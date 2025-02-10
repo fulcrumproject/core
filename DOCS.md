@@ -6,18 +6,16 @@ This document outlines the service architecture class relationships and their ke
 
 ```mermaid
 classDiagram
-    ServiceProvider "1" --> "0..N" ServiceAgent
-    ServiceAgentType "0..N" --> "1..N" ServiceType
-    ServiceAgent "0..N" --> "1" ServiceAgentType
-    ServiceAgent "1" --> "0..N" Service
-    Service "1" --> "1..N" Resource
-    ServiceGroup "1" --> "0..N" Service
-    Resource --> ResourceType
-    Resource --> Resource
-    MetricEntry "1" --> "0..N" MetricType
+    Provider "1" --> "0..N" Agent : has many
+    AgentType "0..N" --> "1..N" ServiceType : can provide
+    Agent "0..N" --> "1" AgentType : is of type
+    Agent "1" --> "0..N" Service : handles
+    Service "0..1" --> "1" ServiceType : is of type
+    ServiceGroup "1" --> "0..N" Service : groups many
+    MetricEntry "1" --> "0..N" MetricType : is of type
 
     namespace Providers {
-        class ServiceProvider {
+        class Provider {
             id : UUID
             name : string
             state : enum[Enabled|Disabled]
@@ -29,22 +27,26 @@ classDiagram
         class ServiceType {
             id : UUID
             name : string
+            resourceDefinitions : json
             createdAt : datetime
             updatedAt : datetime
         }
 
-        class ServiceAgentType {
+        class AgentType {
             id : UUID
             name : string
+            propertyDefinitions : json
             createdAt : datetime
             updatedAt : datetime
         }
 
-        class ServiceAgent {
+        class Agent {
             id : UUID
             name : string
-            state : enum[New|Connected|Disabled|Error]
+            state : enum[New|Connected|Disconnected|Error|Disabled]
+            tokenHash : string 
             attributes : map[string]string[] 
+            properties : json
             createdAt : datetime
             updatedAt : datetime
         }
@@ -54,21 +56,9 @@ classDiagram
         class Service {
             id : UUID
             name : string
-            attributes : map[string]string[] 
-            createdAt : datetime
-            updatedAt : datetime
-        }
-
-        class Resource {
-            id : UUID
-            name : string
-            createdAt : datetime
-            updatedAt : datetime
-        }
-
-        class ResourceType {
-            id : UUID
-            name : string
+            state : enum[New,Creating,Created,Updating,Updated,Deleting, Deleted, Error]
+            attributes : map[string]string[]
+            resources : json
             createdAt : datetime
             updatedAt : datetime
         }
@@ -108,14 +98,14 @@ classDiagram
         }
     }
 
-    note for ResourceType "Types include:
+    note for ServiceType "Resource definitions can be eg.:
     - VM
     - Container
     - Container Image
     - VM Image
     - Kub Control Plane + Kub Worker"
 
-    note for ServiceType "Types include:
+    note for ServiceType "Service types include:
     - VM (VMrunner)
     - K8-Node (node, labels, nodeUsed)
     - MicroK8s application
@@ -128,11 +118,11 @@ classDiagram
 
 ### Core Components
 
-1. **ServiceProvider (Cloud Service Provider)**
+1. **Provider (Cloud Service Provider)**
    - Primary identifier for the cloud service provider
    - One-to-many relationship with Service Managers
 
-2. **ServiceAgent**
+2. **Agent**
    - Manages service instances and their lifecycle
    - Contains type information
    - Links to both services and versioning
