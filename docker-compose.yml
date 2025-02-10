@@ -1,0 +1,43 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=fulcrum
+      - DB_PASSWORD=fulcrum_password
+      - DB_NAME=fulcrum_db
+      - DB_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - fulcrum-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=fulcrum
+      - POSTGRES_PASSWORD=fulcrum_password
+      - POSTGRES_DB=fulcrum_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fulcrum"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fulcrum-network
+
+volumes:
+  postgres_data:
+
+networks:
+  fulcrum-network:
+    driver: bridge

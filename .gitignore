@@ -1,0 +1,7 @@
+__debug**
+**/*.csv
+.vscode/
+/tmp
+.env
+.google_application_credentials.json
+.DS_Store

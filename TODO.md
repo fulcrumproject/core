@@ -1,0 +1,3 @@
+- Add migrations
+- Add a DB seed script
+- Add the first repository
