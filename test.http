@@ -1,0 +1,35 @@
+### Variables
+@baseUrl = http://localhost:3000
+
+### Create new item
+# @name createItem
+POST {{baseUrl}}/items
+Content-Type: application/json
+
+{
+    "name": "Test Item",
+    "description": "This is a test item"
+}
+
+### Response handling - store item ID
+@itemId = {{createItem.response.body.$.id}}
+
+### List all items
+GET {{baseUrl}}/items
+Accept: application/json
+
+### Get item by ID
+GET {{baseUrl}}/items/{{itemId}}
+Accept: application/json
+
+### Update item
+PUT {{baseUrl}}/items/{{itemId}}
+Content-Type: application/json
+
+{
+    "name": "Updated Test Item",
+    "description": "This is an updated test item"
+}
+
+### Delete item
+DELETE {{baseUrl}}/items/{{itemId}}
