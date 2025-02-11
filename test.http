@@ -13,6 +13,10 @@ Content-Type: application/json
         "color": "blue",
         "size": "large",
         "tags": ["test", "example"]
+    },
+    "jsonProperty": {
+        "stringProperty": "test string",
+        "intProperty": 42
     }
 }
 
@@ -39,6 +43,10 @@ Content-Type: application/json
         "size": "medium",
         "tags": ["updated", "modified"],
         "status": "active"
+    },
+    "jsonProperty": {
+        "stringProperty": "updated string",
+        "intProperty": 100
     }
 }
 

@@ -11,34 +11,38 @@ import (
 )
 
 type createItemRequest struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Properties  map[string]interface{} `json:"properties"`
+	Name         string                 `json:"name"`
+	Description  string                 `json:"description"`
+	Properties   map[string]interface{} `json:"properties"`
+	JsonProperty domain.JsonProperty    `json:"jsonProperty"`
 }
 
 type updateItemRequest struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Properties  map[string]interface{} `json:"properties"`
+	Name         string                 `json:"name"`
+	Description  string                 `json:"description"`
+	Properties   map[string]interface{} `json:"properties"`
+	JsonProperty domain.JsonProperty    `json:"jsonProperty"`
 }
 
 type itemResponse struct {
-	ID          uint                   `json:"id"`
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Properties  map[string]interface{} `json:"properties"`
-	CreatedAt   time.Time              `json:"createdAt"`
-	UpdatedAt   time.Time              `json:"updatedAt"`
+	ID           uint                   `json:"id"`
+	Name         string                 `json:"name"`
+	Description  string                 `json:"description"`
+	Properties   map[string]interface{} `json:"properties"`
+	JsonProperty domain.JsonProperty    `json:"jsonProperty"`
+	CreatedAt    time.Time              `json:"createdAt"`
+	UpdatedAt    time.Time              `json:"updatedAt"`
 }
 
 func newItemResponse(item *domain.Item) *itemResponse {
 	return &itemResponse{
-		ID:          item.ID,
-		Name:        item.Name,
-		Description: item.Description,
-		Properties:  item.Properties,
-		CreatedAt:   item.CreatedAt,
-		UpdatedAt:   item.UpdatedAt,
+		ID:           item.ID,
+		Name:         item.Name,
+		Description:  item.Description,
+		Properties:   item.Properties,
+		JsonProperty: item.JsonProperty,
+		CreatedAt:    item.CreatedAt,
+		UpdatedAt:    item.UpdatedAt,
 	}
 }
 
@@ -67,9 +71,10 @@ func HandleCreateItem(repo domain.Repository) http.HandlerFunc {
 		}
 
 		item := &domain.Item{
-			Name:        req.Name,
-			Description: req.Description,
-			Properties:  req.Properties,
+			Name:         req.Name,
+			Description:  req.Description,
+			Properties:   req.Properties,
+			JsonProperty: req.JsonProperty,
 		}
 
 		if err := repo.Create(item); err != nil {
@@ -130,6 +135,7 @@ func HandleUpdateItem(repo domain.Repository) http.HandlerFunc {
 		existingItem.Name = req.Name
 		existingItem.Description = req.Description
 		existingItem.Properties = req.Properties
+		existingItem.JsonProperty = req.JsonProperty
 
 		if err := repo.Update(existingItem); err != nil {
 			respondWithError(w, http.StatusInternalServerError, "Failed to update item")
