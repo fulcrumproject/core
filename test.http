@@ -8,7 +8,12 @@ Content-Type: application/json
 
 {
     "name": "Test Item",
-    "description": "This is a test item"
+    "description": "This is a test item",
+    "properties": {
+        "color": "blue",
+        "size": "large",
+        "tags": ["test", "example"]
+    }
 }
 
 ### Response handling - store item ID
@@ -28,7 +33,13 @@ Content-Type: application/json
 
 {
     "name": "Updated Test Item",
-    "description": "This is an updated test item"
+    "description": "This is an updated test item",
+    "properties": {
+        "color": "red",
+        "size": "medium",
+        "tags": ["updated", "modified"],
+        "status": "active"
+    }
 }
 
 ### Delete item

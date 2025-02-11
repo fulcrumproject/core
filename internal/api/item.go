@@ -11,21 +11,24 @@ import (
 )
 
 type createItemRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Properties  map[string]interface{} `json:"properties"`
 }
 
 type updateItemRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Properties  map[string]interface{} `json:"properties"`
 }
 
 type itemResponse struct {
-	ID          uint      `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID          uint                   `json:"id"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Properties  map[string]interface{} `json:"properties"`
+	CreatedAt   time.Time              `json:"createdAt"`
+	UpdatedAt   time.Time              `json:"updatedAt"`
 }
 
 func newItemResponse(item *domain.Item) *itemResponse {
@@ -33,6 +36,7 @@ func newItemResponse(item *domain.Item) *itemResponse {
 		ID:          item.ID,
 		Name:        item.Name,
 		Description: item.Description,
+		Properties:  item.Properties,
 		CreatedAt:   item.CreatedAt,
 		UpdatedAt:   item.UpdatedAt,
 	}
@@ -65,6 +69,7 @@ func HandleCreateItem(repo domain.Repository) http.HandlerFunc {
 		item := &domain.Item{
 			Name:        req.Name,
 			Description: req.Description,
+			Properties:  req.Properties,
 		}
 
 		if err := repo.Create(item); err != nil {
@@ -124,6 +129,7 @@ func HandleUpdateItem(repo domain.Repository) http.HandlerFunc {
 
 		existingItem.Name = req.Name
 		existingItem.Description = req.Description
+		existingItem.Properties = req.Properties
 
 		if err := repo.Update(existingItem); err != nil {
 			respondWithError(w, http.StatusInternalServerError, "Failed to update item")

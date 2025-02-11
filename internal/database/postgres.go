@@ -27,7 +27,9 @@ func NewConnection(config *Config) (*gorm.DB, error) {
 		config.Port,
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN: dsn,
+	}), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
