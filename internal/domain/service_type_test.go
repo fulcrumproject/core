@@ -64,7 +64,7 @@ func TestNewServiceType(t *testing.T) {
 				return
 			}
 
-			// Confronto profondo delle strutture JSON
+			// Deep comparison of JSON structures
 			if !reflect.DeepEqual(defs, tt.resourceDefinitions) {
 				defsJSON, _ := json.Marshal(defs)
 				expectedJSON, _ := json.Marshal(tt.resourceDefinitions)
@@ -123,7 +123,7 @@ func TestServiceTypeResourceDefinitions(t *testing.T) {
 			return
 		}
 
-		// Confronto profondo delle strutture JSON
+		// Deep comparison of JSON structures
 		if !reflect.DeepEqual(defs, initialDefs) {
 			defsJSON, _ := json.Marshal(defs)
 			initialDefsJSON, _ := json.Marshal(initialDefs)
@@ -149,7 +149,7 @@ func TestServiceTypeResourceDefinitions(t *testing.T) {
 			return
 		}
 
-		// Confronto profondo delle strutture JSON
+		// Deep comparison of JSON structures
 		if !reflect.DeepEqual(defs, newDefs) {
 			defsJSON, _ := json.Marshal(defs)
 			newDefsJSON, _ := json.Marshal(newDefs)

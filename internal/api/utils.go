@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// ParseUUID converte una stringa UUID in domain.UUID
+// ParseUUID converts a string UUID to domain.UUID
 func ParseUUID(s string) (domain.UUID, error) {
 	id, err := uuid.Parse(s)
 	if err != nil {

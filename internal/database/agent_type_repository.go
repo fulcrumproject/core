@@ -13,7 +13,7 @@ type agentTypeRepository struct {
 	db *gorm.DB
 }
 
-// NewAgentTypeRepository crea una nuova istanza di AgentTypeRepository
+// NewAgentTypeRepository creates a new instance of AgentTypeRepository
 func NewAgentTypeRepository(db *gorm.DB) domain.AgentTypeRepository {
 	return &agentTypeRepository{db: db}
 }
@@ -36,7 +36,7 @@ func (r *agentTypeRepository) Update(ctx context.Context, agentType *domain.Agen
 		return err
 	}
 
-	// Prima verifichiamo che l'AgentType esista
+	// First verify that the AgentType exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.AgentType{}, agentType.ID).Error == nil
 	if !exists {
 		return domain.ErrNotFound
@@ -51,7 +51,7 @@ func (r *agentTypeRepository) Update(ctx context.Context, agentType *domain.Agen
 }
 
 func (r *agentTypeRepository) Delete(ctx context.Context, id domain.UUID) error {
-	// Prima verifichiamo che l'AgentType esista
+	// First verify that the AgentType exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.AgentType{}, id).Error == nil
 	if !exists {
 		return domain.ErrNotFound
@@ -108,7 +108,7 @@ func (r *agentTypeRepository) FindByServiceType(ctx context.Context, serviceType
 }
 
 func (r *agentTypeRepository) AddServiceType(ctx context.Context, agentTypeID, serviceTypeID domain.UUID) error {
-	// Prima verifichiamo che l'AgentType esista
+	// First verify that the AgentType exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.AgentType{}, agentTypeID).Error == nil
 	if !exists {
 		return domain.ErrNotFound
@@ -132,7 +132,7 @@ func (r *agentTypeRepository) AddServiceType(ctx context.Context, agentTypeID, s
 }
 
 func (r *agentTypeRepository) RemoveServiceType(ctx context.Context, agentTypeID, serviceTypeID domain.UUID) error {
-	// Prima verifichiamo che l'AgentType esista
+	// First verify that the AgentType exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.AgentType{}, agentTypeID).Error == nil
 	if !exists {
 		return domain.ErrNotFound

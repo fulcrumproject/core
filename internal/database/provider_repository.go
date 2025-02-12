@@ -13,7 +13,7 @@ type providerRepository struct {
 	db *gorm.DB
 }
 
-// NewProviderRepository crea una nuova istanza di ProviderRepository
+// NewProviderRepository creates a new instance of ProviderRepository
 func NewProviderRepository(db *gorm.DB) domain.ProviderRepository {
 	return &providerRepository{db: db}
 }
@@ -32,7 +32,7 @@ func (r *providerRepository) Create(ctx context.Context, provider *domain.Provid
 }
 
 func (r *providerRepository) Update(ctx context.Context, provider *domain.Provider) error {
-	// Prima verifichiamo che il Provider esista
+	// First verify that the Provider exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.Provider{}, provider.ID).Error == nil
 	if !exists {
 		return domain.ErrNotFound
@@ -51,7 +51,7 @@ func (r *providerRepository) Update(ctx context.Context, provider *domain.Provid
 }
 
 func (r *providerRepository) Delete(ctx context.Context, id domain.UUID) error {
-	// Prima verifichiamo che il Provider esista
+	// First verify that the Provider exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.Provider{}, id).Error == nil
 	if !exists {
 		return domain.ErrNotFound
@@ -107,7 +107,7 @@ func (r *providerRepository) FindByCountryCode(ctx context.Context, countryCode 
 }
 
 func (r *providerRepository) UpdateState(ctx context.Context, id domain.UUID, state domain.ProviderState) error {
-	// Prima verifichiamo che il Provider esista
+	// First verify that the Provider exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.Provider{}, id).Error == nil
 	if !exists {
 		return domain.ErrNotFound

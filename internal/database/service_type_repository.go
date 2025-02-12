@@ -13,7 +13,7 @@ type serviceTypeRepository struct {
 	db *gorm.DB
 }
 
-// NewServiceTypeRepository crea una nuova istanza di ServiceTypeRepository
+// NewServiceTypeRepository creates a new instance of ServiceTypeRepository
 func NewServiceTypeRepository(db *gorm.DB) domain.ServiceTypeRepository {
 	return &serviceTypeRepository{db: db}
 }
@@ -36,7 +36,7 @@ func (r *serviceTypeRepository) Update(ctx context.Context, serviceType *domain.
 		return err
 	}
 
-	// Prima verifichiamo che il ServiceType esista
+	// First verify that the ServiceType exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.ServiceType{}, serviceType.ID).Error == nil
 	if !exists {
 		return domain.ErrNotFound
@@ -51,7 +51,7 @@ func (r *serviceTypeRepository) Update(ctx context.Context, serviceType *domain.
 }
 
 func (r *serviceTypeRepository) Delete(ctx context.Context, id domain.UUID) error {
-	// Prima verifichiamo che il ServiceType esista
+	// First verify that the ServiceType exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.ServiceType{}, id).Error == nil
 	if !exists {
 		return domain.ErrNotFound
@@ -108,13 +108,13 @@ func (r *serviceTypeRepository) FindByAgentType(ctx context.Context, agentTypeID
 }
 
 func (r *serviceTypeRepository) UpdateResourceDefinitions(ctx context.Context, id domain.UUID, definitions domain.JSON) error {
-	// Prima verifichiamo che il ServiceType esista
+	// First verify that the ServiceType exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.ServiceType{}, id).Error == nil
 	if !exists {
 		return domain.ErrNotFound
 	}
 
-	// Aggiorniamo solo il campo resource_definitions
+	// Update only the resource_definitions field
 	result := r.db.WithContext(ctx).
 		Model(&domain.ServiceType{}).
 		Where("id = ?", id).

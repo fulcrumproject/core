@@ -6,78 +6,80 @@ import (
 )
 
 var (
-	// ErrNotFound indica che l'entità richiesta non è stata trovata
+	// ErrNotFound indicates that the requested entity was not found
 	ErrNotFound = errors.New("entity not found")
-	// ErrConflict indica che l'operazione non può essere completata a causa di un conflitto
+
+	// ErrConflict indicates that the operation cannot be completed due to a conflict
 	ErrConflict = errors.New("entity conflict")
-	// ErrInvalidInput indica che i dati di input non sono validi
+
+	// ErrInvalidInput indicates that the input data is invalid
 	ErrInvalidInput = errors.New("invalid input")
 )
 
-// Repository definisce l'interfaccia base per tutti i repository
+// Repository defines the base interface for all repositories
 type Repository[T any] interface {
-	// Create crea una nuova entità
+	// Create creates a new entity
 	Create(ctx context.Context, entity *T) error
 
-	// Update aggiorna un'entità esistente
+	// Update updates an existing entity
 	Update(ctx context.Context, entity *T) error
 
-	// Delete elimina un'entità per ID
+	// Delete removes an entity by ID
 	Delete(ctx context.Context, id UUID) error
 
-	// FindByID recupera un'entità per ID
+	// FindByID retrieves an entity by ID
 	FindByID(ctx context.Context, id UUID) (*T, error)
 
-	// List recupera una lista di entità in base ai filtri forniti
+	// List retrieves a list of entities based on the provided filters
 	List(ctx context.Context, filters map[string]interface{}) ([]T, error)
 }
 
-// ProviderRepository definisce l'interfaccia per il repository dei Provider
+// ProviderRepository defines the interface for the Provider repository
 type ProviderRepository interface {
 	Repository[Provider]
 
-	// FindByCountryCode recupera i provider per codice paese
+	// FindByCountryCode retrieves providers by country code
 	FindByCountryCode(ctx context.Context, code string) ([]Provider, error)
 
-	// UpdateState aggiorna lo stato di un provider
+	// UpdateState updates the state of a provider
 	UpdateState(ctx context.Context, id UUID, state ProviderState) error
 }
 
-// AgentRepository definisce l'interfaccia per il repository degli Agent
+// AgentRepository defines the interface for the Agent repository
 type AgentRepository interface {
 	Repository[Agent]
 
-	// FindByProvider recupera gli agent per un provider specifico
+	// FindByProvider retrieves agents for a specific provider
 	FindByProvider(ctx context.Context, providerID UUID) ([]Agent, error)
 
-	// FindByAgentType recupera gli agent per un tipo specifico
+	// FindByAgentType retrieves agents for a specific type
 	FindByAgentType(ctx context.Context, agentTypeID UUID) ([]Agent, error)
 
-	// UpdateState aggiorna lo stato di un agent
+	// UpdateState updates the state of an agent
 	UpdateState(ctx context.Context, id UUID, state AgentState) error
 }
 
-// AgentTypeRepository definisce l'interfaccia per il repository degli AgentType
+// AgentTypeRepository defines the interface for the AgentType repository
 type AgentTypeRepository interface {
 	Repository[AgentType]
 
-	// FindByServiceType recupera i tipi di agent che supportano un tipo di servizio specifico
+	// FindByServiceType retrieves agent types that support a specific service type
 	FindByServiceType(ctx context.Context, serviceTypeID UUID) ([]AgentType, error)
 
-	// AddServiceType aggiunge un tipo di servizio a un tipo di agent
+	// AddServiceType adds a service type to an agent type
 	AddServiceType(ctx context.Context, agentTypeID, serviceTypeID UUID) error
 
-	// RemoveServiceType rimuove un tipo di servizio da un tipo di agent
+	// RemoveServiceType removes a service type from an agent type
 	RemoveServiceType(ctx context.Context, agentTypeID, serviceTypeID UUID) error
 }
 
-// ServiceTypeRepository definisce l'interfaccia per il repository dei ServiceType
+// ServiceTypeRepository defines the interface for the ServiceType repository
 type ServiceTypeRepository interface {
 	Repository[ServiceType]
 
-	// FindByAgentType recupera i tipi di servizio supportati da un tipo di agent
+	// FindByAgentType retrieves service types supported by an agent type
 	FindByAgentType(ctx context.Context, agentTypeID UUID) ([]ServiceType, error)
 
-	// UpdateResourceDefinitions aggiorna le definizioni delle risorse di un tipo di servizio
+	// UpdateResourceDefinitions updates the resource definitions of a service type
 	UpdateResourceDefinitions(ctx context.Context, id UUID, definitions JSON) error
 }

@@ -13,7 +13,7 @@ type agentRepository struct {
 	db *gorm.DB
 }
 
-// NewAgentRepository crea una nuova istanza di AgentRepository
+// NewAgentRepository creates a new instance of AgentRepository
 func NewAgentRepository(db *gorm.DB) domain.AgentRepository {
 	return &agentRepository{db: db}
 }
@@ -36,7 +36,7 @@ func (r *agentRepository) Update(ctx context.Context, agent *domain.Agent) error
 		return err
 	}
 
-	// Prima verifichiamo che l'Agent esista
+	// First verify that the Agent exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.Agent{}, agent.ID).Error == nil
 	if !exists {
 		return domain.ErrNotFound
@@ -51,7 +51,7 @@ func (r *agentRepository) Update(ctx context.Context, agent *domain.Agent) error
 }
 
 func (r *agentRepository) Delete(ctx context.Context, id domain.UUID) error {
-	// Prima verifichiamo che l'Agent esista
+	// First verify that the Agent exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.Agent{}, id).Error == nil
 	if !exists {
 		return domain.ErrNotFound
@@ -120,7 +120,7 @@ func (r *agentRepository) FindByAgentType(ctx context.Context, agentTypeID domai
 }
 
 func (r *agentRepository) UpdateState(ctx context.Context, id domain.UUID, state domain.AgentState) error {
-	// Prima verifichiamo che l'Agent esista
+	// First verify that the Agent exists
 	exists := r.db.WithContext(ctx).Select("id").First(&domain.Agent{}, id).Error == nil
 	if !exists {
 		return domain.ErrNotFound

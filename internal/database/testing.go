@@ -9,16 +9,16 @@ import (
 	"gorm.io/gorm"
 )
 
-// TestDB contiene la connessione al database e le funzioni di utility per i test
+// TestDB contains the database connection and utility functions for tests
 type TestDB struct {
 	DB     *gorm.DB
 	DBName string
 }
 
-// NewTestDB crea una nuova istanza di TestDB
+// NewTestDB creates a new instance of TestDB
 func NewTestDB(t *testing.T) *TestDB {
-	// Usa un database di test separato
-	dbName := fmt.Sprintf("fulcrum_test_%d", os.Getpid()) // Database univoco per ogni processo di test
+	// Use a separate test database
+	dbName := fmt.Sprintf("fulcrum_test_%d", os.Getpid()) // Unique database for each test process
 	config := Config{
 		Host:     getEnvOrDefault("TEST_DB_HOST", "localhost"),
 		User:     getEnvOrDefault("TEST_DB_USER", "fulcrum"),
@@ -27,7 +27,7 @@ func NewTestDB(t *testing.T) *TestDB {
 		Port:     getEnvOrDefault("TEST_DB_PORT", "5432"),
 	}
 
-	// Connettiti al database postgres per creare il database di test
+	// Connect to postgres database to create the test database
 	adminConfig := config
 	adminConfig.DBName = "postgres"
 	adminDB, err := NewConnection(&adminConfig)
@@ -35,7 +35,7 @@ func NewTestDB(t *testing.T) *TestDB {
 		t.Fatalf("Failed to connect to postgres database: %v", err)
 	}
 
-	// Crea il database di test
+	// Create the test database
 	sql := fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbName)
 	if err := adminDB.Exec(sql).Error; err != nil {
 		t.Fatalf("Failed to drop test database: %v", err)
@@ -46,7 +46,7 @@ func NewTestDB(t *testing.T) *TestDB {
 		t.Fatalf("Failed to create test database: %v", err)
 	}
 
-	// Connettiti al database di test
+	// Connect to the test database
 	db, err := NewConnection(&config)
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
@@ -58,7 +58,7 @@ func NewTestDB(t *testing.T) *TestDB {
 	}
 }
 
-// Cleanup elimina il database di test
+// Cleanup removes the test database
 func (tdb *TestDB) Cleanup(t *testing.T) {
 	sqlDB, err := tdb.DB.DB()
 	if err != nil {
@@ -66,13 +66,13 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 		return
 	}
 
-	// Chiudi tutte le connessioni al database
+	// Close all database connections
 	if err := sqlDB.Close(); err != nil {
 		t.Errorf("Failed to close database connection: %v", err)
 		return
 	}
 
-	// Connettiti al database postgres per eliminare il database di test
+	// Connect to postgres database to delete the test database
 	config := Config{
 		Host:     getEnvOrDefault("TEST_DB_HOST", "localhost"),
 		User:     getEnvOrDefault("TEST_DB_USER", "fulcrum"),
@@ -87,7 +87,7 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 		return
 	}
 
-	// Forza la chiusura di tutte le connessioni al database di test
+	// Force close all connections to the test database
 	sql := fmt.Sprintf(`
 		SELECT pg_terminate_backend(pg_stat_activity.pid)
 		FROM pg_stat_activity
@@ -99,14 +99,14 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 		t.Errorf("Failed to terminate database connections: %v", err)
 	}
 
-	// Elimina il database di test
+	// Delete the test database
 	sql = fmt.Sprintf("DROP DATABASE IF EXISTS %s", tdb.DBName)
 	if err := adminDB.Exec(sql).Error; err != nil {
 		t.Errorf("Failed to drop test database: %v", err)
 	}
 }
 
-// TruncateTables elimina tutti i dati dalle tabelle
+// TruncateTables removes all data from the tables
 func (tdb *TestDB) TruncateTables(t *testing.T) {
 	tables := []string{
 		"agent_type_service_types",
@@ -123,7 +123,7 @@ func (tdb *TestDB) TruncateTables(t *testing.T) {
 	}
 }
 
-// RunWithinTransaction esegue una funzione all'interno di una transazione
+// RunWithinTransaction executes a function within a transaction
 func (tdb *TestDB) RunWithinTransaction(t *testing.T, fn func(context.Context, *gorm.DB) error) {
 	tx := tdb.DB.Begin()
 	if tx.Error != nil {
