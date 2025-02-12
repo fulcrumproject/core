@@ -19,7 +19,8 @@ classDiagram
             id : UUID
             name : string
             state : enum[Enabled|Disabled]
-            attributes : map[string]string[] 
+            countryCode : string 
+            attributes : map[string]string[]
             createdAt : datetime
             updatedAt : datetime
         }
@@ -35,7 +36,6 @@ classDiagram
         class AgentType {
             id : UUID
             name : string
-            propertyDefinitions : json
             createdAt : datetime
             updatedAt : datetime
         }
@@ -45,7 +45,8 @@ classDiagram
             name : string
             state : enum[New|Connected|Disconnected|Error|Disabled]
             tokenHash : string 
-            attributes : map[string]string[] 
+            countryCode : string
+            attributes : map[string]string[]
             properties : json
             createdAt : datetime
             updatedAt : datetime
@@ -75,12 +76,15 @@ classDiagram
         class MetricEntry {
             id : UUID
             createdAt : datetime
+            agentId : UUID        
+            serviceId : UUID        
+            resourceId : string
             value : number
         }
 
         class MetricType {
             id : UUID
-            entity : string 
+            entityType : enum[Agent,Service,Resource] 
             name : string
             createdAt : datetime
             updatedAt : datetime
