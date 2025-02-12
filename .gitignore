@@ -5,3 +5,4 @@ __debug**
 .env
 .google_application_credentials.json
 .DS_Store
+coverage.out
