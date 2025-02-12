@@ -267,8 +267,8 @@ Implement RESTful endpoints for each domain:
    - GET /api/v1/metrics/{id}
 
 5. Audit API
-   - GET /api/v1/audit
-   - GET /api/v1/audit/{id}
+   - GET /api/v1/audit-entries
+   - GET /api/v1/audit-entries/{id}
 
 ## Implementation Order
 
