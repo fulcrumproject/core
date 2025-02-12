@@ -1,4 +1,4 @@
-package common
+package domain
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 // UUID represents a unique identifier
@@ -34,7 +35,7 @@ type BaseEntity struct {
 }
 
 // BeforeCreate ensures UUID is set before creating a record
-func (b *BaseEntity) BeforeCreate() error {
+func (b *BaseEntity) BeforeCreate(tx *gorm.DB) error {
 	if b.ID == uuid.Nil {
 		b.ID = uuid.New()
 	}

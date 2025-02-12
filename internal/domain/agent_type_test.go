@@ -1,9 +1,8 @@
-package provider
+package domain
 
 import (
 	"testing"
 
-	"fulcrumproject.org/core/internal/domain/common"
 	"github.com/google/uuid"
 )
 
@@ -80,21 +79,21 @@ func TestAgentTypeValidate(t *testing.T) {
 
 func TestAgentTypeServiceTypeManagement(t *testing.T) {
 	agentType := &AgentType{
-		BaseEntity: common.BaseEntity{
+		BaseEntity: BaseEntity{
 			ID: uuid.New(),
 		},
 		Name: "VM Runner",
 	}
 
 	serviceType1 := &ServiceType{
-		BaseEntity: common.BaseEntity{
+		BaseEntity: BaseEntity{
 			ID: uuid.New(),
 		},
 		Name: "VM Service",
 	}
 
 	serviceType2 := &ServiceType{
-		BaseEntity: common.BaseEntity{
+		BaseEntity: BaseEntity{
 			ID: uuid.New(),
 		},
 		Name: "Container Service",

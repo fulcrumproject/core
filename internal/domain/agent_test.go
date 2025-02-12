@@ -1,11 +1,10 @@
-package provider
+package domain
 
 import (
 	"encoding/json"
 	"reflect"
 	"testing"
 
-	"fulcrumproject.org/core/internal/domain/common"
 	"github.com/google/uuid"
 )
 
@@ -17,23 +16,23 @@ func TestNewAgent(t *testing.T) {
 		name        string
 		agentName   string
 		countryCode string
-		attributes  common.Attributes
-		properties  common.JSON
-		providerID  common.UUID
-		agentTypeID common.UUID
+		attributes  Attributes
+		properties  JSON
+		providerID  UUID
+		agentTypeID UUID
 		wantErr     bool
 	}{
 		{
 			name:        "Valid agent",
 			agentName:   "Test Agent",
 			countryCode: "US",
-			attributes: common.Attributes{
+			attributes: Attributes{
 				"zone":     {"zone1", "zone2"},
 				"capacity": {"high"},
 			},
-			properties: common.JSON{
-				"maxConnections": float64(100), // Esplicitamente usando float64 per i numeri
-				"timeout":        float64(30),  // Esplicitamente usando float64 per i numeri
+			properties: JSON{
+				"maxConnections": float64(100),
+				"timeout":        float64(30),
 			},
 			providerID:  providerID,
 			agentTypeID: agentTypeID,
@@ -43,8 +42,8 @@ func TestNewAgent(t *testing.T) {
 			name:        "Empty name",
 			agentName:   "",
 			countryCode: "US",
-			attributes:  common.Attributes{},
-			properties:  common.JSON{},
+			attributes:  Attributes{},
+			properties:  JSON{},
 			providerID:  providerID,
 			agentTypeID: agentTypeID,
 			wantErr:     true,
@@ -53,8 +52,8 @@ func TestNewAgent(t *testing.T) {
 			name:        "Invalid country code",
 			agentName:   "Test Agent",
 			countryCode: "USA",
-			attributes:  common.Attributes{},
-			properties:  common.JSON{},
+			attributes:  Attributes{},
+			properties:  JSON{},
 			providerID:  providerID,
 			agentTypeID: agentTypeID,
 			wantErr:     true,
@@ -63,10 +62,10 @@ func TestNewAgent(t *testing.T) {
 			name:        "Invalid attributes key",
 			agentName:   "Test Agent",
 			countryCode: "US",
-			attributes: common.Attributes{
+			attributes: Attributes{
 				"": {"value"},
 			},
-			properties:  common.JSON{},
+			properties:  JSON{},
 			providerID:  providerID,
 			agentTypeID: agentTypeID,
 			wantErr:     true,
@@ -75,8 +74,8 @@ func TestNewAgent(t *testing.T) {
 			name:        "Invalid properties key",
 			agentName:   "Test Agent",
 			countryCode: "US",
-			attributes:  common.Attributes{},
-			properties: common.JSON{
+			attributes:  Attributes{},
+			properties: JSON{
 				"": "value",
 			},
 			providerID:  providerID,
@@ -87,8 +86,8 @@ func TestNewAgent(t *testing.T) {
 			name:        "Nil UUID provider",
 			agentName:   "Test Agent",
 			countryCode: "US",
-			attributes:  common.Attributes{},
-			properties:  common.JSON{},
+			attributes:  Attributes{},
+			properties:  JSON{},
 			providerID:  uuid.Nil,
 			agentTypeID: agentTypeID,
 			wantErr:     true,
@@ -97,8 +96,8 @@ func TestNewAgent(t *testing.T) {
 			name:        "Nil UUID agent type",
 			agentName:   "Test Agent",
 			countryCode: "US",
-			attributes:  common.Attributes{},
-			properties:  common.JSON{},
+			attributes:  Attributes{},
+			properties:  JSON{},
 			providerID:  providerID,
 			agentTypeID: uuid.Nil,
 			wantErr:     true,

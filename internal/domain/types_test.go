@@ -1,4 +1,4 @@
-package common
+package domain
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 func TestBaseEntity(t *testing.T) {
 	t.Run("BeforeCreate sets UUID if nil", func(t *testing.T) {
 		entity := &BaseEntity{}
-		err := entity.BeforeCreate()
+		err := entity.BeforeCreate(nil)
 		if err != nil {
 			t.Errorf("BeforeCreate returned error: %v", err)
 		}
@@ -23,7 +23,7 @@ func TestBaseEntity(t *testing.T) {
 	t.Run("BeforeCreate keeps existing UUID", func(t *testing.T) {
 		existingID := uuid.New()
 		entity := &BaseEntity{ID: existingID}
-		err := entity.BeforeCreate()
+		err := entity.BeforeCreate(nil)
 		if err != nil {
 			t.Errorf("BeforeCreate returned error: %v", err)
 		}

@@ -1,25 +1,23 @@
-package provider
+package domain
 
 import (
 	"encoding/json"
 	"reflect"
 	"testing"
-
-	"fulcrumproject.org/core/internal/domain/common"
 )
 
 func TestNewServiceType(t *testing.T) {
 	tests := []struct {
 		name                string
 		typeName            string
-		resourceDefinitions common.JSON
+		resourceDefinitions JSON
 		wantErr             bool
 	}{
 		{
 			name:     "Valid service type",
 			typeName: "VM Service",
-			resourceDefinitions: common.JSON{
-				"cpu":    float64(4), // Esplicitamente usando float64 per i numeri
+			resourceDefinitions: JSON{
+				"cpu":    float64(4),
 				"memory": "8GB",
 				"disk": map[string]interface{}{
 					"size": "100GB",
@@ -31,13 +29,13 @@ func TestNewServiceType(t *testing.T) {
 		{
 			name:                "Empty name",
 			typeName:            "",
-			resourceDefinitions: common.JSON{},
+			resourceDefinitions: JSON{},
 			wantErr:             true,
 		},
 		{
 			name:     "Invalid resource definitions",
 			typeName: "VM Service",
-			resourceDefinitions: common.JSON{
+			resourceDefinitions: JSON{
 				"": "invalid",
 			},
 			wantErr: true,
@@ -68,16 +66,9 @@ func TestNewServiceType(t *testing.T) {
 
 			// Confronto profondo delle strutture JSON
 			if !reflect.DeepEqual(defs, tt.resourceDefinitions) {
-				// Per debug, stampiamo i valori effettivi
-				t.Errorf("Resource definitions don't match\nGot: %#v\nWant: %#v", defs, tt.resourceDefinitions)
-
-				// Stampa i tipi dei valori per debug
-				for k, v := range defs {
-					t.Logf("Got key %s: value %v (type %T)", k, v, v)
-				}
-				for k, v := range tt.resourceDefinitions {
-					t.Logf("Want key %s: value %v (type %T)", k, v, v)
-				}
+				defsJSON, _ := json.Marshal(defs)
+				expectedJSON, _ := json.Marshal(tt.resourceDefinitions)
+				t.Errorf("Resource definitions don't match\nGot: %s\nWant: %s", defsJSON, expectedJSON)
 			}
 		})
 	}
@@ -115,8 +106,8 @@ func TestServiceTypeValidate(t *testing.T) {
 }
 
 func TestServiceTypeResourceDefinitions(t *testing.T) {
-	initialDefs := common.JSON{
-		"cpu":    float64(4), // Esplicitamente usando float64 per i numeri
+	initialDefs := JSON{
+		"cpu":    float64(4),
 		"memory": "8GB",
 	}
 
@@ -141,8 +132,8 @@ func TestServiceTypeResourceDefinitions(t *testing.T) {
 	})
 
 	t.Run("Update resource definitions", func(t *testing.T) {
-		newDefs := common.JSON{
-			"cpu":    float64(8), // Esplicitamente usando float64 per i numeri
+		newDefs := JSON{
+			"cpu":    float64(8),
 			"memory": "16GB",
 			"disk":   "500GB",
 		}
@@ -167,7 +158,7 @@ func TestServiceTypeResourceDefinitions(t *testing.T) {
 	})
 
 	t.Run("Update with invalid resource definitions", func(t *testing.T) {
-		invalidDefs := common.JSON{
+		invalidDefs := JSON{
 			"": "invalid",
 		}
 

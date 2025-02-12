@@ -1,21 +1,19 @@
-package provider
+package domain
 
 import (
 	"errors"
-
-	"fulcrumproject.org/core/internal/domain/common"
 )
 
 // AgentType represents a type of service manager agent
 type AgentType struct {
-	common.BaseEntity
+	BaseEntity
 	Name         string        `gorm:"not null;unique" json:"name"`
 	ServiceTypes []ServiceType `gorm:"many2many:agent_type_service_types" json:"serviceTypes,omitempty"`
 }
 
 // NewAgentType creates a new AgentType with the given parameters
 func NewAgentType(name string) (*AgentType, error) {
-	if err := common.ValidateName(name); err != nil {
+	if err := ValidateName(name); err != nil {
 		return nil, err
 	}
 
@@ -26,7 +24,7 @@ func NewAgentType(name string) (*AgentType, error) {
 
 // Validate checks if the agent type is valid
 func (at *AgentType) Validate() error {
-	if err := common.ValidateName(at.Name); err != nil {
+	if err := ValidateName(at.Name); err != nil {
 		return err
 	}
 	return nil
@@ -42,7 +40,7 @@ func (at *AgentType) AddServiceType(serviceType *ServiceType) error {
 }
 
 // RemoveServiceType removes a service type from the agent type
-func (at *AgentType) RemoveServiceType(serviceTypeID common.UUID) error {
+func (at *AgentType) RemoveServiceType(serviceTypeID UUID) error {
 	for i, st := range at.ServiceTypes {
 		if st.ID == serviceTypeID {
 			at.ServiceTypes = append(at.ServiceTypes[:i], at.ServiceTypes[i+1:]...)
@@ -53,7 +51,7 @@ func (at *AgentType) RemoveServiceType(serviceTypeID common.UUID) error {
 }
 
 // HasServiceType checks if the agent type supports a specific service type
-func (at *AgentType) HasServiceType(serviceTypeID common.UUID) bool {
+func (at *AgentType) HasServiceType(serviceTypeID UUID) bool {
 	for _, st := range at.ServiceTypes {
 		if st.ID == serviceTypeID {
 			return true

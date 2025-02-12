@@ -1,9 +1,8 @@
-package provider
+package domain
 
 import (
 	"testing"
 
-	"fulcrumproject.org/core/internal/domain/common"
 	"github.com/google/uuid"
 )
 
@@ -12,14 +11,14 @@ func TestNewProvider(t *testing.T) {
 		name        string
 		provName    string
 		countryCode string
-		attributes  common.Attributes
+		attributes  Attributes
 		wantErr     bool
 	}{
 		{
 			name:        "Valid provider",
 			provName:    "Test Provider",
 			countryCode: "US",
-			attributes: common.Attributes{
+			attributes: Attributes{
 				"region": {"east", "west"},
 				"tier":   {"premium"},
 			},
@@ -29,21 +28,21 @@ func TestNewProvider(t *testing.T) {
 			name:        "Empty name",
 			provName:    "",
 			countryCode: "US",
-			attributes:  common.Attributes{},
+			attributes:  Attributes{},
 			wantErr:     true,
 		},
 		{
 			name:        "Invalid country code",
 			provName:    "Test Provider",
 			countryCode: "USA",
-			attributes:  common.Attributes{},
+			attributes:  Attributes{},
 			wantErr:     true,
 		},
 		{
 			name:        "Invalid attributes key",
 			provName:    "Test Provider",
 			countryCode: "US",
-			attributes: common.Attributes{
+			attributes: Attributes{
 				"": {"value"},
 			},
 			wantErr: true,
@@ -153,7 +152,7 @@ func TestProviderValidate(t *testing.T) {
 
 func TestProviderAgentManagement(t *testing.T) {
 	provider := &Provider{
-		BaseEntity: common.BaseEntity{
+		BaseEntity: BaseEntity{
 			ID: uuid.New(),
 		},
 		Name:        "Test Provider",
@@ -162,7 +161,7 @@ func TestProviderAgentManagement(t *testing.T) {
 	}
 
 	agent1 := &Agent{
-		BaseEntity: common.BaseEntity{
+		BaseEntity: BaseEntity{
 			ID: uuid.New(),
 		},
 		Name:        "Agent 1",
@@ -172,7 +171,7 @@ func TestProviderAgentManagement(t *testing.T) {
 	}
 
 	agent2 := &Agent{
-		BaseEntity: common.BaseEntity{
+		BaseEntity: BaseEntity{
 			ID: uuid.New(),
 		},
 		Name:        "Agent 2",

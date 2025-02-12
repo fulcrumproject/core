@@ -1,23 +1,19 @@
-package provider
-
-import (
-	"fulcrumproject.org/core/internal/domain/common"
-)
+package domain
 
 // ServiceType represents a type of service that can be provided
 type ServiceType struct {
-	common.BaseEntity
-	Name                string          `gorm:"not null;unique" json:"name"`
-	ResourceDefinitions common.GormJSON `gorm:"type:jsonb" json:"resourceDefinitions"`
-	AgentTypes          []AgentType     `gorm:"many2many:agent_type_service_types" json:"agentTypes,omitempty"`
+	BaseEntity
+	Name                string      `gorm:"not null;unique" json:"name"`
+	ResourceDefinitions GormJSON    `gorm:"type:jsonb" json:"resourceDefinitions"`
+	AgentTypes          []AgentType `gorm:"many2many:agent_type_service_types" json:"agentTypes,omitempty"`
 }
 
 // NewServiceType creates a new ServiceType with the given parameters
-func NewServiceType(name string, resourceDefinitions common.JSON) (*ServiceType, error) {
-	if err := common.ValidateName(name); err != nil {
+func NewServiceType(name string, resourceDefinitions JSON) (*ServiceType, error) {
+	if err := ValidateName(name); err != nil {
 		return nil, err
 	}
-	if err := common.ValidateJSON(resourceDefinitions); err != nil {
+	if err := ValidateJSON(resourceDefinitions); err != nil {
 		return nil, err
 	}
 
@@ -34,20 +30,20 @@ func NewServiceType(name string, resourceDefinitions common.JSON) (*ServiceType,
 
 // Validate checks if the service type is valid
 func (st *ServiceType) Validate() error {
-	if err := common.ValidateName(st.Name); err != nil {
+	if err := ValidateName(st.Name); err != nil {
 		return err
 	}
 	return nil
 }
 
 // GetResourceDefinitions returns the resource definitions as a JSON object
-func (st *ServiceType) GetResourceDefinitions() (common.JSON, error) {
+func (st *ServiceType) GetResourceDefinitions() (JSON, error) {
 	return st.ResourceDefinitions.ToJSON()
 }
 
 // UpdateResourceDefinitions updates the resource definitions
-func (st *ServiceType) UpdateResourceDefinitions(definitions common.JSON) error {
-	if err := common.ValidateJSON(definitions); err != nil {
+func (st *ServiceType) UpdateResourceDefinitions(definitions JSON) error {
+	if err := ValidateJSON(definitions); err != nil {
 		return err
 	}
 

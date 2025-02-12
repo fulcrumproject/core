@@ -1,9 +1,7 @@
-package provider
+package domain
 
 import (
 	"errors"
-
-	"fulcrumproject.org/core/internal/domain/common"
 )
 
 var (
@@ -33,23 +31,23 @@ func (s ProviderState) IsValid() bool {
 
 // Provider represents a cloud service provider
 type Provider struct {
-	common.BaseEntity
-	Name        string                `gorm:"not null" json:"name"`
-	State       ProviderState         `gorm:"not null" json:"state"`
-	CountryCode string                `gorm:"size:2" json:"countryCode"`
-	Attributes  common.GormAttributes `gorm:"type:jsonb" json:"attributes"`
-	Agents      []Agent               `gorm:"foreignKey:ProviderID" json:"agents,omitempty"`
+	BaseEntity
+	Name        string         `gorm:"not null" json:"name"`
+	State       ProviderState  `gorm:"not null" json:"state"`
+	CountryCode string         `gorm:"size:2" json:"countryCode"`
+	Attributes  GormAttributes `gorm:"type:jsonb" json:"attributes"`
+	Agents      []Agent        `gorm:"foreignKey:ProviderID" json:"agents,omitempty"`
 }
 
 // NewProvider creates a new Provider with the given parameters
-func NewProvider(name, countryCode string, attributes common.Attributes) (*Provider, error) {
-	if err := common.ValidateName(name); err != nil {
+func NewProvider(name, countryCode string, attributes Attributes) (*Provider, error) {
+	if err := ValidateName(name); err != nil {
 		return nil, err
 	}
-	if err := common.ValidateCountryCode(countryCode); err != nil {
+	if err := ValidateCountryCode(countryCode); err != nil {
 		return nil, err
 	}
-	if err := common.ValidateAttributes(attributes); err != nil {
+	if err := ValidateAttributes(attributes); err != nil {
 		return nil, err
 	}
 
@@ -68,10 +66,10 @@ func NewProvider(name, countryCode string, attributes common.Attributes) (*Provi
 
 // Validate checks if the provider is valid
 func (p *Provider) Validate() error {
-	if err := common.ValidateName(p.Name); err != nil {
+	if err := ValidateName(p.Name); err != nil {
 		return err
 	}
-	if err := common.ValidateCountryCode(p.CountryCode); err != nil {
+	if err := ValidateCountryCode(p.CountryCode); err != nil {
 		return err
 	}
 	if !p.State.IsValid() {
@@ -81,7 +79,7 @@ func (p *Provider) Validate() error {
 }
 
 // GetAttributes returns the attributes as an Attributes map
-func (p *Provider) GetAttributes() (common.Attributes, error) {
+func (p *Provider) GetAttributes() (Attributes, error) {
 	return p.Attributes.ToAttributes()
 }
 
@@ -116,7 +114,7 @@ func (p *Provider) AddAgent(agent *Agent) error {
 }
 
 // RemoveAgent removes an agent from the provider
-func (p *Provider) RemoveAgent(agentID common.UUID) error {
+func (p *Provider) RemoveAgent(agentID UUID) error {
 	for i, agent := range p.Agents {
 		if agent.ID == agentID {
 			p.Agents = append(p.Agents[:i], p.Agents[i+1:]...)
@@ -127,7 +125,7 @@ func (p *Provider) RemoveAgent(agentID common.UUID) error {
 }
 
 // GetAgent returns an agent by ID
-func (p *Provider) GetAgent(agentID common.UUID) (*Agent, error) {
+func (p *Provider) GetAgent(agentID UUID) (*Agent, error) {
 	for _, agent := range p.Agents {
 		if agent.ID == agentID {
 			return &agent, nil
