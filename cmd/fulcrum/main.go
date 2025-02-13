@@ -21,15 +21,9 @@ func main() {
 
 	// Initialize repositories
 	providerRepo := database.NewProviderRepository(db)
-	agentRepo := database.NewAgentRepository(db)
-	agentTypeRepo := database.NewAgentTypeRepository(db)
-	serviceTypeRepo := database.NewServiceTypeRepository(db)
 
 	// Initialize handlers
 	providerHandler := api.NewProviderHandler(providerRepo)
-	agentHandler := api.NewAgentHandler(agentRepo)
-	agentTypeHandler := api.NewAgentTypeHandler(agentTypeRepo)
-	serviceTypeHandler := api.NewServiceTypeHandler(serviceTypeRepo)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -47,15 +41,6 @@ func main() {
 	r.Route("/api/v1", func(r chi.Router) {
 		// Provider routes
 		r.Mount("/providers", providerHandler.Routes())
-
-		// Agent routes
-		r.Mount("/agents", agentHandler.Routes())
-
-		// Agent Type routes
-		r.Mount("/agent-types", agentTypeHandler.Routes())
-
-		// Service Type routes
-		r.Mount("/service-types", serviceTypeHandler.Routes())
 	})
 
 	// Start server

@@ -1,11 +1,15 @@
 ### Test Provider API
 
+### Variables
+@baseUrl = http://localhost:3000
+
 ### Create a new provider
 POST http://localhost:3000/api/v1/providers
 Content-Type: application/json
 
 {
     "name": "AWS",
+    "state": "Enabled",
     "countryCode": "US",
     "attributes": {
         "regions": ["us-east-1", "us-west-2"],
@@ -13,94 +17,69 @@ Content-Type: application/json
     }
 }
 
+### Get a provider by ID
+GET http://localhost:3000/api/v1/providers/{{providerId}}
+
 ### List all providers
 GET http://localhost:3000/api/v1/providers
 
-### Create a new agent type
-POST http://localhost:3000/api/v1/agent-types
+### Update a provider
+PUT http://localhost:3000/api/v1/providers/{{providerId}}
 Content-Type: application/json
 
 {
-    "name": "VM Runner"
-}
-
-### List all agent types
-GET http://localhost:3000/api/v1/agent-types
-
-### Create a new service type
-POST http://localhost:3000/api/v1/service-types
-Content-Type: application/json
-
-{
-    "name": "VM Service",
-    "resourceDefinitions": {
-        "cpu": 4,
-        "memory": "8GB",
-        "disk": {
-            "size": "100GB",
-            "type": "SSD"
-        }
+    "name": "AWS Updated",
+    "state": "Enabled",
+    "countryCode": "US",
+    "attributes": {
+        "regions": ["us-east-1", "us-west-2", "eu-west-1"],
+        "tier": ["enterprise", "premium"]
     }
 }
 
-### List all service types
-GET http://localhost:3000/api/v1/service-types
+### Delete a provider
+DELETE http://localhost:3000/api/v1/providers/{{providerId}}
 
-### Create a new agent
-POST http://localhost:3000/api/v1/agents
+### Create a provider with invalid state (should fail)
+POST http://localhost:3000/api/v1/providers
 Content-Type: application/json
 
 {
-    "name": "VM Agent 1",
+    "name": "Invalid Provider",
+    "state": "InvalidState",
+    "countryCode": "US"
+}
+
+### Create a provider with invalid country code (should fail)
+POST http://localhost:3000/api/v1/providers
+Content-Type: application/json
+
+{
+    "name": "Invalid Provider",
+    "state": "Enabled",
+    "countryCode": "USA"
+}
+
+### Create a provider with empty name (should fail)
+POST http://localhost:3000/api/v1/providers
+Content-Type: application/json
+
+{
+    "name": "",
+    "state": "Enabled",
+    "countryCode": "US"
+}
+
+### Create a provider with invalid attributes (should fail)
+POST http://localhost:3000/api/v1/providers
+Content-Type: application/json
+
+{
+    "name": "Invalid Provider",
+    "state": "Enabled",
     "countryCode": "US",
     "attributes": {
-        "zone": ["zone1", "zone2"],
-        "capacity": ["high"]
-    },
-    "properties": {
-        "maxConnections": 100,
-        "timeout": 30
-    },
-    "providerId": "REPLACE_WITH_PROVIDER_ID",
-    "agentTypeId": "REPLACE_WITH_AGENT_TYPE_ID"
-}
-
-### List all agents
-GET http://localhost:3000/api/v1/agents
-
-### Add service type to agent type
-POST http://localhost:3000/api/v1/agent-types/REPLACE_WITH_AGENT_TYPE_ID/service-types/REPLACE_WITH_SERVICE_TYPE_ID
-
-### List service types for agent type
-GET http://localhost:3000/api/v1/service-types/agent-type/REPLACE_WITH_AGENT_TYPE_ID
-
-### Update agent state
-PUT http://localhost:3000/api/v1/agents/REPLACE_WITH_AGENT_ID/state
-Content-Type: application/json
-
-{
-    "state": "Connected"
-}
-
-### Update provider state
-PUT http://localhost:3000/api/v1/providers/REPLACE_WITH_PROVIDER_ID/state
-Content-Type: application/json
-
-{
-    "state": "Disabled"
-}
-
-### Update service type resource definitions
-PUT http://localhost:3000/api/v1/service-types/REPLACE_WITH_SERVICE_TYPE_ID/resource-definitions
-Content-Type: application/json
-
-{
-    "resourceDefinitions": {
-        "cpu": 8,
-        "memory": "16GB",
-        "disk": {
-            "size": "500GB",
-            "type": "SSD"
-        }
+        "empty_array": [],
+        "empty_value": [""]
     }
 }

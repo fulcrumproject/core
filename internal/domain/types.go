@@ -9,38 +9,70 @@ import (
 	"gorm.io/gorm"
 )
 
-// UUID represents a unique identifier
-type UUID = uuid.UUID
+// Validatable is the interface for validatable types
+type Validatable interface {
+	Validate() error
+}
 
-// State represents a generic state type that can be used across different entities
-type State string
+// ValidationError represents a domain validation error
+type ValidationError string
 
-// Attributes represents a map of string arrays used for flexible entity attributes
-type Attributes map[string][]string
+// Error implements the error interface
+func (e ValidationError) Error() string {
+	return string(e)
+}
 
-// GormAttributes handles the custom JSON serialization for GORM
-type GormAttributes datatypes.JSON
+// Name represents a validated string that cannot be empty
+type Name string
 
-// JSON represents a generic JSON object
-type JSON map[string]interface{}
+// Validate ensures the Name is not empty
+func (n Name) Validate() error {
+	if string(n) == "" {
+		return ValidationError("name cannot be empty")
+	}
+	return nil
+}
 
-// GormJSON handles the custom JSON serialization for GORM
-type GormJSON datatypes.JSON
+// CountryCode represents a validated ISO 3166-1 alpha-2 country code
+type CountryCode string
+
+// Validate ensures the CountryCode is a valid ISO 3166-1 alpha-2 code
+func (c CountryCode) Validate() error {
+	code := string(c)
+	if len(code) != 2 {
+		return ValidationError("country code must be exactly 2 characters")
+	}
+	for _, ch := range code {
+		if ch < 'A' || ch > 'Z' {
+			return ValidationError("country code must contain only uppercase letters")
+		}
+	}
+	return nil
+}
 
 // BaseEntity provides common fields for all entities
 type BaseEntity struct {
-	ID        UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"createdAt"`
-	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updatedAt"`
+	ID        UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 }
 
 // BeforeCreate ensures UUID is set before creating a record
 func (b *BaseEntity) BeforeCreate(tx *gorm.DB) error {
-	if b.ID == uuid.Nil {
-		b.ID = uuid.New()
+	if uuid.UUID(b.ID) == uuid.Nil {
+		b.ID = UUID(uuid.New())
 	}
 	return nil
 }
+
+// UUID represents a unique identifier
+type UUID uuid.UUID
+
+// JSON handles the JSON serialization for GORM
+type JSON datatypes.JSON
+
+// Attributes represents a map of string arrays used for flexible entity attributes
+type Attributes map[string][]string
 
 // MarshalJSON implements custom JSON marshaling for Attributes
 func (a Attributes) MarshalJSON() ([]byte, error) {
@@ -57,58 +89,23 @@ func (a *Attributes) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// ToGormAttributes converts Attributes to GormAttributes
-func (a Attributes) ToGormAttributes() (GormAttributes, error) {
-	data, err := json.Marshal(a)
-	if err != nil {
-		return nil, err
+// Validate checks if the Attributes are valid:
+// - All keys must be non-empty strings
+// - All arrays must have at least one value
+// - All values must be non-empty strings
+func (a Attributes) Validate() error {
+	for key, values := range a {
+		if key == "" {
+			return ValidationError("attribute key cannot be empty")
+		}
+		if len(values) == 0 {
+			return ValidationError("attribute values array cannot be empty")
+		}
+		for _, value := range values {
+			if value == "" {
+				return ValidationError("attribute value cannot be empty")
+			}
+		}
 	}
-	return GormAttributes(datatypes.JSON(data)), nil
-}
-
-// ToAttributes converts GormAttributes to Attributes
-func (ga GormAttributes) ToAttributes() (Attributes, error) {
-	var attrs Attributes
-	if err := json.Unmarshal([]byte(ga), &attrs); err != nil {
-		return nil, err
-	}
-	return attrs, nil
-}
-
-// ToGormJSON converts JSON to GormJSON
-func (j JSON) ToGormJSON() (GormJSON, error) {
-	data, err := json.Marshal(j)
-	if err != nil {
-		return nil, err
-	}
-	return GormJSON(datatypes.JSON(data)), nil
-}
-
-// ToJSON converts GormJSON to JSON
-func (gj GormJSON) ToJSON() (JSON, error) {
-	var j JSON
-	if err := json.Unmarshal([]byte(gj), &j); err != nil {
-		return nil, err
-	}
-	return j, nil
-}
-
-// Value implements the driver.Valuer interface for GormAttributes
-func (ga GormAttributes) Value() (interface{}, error) {
-	return datatypes.JSON(ga).Value()
-}
-
-// Scan implements the sql.Scanner interface for GormAttributes
-func (ga *GormAttributes) Scan(value interface{}) error {
-	return (*datatypes.JSON)(ga).Scan(value)
-}
-
-// Value implements the driver.Valuer interface for GormJSON
-func (gj GormJSON) Value() (interface{}, error) {
-	return datatypes.JSON(gj).Value()
-}
-
-// Scan implements the sql.Scanner interface for GormJSON
-func (gj *GormJSON) Scan(value interface{}) error {
-	return (*datatypes.JSON)(gj).Scan(value)
+	return nil
 }
