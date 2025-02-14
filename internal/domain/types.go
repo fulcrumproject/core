@@ -1,7 +1,9 @@
 package domain
 
 import (
+	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,7 +54,7 @@ func (c CountryCode) Validate() error {
 
 // BaseEntity provides common fields for all entities
 type BaseEntity struct {
-	ID        UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID        UUID      `gorm:"type:uuid;primary_key"`
 	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 }
@@ -60,19 +62,86 @@ type BaseEntity struct {
 // BeforeCreate ensures UUID is set before creating a record
 func (b *BaseEntity) BeforeCreate(tx *gorm.DB) error {
 	if uuid.UUID(b.ID) == uuid.Nil {
-		b.ID = UUID(uuid.New())
+		uuid7, err := uuid.NewV7()
+		if err != nil {
+			return err
+		}
+		b.ID = UUID(uuid7)
 	}
 	return nil
 }
 
 // UUID represents a unique identifier
-type UUID uuid.UUID
+type UUID datatypes.UUID
+
+// String returns the string representation of the UUID
+func (u UUID) String() string {
+	return uuid.UUID(u).String()
+}
+
+// Scan implements the sql.Scanner interface
+func (u *UUID) Scan(value interface{}) error {
+	return (*datatypes.UUID)(u).Scan(value)
+}
+
+// Value implements the driver.Valuer interface
+func (u UUID) Value() (driver.Value, error) {
+	return datatypes.UUID(u).Value()
+}
+
+// GormDataType returns the GORM data type for UUID
+func (u UUID) GormDataType() string {
+	return "uuid"
+}
 
 // JSON handles the JSON serialization for GORM
 type JSON datatypes.JSON
 
+// Scan implements the sql.Scanner interface
+func (j *JSON) Scan(value interface{}) error {
+	return (*datatypes.JSON)(j).Scan(value)
+}
+
+// Value implements the driver.Valuer interface
+func (j JSON) Value() (driver.Value, error) {
+	return datatypes.JSON(j).Value()
+}
+
+// GormDataType returns the GORM data type for JSON
+func (j JSON) GormDataType() string {
+	return "jsonb"
+}
+
 // Attributes represents a map of string arrays used for flexible entity attributes
 type Attributes map[string][]string
+
+// Scan implements the sql.Scanner interface
+func (a *Attributes) Scan(value interface{}) error {
+	if value == nil {
+		*a = make(Attributes)
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("failed to unmarshal Attributes value: %v", value)
+	}
+
+	return json.Unmarshal(bytes, a)
+}
+
+// Value implements the driver.Valuer interface
+func (a Attributes) Value() (driver.Value, error) {
+	if a == nil {
+		return nil, nil
+	}
+	return json.Marshal(a)
+}
+
+// GormDataType returns the GORM data type for Attributes
+func (a Attributes) GormDataType() string {
+	return "jsonb"
+}
 
 // MarshalJSON implements custom JSON marshaling for Attributes
 func (a Attributes) MarshalJSON() ([]byte, error) {

@@ -1,13 +1,12 @@
 package api
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 	"github.com/google/uuid"
 )
 
@@ -38,8 +37,8 @@ type ProviderResponse struct {
 	UpdatedAt   string               `json:"updatedAt"`
 }
 
-// toResponse converts a domain.Provider to a ProviderResponse
-func toResponse(p *domain.Provider) *ProviderResponse {
+// provderToResponse converts a domain.Provider to a ProviderResponse
+func provderToResponse(p *domain.Provider) *ProviderResponse {
 	return &ProviderResponse{
 		ID:          uuid.UUID(p.ID).String(),
 		Name:        string(p.Name),
@@ -59,8 +58,47 @@ func NewProviderHandler(repo domain.ProviderRepository) *ProviderHandler {
 	return &ProviderHandler{repo: repo}
 }
 
-// Create handles the creation of a new provider
-func (h *ProviderHandler) Create(ctx context.Context, req *CreateProviderRequest) (*ProviderResponse, error) {
+// Routes returns the router with all provider routes registered
+func (h *ProviderHandler) Routes() chi.Router {
+	r := chi.NewRouter()
+
+	// Middleware for all provider routes
+	r.Use(render.SetContentType(render.ContentTypeJSON))
+
+	r.Get("/", h.handleList)
+	r.Post("/", h.handleCreate)
+	r.Get("/{id}", h.handleGet)
+	r.Put("/{id}", h.handleUpdate)
+	r.Delete("/{id}", h.handleDelete)
+
+	return r
+}
+
+// parseID is a helper function to parse and validate provider IDs
+func parseID(id string) (domain.UUID, error) {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return domain.UUID{}, errors.New("invalid provider ID format")
+	}
+	return domain.UUID(uid), nil
+}
+
+// renderError is a helper function to render error responses
+func renderError(w http.ResponseWriter, r *http.Request, err error) {
+	if err != nil && err.Error() == "provider not found" {
+		render.Render(w, r, ErrNotFound())
+		return
+	}
+	render.Render(w, r, ErrInvalidRequest(err))
+}
+
+func (h *ProviderHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
+	var req CreateProviderRequest
+	if err := render.Decode(r, &req); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
 	provider := &domain.Provider{
 		Name:        domain.Name(req.Name),
 		State:       req.State,
@@ -69,175 +107,108 @@ func (h *ProviderHandler) Create(ctx context.Context, req *CreateProviderRequest
 	}
 
 	if err := provider.Validate(); err != nil {
-		return nil, err
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
 	}
 
-	if err := h.repo.Create(ctx, provider); err != nil {
-		return nil, err
+	if err := h.repo.Create(r.Context(), provider); err != nil {
+		renderError(w, r, err)
+		return
 	}
 
-	return toResponse(provider), nil
+	render.Status(r, http.StatusCreated)
+	render.JSON(w, r, provderToResponse(provider))
 }
 
-// Update handles updating an existing provider
-func (h *ProviderHandler) Update(ctx context.Context, id string, req *UpdateProviderRequest) (*ProviderResponse, error) {
-	uid, err := uuid.Parse(id)
+func (h *ProviderHandler) handleGet(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(chi.URLParam(r, "id"))
 	if err != nil {
-		return nil, errors.New("invalid provider ID format")
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
 	}
 
-	existing, err := h.repo.FindByID(ctx, domain.UUID(uid))
+	provider, err := h.repo.FindByID(r.Context(), id)
 	if err != nil {
-		return nil, err
-	}
-	if existing == nil {
-		return nil, errors.New("provider not found")
+		renderError(w, r, err)
+		return
 	}
 
-	existing.Name = domain.Name(req.Name)
-	existing.State = req.State
-	existing.CountryCode = domain.CountryCode(req.CountryCode)
-	existing.Attributes = domain.Attributes(req.Attributes)
-
-	if err := existing.Validate(); err != nil {
-		return nil, err
-	}
-
-	if err := h.repo.Update(ctx, existing); err != nil {
-		return nil, err
-	}
-
-	return toResponse(existing), nil
+	render.JSON(w, r, provderToResponse(provider))
 }
 
-// Get retrieves a provider by ID
-func (h *ProviderHandler) Get(ctx context.Context, id string) (*ProviderResponse, error) {
-	uid, err := uuid.Parse(id)
-	if err != nil {
-		return nil, errors.New("invalid provider ID format")
+func (h *ProviderHandler) handleList(w http.ResponseWriter, r *http.Request) {
+	// Extract query parameters for filtering
+	filters := make(map[string]interface{})
+	if state := r.URL.Query().Get("state"); state != "" {
+		filters["state"] = domain.ProviderState(state)
+	}
+	if countryCode := r.URL.Query().Get("countryCode"); countryCode != "" {
+		filters["country_code"] = domain.CountryCode(countryCode)
 	}
 
-	provider, err := h.repo.FindByID(ctx, domain.UUID(uid))
+	providers, err := h.repo.List(r.Context(), filters)
 	if err != nil {
-		return nil, err
-	}
-	if provider == nil {
-		return nil, errors.New("provider not found")
-	}
-
-	return toResponse(provider), nil
-}
-
-// List retrieves all providers matching the given filters
-func (h *ProviderHandler) List(ctx context.Context, filters map[string]interface{}) ([]*ProviderResponse, error) {
-	providers, err := h.repo.List(ctx, filters)
-	if err != nil {
-		return nil, err
+		renderError(w, r, err)
+		return
 	}
 
 	response := make([]*ProviderResponse, len(providers))
 	for i, provider := range providers {
-		provider := provider // Create a new variable to avoid pointer issues
-		response[i] = toResponse(&provider)
+		response[i] = provderToResponse(&provider)
 	}
 
-	return response, nil
+	render.JSON(w, r, response)
 }
 
-// Delete removes a provider by ID
-func (h *ProviderHandler) Delete(ctx context.Context, id string) error {
-	uid, err := uuid.Parse(id)
+func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(chi.URLParam(r, "id"))
 	if err != nil {
-		return errors.New("invalid provider ID format")
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
 	}
 
-	return h.repo.Delete(ctx, domain.UUID(uid))
+	var req UpdateProviderRequest
+	if err := render.Decode(r, &req); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	provider, err := h.repo.FindByID(r.Context(), id)
+	if err != nil {
+		renderError(w, r, err)
+		return
+	}
+
+	// Update fields
+	provider.Name = domain.Name(req.Name)
+	provider.State = req.State
+	provider.CountryCode = domain.CountryCode(req.CountryCode)
+	provider.Attributes = domain.Attributes(req.Attributes)
+
+	if err := provider.Validate(); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	if err := h.repo.Update(r.Context(), provider); err != nil {
+		renderError(w, r, err)
+		return
+	}
+
+	render.JSON(w, r, provderToResponse(provider))
 }
 
-// Routes returns the router with all provider routes registered
-func (h *ProviderHandler) Routes() chi.Router {
-	r := chi.NewRouter()
+func (h *ProviderHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(chi.URLParam(r, "id"))
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
 
-	r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-		var req CreateProviderRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
-		}
+	if err := h.repo.Delete(r.Context(), id); err != nil {
+		renderError(w, r, err)
+		return
+	}
 
-		resp, err := h.Create(r.Context(), &req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-	})
-
-	r.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
-		id := chi.URLParam(r, "id")
-		resp, err := h.Get(r.Context(), id)
-		if err != nil {
-			if err.Error() == "provider not found" {
-				http.Error(w, err.Error(), http.StatusNotFound)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-	})
-
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		// TODO: Parse query parameters for filters
-		filters := make(map[string]interface{})
-		resp, err := h.List(r.Context(), filters)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-	})
-
-	r.Put("/{id}", func(w http.ResponseWriter, r *http.Request) {
-		id := chi.URLParam(r, "id")
-		var req UpdateProviderRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
-		}
-
-		resp, err := h.Update(r.Context(), id, &req)
-		if err != nil {
-			if err.Error() == "provider not found" {
-				http.Error(w, err.Error(), http.StatusNotFound)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-	})
-
-	r.Delete("/{id}", func(w http.ResponseWriter, r *http.Request) {
-		id := chi.URLParam(r, "id")
-		if err := h.Delete(r.Context(), id); err != nil {
-			if err.Error() == "provider not found" {
-				http.Error(w, err.Error(), http.StatusNotFound)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		w.WriteHeader(http.StatusNoContent)
-	})
-
-	return r
+	w.WriteHeader(http.StatusNoContent)
 }

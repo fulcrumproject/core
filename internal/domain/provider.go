@@ -23,9 +23,9 @@ const (
 func (s ProviderState) Validate() error {
 	switch s {
 	case ProviderEnabled, ProviderDisabled:
-		return ErrInvalidProviderState
-	default:
 		return nil
+	default:
+		return ErrInvalidProviderState
 	}
 }
 
