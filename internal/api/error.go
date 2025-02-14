@@ -25,11 +25,20 @@ func ErrInvalidRequest(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
 		HTTPStatusCode: http.StatusBadRequest,
-		StatusText:     "Invalid request.",
+		StatusText:     "Invalid request",
 		ErrorText:      err.Error(),
 	}
 }
 
 func ErrNotFound() render.Renderer {
-	return &ErrResponse{HTTPStatusCode: http.StatusNotFound, StatusText: "Resource not found."}
+	return &ErrResponse{HTTPStatusCode: http.StatusNotFound, StatusText: "Resource not found"}
+}
+
+func ErrInternalServer(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: http.StatusInternalServerError,
+		StatusText:     "Internal sServer error",
+		ErrorText:      err.Error(),
+	}
 }

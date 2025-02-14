@@ -19,10 +19,6 @@ func NewProviderRepository(db *gorm.DB) domain.ProviderRepository {
 }
 
 func (r *providerRepository) Create(ctx context.Context, provider *domain.Provider) error {
-	if err := provider.Validate(); err != nil {
-		return err
-	}
-
 	result := r.db.WithContext(ctx).Create(provider)
 	if result.Error != nil {
 		return result.Error
@@ -31,16 +27,7 @@ func (r *providerRepository) Create(ctx context.Context, provider *domain.Provid
 	return nil
 }
 
-func (r *providerRepository) Update(ctx context.Context, provider *domain.Provider) error {
-	if err := provider.Validate(); err != nil {
-		return err
-	}
-
-	exists := r.db.WithContext(ctx).Select("id").First(&domain.Provider{}, provider.ID).Error == nil
-	if !exists {
-		return domain.ErrNotFound
-	}
-
+func (r *providerRepository) Save(ctx context.Context, provider *domain.Provider) error {
 	result := r.db.WithContext(ctx).Save(provider)
 	if result.Error != nil {
 		return result.Error
@@ -50,12 +37,6 @@ func (r *providerRepository) Update(ctx context.Context, provider *domain.Provid
 }
 
 func (r *providerRepository) Delete(ctx context.Context, id domain.UUID) error {
-	// First verify that the Provider exists
-	exists := r.db.WithContext(ctx).Select("id").First(&domain.Provider{}, id).Error == nil
-	if !exists {
-		return domain.ErrNotFound
-	}
-
 	result := r.db.WithContext(ctx).Delete(&domain.Provider{}, id)
 	if result.Error != nil {
 		return result.Error

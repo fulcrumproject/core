@@ -8,7 +8,7 @@ type ProviderRepository interface {
 	Create(ctx context.Context, entity *Provider) error
 
 	// Update updates an existing entity
-	Update(ctx context.Context, entity *Provider) error
+	Save(ctx context.Context, entity *Provider) error
 
 	// Delete removes an entity by ID
 	Delete(ctx context.Context, id UUID) error

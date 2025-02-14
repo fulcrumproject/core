@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -74,24 +73,6 @@ func (h *ProviderHandler) Routes() chi.Router {
 	return r
 }
 
-// parseID is a helper function to parse and validate provider IDs
-func parseID(id string) (domain.UUID, error) {
-	uid, err := uuid.Parse(id)
-	if err != nil {
-		return domain.UUID{}, errors.New("invalid provider ID format")
-	}
-	return domain.UUID(uid), nil
-}
-
-// renderError is a helper function to render error responses
-func renderError(w http.ResponseWriter, r *http.Request, err error) {
-	if err != nil && err.Error() == "provider not found" {
-		render.Render(w, r, ErrNotFound())
-		return
-	}
-	render.Render(w, r, ErrInvalidRequest(err))
-}
-
 func (h *ProviderHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	var req CreateProviderRequest
 	if err := render.Decode(r, &req); err != nil {
@@ -112,7 +93,7 @@ func (h *ProviderHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Create(r.Context(), provider); err != nil {
-		renderError(w, r, err)
+		render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 
@@ -121,7 +102,7 @@ func (h *ProviderHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProviderHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -129,7 +110,7 @@ func (h *ProviderHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 	provider, err := h.repo.FindByID(r.Context(), id)
 	if err != nil {
-		renderError(w, r, err)
+		render.Render(w, r, ErrNotFound())
 		return
 	}
 
@@ -148,7 +129,7 @@ func (h *ProviderHandler) handleList(w http.ResponseWriter, r *http.Request) {
 
 	providers, err := h.repo.List(r.Context(), filters)
 	if err != nil {
-		renderError(w, r, err)
+		render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 
@@ -161,7 +142,7 @@ func (h *ProviderHandler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -175,7 +156,7 @@ func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 
 	provider, err := h.repo.FindByID(r.Context(), id)
 	if err != nil {
-		renderError(w, r, err)
+		render.Render(w, r, ErrNotFound())
 		return
 	}
 
@@ -190,8 +171,8 @@ func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repo.Update(r.Context(), provider); err != nil {
-		renderError(w, r, err)
+	if err := h.repo.Save(r.Context(), provider); err != nil {
+		render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 
@@ -199,14 +180,20 @@ func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProviderHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
 
+	_, err = h.repo.FindByID(r.Context(), id)
+	if err != nil {
+		render.Render(w, r, ErrNotFound())
+		return
+	}
+
 	if err := h.repo.Delete(r.Context(), id); err != nil {
-		renderError(w, r, err)
+		render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 

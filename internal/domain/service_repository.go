@@ -8,7 +8,7 @@ type ServiceRepository interface {
 	Create(ctx context.Context, entity *Service) error
 
 	// Update updates an existing entity
-	Update(ctx context.Context, entity *Service) error
+	Save(ctx context.Context, entity *Service) error
 
 	// Delete removes an entity by ID
 	Delete(ctx context.Context, id UUID) error

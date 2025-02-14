@@ -3,9 +3,10 @@ package database
 import (
 	"context"
 	"fmt"
-	"os"
+	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -17,8 +18,9 @@ type TestDB struct {
 
 // NewTestDB creates a new instance of TestDB
 func NewTestDB(t *testing.T) *TestDB {
-	// Use a separate test database
-	dbName := fmt.Sprintf("fulcrum_test_%d", os.Getpid()) // Unique database for each test process
+	// Generate a unique database name using UUID without hyphens
+	uuidStr := strings.Replace(uuid.New().String(), "-", "", -1)
+	dbName := fmt.Sprintf("fulcrum_test_%s", uuidStr)
 	config := Config{
 		Host:     getEnvOrDefault("TEST_DB_HOST", "localhost"),
 		User:     getEnvOrDefault("TEST_DB_USER", "fulcrum"),

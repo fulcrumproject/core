@@ -8,7 +8,7 @@ type ServiceGroupRepository interface {
 	Create(ctx context.Context, entity *ServiceGroup) error
 
 	// Update updates an existing entity
-	Update(ctx context.Context, entity *ServiceGroup) error
+	Save(ctx context.Context, entity *ServiceGroup) error
 
 	// Delete removes an entity by ID
 	Delete(ctx context.Context, id UUID) error

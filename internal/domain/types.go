@@ -3,6 +3,7 @@ package domain
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -62,17 +63,17 @@ type BaseEntity struct {
 // BeforeCreate ensures UUID is set before creating a record
 func (b *BaseEntity) BeforeCreate(tx *gorm.DB) error {
 	if uuid.UUID(b.ID) == uuid.Nil {
-		uuid7, err := uuid.NewV7()
-		if err != nil {
-			return err
-		}
-		b.ID = UUID(uuid7)
+		b.ID = NewUUID()
 	}
 	return nil
 }
 
 // UUID represents a unique identifier
 type UUID datatypes.UUID
+
+func NewUUID() UUID {
+	return UUID(uuid.Must(uuid.NewV7()))
+}
 
 // String returns the string representation of the UUID
 func (u UUID) String() string {
@@ -89,9 +90,13 @@ func (u UUID) Value() (driver.Value, error) {
 	return datatypes.UUID(u).Value()
 }
 
-// GormDataType returns the GORM data type for UUID
-func (u UUID) GormDataType() string {
-	return "uuid"
+// parseID is a helper function to parse and validate IDs
+func ParseID(id string) (UUID, error) {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return UUID{}, errors.New("invalid UUID format")
+	}
+	return UUID(uid), nil
 }
 
 // JSON handles the JSON serialization for GORM
@@ -105,11 +110,6 @@ func (j *JSON) Scan(value interface{}) error {
 // Value implements the driver.Valuer interface
 func (j JSON) Value() (driver.Value, error) {
 	return datatypes.JSON(j).Value()
-}
-
-// GormDataType returns the GORM data type for JSON
-func (j JSON) GormDataType() string {
-	return "jsonb"
 }
 
 // Attributes represents a map of string arrays used for flexible entity attributes
