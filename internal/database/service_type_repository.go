@@ -30,7 +30,6 @@ func (r *serviceTypeRepository) Create(ctx context.Context, serviceType *domain.
 func (r *serviceTypeRepository) FindByID(ctx context.Context, id domain.UUID) (*domain.ServiceType, error) {
 	var serviceType domain.ServiceType
 	err := r.db.WithContext(ctx).
-		Preload("AgentTypes").
 		First(&serviceType, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -45,7 +44,7 @@ func (r *serviceTypeRepository) FindByID(ctx context.Context, id domain.UUID) (*
 func (r *serviceTypeRepository) List(ctx context.Context, filters map[string]interface{}) ([]domain.ServiceType, error) {
 	var serviceTypes []domain.ServiceType
 
-	query := r.db.WithContext(ctx).Preload("AgentTypes")
+	query := r.db.WithContext(ctx)
 	for key, value := range filters {
 		query = query.Where(key, value)
 	}

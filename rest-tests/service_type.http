@@ -1,0 +1,14 @@
+### Test Service Type API
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+
+### List all service types
+# @name listServiceTypes
+GET {{baseUrl}}/service-types
+
+### Extract first service type ID
+@serviceTypeId = {{listServiceTypes.response.body.$[0].id}}
+
+### Get a service type by ID
+GET {{baseUrl}}/service-types/{{serviceTypeId}}

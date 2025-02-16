@@ -1,0 +1,14 @@
+### Test Agent Type API
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+
+### List all agent types
+# @name listAgentTypes
+GET {{baseUrl}}/agent-types
+
+### Extract first agent type ID
+@agentTypeId = {{listAgentTypes.response.body.$[0].id}}
+
+### Get an agent type by ID
+GET {{baseUrl}}/agent-types/{{agentTypeId}}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -63,7 +64,7 @@ func NewConnection(config *Config) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: config.DSN(),
 	}), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent), // logger.Default.LogMode(getLogLevelFromEnv("DB_LOG_LEVEL", logger.Warn)),
+		Logger: logger.Default.LogMode(logger.Info), // logger.Default.LogMode(getLogLevelFromEnv("DB_LOG_LEVEL", logger.Warn)),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
@@ -77,6 +78,11 @@ func NewConnection(config *Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
+	// Seed default types
+	// if err := seedDefaultTypes(db); err != nil {
+	// 	return nil, fmt.Errorf("failed to seed default types: %w", err)
+	// }
+
 	return db, nil
 }
 
@@ -88,6 +94,38 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.AgentType{},
 		&domain.ServiceType{},
 	)
+}
+
+// seedDefaultTypes creates default agent and service types if they don't exist
+func seedDefaultTypes(db *gorm.DB) error {
+	// Fixed UUIDs for default types
+	dummyAgentTypeID := domain.UUID(uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	vmServiceTypeID := domain.UUID(uuid.MustParse("22222222-2222-2222-2222-222222222222"))
+
+	// Create vm service type if it doesn't exist
+	vmServiceType := domain.ServiceType{
+		BaseEntity: domain.BaseEntity{
+			ID: vmServiceTypeID,
+		},
+		Name: "vm",
+	}
+	if err := db.FirstOrCreate(&vmServiceType, domain.ServiceType{Name: "vm"}).Error; err != nil {
+		return fmt.Errorf("failed to create vm service type: %w", err)
+	}
+
+	// Create dummy agent type if it doesn't exist
+	dummyAgentType := domain.AgentType{
+		BaseEntity: domain.BaseEntity{
+			ID: dummyAgentTypeID,
+		},
+		Name:         "dummy",
+		ServiceTypes: []domain.ServiceType{vmServiceType},
+	}
+	if err := db.FirstOrCreate(&dummyAgentType, domain.AgentType{Name: "dummy"}).Error; err != nil {
+		return fmt.Errorf("failed to create dummy agent type: %w", err)
+	}
+
+	return nil
 }
 
 func getEnvOrDefault(key, defaultValue string) string {

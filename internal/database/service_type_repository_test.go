@@ -114,7 +114,6 @@ func createTestServiceType(t *testing.T) *domain.ServiceType {
 	randomSuffix := uuid.New().String()
 
 	return &domain.ServiceType{
-		Name:       fmt.Sprintf("Test Service Type %s", randomSuffix),
-		AgentTypes: []domain.AgentType{}, // Empty slice for now, can be populated if needed
+		Name: fmt.Sprintf("Test Service Type %s", randomSuffix),
 	}
 }

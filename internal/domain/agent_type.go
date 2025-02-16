@@ -4,7 +4,7 @@ package domain
 type AgentType struct {
 	BaseEntity
 	Name         string        `gorm:"not null;unique"`
-	ServiceTypes []ServiceType `gorm:"many2many:agent_types_service_types"`
+	ServiceTypes []ServiceType `gorm:"many2many:agent_type_service_types;"`
 }
 
 // TableName returns the table name for the agent type

@@ -45,7 +45,7 @@ func (r *agentTypeRepository) FindByID(ctx context.Context, id domain.UUID) (*do
 func (r *agentTypeRepository) List(ctx context.Context, filters map[string]interface{}) ([]domain.AgentType, error) {
 	var agentTypes []domain.AgentType
 
-	query := r.db.WithContext(ctx).Preload("ServiceTypes")
+	query := r.db.WithContext(ctx)
 	for key, value := range filters {
 		query = query.Where(key, value)
 	}
