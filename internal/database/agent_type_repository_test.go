@@ -51,11 +51,17 @@ func TestAgentTypeRepository(t *testing.T) {
 			agentType2 := createTestAgentType(t)
 			require.NoError(t, repo.Create(ctx, agentType2))
 
+			pagination := &domain.Pagination{
+				Page:     1,
+				PageSize: 10,
+			}
+
 			// Execute
-			agentTypes, err := repo.List(ctx, nil)
+			result, err := repo.List(ctx, nil, nil, pagination)
 
 			// Assert
 			require.NoError(t, err)
+			agentTypes := result.Items
 			assert.Greater(t, len(agentTypes), 0)
 		})
 
@@ -66,17 +72,94 @@ func TestAgentTypeRepository(t *testing.T) {
 			agentType := createTestAgentType(t)
 			require.NoError(t, repo.Create(ctx, agentType))
 
-			filters := map[string]interface{}{
+			filters := domain.Filters{
 				"name": agentType.Name,
 			}
 
+			pagination := &domain.Pagination{
+				Page:     1,
+				PageSize: 10,
+			}
+
 			// Execute
-			agentTypes, err := repo.List(ctx, filters)
+			result, err := repo.List(ctx, filters, nil, pagination)
 
 			// Assert
 			require.NoError(t, err)
-			require.Len(t, agentTypes, 1)
+			require.Len(t, result.Items, 1)
+			agentTypes := result.Items
 			assert.Equal(t, agentType.Name, agentTypes[0].Name)
+		})
+
+		t.Run("success - list with sorting", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			agentType1 := createTestAgentType(t)
+			agentType1.Name = "A Agent Type"
+			require.NoError(t, repo.Create(ctx, agentType1))
+
+			agentType2 := createTestAgentType(t)
+			agentType2.Name = "B Agent Type"
+			require.NoError(t, repo.Create(ctx, agentType2))
+
+			sorting := &domain.Sorting{
+				SortField: "name",
+				SortOrder: "desc",
+			}
+
+			pagination := &domain.Pagination{
+				Page:     1,
+				PageSize: 10,
+			}
+
+			// Execute
+			result, err := repo.List(ctx, nil, sorting, pagination)
+
+			// Assert
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 2)
+			assert.GreaterOrEqual(t, result.Items[0].Name, result.Items[1].Name)
+		})
+
+		t.Run("success - list with pagination", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup - Create multiple agent types
+			for i := 0; i < 5; i++ {
+				agentType := createTestAgentType(t)
+				require.NoError(t, repo.Create(ctx, agentType))
+			}
+
+			pagination := &domain.Pagination{
+				Page:     1,
+				PageSize: 2,
+			}
+
+			// Execute first page
+			result, err := repo.List(ctx, nil, nil, pagination)
+
+			// Assert first page
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.False(t, result.HasPrev)
+			assert.Greater(t, result.TotalItems, int64(2))
+
+			// Execute second page
+			pagination.Page = 2
+			result, err = repo.List(ctx, nil, nil, pagination)
+
+			// Assert second page
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.True(t, result.HasPrev)
+
+			// Verify total count matches
+			count, err := repo.Count(ctx, nil)
+			require.NoError(t, err)
+			assert.Equal(t, result.TotalItems, count)
 		})
 	})
 

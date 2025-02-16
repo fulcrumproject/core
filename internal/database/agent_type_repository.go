@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
 
@@ -42,22 +43,57 @@ func (r *agentTypeRepository) FindByID(ctx context.Context, id domain.UUID) (*do
 	return &agentType, nil
 }
 
-func (r *agentTypeRepository) List(ctx context.Context, filters map[string]interface{}) ([]domain.AgentType, error) {
+func (r *agentTypeRepository) List(ctx context.Context, filters domain.Filters, sorting *domain.Sorting, pagination *domain.Pagination) (*domain.PaginatedResult[domain.AgentType], error) {
 	var agentTypes []domain.AgentType
+	var totalItems int64
 
 	query := r.db.WithContext(ctx)
+
+	// Apply filters
 	for key, value := range filters {
 		query = query.Where(key, value)
+	}
+
+	// Get total count for pagination
+	if err := query.Model(&domain.AgentType{}).Count(&totalItems).Error; err != nil {
+		return nil, err
+	}
+
+	// Apply sorting if provided
+	if sorting != nil && sorting.SortField != "" {
+		order := "asc"
+		if sorting.SortOrder == "desc" {
+			order = "desc"
+		}
+		query = query.Order(fmt.Sprintf("%s %s", sorting.SortField, order))
+	}
+
+	// Apply pagination if provided
+	if pagination != nil {
+		offset := (pagination.Page - 1) * pagination.PageSize
+		query = query.Offset(offset).Limit(pagination.PageSize)
 	}
 
 	if err := query.Find(&agentTypes).Error; err != nil {
 		return nil, err
 	}
 
-	return agentTypes, nil
+	totalPages := int(totalItems) / pagination.PageSize
+	if int(totalItems)%pagination.PageSize > 0 {
+		totalPages++
+	}
+
+	return &domain.PaginatedResult[domain.AgentType]{
+		Items:       agentTypes,
+		TotalItems:  totalItems,
+		TotalPages:  totalPages,
+		CurrentPage: pagination.Page,
+		HasNext:     pagination.Page < totalPages,
+		HasPrev:     pagination.Page > 1,
+	}, nil
 }
 
-func (r *agentTypeRepository) Count(ctx context.Context, filters map[string]interface{}) (int64, error) {
+func (r *agentTypeRepository) Count(ctx context.Context, filters domain.Filters) (int64, error) {
 	var count int64
 
 	query := r.db.WithContext(ctx).Model(&domain.AgentType{})

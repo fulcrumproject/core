@@ -79,12 +79,18 @@ func TestServiceTypeRepository(t *testing.T) {
 			serviceType2 := createTestServiceType(t)
 			require.NoError(t, repo.Create(ctx, serviceType2))
 
+			pagination := &domain.Pagination{
+				Page:     1,
+				PageSize: 10,
+			}
+
 			// Execute
-			serviceTypes, err := repo.List(ctx, nil)
+			result, err := repo.List(ctx, nil, nil, pagination)
 
 			// Assert
 			require.NoError(t, err)
-			assert.Greater(t, len(serviceTypes), 0)
+			assert.Greater(t, len(result.Items), 0)
+			assert.Greater(t, result.TotalItems, int64(2))
 		})
 
 		t.Run("success - list with filters", func(t *testing.T) {
@@ -94,17 +100,93 @@ func TestServiceTypeRepository(t *testing.T) {
 			serviceType := createTestServiceType(t)
 			require.NoError(t, repo.Create(ctx, serviceType))
 
-			filters := map[string]interface{}{
+			filters := domain.Filters{
 				"name": serviceType.Name,
 			}
 
+			pagination := &domain.Pagination{
+				Page:     1,
+				PageSize: 10,
+			}
+
 			// Execute
-			serviceTypes, err := repo.List(ctx, filters)
+			result, err := repo.List(ctx, filters, nil, pagination)
 
 			// Assert
 			require.NoError(t, err)
-			require.Len(t, serviceTypes, 1)
-			assert.Equal(t, serviceType.Name, serviceTypes[0].Name)
+			require.Len(t, result.Items, 1)
+			assert.Equal(t, serviceType.Name, result.Items[0].Name)
+		})
+
+		t.Run("success - list with sorting", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			serviceType1 := createTestServiceType(t)
+			serviceType1.Name = "A Service Type"
+			require.NoError(t, repo.Create(ctx, serviceType1))
+
+			serviceType2 := createTestServiceType(t)
+			serviceType2.Name = "B Service Type"
+			require.NoError(t, repo.Create(ctx, serviceType2))
+
+			sorting := &domain.Sorting{
+				SortField: "name",
+				SortOrder: "desc",
+			}
+
+			pagination := &domain.Pagination{
+				Page:     1,
+				PageSize: 10,
+			}
+
+			// Execute
+			result, err := repo.List(ctx, nil, sorting, pagination)
+
+			// Assert
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 2)
+			assert.GreaterOrEqual(t, result.Items[0].Name, result.Items[1].Name)
+		})
+
+		t.Run("success - list with pagination", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup - Create multiple service types
+			for i := 0; i < 5; i++ {
+				serviceType := createTestServiceType(t)
+				require.NoError(t, repo.Create(ctx, serviceType))
+			}
+
+			pagination := &domain.Pagination{
+				Page:     1,
+				PageSize: 2,
+			}
+
+			// Execute first page
+			result, err := repo.List(ctx, nil, nil, pagination)
+
+			// Assert first page
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.False(t, result.HasPrev)
+			assert.Greater(t, result.TotalItems, int64(2))
+
+			// Execute second page
+			pagination.Page = 2
+			result, err = repo.List(ctx, nil, nil, pagination)
+
+			// Assert second page
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.True(t, result.HasPrev)
+
+			// Verify total count matches
+			count, err := repo.Count(ctx, nil)
+			require.NoError(t, err)
+			assert.Equal(t, result.TotalItems, count)
 		})
 	})
 }
