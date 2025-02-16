@@ -93,16 +93,33 @@ func (h *AgentTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AgentTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	agentTypes, err := h.repo.List(r.Context(), nil)
+	// Parse request parameters using shared utilities
+	filters := ParseFilters(r, []FilterConfig{
+		{
+			Field:      "name",
+			ExactMatch: false,
+		},
+	})
+	sorting := ParseSorting(r)
+	pagination := ParsePagination(r)
+
+	result, err := h.repo.List(r.Context(), filters, sorting, pagination)
 	if err != nil {
 		render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 
-	response := make([]*AgentTypeResponse, len(agentTypes))
-	for i, agentType := range agentTypes {
+	response := make([]*AgentTypeResponse, len(result.Items))
+	for i, agentType := range result.Items {
 		response[i] = agentTypeToResponse(&agentType)
 	}
 
-	render.JSON(w, r, response)
+	render.JSON(w, r, &PaginatedResponse[*AgentTypeResponse]{
+		Items:       response,
+		TotalItems:  result.TotalItems,
+		TotalPages:  result.TotalPages,
+		CurrentPage: result.CurrentPage,
+		HasNext:     result.HasNext,
+		HasPrev:     result.HasPrev,
+	})
 }

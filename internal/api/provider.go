@@ -118,27 +118,45 @@ func (h *ProviderHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProviderHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	// Extract query parameters for filtering
-	filters := make(map[string]interface{})
-	if state := r.URL.Query().Get("state"); state != "" {
-		filters["state"] = domain.ProviderState(state)
-	}
-	if countryCode := r.URL.Query().Get("countryCode"); countryCode != "" {
-		filters["country_code"] = domain.CountryCode(countryCode)
-	}
+	// Parse request parameters using shared utilities
+	filters := ParseFilters(r, []FilterConfig{
+		{
+			Field:      "name",
+			ExactMatch: false,
+		},
+		{
+			Field:      "state",
+			ExactMatch: true,
+			Transform:  func(v string) interface{} { return domain.ProviderState(v) },
+		},
+		{
+			Field:      "country_code",
+			ExactMatch: true,
+			Transform:  func(v string) interface{} { return domain.CountryCode(v) },
+		},
+	})
+	sorting := ParseSorting(r)
+	pagination := ParsePagination(r)
 
-	providers, err := h.repo.List(r.Context(), filters)
+	result, err := h.repo.List(r.Context(), filters, sorting, pagination)
 	if err != nil {
 		render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 
-	response := make([]*ProviderResponse, len(providers))
-	for i, provider := range providers {
+	response := make([]*ProviderResponse, len(result.Items))
+	for i, provider := range result.Items {
 		response[i] = provderToResponse(&provider)
 	}
 
-	render.JSON(w, r, response)
+	render.JSON(w, r, &PaginatedResponse[*ProviderResponse]{
+		Items:       response,
+		TotalItems:  result.TotalItems,
+		TotalPages:  result.TotalPages,
+		CurrentPage: result.CurrentPage,
+		HasNext:     result.HasNext,
+		HasPrev:     result.HasPrev,
+	})
 }
 
 func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {

@@ -8,7 +8,7 @@
 GET {{baseUrl}}/agent-types
 
 ### Extract first agent type ID
-@agentTypeId = {{listAgentTypes.response.body.$[0].id}}
+@agentTypeId = {{listAgentTypes.response.body.items[0].id}}
 
 ### Get an agent type by ID
 GET {{baseUrl}}/agent-types/{{agentTypeId}}
