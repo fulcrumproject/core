@@ -121,18 +121,15 @@ func (h *ProviderHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	// Parse request parameters using shared utilities
 	filters := ParseFilters(r, []FilterConfig{
 		{
-			Field:      "name",
-			ExactMatch: false,
+			Param: "name",
 		},
 		{
-			Field:      "state",
-			ExactMatch: true,
-			Transform:  func(v string) interface{} { return domain.ProviderState(v) },
+			Param:  "state",
+			Valuer: func(v string) interface{} { return domain.ProviderState(v) },
 		},
 		{
-			Field:      "country_code",
-			ExactMatch: true,
-			Transform:  func(v string) interface{} { return domain.CountryCode(v) },
+			Param:  "countryCode",
+			Valuer: func(v string) interface{} { return domain.CountryCode(v) },
 		},
 	})
 	sorting := ParseSorting(r)

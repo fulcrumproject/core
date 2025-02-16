@@ -49,9 +49,9 @@ func ParseSorting(r *http.Request) *domain.Sorting {
 
 // FilterConfig defines how a field should be filtered
 type FilterConfig struct {
-	Field      string
-	ExactMatch bool
-	Transform  func(string) interface{}
+	Param  string
+	Query  string
+	Valuer func(string) interface{}
 }
 
 // ParseFilters extracts filters from the request based on provided field configurations
@@ -60,14 +60,16 @@ func ParseFilters(r *http.Request, configs []FilterConfig) domain.Filters {
 	filters := make(domain.Filters)
 
 	for _, config := range configs {
-		if value := query.Get(config.Field); value != "" {
-			if config.Transform != nil {
-				filters[config.Field] = config.Transform(value)
-			} else if config.ExactMatch {
-				filters[config.Field] = value
-			} else {
-				filters[config.Field+" ILIKE ?"] = "%" + value + "%"
+		if paramValue := query.Get(config.Param); paramValue != "" {
+			query := config.Param
+			if config.Query != "" {
+				query = config.Query
 			}
+			var value interface{} = paramValue
+			if config.Valuer != nil {
+				value = config.Valuer(paramValue)
+			}
+			filters[query] = value
 		}
 	}
 

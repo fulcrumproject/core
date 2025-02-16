@@ -96,8 +96,8 @@ func (h *AgentTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	// Parse request parameters using shared utilities
 	filters := ParseFilters(r, []FilterConfig{
 		{
-			Field:      "name",
-			ExactMatch: false,
+			Param: "name",
+			Query: "name ? LIKE ",
 		},
 	})
 	sorting := ParseSorting(r)

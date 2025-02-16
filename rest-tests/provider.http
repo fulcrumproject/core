@@ -26,7 +26,7 @@ Content-Type: application/json
 GET {{baseUrl}}/providers/{{providerId}}
 
 ### List all providers
-GET {{baseUrl}}/providers
+GET {{baseUrl}}/providers?name=AWS
 
 ### Update a provider
 PUT {{baseUrl}}/providers/{{providerId}}
