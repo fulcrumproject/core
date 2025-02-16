@@ -1,22 +1,26 @@
 - Core
   - [x] Provider
-    - [x] CRUD  (delete solo se senza agent)
+    - [x] CRUD
+    - [ ] Delete solo se senza agent
   - [ ] Agent
-    - [ ] CRUD (delete solo se senza service)
+    - [ ] CRUD
+    - [ ] Delete solo se senza service
     - [ ] Usiamo un Token
     - [ ] Timer Disconnected
     - [ ] Health Endpoint
-  - [ ] AgentType
-    - [ ] Seed
-    - [ ] Endpoint lettura
-    - [ ] Facciamo Dummy e Proxmox
-  - [ ] ServiceType
-    - [ ] Seed
-    - [ ] Endpoint lettura
+  - [x] AgentType
+    - [x] Seed
+    - [x] Endpoint lettura
+    - [x] Facciamo Dummy e Proxmox
+  - [x] ServiceType
+    - [x] Seed
+    - [x] Endpoint lettura
   - [ ] ServiceGroup
-    - [ ] CRUD (delete solo se vuoto per ora)
+    - [ ] CRUD
+    - [ ] Delete solo se vuoto per ora
   - [ ] Service
-    - [ ] CRUD con post del task e match degli attribute sul nuovo
+    - [ ] CRUD
+    - [ ] Post del task e match degli attribute sul nuovo
   - [ ] Metric
     - [ ] Endpoint aggiunta
     - [ ] Endpoint lettura
