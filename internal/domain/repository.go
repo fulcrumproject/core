@@ -14,3 +14,24 @@ var (
 	// ErrInvalidInput indicates that the input data is invalid
 	ErrInvalidInput = errors.New("invalid input")
 )
+
+type Filters map[string]interface{}
+
+type Sorting struct {
+	SortField string // Field to sort by
+	SortOrder string // "asc" or "desc"
+}
+
+type Pagination struct {
+	Page     int // Current page number
+	PageSize int // Number of items per page
+}
+
+type PaginatedResult[T any] struct {
+	Items       []T
+	TotalItems  int64
+	TotalPages  int
+	CurrentPage int
+	HasNext     bool
+	HasPrev     bool
+}

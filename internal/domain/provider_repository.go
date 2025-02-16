@@ -17,8 +17,8 @@ type ProviderRepository interface {
 	FindByID(ctx context.Context, id UUID) (*Provider, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, filters map[string]interface{}) ([]Provider, error)
+	List(ctx context.Context, filters Filters, sorting *Sorting, pagination *Pagination) (*PaginatedResult[Provider], error)
 
 	// Count returns the number of entities matching the provided filters
-	Count(ctx context.Context, filters map[string]interface{}) (int64, error)
+	Count(ctx context.Context, filters Filters) (int64, error)
 }
