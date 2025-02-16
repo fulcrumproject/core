@@ -56,3 +56,18 @@ func (r *agentTypeRepository) List(ctx context.Context, filters map[string]inter
 
 	return agentTypes, nil
 }
+
+func (r *agentTypeRepository) Count(ctx context.Context, filters map[string]interface{}) (int64, error) {
+	var count int64
+
+	query := r.db.WithContext(ctx).Model(&domain.AgentType{})
+	for key, value := range filters {
+		query = query.Where(key, value)
+	}
+
+	if err := query.Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}

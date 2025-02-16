@@ -18,4 +18,7 @@ type ProviderRepository interface {
 
 	// List retrieves a list of entities based on the provided filters
 	List(ctx context.Context, filters map[string]interface{}) ([]Provider, error)
+
+	// Count returns the number of entities matching the provided filters
+	Count(ctx context.Context, filters map[string]interface{}) (int64, error)
 }

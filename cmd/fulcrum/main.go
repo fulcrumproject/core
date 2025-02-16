@@ -19,6 +19,11 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	// Seed with basic data
+	if err := database.Seed(db); err != nil {
+		log.Fatalf("Failed to seed the database: %v", err)
+	}
+
 	// Initialize repositories
 	providerRepo := database.NewProviderRepository(db)
 	agentTypeRepo := database.NewAgentTypeRepository(db)

@@ -72,3 +72,18 @@ func (r *providerRepository) List(ctx context.Context, filters map[string]interf
 
 	return providers, nil
 }
+
+func (r *providerRepository) Count(ctx context.Context, filters map[string]interface{}) (int64, error) {
+	var count int64
+
+	query := r.db.WithContext(ctx).Model(&domain.Provider{})
+	for key, value := range filters {
+		query = query.Where(key, value)
+	}
+
+	if err := query.Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
