@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"gorm.io/gorm"
 
@@ -47,49 +46,19 @@ func (r *serviceTypeRepository) List(ctx context.Context, filters domain.Filters
 	var totalItems int64
 
 	query := r.db.WithContext(ctx)
-
-	// Apply filters
-	for key, value := range filters {
-		query = query.Where(key, value)
-	}
-
+	query = applyFilters(query, filters)
 	// Get total count for pagination
 	if err := query.Model(&domain.ServiceType{}).Count(&totalItems).Error; err != nil {
 		return nil, err
 	}
-
-	// Apply sorting if provided
-	if sorting != nil && sorting.SortField != "" {
-		order := "asc"
-		if sorting.SortOrder == "desc" {
-			order = "desc"
-		}
-		query = query.Order(fmt.Sprintf("%s %s", sorting.SortField, order))
-	}
-
-	// Apply pagination if provided
-	if pagination != nil {
-		offset := (pagination.Page - 1) * pagination.PageSize
-		query = query.Offset(offset).Limit(pagination.PageSize)
-	}
+	query = applySorting(query, sorting)
+	query = applyPagination(query, pagination)
 
 	if err := query.Find(&serviceTypes).Error; err != nil {
 		return nil, err
 	}
 
-	totalPages := int(totalItems) / pagination.PageSize
-	if int(totalItems)%pagination.PageSize > 0 {
-		totalPages++
-	}
-
-	return &domain.PaginatedResult[domain.ServiceType]{
-		Items:       serviceTypes,
-		TotalItems:  totalItems,
-		TotalPages:  totalPages,
-		CurrentPage: pagination.Page,
-		HasNext:     pagination.Page < totalPages,
-		HasPrev:     pagination.Page > 1,
-	}, nil
+	return domain.NewPaginatedResult(serviceTypes, totalItems, pagination), nil
 }
 
 func (r *serviceTypeRepository) Count(ctx context.Context, filters domain.Filters) (int64, error) {
