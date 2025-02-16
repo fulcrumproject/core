@@ -46,10 +46,10 @@ func (r *agentTypeRepository) List(ctx context.Context, filters domain.Filters, 
 	var agentTypes []domain.AgentType
 	var totalItems int64
 
-	query := r.db.WithContext(ctx)
+	query := r.db.WithContext(ctx).Model(&domain.AgentType{})
 	query = applyFilters(query, filters)
 	// Get total count for pagination
-	if err := query.Model(&domain.AgentType{}).Count(&totalItems).Error; err != nil {
+	if err := query.Count(&totalItems).Error; err != nil {
 		return nil, err
 	}
 	query = applySorting(query, sorting)
@@ -66,9 +66,7 @@ func (r *agentTypeRepository) Count(ctx context.Context, filters domain.Filters)
 	var count int64
 
 	query := r.db.WithContext(ctx).Model(&domain.AgentType{})
-	for key, value := range filters {
-		query = query.Where(key, value)
-	}
+	query = applyFilters(query, filters)
 
 	if err := query.Count(&count).Error; err != nil {
 		return 0, err

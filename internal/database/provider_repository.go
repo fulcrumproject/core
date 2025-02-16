@@ -62,10 +62,10 @@ func (r *providerRepository) List(ctx context.Context, filters domain.Filters, s
 	var providers []domain.Provider
 	var totalItems int64
 
-	query := r.db.WithContext(ctx)
+	query := r.db.WithContext(ctx).Model(&domain.Provider{})
 	query = applyFilters(query, filters)
 	// Get total count for pagination
-	if err := query.Model(&domain.Provider{}).Count(&totalItems).Error; err != nil {
+	if err := query.Count(&totalItems).Error; err != nil {
 		return nil, err
 	}
 	query = applySorting(query, sorting)
@@ -82,9 +82,7 @@ func (r *providerRepository) Count(ctx context.Context, filters domain.Filters) 
 	var count int64
 
 	query := r.db.WithContext(ctx).Model(&domain.Provider{})
-	for key, value := range filters {
-		query = query.Where(key, value)
-	}
+	query = applyFilters(query, filters)
 
 	if err := query.Count(&count).Error; err != nil {
 		return 0, err
