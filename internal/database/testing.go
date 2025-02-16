@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"fulcrumproject.org/core/internal/env"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -22,11 +23,11 @@ func NewTestDB(t *testing.T) *TestDB {
 	uuidStr := strings.Replace(uuid.New().String(), "-", "", -1)
 	dbName := fmt.Sprintf("fulcrum_test_%s", uuidStr)
 	config := Config{
-		Host:     getEnvOrDefault("TEST_DB_HOST", "localhost"),
-		User:     getEnvOrDefault("TEST_DB_USER", "fulcrum"),
-		Password: getEnvOrDefault("TEST_DB_PASSWORD", "fulcrum_password"),
+		Host:     env.GetOrDefault("TEST_DB_HOST", "localhost"),
+		User:     env.GetOrDefault("TEST_DB_USER", "fulcrum"),
+		Password: env.GetOrDefault("TEST_DB_PASSWORD", "fulcrum_password"),
 		DBName:   dbName,
-		Port:     getEnvOrDefault("TEST_DB_PORT", "5432"),
+		Port:     env.GetOrDefault("TEST_DB_PORT", "5432"),
 	}
 
 	// Connect to postgres database to create the test database
@@ -76,11 +77,11 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 
 	// Connect to postgres database to delete the test database
 	config := Config{
-		Host:     getEnvOrDefault("TEST_DB_HOST", "localhost"),
-		User:     getEnvOrDefault("TEST_DB_USER", "fulcrum"),
-		Password: getEnvOrDefault("TEST_DB_PASSWORD", "fulcrum_password"),
+		Host:     env.GetOrDefault("TEST_DB_HOST", "localhost"),
+		User:     env.GetOrDefault("TEST_DB_USER", "fulcrum"),
+		Password: env.GetOrDefault("TEST_DB_PASSWORD", "fulcrum_password"),
 		DBName:   "postgres",
-		Port:     getEnvOrDefault("TEST_DB_PORT", "5432"),
+		Port:     env.GetOrDefault("TEST_DB_PORT", "5432"),
 	}
 
 	adminDB, err := NewConnection(&config)

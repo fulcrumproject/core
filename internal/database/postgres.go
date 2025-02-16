@@ -2,12 +2,14 @@ package database
 
 import (
 	"fmt"
+	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
 	"fulcrumproject.org/core/internal/domain"
+	"fulcrumproject.org/core/internal/env"
 )
 
 // Config contains the database connection configuration
@@ -23,12 +25,12 @@ type Config struct {
 // NewConfigFromEnv creates a new database configuration from environment variables
 func NewConfigFromEnv() *Config {
 	return &Config{
-		Host:     getEnvOrDefault("DB_HOST", "localhost"),
-		User:     getEnvOrDefault("DB_USER", "fulcrum"),
-		Password: getEnvOrDefault("DB_PASSWORD", "fulcrum_password"),
-		DBName:   getEnvOrDefault("DB_NAME", "fulcrum_db"),
-		Port:     getEnvOrDefault("DB_PORT", "5432"),
-		SSLMode:  getEnvOrDefault("DB_SSL_MODE", "disable"),
+		Host:     env.GetOrDefault("DB_HOST", "localhost"),
+		User:     env.GetOrDefault("DB_USER", "fulcrum"),
+		Password: env.GetOrDefault("DB_PASSWORD", "fulcrum_password"),
+		DBName:   env.GetOrDefault("DB_NAME", "fulcrum_db"),
+		Port:     env.GetOrDefault("DB_PORT", "5432"),
+		SSLMode:  env.GetOrDefault("DB_SSL_MODE", "disable"),
 	}
 }
 
@@ -70,4 +72,21 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.AgentType{},
 		&domain.ServiceType{},
 	)
+}
+
+// getLogLevelFromEnv gets the log level from environment variable or returns the default
+func getLogLevelFromEnv(key string, defaultValue logger.LogLevel) logger.LogLevel {
+	value := os.Getenv(key)
+	switch value {
+	case "silent":
+		return logger.Silent
+	case "error":
+		return logger.Error
+	case "warn":
+		return logger.Warn
+	case "info":
+		return logger.Info
+	default:
+		return defaultValue
+	}
 }
