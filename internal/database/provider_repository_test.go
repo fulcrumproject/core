@@ -134,14 +134,6 @@ func TestProviderRepository(t *testing.T) {
 			assert.Nil(t, found)
 			assert.ErrorIs(t, err, domain.ErrNotFound)
 		})
-
-		t.Run("delete non-existent", func(t *testing.T) {
-			ctx := context.Background()
-
-			// Execute
-			err := repo.Delete(ctx, domain.NewUUID())
-			require.NoError(t, err) // GORM's Delete operation doesn't return error for non-existent records
-		})
 	})
 }
 

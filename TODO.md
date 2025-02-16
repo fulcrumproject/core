@@ -1,35 +1,35 @@
 - Core
-  - Provider
-    - CRUD  (delete solo se senza agent)
-  - Agent
-    - CRUD (delete solo se senza service)
-    - Usiamo un Token
-    - Timer Disconnected
-    - Health Endpoint
-  - AgentType
-    - Seed
-    - Endpoint lettura
-    - Facciamo Dummy e Proxmox
-  - ServiceType
-    - Seed
-    - Endpoint lettura
-  - ServiceGroup
-    - CRUD (delete solo se vuoto per ora)
-  - Service
-    - CRUD con post del task e match degli attribute sul nuovo
-  - Metric
-    - Endpoint aggiunta
-    - Endpoint lettura
-  - Audit
-    - Metodi tracciatura
-    - Endpoint lettura
-  - Task Queue Endpoints
-    - Read
-    - Commit
-- Dummy Agent
-  - Cosa?
-  - Timer Health
-  - Task Queue Handler
-  - Timer Metric
-- Auth & Authz?
-  - Roles: Fulcrum Admin, Provider Admin, Provider Reader, Marketplace
+  - [x] Provider
+    - [x] CRUD  (delete solo se senza agent)
+  - [ ] Agent
+    - [ ] CRUD (delete solo se senza service)
+    - [ ] Usiamo un Token
+    - [ ] Timer Disconnected
+    - [ ] Health Endpoint
+  - [ ] AgentType
+    - [ ] Seed
+    - [ ] Endpoint lettura
+    - [ ] Facciamo Dummy e Proxmox
+  - [ ] ServiceType
+    - [ ] Seed
+    - [ ] Endpoint lettura
+  - [ ] ServiceGroup
+    - [ ] CRUD (delete solo se vuoto per ora)
+  - [ ] Service
+    - [ ] CRUD con post del task e match degli attribute sul nuovo
+  - [ ] Metric
+    - [ ] Endpoint aggiunta
+    - [ ] Endpoint lettura
+  - [ ] Audit
+    - [ ] Metodi tracciatura
+    - [ ] Endpoint lettura
+  - [ ] Task Queue Endpoints
+    - [ ] Read
+    - [ ] Commit
+- [ ] Dummy Agent
+  - [ ] Cosa?
+  - [ ] Timer Health
+  - [ ] Task Queue Handler
+  - [ ] Timer Metric
+- [ ] Auth & Authz?
+  - [ ] Roles: Fulcrum Admin, Provider Admin, Provider Reader, Marketplace

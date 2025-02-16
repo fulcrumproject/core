@@ -99,19 +99,6 @@ func ParseID(id string) (UUID, error) {
 	return UUID(uid), nil
 }
 
-// JSON handles the JSON serialization for GORM
-type JSON datatypes.JSON
-
-// Scan implements the sql.Scanner interface
-func (j *JSON) Scan(value interface{}) error {
-	return (*datatypes.JSON)(j).Scan(value)
-}
-
-// Value implements the driver.Valuer interface
-func (j JSON) Value() (driver.Value, error) {
-	return datatypes.JSON(j).Value()
-}
-
 // Attributes represents a map of string arrays used for flexible entity attributes
 type Attributes map[string][]string
 
