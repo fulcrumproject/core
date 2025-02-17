@@ -9,28 +9,30 @@ import (
 	"github.com/google/uuid"
 )
 
-// AgentTypeResponse represents the response body for agent type operations
-type AgentTypeResponse struct {
+// AgentTypeGetResponse represents the detailed response for single agent type operations
+type AgentTypeGetResponse struct {
+	AgentTypeListResponse
+	ServiceTypes []AgentTypeServiceTypeResponse `json:"serviceTypes"`
+}
+
+type AgentTypeServiceTypeResponse struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	CreatedAt string `json:"createdAt"`
 	UpdatedAt string `json:"updatedAt"`
 }
 
-type ServiceTypeMinimal struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-// AgentTypeDetailResponse represents the detailed response for single agent type operations
-type AgentTypeDetailResponse struct {
-	AgentTypeResponse
-	ServiceTypes []ServiceTypeMinimal `json:"serviceTypes"`
+// AgentTypeListResponse represents the response body for agent type operations
+type AgentTypeListResponse struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 // agentTypeToResponse converts a domain.AgentType to an AgentTypeResponse
-func agentTypeToResponse(at *domain.AgentType) *AgentTypeResponse {
-	return &AgentTypeResponse{
+func agentTypeToResponse(at *domain.AgentType) *AgentTypeListResponse {
+	return &AgentTypeListResponse{
 		ID:        uuid.UUID(at.ID).String(),
 		Name:      at.Name,
 		CreatedAt: at.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
@@ -39,16 +41,18 @@ func agentTypeToResponse(at *domain.AgentType) *AgentTypeResponse {
 }
 
 // agentTypeToDetailResponse converts a domain.AgentType to an AgentTypeDetailResponse
-func agentTypeToDetailResponse(at *domain.AgentType) *AgentTypeDetailResponse {
-	response := &AgentTypeDetailResponse{
-		AgentTypeResponse: *agentTypeToResponse(at),
-		ServiceTypes:      make([]ServiceTypeMinimal, len(at.ServiceTypes)),
+func agentTypeToDetailResponse(at *domain.AgentType) *AgentTypeGetResponse {
+	response := &AgentTypeGetResponse{
+		AgentTypeListResponse: *agentTypeToResponse(at),
+		ServiceTypes:          make([]AgentTypeServiceTypeResponse, len(at.ServiceTypes)),
 	}
 
 	for i, st := range at.ServiceTypes {
-		response.ServiceTypes[i] = ServiceTypeMinimal{
-			ID:   uuid.UUID(st.ID).String(),
-			Name: st.Name,
+		response.ServiceTypes[i] = AgentTypeServiceTypeResponse{
+			ID:        uuid.UUID(st.ID).String(),
+			Name:      st.Name,
+			CreatedAt: st.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt: st.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		}
 	}
 
@@ -109,12 +113,12 @@ func (h *AgentTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := make([]*AgentTypeResponse, len(result.Items))
+	response := make([]*AgentTypeListResponse, len(result.Items))
 	for i, agentType := range result.Items {
 		response[i] = agentTypeToResponse(&agentType)
 	}
 
-	render.JSON(w, r, &PaginatedResponse[*AgentTypeResponse]{
+	render.JSON(w, r, &PaginatedResponse[*AgentTypeListResponse]{
 		Items:       response,
 		TotalItems:  result.TotalItems,
 		TotalPages:  result.TotalPages,

@@ -9,16 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// CreateProviderRequest represents the request body for creating a provider
-type CreateProviderRequest struct {
-	Name        string               `json:"name"`
-	State       domain.ProviderState `json:"state"`
-	CountryCode string               `json:"countryCode,omitempty"`
-	Attributes  map[string][]string  `json:"attributes,omitempty"`
-}
-
-// UpdateProviderRequest represents the request body for updating a provider
-type UpdateProviderRequest struct {
+// CreateUpdateProviderRequest represents the request body for creating a provider
+type CreateUpdateProviderRequest struct {
 	Name        string               `json:"name"`
 	State       domain.ProviderState `json:"state"`
 	CountryCode string               `json:"countryCode,omitempty"`
@@ -74,7 +66,7 @@ func (h *ProviderHandler) Routes() chi.Router {
 }
 
 func (h *ProviderHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	var req CreateProviderRequest
+	var req CreateUpdateProviderRequest
 	if err := render.Decode(r, &req); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -163,7 +155,7 @@ func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req UpdateProviderRequest
+	var req CreateUpdateProviderRequest
 	if err := render.Decode(r, &req); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
