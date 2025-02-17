@@ -6,7 +6,6 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
 )
 
 // ServiceTypeResponse represents the response body for service type operations
@@ -20,7 +19,7 @@ type ServiceTypeResponse struct {
 // serviceTypeToResponse converts a domain.ServiceType to a ServiceTypeResponse
 func serviceTypeToResponse(st *domain.ServiceType) *ServiceTypeResponse {
 	return &ServiceTypeResponse{
-		ID:        uuid.UUID(st.ID).String(),
+		ID:        st.ID.String(),
 		Name:      st.Name,
 		CreatedAt: st.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt: st.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),

@@ -6,7 +6,6 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
 )
 
 // ErrProviderHasConnectedAgents is returned when attempting to delete a provider that has connected agents
@@ -38,7 +37,7 @@ type ProviderResponse struct {
 // provderToResponse converts a domain.Provider to a ProviderResponse
 func provderToResponse(p *domain.Provider) *ProviderResponse {
 	return &ProviderResponse{
-		ID:          uuid.UUID(p.ID).String(),
+		ID:          p.ID.String(),
 		Name:        string(p.Name),
 		State:       p.State,
 		CountryCode: string(p.CountryCode),

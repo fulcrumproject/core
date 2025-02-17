@@ -6,7 +6,6 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
 )
 
 // CreateUpdateAgentRequest represents the request body for creating/updating an agent
@@ -40,14 +39,14 @@ type AgentResponse struct {
 // agentToResponse converts a domain.Agent to an AgentResponse
 func agentToResponse(a *domain.Agent) *AgentResponse {
 	response := &AgentResponse{
-		ID:          uuid.UUID(a.ID).String(),
+		ID:          a.ID.String(),
 		Name:        a.Name,
 		State:       a.State,
 		CountryCode: a.CountryCode,
 		Attributes:  map[string][]string(a.Attributes),
 		Properties:  a.Properties,
-		ProviderID:  uuid.UUID(a.ProviderID).String(),
-		AgentTypeID: uuid.UUID(a.AgentTypeID).String(),
+		ProviderID:  a.ProviderID.String(),
+		AgentTypeID: a.AgentTypeID.String(),
 		CreatedAt:   a.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:   a.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
