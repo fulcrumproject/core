@@ -36,6 +36,9 @@ func (n Name) Validate() error {
 	return nil
 }
 
+// JSON type alias
+type JSON = datatypes.JSONMap
+
 // CountryCode represents a validated ISO 3166-1 alpha-2 country code
 type CountryCode string
 

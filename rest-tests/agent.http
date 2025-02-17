@@ -1,0 +1,90 @@
+### Test Agent API
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+
+### Create a provider for testing
+# @name createProvider
+POST {{baseUrl}}/providers
+Content-Type: application/json
+
+{
+    "name": "Test Provider",
+    "state": "Enabled",
+    "countryCode": "US",
+    "attributes": {
+        "type": ["test"]
+    }
+}
+
+### Extract provider ID
+@providerId = {{createProvider.response.body.$.id}}
+
+### Get an agent type for testing
+# @name getAgentTypes
+GET {{baseUrl}}/agent-types
+
+### Extract first agent type ID
+@agentTypeId = {{getAgentTypes.response.body.$.items[0].id}}
+
+### Create a new agent
+# @name createAgent
+POST {{baseUrl}}/agents
+Content-Type: application/json
+
+{
+    "name": "Test Agent",
+    "state": "New",
+    "tokenHash": "test-token-hash",
+    "countryCode": "US",
+    "attributes": {
+        "environment": ["production"],
+        "version": ["1.0.0"]
+    },
+    "properties": {
+        "os": "linux",
+        "arch": "amd64"
+    },
+    "providerId": "{{providerId}}",
+    "agentTypeId": "{{agentTypeId}}"
+}
+
+### Extract agent ID
+@agentId = {{createAgent.response.body.$.id}}
+
+### Get an agent by ID
+GET {{baseUrl}}/agents/{{agentId}}
+
+### List all agents
+GET {{baseUrl}}/agents
+
+### List agents with filters
+GET {{baseUrl}}/agents?state=New&countryCode=US
+
+### List agents for specific provider
+GET {{baseUrl}}/agents?providerId={{providerId}}
+
+### Update an agent
+PUT {{baseUrl}}/agents/{{agentId}}
+Content-Type: application/json
+
+{
+    "name": "Test Agent Updated",
+    "state": "Connected",
+    "tokenHash": "test-token-hash",
+    "countryCode": "UK",
+    "attributes": {
+        "environment": ["staging"],
+        "version": ["1.1.0"]
+    },
+    "properties": {
+        "os": "linux",
+        "arch": "amd64",
+        "memory": "8GB"
+    },
+    "providerId": "{{providerId}}",
+    "agentTypeId": "{{agentTypeId}}"
+}
+
+### Delete an agent
+DELETE {{baseUrl}}/agents/{{agentId}}
