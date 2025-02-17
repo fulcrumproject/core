@@ -47,6 +47,7 @@ func (r *providerRepository) Delete(ctx context.Context, id domain.UUID) error {
 
 func (r *providerRepository) FindByID(ctx context.Context, id domain.UUID) (*domain.Provider, error) {
 	var provider domain.Provider
+
 	err := r.db.WithContext(ctx).First(&provider, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -70,7 +71,6 @@ func (r *providerRepository) List(ctx context.Context, filters domain.Filters, s
 	}
 	query = applySorting(query, sorting)
 	query = applyPagination(query, pagination)
-
 	if err := query.Find(&providers).Error; err != nil {
 		return nil, err
 	}
@@ -83,7 +83,6 @@ func (r *providerRepository) Count(ctx context.Context, filters domain.Filters) 
 
 	query := r.db.WithContext(ctx).Model(&domain.Provider{})
 	query = applyFilters(query, filters)
-
 	if err := query.Count(&count).Error; err != nil {
 		return 0, err
 	}

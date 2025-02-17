@@ -29,6 +29,7 @@ func (r *agentTypeRepository) Create(ctx context.Context, agentType *domain.Agen
 
 func (r *agentTypeRepository) FindByID(ctx context.Context, id domain.UUID) (*domain.AgentType, error) {
 	var agentType domain.AgentType
+
 	err := r.db.WithContext(ctx).
 		Preload("ServiceTypes").
 		First(&agentType, id).Error
@@ -54,7 +55,6 @@ func (r *agentTypeRepository) List(ctx context.Context, filters domain.Filters, 
 	}
 	query = applySorting(query, sorting)
 	query = applyPagination(query, pagination)
-
 	if err := query.Find(&agentTypes).Error; err != nil {
 		return nil, err
 	}
@@ -67,7 +67,6 @@ func (r *agentTypeRepository) Count(ctx context.Context, filters domain.Filters)
 
 	query := r.db.WithContext(ctx).Model(&domain.AgentType{})
 	query = applyFilters(query, filters)
-
 	if err := query.Count(&count).Error; err != nil {
 		return 0, err
 	}

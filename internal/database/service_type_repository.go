@@ -29,6 +29,7 @@ func (r *serviceTypeRepository) Create(ctx context.Context, serviceType *domain.
 
 func (r *serviceTypeRepository) FindByID(ctx context.Context, id domain.UUID) (*domain.ServiceType, error) {
 	var serviceType domain.ServiceType
+
 	err := r.db.WithContext(ctx).
 		First(&serviceType, id).Error
 	if err != nil {
@@ -53,7 +54,6 @@ func (r *serviceTypeRepository) List(ctx context.Context, filters domain.Filters
 	}
 	query = applySorting(query, sorting)
 	query = applyPagination(query, pagination)
-
 	if err := query.Find(&serviceTypes).Error; err != nil {
 		return nil, err
 	}
@@ -66,7 +66,6 @@ func (r *serviceTypeRepository) Count(ctx context.Context, filters domain.Filter
 
 	query := r.db.WithContext(ctx).Model(&domain.ServiceType{})
 	query = applyFilters(query, filters)
-
 	if err := query.Count(&count).Error; err != nil {
 		return 0, err
 	}
