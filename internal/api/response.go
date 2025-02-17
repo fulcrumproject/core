@@ -11,6 +11,14 @@ const (
 	ISO8601UTC = "2006-01-02T15:04:05Z07:00"
 )
 
+// JSONUTCTime is an UTC marshaled time
+type JSONUTCTime time.Time
+
+func (t JSONUTCTime) MarshalJSON() ([]byte, error) {
+	formatted := time.Time(t).UTC().Format(ISO8601UTC)
+	return []byte(`"` + formatted + `"`), nil
+}
+
 // NewPaginatedResponse creates a new PaginatedResponse from a domain.PaginatedResult
 func NewPaginatedResponse[E any, R any](result *domain.PaginatedResult[E], conv func(*E) *R) *PaginatedResponse[R] {
 	items := make([]*R, len(result.Items))
@@ -36,12 +44,4 @@ type PaginatedResponse[T any] struct {
 	CurrentPage int   `json:"currentPage"`
 	HasNext     bool  `json:"hasNext"`
 	HasPrev     bool  `json:"hasPrev"`
-}
-
-type JSONUTCTime time.Time
-
-// MarshalJSON implements json.Marshaler interface
-func (t JSONUTCTime) MarshalJSON() ([]byte, error) {
-	formatted := time.Time(t).UTC().Format(ISO8601UTC)
-	return []byte(`"` + formatted + `"`), nil
 }
