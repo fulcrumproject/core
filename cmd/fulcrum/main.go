@@ -19,7 +19,7 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	// Seed with basic data
+	// Seed with basic data if needed
 	if err := database.Seed(db); err != nil {
 		log.Fatalf("Failed to seed the database: %v", err)
 	}
@@ -33,7 +33,7 @@ func main() {
 	// Initialize handlers
 	agentTypeHandler := api.NewAgentTypeHandler(agentTypeRepo)
 	serviceTypeHandler := api.NewServiceTypeHandler(serviceTypeRepo)
-	providerHandler := api.NewProviderHandler(providerRepo)
+	providerHandler := api.NewProviderHandler(providerRepo, agentRepo)
 	agentHandler := api.NewAgentHandler(agentRepo)
 
 	// Initialize router
@@ -42,11 +42,6 @@ func main() {
 	// Middleware
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-
-	// Routes
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Fulcrum Core API"))
-	})
 
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {

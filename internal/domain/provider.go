@@ -29,6 +29,11 @@ func (s ProviderState) Validate() error {
 	}
 }
 
+func ParseProviderState(value string) (ProviderState, error) {
+	state := ProviderState(value)
+	return state, state.Validate()
+}
+
 // Provider represents a cloud service provider
 type Provider struct {
 	BaseEntity

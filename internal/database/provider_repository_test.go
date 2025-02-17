@@ -47,7 +47,6 @@ func TestProviderRepository(t *testing.T) {
 	t.Run("List", func(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
 			ctx := context.Background()
-			filters := domain.Filters(nil)
 
 			// Setup
 			provider1 := createTestProvider(t, domain.ProviderEnabled)
@@ -61,7 +60,7 @@ func TestProviderRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, filters, nil, pagination)
+			result, err := repo.List(ctx, nil, nil, pagination)
 
 			// Assert
 			providers := result.Items
@@ -73,8 +72,9 @@ func TestProviderRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			filters := domain.Filters{
-				"state": domain.ProviderEnabled,
+			filter := &domain.SimpleFilter{
+				Field: "state",
+				Value: "Enabled",
 			}
 
 			pagination := &domain.Pagination{
@@ -83,7 +83,7 @@ func TestProviderRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, filters, nil, pagination)
+			result, err := repo.List(ctx, filter, nil, pagination)
 
 			// Assert
 			require.NoError(t, err)
@@ -105,8 +105,8 @@ func TestProviderRepository(t *testing.T) {
 			require.NoError(t, repo.Create(ctx, provider2))
 
 			sorting := &domain.Sorting{
-				SortField: "name",
-				SortOrder: "desc",
+				Field: "name",
+				Order: "desc",
 			}
 
 			pagination := &domain.Pagination{

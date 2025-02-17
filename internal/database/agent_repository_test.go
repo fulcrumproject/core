@@ -61,7 +61,6 @@ func TestAgentRepository(t *testing.T) {
 	t.Run("List", func(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
 			ctx := context.Background()
-			filters := domain.Filters(nil)
 
 			// Setup
 			provider := createTestProvider(t, domain.ProviderEnabled)
@@ -81,7 +80,7 @@ func TestAgentRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := agentRepo.List(ctx, filters, nil, pagination)
+			result, err := agentRepo.List(ctx, nil, nil, pagination)
 
 			// Assert
 			agents := result.Items
@@ -93,8 +92,9 @@ func TestAgentRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			filters := domain.Filters{
-				"state": domain.AgentConnected,
+			filter := &domain.SimpleFilter{
+				Field: "state",
+				Value: "Connected",
 			}
 
 			pagination := &domain.Pagination{
@@ -103,7 +103,7 @@ func TestAgentRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := agentRepo.List(ctx, filters, nil, pagination)
+			result, err := agentRepo.List(ctx, filter, nil, pagination)
 
 			// Assert
 			require.NoError(t, err)
@@ -131,8 +131,8 @@ func TestAgentRepository(t *testing.T) {
 			require.NoError(t, agentRepo.Create(ctx, agent2))
 
 			sorting := &domain.Sorting{
-				SortField: "name",
-				SortOrder: "desc",
+				Field: "name",
+				Order: "desc",
 			}
 
 			pagination := &domain.Pagination{

@@ -65,32 +65,15 @@ func (h *ServiceTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServiceTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	// Parse request parameters using shared utilities
-	filters := ParseFilters(r, []FilterConfig{
-		{
-			Param: "name",
-		},
-	})
-	sorting := ParseSorting(r)
-	pagination := ParsePagination(r)
+	filter := parseSimpleFilter(r)
+	sorting := parseSorting(r)
+	pagination := parsePagination(r)
 
-	result, err := h.repo.List(r.Context(), filters, sorting, pagination)
+	result, err := h.repo.List(r.Context(), filter, sorting, pagination)
 	if err != nil {
-		render.Render(w, r, ErrInternalServer(err))
+		render.Render(w, r, ErrDomain(err))
 		return
 	}
 
-	response := make([]*ServiceTypeResponse, len(result.Items))
-	for i, serviceType := range result.Items {
-		response[i] = serviceTypeToResponse(&serviceType)
-	}
-
-	render.JSON(w, r, &PaginatedResponse[*ServiceTypeResponse]{
-		Items:       response,
-		TotalItems:  result.TotalItems,
-		TotalPages:  result.TotalPages,
-		CurrentPage: result.CurrentPage,
-		HasNext:     result.HasNext,
-		HasPrev:     result.HasPrev,
-	})
+	render.JSON(w, r, NewPaginatedResponse(result, serviceTypeToResponse))
 }

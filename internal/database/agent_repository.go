@@ -21,7 +21,7 @@ func NewAgentRepository(db *gorm.DB) domain.AgentRepository {
 func (r *agentRepository) Create(ctx context.Context, agent *domain.Agent) error {
 	result := r.db.WithContext(ctx).Create(agent)
 	if result.Error != nil {
-		return result.Error
+		return domain.NewInternalError(result.Error)
 	}
 
 	return nil
@@ -30,7 +30,7 @@ func (r *agentRepository) Create(ctx context.Context, agent *domain.Agent) error
 func (r *agentRepository) Save(ctx context.Context, agent *domain.Agent) error {
 	result := r.db.WithContext(ctx).Save(agent)
 	if result.Error != nil {
-		return result.Error
+		return domain.NewInternalError(result.Error)
 	}
 
 	return nil
@@ -39,7 +39,7 @@ func (r *agentRepository) Save(ctx context.Context, agent *domain.Agent) error {
 func (r *agentRepository) Delete(ctx context.Context, id domain.UUID) error {
 	result := r.db.WithContext(ctx).Delete(&domain.Agent{}, id)
 	if result.Error != nil {
-		return result.Error
+		return domain.NewInternalError(result.Error)
 	}
 
 	return nil
@@ -51,40 +51,61 @@ func (r *agentRepository) FindByID(ctx context.Context, id domain.UUID) (*domain
 	err := r.db.WithContext(ctx).Preload("Provider").Preload("AgentType").First(&agent, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, domain.ErrNotFound
+			return nil, domain.NewNotFoundError("agent", id.String(), err)
 		}
-		return nil, err
+		return nil, domain.NewInternalError(err)
 	}
 
 	return &agent, nil
 }
 
-func (r *agentRepository) List(ctx context.Context, filters domain.Filters, sorting *domain.Sorting, pagination *domain.Pagination) (*domain.PaginatedResult[domain.Agent], error) {
+var agentFilterConfigs = map[string]FilterConfig{
+	"name":        {},
+	"state":       {Query: "state", Valuer: func(v string) (interface{}, error) { return domain.ParseAgentState(v) }},
+	"countryCode": {Query: "country_code", Valuer: func(v string) (interface{}, error) { return domain.ParseCountryCode(v) }},
+	"providerId":  {Query: "provider_id", Valuer: func(v string) (interface{}, error) { return domain.ParseID(v) }},
+	"agentTypeId": {Query: "agent_type_id", Valuer: func(v string) (interface{}, error) { return domain.ParseID(v) }},
+}
+
+func (r *agentRepository) List(ctx context.Context, filter *domain.SimpleFilter, sorting *domain.Sorting, pagination *domain.Pagination) (*domain.PaginatedResult[domain.Agent], error) {
 	var agents []domain.Agent
 	var totalItems int64
 
 	query := r.db.WithContext(ctx).Model(&domain.Agent{})
-	query = applyFilters(query, filters)
-	// Get total count for pagination
-	if err := query.Count(&totalItems).Error; err != nil {
+
+	query, err := applySimpleFilter(query, filter, agentFilterConfigs)
+	if err != nil {
 		return nil, err
 	}
-	query = applySorting(query, sorting)
-	query = applyPagination(query, pagination)
-	if err := query.Preload("Provider").Preload("AgentType").Find(&agents).Error; err != nil {
+	if err := query.Count(&totalItems).Error; err != nil {
+		return nil, domain.NewInternalError(err)
+	}
+	query, err = applySorting(query, sorting)
+	if err != nil {
 		return nil, err
+	}
+	query, err = applyPagination(query, pagination)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := query.Preload("Provider").Preload("AgentType").Find(&agents).Error; err != nil {
+		return nil, domain.NewInternalError(err)
 	}
 
 	return domain.NewPaginatedResult(agents, totalItems, pagination), nil
 }
 
-func (r *agentRepository) Count(ctx context.Context, filters domain.Filters) (int64, error) {
+func (r *agentRepository) Count(ctx context.Context, filter *domain.SimpleFilter) (int64, error) {
 	var count int64
 
 	query := r.db.WithContext(ctx).Model(&domain.Agent{})
-	query = applyFilters(query, filters)
-	if err := query.Count(&count).Error; err != nil {
+	query, err := applySimpleFilter(query, filter, agentFilterConfigs)
+	if err != nil {
 		return 0, err
+	}
+	if err := query.Count(&count).Error; err != nil {
+		return 0, domain.NewInternalError(err)
 	}
 
 	return count, nil

@@ -122,7 +122,7 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Create(r.Context(), agent); err != nil {
-		render.Render(w, r, ErrInternalServer(err))
+		render.Render(w, r, ErrInternal(err))
 		return
 	}
 
@@ -147,64 +147,17 @@ func (h *AgentHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AgentHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	filters := ParseFilters(r, []FilterConfig{
-		{
-			Param: "name",
-		},
-		{
-			Param:  "state",
-			Valuer: func(v string) interface{} { return domain.AgentState(v) },
-		},
-		{
-			Param:  "countryCode",
-			Query:  "country_code",
-			Valuer: func(v string) interface{} { return v },
-		},
-		{
-			Param: "providerId",
-			Query: "provider_id",
-			Valuer: func(v string) interface{} {
-				id, err := domain.ParseID(v)
-				if err != nil {
-					return nil
-				}
-				return id
-			},
-		},
-		{
-			Param: "agentTypeId",
-			Query: "agent_type_id",
-			Valuer: func(v string) interface{} {
-				id, err := domain.ParseID(v)
-				if err != nil {
-					return nil
-				}
-				return id
-			},
-		},
-	})
-	sorting := ParseSorting(r)
-	pagination := ParsePagination(r)
+	filter := parseSimpleFilter(r)
+	sorting := parseSorting(r)
+	pagination := parsePagination(r)
 
-	result, err := h.repo.List(r.Context(), filters, sorting, pagination)
+	result, err := h.repo.List(r.Context(), filter, sorting, pagination)
 	if err != nil {
-		render.Render(w, r, ErrInternalServer(err))
+		render.Render(w, r, ErrDomain(err))
 		return
 	}
 
-	response := make([]*AgentResponse, len(result.Items))
-	for i, agent := range result.Items {
-		response[i] = agentToResponse(&agent)
-	}
-
-	render.JSON(w, r, &PaginatedResponse[*AgentResponse]{
-		Items:       response,
-		TotalItems:  result.TotalItems,
-		TotalPages:  result.TotalPages,
-		CurrentPage: result.CurrentPage,
-		HasNext:     result.HasNext,
-		HasPrev:     result.HasPrev,
-	})
+	render.JSON(w, r, NewPaginatedResponse(result, agentToResponse))
 }
 
 func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
@@ -254,7 +207,7 @@ func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Save(r.Context(), agent); err != nil {
-		render.Render(w, r, ErrInternalServer(err))
+		render.Render(w, r, ErrInternal(err))
 		return
 	}
 
@@ -275,7 +228,7 @@ func (h *AgentHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Delete(r.Context(), id); err != nil {
-		render.Render(w, r, ErrInternalServer(err))
+		render.Render(w, r, ErrInternal(err))
 		return
 	}
 

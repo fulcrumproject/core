@@ -33,7 +33,7 @@ type AgentTypeListResponse struct {
 // agentTypeToResponse converts a domain.AgentType to an AgentTypeResponse
 func agentTypeToResponse(at *domain.AgentType) *AgentTypeListResponse {
 	return &AgentTypeListResponse{
-		ID:        uuid.UUID(at.ID).String(),
+		ID:        at.ID.String(),
 		Name:      at.Name,
 		CreatedAt: at.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt: at.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
@@ -97,33 +97,15 @@ func (h *AgentTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AgentTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	// Parse request parameters using shared utilities
-	filters := ParseFilters(r, []FilterConfig{
-		{
-			Param: "name",
-			Query: "name ? LIKE ",
-		},
-	})
-	sorting := ParseSorting(r)
-	pagination := ParsePagination(r)
+	filter := parseSimpleFilter(r) // name
+	sorting := parseSorting(r)
+	pagination := parsePagination(r)
 
-	result, err := h.repo.List(r.Context(), filters, sorting, pagination)
+	result, err := h.repo.List(r.Context(), filter, sorting, pagination)
 	if err != nil {
-		render.Render(w, r, ErrInternalServer(err))
+		render.Render(w, r, ErrDomain(err))
 		return
 	}
 
-	response := make([]*AgentTypeListResponse, len(result.Items))
-	for i, agentType := range result.Items {
-		response[i] = agentTypeToResponse(&agentType)
-	}
-
-	render.JSON(w, r, &PaginatedResponse[*AgentTypeListResponse]{
-		Items:       response,
-		TotalItems:  result.TotalItems,
-		TotalPages:  result.TotalPages,
-		CurrentPage: result.CurrentPage,
-		HasNext:     result.HasNext,
-		HasPrev:     result.HasPrev,
-	})
+	render.JSON(w, r, NewPaginatedResponse(result, agentTypeToResponse))
 }

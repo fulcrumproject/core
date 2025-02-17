@@ -9,6 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
+// ErrProviderHasConnectedAgents is returned when attempting to delete a provider that has connected agents
+var ErrProviderHasConnectedAgents = &ErrResponse{
+	HTTPStatusCode: http.StatusConflict,
+	StatusText:     "Provider has connected agents",
+	ErrorText:      "Cannot delete provider while it has connected agents",
+}
+
 // CreateUpdateProviderRequest represents the request body for creating a provider
 type CreateUpdateProviderRequest struct {
 	Name        string               `json:"name"`
@@ -42,11 +49,12 @@ func provderToResponse(p *domain.Provider) *ProviderResponse {
 }
 
 type ProviderHandler struct {
-	repo domain.ProviderRepository
+	repo      domain.ProviderRepository
+	agentRepo domain.AgentRepository
 }
 
-func NewProviderHandler(repo domain.ProviderRepository) *ProviderHandler {
-	return &ProviderHandler{repo: repo}
+func NewProviderHandler(repo domain.ProviderRepository, agentRepo domain.AgentRepository) *ProviderHandler {
+	return &ProviderHandler{repo: repo, agentRepo: agentRepo}
 }
 
 // Routes returns the router with all provider routes registered
@@ -85,7 +93,7 @@ func (h *ProviderHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Create(r.Context(), provider); err != nil {
-		render.Render(w, r, ErrInternalServer(err))
+		render.Render(w, r, ErrInternal(err))
 		return
 	}
 
@@ -110,42 +118,17 @@ func (h *ProviderHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProviderHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	// Parse request parameters using shared utilities
-	filters := ParseFilters(r, []FilterConfig{
-		{
-			Param: "name",
-		},
-		{
-			Param:  "state",
-			Valuer: func(v string) interface{} { return domain.ProviderState(v) },
-		},
-		{
-			Param:  "countryCode",
-			Valuer: func(v string) interface{} { return domain.CountryCode(v) },
-		},
-	})
-	sorting := ParseSorting(r)
-	pagination := ParsePagination(r)
+	filter := parseSimpleFilter(r)
+	sorting := parseSorting(r)
+	pagination := parsePagination(r)
 
-	result, err := h.repo.List(r.Context(), filters, sorting, pagination)
+	result, err := h.repo.List(r.Context(), filter, sorting, pagination)
 	if err != nil {
-		render.Render(w, r, ErrInternalServer(err))
+		render.Render(w, r, ErrDomain(err))
 		return
 	}
 
-	response := make([]*ProviderResponse, len(result.Items))
-	for i, provider := range result.Items {
-		response[i] = provderToResponse(&provider)
-	}
-
-	render.JSON(w, r, &PaginatedResponse[*ProviderResponse]{
-		Items:       response,
-		TotalItems:  result.TotalItems,
-		TotalPages:  result.TotalPages,
-		CurrentPage: result.CurrentPage,
-		HasNext:     result.HasNext,
-		HasPrev:     result.HasPrev,
-	})
+	render.JSON(w, r, NewPaginatedResponse(result, provderToResponse))
 }
 
 func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
@@ -179,7 +162,7 @@ func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Save(r.Context(), provider); err != nil {
-		render.Render(w, r, ErrInternalServer(err))
+		render.Render(w, r, ErrInternal(err))
 		return
 	}
 
@@ -199,8 +182,10 @@ func (h *ProviderHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO numOfAgents, err := h.agentRepo.Count(c.Context(), provider.ID)
+
 	if err := h.repo.Delete(r.Context(), id); err != nil {
-		render.Render(w, r, ErrInternalServer(err))
+		render.Render(w, r, ErrInternal(err))
 		return
 	}
 

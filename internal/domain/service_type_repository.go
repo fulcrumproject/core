@@ -11,8 +11,8 @@ type ServiceTypeRepository interface {
 	FindByID(ctx context.Context, id UUID) (*ServiceType, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, filters Filters, sorting *Sorting, pagination *Pagination) (*PaginatedResult[ServiceType], error)
+	List(ctx context.Context, filter *SimpleFilter, sorting *Sorting, pagination *Pagination) (*PaginatedResult[ServiceType], error)
 
 	// Count returns the number of entities matching the provided filters
-	Count(ctx context.Context, filters Filters) (int64, error)
+	Count(ctx context.Context, filter *SimpleFilter) (int64, error)
 }

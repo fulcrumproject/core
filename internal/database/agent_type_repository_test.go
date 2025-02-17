@@ -72,17 +72,17 @@ func TestAgentTypeRepository(t *testing.T) {
 			agentType := createTestAgentType(t)
 			require.NoError(t, repo.Create(ctx, agentType))
 
-			filters := domain.Filters{
-				"name": agentType.Name,
+			filter := &domain.SimpleFilter{
+				Field: "name",
+				Value: agentType.Name,
 			}
-
 			pagination := &domain.Pagination{
 				Page:     1,
 				PageSize: 10,
 			}
 
 			// Execute
-			result, err := repo.List(ctx, filters, nil, pagination)
+			result, err := repo.List(ctx, filter, nil, pagination)
 
 			// Assert
 			require.NoError(t, err)
@@ -104,8 +104,8 @@ func TestAgentTypeRepository(t *testing.T) {
 			require.NoError(t, repo.Create(ctx, agentType2))
 
 			sorting := &domain.Sorting{
-				SortField: "name",
-				SortOrder: "desc",
+				Field: "name",
+				Order: "desc",
 			}
 
 			pagination := &domain.Pagination{

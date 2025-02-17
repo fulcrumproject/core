@@ -2,8 +2,8 @@
   - [x] Provider
     - [x] CRUD
     - [ ] Delete solo se senza agent
-  - [ ] Agent
-    - [ ] CRUD
+  - [x] Agent
+    - [x] CRUD
     - [ ] Delete solo se senza service
     - [ ] Usiamo un Token
     - [ ] Timer Disconnected

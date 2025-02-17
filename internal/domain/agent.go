@@ -35,6 +35,14 @@ func (s AgentState) IsValid() bool {
 	}
 }
 
+func ParseAgentState(value string) (AgentState, error) {
+	state := AgentState(value)
+	if !state.IsValid() {
+		return state, ErrInvalidAgentState
+	}
+	return state, nil
+}
+
 // Agent represents a service manager agent
 type Agent struct {
 	BaseEntity

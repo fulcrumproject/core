@@ -3,7 +3,6 @@ package domain
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -56,6 +55,11 @@ func (c CountryCode) Validate() error {
 	return nil
 }
 
+func ParseCountryCode(value string) (CountryCode, error) {
+	code := CountryCode(value)
+	return code, code.Validate()
+}
+
 // BaseEntity provides common fields for all entities
 type BaseEntity struct {
 	ID        UUID      `gorm:"type:uuid;primary_key"`
@@ -72,32 +76,17 @@ func (b *BaseEntity) BeforeCreate(tx *gorm.DB) error {
 }
 
 // UUID represents a unique identifier
-type UUID datatypes.UUID
+type UUID = datatypes.UUID
 
 func NewUUID() UUID {
 	return UUID(uuid.Must(uuid.NewV7()))
-}
-
-// String returns the string representation of the UUID
-func (u UUID) String() string {
-	return uuid.UUID(u).String()
-}
-
-// Scan implements the sql.Scanner interface
-func (u *UUID) Scan(value interface{}) error {
-	return (*datatypes.UUID)(u).Scan(value)
-}
-
-// Value implements the driver.Valuer interface
-func (u UUID) Value() (driver.Value, error) {
-	return datatypes.UUID(u).Value()
 }
 
 // parseID is a helper function to parse and validate IDs
 func ParseID(id string) (UUID, error) {
 	uid, err := uuid.Parse(id)
 	if err != nil {
-		return UUID{}, errors.New("invalid UUID format")
+		return UUID{}, err
 	}
 	return UUID(uid), nil
 }
