@@ -10,10 +10,10 @@ import (
 
 // ServiceTypeResponse represents the response body for service type operations
 type ServiceTypeResponse struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
+	ID        string      `json:"id"`
+	Name      string      `json:"name"`
+	CreatedAt JSONUTCTime `json:"createdAt"`
+	UpdatedAt JSONUTCTime `json:"updatedAt"`
 }
 
 // serviceTypeToResponse converts a domain.ServiceType to a ServiceTypeResponse
@@ -21,8 +21,8 @@ func serviceTypeToResponse(st *domain.ServiceType) *ServiceTypeResponse {
 	return &ServiceTypeResponse{
 		ID:        st.ID.String(),
 		Name:      st.Name,
-		CreatedAt: st.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt: st.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		CreatedAt: JSONUTCTime(st.CreatedAt),
+		UpdatedAt: JSONUTCTime(st.UpdatedAt),
 	}
 }
 

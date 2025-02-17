@@ -31,9 +31,9 @@ type AgentResponse struct {
 	ProviderID  string                 `json:"providerId"`
 	AgentTypeID string                 `json:"agentTypeId"`
 	Provider    *ProviderResponse      `json:"provider,omitempty"`
-	AgentType   *AgentTypeListResponse `json:"agentType,omitempty"`
-	CreatedAt   string                 `json:"createdAt"`
-	UpdatedAt   string                 `json:"updatedAt"`
+	AgentType   *AgentTypeResponse     `json:"agentType,omitempty"`
+	CreatedAt   JSONUTCTime            `json:"createdAt"`
+	UpdatedAt   JSONUTCTime            `json:"updatedAt"`
 }
 
 // agentToResponse converts a domain.Agent to an AgentResponse
@@ -47,8 +47,8 @@ func agentToResponse(a *domain.Agent) *AgentResponse {
 		Properties:  a.Properties,
 		ProviderID:  a.ProviderID.String(),
 		AgentTypeID: a.AgentTypeID.String(),
-		CreatedAt:   a.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   a.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		CreatedAt:   JSONUTCTime(a.CreatedAt),
+		UpdatedAt:   JSONUTCTime(a.UpdatedAt),
 	}
 
 	if a.Provider != nil {

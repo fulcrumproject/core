@@ -51,7 +51,9 @@ func (r *agentTypeRepository) List(ctx context.Context, filter *domain.SimpleFil
 	var agentTypes []domain.AgentType
 	var totalItems int64
 
-	query := r.db.WithContext(ctx).Model(&domain.AgentType{})
+	query := r.db.WithContext(ctx).
+		Preload("ServiceTypes").
+		Model(&domain.AgentType{})
 	query, err := applySimpleFilter(query, filter, agentTypeFilterConfigs)
 	if err != nil {
 		return nil, err

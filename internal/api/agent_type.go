@@ -6,56 +6,29 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
 )
 
-// AgentTypeGetResponse represents the detailed response for single agent type operations
-type AgentTypeGetResponse struct {
-	AgentTypeListResponse
-	ServiceTypes []AgentTypeServiceTypeResponse `json:"serviceTypes"`
-}
-
-type AgentTypeServiceTypeResponse struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
-}
-
-// AgentTypeListResponse represents the response body for agent type operations
-type AgentTypeListResponse struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
+// AgentTypeResponse represents the response body for agent type operations
+type AgentTypeResponse struct {
+	ID           string                 `json:"id"`
+	Name         string                 `json:"name"`
+	CreatedAt    JSONUTCTime            `json:"createdAt"`
+	UpdatedAt    JSONUTCTime            `json:"updatedAt"`
+	ServiceTypes []*ServiceTypeResponse `json:"serviceTypes"`
 }
 
 // agentTypeToResponse converts a domain.AgentType to an AgentTypeResponse
-func agentTypeToResponse(at *domain.AgentType) *AgentTypeListResponse {
-	return &AgentTypeListResponse{
-		ID:        at.ID.String(),
-		Name:      at.Name,
-		CreatedAt: at.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt: at.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+func agentTypeToResponse(at *domain.AgentType) *AgentTypeResponse {
+	response := &AgentTypeResponse{
+		ID:           at.ID.String(),
+		Name:         at.Name,
+		CreatedAt:    JSONUTCTime(at.CreatedAt),
+		UpdatedAt:    JSONUTCTime(at.UpdatedAt),
+		ServiceTypes: make([]*ServiceTypeResponse, 0),
 	}
-}
-
-// agentTypeToDetailResponse converts a domain.AgentType to an AgentTypeDetailResponse
-func agentTypeToDetailResponse(at *domain.AgentType) *AgentTypeGetResponse {
-	response := &AgentTypeGetResponse{
-		AgentTypeListResponse: *agentTypeToResponse(at),
-		ServiceTypes:          make([]AgentTypeServiceTypeResponse, len(at.ServiceTypes)),
+	for _, st := range at.ServiceTypes {
+		response.ServiceTypes = append(response.ServiceTypes, serviceTypeToResponse(&st))
 	}
-
-	for i, st := range at.ServiceTypes {
-		response.ServiceTypes[i] = AgentTypeServiceTypeResponse{
-			ID:        uuid.UUID(st.ID).String(),
-			Name:      st.Name,
-			CreatedAt: st.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-			UpdatedAt: st.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		}
-	}
-
 	return response
 }
 
@@ -93,7 +66,7 @@ func (h *AgentTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.JSON(w, r, agentTypeToDetailResponse(agentType))
+	render.JSON(w, r, agentTypeToResponse(agentType))
 }
 
 func (h *AgentTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {

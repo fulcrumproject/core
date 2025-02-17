@@ -30,8 +30,8 @@ type ProviderResponse struct {
 	State       domain.ProviderState `json:"state"`
 	CountryCode string               `json:"countryCode,omitempty"`
 	Attributes  map[string][]string  `json:"attributes,omitempty"`
-	CreatedAt   string               `json:"createdAt"`
-	UpdatedAt   string               `json:"updatedAt"`
+	CreatedAt   JSONUTCTime          `json:"createdAt"`
+	UpdatedAt   JSONUTCTime          `json:"updatedAt"`
 }
 
 // provderToResponse converts a domain.Provider to a ProviderResponse
@@ -42,8 +42,8 @@ func provderToResponse(p *domain.Provider) *ProviderResponse {
 		State:       p.State,
 		CountryCode: string(p.CountryCode),
 		Attributes:  map[string][]string(p.Attributes),
-		CreatedAt:   p.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   p.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		CreatedAt:   JSONUTCTime(p.CreatedAt),
+		UpdatedAt:   JSONUTCTime(p.UpdatedAt),
 	}
 }
 
