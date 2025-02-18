@@ -6,8 +6,7 @@
     - [x] CRUD
     - [x] Delete solo se senza service
     - [ ] Auth con Token
-    - [ ] Timer Disconnected
-    - [ ] Health Endpoint
+    - [ ] Health Endpoint + Timer Disconnected
   - [x] AgentType
     - [x] Seed
     - [x] Endpoint lettura

@@ -1,0 +1,41 @@
+### Test Metric Type API
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+
+### Create a new metric type
+# @name createMetricType
+POST {{baseUrl}}/metric-types
+Content-Type: application/json
+
+{
+    "name": "CPU Usage",
+    "entityType": "Service"
+}
+
+### Extract metric type ID
+@metricTypeId = {{createMetricType.response.body.$.id}}
+
+### Get a metric type by ID
+GET {{baseUrl}}/metric-types/{{metricTypeId}}
+
+### List all metric types
+GET {{baseUrl}}/metric-types
+
+### List metric types with filters
+GET {{baseUrl}}/metric-types?name=CPU
+
+### List metric types with pagination
+GET {{baseUrl}}/metric-types?page=1&pageSize=10
+
+### Update a metric type
+PUT {{baseUrl}}/metric-types/{{metricTypeId}}
+Content-Type: application/json
+
+{
+    "name": "Updated CPU Usage",
+    "entityType": "Agent"
+}
+
+### Delete a metric type
+DELETE {{baseUrl}}/metric-types/{{metricTypeId}}

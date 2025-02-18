@@ -73,6 +73,9 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.ServiceType{},
 		&domain.ServiceGroup{},
 		&domain.Service{},
+		&domain.MetricType{},
+		&domain.MetricEntry{},
+		&domain.AuditEntry{},
 	)
 }
 

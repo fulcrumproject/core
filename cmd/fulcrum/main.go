@@ -31,6 +31,7 @@ func main() {
 	agentRepo := database.NewAgentRepository(db)
 	serviceGroupRepo := database.NewServiceGroupRepository(db)
 	serviceRepo := database.NewServiceRepository(db)
+	metricTypeRepo := database.NewMetricTypeRepository(db)
 
 	// Initialize handlers
 	agentTypeHandler := api.NewAgentTypeHandler(agentTypeRepo)
@@ -39,6 +40,7 @@ func main() {
 	agentHandler := api.NewAgentHandler(agentRepo)
 	serviceGroupHandler := api.NewServiceGroupHandler(serviceGroupRepo, serviceRepo)
 	serviceHandler := api.NewServiceHandler(serviceRepo)
+	metricTypeHandler := api.NewMetricTypeHandler(metricTypeRepo)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -55,6 +57,7 @@ func main() {
 		r.Mount("/agents", agentHandler.Routes())
 		r.Mount("/service-groups", serviceGroupHandler.Routes())
 		r.Mount("/services", serviceHandler.Routes())
+		r.Mount("/metric-types", metricTypeHandler.Routes())
 	})
 
 	// Start server
