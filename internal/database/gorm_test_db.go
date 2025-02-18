@@ -1,7 +1,6 @@
 package database
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -106,48 +105,5 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 	sql = fmt.Sprintf("DROP DATABASE IF EXISTS %s", tdb.DBName)
 	if err := adminDB.Exec(sql).Error; err != nil {
 		t.Errorf("Failed to drop test database: %v", err)
-	}
-}
-
-// TruncateTables removes all data from the tables
-func (tdb *TestDB) TruncateTables(t *testing.T) {
-	tables := []string{
-		"agent_type_service_types",
-		"agents",
-		"service_types",
-		"agent_types",
-		"providers",
-		"service_groups",
-	}
-
-	for _, table := range tables {
-		if err := tdb.DB.Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", table)).Error; err != nil {
-			t.Errorf("Failed to truncate table %s: %v", table, err)
-		}
-	}
-}
-
-// RunWithinTransaction executes a function within a transaction
-func (tdb *TestDB) RunWithinTransaction(t *testing.T, fn func(context.Context, *gorm.DB) error) {
-	tx := tdb.DB.Begin()
-	if tx.Error != nil {
-		t.Fatalf("Failed to begin transaction: %v", tx.Error)
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			t.Fatalf("Panic in transaction: %v", r)
-		}
-	}()
-
-	ctx := context.Background()
-	if err := fn(ctx, tx); err != nil {
-		tx.Rollback()
-		t.Fatalf("Transaction failed: %v", err)
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		t.Fatalf("Failed to commit transaction: %v", err)
 	}
 }
