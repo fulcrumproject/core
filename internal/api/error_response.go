@@ -21,7 +21,7 @@ func ErrDomain(err error) render.Renderer {
 	if errors.As(err, &domain.InvalidInputError{}) {
 		return ErrInvalidRequest(err)
 	}
-	if errors.As(err, &domain.InvalidInputError{}) {
+	if errors.As(err, &domain.NotFoundError{}) {
 		return ErrNotFound()
 	}
 	return ErrInternal(err)

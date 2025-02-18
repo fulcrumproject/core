@@ -4,8 +4,8 @@
     - [x] Delete solo se senza agent
   - [ ] Agent
     - [x] CRUD
-    - [ ] Delete solo se senza service
-    - [ ] Usiamo un Token
+    - [x] Delete solo se senza service
+    - [ ] Auth con Token
     - [ ] Timer Disconnected
     - [ ] Health Endpoint
   - [x] AgentType
