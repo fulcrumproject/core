@@ -1,7 +1,7 @@
 - Core
   - [x] Provider
     - [x] CRUD
-    - [ ] Delete solo se senza agent
+    - [x] Delete solo se senza agent
   - [x] Agent
     - [x] CRUD
     - [ ] Delete solo se senza service

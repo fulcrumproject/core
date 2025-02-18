@@ -90,3 +90,12 @@ func (r *agentRepository) Count(ctx context.Context, filter *domain.SimpleFilter
 	}
 	return count, nil
 }
+
+func (r *agentRepository) CountByProvider(ctx context.Context, providerID domain.UUID) (int64, error) {
+	var count int64
+	result := r.db.WithContext(ctx).Model(&domain.Agent{}).Where("provider_id = ?", providerID).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}

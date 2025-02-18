@@ -1,19 +1,13 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
-
-// ErrProviderHasConnectedAgents is returned when attempting to delete a provider that has connected agents
-var ErrProviderHasConnectedAgents = &ErrResponse{
-	HTTPStatusCode: http.StatusConflict,
-	StatusText:     "Provider has connected agents",
-	ErrorText:      "Cannot delete provider while it has connected agents",
-}
 
 // CreateUpdateProviderRequest represents the request body for creating a provider
 type CreateUpdateProviderRequest struct {
@@ -175,13 +169,22 @@ func (h *ProviderHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.repo.FindByID(r.Context(), id)
+	provider, err := h.repo.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
 		return
 	}
 
-	// TODO numOfAgents, err := h.agentRepo.Count(c.Context(), provider.ID)
+	numOfAgents, err := h.agentRepo.CountByProvider(r.Context(), provider.ID)
+	if err != nil {
+		render.Render(w, r, ErrInternal(err))
+		return
+	}
+
+	if numOfAgents > 0 {
+		render.Render(w, r, ErrInvalidRequest(errors.New("cannot delete provider with associated agents")))
+		return
+	}
 
 	if err := h.repo.Delete(r.Context(), id); err != nil {
 		render.Render(w, r, ErrInternal(err))
