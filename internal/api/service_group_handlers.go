@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -143,21 +144,21 @@ func (h *ServiceGroupHandler) handleDelete(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	_, err = h.repo.FindByID(r.Context(), id)
+	serviceGroup, err := h.repo.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
 		return
 	}
 
-	// numOfServices, err := h.serviceRepo.CountByGroup(r.Context(), serviceGroup.ID)
-	// if err != nil {
-	// 	render.Render(w, r, ErrInternal(err))
-	// 	return
-	// }
-	// if numOfServices > 0 {
-	// 	render.Render(w, r, ErrInvalidRequest(errors.New("cannot delete service group with associated services")))
-	// 	return
-	// }
+	numOfServices, err := h.serviceRepo.CountByGroup(r.Context(), serviceGroup.ID)
+	if err != nil {
+		render.Render(w, r, ErrInternal(err))
+		return
+	}
+	if numOfServices > 0 {
+		render.Render(w, r, ErrInvalidRequest(errors.New("cannot delete service group with associated services")))
+		return
+	}
 
 	if err := h.repo.Delete(r.Context(), id); err != nil {
 		render.Render(w, r, ErrInternal(err))

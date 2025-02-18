@@ -2,7 +2,7 @@
   - [x] Provider
     - [x] CRUD
     - [x] Delete solo se senza agent
-  - [x] Agent
+  - [ ] Agent
     - [x] CRUD
     - [ ] Delete solo se senza service
     - [ ] Usiamo un Token
@@ -15,11 +15,11 @@
   - [x] ServiceType
     - [x] Seed
     - [x] Endpoint lettura
-  - [ ] ServiceGroup
-    - [ ] CRUD
-    - [ ] Delete solo se vuoto per ora
+  - [x] ServiceGroup
+    - [x] CRUD
+    - [x] Delete solo se vuoto per ora
   - [ ] Service
-    - [ ] CRUD
+    - [x] CRUD
     - [ ] Post del task e match degli attribute sul nuovo
   - [ ] Metric
     - [ ] Endpoint aggiunta
