@@ -95,7 +95,7 @@ func (h *ProviderHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProviderHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id, err := domain.ParseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -125,7 +125,7 @@ func (h *ProviderHandler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id, err := domain.ParseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -163,7 +163,7 @@ func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProviderHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id, err := domain.ParseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return

@@ -92,13 +92,13 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	providerID, err := domain.ParseID(req.ProviderID)
+	providerID, err := domain.ParseUUID(req.ProviderID)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
 
-	agentTypeID, err := domain.ParseID(req.AgentTypeID)
+	agentTypeID, err := domain.ParseUUID(req.AgentTypeID)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -130,7 +130,7 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AgentHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id, err := domain.ParseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -160,7 +160,7 @@ func (h *AgentHandler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id, err := domain.ParseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -178,13 +178,13 @@ func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	providerID, err := domain.ParseID(req.ProviderID)
+	providerID, err := domain.ParseUUID(req.ProviderID)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
 
-	agentTypeID, err := domain.ParseID(req.AgentTypeID)
+	agentTypeID, err := domain.ParseUUID(req.AgentTypeID)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -214,7 +214,7 @@ func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AgentHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id, err := domain.ParseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return

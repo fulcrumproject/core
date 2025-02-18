@@ -63,8 +63,8 @@ var agentFilterConfigs = map[string]FilterConfig{
 	"name":        {},
 	"state":       {Query: "state", Valuer: func(v string) (interface{}, error) { return domain.ParseAgentState(v) }},
 	"countryCode": {Query: "country_code", Valuer: func(v string) (interface{}, error) { return domain.ParseCountryCode(v) }},
-	"providerId":  {Query: "provider_id", Valuer: func(v string) (interface{}, error) { return domain.ParseID(v) }},
-	"agentTypeId": {Query: "agent_type_id", Valuer: func(v string) (interface{}, error) { return domain.ParseID(v) }},
+	"providerId":  {Query: "provider_id", Valuer: func(v string) (interface{}, error) { return domain.ParseUUID(v) }},
+	"agentTypeId": {Query: "agent_type_id", Valuer: func(v string) (interface{}, error) { return domain.ParseUUID(v) }},
 }
 
 func (r *agentRepository) List(ctx context.Context, filter *domain.SimpleFilter, sorting *domain.Sorting, pagination *domain.Pagination) (*domain.PaginatedResult[domain.Agent], error) {

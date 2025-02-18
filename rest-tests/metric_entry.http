@@ -1,0 +1,120 @@
+### Test Metric Entry API
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+
+### Create a provider for testing
+# @name createProvider
+POST {{baseUrl}}/providers
+Content-Type: application/json
+
+{
+    "name": "Test Provider",
+    "state": "Enabled",
+    "countryCode": "US",
+    "attributes": {
+        "type": ["test"]
+    }
+}
+
+### Extract provider ID
+@providerId = {{createProvider.response.body.$.id}}
+
+### Get an agent type for testing
+# @name getAgentTypes
+GET {{baseUrl}}/agent-types
+
+### Extract first agent type ID
+@agentTypeId = {{getAgentTypes.response.body.$.items[0].id}}
+
+### Get a service type for testing
+# @name getServiceTypes
+GET {{baseUrl}}/service-types
+
+### Extract first agent type ID
+@serviceTypeId = {{getServiceTypes.response.body.$.items[0].id}}
+
+### Create an agent
+# @name createAgent
+POST {{baseUrl}}/agents
+Content-Type: application/json
+
+{
+    "name": "Test Agent",
+    "state": "Connected",
+    "tokenHash": "test-token-hash",
+    "countryCode": "US",
+    "agentTypeId": "{{agentTypeId}}",
+    "providerId": "{{providerId}}"
+}
+
+### Extract agent ID
+@agentId = {{createAgent.response.body.$.id}}
+
+### Create a service group
+# @name createServiceGroup
+POST {{baseUrl}}/service-groups
+Content-Type: application/json
+
+{
+    "name": "Test Service Group"
+}
+
+### Extract service group ID
+@serviceGroupId = {{createServiceGroup.response.body.$.id}}
+
+### Create a new service
+# @name createService
+POST {{baseUrl}}/services
+Content-Type: application/json
+
+{
+    "name": "Test Service",
+    "state": "Created",
+    "attributes": {
+        "environment": ["production"],
+        "region": ["us-west"]
+    },
+    "resources": {
+        "cpu": 2,
+        "memory": "4GB"
+    },
+    "agentId": "{{agentId}}",
+    "serviceTypeId": "{{serviceTypeId}}",
+    "groupId": "{{serviceGroupId}}"
+}
+
+### Extract service ID
+@serviceId = {{createService.response.body.$.id}}
+
+### Create a metric type for testing
+# @name createMetricType
+POST {{baseUrl}}/metric-types
+Content-Type: application/json
+
+{
+    "name": "test-metric",
+    "entityType": "Service"
+}
+
+### Extract metric type ID
+@metricTypeId = {{createMetricType.response.body.$.id}}
+
+### Create a new metric entry
+# @name createMetricEntry
+POST {{baseUrl}}/metric-entries
+Content-Type: application/json
+
+{
+    "agentId": "{{agentId}}",
+    "serviceId": "{{serviceId}}",
+    "resourceId": "test-resource",
+    "value": 42.5,
+    "typeId": "{{metricTypeId}}"
+}
+
+### List all metric entries
+GET {{baseUrl}}/metric-entries
+
+### List metric entries with pagination
+GET {{baseUrl}}/metric-entries?page=1&pageSize=10

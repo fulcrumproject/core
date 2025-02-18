@@ -48,7 +48,7 @@ func (h *ServiceTypeHandler) Routes() chi.Router {
 }
 
 func (h *ServiceTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id, err := domain.ParseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return

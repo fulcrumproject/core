@@ -2,11 +2,9 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"fulcrumproject.org/core/internal/domain"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -265,19 +263,4 @@ func TestAgentRepository(t *testing.T) {
 			assert.ErrorAs(t, err, &domain.NotFoundError{})
 		})
 	})
-}
-
-func createTestAgent(t *testing.T, providerID, agentTypeID domain.UUID, state domain.AgentState) *domain.Agent {
-	t.Helper()
-	randomSuffix := uuid.New().String()
-	return &domain.Agent{
-		Name:        fmt.Sprintf("Test Agent %s", randomSuffix),
-		State:       state,
-		TokenHash:   fmt.Sprintf("token-hash-%s", randomSuffix),
-		CountryCode: "US",
-		Attributes:  domain.Attributes{"key": []string{"value"}},
-		Properties:  map[string]interface{}{"prop": "value"},
-		ProviderID:  providerID,
-		AgentTypeID: agentTypeID,
-	}
 }

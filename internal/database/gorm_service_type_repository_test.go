@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -249,13 +248,4 @@ func TestServiceTypeRepository(t *testing.T) {
 			assert.Equal(t, int64(0), count)
 		})
 	})
-}
-
-func createTestServiceType(t *testing.T) *domain.ServiceType {
-	t.Helper()
-	randomSuffix := uuid.New().String()
-
-	return &domain.ServiceType{
-		Name: fmt.Sprintf("Test Service Type %s", randomSuffix),
-	}
 }

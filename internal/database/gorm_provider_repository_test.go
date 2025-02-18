@@ -2,11 +2,9 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"fulcrumproject.org/core/internal/domain"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -218,15 +216,4 @@ func TestProviderRepository(t *testing.T) {
 			assert.ErrorAs(t, err, &domain.NotFoundError{})
 		})
 	})
-}
-
-func createTestProvider(t *testing.T, state domain.ProviderState) *domain.Provider {
-	t.Helper()
-	randomSuffix := uuid.New().String()
-	return &domain.Provider{
-		Name:        fmt.Sprintf("Test Provider %s", randomSuffix),
-		State:       state,
-		CountryCode: "US",
-		Attributes:  domain.Attributes{"key": []string{"value"}},
-	}
 }

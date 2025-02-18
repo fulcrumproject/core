@@ -100,13 +100,13 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	agentID, err := domain.ParseID(req.AgentID)
+	agentID, err := domain.ParseUUID(req.AgentID)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
 
-	serviceTypeID, err := domain.ParseID(req.ServiceTypeID)
+	serviceTypeID, err := domain.ParseUUID(req.ServiceTypeID)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -122,7 +122,7 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.GroupID != "" {
-		groupID, err := domain.ParseID(req.GroupID)
+		groupID, err := domain.ParseUUID(req.GroupID)
 		if err != nil {
 			render.Render(w, r, ErrInvalidRequest(err))
 			return
@@ -140,7 +140,7 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServiceHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id, err := domain.ParseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -170,7 +170,7 @@ func (h *ServiceHandler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServiceHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id, err := domain.ParseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -188,13 +188,13 @@ func (h *ServiceHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	agentID, err := domain.ParseID(req.AgentID)
+	agentID, err := domain.ParseUUID(req.AgentID)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
 
-	serviceTypeID, err := domain.ParseID(req.ServiceTypeID)
+	serviceTypeID, err := domain.ParseUUID(req.ServiceTypeID)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -209,7 +209,7 @@ func (h *ServiceHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	service.ServiceTypeID = serviceTypeID
 
 	if req.GroupID != "" {
-		groupID, err := domain.ParseID(req.GroupID)
+		groupID, err := domain.ParseUUID(req.GroupID)
 		if err != nil {
 			render.Render(w, r, ErrInvalidRequest(err))
 			return
@@ -228,7 +228,7 @@ func (h *ServiceHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServiceHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id, err := domain.ParseID(chi.URLParam(r, "id"))
+	id, err := domain.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return

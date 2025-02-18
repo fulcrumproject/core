@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -190,12 +189,4 @@ func TestAgentTypeRepository(t *testing.T) {
 			assert.ErrorAs(t, err, &domain.NotFoundError{})
 		})
 	})
-}
-
-func createTestAgentType(t *testing.T) *domain.AgentType {
-	t.Helper()
-	randomSuffix := uuid.New().String()
-	return &domain.AgentType{
-		Name: fmt.Sprintf("Test Agent Type %s", randomSuffix),
-	}
 }
