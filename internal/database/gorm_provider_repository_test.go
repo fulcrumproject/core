@@ -11,33 +11,36 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAgentTypeRepository(t *testing.T) {
+func TestProviderRepository(t *testing.T) {
 	// Setup test database
 	tdb := NewTestDB(t)
 	t.Logf("Temp test DB name %s", tdb.DBName)
 	defer tdb.Cleanup(t)
 
 	// Create repository instance
-	repo := NewAgentTypeRepository(tdb.DB)
+	repo := NewProviderRepository(tdb.DB)
 
 	t.Run("Create", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			agentType := createTestAgentType(t)
+			provider := createTestProvider(t, domain.ProviderEnabled)
 
 			// Execute
-			err := repo.Create(ctx, agentType)
+			err := repo.Create(ctx, provider)
 
 			// Assert
 			require.NoError(t, err)
-			assert.NotEmpty(t, agentType.ID)
+			assert.NotEmpty(t, provider.ID)
 
 			// Verify in database
-			found, err := repo.FindByID(ctx, agentType.ID)
+			found, err := repo.FindByID(ctx, provider.ID)
 			require.NoError(t, err)
-			assert.Equal(t, agentType.Name, found.Name)
+			assert.Equal(t, provider.Name, found.Name)
+			assert.Equal(t, provider.State, found.State)
+			assert.Equal(t, provider.CountryCode, found.CountryCode)
+			assert.Equal(t, provider.Attributes, found.Attributes)
 		})
 	})
 
@@ -46,10 +49,10 @@ func TestAgentTypeRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			agentType1 := createTestAgentType(t)
-			require.NoError(t, repo.Create(ctx, agentType1))
-			agentType2 := createTestAgentType(t)
-			require.NoError(t, repo.Create(ctx, agentType2))
+			provider1 := createTestProvider(t, domain.ProviderEnabled)
+			require.NoError(t, repo.Create(ctx, provider1))
+			provider2 := createTestProvider(t, domain.ProviderDisabled)
+			require.NoError(t, repo.Create(ctx, provider2))
 
 			pagination := &domain.Pagination{
 				Page:     1,
@@ -60,22 +63,20 @@ func TestAgentTypeRepository(t *testing.T) {
 			result, err := repo.List(ctx, nil, nil, pagination)
 
 			// Assert
+			providers := result.Items
 			require.NoError(t, err)
-			agentTypes := result.Items
-			assert.Greater(t, len(agentTypes), 0)
+			assert.Greater(t, len(providers), 0)
 		})
 
 		t.Run("success - list with filters", func(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			agentType := createTestAgentType(t)
-			require.NoError(t, repo.Create(ctx, agentType))
-
 			filter := &domain.SimpleFilter{
-				Field: "name",
-				Value: agentType.Name,
+				Field: "state",
+				Value: "Enabled",
 			}
+
 			pagination := &domain.Pagination{
 				Page:     1,
 				PageSize: 10,
@@ -86,22 +87,22 @@ func TestAgentTypeRepository(t *testing.T) {
 
 			// Assert
 			require.NoError(t, err)
-			require.Len(t, result.Items, 1)
-			agentTypes := result.Items
-			assert.Equal(t, agentType.Name, agentTypes[0].Name)
+			for _, p := range result.Items {
+				assert.Equal(t, domain.ProviderEnabled, p.State)
+			}
 		})
 
 		t.Run("success - list with sorting", func(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			agentType1 := createTestAgentType(t)
-			agentType1.Name = "A Agent Type"
-			require.NoError(t, repo.Create(ctx, agentType1))
+			provider1 := createTestProvider(t, domain.ProviderEnabled)
+			provider1.Name = "A Provider"
+			require.NoError(t, repo.Create(ctx, provider1))
 
-			agentType2 := createTestAgentType(t)
-			agentType2.Name = "B Agent Type"
-			require.NoError(t, repo.Create(ctx, agentType2))
+			provider2 := createTestProvider(t, domain.ProviderEnabled)
+			provider2.Name = "B Provider"
+			require.NoError(t, repo.Create(ctx, provider2))
 
 			sorting := &domain.Sorting{
 				Field: "name",
@@ -125,10 +126,10 @@ func TestAgentTypeRepository(t *testing.T) {
 		t.Run("success - list with pagination", func(t *testing.T) {
 			ctx := context.Background()
 
-			// Setup - Create multiple agent types
+			// Setup - Create multiple providers
 			for i := 0; i < 5; i++ {
-				agentType := createTestAgentType(t)
-				require.NoError(t, repo.Create(ctx, agentType))
+				provider := createTestProvider(t, domain.ProviderEnabled)
+				require.NoError(t, repo.Create(ctx, provider))
 			}
 
 			pagination := &domain.Pagination{
@@ -156,46 +157,76 @@ func TestAgentTypeRepository(t *testing.T) {
 			assert.True(t, result.HasNext)
 			assert.True(t, result.HasPrev)
 
-			// Verify total count matches
+			// Verify total count
 			count, err := repo.Count(ctx, nil)
 			require.NoError(t, err)
 			assert.Equal(t, result.TotalItems, count)
 		})
 	})
 
-	t.Run("FindByID", func(t *testing.T) {
+	t.Run("Update", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			agentType := createTestAgentType(t)
-			require.NoError(t, repo.Create(ctx, agentType))
+			provider := createTestProvider(t, domain.ProviderEnabled)
+			require.NoError(t, repo.Create(ctx, provider))
+
+			// Read
+			provider, err := repo.FindByID(ctx, provider.ID)
+			require.NoError(t, err)
+
+			// Update provider
+			provider.Name = "Updated Provider"
+			provider.State = domain.ProviderDisabled
+			provider.CountryCode = "UK"
+			provider.Attributes = domain.Attributes{"new_key": []string{"new_value"}}
 
 			// Execute
-			found, err := repo.FindByID(ctx, agentType.ID)
+			err = repo.Save(ctx, provider)
 
 			// Assert
 			require.NoError(t, err)
-			assert.Equal(t, agentType.Name, found.Name)
-		})
 
-		t.Run("not found", func(t *testing.T) {
+			// Verify in database
+			updated, err := repo.FindByID(ctx, provider.ID)
+			require.NoError(t, err)
+			assert.Equal(t, "Updated Provider", updated.Name)
+			assert.Equal(t, domain.ProviderDisabled, updated.State)
+			assert.Equal(t, domain.CountryCode("UK"), updated.CountryCode)
+			assert.Equal(t, domain.Attributes{"new_key": []string{"new_value"}}, updated.Attributes)
+		})
+	})
+
+	t.Run("Delete", func(t *testing.T) {
+		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 
+			// Setup
+			provider := createTestProvider(t, domain.ProviderEnabled)
+			require.NoError(t, repo.Create(ctx, provider))
+
 			// Execute
-			found, err := repo.FindByID(ctx, domain.UUID(uuid.New()))
+			err := repo.Delete(ctx, provider.ID)
 
 			// Assert
+			require.NoError(t, err)
+
+			// Verify deletion
+			found, err := repo.FindByID(ctx, provider.ID)
 			assert.Nil(t, found)
-			assert.ErrorIs(t, err, domain.ErrNotFound)
+			assert.ErrorAs(t, err, &domain.NotFoundError{})
 		})
 	})
 }
 
-func createTestAgentType(t *testing.T) *domain.AgentType {
+func createTestProvider(t *testing.T, state domain.ProviderState) *domain.Provider {
 	t.Helper()
 	randomSuffix := uuid.New().String()
-	return &domain.AgentType{
-		Name: fmt.Sprintf("Test Agent Type %s", randomSuffix),
+	return &domain.Provider{
+		Name:        fmt.Sprintf("Test Provider %s", randomSuffix),
+		State:       state,
+		CountryCode: "US",
+		Attributes:  domain.Attributes{"key": []string{"value"}},
 	}
 }

@@ -51,7 +51,7 @@ func (r *providerRepository) FindByID(ctx context.Context, id domain.UUID) (*dom
 	err := r.db.WithContext(ctx).First(&provider, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, domain.ErrNotFound
+			return nil, domain.NotFoundError{Err: err}
 		}
 		return nil, err
 	}
@@ -70,18 +70,7 @@ func (r *providerRepository) List(ctx context.Context, filter *domain.SimpleFilt
 	var totalItems int64
 
 	query := r.db.WithContext(ctx).Model(&domain.Provider{})
-	query, err := applySimpleFilter(query, filter, providerFilterConfigs)
-	if err != nil {
-		return nil, err
-	}
-	if err := query.Count(&totalItems).Error; err != nil {
-		return nil, domain.NewInternalError(err)
-	}
-	query, err = applySorting(query, sorting)
-	if err != nil {
-		return nil, err
-	}
-	query, err = applyPagination(query, pagination)
+	query, totalItems, err := applyFindAndCount(query, filter, providerFilterConfigs, sorting, pagination)
 	if err != nil {
 		return nil, err
 	}
@@ -93,16 +82,10 @@ func (r *providerRepository) List(ctx context.Context, filter *domain.SimpleFilt
 }
 
 func (r *providerRepository) Count(ctx context.Context, filter *domain.SimpleFilter) (int64, error) {
-	var count int64
-
 	query := r.db.WithContext(ctx).Model(&domain.Provider{})
-	query, err := applySimpleFilter(query, filter, providerFilterConfigs)
+	_, count, err := applyFilterAndCount(query, filter, providerFilterConfigs)
 	if err != nil {
 		return 0, err
 	}
-	if err := query.Count(&count).Error; err != nil {
-		return 0, domain.NewInternalError(err)
-	}
-
 	return count, nil
 }

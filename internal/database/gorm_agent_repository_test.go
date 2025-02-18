@@ -262,7 +262,7 @@ func TestAgentRepository(t *testing.T) {
 			// Verify deletion
 			found, err := agentRepo.FindByID(ctx, agent.ID)
 			assert.Nil(t, found)
-			assert.ErrorIs(t, err, domain.ErrNotFound)
+			assert.ErrorAs(t, err, &domain.NotFoundError{})
 		})
 	})
 }

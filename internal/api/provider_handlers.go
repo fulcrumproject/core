@@ -80,7 +80,7 @@ func (h *ProviderHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	provider := &domain.Provider{
-		Name:        domain.Name(req.Name),
+		Name:        req.Name,
 		State:       req.State,
 		CountryCode: domain.CountryCode(req.CountryCode),
 		Attributes:  domain.Attributes(req.Attributes),
@@ -150,7 +150,7 @@ func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update fields
-	provider.Name = domain.Name(req.Name)
+	provider.Name = req.Name
 	provider.State = req.State
 	provider.CountryCode = domain.CountryCode(req.CountryCode)
 	provider.Attributes = domain.Attributes(req.Attributes)

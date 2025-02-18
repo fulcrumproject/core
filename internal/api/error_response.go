@@ -18,10 +18,10 @@ type ErrResponse struct {
 }
 
 func ErrDomain(err error) render.Renderer {
-	if errors.Is(err, domain.ErrInvalidInput) {
+	if errors.As(err, &domain.InvalidInputError{}) {
 		return ErrInvalidRequest(err)
 	}
-	if errors.Is(err, domain.ErrNotFound) {
+	if errors.As(err, &domain.InvalidInputError{}) {
 		return ErrNotFound()
 	}
 	return ErrInternal(err)

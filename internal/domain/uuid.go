@@ -1,0 +1,22 @@
+package domain
+
+import (
+	"github.com/google/uuid"
+	"gorm.io/datatypes"
+)
+
+// UUID represents a unique identifier
+type UUID = datatypes.UUID
+
+func NewUUID() UUID {
+	return UUID(uuid.Must(uuid.NewV7()))
+}
+
+// parseID is a helper function to parse and validate IDs
+func ParseID(id string) (UUID, error) {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return UUID{}, err
+	}
+	return UUID(uid), nil
+}

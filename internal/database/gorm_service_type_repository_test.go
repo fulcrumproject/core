@@ -65,7 +65,7 @@ func TestServiceTypeRepository(t *testing.T) {
 
 			// Assert
 			assert.Nil(t, found)
-			assert.ErrorIs(t, err, domain.ErrNotFound)
+			assert.ErrorAs(t, err, &domain.NotFoundError{})
 		})
 	})
 
