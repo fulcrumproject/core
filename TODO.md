@@ -20,12 +20,14 @@
   - [ ] Service
     - [x] CRUD
     - [ ] Post del task e match degli attribute sul nuovo
-  - [ ] Metric
-    - [ ] Endpoint aggiunta
-    - [ ] Endpoint lettura
-  - [ ] Audit
-    - [ ] Metodi tracciatura
-    - [ ] Endpoint lettura
+  - [x] Metric
+    - [x] Endpoint aggiunta
+    - [x] Endpoint lettura
+  - [x] Audit
+    - [x] Metodi tracciatura
+    - [x] Endpoint lettura
+  - [ ] !!! Fix sort
+  - [ ] !!! Multi column filter
   - [ ] Task Queue Endpoints
     - [ ] Read
     - [ ] Commit

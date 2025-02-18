@@ -50,4 +50,4 @@ GET {{baseUrl}}/audit-entries?filterField=authorityType&filterValue=agent
 GET {{baseUrl}}/audit-entries?filterField=type&filterValue=config_update
 
 ### List audit entries with sorting
-GET {{baseUrl}}/audit-entries?sortFiled=createdAt&sortOrder=desc
+GET {{baseUrl}}/audit-entries?sortField=createdAt&sortOrder=desc
