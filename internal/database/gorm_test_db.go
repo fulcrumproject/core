@@ -117,6 +117,7 @@ func (tdb *TestDB) TruncateTables(t *testing.T) {
 		"service_types",
 		"agent_types",
 		"providers",
+		"service_groups",
 	}
 
 	for _, table := range tables {

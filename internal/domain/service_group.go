@@ -6,3 +6,8 @@ type ServiceGroup struct {
 	Name     string    `gorm:"not null"`
 	Services []Service `gorm:"foreignKey:GroupID"`
 }
+
+// TableName returns the table name for the service
+func (ServiceGroup) TableName() string {
+	return "service_groups"
+}

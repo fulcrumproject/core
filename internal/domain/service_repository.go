@@ -21,4 +21,7 @@ type ServiceRepository interface {
 
 	// Count returns the number of entities matching the provided filters
 	Count(ctx context.Context, filter *SimpleFilter) (int64, error)
+
+	// CountByGroup returns the number of services in a specific group
+	CountByGroup(ctx context.Context, groupID UUID) (int64, error)
 }
