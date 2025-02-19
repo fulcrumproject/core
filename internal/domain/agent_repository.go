@@ -17,7 +17,7 @@ type AgentRepository interface {
 	FindByID(ctx context.Context, id UUID) (*Agent, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, filter *SimpleFilter, sorting *Sorting, pagination *Pagination) (*PaginatedResult[Agent], error)
+	List(ctx context.Context, req *PageRequest) (*PageResponse[Agent], error)
 
 	// CountByProvider returns the number of agents for a specific provider
 	CountByProvider(ctx context.Context, providerID UUID) (int64, error)

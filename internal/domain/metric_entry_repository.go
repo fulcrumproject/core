@@ -8,5 +8,5 @@ type MetricEntryRepository interface {
 	Create(ctx context.Context, entity *MetricEntry) error
 
 	// List retrieves a list of metric entries based on the provided filters
-	List(ctx context.Context, filter *SimpleFilter, sorting *Sorting, pagination *Pagination) (*PaginatedResult[MetricEntry], error)
+	List(ctx context.Context, req *PageRequest) (*PageResponse[MetricEntry], error)
 }

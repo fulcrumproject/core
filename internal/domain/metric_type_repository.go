@@ -17,5 +17,5 @@ type MetricTypeRepository interface {
 	FindByID(ctx context.Context, id UUID) (*MetricType, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, filter *SimpleFilter, sorting *Sorting, pagination *Pagination) (*PaginatedResult[MetricType], error)
+	List(ctx context.Context, req *PageRequest) (*PageResponse[MetricType], error)
 }

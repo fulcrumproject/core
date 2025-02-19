@@ -85,15 +85,17 @@ func (h *AuditEntryHandler) handleCreate(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *AuditEntryHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	filter := parseSimpleFilter(r)
-	sorting := parseSorting(r)
-	pagination := parsePagination(r)
+	pag, err := parsePageRequest(r)
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
 
-	result, err := h.repo.List(r.Context(), filter, sorting, pagination)
+	result, err := h.repo.List(r.Context(), pag)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
 
-	render.JSON(w, r, NewPaginatedResponse(result, auditEntryToResponse))
+	render.JSON(w, r, NewPageResponse(result, auditEntryToResponse))
 }

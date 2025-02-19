@@ -94,7 +94,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 GET {{baseUrl}}/services
 
 ### List services with filters
-GET {{baseUrl}}/services?name=Test&state=Created
+GET {{baseUrl}}/services?name=Test Service&state=Created
 
 ### List services with pagination
 GET {{baseUrl}}/services?page=1&pageSize=10

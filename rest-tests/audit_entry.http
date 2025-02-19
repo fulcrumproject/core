@@ -44,10 +44,10 @@ GET {{baseUrl}}/audit-entries
 GET {{baseUrl}}/audit-entries?page=1&pageSize=10
 
 ### List audit entries filtered by authority type
-GET {{baseUrl}}/audit-entries?filterField=authorityType&filterValue=agent
+GET {{baseUrl}}/audit-entries?authorityType=agent
 
 ### List audit entries filtered by type
-GET {{baseUrl}}/audit-entries?filterField=type&filterValue=config_update
+GET {{baseUrl}}/audit-entries?type=config_update
 
 ### List audit entries with sorting
-GET {{baseUrl}}/audit-entries?sortField=createdAt&sortOrder=desc
+GET {{baseUrl}}/audit-entries?sort=-createdAt

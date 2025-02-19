@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -96,26 +97,103 @@ func TestMetricTypeRepository(t *testing.T) {
 	})
 
 	t.Run("List", func(t *testing.T) {
-		// Create multiple metric types
-		metricTypes := []*domain.MetricType{
-			{Name: "CPU Usage", EntityType: domain.MetricEntityTypeService},
-			{Name: "Memory Usage", EntityType: domain.MetricEntityTypeAgent},
-			{Name: "Disk Space", EntityType: domain.MetricEntityTypeResource},
-		}
-		for _, metricType := range metricTypes {
-			err := repo.Create(context.Background(), metricType)
+		t.Run("success - list all", func(t *testing.T) {
+			// Create multiple metric types
+			metricTypes := []*domain.MetricType{
+				{Name: "CPU Usage", EntityType: domain.MetricEntityTypeService},
+				{Name: "Memory Usage", EntityType: domain.MetricEntityTypeAgent},
+				{Name: "Disk Space", EntityType: domain.MetricEntityTypeResource},
+			}
+			for _, metricType := range metricTypes {
+				err := repo.Create(context.Background(), metricType)
+				require.NoError(t, err)
+			}
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+			}
+
+			result, err := repo.List(context.Background(), page)
 			require.NoError(t, err)
-		}
+			assert.GreaterOrEqual(t, len(result.Items), 3)
+		})
 
-		// Test listing with pagination
-		result, err := repo.List(context.Background(), nil, nil, &domain.Pagination{Page: 1, PageSize: 10})
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(result.Items), 3)
+		t.Run("success - list with name filter", func(t *testing.T) {
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"name": {"CPU Usage"}},
+			}
 
-		// Test listing with name filter
-		result, err = repo.List(context.Background(), &domain.SimpleFilter{Field: "name", Value: "CPU Usage"}, nil, &domain.Pagination{Page: 1, PageSize: 10})
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(result.Items), 1)
-		assert.Equal(t, "CPU Usage", result.Items[0].Name)
+			result, err := repo.List(context.Background(), page)
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 1)
+			for _, item := range result.Items {
+				assert.Equal(t, "CPU Usage", item.Name)
+			}
+		})
+
+		t.Run("success - list with sorting", func(t *testing.T) {
+			// Create metric types with specific names for sorting
+			metricTypes := []*domain.MetricType{
+				{Name: "A Metric", EntityType: domain.MetricEntityTypeService},
+				{Name: "B Metric", EntityType: domain.MetricEntityTypeService},
+				{Name: "C Metric", EntityType: domain.MetricEntityTypeService},
+			}
+			for _, metricType := range metricTypes {
+				err := repo.Create(context.Background(), metricType)
+				require.NoError(t, err)
+			}
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+				Sort:     true,
+				SortBy:   "name",
+				SortAsc:  false, // Descending order
+			}
+
+			result, err := repo.List(context.Background(), page)
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 3)
+			// Verify descending order
+			for i := 1; i < len(result.Items); i++ {
+				assert.GreaterOrEqual(t, result.Items[i-1].Name, result.Items[i].Name)
+			}
+		})
+
+		t.Run("success - list with pagination", func(t *testing.T) {
+			// Create multiple metric types
+			for i := 0; i < 5; i++ {
+				metricType := &domain.MetricType{
+					Name:       fmt.Sprintf("Metric %d", i),
+					EntityType: domain.MetricEntityTypeService,
+				}
+				err := repo.Create(context.Background(), metricType)
+				require.NoError(t, err)
+			}
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 2,
+			}
+
+			// First page
+			result, err := repo.List(context.Background(), page)
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.False(t, result.HasPrev)
+			assert.Greater(t, result.TotalItems, int64(2))
+
+			// Second page
+			page.Page = 2
+			result, err = repo.List(context.Background(), page)
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.True(t, result.HasPrev)
+		})
 	})
 }

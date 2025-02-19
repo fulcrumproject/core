@@ -78,13 +78,13 @@ func TestServiceTypeRepository(t *testing.T) {
 			serviceType2 := createTestServiceType(t)
 			require.NoError(t, repo.Create(ctx, serviceType2))
 
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
 			}
 
 			// Execute
-			result, err := repo.List(ctx, nil, nil, pagination)
+			result, err := repo.List(ctx, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -92,25 +92,21 @@ func TestServiceTypeRepository(t *testing.T) {
 			assert.Greater(t, result.TotalItems, int64(2))
 		})
 
-		t.Run("success - list with filters", func(t *testing.T) {
+		t.Run("success - list with name filter", func(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
 			serviceType := createTestServiceType(t)
 			require.NoError(t, repo.Create(ctx, serviceType))
 
-			filter := &domain.SimpleFilter{
-				Field: "name",
-				Value: serviceType.Name,
-			}
-
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
+				Filters:  map[string][]string{"name": {serviceType.Name}},
 			}
 
 			// Execute
-			result, err := repo.List(ctx, filter, nil, pagination)
+			result, err := repo.List(ctx, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -130,23 +126,24 @@ func TestServiceTypeRepository(t *testing.T) {
 			serviceType2.Name = "B Service Type"
 			require.NoError(t, repo.Create(ctx, serviceType2))
 
-			sorting := &domain.Sorting{
-				Field: "name",
-				Order: "desc",
-			}
-
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
+				Sort:     true,
+				SortBy:   "name",
+				SortAsc:  false, // Descending order
 			}
 
 			// Execute
-			result, err := repo.List(ctx, nil, sorting, pagination)
+			result, err := repo.List(ctx, page)
 
 			// Assert
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 2)
-			assert.GreaterOrEqual(t, result.Items[0].Name, result.Items[1].Name)
+			// Verify descending order
+			for i := 1; i < len(result.Items); i++ {
+				assert.GreaterOrEqual(t, result.Items[i-1].Name, result.Items[i].Name)
+			}
 		})
 
 		t.Run("success - list with pagination", func(t *testing.T) {
@@ -158,13 +155,13 @@ func TestServiceTypeRepository(t *testing.T) {
 				require.NoError(t, repo.Create(ctx, serviceType))
 			}
 
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 2,
 			}
 
 			// Execute first page
-			result, err := repo.List(ctx, nil, nil, pagination)
+			result, err := repo.List(ctx, page)
 
 			// Assert first page
 			require.NoError(t, err)
@@ -174,8 +171,8 @@ func TestServiceTypeRepository(t *testing.T) {
 			assert.Greater(t, result.TotalItems, int64(2))
 
 			// Execute second page
-			pagination.Page = 2
-			result, err = repo.List(ctx, nil, nil, pagination)
+			page.Page = 2
+			result, err = repo.List(ctx, page)
 
 			// Assert second page
 			require.NoError(t, err)
@@ -184,7 +181,7 @@ func TestServiceTypeRepository(t *testing.T) {
 			assert.True(t, result.HasPrev)
 
 			// Verify total count matches
-			count, err := repo.Count(ctx, nil)
+			count, err := repo.Count(ctx)
 			require.NoError(t, err)
 			assert.Equal(t, result.TotalItems, count)
 		})
@@ -201,51 +198,11 @@ func TestServiceTypeRepository(t *testing.T) {
 			require.NoError(t, repo.Create(ctx, serviceType2))
 
 			// Execute
-			count, err := repo.Count(ctx, nil)
+			count, err := repo.Count(ctx)
 
 			// Assert
 			require.NoError(t, err)
 			assert.Greater(t, count, int64(1))
-		})
-
-		t.Run("success - count with filters", func(t *testing.T) {
-			ctx := context.Background()
-
-			// Setup
-			serviceType := createTestServiceType(t)
-			require.NoError(t, repo.Create(ctx, serviceType))
-
-			filter := &domain.SimpleFilter{
-				Field: "name",
-				Value: serviceType.Name,
-			}
-
-			// Execute
-			count, err := repo.Count(ctx, filter)
-
-			// Assert
-			require.NoError(t, err)
-			assert.Equal(t, int64(1), count)
-		})
-
-		t.Run("success - count with non-matching filters", func(t *testing.T) {
-			ctx := context.Background()
-
-			// Setup
-			serviceType := createTestServiceType(t)
-			require.NoError(t, repo.Create(ctx, serviceType))
-
-			filter := &domain.SimpleFilter{
-				Field: "name",
-				Value: "non-existent-name",
-			}
-
-			// Execute
-			count, err := repo.Count(ctx, filter)
-
-			// Assert
-			require.NoError(t, err)
-			assert.Equal(t, int64(0), count)
 		})
 	})
 }

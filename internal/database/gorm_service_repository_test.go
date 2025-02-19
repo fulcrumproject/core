@@ -164,33 +164,113 @@ func TestServiceRepository(t *testing.T) {
 	})
 
 	t.Run("List", func(t *testing.T) {
-		// Create multiple services
-		services := []*domain.Service{
-			{Name: "Service A", State: domain.ServiceCreated, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-			{Name: "Service B", State: domain.ServiceUpdated, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-			{Name: "Service C", State: domain.ServiceCreated, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-		}
-		for _, service := range services {
-			err := repo.Create(context.Background(), service)
+		t.Run("success - list all", func(t *testing.T) {
+			// Create multiple services
+			services := []*domain.Service{
+				{Name: "Service A", State: domain.ServiceCreated, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service B", State: domain.ServiceUpdated, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service C", State: domain.ServiceCreated, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+			}
+			for _, service := range services {
+				err := repo.Create(context.Background(), service)
+				require.NoError(t, err)
+			}
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+			}
+
+			result, err := repo.List(context.Background(), page)
 			require.NoError(t, err)
-		}
+			assert.GreaterOrEqual(t, len(result.Items), 3)
+			// Verify relationships are loaded
+			assert.NotNil(t, result.Items[0].Agent)
+			assert.NotNil(t, result.Items[0].ServiceType)
+			assert.NotNil(t, result.Items[0].Group)
+		})
 
-		// Test listing with pagination
-		result, err := repo.List(context.Background(), nil, nil, &domain.Pagination{Page: 1, PageSize: 10})
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(result.Items), 3)
+		t.Run("success - list with name filter", func(t *testing.T) {
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"name": {"Service A"}},
+			}
 
-		// Test listing with name filter
-		result, err = repo.List(context.Background(), &domain.SimpleFilter{Field: "name", Value: "Service A"}, nil, &domain.Pagination{Page: 1, PageSize: 10})
-		require.NoError(t, err)
-		assert.Len(t, result.Items, 1)
-		assert.Equal(t, "Service A", result.Items[0].Name)
+			result, err := repo.List(context.Background(), page)
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 1)
+			assert.Equal(t, "Service A", result.Items[0].Name)
+		})
 
-		// Test listing with state filter
-		result, err = repo.List(context.Background(), &domain.SimpleFilter{Field: "state", Value: string(domain.ServiceUpdated)}, nil, &domain.Pagination{Page: 1, PageSize: 10})
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(result.Items), 1)
-		assert.Equal(t, domain.ServiceUpdated, result.Items[0].State)
+		t.Run("success - list with state filter", func(t *testing.T) {
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"state": {string(domain.ServiceUpdated)}},
+			}
+
+			result, err := repo.List(context.Background(), page)
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 1)
+			for _, item := range result.Items {
+				assert.Equal(t, domain.ServiceUpdated, item.State)
+			}
+		})
+
+		t.Run("success - list with sorting", func(t *testing.T) {
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+				Sort:     true,
+				SortBy:   "name",
+				SortAsc:  false, // Descending order
+			}
+
+			result, err := repo.List(context.Background(), page)
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 3)
+			// Verify descending order
+			for i := 1; i < len(result.Items); i++ {
+				assert.GreaterOrEqual(t, result.Items[i-1].Name, result.Items[i].Name)
+			}
+		})
+
+		t.Run("success - list with pagination", func(t *testing.T) {
+			// Create multiple services
+			for i := 0; i < 5; i++ {
+				service := &domain.Service{
+					Name:          "Paginated Service",
+					State:         domain.ServiceCreated,
+					AgentID:       agent.ID,
+					ServiceTypeID: serviceType.ID,
+					GroupID:       serviceGroup.ID,
+				}
+				err := repo.Create(context.Background(), service)
+				require.NoError(t, err)
+			}
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 2,
+			}
+
+			// First page
+			result, err := repo.List(context.Background(), page)
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.False(t, result.HasPrev)
+			assert.Greater(t, result.TotalItems, int64(2))
+
+			// Second page
+			page.Page = 2
+			result, err = repo.List(context.Background(), page)
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.True(t, result.HasPrev)
+		})
 	})
 
 	t.Run("CountByGroup", func(t *testing.T) {

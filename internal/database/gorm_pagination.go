@@ -1,108 +1,130 @@
 package database
 
 import (
+	"context"
 	"fmt"
 
 	"fulcrumproject.org/core/internal/domain"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-type FilterValuer func(v string) (interface{}, error)
+type PageApplier func(q *gorm.DB, r *domain.PageRequest) (*gorm.DB, error)
 
-type FilterConfig struct {
-	Query  string
-	Valuer FilterValuer
+type FilterFieldApplier func(q *gorm.DB, vv []string) (*gorm.DB, error)
+
+func mapFilterApplier(fields map[string]FilterFieldApplier) PageApplier {
+	return func(q *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
+		if len(r.Filters) == 0 {
+			return q, nil
+		}
+
+		var err error
+		for field, values := range r.Filters {
+			applier, exists := fields[field]
+			if !exists {
+				return q, fmt.Errorf("cannot filter by field %s", field)
+			}
+			if q, err = applier(q, values); err != nil {
+				return nil, err
+			}
+		}
+		return q, nil
+	}
 }
 
-func applyFindAndCount(query *gorm.DB, filter *domain.SimpleFilter, filterConfigs map[string]FilterConfig, sorting *domain.Sorting, pagination *domain.Pagination) (*gorm.DB, int64, error) {
-	query, totalItems, err := applyFilterAndCount(query, filter, filterConfigs)
-	if err != nil {
-		return nil, 0, err
+func mapSortApplier(fields map[string]string) PageApplier {
+	return func(q *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
+		if !r.Sort {
+			return q, nil
+		}
+		field, exists := fields[r.SortBy]
+		if !exists {
+			return q, fmt.Errorf("cannot sort by field %s", field)
+		}
+		return q.Order(clause.OrderByColumn{Column: clause.Column{Name: field}, Desc: !r.SortAsc}), nil
 	}
-	query, err = applySorting(query, sorting)
-	if err != nil {
-		return nil, 0, domain.InvalidInputError{Err: err}
-	}
-	query, err = applyPagination(query, pagination)
-	if err != nil {
-		return nil, 0, domain.InvalidInputError{Err: err}
-	}
-	return query, totalItems, nil
 }
 
-func applyFilterAndCount(query *gorm.DB, filter *domain.SimpleFilter, filterConfigs map[string]FilterConfig) (*gorm.DB, int64, error) {
-	var totalItems int64
-	query, err := applySimpleFilter(query, filter, filterConfigs)
-	if err != nil {
-		return nil, 0, domain.InvalidInputError{Err: err}
-	}
-	if err := query.Count(&totalItems).Error; err != nil {
-		return nil, 0, err
-	}
-	return query, totalItems, nil
+func applyPagination(q *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
+	offset := (r.Page - 1) * r.PageSize
+	q = q.Offset(offset).Limit(r.PageSize)
+	return q, nil
 }
 
-func applySimpleFilter(query *gorm.DB, filter *domain.SimpleFilter, filterConfigs map[string]FilterConfig) (*gorm.DB, error) {
-	if filter == nil {
-		return query, nil
+func parserInFilterFieldApplier[T any](f string, t func(string) (T, error)) FilterFieldApplier {
+	return func(q *gorm.DB, vv []string) (*gorm.DB, error) {
+		if len(vv) == 0 {
+			return q, nil
+		}
+		values := make([]T, len(vv))
+		for _, v := range vv {
+			value, err := t(v)
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, value)
+		}
+		return q.Where(fmt.Sprintf("%s IN ?", f), values), nil
 	}
-	config, exists := filterConfigs[filter.Field]
-	if !exists {
-		return query, fmt.Errorf("field '%s' is not a valid filter field", filter.Field)
-	}
-	where := filter.Field
-	if config.Query != "" {
-		where = config.Query
-	}
-	var (
-		value interface{} = filter.Value
-		err   error
-	)
-	if config.Valuer != nil {
-		value, err = config.Valuer(filter.Value)
-		if err != nil {
-			return query, fmt.Errorf("invalid value for field '%s': %w", filter.Field, err)
+}
+
+func stringInFilterFieldApplier(f string) FilterFieldApplier {
+	return parserInFilterFieldApplier[string](f, func(v string) (string, error) { return v, nil })
+}
+
+// list implements a generic list operation for any model type
+func list[T any](
+	ctx context.Context,
+	db *gorm.DB,
+	page *domain.PageRequest,
+	filterApplier PageApplier,
+	sortApplier PageApplier,
+	preloadPaths []string,
+) (*domain.PageResponse[T], error) {
+	var items []T
+
+	// Start the query with the model type
+	q := db.WithContext(ctx).Model(new(T))
+
+	// Apply filters if a filter applier is provided
+	if filterApplier != nil {
+		var err error
+		if q, err = filterApplier(q, page); err != nil {
+			return nil, err
 		}
 	}
-	return query.Where(where, value), nil
-}
 
-type SortingConfig struct {
-	Query string
-	Value func(value string) interface{}
-}
-
-func applySorting(query *gorm.DB, sorting *domain.Sorting) (*gorm.DB, error) {
-	if sorting == nil || sorting.Field == "" {
-		return query, nil
+	// Get total count
+	var count int64
+	q = q.Count(&count)
+	if q.Error != nil {
+		return nil, q.Error
 	}
 
-	// Validate sorting order
-	order := sorting.Order
-	if order == "" {
-		order = "asc"
-	} else if order != "asc" && order != "desc" {
-		return query, fmt.Errorf("invalid sort order '%s': must be 'asc' or 'desc'", order)
+	// Apply sorting if a sort applier is provided
+	if sortApplier != nil {
+		var err error
+		if q, err = sortApplier(q, page); err != nil {
+			return nil, err
+		}
 	}
 
-	query = query.Order(fmt.Sprintf("%s %s", sorting.Field, order))
-	return query, nil
-}
-
-func applyPagination(query *gorm.DB, pagination *domain.Pagination) (*gorm.DB, error) {
-	if pagination == nil {
-		return query, nil
+	// Apply pagination
+	var err error
+	if q, err = applyPagination(q, page); err != nil {
+		return nil, err
 	}
 
-	// Validate pagination parameters
-	if pagination.Page < 1 {
-		return query, fmt.Errorf("page number must be greater than 0, got %d", pagination.Page)
-	}
-	if pagination.PageSize < 1 {
-		return query, fmt.Errorf("page size must be greater than 0, got %d", pagination.PageSize)
+	// Apply preloads
+	for _, path := range preloadPaths {
+		q = q.Preload(path)
 	}
 
-	offset := (pagination.Page - 1) * pagination.PageSize
-	query = query.Offset(offset).Limit(pagination.PageSize)
-	return query, nil
+	// Execute the query
+	if err := q.Find(&items).Error; err != nil {
+		return nil, err
+	}
+
+	return domain.NewPaginatedResult(items, count, page), nil
 }

@@ -21,3 +21,8 @@ func (b *BaseEntity) BeforeCreate(tx *gorm.DB) error {
 	}
 	return nil
 }
+
+// GetID returns the entity's ID
+func (b BaseEntity) GetID() UUID {
+	return b.ID
+}

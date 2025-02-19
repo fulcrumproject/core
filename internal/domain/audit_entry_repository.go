@@ -8,5 +8,5 @@ type AuditEntryRepository interface {
 	Create(ctx context.Context, entry *AuditEntry) error
 
 	// List retrieves a list of audit entries based on the provided filters
-	List(ctx context.Context, filter *SimpleFilter, sorting *Sorting, pagination *Pagination) (*PaginatedResult[AuditEntry], error)
+	List(ctx context.Context, req *PageRequest) (*PageResponse[AuditEntry], error)
 }

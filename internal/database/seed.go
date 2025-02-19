@@ -15,12 +15,12 @@ func Seed(db *gorm.DB) error {
 
 	ctx := context.Background()
 
-	na, err := agentTypeRepo.Count(ctx, nil)
+	na, err := agentTypeRepo.Count(ctx)
 	if err != nil {
 		return err
 	}
 
-	ns, err := serviceTypeRepo.Count(ctx, nil)
+	ns, err := serviceTypeRepo.Count(ctx)
 	if err != nil {
 		return err
 	}

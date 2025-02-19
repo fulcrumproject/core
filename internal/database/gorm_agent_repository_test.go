@@ -72,36 +72,34 @@ func TestAgentRepository(t *testing.T) {
 			agent2 := createTestAgent(t, provider.ID, agentType.ID, domain.AgentConnected)
 			require.NoError(t, agentRepo.Create(ctx, agent2))
 
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
 			}
 
 			// Execute
-			result, err := agentRepo.List(ctx, nil, nil, pagination)
+			result, err := agentRepo.List(ctx, page)
 
 			// Assert
-			agents := result.Items
 			require.NoError(t, err)
-			assert.Greater(t, len(agents), 0)
+			assert.Greater(t, len(result.Items), 0)
+			// Verify Provider is preloaded but not AgentType (as per repository config)
+			assert.NotNil(t, result.Items[0].Provider)
+			assert.Nil(t, result.Items[0].AgentType)
 		})
 
 		t.Run("success - list with filters", func(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			filter := &domain.SimpleFilter{
-				Field: "state",
-				Value: "Connected",
-			}
-
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
+				Filters:  map[string][]string{"state": {"Connected"}},
 			}
 
 			// Execute
-			result, err := agentRepo.List(ctx, filter, nil, pagination)
+			result, err := agentRepo.List(ctx, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -128,18 +126,16 @@ func TestAgentRepository(t *testing.T) {
 			agent2.Name = "B Agent"
 			require.NoError(t, agentRepo.Create(ctx, agent2))
 
-			sorting := &domain.Sorting{
-				Field: "name",
-				Order: "desc",
-			}
-
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
+				Sort:     true,
+				SortBy:   "name",
+				SortAsc:  false,
 			}
 
 			// Execute
-			result, err := agentRepo.List(ctx, nil, sorting, pagination)
+			result, err := agentRepo.List(ctx, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -163,13 +159,13 @@ func TestAgentRepository(t *testing.T) {
 				require.NoError(t, agentRepo.Create(ctx, agent))
 			}
 
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 2,
 			}
 
 			// Execute first page
-			result, err := agentRepo.List(ctx, nil, nil, pagination)
+			result, err := agentRepo.List(ctx, page)
 
 			// Assert first page
 			require.NoError(t, err)
@@ -179,8 +175,8 @@ func TestAgentRepository(t *testing.T) {
 			assert.Greater(t, result.TotalItems, int64(2))
 
 			// Execute second page
-			pagination.Page = 2
-			result, err = agentRepo.List(ctx, nil, nil, pagination)
+			page.Page = 2
+			result, err = agentRepo.List(ctx, page)
 
 			// Assert second page
 			require.NoError(t, err)

@@ -16,15 +16,20 @@ func TestAgentTypeRepository(t *testing.T) {
 	t.Logf("Temp test DB name %s", tdb.DBName)
 	defer tdb.Cleanup(t)
 
-	// Create repository instance
+	// Create repository instances
 	repo := NewAgentTypeRepository(tdb.DB)
+	serviceTypeRepo := NewServiceTypeRepository(tdb.DB)
 
 	t.Run("Create", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
+			serviceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType))
+
 			agentType := createTestAgentType(t)
+			agentType.ServiceTypes = []domain.ServiceType{*serviceType}
 
 			// Execute
 			err := repo.Create(ctx, agentType)
@@ -37,128 +42,8 @@ func TestAgentTypeRepository(t *testing.T) {
 			found, err := repo.FindByID(ctx, agentType.ID)
 			require.NoError(t, err)
 			assert.Equal(t, agentType.Name, found.Name)
-		})
-	})
-
-	t.Run("List", func(t *testing.T) {
-		t.Run("success - list all", func(t *testing.T) {
-			ctx := context.Background()
-
-			// Setup
-			agentType1 := createTestAgentType(t)
-			require.NoError(t, repo.Create(ctx, agentType1))
-			agentType2 := createTestAgentType(t)
-			require.NoError(t, repo.Create(ctx, agentType2))
-
-			pagination := &domain.Pagination{
-				Page:     1,
-				PageSize: 10,
-			}
-
-			// Execute
-			result, err := repo.List(ctx, nil, nil, pagination)
-
-			// Assert
-			require.NoError(t, err)
-			agentTypes := result.Items
-			assert.Greater(t, len(agentTypes), 0)
-		})
-
-		t.Run("success - list with filters", func(t *testing.T) {
-			ctx := context.Background()
-
-			// Setup
-			agentType := createTestAgentType(t)
-			require.NoError(t, repo.Create(ctx, agentType))
-
-			filter := &domain.SimpleFilter{
-				Field: "name",
-				Value: agentType.Name,
-			}
-			pagination := &domain.Pagination{
-				Page:     1,
-				PageSize: 10,
-			}
-
-			// Execute
-			result, err := repo.List(ctx, filter, nil, pagination)
-
-			// Assert
-			require.NoError(t, err)
-			require.Len(t, result.Items, 1)
-			agentTypes := result.Items
-			assert.Equal(t, agentType.Name, agentTypes[0].Name)
-		})
-
-		t.Run("success - list with sorting", func(t *testing.T) {
-			ctx := context.Background()
-
-			// Setup
-			agentType1 := createTestAgentType(t)
-			agentType1.Name = "A Agent Type"
-			require.NoError(t, repo.Create(ctx, agentType1))
-
-			agentType2 := createTestAgentType(t)
-			agentType2.Name = "B Agent Type"
-			require.NoError(t, repo.Create(ctx, agentType2))
-
-			sorting := &domain.Sorting{
-				Field: "name",
-				Order: "desc",
-			}
-
-			pagination := &domain.Pagination{
-				Page:     1,
-				PageSize: 10,
-			}
-
-			// Execute
-			result, err := repo.List(ctx, nil, sorting, pagination)
-
-			// Assert
-			require.NoError(t, err)
-			assert.GreaterOrEqual(t, len(result.Items), 2)
-			assert.GreaterOrEqual(t, result.Items[0].Name, result.Items[1].Name)
-		})
-
-		t.Run("success - list with pagination", func(t *testing.T) {
-			ctx := context.Background()
-
-			// Setup - Create multiple agent types
-			for i := 0; i < 5; i++ {
-				agentType := createTestAgentType(t)
-				require.NoError(t, repo.Create(ctx, agentType))
-			}
-
-			pagination := &domain.Pagination{
-				Page:     1,
-				PageSize: 2,
-			}
-
-			// Execute first page
-			result, err := repo.List(ctx, nil, nil, pagination)
-
-			// Assert first page
-			require.NoError(t, err)
-			assert.Len(t, result.Items, 2)
-			assert.True(t, result.HasNext)
-			assert.False(t, result.HasPrev)
-			assert.Greater(t, result.TotalItems, int64(2))
-
-			// Execute second page
-			pagination.Page = 2
-			result, err = repo.List(ctx, nil, nil, pagination)
-
-			// Assert second page
-			require.NoError(t, err)
-			assert.Len(t, result.Items, 2)
-			assert.True(t, result.HasNext)
-			assert.True(t, result.HasPrev)
-
-			// Verify total count matches
-			count, err := repo.Count(ctx, nil)
-			require.NoError(t, err)
-			assert.Equal(t, result.TotalItems, count)
+			assert.NotEmpty(t, found.ServiceTypes)
+			assert.Equal(t, serviceType.ID, found.ServiceTypes[0].ID)
 		})
 	})
 
@@ -167,7 +52,11 @@ func TestAgentTypeRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
+			serviceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType))
+
 			agentType := createTestAgentType(t)
+			agentType.ServiceTypes = []domain.ServiceType{*serviceType}
 			require.NoError(t, repo.Create(ctx, agentType))
 
 			// Execute
@@ -176,6 +65,8 @@ func TestAgentTypeRepository(t *testing.T) {
 			// Assert
 			require.NoError(t, err)
 			assert.Equal(t, agentType.Name, found.Name)
+			assert.NotEmpty(t, found.ServiceTypes)
+			assert.Equal(t, serviceType.ID, found.ServiceTypes[0].ID)
 		})
 
 		t.Run("not found", func(t *testing.T) {
@@ -187,6 +78,151 @@ func TestAgentTypeRepository(t *testing.T) {
 			// Assert
 			assert.Nil(t, found)
 			assert.ErrorAs(t, err, &domain.NotFoundError{})
+		})
+	})
+
+	t.Run("List", func(t *testing.T) {
+		t.Run("success - list all", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			serviceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType))
+
+			agentType1 := createTestAgentType(t)
+			agentType1.ServiceTypes = []domain.ServiceType{*serviceType}
+			require.NoError(t, repo.Create(ctx, agentType1))
+
+			agentType2 := createTestAgentType(t)
+			agentType2.ServiceTypes = []domain.ServiceType{*serviceType}
+			require.NoError(t, repo.Create(ctx, agentType2))
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+			}
+
+			// Execute
+			result, err := repo.List(ctx, page)
+
+			// Assert
+			require.NoError(t, err)
+			assert.Greater(t, len(result.Items), 0)
+			// Verify ServiceTypes are preloaded
+			assert.NotEmpty(t, result.Items[0].ServiceTypes)
+		})
+
+		t.Run("success - list with name filter", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			serviceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType))
+
+			agentType := createTestAgentType(t)
+			agentType.ServiceTypes = []domain.ServiceType{*serviceType}
+			require.NoError(t, repo.Create(ctx, agentType))
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"name": {agentType.Name}},
+			}
+
+			// Execute
+			result, err := repo.List(ctx, page)
+
+			// Assert
+			require.NoError(t, err)
+			require.Len(t, result.Items, 1)
+			assert.Equal(t, agentType.Name, result.Items[0].Name)
+			assert.NotEmpty(t, result.Items[0].ServiceTypes)
+		})
+
+		t.Run("success - list with sorting", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			serviceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType))
+
+			agentType1 := createTestAgentType(t)
+			agentType1.Name = "A Agent Type"
+			agentType1.ServiceTypes = []domain.ServiceType{*serviceType}
+			require.NoError(t, repo.Create(ctx, agentType1))
+
+			agentType2 := createTestAgentType(t)
+			agentType2.Name = "B Agent Type"
+			agentType2.ServiceTypes = []domain.ServiceType{*serviceType}
+			require.NoError(t, repo.Create(ctx, agentType2))
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+				Sort:     true,
+				SortBy:   "name",
+				SortAsc:  false, // Descending order
+			}
+
+			// Execute
+			result, err := repo.List(ctx, page)
+
+			// Assert
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 2)
+			// Verify descending order
+			for i := 1; i < len(result.Items); i++ {
+				assert.GreaterOrEqual(t, result.Items[i-1].Name, result.Items[i].Name)
+			}
+			// Verify ServiceTypes are preloaded
+			assert.NotEmpty(t, result.Items[0].ServiceTypes)
+		})
+
+		t.Run("success - list with pagination", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			serviceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType))
+
+			// Create multiple agent types
+			for i := 0; i < 5; i++ {
+				agentType := createTestAgentType(t)
+				agentType.ServiceTypes = []domain.ServiceType{*serviceType}
+				require.NoError(t, repo.Create(ctx, agentType))
+			}
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 2,
+			}
+
+			// Execute first page
+			result, err := repo.List(ctx, page)
+
+			// Assert first page
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.False(t, result.HasPrev)
+			assert.Greater(t, result.TotalItems, int64(2))
+			// Verify ServiceTypes are preloaded
+			assert.NotEmpty(t, result.Items[0].ServiceTypes)
+
+			// Execute second page
+			page.Page = 2
+			result, err = repo.List(ctx, page)
+
+			// Assert second page
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.True(t, result.HasPrev)
+
+			// Verify total count matches
+			count, err := repo.Count(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, result.TotalItems, count)
 		})
 	})
 }

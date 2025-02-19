@@ -11,8 +11,8 @@ type AgentTypeRepository interface {
 	FindByID(ctx context.Context, id UUID) (*AgentType, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, filter *SimpleFilter, sorting *Sorting, pagination *Pagination) (*PaginatedResult[AgentType], error)
+	List(ctx context.Context, req *PageRequest) (*PageResponse[AgentType], error)
 
 	// Count returns the number of entities matching the provided filters
-	Count(ctx context.Context, filter *SimpleFilter) (int64, error)
+	Count(ctx context.Context) (int64, error)
 }

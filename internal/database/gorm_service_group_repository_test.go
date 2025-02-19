@@ -16,98 +16,209 @@ func TestServiceGroupRepository(t *testing.T) {
 	repo := NewServiceGroupRepository(testDB.DB)
 
 	t.Run("Create", func(t *testing.T) {
-		serviceGroup := &domain.ServiceGroup{
-			Name: "Test Group",
-		}
+		t.Run("success", func(t *testing.T) {
+			ctx := context.Background()
 
-		err := repo.Create(context.Background(), serviceGroup)
-		require.NoError(t, err)
-		assert.NotEmpty(t, serviceGroup.ID)
-		assert.NotZero(t, serviceGroup.CreatedAt)
-		assert.NotZero(t, serviceGroup.UpdatedAt)
+			// Setup
+			serviceGroup := createTestServiceGroup(t)
+
+			// Execute
+			err := repo.Create(ctx, serviceGroup)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotEmpty(t, serviceGroup.ID)
+			assert.NotZero(t, serviceGroup.CreatedAt)
+			assert.NotZero(t, serviceGroup.UpdatedAt)
+
+			// Verify in database
+			found, err := repo.FindByID(ctx, serviceGroup.ID)
+			require.NoError(t, err)
+			assert.Equal(t, serviceGroup.Name, found.Name)
+		})
 	})
 
 	t.Run("FindByID", func(t *testing.T) {
-		// Create a service group
-		serviceGroup := &domain.ServiceGroup{
-			Name: "Test Group",
-		}
-		err := repo.Create(context.Background(), serviceGroup)
-		require.NoError(t, err)
+		t.Run("success", func(t *testing.T) {
+			ctx := context.Background()
 
-		// Find the service group
-		found, err := repo.FindByID(context.Background(), serviceGroup.ID)
-		require.NoError(t, err)
-		assert.Equal(t, serviceGroup.ID, found.ID)
-		assert.Equal(t, serviceGroup.Name, found.Name)
-	})
+			// Setup
+			serviceGroup := createTestServiceGroup(t)
+			require.NoError(t, repo.Create(ctx, serviceGroup))
 
-	t.Run("FindByID_NotFound", func(t *testing.T) {
-		found, err := repo.FindByID(context.Background(), domain.NewUUID())
-		assert.Error(t, err)
-		assert.Nil(t, found)
-		assert.IsType(t, domain.NotFoundError{}, err)
-	})
+			// Execute
+			found, err := repo.FindByID(ctx, serviceGroup.ID)
 
-	t.Run("Save", func(t *testing.T) {
-		// Create a service group
-		serviceGroup := &domain.ServiceGroup{
-			Name: "Test Group",
-		}
-		err := repo.Create(context.Background(), serviceGroup)
-		require.NoError(t, err)
+			// Assert
+			require.NoError(t, err)
+			assert.Equal(t, serviceGroup.Name, found.Name)
+		})
 
-		// Update the service group
-		serviceGroup.Name = "Updated Group"
-		err = repo.Save(context.Background(), serviceGroup)
-		require.NoError(t, err)
+		t.Run("not found", func(t *testing.T) {
+			ctx := context.Background()
 
-		// Verify the update
-		found, err := repo.FindByID(context.Background(), serviceGroup.ID)
-		require.NoError(t, err)
-		assert.Equal(t, "Updated Group", found.Name)
-	})
+			// Execute
+			found, err := repo.FindByID(ctx, domain.NewUUID())
 
-	t.Run("Delete", func(t *testing.T) {
-		// Create a service group
-		serviceGroup := &domain.ServiceGroup{
-			Name: "Test Group",
-		}
-		err := repo.Create(context.Background(), serviceGroup)
-		require.NoError(t, err)
-
-		// Delete the service group
-		err = repo.Delete(context.Background(), serviceGroup.ID)
-		require.NoError(t, err)
-
-		// Verify deletion
-		found, err := repo.FindByID(context.Background(), serviceGroup.ID)
-		assert.Error(t, err)
-		assert.Nil(t, found)
-		assert.IsType(t, domain.NotFoundError{}, err)
+			// Assert
+			assert.Nil(t, found)
+			assert.ErrorAs(t, err, &domain.NotFoundError{})
+		})
 	})
 
 	t.Run("List", func(t *testing.T) {
-		// Create multiple service groups
-		groups := []*domain.ServiceGroup{
-			{Name: "Group A"},
-			{Name: "Group B"},
-			{Name: "Group C"},
-		}
-		for _, group := range groups {
-			err := repo.Create(context.Background(), group)
+		t.Run("success - list all", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			group1 := createTestServiceGroup(t)
+			require.NoError(t, repo.Create(ctx, group1))
+			group2 := createTestServiceGroup(t)
+			require.NoError(t, repo.Create(ctx, group2))
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+			}
+
+			// Execute
+			result, err := repo.List(ctx, page)
+
+			// Assert
 			require.NoError(t, err)
-		}
+			assert.Greater(t, len(result.Items), 0)
+		})
 
-		// Test listing with pagination
-		result, err := repo.List(context.Background(), nil, nil, &domain.Pagination{Page: 1, PageSize: 10})
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(result.Items), 2)
+		t.Run("success - list with name filter", func(t *testing.T) {
+			ctx := context.Background()
 
-		// Test listing with filter
-		result, err = repo.List(context.Background(), &domain.SimpleFilter{Field: "name", Value: "Group A"}, nil, &domain.Pagination{Page: 1, PageSize: 10})
-		require.NoError(t, err)
-		assert.Len(t, result.Items, 1)
-		assert.Equal(t, "Group A", result.Items[0].Name)
+			// Setup
+			serviceGroup := createTestServiceGroup(t)
+			require.NoError(t, repo.Create(ctx, serviceGroup))
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"name": {serviceGroup.Name}},
+			}
+
+			// Execute
+			result, err := repo.List(ctx, page)
+
+			// Assert
+			require.NoError(t, err)
+			require.Len(t, result.Items, 1)
+			assert.Equal(t, serviceGroup.Name, result.Items[0].Name)
+		})
+
+		t.Run("success - list with sorting", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			group1 := createTestServiceGroup(t)
+			require.NoError(t, repo.Create(ctx, group1))
+
+			group2 := createTestServiceGroup(t)
+			require.NoError(t, repo.Create(ctx, group2))
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+				Sort:     true,
+				SortBy:   "name",
+				SortAsc:  false, // Descending order
+			}
+
+			// Execute
+			result, err := repo.List(ctx, page)
+
+			// Assert
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 2)
+			// Verify descending order
+			for i := 1; i < len(result.Items); i++ {
+				assert.GreaterOrEqual(t, result.Items[i-1].Name, result.Items[i].Name)
+			}
+		})
+
+		t.Run("success - list with pagination", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup - Create multiple service groups
+			for i := 0; i < 5; i++ {
+				group := createTestServiceGroup(t)
+				require.NoError(t, repo.Create(ctx, group))
+			}
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 2,
+			}
+
+			// Execute first page
+			result, err := repo.List(ctx, page)
+
+			// Assert first page
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.False(t, result.HasPrev)
+			assert.Greater(t, result.TotalItems, int64(2))
+
+			// Execute second page
+			page.Page = 2
+			result, err = repo.List(ctx, page)
+
+			// Assert second page
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 2)
+			assert.True(t, result.HasNext)
+			assert.True(t, result.HasPrev)
+		})
+	})
+
+	t.Run("Save", func(t *testing.T) {
+		t.Run("success", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			serviceGroup := createTestServiceGroup(t)
+			require.NoError(t, repo.Create(ctx, serviceGroup))
+
+			// Update the service group
+			serviceGroup.Name = "Updated Group"
+
+			// Execute
+			err := repo.Save(ctx, serviceGroup)
+
+			// Assert
+			require.NoError(t, err)
+
+			// Verify in database
+			found, err := repo.FindByID(ctx, serviceGroup.ID)
+			require.NoError(t, err)
+			assert.Equal(t, "Updated Group", found.Name)
+		})
+	})
+
+	t.Run("Delete", func(t *testing.T) {
+		t.Run("success", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			serviceGroup := createTestServiceGroup(t)
+			require.NoError(t, repo.Create(ctx, serviceGroup))
+
+			// Execute
+			err := repo.Delete(ctx, serviceGroup.ID)
+
+			// Assert
+			require.NoError(t, err)
+
+			// Verify deletion
+			found, err := repo.FindByID(ctx, serviceGroup.ID)
+			assert.Nil(t, found)
+			assert.ErrorAs(t, err, &domain.NotFoundError{})
+		})
 	})
 }

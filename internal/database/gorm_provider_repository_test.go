@@ -52,41 +52,63 @@ func TestProviderRepository(t *testing.T) {
 			provider2 := createTestProvider(t, domain.ProviderDisabled)
 			require.NoError(t, repo.Create(ctx, provider2))
 
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
 			}
 
 			// Execute
-			result, err := repo.List(ctx, nil, nil, pagination)
+			result, err := repo.List(ctx, page)
 
 			// Assert
-			providers := result.Items
 			require.NoError(t, err)
-			assert.Greater(t, len(providers), 0)
+			assert.Greater(t, len(result.Items), 0)
 		})
 
-		t.Run("success - list with filters", func(t *testing.T) {
+		t.Run("success - list with state filter", func(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			filter := &domain.SimpleFilter{
-				Field: "state",
-				Value: "Enabled",
-			}
+			provider := createTestProvider(t, domain.ProviderEnabled)
+			require.NoError(t, repo.Create(ctx, provider))
 
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
+				Filters:  map[string][]string{"state": {"Enabled"}},
 			}
 
 			// Execute
-			result, err := repo.List(ctx, filter, nil, pagination)
+			result, err := repo.List(ctx, page)
 
 			// Assert
 			require.NoError(t, err)
 			for _, p := range result.Items {
 				assert.Equal(t, domain.ProviderEnabled, p.State)
+			}
+		})
+
+		t.Run("success - list with country code filter", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			provider := createTestProvider(t, domain.ProviderEnabled)
+			provider.CountryCode = "UK"
+			require.NoError(t, repo.Create(ctx, provider))
+
+			page := &domain.PageRequest{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"countryCode": {"UK"}},
+			}
+
+			// Execute
+			result, err := repo.List(ctx, page)
+
+			// Assert
+			require.NoError(t, err)
+			for _, p := range result.Items {
+				assert.Equal(t, domain.CountryCode("UK"), p.CountryCode)
 			}
 		})
 
@@ -102,23 +124,24 @@ func TestProviderRepository(t *testing.T) {
 			provider2.Name = "B Provider"
 			require.NoError(t, repo.Create(ctx, provider2))
 
-			sorting := &domain.Sorting{
-				Field: "name",
-				Order: "desc",
-			}
-
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
+				Sort:     true,
+				SortBy:   "name",
+				SortAsc:  false, // Descending order
 			}
 
 			// Execute
-			result, err := repo.List(ctx, nil, sorting, pagination)
+			result, err := repo.List(ctx, page)
 
 			// Assert
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 2)
-			assert.GreaterOrEqual(t, result.Items[0].Name, result.Items[1].Name)
+			// Verify descending order
+			for i := 1; i < len(result.Items); i++ {
+				assert.GreaterOrEqual(t, result.Items[i-1].Name, result.Items[i].Name)
+			}
 		})
 
 		t.Run("success - list with pagination", func(t *testing.T) {
@@ -130,13 +153,13 @@ func TestProviderRepository(t *testing.T) {
 				require.NoError(t, repo.Create(ctx, provider))
 			}
 
-			pagination := &domain.Pagination{
+			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 2,
 			}
 
 			// Execute first page
-			result, err := repo.List(ctx, nil, nil, pagination)
+			result, err := repo.List(ctx, page)
 
 			// Assert first page
 			require.NoError(t, err)
@@ -146,8 +169,8 @@ func TestProviderRepository(t *testing.T) {
 			assert.Greater(t, result.TotalItems, int64(2))
 
 			// Execute second page
-			pagination.Page = 2
-			result, err = repo.List(ctx, nil, nil, pagination)
+			page.Page = 2
+			result, err = repo.List(ctx, page)
 
 			// Assert second page
 			require.NoError(t, err)

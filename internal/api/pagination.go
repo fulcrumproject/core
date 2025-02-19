@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"fulcrumproject.org/core/internal/domain"
 )
@@ -10,59 +11,68 @@ import (
 const (
 	defaultPage     = 1
 	defaultPageSize = 10
+	maxPageSize     = 100
+
+	// Request parameters
+	paramPage     = "page"
+	paramPageSize = "pageSize"
+	paramSort     = "sort"
 )
 
-// parsePagination extracts and validates pagination parameters from the request
-func parsePagination(r *http.Request) *domain.Pagination {
-	query := r.URL.Query()
+// Reserved parameters that should not be included in filters
+var reservedParams = map[string]bool{
+	paramPage:     true,
+	paramPageSize: true,
+	paramSort:     true,
+}
 
-	page, _ := strconv.Atoi(query.Get("page"))
+func parsePageRequest(r *http.Request) (*domain.PageRequest, error) {
+	q := r.URL.Query()
+
+	// Pagination
+	page, _ := strconv.Atoi(q.Get(paramPage))
 	if page < 1 {
 		page = defaultPage
 	}
-
-	pageSize, _ := strconv.Atoi(query.Get("pageSize"))
-	if pageSize < 1 {
+	pageSize, _ := strconv.Atoi(q.Get(paramPageSize))
+	if pageSize < 1 || pageSize > maxPageSize {
 		pageSize = defaultPageSize
 	}
 
-	return &domain.Pagination{
-		Page:     page,
-		PageSize: pageSize,
-	}
-}
-
-// parseSorting extracts and validates sorting parameters from the request
-func parseSorting(r *http.Request) *domain.Sorting {
-	query := r.URL.Query()
-
-	sortField := query.Get("sortField")
-	if sortField == "" {
-		return nil
-	}
-
-	return &domain.Sorting{
-		Field: sortField,
-		Order: query.Get("sortOrder"),
-	}
-}
-
-// ParseFilters extracts filters from the request based on provided field configurations
-func parseSimpleFilter(r *http.Request) *domain.SimpleFilter {
-	query := r.URL.Query()
-	if query.Has("filterField") && query.Has("filterValue") {
-		if paramValue := query.Get("filterField"); paramValue != "" {
-			return &domain.SimpleFilter{
-				Field: paramValue,
-				Value: query.Get("filterValue"),
-			}
+	// Sort
+	sort := q.Get(paramSort)
+	var sortBy string
+	var sortAsc bool
+	if sort != "" {
+		if strings.HasPrefix(sort, "+") {
+			sortBy = sort[1:]
+			sortAsc = true
+		} else if strings.HasPrefix(sort, "-") {
+			sortBy = sort[1:]
+			sortAsc = false
+		} else {
+			sortBy = sort
+			sortAsc = true // default to ascending if no prefix
 		}
 	}
-	return nil
+
+	// Collect all non-reserved parameters as filters
+	filters := make(map[string][]string)
+	for key, values := range q {
+		if !reservedParams[key] && len(values) > 0 {
+			filters[key] = values
+		}
+	}
+
+	return &domain.PageRequest{
+		Page: page, PageSize: pageSize,
+		Sort: sort != "", SortBy: sortBy, SortAsc: sortAsc,
+		Filters: filters,
+	}, nil
 }
 
-// PaginatedResponse represents a generic paginated response
-type PaginatedResponse[T any] struct {
+// PageResponse represents a generic paginated response
+type PageResponse[T any] struct {
 	Items       []*T  `json:"items"`
 	TotalItems  int64 `json:"totalItems"`
 	TotalPages  int   `json:"totalPages"`
@@ -71,14 +81,14 @@ type PaginatedResponse[T any] struct {
 	HasPrev     bool  `json:"hasPrev"`
 }
 
-// NewPaginatedResponse creates a new PaginatedResponse from a domain.PaginatedResult
-func NewPaginatedResponse[E any, R any](result *domain.PaginatedResult[E], conv func(*E) *R) *PaginatedResponse[R] {
+// NewPageResponse creates a new PaginatedResponse from a domain.PaginatedResult
+func NewPageResponse[E any, R any](result *domain.PageResponse[E], conv func(*E) *R) *PageResponse[R] {
 	items := make([]*R, len(result.Items))
 	for i, e := range result.Items {
 		items[i] = conv(&e)
 	}
 
-	return &PaginatedResponse[R]{
+	return &PageResponse[R]{
 		Items:       items,
 		TotalItems:  result.TotalItems,
 		TotalPages:  result.TotalPages,
