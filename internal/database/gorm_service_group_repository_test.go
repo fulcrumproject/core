@@ -110,27 +110,4 @@ func TestServiceGroupRepository(t *testing.T) {
 		assert.Len(t, result.Items, 1)
 		assert.Equal(t, "Group A", result.Items[0].Name)
 	})
-
-	t.Run("Count", func(t *testing.T) {
-		// Create multiple service groups
-		groups := []*domain.ServiceGroup{
-			{Name: "Count A"},
-			{Name: "Count B"},
-			{Name: "Count C"},
-		}
-		for _, group := range groups {
-			err := repo.Create(context.Background(), group)
-			require.NoError(t, err)
-		}
-
-		// Test count without filter
-		count, err := repo.Count(context.Background(), nil)
-		require.NoError(t, err)
-		assert.Greater(t, count, int64(2))
-
-		// Test count with filter
-		count, err = repo.Count(context.Background(), &domain.SimpleFilter{Field: "name", Value: "Count A"})
-		require.NoError(t, err)
-		assert.Equal(t, int64(1), count)
-	})
 }

@@ -111,21 +111,4 @@ func TestMetricEntryRepository(t *testing.T) {
 		assert.NotNil(t, result.Items[0].Service)
 		assert.NotNil(t, result.Items[0].Type)
 	})
-
-	t.Run("Count", func(t *testing.T) {
-		// Test count without filter
-		count, err := repo.Count(context.Background(), nil)
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, count, int64(3))
-
-		// Test count with serviceId filter
-		count, err = repo.Count(context.Background(), &domain.SimpleFilter{Field: "serviceId", Value: service.ID.String()})
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, count, int64(3))
-
-		// Test count with typeId filter
-		count, err = repo.Count(context.Background(), &domain.SimpleFilter{Field: "typeId", Value: metricType.ID.String()})
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, count, int64(3))
-	})
 }

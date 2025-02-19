@@ -193,34 +193,6 @@ func TestServiceRepository(t *testing.T) {
 		assert.Equal(t, domain.ServiceUpdated, result.Items[0].State)
 	})
 
-	t.Run("Count", func(t *testing.T) {
-		// Create multiple services
-		services := []*domain.Service{
-			{Name: "Count A", State: domain.ServiceCreated, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-			{Name: "Count B", State: domain.ServiceUpdated, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-			{Name: "Count C", State: domain.ServiceCreated, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-		}
-		for _, service := range services {
-			err := repo.Create(context.Background(), service)
-			require.NoError(t, err)
-		}
-
-		// Test count without filter
-		count, err := repo.Count(context.Background(), nil)
-		require.NoError(t, err)
-		assert.Greater(t, count, int64(2))
-
-		// Test count with name filter
-		count, err = repo.Count(context.Background(), &domain.SimpleFilter{Field: "name", Value: "Count A"})
-		require.NoError(t, err)
-		assert.Equal(t, int64(1), count)
-
-		// Test count with state filter
-		count, err = repo.Count(context.Background(), &domain.SimpleFilter{Field: "state", Value: string(domain.ServiceUpdated)})
-		require.NoError(t, err)
-		assert.NotZero(t, count)
-	})
-
 	t.Run("CountByGroup", func(t *testing.T) {
 		// Create a service in the group
 		service := &domain.Service{

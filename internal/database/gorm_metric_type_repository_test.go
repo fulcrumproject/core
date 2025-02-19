@@ -118,27 +118,4 @@ func TestMetricTypeRepository(t *testing.T) {
 		assert.GreaterOrEqual(t, len(result.Items), 1)
 		assert.Equal(t, "CPU Usage", result.Items[0].Name)
 	})
-
-	t.Run("Count", func(t *testing.T) {
-		// Create multiple metric types
-		metricTypes := []*domain.MetricType{
-			{Name: "Count A", EntityType: domain.MetricEntityTypeService},
-			{Name: "Count B", EntityType: domain.MetricEntityTypeAgent},
-			{Name: "Count C", EntityType: domain.MetricEntityTypeResource},
-		}
-		for _, metricType := range metricTypes {
-			err := repo.Create(context.Background(), metricType)
-			require.NoError(t, err)
-		}
-
-		// Test count without filter
-		count, err := repo.Count(context.Background(), nil)
-		require.NoError(t, err)
-		assert.Greater(t, count, int64(2))
-
-		// Test count with name filter
-		count, err = repo.Count(context.Background(), &domain.SimpleFilter{Field: "name", Value: "Count A"})
-		require.NoError(t, err)
-		assert.Equal(t, int64(1), count)
-	})
 }

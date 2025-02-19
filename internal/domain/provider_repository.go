@@ -18,7 +18,4 @@ type ProviderRepository interface {
 
 	// List retrieves a list of entities based on the provided filters
 	List(ctx context.Context, filter *SimpleFilter, sorting *Sorting, pagination *Pagination) (*PaginatedResult[Provider], error)
-
-	// Count returns the number of entities matching the provided filters
-	Count(ctx context.Context, filter *SimpleFilter) (int64, error)
 }

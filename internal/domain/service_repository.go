@@ -19,9 +19,6 @@ type ServiceRepository interface {
 	// List retrieves a list of entities based on the provided filters
 	List(ctx context.Context, filter *SimpleFilter, sorting *Sorting, pagination *Pagination) (*PaginatedResult[Service], error)
 
-	// Count returns the number of entities matching the provided filters
-	Count(ctx context.Context, filter *SimpleFilter) (int64, error)
-
 	// CountByGroup returns the number of services in a specific group
 	CountByGroup(ctx context.Context, groupID UUID) (int64, error)
 }

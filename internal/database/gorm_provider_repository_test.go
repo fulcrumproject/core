@@ -154,11 +154,6 @@ func TestProviderRepository(t *testing.T) {
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)
 			assert.True(t, result.HasPrev)
-
-			// Verify total count
-			count, err := repo.Count(ctx, nil)
-			require.NoError(t, err)
-			assert.Equal(t, result.TotalItems, count)
 		})
 	})
 

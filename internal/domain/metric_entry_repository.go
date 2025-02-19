@@ -9,7 +9,4 @@ type MetricEntryRepository interface {
 
 	// List retrieves a list of metric entries based on the provided filters
 	List(ctx context.Context, filter *SimpleFilter, sorting *Sorting, pagination *Pagination) (*PaginatedResult[MetricEntry], error)
-
-	// Count returns the number of entities matching the provided filters
-	Count(ctx context.Context, filter *SimpleFilter) (int64, error)
 }
