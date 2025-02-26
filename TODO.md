@@ -26,8 +26,9 @@
   - [x] Audit
     - [x] Metodi tracciatura
     - [x] Endpoint lettura
-  - [ ] !!! Fix sort
-  - [ ] !!! Multi column filter
+    - [ ] Inserimento
+  - [x] !!! Fix sort
+  - [x] !!! Multi column filter
   - [ ] Task Queue Endpoints
     - [ ] Read
     - [ ] Commit
