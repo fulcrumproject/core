@@ -70,7 +70,7 @@ func parserInFilterFieldApplier[T any](f string, t func(string) (T, error)) Filt
 }
 
 func stringInFilterFieldApplier(f string) FilterFieldApplier {
-	return parserInFilterFieldApplier[string](f, func(v string) (string, error) { return v, nil })
+	return parserInFilterFieldApplier(f, func(v string) (string, error) { return v, nil })
 }
 
 // list implements a generic list operation for any model type

@@ -1,0 +1,173 @@
+### Test Job API
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+
+### Create a provider for testing
+# @name createProvider
+POST {{baseUrl}}/providers
+Content-Type: application/json
+
+{
+    "name": "Test Provider",
+    "state": "Enabled",
+    "countryCode": "US",
+    "attributes": {
+        "type": ["test"]
+    }
+}
+
+### Extract provider ID
+@providerId = {{createProvider.response.body.$.id}}
+
+### Get an agent type for testing
+# @name getAgentTypes
+GET {{baseUrl}}/agent-types
+
+### Extract first agent type ID
+@agentTypeId = {{getAgentTypes.response.body.$.items[0].id}}
+
+### Create an agent
+# @name createAgent
+POST {{baseUrl}}/agents
+Content-Type: application/json
+
+{
+    "name": "Test Job Agent",
+    "state": "Connected",
+    "tokenHash": "test-job-token-hash",
+    "countryCode": "US",
+    "agentTypeId": "{{agentTypeId}}",
+    "providerId": "{{providerId}}"
+}
+
+### Extract agent ID
+@agentId = {{createAgent.response.body.$.id}}
+
+### Extract agent token from response
+@agentToken = {{createAgent.response.body.$.token}}
+
+### Get a service type for testing
+# @name getServiceTypes
+GET {{baseUrl}}/service-types
+
+### Extract first service type ID
+@serviceTypeId = {{getServiceTypes.response.body.$.items[0].id}}
+
+### Create a service group
+# @name createServiceGroup
+POST {{baseUrl}}/service-groups
+Content-Type: application/json
+
+{
+    "name": "Test Job Service Group"
+}
+
+### Extract service group ID
+@serviceGroupId = {{createServiceGroup.response.body.$.id}}
+
+### Create a service
+# @name createService
+POST {{baseUrl}}/services
+Content-Type: application/json
+
+{
+    "name": "Test Job Service",
+    "state": "Running",
+    "attributes": {
+        "environment": ["test"]
+    },
+    "resources": {
+        "cpu": 1,
+        "memory": "2GB"
+    },
+    "agentId": "{{agentId}}",
+    "serviceTypeId": "{{serviceTypeId}}",
+    "groupId": "{{serviceGroupId}}"
+}
+
+### Extract service ID
+@serviceId = {{createService.response.body.$.id}}
+
+### List all jobs
+GET {{baseUrl}}/jobs
+
+### List jobs with filters
+GET {{baseUrl}}/jobs?state=Pending
+
+### List jobs with pagination
+GET {{baseUrl}}/jobs?page=1&pageSize=10
+
+### Get pending jobs for agent (requires authentication)
+# @name pendingJobs
+GET {{baseUrl}}/jobs/pending
+Authorization: Bearer {{agentToken}}
+
+### Extract first job ID
+@jobId = {{pendingJobs.response.body.$.[0].id}}
+
+### Get a job by ID
+GET {{baseUrl}}/jobs/{{jobId}}
+
+### Claim a job (requires authentication)
+POST {{baseUrl}}/jobs/{{jobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete a job (requires authentication)
+POST {{baseUrl}}/jobs/{{jobId}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "resultData": {
+        "status": "success",
+        "details": {
+            "duration": "10s",
+            "output": "Service started successfully"
+        }
+    }
+}
+
+### Update the created service to trigger job creation
+# @name updateService
+PUT {{baseUrl}}/services/{{serviceId}}
+Content-Type: application/json
+
+{
+    "name": "Updated Job Service",
+    "state": "Running",
+    "attributes": {
+        "environment": ["test", "updated"]
+    },
+    "resources": {
+        "cpu": 2,
+        "memory": "4GB"
+    },
+    "agentId": "{{agentId}}",
+    "serviceTypeId": "{{serviceTypeId}}",
+    "groupId": "{{serviceGroupId}}"
+}
+
+### Get pending jobs for agent (requires authentication)
+# @name pendingJobs2
+GET {{baseUrl}}/jobs/pending
+Authorization: Bearer {{agentToken}}
+
+### Extract the second job ID
+@failJobId = {{pendingJobs2.response.body.$.[0].id}}
+
+### Claim the job for failure testing
+POST {{baseUrl}}/jobs/{{failJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Fail a job (requires authentication)
+POST {{baseUrl}}/jobs/{{failJobId}}/fail
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "errorMessage": "Update failed: dependency missing"
+}
+
+### Check the failed job status
+GET {{baseUrl}}/jobs/{{failJobId}}

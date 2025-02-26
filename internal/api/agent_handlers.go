@@ -36,6 +36,12 @@ type AgentResponse struct {
 	UpdatedAt   JSONUTCTime            `json:"updatedAt"`
 }
 
+// AgentCreateResponse extends AgentResponse with a token field
+type AgentCreateResponse struct {
+	*AgentResponse
+	Token string `json:"token,omitempty"` // Only included in creation response
+}
+
 // agentToResponse converts a domain.Agent to an AgentResponse
 func agentToResponse(a *domain.Agent) *AgentResponse {
 	response := &AgentResponse{
@@ -81,6 +87,7 @@ func (h *AgentHandler) Routes() chi.Router {
 	r.Get("/{id}", h.handleGet)
 	r.Put("/{id}", h.handleUpdate)
 	r.Delete("/{id}", h.handleDelete)
+	r.Post("/{id}/rotate-token", h.handleRotateToken) // New endpoint
 
 	return r
 }
@@ -105,9 +112,9 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	agent := &domain.Agent{
-		Name:        req.Name,
-		State:       req.State,
-		TokenHash:   req.TokenHash,
+		Name:  req.Name,
+		State: req.State,
+		// Token is now generated, not provided in the request
 		CountryCode: req.CountryCode,
 		Attributes:  domain.Attributes(req.Attributes),
 		Properties:  req.Properties,
@@ -120,13 +127,25 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Generate a secure token for the agent
+	token, err := agent.GenerateToken()
+	if err != nil {
+		render.Render(w, r, ErrInternal(err))
+		return
+	}
+
 	if err := h.repo.Create(r.Context(), agent); err != nil {
 		render.Render(w, r, ErrInternal(err))
 		return
 	}
 
+	// Return the agent with the token (one time only)
+	resp := &AgentCreateResponse{
+		AgentResponse: agentToResponse(agent),
+		Token:         token,
+	}
+	render.JSON(w, r, resp)
 	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, agentToResponse(agent))
 }
 
 func (h *AgentHandler) handleGet(w http.ResponseWriter, r *http.Request) {
@@ -195,9 +214,10 @@ func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	// Update fields
 	agent.Name = req.Name
 	agent.State = req.State
-	agent.TokenHash = req.TokenHash
+	// Keep existing token hash
+	currentTokenHash := agent.TokenHash
 	agent.CountryCode = req.CountryCode
-	agent.Attributes = domain.Attributes(req.Attributes)
+	agent.TokenHash = currentTokenHash // Preserve the token hash
 	agent.Properties = req.Properties
 	agent.ProviderID = providerID
 	agent.AgentTypeID = agentTypeID
@@ -234,4 +254,39 @@ func (h *AgentHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleRotateToken handles POST /agents/{id}/rotate-token
+func (h *AgentHandler) handleRotateToken(w http.ResponseWriter, r *http.Request) {
+	id, err := domain.ParseUUID(chi.URLParam(r, "id"))
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	agent, err := h.repo.FindByID(r.Context(), id)
+	if err != nil {
+		render.Render(w, r, ErrNotFound())
+		return
+	}
+
+	// Generate a new token
+	token, err := agent.GenerateToken()
+	if err != nil {
+		render.Render(w, r, ErrInternal(err))
+		return
+	}
+
+	// Save the agent with the new token hash
+	if err := h.repo.Save(r.Context(), agent); err != nil {
+		render.Render(w, r, ErrInternal(err))
+		return
+	}
+
+	// Return the new token
+	resp := &AgentCreateResponse{
+		AgentResponse: agentToResponse(agent),
+		Token:         token,
+	}
+	render.JSON(w, r, resp)
 }

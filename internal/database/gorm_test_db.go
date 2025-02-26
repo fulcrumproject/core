@@ -2,11 +2,9 @@ package database
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"fulcrumproject.org/core/internal/env"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -19,8 +17,8 @@ type TestDB struct {
 // NewTestDB creates a new instance of TestDB
 func NewTestDB(t *testing.T) *TestDB {
 	// Generate a unique database name using UUID without hyphens
-	uuidStr := strings.Replace(uuid.New().String(), "-", "", -1)
-	dbName := fmt.Sprintf("fulcrum_test_%s", uuidStr)
+	// uuidStr := strings.Replace(uuid.New().String(), "-", "", -1)
+	dbName := fmt.Sprintf("fulcrum_test_%s", "db") // uuidStr)
 	config := Config{
 		Host:     env.GetOrDefault("TEST_DB_HOST", "localhost"),
 		User:     env.GetOrDefault("TEST_DB_USER", "fulcrum"),

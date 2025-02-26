@@ -2,8 +2,11 @@ package database
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"fulcrumproject.org/core/internal/domain"
 )
@@ -41,4 +44,23 @@ func NewAgentRepository(db *gorm.DB) domain.AgentRepository {
 // CountByProvider returns the number of agents for a specific provider
 func (r *gormAgentRepository) CountByProvider(ctx context.Context, providerID domain.UUID) (int64, error) {
 	return r.Count(ctx, "provider_id = ?", providerID)
+}
+
+// FindByTokenHash finds an agent by its token hash
+func (r *gormAgentRepository) FindByTokenHash(ctx context.Context, tokenHash string) (*domain.Agent, error) {
+	var agent domain.Agent
+
+	err := r.db.WithContext(ctx).
+		Preload(clause.Associations).
+		Where("token_hash = ?", tokenHash).
+		First(&agent).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.NotFoundError{Err: fmt.Errorf("agent with token hash not found")}
+		}
+		return nil, err
+	}
+
+	return &agent, nil
 }

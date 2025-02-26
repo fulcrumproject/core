@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
 	"fulcrumproject.org/core/internal/api"
 	"fulcrumproject.org/core/internal/database"
+	"fulcrumproject.org/core/internal/service"
 )
 
 func main() {
@@ -34,6 +37,10 @@ func main() {
 	metricTypeRepo := database.NewMetricTypeRepository(db)
 	metricEntryRepo := database.NewMetricEntryRepository(db)
 	auditEntryRepo := database.NewAuditEntryRepository(db)
+	jobRepo := database.NewJobRepository(db)
+
+	// Initialize services
+	serviceOps := service.NewServiceOperationService(serviceRepo, jobRepo)
 
 	// Initialize handlers
 	agentTypeHandler := api.NewAgentTypeHandler(agentTypeRepo)
@@ -41,7 +48,13 @@ func main() {
 	providerHandler := api.NewProviderHandler(providerRepo, agentRepo)
 	agentHandler := api.NewAgentHandler(agentRepo)
 	serviceGroupHandler := api.NewServiceGroupHandler(serviceGroupRepo, serviceRepo)
-	serviceHandler := api.NewServiceHandler(serviceRepo)
+
+	// Use ServiceOperationService for service operations that require job creation
+	serviceHandler := api.NewServiceHandler(serviceOps)
+
+	// Job handler for agent communication
+	jobHandler := api.NewJobHandler(jobRepo, agentRepo)
+
 	metricTypeHandler := api.NewMetricTypeHandler(metricTypeRepo)
 	metricEntryHandler := api.NewMetricEntryHandler(metricEntryRepo)
 	auditEntryHandler := api.NewAuditEntryHandler(auditEntryRepo)
@@ -64,7 +77,28 @@ func main() {
 		r.Mount("/metric-types", metricTypeHandler.Routes())
 		r.Mount("/metric-entries", metricEntryHandler.Routes())
 		r.Mount("/audit-entries", auditEntryHandler.Routes())
+		r.Mount("/jobs", jobHandler.Routes())
 	})
+
+	// Setup background job maintenance worker
+	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		for range ticker.C {
+			ctx := context.Background()
+
+			// Release jobs that have been processing for more than 30 minutes
+			releasedCount, _ := jobRepo.ReleaseStuckJobs(ctx, 30)
+			if releasedCount > 0 {
+				log.Printf("Released %d stuck jobs", releasedCount)
+			}
+
+			// Delete completed/failed jobs older than 7 days
+			deletedCount, _ := jobRepo.DeleteOldCompletedJobs(ctx, 7)
+			if deletedCount > 0 {
+				log.Printf("Deleted %d old completed jobs", deletedCount)
+			}
+		}
+	}()
 
 	// Start server
 	log.Println("Server starting on port 3000...")

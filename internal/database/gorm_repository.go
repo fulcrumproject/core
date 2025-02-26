@@ -82,7 +82,7 @@ func (r *GormRepository[T]) FindByID(ctx context.Context, id domain.UUID) (*T, e
 		query = query.Preload(path)
 	}
 
-	err := query.First(entity, id).Error
+	err := query.First(entity, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.NotFoundError{Err: err}

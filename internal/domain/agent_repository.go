@@ -21,4 +21,7 @@ type AgentRepository interface {
 
 	// CountByProvider returns the number of agents for a specific provider
 	CountByProvider(ctx context.Context, providerID UUID) (int64, error)
+
+	// FindByTokenHash finds an agent by its token hash
+	FindByTokenHash(ctx context.Context, tokenHash string) (*Agent, error)
 }
