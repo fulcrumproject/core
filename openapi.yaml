@@ -10,6 +10,20 @@ info:
     name: Apache License 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
 
+tags:
+  - name: Providers
+    description: Cloud provider management
+  - name: Agents
+    description: Agent and agent type management
+  - name: Services
+    description: Service, service type, and service group management
+  - name: Jobs
+    description: Job queue and processing
+  - name: Metrics
+    description: Metrics collection and management
+  - name: Audit
+    description: Audit logging
+
 servers:
   - url: http://localhost:3000/api/v1
     description: Local development server
@@ -512,6 +526,8 @@ paths:
   /providers:
     get:
       summary: List providers
+      tags:
+        - Providers
       description: Retrieves a paginated list of providers
       parameters:
         - name: page
@@ -540,6 +556,8 @@ paths:
                           $ref: "#/components/schemas/ProviderResponse"
     post:
       summary: Create a provider
+      tags:
+        - Providers
       description: Creates a new provider
       requestBody:
         required: true
@@ -570,6 +588,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     get:
       summary: Get a provider
+      tags:
+        - Providers
       description: Retrieves a specific provider by ID
       responses:
         "200":
@@ -586,6 +606,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     put:
       summary: Update a provider
+      tags:
+        - Providers
       description: Updates an existing provider
       requestBody:
         required: true
@@ -608,6 +630,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     delete:
       summary: Delete a provider
+      tags:
+        - Providers
       description: Deletes a provider by ID
       responses:
         "204":
@@ -625,6 +649,8 @@ paths:
   /agents:
     get:
       summary: List agents
+      tags:
+        - Agents
       description: Retrieves a paginated list of agents
       parameters:
         - name: page
@@ -653,6 +679,8 @@ paths:
                           $ref: "#/components/schemas/AgentResponse"
     post:
       summary: Create an agent
+      tags:
+        - Agents
       description: Creates a new agent and returns the agent data with an authentication token
       requestBody:
         required: true
@@ -683,6 +711,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     get:
       summary: Get an agent
+      tags:
+        - Agents
       description: Retrieves a specific agent by ID
       responses:
         "200":
@@ -699,6 +729,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     put:
       summary: Update an agent
+      tags:
+        - Agents
       description: Updates an existing agent
       requestBody:
         required: true
@@ -721,6 +753,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     delete:
       summary: Delete an agent
+      tags:
+        - Agents
       description: Deletes an agent by ID
       responses:
         "204":
@@ -741,6 +775,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     post:
       summary: Rotate agent token
+      tags:
+        - Agents
       description: Generates a new authentication token for the agent
       responses:
         "200":
@@ -762,6 +798,8 @@ paths:
   /agent-types:
     get:
       summary: List agent types
+      tags:
+        - Agents
       description: Retrieves a paginated list of agent types
       parameters:
         - name: page
@@ -790,6 +828,8 @@ paths:
                           $ref: "#/components/schemas/AgentTypeResponse"
     post:
       summary: Create an agent type
+      tags:
+        - Agents
       description: Creates a new agent type
       requestBody:
         required: true
@@ -820,6 +860,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     get:
       summary: Get an agent type
+      tags:
+        - Agents
       description: Retrieves a specific agent type by ID
       responses:
         "200":
@@ -836,6 +878,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     put:
       summary: Update an agent type
+      tags:
+        - Agents
       description: Updates an existing agent type
       requestBody:
         required: true
@@ -858,6 +902,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     delete:
       summary: Delete an agent type
+      tags:
+        - Agents
       description: Deletes an agent type by ID
       responses:
         "204":
@@ -875,6 +921,8 @@ paths:
   /services:
     get:
       summary: List services
+      tags:
+        - Services
       description: Retrieves a paginated list of services
       parameters:
         - name: page
@@ -903,6 +951,8 @@ paths:
                           $ref: "#/components/schemas/ServiceResponse"
     post:
       summary: Create a service
+      tags:
+        - Services
       description: Creates a new service
       requestBody:
         required: true
@@ -933,6 +983,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     get:
       summary: Get a service
+      tags:
+        - Services
       description: Retrieves a specific service by ID
       responses:
         "200":
@@ -949,6 +1001,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     put:
       summary: Update a service
+      tags:
+        - Services
       description: Updates an existing service
       requestBody:
         required: true
@@ -971,6 +1025,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     delete:
       summary: Delete a service
+      tags:
+        - Services
       description: Deletes a service by ID
       responses:
         "204":
@@ -988,6 +1044,8 @@ paths:
   /service-types:
     get:
       summary: List service types
+      tags:
+        - Services
       description: Retrieves a paginated list of service types
       parameters:
         - name: page
@@ -1016,6 +1074,8 @@ paths:
                           $ref: "#/components/schemas/ServiceTypeResponse"
     post:
       summary: Create a service type
+      tags:
+        - Services
       description: Creates a new service type
       requestBody:
         required: true
@@ -1046,6 +1106,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     get:
       summary: Get a service type
+      tags:
+        - Services
       description: Retrieves a specific service type by ID
       responses:
         "200":
@@ -1062,6 +1124,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     put:
       summary: Update a service type
+      tags:
+        - Services
       description: Updates an existing service type
       requestBody:
         required: true
@@ -1084,6 +1148,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     delete:
       summary: Delete a service type
+      tags:
+        - Services
       description: Deletes a service type by ID
       responses:
         "204":
@@ -1101,6 +1167,8 @@ paths:
   /service-groups:
     get:
       summary: List service groups
+      tags:
+        - Services
       description: Retrieves a paginated list of service groups
       parameters:
         - name: page
@@ -1129,6 +1197,8 @@ paths:
                           $ref: "#/components/schemas/ServiceGroupResponse"
     post:
       summary: Create a service group
+      tags:
+        - Services
       description: Creates a new service group
       requestBody:
         required: true
@@ -1159,6 +1229,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     get:
       summary: Get a service group
+      tags:
+        - Services
       description: Retrieves a specific service group by ID
       responses:
         "200":
@@ -1175,6 +1247,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     put:
       summary: Update a service group
+      tags:
+        - Services
       description: Updates an existing service group
       requestBody:
         required: true
@@ -1197,6 +1271,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     delete:
       summary: Delete a service group
+      tags:
+        - Services
       description: Deletes a service group by ID
       responses:
         "204":
@@ -1214,6 +1290,8 @@ paths:
   /jobs:
     get:
       summary: List jobs
+      tags:
+        - Jobs
       description: Retrieves a paginated list of jobs (admin route)
       parameters:
         - name: page
@@ -1244,6 +1322,8 @@ paths:
   /jobs/pending:
     get:
       summary: Get pending jobs
+      tags:
+        - Jobs
       description: Retrieves a list of pending jobs for the authenticated agent
       security:
         - AgentAuth: []
@@ -1278,6 +1358,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     get:
       summary: Get a job
+      tags:
+        - Jobs
       description: Retrieves a specific job by ID (admin route)
       responses:
         "200":
@@ -1302,6 +1384,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     post:
       summary: Claim a job
+      tags:
+        - Jobs
       description: Claims a job for processing by the authenticated agent
       security:
         - AgentAuth: []
@@ -1330,6 +1414,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     post:
       summary: Complete a job
+      tags:
+        - Jobs
       description: Marks a job as completed with results
       security:
         - AgentAuth: []
@@ -1364,6 +1450,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     post:
       summary: Fail a job
+      tags:
+        - Jobs
       description: Marks a job as failed with an error message
       security:
         - AgentAuth: []
@@ -1395,6 +1483,8 @@ paths:
   /metric-types:
     get:
       summary: List metric types
+      tags:
+        - Metrics
       description: Retrieves a paginated list of metric types
       parameters:
         - name: page
@@ -1423,6 +1513,8 @@ paths:
                           $ref: "#/components/schemas/MetricTypeResponse"
     post:
       summary: Create a metric type
+      tags:
+        - Metrics
       description: Creates a new metric type
       requestBody:
         required: true
@@ -1453,6 +1545,8 @@ paths:
           $ref: "#/components/schemas/UUID"
     get:
       summary: Get a metric type
+      tags:
+        - Metrics
       description: Retrieves a specific metric type by ID
       responses:
         "200":
@@ -1469,6 +1563,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     put:
       summary: Update a metric type
+      tags:
+        - Metrics
       description: Updates an existing metric type
       requestBody:
         required: true
@@ -1491,6 +1587,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
     delete:
       summary: Delete a metric type
+      tags:
+        - Metrics
       description: Deletes a metric type by ID
       responses:
         "204":
@@ -1508,6 +1606,8 @@ paths:
   /metric-entries:
     get:
       summary: List metric entries
+      tags:
+        - Metrics
       description: Retrieves a paginated list of metric entries
       parameters:
         - name: page
@@ -1536,6 +1636,8 @@ paths:
                           $ref: "#/components/schemas/MetricEntryResponse"
     post:
       summary: Create a metric entry
+      tags:
+        - Metrics
       description: Creates a new metric entry
       requestBody:
         required: true
@@ -1563,6 +1665,8 @@ paths:
   /audit-entries:
     get:
       summary: List audit entries
+      tags:
+        - Audit
       description: Retrieves a paginated list of audit entries
       parameters:
         - name: page
