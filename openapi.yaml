@@ -172,7 +172,7 @@ components:
       properties:
         name:
           type: string
-          example: "AWS US East"
+          example: "Provider"
         state:
           $ref: "#/components/schemas/ProviderState"
         countryCode:
@@ -188,7 +188,7 @@ components:
           $ref: "#/components/schemas/UUID"
         name:
           type: string
-          example: "AWS US East"
+          example: "Provider"
         state:
           $ref: "#/components/schemas/ProviderState"
         countryCode:
@@ -211,7 +211,7 @@ components:
       properties:
         name:
           type: string
-          example: "AWS EC2 Agent"
+          example: "Provider VM Agent"
 
     AgentTypeResponse:
       type: object
@@ -220,7 +220,7 @@ components:
           $ref: "#/components/schemas/UUID"
         name:
           type: string
-          example: "AWS EC2 Agent"
+          example: "Provider VM Agent"
         createdAt:
           type: string
           format: date-time

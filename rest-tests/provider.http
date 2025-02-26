@@ -9,7 +9,7 @@ POST {{baseUrl}}/providers
 Content-Type: application/json
 
 {
-    "name": "AWS",
+    "name": "Provider",
     "state": "Enabled",
     "countryCode": "US",
     "attributes": {
@@ -26,14 +26,14 @@ Content-Type: application/json
 GET {{baseUrl}}/providers/{{providerId}}
 
 ### List all providers
-GET {{baseUrl}}/providers?name=AWS
+GET {{baseUrl}}/providers?name=Provider
 
 ### Update a provider
 PUT {{baseUrl}}/providers/{{providerId}}
 Content-Type: application/json
 
 {
-    "name": "AWS Updated",
+    "name": "Provider Updated",
     "state": "Enabled",
     "countryCode": "US",
     "attributes": {
