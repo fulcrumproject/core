@@ -12,6 +12,7 @@ The system is built as a RESTful API and enables organizations to:
 - Organize services into logical groups for easier management
 - Collect and analyze metrics from agents and services
 - Maintain a comprehensive audit trail of all system operations
+- Coordinate service operations with agents through a robust job queue system
 
 ## Context
 
@@ -40,7 +41,6 @@ graph TB
     AG -->|Report Status & Metrics| FC
     AG -->|Provision & Manage| SVC
 ```
-
 ### Actors and Their Roles
 
 #### Fulcrum Core UI
@@ -62,6 +62,8 @@ Agents are software components installed on Cloud Service Providers that act as 
 - Handle local resource allocation and optimization
 - Implement provider-specific operations and API interactions
 - Maintain secure communications with the Fulcrum Core through token-based authentication
+- Poll for jobs from the job queue and process them
+- Update job status upon completion or failure
 
 #### Fulcrum Administrators
 
@@ -74,6 +76,7 @@ Fulcrum Administrators are responsible for the overall management of the Fulcrum
 - Orchestrate service groups across multiple providers
 - Define service types and their resource requirements
 - Oversee agent deployments and their operational status
+- Monitor job queue health and processing
 
 #### Cloud Service Provider Administrators
 
@@ -109,7 +112,9 @@ classDiagram
     AgentType "0..N" --> "1..N" ServiceType : can provide
     Agent "0..N" --> "1" AgentType : is of type
     Agent "1" --> "0..N" Service : handles
+    Agent "1" --> "0..N" Job : processes
     Service "0..1" --> "1" ServiceType : is of type
+    Service "1" --> "0..N" Job : related to
     ServiceGroup "1" --> "0..N" Service : groups many
     MetricEntry "1" --> "0..N" MetricType : is of type
 
@@ -169,6 +174,22 @@ classDiagram
             createdAt : datetime
             updatedAt : datetime
         }
+        
+        class Job {
+            id : UUID
+            type : enum[ServiceCreate,ServiceUpdate,ServiceDelete]
+            state : enum[Pending,Processing,Completed,Failed]
+            agentId : UUID
+            serviceId : UUID
+            priority : int
+            requestData : json
+            resultData : json
+            errorMessage : string
+            claimedAt : datetime
+            completedAt : datetime
+            createdAt : datetime
+            updatedAt : datetime
+        }
     }
 
     namespace Metrics {
@@ -215,6 +236,10 @@ classDiagram
     - Cluster Kubernetes Autodocs
     - Container Runtime services
     - K8s Application Reconcilier base"
+    
+    note for Job "Jobs represent operations that 
+    agents must perform, such as creating, 
+    updating, or deleting cloud services"
 ```
 
 #### Enities
@@ -235,6 +260,7 @@ classDiagram
    - Secured with token-based authentication
    - Includes country code and custom attributes
    - Stores additional configuration in properties field
+   - Processes jobs from the job queue
 
 3. **Service**
    - Represents individual service instances
@@ -243,6 +269,7 @@ classDiagram
    - Tracks service lifecycle state
    - Contains custom attributes for metadata
    - Stores service-specific resources configuration
+   - Related to jobs for lifecycle operations
 
 4. **AgentType**
    - Defines the type classification for agents
@@ -260,6 +287,16 @@ classDiagram
    - Organizes related services into logical groups
    - Provides a way to manage collections of services
    - One-to-many relationship with Services
+
+7. **Job**
+   - Represents operations to be performed by agents
+   - Types include ServiceCreate, ServiceUpdate, and ServiceDelete
+   - Tracks state through lifecycle (Pending, Processing, Completed, Failed)
+   - Links to target agent and related service
+   - Contains operation-specific data in requestData
+   - Stores operation results or error details
+   - Supports prioritization of operations
+   - Records timing of claim and completion events
 
 ##### Metrics
 
@@ -302,26 +339,172 @@ Fulcrum Core follows a clean, layered architecture to ensure separation of conce
    - Implements RESTful endpoints for all system entities
    - Manages request validation, error handling, and response formatting
    - Translates between HTTP/JSON and domain entities
+   - Includes authentication middleware
 
-2. **Domain Layer** (`internal/domain/`)
+2. **Service Layer** (`internal/service/`)
+   - Contains business logic that spans multiple entities
+   - Implements transaction management for complex operations
+   - Coordinates between repositories for multi-entity operations
+
+3. **Domain Layer** (`internal/domain/`)
    - Contains core business entities and logic
    - Defines repository interfaces for data access abstraction
    - Implements value objects and entity state definitions
    - Remains technology-agnostic with no external dependencies
 
-3. **Database Layer** (`internal/database/`)
+4. **Database Layer** (`internal/database/`)
    - Implements repository interfaces defined in the domain layer
    - Uses GORM to translate between domain entities and database models
    - Handles database-specific concerns like transactions and migrations
    - Includes testing utilities for database-backed unit tests
 
-4. **Application Layer** (`cmd/fulcrum/`)
+5. **Application Layer** (`cmd/fulcrum/`)
    - Serves as the application entry point
    - Configures dependencies and wires components together
    - Manages application lifecycle and environment configuration
    - Initializes and coordinates all system components
+   - Sets up background job maintenance workers
 
 This layered approach allows for clear separation between business logic and infrastructure concerns, enabling easier testing, maintenance, and future extensions. The system follows the Dependency Inversion Principle, with higher layers defining interfaces that lower layers implement, ensuring that dependencies point inward toward the domain core.
+
+### Job Queue Architecture
+
+The job queue is implemented as a database-backed queue that facilitates communication between the Fulcrum Core API and agent instances:
+
+```mermaid
+classDiagram
+    class Job {
+        +id: UUID
+        +type: string
+        +state: string
+        +agentId: UUID
+        +serviceId: UUID
+        +priority: int
+        +requestData: json
+        +resultData: json
+        +errorMessage: string
+        +claimedAt: datetime
+        +completedAt: datetime
+        +createdAt: datetime
+        +updatedAt: datetime
+    }
+    
+    Job --> Agent: targetAgent
+    Job --> Service: relatedService
+```
+
+Key components of the job queue include:
+
+1. **Job Entity**: Represents operations to be performed by agents
+2. **JobRepository**: Provides job queue operations like claiming and completing jobs
+3. **ServiceOperationService**: Handles service operations that create jobs
+4. **Job API Endpoints**: Allow agents to poll for and update jobs
+5. **Agent Token Authentication**: Secures agent-API communication
+6. **Job Maintenance**: Background processes that handle stuck or old jobs
+
+#### Agent Authentication Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Fulcrum Core API
+    participant DB as Database
+    
+    Client->>API: POST /api/v1/agents
+    API->>API: Generate secure random token
+    API->>API: Hash token
+    API->>DB: Store agent with token hash
+    API->>Client: Return agent data with token (once only)
+    Client->>Client: Securely store token
+    
+    Note over Client,API: Later API calls
+    
+    Client->>API: GET /api/v1/jobs/pending
+    Note right of Client: With Authorization: Bearer <token>
+    API->>API: Validate token by hashing and comparing
+    API->>DB: Query jobs for authenticated agent
+    API->>Client: Return pending jobs
+```
+
+#### Job Management Flow
+
+The job queue system manages the complete lifecycle of service operations from creation to completion. The following diagram illustrates the job management flow:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending: Job Created
+    Pending --> Processing: Agent Claims Job
+    Processing --> Completed: Operation Successful
+    Processing --> Failed: Operation Error
+    Completed --> [*]
+    Failed --> Pending: Auto-retry (timeout/error)
+    
+    note right of Pending
+        Jobs waiting to be claimed by agents
+        - Created when services are created/updated/deleted
+        - Contains operation data in requestData
+        - Assigned to specific agent
+    end note
+    
+    note right of Processing
+        Jobs currently being executed by an agent
+        - Agent has claimed the job
+        - claimedAt timestamp recorded
+        - Timeout monitoring active
+    end note
+    
+    note right of Completed
+        Successfully executed jobs
+        - Contains operation results in resultData
+        - completedAt timestamp recorded
+        - May be cleaned up after retention period
+    end note
+    
+    note right of Failed
+        Failed operation jobs
+        - Contains error details in errorMessage
+        - May be automatically retried
+        - Available for administrative review
+    end note
+```
+
+The job management process follows these steps:
+
+1. **Job Creation**: 
+   - When a service operation (create, update, delete) is initiated via the API
+   - The ServiceOperationService creates a job with state "Pending"
+   - The job is assigned to the appropriate agent
+   - Job contains all necessary data to perform the operation
+
+2. **Job Polling and Claiming**:
+   - Agents periodically poll `/api/v1/jobs/pending` for new jobs
+   - When a job is available, the agent claims it using `/api/v1/jobs/{id}/claim`
+   - The job state changes to "Processing"
+   - A timestamp is recorded in the `claimedAt` field
+
+3. **Job Processing**:
+   - The agent performs the requested operation on the cloud provider
+   - The agent maintains a secure connection with the job queue using token-based authentication
+   - During processing, the service state reflects the operation (Creating, Updating, Deleting)
+
+4. **Job Completion**:
+   - On successful completion, the agent calls `/api/v1/jobs/{id}/complete` with result data
+   - The job state changes to "Completed"
+   - A timestamp is recorded in the `completedAt` field
+   - The service state is updated accordingly (Created, Updated, Deleted)
+
+5. **Job Failure Handling**:
+   - If an operation fails, the agent calls `/api/v1/jobs/{id}/fail` with error details
+   - The job state changes to "Failed"
+   - The service state is updated to reflect the error
+   - Jobs may be automatically retried based on error type and configured policies
+
+6. **Job Maintenance**:
+   - Background workers periodically:
+     - Release stuck jobs (processing too long)
+     - Clean up old completed jobs after retention period
+     - Handle retry logic for failed jobs
+     - Monitor queue health and performance metrics
 
 ### High-Availability Deployment
 
@@ -368,3 +551,23 @@ graph TB
     DB1 -.Replication.-> DB2
     Agent1 & Agent2 & Agent3 --> Internet
 ```
+
+### API Endpoints
+
+#### Job Management API
+
+| Endpoint                     | Method | Description                                  |
+| ---------------------------- | ------ | -------------------------------------------- |
+| `/api/v1/jobs`               | GET    | List all jobs (admin)                        |
+| `/api/v1/jobs/{id}`          | GET    | Get job details (admin)                      |
+| `/api/v1/jobs/pending`       | GET    | Get pending jobs for the authenticated agent |
+| `/api/v1/jobs/{id}/claim`    | POST   | Claim a job for processing                   |
+| `/api/v1/jobs/{id}/complete` | POST   | Mark a job as completed                      |
+| `/api/v1/jobs/{id}/fail`     | POST   | Mark a job as failed                         |
+
+All agent endpoints require token-based authentication using the following header:
+```
+Authorization: Bearer <agent_token>
+```
+
+The token is provided once during agent creation and should be securely stored by the agent client.
