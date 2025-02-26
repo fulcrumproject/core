@@ -5,7 +5,7 @@
   - [ ] Agent
     - [x] CRUD
     - [x] Delete solo se senza service
-    - [ ] Auth con Token
+    - [x] Auth con Token
     - [ ] Health Endpoint + Timer Disconnected
   - [x] AgentType
     - [x] Seed
@@ -29,9 +29,9 @@
     - [ ] Inserimento
   - [x] !!! Fix sort
   - [x] !!! Multi column filter
-  - [ ] Task Queue Endpoints
-    - [ ] Read
-    - [ ] Commit
+  - [x] Task Queue Endpoints
+    - [x] Read
+    - [x] Commit
 - [ ] Dummy Agent
   - [ ] Cosa?
   - [ ] Timer Health

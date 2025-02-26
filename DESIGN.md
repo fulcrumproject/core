@@ -367,6 +367,17 @@ Fulcrum Core follows a clean, layered architecture to ensure separation of conce
 
 This layered approach allows for clear separation between business logic and infrastructure concerns, enabling easier testing, maintenance, and future extensions. The system follows the Dependency Inversion Principle, with higher layers defining interfaces that lower layers implement, ensuring that dependencies point inward toward the domain core.
 
+### API Documentation
+
+The Fulcrum Core API is fully documented using the OpenAPI 3.0 specification. The [openapi.yaml](openapi.yaml) file in the project root provides a comprehensive description of all API endpoints, including:
+
+- Complete endpoint documentation for all resources
+- Request and response schemas
+- Security schemes for authentication
+- Parameter details and examples
+
+This specification can be used with tools like Swagger UI or Redoc to generate interactive API documentation, making it easier for developers to understand and integrate with the Fulcrum Core API.
+
 ### Job Queue Architecture
 
 The job queue is implemented as a database-backed queue that facilitates communication between the Fulcrum Core API and agent instances:
@@ -551,23 +562,3 @@ graph TB
     DB1 -.Replication.-> DB2
     Agent1 & Agent2 & Agent3 --> Internet
 ```
-
-### API Endpoints
-
-#### Job Management API
-
-| Endpoint                     | Method | Description                                  |
-| ---------------------------- | ------ | -------------------------------------------- |
-| `/api/v1/jobs`               | GET    | List all jobs (admin)                        |
-| `/api/v1/jobs/{id}`          | GET    | Get job details (admin)                      |
-| `/api/v1/jobs/pending`       | GET    | Get pending jobs for the authenticated agent |
-| `/api/v1/jobs/{id}/claim`    | POST   | Claim a job for processing                   |
-| `/api/v1/jobs/{id}/complete` | POST   | Mark a job as completed                      |
-| `/api/v1/jobs/{id}/fail`     | POST   | Mark a job as failed                         |
-
-All agent endpoints require token-based authentication using the following header:
-```
-Authorization: Bearer <agent_token>
-```
-
-The token is provided once during agent creation and should be securely stored by the agent client.

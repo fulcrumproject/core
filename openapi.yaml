@@ -1,0 +1,1591 @@
+openapi: 3.0.3
+info:
+  title: Fulcrum Core API
+  description: A comprehensive cloud infrastructure management system designed to orchestrate and monitor distributed cloud resources across multiple providers.
+  version: 1.0.0
+  contact:
+    name: Fulcrum Project
+    url: https://fulcrumproject.org
+  license:
+    name: Apache License 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+  - url: https://api.fulcrum.testudosrl.dev/api/v1
+    description: Production server
+
+components:
+  securitySchemes:
+    AgentAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+      description: Agent authentication using bearer token. This token is generated when an agent is created.
+
+  schemas:
+    PaginationParams:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: The page number (1-based)
+          default: 1
+        pageSize:
+          type: integer
+          description: The number of items per page
+          default: 20
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        error:
+          type: string
+          description: Error message
+          example: "Invalid request parameters"
+        details:
+          type: string
+          description: Additional error details
+          example: "The field 'name' is required"
+
+    UUID:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+
+    Attributes:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      example:
+        region: ["us-east-1"]
+        capabilities: ["compute", "storage"]
+
+    JSONObject:
+      type: object
+      additionalProperties: true
+      description: A generic JSON object
+
+    # Agent schemas
+    AgentState:
+      type: string
+      enum: [New, Connected, Disconnected, Error, Disabled]
+
+    AgentRequest:
+      type: object
+      required:
+        - name
+        - state
+        - providerId
+        - agentTypeId
+      properties:
+        name:
+          type: string
+          example: "aws-agent-01"
+        state:
+          $ref: "#/components/schemas/AgentState"
+        countryCode:
+          type: string
+          example: "US"
+        attributes:
+          $ref: "#/components/schemas/Attributes"
+        properties:
+          $ref: "#/components/schemas/JSONObject"
+        providerId:
+          $ref: "#/components/schemas/UUID"
+        agentTypeId:
+          $ref: "#/components/schemas/UUID"
+
+    AgentResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          example: "aws-agent-01"
+        state:
+          $ref: "#/components/schemas/AgentState"
+        countryCode:
+          type: string
+          example: "US"
+        attributes:
+          $ref: "#/components/schemas/Attributes"
+        properties:
+          $ref: "#/components/schemas/JSONObject"
+        providerId:
+          $ref: "#/components/schemas/UUID"
+        agentTypeId:
+          $ref: "#/components/schemas/UUID"
+        provider:
+          $ref: "#/components/schemas/ProviderResponse"
+        agentType:
+          $ref: "#/components/schemas/AgentTypeResponse"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AgentCreateResponse:
+      allOf:
+        - $ref: "#/components/schemas/AgentResponse"
+        - type: object
+          properties:
+            token:
+              type: string
+              description: "Authentication token for the agent (only provided once at creation)"
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    # Provider schemas
+    ProviderState:
+      type: string
+      enum: [Enabled, Disabled]
+
+    ProviderRequest:
+      type: object
+      required:
+        - name
+        - state
+      properties:
+        name:
+          type: string
+          example: "AWS US East"
+        state:
+          $ref: "#/components/schemas/ProviderState"
+        countryCode:
+          type: string
+          example: "US"
+        attributes:
+          $ref: "#/components/schemas/Attributes"
+
+    ProviderResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          example: "AWS US East"
+        state:
+          $ref: "#/components/schemas/ProviderState"
+        countryCode:
+          type: string
+          example: "US"
+        attributes:
+          $ref: "#/components/schemas/Attributes"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Agent Type schemas
+    AgentTypeRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "AWS EC2 Agent"
+
+    AgentTypeResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          example: "AWS EC2 Agent"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Service schemas
+    ServiceState:
+      type: string
+      enum:
+        [New, Creating, Created, Updating, Updated, Deleting, Deleted, Error]
+
+    ServiceRequest:
+      type: object
+      required:
+        - name
+        - state
+        - agentId
+        - serviceTypeId
+      properties:
+        name:
+          type: string
+          example: "web-server-01"
+        state:
+          $ref: "#/components/schemas/ServiceState"
+        attributes:
+          $ref: "#/components/schemas/Attributes"
+        resources:
+          $ref: "#/components/schemas/JSONObject"
+        agentId:
+          $ref: "#/components/schemas/UUID"
+        serviceTypeId:
+          $ref: "#/components/schemas/UUID"
+        groupId:
+          $ref: "#/components/schemas/UUID"
+
+    ServiceResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          example: "web-server-01"
+        state:
+          $ref: "#/components/schemas/ServiceState"
+        attributes:
+          $ref: "#/components/schemas/Attributes"
+        resources:
+          $ref: "#/components/schemas/JSONObject"
+        agentId:
+          $ref: "#/components/schemas/UUID"
+        serviceTypeId:
+          $ref: "#/components/schemas/UUID"
+        groupId:
+          $ref: "#/components/schemas/UUID"
+        agent:
+          $ref: "#/components/schemas/AgentResponse"
+        serviceType:
+          $ref: "#/components/schemas/ServiceTypeResponse"
+        group:
+          $ref: "#/components/schemas/ServiceGroupResponse"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Service Type schemas
+    ServiceTypeRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "VM"
+        resourceDefinitions:
+          $ref: "#/components/schemas/JSONObject"
+
+    ServiceTypeResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          example: "VM"
+        resourceDefinitions:
+          $ref: "#/components/schemas/JSONObject"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Service Group schemas
+    ServiceGroupRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "Web Servers"
+
+    ServiceGroupResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          example: "Web Servers"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Job schemas
+    JobType:
+      type: string
+      enum: [ServiceCreate, ServiceUpdate, ServiceDelete]
+
+    JobState:
+      type: string
+      enum: [Pending, Processing, Completed, Failed]
+
+    JobResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        type:
+          $ref: "#/components/schemas/JobType"
+        state:
+          $ref: "#/components/schemas/JobState"
+        agentId:
+          $ref: "#/components/schemas/UUID"
+        serviceId:
+          $ref: "#/components/schemas/UUID"
+        priority:
+          type: integer
+          example: 1
+        requestData:
+          $ref: "#/components/schemas/JSONObject"
+        resultData:
+          $ref: "#/components/schemas/JSONObject"
+        errorMessage:
+          type: string
+          example: "Failed to create VM: insufficient resources"
+        claimedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        agent:
+          $ref: "#/components/schemas/AgentResponse"
+        service:
+          $ref: "#/components/schemas/ServiceResponse"
+
+    CompleteJobRequest:
+      type: object
+      required:
+        - resultData
+      properties:
+        resultData:
+          $ref: "#/components/schemas/JSONObject"
+
+    FailJobRequest:
+      type: object
+      required:
+        - errorMessage
+      properties:
+        errorMessage:
+          type: string
+          example: "Failed to create VM: insufficient resources"
+
+    # Metric schemas
+    MetricEntityType:
+      type: string
+      enum: [Agent, Service, Resource]
+
+    MetricTypeRequest:
+      type: object
+      required:
+        - name
+        - entityType
+      properties:
+        name:
+          type: string
+          example: "cpu_usage"
+        entityType:
+          $ref: "#/components/schemas/MetricEntityType"
+
+    MetricTypeResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        entityType:
+          $ref: "#/components/schemas/MetricEntityType"
+        name:
+          type: string
+          example: "cpu_usage"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    MetricEntryRequest:
+      type: object
+      required:
+        - value
+      properties:
+        agentId:
+          $ref: "#/components/schemas/UUID"
+        serviceId:
+          $ref: "#/components/schemas/UUID"
+        resourceId:
+          type: string
+          example: "cpu-1"
+        value:
+          type: number
+          format: float
+          example: 78.5
+
+    MetricEntryResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        agentId:
+          $ref: "#/components/schemas/UUID"
+        serviceId:
+          $ref: "#/components/schemas/UUID"
+        resourceId:
+          type: string
+          example: "cpu-1"
+        value:
+          type: number
+          format: float
+          example: 78.5
+        createdAt:
+          type: string
+          format: date-time
+
+    # Audit schemas
+    AuditEntryResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        authorityType:
+          type: string
+          example: "user"
+        authorityId:
+          type: string
+          example: "admin"
+        type:
+          type: string
+          example: "service.created"
+        properties:
+          $ref: "#/components/schemas/JSONObject"
+        createdAt:
+          type: string
+          format: date-time
+
+    PageResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+        totalItems:
+          type: integer
+        totalPages:
+          type: integer
+        pageSize:
+          type: integer
+        page:
+          type: integer
+
+paths:
+  #
+  # Provider endpoints
+  #
+  /providers:
+    get:
+      summary: List providers
+      description: Retrieves a paginated list of providers
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of providers
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProviderResponse"
+    post:
+      summary: Create a provider
+      description: Creates a new provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderRequest"
+      responses:
+        "201":
+          description: Provider created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /providers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    get:
+      summary: Get a provider
+      description: Retrieves a specific provider by ID
+      responses:
+        "200":
+          description: The provider details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderResponse"
+        "404":
+          description: Provider not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      summary: Update a provider
+      description: Updates an existing provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderRequest"
+      responses:
+        "200":
+          description: Provider updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderResponse"
+        "404":
+          description: Provider not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      summary: Delete a provider
+      description: Deletes a provider by ID
+      responses:
+        "204":
+          description: Provider deleted successfully
+        "404":
+          description: Provider not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  #
+  # Agent endpoints
+  #
+  /agents:
+    get:
+      summary: List agents
+      description: Retrieves a paginated list of agents
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of agents
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/AgentResponse"
+    post:
+      summary: Create an agent
+      description: Creates a new agent and returns the agent data with an authentication token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRequest"
+      responses:
+        "201":
+          description: Agent created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentCreateResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /agents/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    get:
+      summary: Get an agent
+      description: Retrieves a specific agent by ID
+      responses:
+        "200":
+          description: The agent details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+        "404":
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      summary: Update an agent
+      description: Updates an existing agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRequest"
+      responses:
+        "200":
+          description: Agent updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+        "404":
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      summary: Delete an agent
+      description: Deletes an agent by ID
+      responses:
+        "204":
+          description: Agent deleted successfully
+        "404":
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /agents/{id}/rotate-token:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    post:
+      summary: Rotate agent token
+      description: Generates a new authentication token for the agent
+      responses:
+        "200":
+          description: New token generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentCreateResponse"
+        "404":
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  #
+  # Agent Type endpoints
+  #
+  /agent-types:
+    get:
+      summary: List agent types
+      description: Retrieves a paginated list of agent types
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of agent types
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/AgentTypeResponse"
+    post:
+      summary: Create an agent type
+      description: Creates a new agent type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentTypeRequest"
+      responses:
+        "201":
+          description: Agent type created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTypeResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /agent-types/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    get:
+      summary: Get an agent type
+      description: Retrieves a specific agent type by ID
+      responses:
+        "200":
+          description: The agent type details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTypeResponse"
+        "404":
+          description: Agent type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      summary: Update an agent type
+      description: Updates an existing agent type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentTypeRequest"
+      responses:
+        "200":
+          description: Agent type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTypeResponse"
+        "404":
+          description: Agent type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      summary: Delete an agent type
+      description: Deletes an agent type by ID
+      responses:
+        "204":
+          description: Agent type deleted successfully
+        "404":
+          description: Agent type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  #
+  # Service endpoints
+  #
+  /services:
+    get:
+      summary: List services
+      description: Retrieves a paginated list of services
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of services
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ServiceResponse"
+    post:
+      summary: Create a service
+      description: Creates a new service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceRequest"
+      responses:
+        "201":
+          description: Service created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /services/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    get:
+      summary: Get a service
+      description: Retrieves a specific service by ID
+      responses:
+        "200":
+          description: The service details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceResponse"
+        "404":
+          description: Service not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      summary: Update a service
+      description: Updates an existing service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceRequest"
+      responses:
+        "200":
+          description: Service updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceResponse"
+        "404":
+          description: Service not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      summary: Delete a service
+      description: Deletes a service by ID
+      responses:
+        "204":
+          description: Service deleted successfully
+        "404":
+          description: Service not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  #
+  # Service Type endpoints
+  #
+  /service-types:
+    get:
+      summary: List service types
+      description: Retrieves a paginated list of service types
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of service types
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ServiceTypeResponse"
+    post:
+      summary: Create a service type
+      description: Creates a new service type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceTypeRequest"
+      responses:
+        "201":
+          description: Service type created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceTypeResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /service-types/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    get:
+      summary: Get a service type
+      description: Retrieves a specific service type by ID
+      responses:
+        "200":
+          description: The service type details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceTypeResponse"
+        "404":
+          description: Service type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      summary: Update a service type
+      description: Updates an existing service type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceTypeRequest"
+      responses:
+        "200":
+          description: Service type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceTypeResponse"
+        "404":
+          description: Service type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      summary: Delete a service type
+      description: Deletes a service type by ID
+      responses:
+        "204":
+          description: Service type deleted successfully
+        "404":
+          description: Service type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  #
+  # Service Group endpoints
+  #
+  /service-groups:
+    get:
+      summary: List service groups
+      description: Retrieves a paginated list of service groups
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of service groups
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ServiceGroupResponse"
+    post:
+      summary: Create a service group
+      description: Creates a new service group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceGroupRequest"
+      responses:
+        "201":
+          description: Service group created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceGroupResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /service-groups/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    get:
+      summary: Get a service group
+      description: Retrieves a specific service group by ID
+      responses:
+        "200":
+          description: The service group details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceGroupResponse"
+        "404":
+          description: Service group not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      summary: Update a service group
+      description: Updates an existing service group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceGroupRequest"
+      responses:
+        "200":
+          description: Service group updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceGroupResponse"
+        "404":
+          description: Service group not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      summary: Delete a service group
+      description: Deletes a service group by ID
+      responses:
+        "204":
+          description: Service group deleted successfully
+        "404":
+          description: Service group not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  #
+  # Job endpoints
+  #
+  /jobs:
+    get:
+      summary: List jobs
+      description: Retrieves a paginated list of jobs (admin route)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of jobs
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/JobResponse"
+
+  /jobs/pending:
+    get:
+      summary: Get pending jobs
+      description: Retrieves a list of pending jobs for the authenticated agent
+      security:
+        - AgentAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: List of pending jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    get:
+      summary: Get a job
+      description: Retrieves a specific job by ID (admin route)
+      responses:
+        "200":
+          description: The job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobResponse"
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/{id}/claim:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    post:
+      summary: Claim a job
+      description: Claims a job for processing by the authenticated agent
+      security:
+        - AgentAuth: []
+      responses:
+        "204":
+          description: Job claimed successfully
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/{id}/complete:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    post:
+      summary: Complete a job
+      description: Marks a job as completed with results
+      security:
+        - AgentAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteJobRequest"
+      responses:
+        "204":
+          description: Job completed successfully
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/{id}/fail:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    post:
+      summary: Fail a job
+      description: Marks a job as failed with an error message
+      security:
+        - AgentAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FailJobRequest"
+      responses:
+        "204":
+          description: Job marked as failed successfully
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  #
+  # Metric Type endpoints
+  #
+  /metric-types:
+    get:
+      summary: List metric types
+      description: Retrieves a paginated list of metric types
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of metric types
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/MetricTypeResponse"
+    post:
+      summary: Create a metric type
+      description: Creates a new metric type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetricTypeRequest"
+      responses:
+        "201":
+          description: Metric type created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricTypeResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /metric-types/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    get:
+      summary: Get a metric type
+      description: Retrieves a specific metric type by ID
+      responses:
+        "200":
+          description: The metric type details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricTypeResponse"
+        "404":
+          description: Metric type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      summary: Update a metric type
+      description: Updates an existing metric type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetricTypeRequest"
+      responses:
+        "200":
+          description: Metric type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricTypeResponse"
+        "404":
+          description: Metric type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      summary: Delete a metric type
+      description: Deletes a metric type by ID
+      responses:
+        "204":
+          description: Metric type deleted successfully
+        "404":
+          description: Metric type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  #
+  # Metric Entry endpoints
+  #
+  /metric-entries:
+    get:
+      summary: List metric entries
+      description: Retrieves a paginated list of metric entries
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of metric entries
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/MetricEntryResponse"
+    post:
+      summary: Create a metric entry
+      description: Creates a new metric entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetricEntryRequest"
+      responses:
+        "201":
+          description: Metric entry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricEntryResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  #
+  # Audit Entry endpoints
+  #
+  /audit-entries:
+    get:
+      summary: List audit entries
+      description: Retrieves a paginated list of audit entries
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of audit entries
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/AuditEntryResponse"
