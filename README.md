@@ -78,11 +78,9 @@ air
 
 ## API Documentation
 
-Fulcrum Core's API is documented using the OpenAPI 3.0 specification. The specification is available in the [openapi.yaml](openapi.yaml) file in the project root. This file can be imported into tools like Swagger UI, Postman, or other OpenAPI compatible tools to explore and test the API.
+Fulcrum Core's API is documented using the OpenAPI 3.0 specification. The specification is available in the [openapi.yaml](docs/openapi.yaml) file in the project root. This file can be imported into tools like Swagger UI, Postman, or other OpenAPI compatible tools to explore and test the API.
 
-An online version of the API documentation is also available at:
-
-http://docs.fulcrum.testudosrl.dev/
+An online version of the API documentation is also available at: TBD
 
 ## Project Structure
 
@@ -95,7 +93,7 @@ http://docs.fulcrum.testudosrl.dev/
 
 ## Detailed Design Documentation
 
-For a comprehensive overview of Fulcrum Core's architecture, data model, and component interactions, please refer to the [DESIGN.md](DESIGN.md) document.
+For a comprehensive overview of Fulcrum Core's architecture, data model, and component interactions, please refer to the [DESIGN.md](docs/DESIGN.md) document.
 
 ## License
 

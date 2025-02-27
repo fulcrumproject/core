@@ -1,41 +1,13 @@
-- Core
-  - [x] Provider
-    - [x] CRUD
-    - [x] Delete solo se senza agent
-  - [ ] Agent
-    - [x] CRUD
-    - [x] Delete solo se senza service
-    - [x] Auth con Token
-    - [ ] Health Endpoint + Timer Disconnected
-  - [x] AgentType
-    - [x] Seed
-    - [x] Endpoint lettura
-    - [x] Facciamo Dummy e Proxmox
-  - [x] ServiceType
-    - [x] Seed
-    - [x] Endpoint lettura
-  - [x] ServiceGroup
-    - [x] CRUD
-    - [x] Delete solo se vuoto per ora
-  - [ ] Service
-    - [x] CRUD
-    - [ ] Post del task e match degli attribute sul nuovo
-  - [x] Metric
-    - [x] Endpoint aggiunta
-    - [x] Endpoint lettura
-  - [x] Audit
-    - [x] Metodi tracciatura
-    - [x] Endpoint lettura
-    - [ ] Inserimento
-  - [x] !!! Fix sort
-  - [x] !!! Multi column filter
-  - [x] Task Queue Endpoints
-    - [x] Read
-    - [x] Commit
-- [ ] Dummy Agent
-  - [ ] Cosa?
-  - [ ] Timer Health
-  - [ ] Task Queue Handler
-  - [ ] Timer Metric
-- [ ] Auth & Authz?
-  - [ ] Roles: Fulcrum Admin, Provider Admin, Provider Reader, Marketplace
+- [ ] Test Agent: basic
+- [ ] Test Agent: metrics
+- [ ] Health Agent Status and Test Agent
+- [ ] Check delete: Provider, ServiceGroup
+- [ ] Create Service with attributes match
+- [ ] Authz: Mock, Roles: Fulcrum Admin, Provider Admin, Provider Reader, Marketplace
+- [ ] Structured logging
+- [ ] Refactor domain
+- [ ] Audit: insert
+- [ ] Long polling
+- [ ] HTTP Port
+- [ ] Handler tests
+- [ ] Domain tests
