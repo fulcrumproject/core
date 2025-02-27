@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"testing"
+	"time"
 
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/stretchr/testify/assert"
@@ -252,6 +253,62 @@ func TestAgentRepository(t *testing.T) {
 			found, err := agentRepo.FindByID(ctx, agent.ID)
 			assert.Nil(t, found)
 			assert.ErrorAs(t, err, &domain.NotFoundError{})
+		})
+	})
+
+	t.Run("MarkInactiveAgentsAsDisconnected", func(t *testing.T) {
+		t.Run("success", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			provider := createTestProvider(t, domain.ProviderEnabled)
+			require.NoError(t, providerRepo.Create(ctx, provider))
+
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+
+			// Create a connected agent with recent status update (should NOT be marked as disconnected)
+			recentAgent := createTestAgentWithStatusUpdate(t, provider.ID, agentType.ID, domain.AgentConnected, time.Now().Add(-2*time.Minute))
+			require.NoError(t, agentRepo.Create(ctx, recentAgent))
+
+			// Create a connected agent with old status update (should be marked as disconnected)
+			oldAgent := createTestAgentWithStatusUpdate(t, provider.ID, agentType.ID, domain.AgentConnected, time.Now().Add(-10*time.Minute))
+			require.NoError(t, agentRepo.Create(ctx, oldAgent))
+
+			// Create a disconnected agent with old status update (should NOT be marked as disconnected because it's already disconnected)
+			discoAgent := createTestAgentWithStatusUpdate(t, provider.ID, agentType.ID, domain.AgentDisconnected, time.Now().Add(-10*time.Minute))
+			require.NoError(t, agentRepo.Create(ctx, discoAgent))
+
+			// Execute the method with 5-minute inactive duration
+			count, err := agentRepo.MarkInactiveAgentsAsDisconnected(ctx, 5*time.Minute)
+
+			// Assert
+			require.NoError(t, err)
+			assert.Equal(t, int64(1), count, "Should mark exactly one agent as disconnected")
+
+			// Verify the states of all agents
+			found, err := agentRepo.FindByID(ctx, recentAgent.ID)
+			require.NoError(t, err)
+			assert.Equal(t, domain.AgentConnected, found.State, "Recent agent should still be connected")
+
+			found, err = agentRepo.FindByID(ctx, oldAgent.ID)
+			require.NoError(t, err)
+			assert.Equal(t, domain.AgentDisconnected, found.State, "Old agent should be disconnected")
+
+			found, err = agentRepo.FindByID(ctx, discoAgent.ID)
+			require.NoError(t, err)
+			assert.Equal(t, domain.AgentDisconnected, found.State, "Disconnected agent should remain disconnected")
+		})
+
+		t.Run("no agents to update", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Execute with a very long inactive duration that no agent should match
+			count, err := agentRepo.MarkInactiveAgentsAsDisconnected(ctx, 24*time.Hour)
+
+			// Assert
+			require.NoError(t, err)
+			assert.Equal(t, int64(0), count, "Should not mark any agents as disconnected")
 		})
 	})
 }

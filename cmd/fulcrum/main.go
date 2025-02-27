@@ -100,6 +100,21 @@ func main() {
 		}
 	}()
 
+	// Setup background worker to mark inactive agents as disconnected
+	go func() {
+		inactiveTime := 5 * time.Minute
+		ticker := time.NewTicker(inactiveTime)
+		for range ticker.C {
+			ctx := context.Background()
+			disconnectedCount, err := agentRepo.MarkInactiveAgentsAsDisconnected(ctx, inactiveTime)
+			if err != nil {
+				log.Printf("Error marking inactive agents as disconnected: %v", err)
+			} else if disconnectedCount > 0 {
+				log.Printf("Marked %d inactive agents as disconnected", disconnectedCount)
+			}
+		}
+	}()
+
 	// Start server
 	log.Println("Server starting on port 3000...")
 	if err := http.ListenAndServe(":3000", r); err != nil {

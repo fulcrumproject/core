@@ -1,6 +1,9 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // AgentRepository defines the interface for the Agent repository
 type AgentRepository interface {
@@ -24,4 +27,7 @@ type AgentRepository interface {
 
 	// FindByTokenHash finds an agent by its token hash
 	FindByTokenHash(ctx context.Context, tokenHash string) (*Agent, error)
+
+	// MarkInactiveAgentsAsDisconnected marks agents that haven't updated their status in the given duration as disconnected
+	MarkInactiveAgentsAsDisconnected(ctx context.Context, inactiveDuration time.Duration) (int64, error)
 }

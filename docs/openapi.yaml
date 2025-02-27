@@ -792,6 +792,45 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /agents/me/status:
+    put:
+      summary: Update agent status
+      tags:
+        - Agents
+      description: Updates the status of the authenticated agent
+      security:
+        - AgentAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - state
+              properties:
+                state:
+                  $ref: "#/components/schemas/AgentState"
+      responses:
+        "200":
+          description: Agent status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   #
   # Agent Type endpoints
   #

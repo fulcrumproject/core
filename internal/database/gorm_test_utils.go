@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/google/uuid"
@@ -37,16 +38,23 @@ func createTestAgentType(t *testing.T) *domain.AgentType {
 
 func createTestAgent(t *testing.T, providerID, agentTypeID domain.UUID, state domain.AgentState) *domain.Agent {
 	t.Helper()
+	return createTestAgentWithStatusUpdate(t, providerID, agentTypeID, state, time.Now())
+}
+
+// Helper function to create a test agent with a specific LastStatusUpdate time
+func createTestAgentWithStatusUpdate(t *testing.T, providerID, agentTypeID domain.UUID, state domain.AgentState, lastUpdate time.Time) *domain.Agent {
+	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Agent{
-		Name:        fmt.Sprintf("Test Agent %s", randomSuffix),
-		State:       state,
-		TokenHash:   fmt.Sprintf("token-hash-%s", randomSuffix),
-		CountryCode: "US",
-		Attributes:  domain.Attributes{"key": []string{"value"}},
-		Properties:  map[string]interface{}{"prop": "value"},
-		ProviderID:  providerID,
-		AgentTypeID: agentTypeID,
+		Name:             fmt.Sprintf("Test Agent %s", randomSuffix),
+		State:            state,
+		TokenHash:        fmt.Sprintf("token-hash-%s", randomSuffix),
+		CountryCode:      "US",
+		Attributes:       domain.Attributes{"key": []string{"value"}},
+		Properties:       map[string]interface{}{"prop": "value"},
+		ProviderID:       providerID,
+		AgentTypeID:      agentTypeID,
+		LastStatusUpdate: lastUpdate,
 	}
 }
 

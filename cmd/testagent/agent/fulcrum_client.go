@@ -37,7 +37,7 @@ func (c *FulcrumClient) UpdateAgentStatus(status string) error {
 		return fmt.Errorf("failed to marshal status update request: %w", err)
 	}
 
-	resp, err := c.patch("/api/v1/agents/me/status", reqBody)
+	resp, err := c.put("/api/v1/agents/me/status", reqBody)
 	if err != nil {
 		return fmt.Errorf("failed to update agent status: %w", err)
 	}
@@ -240,6 +240,24 @@ func (c *FulcrumClient) post(endpoint string, body []byte, contentType string) (
 		contentType = "application/json"
 	}
 	req.Header.Set("Content-Type", contentType)
+
+	return c.httpClient.Do(req)
+}
+
+func (c *FulcrumClient) put(endpoint string, body []byte) (*http.Response, error) {
+	u, err := url.Parse(c.baseURL)
+	if err != nil {
+		return nil, err
+	}
+	u.Path = path.Join(u.Path, endpoint)
+
+	req, err := http.NewRequest(http.MethodPut, u.String(), bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Content-Type", "application/json")
 
 	return c.httpClient.Do(req)
 }

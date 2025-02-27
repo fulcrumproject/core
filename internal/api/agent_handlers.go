@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"time"
 
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/go-chi/chi/v5"
@@ -88,6 +89,12 @@ func (h *AgentHandler) Routes() chi.Router {
 	r.Put("/{id}", h.handleUpdate)
 	r.Delete("/{id}", h.handleDelete)
 	r.Post("/{id}/rotate-token", h.handleRotateToken) // New endpoint
+
+	// Agent-authenticated routes
+	r.Group(func(r chi.Router) {
+		r.Use(AgentAuthMiddleware(h.repo))
+		r.Put("/me/status", h.handleUpdateStatus) // Endpoint for agents to update their status
+	})
 
 	return r
 }
@@ -289,4 +296,37 @@ func (h *AgentHandler) handleRotateToken(w http.ResponseWriter, r *http.Request)
 		Token:         token,
 	}
 	render.JSON(w, r, resp)
+}
+
+// UpdateAgentStatusRequest represents the request body for updating agent status
+type UpdateAgentStatusRequest struct {
+	State domain.AgentState `json:"state"`
+}
+
+// handleUpdateStatus handles PUT /agents/me/status
+// This endpoint allows agents to update their own status
+func (h *AgentHandler) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
+	// Get authenticated agent from context (set by middleware)
+	agent := GetAuthenticatedAgent(r)
+	if agent == nil {
+		render.Render(w, r, ErrUnauthorized())
+		return
+	}
+
+	// Parse the request body
+	var req UpdateAgentStatusRequest
+	if err := render.Decode(r, &req); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	// Update the agent's state
+	agent.State = req.State
+	agent.LastStatusUpdate = time.Now()
+	if err := h.repo.Save(r.Context(), agent); err != nil {
+		render.Render(w, r, ErrInternal(err))
+		return
+	}
+
+	render.JSON(w, r, agentToResponse(agent))
 }

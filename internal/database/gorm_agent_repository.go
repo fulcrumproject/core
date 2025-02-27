@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -63,4 +64,19 @@ func (r *gormAgentRepository) FindByTokenHash(ctx context.Context, tokenHash str
 	}
 
 	return &agent, nil
+}
+
+// MarkInactiveAgentsAsDisconnected marks agents that haven't updated their status in the given duration as disconnected
+func (r *gormAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Context, inactiveDuration time.Duration) (int64, error) {
+	cutoffTime := time.Now().Add(-inactiveDuration)
+
+	result := r.db.WithContext(ctx).
+		Model(&domain.Agent{}).
+		Where("state = ?", domain.AgentConnected).
+		Where("last_status_update < ? OR last_status_update IS NULL", cutoffTime).
+		Updates(map[string]interface{}{
+			"state": domain.AgentDisconnected,
+		})
+
+	return result.RowsAffected, result.Error
 }

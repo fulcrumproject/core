@@ -51,6 +51,19 @@ Content-Type: application/json
 ### Extract agent ID
 @agentId = {{createAgent.response.body.$.id}}
 
+### Extract agent token for status update test
+@agentToken = {{createAgent.response.body.$.token}}
+
+### Update agent status via authenticated endpoint
+# @name updateAgentStatus
+PUT {{baseUrl}}/agents/me/status
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
+
+{
+    "state": "Connected"
+}
+
 ### Get an agent by ID
 GET {{baseUrl}}/agents/{{agentId}}
 
@@ -82,6 +95,23 @@ Content-Type: application/json
     },
     "providerId": "{{providerId}}",
     "agentTypeId": "{{agentTypeId}}"
+}
+
+### Rotate agent token
+# @name rotateAgentToken
+POST {{baseUrl}}/agents/{{agentId}}/rotate-token
+Content-Type: application/json
+
+### Extract new token
+@newAgentToken = {{rotateAgentToken.response.body.$.token}}
+
+### Test new token by updating status with rotated token
+PUT {{baseUrl}}/agents/me/status
+Content-Type: application/json
+Authorization: Bearer {{newAgentToken}}
+
+{
+    "state": "Disconnected"
 }
 
 ### Delete an agent
