@@ -35,7 +35,6 @@ Content-Type: application/json
 {
     "name": "Test Job Agent",
     "state": "Connected",
-    "tokenHash": "test-job-token-hash",
     "countryCode": "US",
     "agentTypeId": "{{agentTypeId}}",
     "providerId": "{{providerId}}"
