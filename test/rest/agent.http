@@ -35,7 +35,6 @@ Content-Type: application/json
 {
     "name": "Test Agent",
     "state": "New",
-    "tokenHash": "test-token-hash",
     "countryCode": "US",
     "attributes": {
         "environment": ["production"],
@@ -71,7 +70,6 @@ Content-Type: application/json
 {
     "name": "Test Agent Updated",
     "state": "Connected",
-    "tokenHash": "test-token-hash",
     "countryCode": "UK",
     "attributes": {
         "environment": ["staging"],

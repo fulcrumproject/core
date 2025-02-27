@@ -42,7 +42,6 @@ Content-Type: application/json
 {
     "name": "Test Agent",
     "state": "Connected",
-    "tokenHash": "test-token-hash",
     "countryCode": "US",
     "agentTypeId": "{{agentTypeId}}",
     "providerId": "{{providerId}}"
