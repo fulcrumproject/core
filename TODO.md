@@ -7,7 +7,7 @@
 - [ ] Structured logging
 - [ ] Refactor domain
 - [ ] Audit: insert
-- [ ] Long polling
 - [ ] HTTP Port
 - [ ] Handler tests
 - [ ] Domain tests
+- [ ] Long polling
