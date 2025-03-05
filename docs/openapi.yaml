@@ -232,7 +232,18 @@ components:
     ServiceState:
       type: string
       enum:
-        [New, Creating, Created, Updating, Updated, Deleting, Deleted, Error]
+        [
+          Creating,
+          Created,
+          Starting,
+          Started,
+          Stopping,
+          Stopped,
+          HotUpdating,
+          ColdUpdating,
+          Deleting,
+          Deleted,
+        ]
 
     ServiceRequest:
       type: object
@@ -266,10 +277,22 @@ components:
         name:
           type: string
           example: "web-server-01"
-        state:
+        currentState:
           $ref: "#/components/schemas/ServiceState"
-        attributes:
+        currentAttributes:
           $ref: "#/components/schemas/Attributes"
+        targetState:
+          $ref: "#/components/schemas/ServiceState"
+        targetAttributes:
+          $ref: "#/components/schemas/Attributes"
+        failedAction:
+          $ref: "#/components/schemas/ServiceAction"
+        errorMessage:
+          type: string
+          example: "Failed to start service: insufficient resources"
+        retryCount:
+          type: integer
+          example: 0
         resources:
           $ref: "#/components/schemas/JSONObject"
         externalId:
@@ -347,10 +370,31 @@ components:
           type: string
           format: date-time
 
-    # Job schemas
-    JobType:
+    # Action types
+    ServiceAction:
       type: string
-      enum: [ServiceCreate, ServiceUpdate, ServiceDelete]
+      enum:
+        [
+          ServiceCreate,
+          ServiceStart,
+          ServiceStop,
+          ServiceHotUpdate,
+          ServiceColdUpdate,
+          ServiceDelete,
+        ]
+
+    # Job schemas
+    JobAction:
+      type: string
+      enum:
+        [
+          ServiceCreate,
+          ServiceStart,
+          ServiceStop,
+          ServiceHotUpdate,
+          ServiceColdUpdate,
+          ServiceDelete,
+        ]
 
     JobState:
       type: string
@@ -361,8 +405,8 @@ components:
       properties:
         id:
           $ref: "#/components/schemas/UUID"
-        type:
-          $ref: "#/components/schemas/JobType"
+        action:
+          $ref: "#/components/schemas/ServiceAction"
         state:
           $ref: "#/components/schemas/JobState"
         agentId:
@@ -399,15 +443,10 @@ components:
     CompleteJobRequest:
       type: object
       required:
-        - resultData
-        - externalId
+        - resources
       properties:
-        resultData:
+        resources:
           $ref: "#/components/schemas/JSONObject"
-        externalId:
-          type: string
-          description: "External identifier for the resource (e.g., VM ID) used to associate agent resources with services"
-          example: "vm-123"
 
     FailJobRequest:
       type: object
@@ -457,6 +496,7 @@ components:
       required:
         - serviceId
         - resourceId
+        - typeName
         - value
       properties:
         serviceId:
@@ -464,19 +504,13 @@ components:
         resourceId:
           type: string
           example: "cpu-1"
-        externalId:
-          type: string
-          description: "External resource ID (alternative to serviceId)"
         value:
           type: number
           format: float
           example: 78.5
-        typeId:
-          $ref: "#/components/schemas/UUID"
-          description: "ID of the metric type (optional if typeName is provided)"
         typeName:
           type: string
-          description: "Name of the metric type (optional if typeId is provided)"
+          description: "Name of the metric type"
           example: "cpu.usage"
 
     MetricEntryResponse:
@@ -882,30 +916,6 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/AgentTypeResponse"
-    post:
-      summary: Create an agent type
-      tags:
-        - Agents
-      description: Creates a new agent type
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AgentTypeRequest"
-      responses:
-        "201":
-          description: Agent type created successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AgentTypeResponse"
-        "400":
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
 
   /agent-types/{id}:
     parameters:
@@ -932,45 +942,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-    put:
-      summary: Update an agent type
-      tags:
-        - Agents
-      description: Updates an existing agent type
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AgentTypeRequest"
-      responses:
-        "200":
-          description: Agent type updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AgentTypeResponse"
-        "404":
-          description: Agent type not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-    delete:
-      summary: Delete an agent type
-      tags:
-        - Agents
-      description: Deletes an agent type by ID
-      responses:
-        "204":
-          description: Agent type deleted successfully
-        "404":
-          description: Agent type not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
   #
   # Service endpoints
   #
@@ -1094,6 +1065,72 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /services/{id}/start:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    post:
+      summary: Start a service
+      tags:
+        - Services
+      description: Starts a service by ID
+      responses:
+        "204":
+          description: Service start operation initiated successfully
+        "404":
+          description: Service not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /services/{id}/stop:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    post:
+      summary: Stop a service
+      tags:
+        - Services
+      description: Stops a service by ID
+      responses:
+        "204":
+          description: Service stop operation initiated successfully
+        "404":
+          description: Service not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /services/{id}/retry:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    post:
+      summary: Retry a failed service operation
+      tags:
+        - Services
+      description: Retries the last failed operation on a service
+      responses:
+        "204":
+          description: Service retry operation initiated successfully
+        "404":
+          description: Service not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   #
   # Service Type endpoints
   #
@@ -1172,44 +1209,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ServiceTypeResponse"
-        "404":
-          description: Service type not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-    put:
-      summary: Update a service type
-      tags:
-        - Services
-      description: Updates an existing service type
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ServiceTypeRequest"
-      responses:
-        "200":
-          description: Service type updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ServiceTypeResponse"
-        "404":
-          description: Service type not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-    delete:
-      summary: Delete a service type
-      tags:
-        - Services
-      description: Deletes a service type by ID
-      responses:
-        "204":
-          description: Service type deleted successfully
         "404":
           description: Service type not found
           content:
