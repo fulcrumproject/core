@@ -41,12 +41,9 @@ Create a JSON configuration file (e.g., `config.json`):
 
 ```json
 {
-  "agentName": "test-vm-agent",
-  "agentTypeId": "00000000-0000-0000-0000-000000000001",
-  "providerId": "00000000-0000-0000-0000-000000000002",
+  "agentToken": "TOKEN",
   "fulcrumApiUrl": "http://localhost:3000",
-  "vmCount": 10,
-  "vmOperationInterval": "30s",
+  "vmUpdateInterval": "30s",
   "jobPollInterval": "5s",
   "metricReportInterval": "60s",
   "operationDelayMin": "2s",
@@ -59,11 +56,8 @@ Create a JSON configuration file (e.g., `config.json`):
 
 You can also use environment variables to override the configuration:
 
-- `TESTAGENT_NAME`: Agent name
-- `TESTAGENT_AGENT_TYPE_ID`: UUID of the agent type
-- `TESTAGENT_PROVIDER_ID`: UUID of the provider
+- `TESTAGENT_AGENT_TOKEN`: Secret token of the agent
 - `TESTAGENT_FULCRUM_API_URL`: URL of the Fulcrum Core API
-- `TESTAGENT_VM_COUNT`: Number of VMs to simulate
 - `TESTAGENT_VM_OPERATION_INTERVAL`: How often to perform VM operations
 - `TESTAGENT_JOB_POLL_INTERVAL`: How often to poll for jobs
 - `TESTAGENT_METRIC_REPORT_INTERVAL`: How often to report metrics
@@ -87,29 +81,10 @@ You can also use environment variables to override the configuration:
 
 The agent handles SIGINT and SIGTERM signals for graceful shutdown. Simply press `Ctrl+C` to stop it cleanly.
 
-## VM Lifecycle
-
-The test agent simulates VMs with the following state transitions:
-
-```
-NONE → CREATING → CREATED → STARTING → RUNNING → STOPPING → STOPPED → DELETING → DELETED
-```
-
-At any point, operations may fail and transition the VM to an ERROR state.
 
 ## Metrics Generated
 
 The test agent generates the following metrics:
-
-### VM-related Metrics
-
-- `vm.count`: Total number of VMs managed
-- `vm.state.count`: Number of VMs in each state
-- `vm.create.duration`: Time taken to create a VM
-- `vm.start.duration`: Time taken to start a VM
-- `vm.stop.duration`: Time taken to stop a VM
-- `vm.delete.duration`: Time taken to delete a VM
-- `vm.operation.failure`: Count of operation failures
 
 ### Resource Utilization Metrics
 
@@ -117,13 +92,6 @@ The test agent generates the following metrics:
 - `vm.memory.usage`: Simulated memory usage percentage
 - `vm.disk.usage`: Simulated disk usage percentage
 - `vm.network.throughput`: Simulated network throughput (Mbps)
-
-### Agent Metrics
-
-- `agent.jobs.processed`: Number of jobs processed
-- `agent.jobs.success`: Number of successfully completed jobs
-- `agent.jobs.failed`: Number of failed jobs
-- `agent.uptime`: Agent uptime in seconds
 
 ## Job Processing
 
@@ -133,22 +101,11 @@ The test agent can process the following job types from Fulcrum Core:
 - `ServiceUpdate`: Updates a VM (start/stop operations)
 - `ServiceDelete`: Deletes a VM
 
-## Automatic Mode
-
-When `vmCount` is set greater than 0, the agent will automatically:
-
-1. Create the specified number of VMs at startup
-2. Periodically perform random operations on these VMs
-3. Generate metrics about the operations and VM states
-4. Report these metrics back to Fulcrum Core
-
-This mode is useful for demonstrations and testing the Fulcrum Core dashboard.
-
 ## Simulation Parameters
 
 - `operationDelayMin` and `operationDelayMax`: Control how long VM operations take
 - `errorRate`: Controls how often operations fail (0.0 = never, 1.0 = always)
-- `vmOperationInterval`: Controls how often automatic operations occur
+- `vmUpdateInterval`: Controls how often automatic operations occur
 
 ## Troubleshooting
 
@@ -156,13 +113,12 @@ This mode is useful for demonstrations and testing the Fulcrum Core dashboard.
 
 Make sure:
 - Fulcrum Core API is running and accessible
-- The provided agent type ID exists in Fulcrum Core
-- The provided provider ID exists in Fulcrum Core
+- The provided agent token exists in Fulcrum Core
 
 ### No Metrics Appearing
 
 Check:
-- The metric type IDs are registered in Fulcrum Core
+- The metric type names are registered in Fulcrum Core
 - The agent is successfully registered
 - The metrics reporting interval is not too long
 

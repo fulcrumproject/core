@@ -29,12 +29,12 @@ GET {{baseUrl}}/providers/{{providerId}}
 GET {{baseUrl}}/providers?name=Provider
 
 ### Update a provider
-PUT {{baseUrl}}/providers/{{providerId}}
+PATCH {{baseUrl}}/providers/{{providerId}}
 Content-Type: application/json
 
 {
     "name": "Provider Updated",
-    "state": "Enabled",
+    "state": "Disabled",
     "countryCode": "US",
     "attributes": {
         "regions": ["us-east-1", "us-west-2", "eu-west-1"],

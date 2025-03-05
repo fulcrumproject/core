@@ -29,12 +29,11 @@ GET {{baseUrl}}/metric-types?name=CPU Usage
 GET {{baseUrl}}/metric-types?page=1&pageSize=10
 
 ### Update a metric type
-PUT {{baseUrl}}/metric-types/{{metricTypeId}}
+PATCH {{baseUrl}}/metric-types/{{metricTypeId}}
 Content-Type: application/json
 
 {
-    "name": "Updated CPU Usage",
-    "entityType": "Agent"
+    "name": "Updated CPU Usage"
 }
 
 ### Delete a metric type

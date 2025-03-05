@@ -272,6 +272,8 @@ components:
           $ref: "#/components/schemas/Attributes"
         resources:
           $ref: "#/components/schemas/JSONObject"
+        externalId:
+          type: string
         agentId:
           $ref: "#/components/schemas/UUID"
         serviceTypeId:
@@ -398,9 +400,14 @@ components:
       type: object
       required:
         - resultData
+        - externalId
       properties:
         resultData:
           $ref: "#/components/schemas/JSONObject"
+        externalId:
+          type: string
+          description: "External identifier for the resource (e.g., VM ID) used to associate agent resources with services"
+          example: "vm-123"
 
     FailJobRequest:
       type: object
@@ -448,19 +455,29 @@ components:
     MetricEntryRequest:
       type: object
       required:
+        - serviceId
+        - resourceId
         - value
       properties:
-        agentId:
-          $ref: "#/components/schemas/UUID"
         serviceId:
           $ref: "#/components/schemas/UUID"
         resourceId:
           type: string
           example: "cpu-1"
+        externalId:
+          type: string
+          description: "External resource ID (alternative to serviceId)"
         value:
           type: number
           format: float
           example: 78.5
+        typeId:
+          $ref: "#/components/schemas/UUID"
+          description: "ID of the metric type (optional if typeName is provided)"
+        typeName:
+          type: string
+          description: "Name of the metric type (optional if typeId is provided)"
+          example: "cpu.usage"
 
     MetricEntryResponse:
       type: object
@@ -1677,6 +1694,8 @@ paths:
       summary: Create a metric entry
       tags:
         - Metrics
+      security:
+        - AgentAuth: []
       description: Creates a new metric entry
       requestBody:
         required: true
@@ -1693,6 +1712,12 @@ paths:
                 $ref: "#/components/schemas/MetricEntryResponse"
         "400":
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:

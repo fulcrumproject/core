@@ -50,6 +50,9 @@ Content-Type: application/json
 ### Extract agent ID
 @agentId = {{createAgent.response.body.$.id}}
 
+### Extract agent token
+@agentToken = {{createAgent.response.body.$.token}}
+
 ### Create a service group
 # @name createServiceGroup
 POST {{baseUrl}}/service-groups
@@ -74,10 +77,6 @@ Content-Type: application/json
         "environment": ["production"],
         "region": ["us-west"]
     },
-    "resources": {
-        "cpu": 2,
-        "memory": "4GB"
-    },
     "agentId": "{{agentId}}",
     "serviceTypeId": "{{serviceTypeId}}",
     "groupId": "{{serviceGroupId}}"
@@ -99,17 +98,40 @@ Content-Type: application/json
 ### Extract metric type ID
 @metricTypeId = {{createMetricType.response.body.$.id}}
 
-### Create a new metric entry
+### Create a new metric entry using typeId
 # @name createMetricEntry
 POST {{baseUrl}}/metric-entries
 Content-Type: application/json
+Authorization: Bearer {{agentToken}}
 
 {
-    "agentId": "{{agentId}}",
     "serviceId": "{{serviceId}}",
     "resourceId": "test-resource",
-    "value": 42.5,
-    "typeId": "{{metricTypeId}}"
+    "value": 42.5, 
+    "typeName": "test-metric"
+}
+
+### Create a metric type with a specific name for testing by name
+# @name createNamedMetricType
+POST {{baseUrl}}/metric-types
+Content-Type: application/json
+
+{
+    "name": "cpu-usage",
+    "entityType": "Service"
+}
+
+### Create a new metric entry using typeName instead of typeId
+# @name createMetricEntryByName
+POST {{baseUrl}}/metric-entries
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
+
+{
+    "serviceId": "{{serviceId}}",
+    "resourceId": "cpu-resource",
+    "value": 78.2, 
+    "typeName": "cpu-usage"
 }
 
 ### List all metric entries

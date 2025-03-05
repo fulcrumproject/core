@@ -51,7 +51,6 @@ func createTestAgentWithStatusUpdate(t *testing.T, providerID, agentTypeID domai
 		TokenHash:        fmt.Sprintf("token-hash-%s", randomSuffix),
 		CountryCode:      "US",
 		Attributes:       domain.Attributes{"key": []string{"value"}},
-		Properties:       map[string]interface{}{"prop": "value"},
 		ProviderID:       providerID,
 		AgentTypeID:      agentTypeID,
 		LastStatusUpdate: lastUpdate,
@@ -70,13 +69,13 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID doma
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Service{
-		Name:          fmt.Sprintf("Test Service %s", randomSuffix),
-		ServiceTypeID: serviceTypeID,
-		GroupID:       serviceGroupID,
-		State:         domain.ServiceNew,
-		AgentID:       agentID,
-		Attributes:    domain.Attributes{},
-		Resources:     domain.JSON{},
+		Name:              fmt.Sprintf("Test Service %s", randomSuffix),
+		ServiceTypeID:     serviceTypeID,
+		GroupID:           serviceGroupID,
+		CurrentState:      domain.ServiceStarted,
+		AgentID:           agentID,
+		CurrentAttributes: domain.Attributes{},
+		Resources:         domain.JSON{},
 	}
 }
 
@@ -86,5 +85,28 @@ func createTestMetricType(t *testing.T) *domain.MetricType {
 	return &domain.MetricType{
 		Name:       fmt.Sprintf("Test MetricType %s", randomSuffix),
 		EntityType: domain.MetricEntityTypeService,
+	}
+}
+
+// createTestMetricTypeForEntity creates a test metric type for a specific entity type
+func createTestMetricTypeForEntity(t *testing.T, entityType domain.MetricEntityType) *domain.MetricType {
+	t.Helper()
+	randomSuffix := uuid.New().String()
+	return &domain.MetricType{
+		Name:       fmt.Sprintf("Test MetricType %s for %s", randomSuffix, entityType),
+		EntityType: entityType,
+	}
+}
+
+// createTestMetricEntry creates a test metric entry with all required relationships
+func createTestMetricEntry(t *testing.T, agentID, serviceID, typeID domain.UUID) *domain.MetricEntry {
+	t.Helper()
+	randomSuffix := uuid.New().String()
+	return &domain.MetricEntry{
+		AgentID:    agentID,
+		ServiceID:  serviceID,
+		ResourceID: fmt.Sprintf("resource-%s", randomSuffix),
+		Value:      42.0,
+		TypeID:     typeID,
 	}
 }

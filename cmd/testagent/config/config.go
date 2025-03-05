@@ -17,8 +17,7 @@ type Config struct {
 	FulcrumAPIURL string `json:"fulcrumApiUrl"`
 
 	// Simulation parameters
-	VMCount              int           `json:"vmCount"`              // Number of VMs to simulate
-	VMOperationInterval  time.Duration `json:"vmOperationInterval"`  // How often to perform VM operations
+	VMUpdateInterval     time.Duration `json:"vmUpdateInterval"`     // How often to perform VM operations
 	JobPollInterval      time.Duration `json:"jobPollInterval"`      // How often to poll for jobs
 	MetricReportInterval time.Duration `json:"metricReportInterval"` // How often to report metrics
 
@@ -33,10 +32,9 @@ func DefaultConfig() *Config {
 	return &Config{
 		AgentToken:           "", // Must be provided
 		FulcrumAPIURL:        "http://localhost:3000",
-		VMCount:              10,
-		VMOperationInterval:  30 * time.Second,
+		VMUpdateInterval:     5 * time.Second,
 		JobPollInterval:      5 * time.Second,
-		MetricReportInterval: 60 * time.Second,
+		MetricReportInterval: 30 * time.Second,
 		OperationDelayMin:    2 * time.Second,
 		OperationDelayMax:    10 * time.Second,
 		ErrorRate:            0.05, // 5% chance of failure
@@ -60,51 +58,66 @@ func LoadFromFile(filepath string) (*Config, error) {
 }
 
 // LoadFromEnv overrides configuration with environment variables
-func (c *Config) LoadFromEnv() {
+func (c *Config) LoadFromEnv() error {
 	// Map environment variables to config fields
 	if v := os.Getenv("TESTAGENT_AGENT_TOKEN"); v != "" {
 		c.AgentToken = v
 	}
+
 	if v := os.Getenv("TESTAGENT_FULCRUM_API_URL"); v != "" {
 		c.FulcrumAPIURL = v
 	}
 
 	// Load numeric and duration parameters
-	if v := os.Getenv("TESTAGENT_VM_COUNT"); v != "" {
-		if i, err := strconv.Atoi(v); err == nil {
-			c.VMCount = i
-		}
-	}
 	if v := os.Getenv("TESTAGENT_VM_OPERATION_INTERVAL"); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			c.VMOperationInterval = d
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return fmt.Errorf("invalid VM operation interval: %w", err)
 		}
+		c.VMUpdateInterval = d
 	}
+
 	if v := os.Getenv("TESTAGENT_JOB_POLL_INTERVAL"); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			c.JobPollInterval = d
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return fmt.Errorf("invalid job poll interval: %w", err)
 		}
+		c.JobPollInterval = d
 	}
+
 	if v := os.Getenv("TESTAGENT_METRIC_REPORT_INTERVAL"); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			c.MetricReportInterval = d
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return fmt.Errorf("invalid metric report interval: %w", err)
 		}
+		c.MetricReportInterval = d
 	}
+
 	if v := os.Getenv("TESTAGENT_OPERATION_DELAY_MIN"); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			c.OperationDelayMin = d
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return fmt.Errorf("invalid operation delay minimum: %w", err)
 		}
+		c.OperationDelayMin = d
 	}
+
 	if v := os.Getenv("TESTAGENT_OPERATION_DELAY_MAX"); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			c.OperationDelayMax = d
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return fmt.Errorf("invalid operation delay maximum: %w", err)
 		}
+		c.OperationDelayMax = d
 	}
+
 	if v := os.Getenv("TESTAGENT_ERROR_RATE"); v != "" {
-		if f, err := strconv.ParseFloat(v, 64); err == nil {
-			c.ErrorRate = f
+		f, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return fmt.Errorf("invalid error rate: %w", err)
 		}
+		c.ErrorRate = f
 	}
+
+	return nil
 }
 
 // Validate checks if the configuration is valid
@@ -113,7 +126,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("agent token is required")
 	}
 	if c.FulcrumAPIURL == "" {
-		return fmt.Errorf("Fulcrum API URL is required")
+		return fmt.Errorf("the Fulcrum API URL is required")
 	}
 	if c.OperationDelayMin > c.OperationDelayMax {
 		return fmt.Errorf("minimum operation delay cannot be greater than maximum")

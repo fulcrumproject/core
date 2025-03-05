@@ -9,7 +9,7 @@ POST {{baseUrl}}/service-groups
 Content-Type: application/json
 
 {
-    "name": "Database Services"
+    "name": "Database"
 }
 
 ### Extract service group ID
@@ -22,7 +22,7 @@ GET {{baseUrl}}/service-groups/{{serviceGroupId}}
 GET {{baseUrl}}/service-groups?name=Database
 
 ### Update a service group
-PUT {{baseUrl}}/service-groups/{{serviceGroupId}}
+PATCH {{baseUrl}}/service-groups/{{serviceGroupId}}
 Content-Type: application/json
 
 {

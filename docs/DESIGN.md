@@ -413,6 +413,27 @@ Key components of the job queue include:
 5. **Agent Token Authentication**: Secures agent-API communication
 6. **Job Maintenance**: Background processes that handle stuck or old jobs
 
+#### Service State Transitions
+
+The following diagram illustrates the various states a service can transition through during its lifecycle:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Creating: create operation
+    Creating --> Created: creation complete
+    Created --> Starting: start operation
+    Starting --> Started: operation complete    
+    Started --> Stopping: stop operation
+    Started --> HotUpdating: update operation
+    HotUpdating --> Started: update complete
+    Stopped --> Starting: start operation
+    Stopped --> Deleting: delete operation
+    Stopped --> ColdUpdating: update operation    
+    Stopping --> Stopped: operation complete
+    ColdUpdating --> Stopped: update complete
+    Deleting --> Deleted: operation complete
+```
+
 #### Agent Authentication Flow
 
 ```mermaid
@@ -561,4 +582,3 @@ graph TB
     API3 & API4 --> DB2
     DB1 -.Replication.-> DB2
     Agent1 & Agent2 & Agent3 --> Internet
-```

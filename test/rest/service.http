@@ -9,7 +9,7 @@ POST {{baseUrl}}/providers
 Content-Type: application/json
 
 {
-    "name": "Test Provider",
+    "name": "Test Service Provider",
     "state": "Enabled",
     "countryCode": "US",
     "attributes": {
@@ -41,7 +41,6 @@ Content-Type: application/json
 
 {
     "name": "Test Agent",
-    "state": "Connected",
     "countryCode": "US",
     "agentTypeId": "{{agentTypeId}}",
     "providerId": "{{providerId}}"
@@ -49,6 +48,15 @@ Content-Type: application/json
 
 ### Extract agent ID
 @agentId = {{createAgent.response.body.$.id}}
+
+### Extract agent token for status update test
+@agentToken = {{createAgent.response.body.$.token}}
+
+### Get agent's own information via authenticated endpoint
+# @name getAgentMe
+GET {{baseUrl}}/agents/me
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
 
 ### Create a service group
 # @name createServiceGroup
@@ -69,14 +77,9 @@ Content-Type: application/json
 
 {
     "name": "Test Service",
-    "state": "Created",
     "attributes": {
-        "environment": ["production"],
-        "region": ["us-west"]
-    },
-    "resources": {
-        "cpu": 2,
-        "memory": "4GB"
+        "cpu": ["4"],
+        "memory": ["8"]
     },
     "agentId": "{{agentId}}",
     "serviceTypeId": "{{serviceTypeId}}",
@@ -89,34 +92,54 @@ Content-Type: application/json
 ### Get a service by ID
 GET {{baseUrl}}/services/{{serviceId}}
 
+### Update vm memory TODO resources not updated - is it correct?
+PATCH {{baseUrl}}/services/{{serviceId}}
+Content-Type: application/json
+
+{
+    "name": "Updated Service"
+}
+
+### Start Service
+POST {{baseUrl}}/services/{{serviceId}}/start
+Content-Type: application/json
+
+
+### Hot update vm state
+PATCH {{baseUrl}}/services/{{serviceId}}
+Content-Type: application/json
+
+{
+    "attributes": {
+        "cpu": ["4"],
+        "memory": ["12"]
+    }
+}
+
+### Stop Service
+POST {{baseUrl}}/services/{{serviceId}}/stop
+Content-Type: application/json
+
+### Cold update vm state
+PATCH {{baseUrl}}/services/{{serviceId}}
+Content-Type: application/json
+
+{
+    "attributes": {
+        "cpu": ["8"],
+        "memory": ["16"]
+    }
+}
+
+### Delete a service NOT WORKING SEE TODO
+DELETE {{baseUrl}}/services/{{serviceId}}
+
 ### List all services
 GET {{baseUrl}}/services
 
 ### List services with filters
-GET {{baseUrl}}/services?name=Test Service&state=Created
+GET {{baseUrl}}/services?name=Test Service
 
 ### List services with pagination
 GET {{baseUrl}}/services?page=1&pageSize=10
 
-### Update a service
-PUT {{baseUrl}}/services/{{serviceId}}
-Content-Type: application/json
-
-{
-    "name": "Updated Service",
-    "state": "Updated",
-    "attributes": {
-        "environment": ["staging"],
-        "region": ["us-east"]
-    },
-    "resources": {
-        "cpu": 4,
-        "memory": "8GB"
-    },
-    "agentId": "{{agentId}}",
-    "serviceTypeId": "{{serviceTypeId}}",
-    "groupId": "{{serviceGroupId}}"
-}
-
-### Delete a service
-DELETE {{baseUrl}}/services/{{serviceId}}

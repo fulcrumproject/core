@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -13,40 +12,33 @@ import (
 
 // Agent is the main test agent implementation
 type Agent struct {
-	cfg        *config.Config
-	client     *FulcrumClient
-	jobHandler *JobHandler
-	metrics    *MetricsCollector
-	vmManager  *VMManager
-	stopCh     chan struct{}
-	wg         sync.WaitGroup
-	startTime  time.Time
-	connected  bool
-	agentID    string
+	cfg             *config.Config
+	client          FulcrumClient
+	jobHandler      *JobHandler
+	vmManager       *VMManager
+	metricsReporter *MetricsReporter
+	stopCh          chan struct{}
+	wg              sync.WaitGroup
+	startTime       time.Time
+	connected       bool
+	agentID         string
 }
 
 // New creates a new test agent
 func New(cfg *config.Config) (*Agent, error) {
-	// Create a new Fulcrum client with the provided token
-	client := NewFulcrumClient(cfg.FulcrumAPIURL, cfg.AgentToken)
-
-	// Create metrics collector
-	metrics := NewMetricsCollector(client)
-
-	// Create VM manager
-	vmManager := NewVMManager(cfg, metrics)
-
-	// Create job handler
+	client := NewHTTPFulcrumClient(cfg.FulcrumAPIURL, cfg.AgentToken)
+	vmManager := NewVMManager(cfg)
 	jobHandler := NewJobHandler(client, vmManager)
+	metricsReporter := NewMetricsReporter(client, vmManager)
 
 	return &Agent{
-		cfg:        cfg,
-		client:     client,
-		metrics:    metrics,
-		jobHandler: jobHandler,
-		vmManager:  vmManager,
-		stopCh:     make(chan struct{}),
-		connected:  false,
+		cfg:             cfg,
+		client:          client,
+		jobHandler:      jobHandler,
+		vmManager:       vmManager,
+		metricsReporter: metricsReporter,
+		stopCh:          make(chan struct{}),
+		connected:       false,
 	}, nil
 }
 
@@ -67,12 +59,6 @@ func (a *Agent) Start(ctx context.Context) error {
 	}
 	a.agentID = id
 
-	// Set agent ID in the metrics collector
-	a.metrics.SetAgentID(id)
-
-	// Note: Metric types are expected to already exist in the Fulcrum Core system
-	// No need to register them here
-
 	log.Printf("Agent authenticated with ID: %s", id)
 
 	// Update agent status to Connected
@@ -90,7 +76,6 @@ func (a *Agent) Start(ctx context.Context) error {
 	// Start VM resource updater background task
 	a.wg.Add(1)
 	go a.updateVMResources(ctx)
-	a.initializeVMs(ctx)
 
 	// Start metrics reporting background task
 	a.wg.Add(1)
@@ -130,7 +115,7 @@ func (a *Agent) heartbeat(ctx context.Context) {
 func (a *Agent) updateVMResources(ctx context.Context) {
 	defer a.wg.Done()
 
-	ticker := time.NewTicker(10 * time.Second) // Update resources every 10 seconds
+	ticker := time.NewTicker(a.cfg.VMUpdateInterval)
 	defer ticker.Stop()
 
 	for {
@@ -155,11 +140,11 @@ func (a *Agent) reportMetrics(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			count, err := a.metrics.ReportMetrics()
+			n, err := a.metricsReporter.Report()
 			if err != nil {
 				log.Printf("Error reporting metrics: %v", err)
-			} else if count > 0 {
-				log.Printf("Reported %d metrics", count)
+			} else {
+				log.Printf("Metrics reported %d", n)
 			}
 		case <-a.stopCh:
 			return
@@ -188,40 +173,6 @@ func (a *Agent) pollJobs(ctx context.Context) {
 			return
 		}
 	}
-}
-
-// initializeVMs creates the initial set of VMs based on configuration
-func (a *Agent) initializeVMs(ctx context.Context) {
-	if a.cfg.VMCount <= 0 {
-		return
-	}
-
-	log.Printf("Creating %d initial VMs...", a.cfg.VMCount)
-	for i := 0; i < a.cfg.VMCount; i++ {
-		vmName := fmt.Sprintf("test-vm-%d", i+1)
-		vm, err := a.vmManager.CreateVM(vmName)
-		if err != nil {
-			log.Printf("Failed to create VM %s: %v", vmName, err)
-		} else {
-			log.Printf("Created VM %s (ID: %s)", vm.Name, vm.ID)
-		}
-	}
-
-	// Start a goroutine to periodically perform VM operations if configured
-	if a.cfg.VMOperationInterval > 0 {
-		a.wg.Add(1)
-		go a.simulateVMOperations(ctx)
-	}
-}
-
-// GetVM returns a VM by ID
-func (a *Agent) GetVM(id string) (*VM, bool) {
-	return a.vmManager.GetVM(id)
-}
-
-// GetVMs returns all managed VMs
-func (a *Agent) GetVMs() []*VM {
-	return a.vmManager.GetVMs()
 }
 
 // Shutdown stops the agent and releases resources
@@ -263,34 +214,9 @@ func (a *Agent) GetAgentID() string {
 	return a.agentID
 }
 
-// IsConnected returns whether the agent is connected
-func (a *Agent) IsConnected() bool {
-	return a.connected
-}
-
 // GetUptime returns the agent's uptime
 func (a *Agent) GetUptime() time.Duration {
 	return time.Since(a.startTime)
-}
-
-// CreateVM creates a new virtual machine
-func (a *Agent) CreateVM(name string) (*VM, error) {
-	return a.vmManager.CreateVM(name)
-}
-
-// StartVM starts a VM
-func (a *Agent) StartVM(id string) error {
-	return a.vmManager.StartVM(id)
-}
-
-// StopVM stops a VM
-func (a *Agent) StopVM(id string) error {
-	return a.vmManager.StopVM(id)
-}
-
-// DeleteVM deletes a VM
-func (a *Agent) DeleteVM(id string) error {
-	return a.vmManager.DeleteVM(id)
 }
 
 // GetVMStateCounts returns the count of VMs in each state
@@ -301,88 +227,4 @@ func (a *Agent) GetVMStateCounts() map[VMState]int {
 // GetJobStats returns the job processing statistics
 func (a *Agent) GetJobStats() (processed, succeeded, failed int) {
 	return a.jobHandler.GetStats()
-}
-
-// GetPendingMetricsCount returns the number of metrics waiting to be reported
-func (a *Agent) GetPendingMetricsCount() int {
-	return a.metrics.GetPendingMetricsCount()
-}
-
-// simulateVMOperations periodically performs random operations on VMs
-func (a *Agent) simulateVMOperations(ctx context.Context) {
-	defer a.wg.Done()
-
-	ticker := time.NewTicker(a.cfg.VMOperationInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			a.performRandomVMOperation()
-		case <-a.stopCh:
-			return
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-// performRandomVMOperation performs a random operation on a random VM
-func (a *Agent) performRandomVMOperation() {
-	vms := a.vmManager.GetVMs()
-	if len(vms) == 0 {
-		return
-	}
-
-	// Choose a random VM
-	randomIndex := rand.Intn(len(vms))
-	vm := vms[randomIndex]
-
-	// Perform a random operation based on the VM's state
-	switch vm.State {
-	case VMStateCREATED:
-		// Start the VM
-		if err := a.vmManager.StartVM(vm.ID); err != nil {
-			log.Printf("Failed to start VM %s: %v", vm.ID, err)
-		} else {
-			log.Printf("Started VM %s", vm.ID)
-		}
-	case VMStateRUNNING:
-		// Stop the VM
-		if err := a.vmManager.StopVM(vm.ID); err != nil {
-			log.Printf("Failed to stop VM %s: %v", vm.ID, err)
-		} else {
-			log.Printf("Stopped VM %s", vm.ID)
-		}
-	case VMStateSTOPPED:
-		// Either start or delete the VM
-		if rand.Intn(2) == 0 {
-			if err := a.vmManager.StartVM(vm.ID); err != nil {
-				log.Printf("Failed to start VM %s: %v", vm.ID, err)
-			} else {
-				log.Printf("Started VM %s", vm.ID)
-			}
-		} else {
-			if err := a.vmManager.DeleteVM(vm.ID); err != nil {
-				log.Printf("Failed to delete VM %s: %v", vm.ID, err)
-			} else {
-				log.Printf("Deleted VM %s", vm.ID)
-			}
-		}
-	case VMStateERROR:
-		// Delete the VM
-		if err := a.vmManager.DeleteVM(vm.ID); err != nil {
-			log.Printf("Failed to delete VM %s: %v", vm.ID, err)
-		} else {
-			log.Printf("Deleted VM %s (was in ERROR state)", vm.ID)
-
-			// Create a new VM to replace it
-			newName := fmt.Sprintf("replacement-vm-%d", rand.Intn(1000))
-			if newVM, err := a.vmManager.CreateVM(newName); err != nil {
-				log.Printf("Failed to create replacement VM: %v", err)
-			} else {
-				log.Printf("Created replacement VM %s (ID: %s)", newVM.Name, newVM.ID)
-			}
-		}
-	}
 }

@@ -36,8 +36,11 @@ func main() {
 	}
 
 	// Override with environment variables
-	cfg.LoadFromEnv()
-	log.Printf("Applied environment variable overrides")
+	if err := cfg.LoadFromEnv(); err != nil {
+		log.Fatalf("Failed to load configuration from environment: %v", err)
+	} else {
+		log.Printf("Applied environment variable overrides")
+	}
 
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
@@ -66,15 +69,6 @@ func main() {
 	}
 
 	log.Printf("Test agent started successfully (Agent ID: %s)", testAgent.GetAgentID())
-
-	// Display VM initialization info
-	if cfg.VMCount > 0 {
-		log.Printf("Initialized with %d VMs", cfg.VMCount)
-		log.Printf("VM operation interval: %s", cfg.VMOperationInterval)
-		log.Printf("VM operation delay range: %s to %s", cfg.OperationDelayMin, cfg.OperationDelayMax)
-		log.Printf("VM operation error rate: %.1f%%", cfg.ErrorRate*100)
-	}
-
 	log.Printf("Press Ctrl+C to stop the agent")
 
 	// Start a background goroutine to periodically display VM state counts

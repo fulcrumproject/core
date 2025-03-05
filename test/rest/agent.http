@@ -9,7 +9,7 @@ POST {{baseUrl}}/providers
 Content-Type: application/json
 
 {
-    "name": "Test Provider",
+    "name": "Test Agent Provider",
     "state": "Enabled",
     "countryCode": "US",
     "attributes": {
@@ -34,15 +34,10 @@ Content-Type: application/json
 
 {
     "name": "Test Agent",
-    "state": "New",
     "countryCode": "US",
     "attributes": {
         "environment": ["production"],
         "version": ["1.0.0"]
-    },
-    "properties": {
-        "os": "linux",
-        "arch": "amd64"
     },
     "providerId": "{{providerId}}",
     "agentTypeId": "{{agentTypeId}}"
@@ -53,6 +48,13 @@ Content-Type: application/json
 
 ### Extract agent token for status update test
 @agentToken = {{createAgent.response.body.$.token}}
+
+### Get agent's own information via authenticated endpoint
+# @name getAgentMe
+GET {{baseUrl}}/agents/me
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
+
 
 ### Update agent status via authenticated endpoint
 # @name updateAgentStatus
@@ -71,30 +73,23 @@ GET {{baseUrl}}/agents/{{agentId}}
 GET {{baseUrl}}/agents
 
 ### List agents with filters
-GET {{baseUrl}}/agents?state=New&countryCode=US
+GET {{baseUrl}}/agents?state=Connected&countryCode=US
 
 ### List agents for specific provider
 GET {{baseUrl}}/agents?providerId={{providerId}}
 
 ### Update an agent
-PUT {{baseUrl}}/agents/{{agentId}}
+PATCH {{baseUrl}}/agents/{{agentId}}
 Content-Type: application/json
 
 {
     "name": "Test Agent Updated",
-    "state": "Connected",
+    "state": "Disconnected",
     "countryCode": "UK",
     "attributes": {
         "environment": ["staging"],
-        "version": ["1.1.0"]
-    },
-    "properties": {
-        "os": "linux",
-        "arch": "amd64",
-        "memory": "8GB"
-    },
-    "providerId": "{{providerId}}",
-    "agentTypeId": "{{agentTypeId}}"
+        "version": ["1.1.1"]
+    }
 }
 
 ### Rotate agent token
@@ -111,8 +106,13 @@ Content-Type: application/json
 Authorization: Bearer {{newAgentToken}}
 
 {
-    "state": "Disconnected"
+    "state": "Connected"
 }
+
+### Test new token by getting agent information with rotated token
+GET {{baseUrl}}/agents/me
+Authorization: Bearer {{newAgentToken}}
+
 
 ### Delete an agent
 DELETE {{baseUrl}}/agents/{{agentId}}

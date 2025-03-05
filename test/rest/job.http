@@ -34,7 +34,6 @@ Content-Type: application/json
 
 {
     "name": "Test Job Agent",
-    "state": "Connected",
     "countryCode": "US",
     "agentTypeId": "{{agentTypeId}}",
     "providerId": "{{providerId}}"
@@ -72,13 +71,8 @@ Content-Type: application/json
 
 {
     "name": "Test Job Service",
-    "state": "Running",
     "attributes": {
         "environment": ["test"]
-    },
-    "resources": {
-        "cpu": 1,
-        "memory": "2GB"
     },
     "agentId": "{{agentId}}",
     "serviceTypeId": "{{serviceTypeId}}",
@@ -129,12 +123,12 @@ Content-Type: application/json
 
 ### Update the created service to trigger job creation
 # @name updateService
-PUT {{baseUrl}}/services/{{serviceId}}
+PATCH {{baseUrl}}/services/{{serviceId}}
 Content-Type: application/json
 
 {
     "name": "Updated Job Service",
-    "state": "Running",
+    "state": "Started",
     "attributes": {
         "environment": ["test", "updated"]
     },
