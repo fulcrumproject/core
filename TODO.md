@@ -1,20 +1,15 @@
-- [ ] Test Agent: basic
-- [ ] Test Agent: metrics
-
+- [ ] ExternalID for Service metrics
+- [ ] Resolve Service attributes design
 - [ ] Create Service with attributes match
-
 - [ ] Authz: Mock, Roles: Fulcrum Admin, Provider Admin, Provider Reader, Marketplace
 - [ ] Audit: insert
-
 - [ ] Config refactoring
-
 - [ ] Structured logging
-
 - [ ] Handler tests
 - [ ] Domain tests
-
 - [ ] Long polling
-
+- [x] Test Agent: basic
+- [x] Test Agent: metrics
 - [x] Review service layer
 - [x] Check delete: Provider, ServiceGroup
 - [x] Health Agent Status and Test Agent

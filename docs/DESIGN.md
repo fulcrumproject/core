@@ -102,21 +102,21 @@ Marketplace Systems are external platforms that can integrate with Fulcrum to au
 
 ## Model
 
-This paragraph outlines the service entities and their relationships.
+This section outlines the service entities and their relationships.
 
 ### Class Diagram
 
 ```mermaid
 classDiagram
     Provider "1" --> "0..N" Agent : has many
-    AgentType "0..N" --> "1..N" ServiceType : can provide
+    AgentType "0..N" <--> "1..N" ServiceType : can provide
     Agent "0..N" --> "1" AgentType : is of type
     Agent "1" --> "0..N" Service : handles
     Agent "1" --> "0..N" Job : processes
     Service "0..1" --> "1" ServiceType : is of type
     Service "1" --> "0..N" Job : related to
-    ServiceGroup "1" --> "0..N" Service : groups many
-    MetricEntry "1" --> "0..N" MetricType : is of type
+    ServiceGroup "1" --> "0..N" Service : groups
+    MetricType "1" --> "0..N" MetricEntry : categorizes
 
     namespace Providers {
         class Provider {
@@ -132,7 +132,6 @@ classDiagram
         class ServiceType {
             id : UUID
             name : string
-            resourceDefinitions : json
             createdAt : datetime
             updatedAt : datetime
         }
@@ -151,7 +150,7 @@ classDiagram
             tokenHash : string 
             countryCode : string
             attributes : map[string]string[]
-            properties : json
+            lastStatusUpdate : datetime
             createdAt : datetime
             updatedAt : datetime
         }
@@ -161,8 +160,13 @@ classDiagram
         class Service {
             id : UUID
             name : string
-            state : enum[New,Creating,Created,Updating,Updated,Deleting, Deleted, Error]
-            attributes : map[string]string[]
+            currentState : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]
+            targetState : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]
+            errorMessage : string
+            failedAction : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
+            retryCount : int
+            currentAttributes : map[string]string[]
+            targetAttributes : map[string]string[]
             resources : json
             createdAt : datetime
             updatedAt : datetime
@@ -177,13 +181,11 @@ classDiagram
         
         class Job {
             id : UUID
-            type : enum[ServiceCreate,ServiceUpdate,ServiceDelete]
+            action : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
             state : enum[Pending,Processing,Completed,Failed]
             agentId : UUID
             serviceId : UUID
             priority : int
-            requestData : json
-            resultData : json
             errorMessage : string
             claimedAt : datetime
             completedAt : datetime
@@ -222,81 +224,76 @@ classDiagram
         }
     }
 
-    note for ServiceType "Resource definitions can be eg.:
-    - VM
-    - Container
-    - Container Image
-    - VM Image
-    - Kub Control Plane + Kub Worker"
+    note for Service "Service has a sophisticated state management system with:
+    - Current and target states
+    - Error handling
+    - Support for hot and cold updates"
 
     note for ServiceType "Service types include:
-    - VM (VMrunner)
-    - K8-Node (node, labels, nodeUsed)
+    - VM
+    - Kubernetes Node
     - MicroK8s application
-    - Cluster Kubernetes Autodocs
+    - Kubernetes Cluster
     - Container Runtime services
-    - K8s Application Reconcilier base"
+    - Kubernetes Application controller"
     
-    note for Job "Jobs represent operations that 
-    agents must perform, such as creating, 
-    updating, or deleting cloud services"
+    note for Job "Jobs represent operations that agents
+    perform on services including:
+    - Creating services
+    - Starting/stopping services
+    - Hot/cold updating services
+    - Deleting services
+    
+    Each job transitions service state appropriately"
 ```
 
-#### Enities
+#### Entities
 
 ##### Core
 
 1. **Provider (Cloud Service Provider)**
-   - Primary identifier for the cloud service provider
-   - Contains essential provider information including name and operational state
-   - Includes country code for geographical identification
-   - Supports custom attributes for flexible metadata storage
-   - One-to-many relationship with the Agents
+   - Represents a cloud service provider with name and operational state
+   - Contains geographical information via country code
+   - Stores flexible metadata through custom attributes
+   - Has many agents deployed within its infrastructure
 
 2. **Agent**
-   - Manages service instances and their lifecycle
-   - Associated with a specific Provider and AgentType
-   - Maintains state (New, Connected, Disconnected, Error, Disabled)
-   - Secured with token-based authentication
-   - Includes country code and custom attributes
-   - Stores additional configuration in properties field
-   - Processes jobs from the job queue
+   - Deployed software component that manages services
+   - Belongs to a specific Provider and AgentType
+   - Tracks connectivity state (New, Connected, Disconnected, Error, Disabled)
+   - Uses secure token-based authentication
+   - Tracks last status update timestamp
+   - Processes jobs from the job queue to perform service operations
 
 3. **Service**
-   - Represents individual service instances
-   - Managed by a specific Agent
-   - Associated with a ServiceType and ServiceGroup
-   - Tracks service lifecycle state
-   - Contains custom attributes for metadata
-   - Stores service-specific resources configuration
-   - Related to jobs for lifecycle operations
+   - Cloud resource managed by an agent
+   - Sophisticated state management with current and target states
+   - State transitions: Creating → Created → Starting → Started → Stopping → Stopped → Deleting → Deleted
+   - Supports both hot updates (while running) and cold updates (while stopped)
+   - Tracks failed operations with error messages and retry counts
+   - Manages attribute changes through current and target attribute sets
+   - Stores service-specific resource configuration
 
 4. **AgentType**
    - Defines the type classification for agents
-   - Has a unique name identifier
    - Many-to-many relationship with ServiceTypes
    - Determines which types of services an agent can manage
 
 5. **ServiceType**
    - Defines the type classification for services
-   - Has a unique name identifier
-   - Contains resource definitions for different service configurations
    - Examples include VM, Container, Kubernetes nodes, etc.
 
 6. **ServiceGroup**
    - Organizes related services into logical groups
-   - Provides a way to manage collections of services
-   - One-to-many relationship with Services
+   - Enables collective management of related services
 
 7. **Job**
-   - Represents operations to be performed by agents
-   - Types include ServiceCreate, ServiceUpdate, and ServiceDelete
-   - Tracks state through lifecycle (Pending, Processing, Completed, Failed)
-   - Links to target agent and related service
-   - Contains operation-specific data in requestData
-   - Stores operation results or error details
-   - Supports prioritization of operations
-   - Records timing of claim and completion events
+   - Represents a discrete operation to be performed by an agent
+   - Action types match service transitions: Create, Start, Stop, HotUpdate, ColdUpdate, Delete
+   - Lifecycle states: Pending → Processing → Completed/Failed
+   - Prioritizes operations for execution order
+   - Tracks execution timing through claimedAt and completedAt
+   - Records error details for failed operations
 
 ##### Metrics
 
@@ -378,40 +375,7 @@ The Fulcrum Core API is fully documented using the OpenAPI 3.0 specification. Th
 
 This specification can be used with tools like Swagger UI or Redoc to generate interactive API documentation, making it easier for developers to understand and integrate with the Fulcrum Core API.
 
-### Job Queue Architecture
-
-The job queue is implemented as a database-backed queue that facilitates communication between the Fulcrum Core API and agent instances:
-
-```mermaid
-classDiagram
-    class Job {
-        +id: UUID
-        +type: string
-        +state: string
-        +agentId: UUID
-        +serviceId: UUID
-        +priority: int
-        +requestData: json
-        +resultData: json
-        +errorMessage: string
-        +claimedAt: datetime
-        +completedAt: datetime
-        +createdAt: datetime
-        +updatedAt: datetime
-    }
-    
-    Job --> Agent: targetAgent
-    Job --> Service: relatedService
-```
-
-Key components of the job queue include:
-
-1. **Job Entity**: Represents operations to be performed by agents
-2. **JobRepository**: Provides job queue operations like claiming and completing jobs
-3. **ServiceOperationService**: Handles service operations that create jobs
-4. **Job API Endpoints**: Allow agents to poll for and update jobs
-5. **Agent Token Authentication**: Secures agent-API communication
-6. **Job Maintenance**: Background processes that handle stuck or old jobs
+### Services, Agents, and Jobs
 
 #### Service State Transitions
 
@@ -422,13 +386,13 @@ stateDiagram-v2
     [*] --> Creating: create operation
     Creating --> Created: creation complete
     Created --> Starting: start operation
-    Starting --> Started: operation complete    
+    Starting --> Started: operation complete
     Started --> Stopping: stop operation
-    Started --> HotUpdating: update operation
+    Started --> HotUpdating: hot update operation
     HotUpdating --> Started: update complete
     Stopped --> Starting: start operation
     Stopped --> Deleting: delete operation
-    Stopped --> ColdUpdating: update operation    
+    Stopped --> ColdUpdating: cold update operation
     Stopping --> Stopped: operation complete
     ColdUpdating --> Stopped: update complete
     Deleting --> Deleted: operation complete
@@ -460,7 +424,7 @@ sequenceDiagram
 
 #### Job Management Flow
 
-The job queue system manages the complete lifecycle of service operations from creation to completion. The following diagram illustrates the job management flow:
+Job states and transitions can be visualized as follows:
 
 ```mermaid
 stateDiagram-v2
@@ -470,41 +434,60 @@ stateDiagram-v2
     Processing --> Failed: Operation Error
     Completed --> [*]
     Failed --> Pending: Auto-retry (timeout/error)
+```
+
+The job queue system manages the complete lifecycle of service operations from creation to completion. The following diagram illustrates the job management flow:
+
+```mermaid
+sequenceDiagram
+    participant Client as Client/Admin UI
+    participant API as Fulcrum Core API 
+    participant Agent as Agent
+    participant MS as Managed System
+
+    %% Job Creation
+    Client->>API: Request service operation (create/update/delete)
+    API->>API: Update service state (transitioning)
+    API->>API: Create pending job
+    API-->>Client: Return response with job ID
+
+    %% Job Discovery and Claiming
+    Agent->>API: Poll for pending jobs (GET /jobs/pending)
+    Note right of Agent: Uses token authentication
+    API-->>Agent: Return list of pending jobs
     
-    note right of Pending
-        Jobs waiting to be claimed by agents
-        - Created when services are created/updated/deleted
-        - Contains operation data in requestData
-        - Assigned to specific agent
-    end note
-    
-    note right of Processing
-        Jobs currently being executed by an agent
-        - Agent has claimed the job
-        - claimedAt timestamp recorded
-        - Timeout monitoring active
-    end note
-    
-    note right of Completed
-        Successfully executed jobs
-        - Contains operation results in resultData
-        - completedAt timestamp recorded
-        - May be cleaned up after retention period
-    end note
-    
-    note right of Failed
-        Failed operation jobs
-        - Contains error details in errorMessage
-        - May be automatically retried
-        - Available for administrative review
-    end note
+    Agent->>API: Claim job (POST /jobs/{id}/claim)
+    API->>API: Update job state to Processing
+    API-->>Agent: Confirm job claimed
+
+    %% Job Execution
+    Agent->>MS: Execute required operation
+    Note right of Agent: Create/start/stop/update/delete service
+
+    %% Successful Completion Path
+    alt Successful Operation
+        MS-->>Agent: Operation succeeded
+        Agent->>API: Complete job (POST /jobs/{id}/complete)
+        API->>API: Update job state to Completed
+        API->>API: Update service state
+        API-->>Agent: Confirm job completed
+
+    %% Failed Operation Path
+    else Failed Operation
+        MS-->>Agent: Operation failed with error
+        Agent->>API: Fail job (POST /jobs/{id}/fail)
+        API->>API: Update job state to Failed and record error
+        API->>API: Update service with error info
+        API-->>Agent: Confirm job failed
+    end
+
 ```
 
 The job management process follows these steps:
 
 1. **Job Creation**: 
    - When a service operation (create, update, delete) is initiated via the API
-   - The ServiceOperationService creates a job with state "Pending"
+   - The ServiceCommander creates a job with state "Pending"
    - The job is assigned to the appropriate agent
    - Job contains all necessary data to perform the operation
 
