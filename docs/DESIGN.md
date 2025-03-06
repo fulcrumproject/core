@@ -24,7 +24,7 @@ graph TB
     UI[Fulcrum Core UI]
     FA[Fulcrum Administrators]
     CSPA[Cloud Service Provider Administrators]
-    MP[Marketplace Systems]
+    MP[Marketplace/CEM]
     
     %% Cloud Service Providers containing Agents and Services
     subgraph CSP[Cloud Service Providers]
