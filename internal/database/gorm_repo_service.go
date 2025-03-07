@@ -55,7 +55,7 @@ func (r *gormServiceRepository) CountByAgent(ctx context.Context, agentID domain
 }
 
 // FindByExternalID retrieves a service by its external ID and agent ID
-func (r *gormServiceRepository) FindByExternalID(ctx context.Context, externalID string, agentID domain.UUID) (*domain.Service, error) {
+func (r *gormServiceRepository) FindByExternalID(ctx context.Context, agentID domain.UUID, externalID string) (*domain.Service, error) {
 	var service domain.Service
 
 	result := r.db.WithContext(ctx).

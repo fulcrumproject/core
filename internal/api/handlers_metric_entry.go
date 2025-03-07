@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -39,10 +40,11 @@ func (h *MetricEntryHandler) Routes(agentAuthMw func(http.Handler) http.Handler)
 
 func (h *MetricEntryHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	var p struct {
-		ServiceID  domain.UUID `json:"serviceId"`
-		ResourceID string      `json:"resourceId"`
-		Value      float64     `json:"value"`
-		TypeName   string      `json:"typeName"`
+		ServiceID  *domain.UUID `json:"serviceId"`
+		ExternalID *string      `json:"externalId"`
+		ResourceID string       `json:"resourceId"`
+		Value      float64      `json:"value"`
+		TypeName   string       `json:"typeName"`
 	}
 	if err := render.Decode(r, &p); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
@@ -54,7 +56,18 @@ func (h *MetricEntryHandler) handleCreate(w http.ResponseWriter, r *http.Request
 		render.Render(w, r, ErrUnauthorized())
 		return
 	}
-	metricEntry, err := h.commander.Create(r.Context(), p.TypeName, agent.ID, p.ServiceID, p.ResourceID, p.Value)
+	var (
+		metricEntry *domain.MetricEntry
+		err         error
+	)
+	if p.ServiceID != nil {
+		metricEntry, err = h.commander.Create(r.Context(), p.TypeName, agent.ID, *p.ServiceID, p.ResourceID, p.Value)
+	} else if p.ExternalID != nil {
+		metricEntry, err = h.commander.CreateWithExternalID(r.Context(), p.TypeName, agent.ID, *p.ExternalID, p.ResourceID, p.Value)
+	} else {
+		render.Render(w, r, ErrInvalidRequest(errors.New("at least one of serviceId or externalId must be specified")))
+		return
+	}
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return

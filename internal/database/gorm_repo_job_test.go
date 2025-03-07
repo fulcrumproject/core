@@ -57,7 +57,7 @@ func TestJobRepository(t *testing.T) {
 		CurrentState:      domain.ServiceStarted,
 		CurrentProperties: &(domain.JSON{"key": "value"}),
 		Attributes:        domain.Attributes{"key": []string{"value"}},
-		Resources:         map[string]interface{}{"cpu": 1},
+		Resources:         &(domain.JSON{"cpu": 1}),
 		AgentID:           agent.ID,
 		ServiceTypeID:     serviceType.ID,
 		GroupID:           serviceGroup.ID,

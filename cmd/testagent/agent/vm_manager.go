@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"fulcrumproject.org/core/cmd/testagent/config"
+	"github.com/google/uuid"
 )
 
 // VMState represents the possible states of a VM
@@ -40,7 +41,6 @@ type VMManager struct {
 	vms        map[string]*VM
 	mutex      sync.RWMutex
 	config     *config.Config
-	nextVMID   int // TODO
 	errorRate  float64
 	delayRange [2]time.Duration // Min and max operation delay
 }
@@ -50,7 +50,6 @@ func NewVMManager(config *config.Config) *VMManager {
 	return &VMManager{
 		vms:       make(map[string]*VM),
 		config:    config,
-		nextVMID:  1,
 		errorRate: config.ErrorRate,
 		delayRange: [2]time.Duration{
 			config.OperationDelayMin,
@@ -81,9 +80,11 @@ func (m *VMManager) GetVM(id string) (*VM, bool) {
 }
 
 // CreateVM starts the VM creation process
-func (m *VMManager) CreateVM(id, name string, cpu int, memory int) (*VM, error) {
+func (m *VMManager) CreateVM(name string, cpu int, memory int) (*VM, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
+
+	id := fmt.Sprintf("vm-%s", uuid.New())
 
 	vm := &VM{
 		ID:           id,

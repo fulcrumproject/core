@@ -39,8 +39,9 @@ type Job struct {
 	State    JobState  `json:"state"`
 	Priority int       `json:"priority"`
 	Service  struct {
-		ID                string `json:"id"`
-		Name              string `json:"name"`
+		ID                string  `json:"id"`
+		Name              string  `json:"name"`
+		ExternalID        *string `json:"externalId"`
 		CurrentProperties *struct {
 			CPU    int `json:"cpu"`
 			Memory int `json:"memory"`
@@ -54,7 +55,7 @@ type Job struct {
 
 // MetricEntry represents a single metric measurement
 type MetricEntry struct {
-	ServicelID string  `json:"serviceId"`
+	ExternalID string  `json:"externalId"`
 	ResourceID string  `json:"resourceId"`
 	Value      float64 `json:"value"`
 	TypeName   string  `json:"typeName"`
@@ -66,7 +67,7 @@ type FulcrumClient interface {
 	GetAgentInfo() (map[string]any, error)
 	GetPendingJobs() ([]*Job, error)
 	ClaimJob(jobID string) error
-	CompleteJob(jobID string, resources map[string]any) error
+	CompleteJob(jobID string, resources any) error
 	FailJob(jobID string, errorMessage string) error
 	ReportMetric(metrics *MetricEntry) error
 }
@@ -168,10 +169,8 @@ func (c *HTTPFulcrumClient) ClaimJob(jobID string) error {
 }
 
 // CompleteJob marks a job as completed with results
-func (c *HTTPFulcrumClient) CompleteJob(jobID string, resources map[string]any) error {
-	reqBody, err := json.Marshal(map[string]any{
-		"resources": resources,
-	})
+func (c *HTTPFulcrumClient) CompleteJob(jobID string, response any) error {
+	reqBody, err := json.Marshal(response)
 	if err != nil {
 		return fmt.Errorf("failed to marshal job completion request: %w", err)
 	}

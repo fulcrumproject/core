@@ -446,9 +446,9 @@ components:
 
     CompleteJobRequest:
       type: object
-      required:
-        - resources
       properties:
+        externalId:
+          type: string
         resources:
           $ref: "#/components/schemas/JSONObject"
 
@@ -498,13 +498,17 @@ components:
     MetricEntryRequest:
       type: object
       required:
-        - serviceId
         - resourceId
         - typeName
         - value
       properties:
         serviceId:
           $ref: "#/components/schemas/UUID"
+          description: "ID of the service associated with this metric (either serviceId or externalId must be provided)"
+        externalId:
+          type: string
+          description: "External ID of the service associated with this metric (either serviceId or externalId must be provided)"
+          example: "vm-i-12345"
         resourceId:
           type: string
           example: "cpu-1"

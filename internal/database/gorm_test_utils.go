@@ -75,7 +75,7 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID doma
 		CurrentState:      domain.ServiceStarted,
 		AgentID:           agentID,
 		CurrentProperties: &(domain.JSON{}),
-		Resources:         domain.JSON{},
+		Resources:         &(domain.JSON{}),
 	}
 }
 

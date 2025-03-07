@@ -54,22 +54,26 @@ func (s ServiceState) Validate() error {
 // Service represents a service instance managed by an agent
 type Service struct {
 	BaseEntity
-	AgentID       UUID `gorm:"not null"`
+	AgentID       UUID `gorm:"not null,uniqueIndex:service_external_id_uniq"`
 	GroupID       UUID `gorm:"not null" json:"groupId"`
 	ServiceTypeID UUID `gorm:"not null"`
 
-	Name              string       `gorm:"not null"`
+	Name       string     `gorm:"not null"`
+	Attributes Attributes `gorm:"type:jsonb"`
+
+	// State management
 	CurrentState      ServiceState `gorm:"not null"`
 	TargetState       *ServiceState
 	ErrorMessage      *string
 	FailedAction      *ServiceAction
 	RetryCount        int
-	CurrentProperties *JSON      `gorm:"type:jsonb"`
-	TargetProperties  *JSON      `gorm:"type:jsonb"`
-	Attributes        Attributes `gorm:"type:jsonb"`
+	CurrentProperties *JSON `gorm:"type:jsonb"`
+	TargetProperties  *JSON `gorm:"type:jsonb"`
 
+	// To store an external ID for the agent's use to facilitate metric reporting
+	ExternalID *string `gorm:"uniqueIndex:service_external_id_uniq"`
 	// Safe place for the Agent for store data
-	Resources JSON `gorm:"type:jsonb"`
+	Resources *JSON `gorm:"type:jsonb"`
 
 	// Relationships
 	Agent       *Agent        `gorm:"foreignKey:AgentID"`
@@ -300,7 +304,7 @@ type ServiceRepository interface {
 	FindByID(ctx context.Context, id UUID) (*Service, error)
 
 	// FindByExternalID retrieves a service by its external ID and agent ID
-	FindByExternalID(ctx context.Context, externalID string, agentID UUID) (*Service, error)
+	FindByExternalID(ctx context.Context, agentID UUID, externalID string) (*Service, error)
 
 	// Update updates an existing entity
 	Save(ctx context.Context, entity *Service) error

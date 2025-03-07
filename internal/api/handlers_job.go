@@ -137,14 +137,15 @@ func (h *JobHandler) handleCompleteJob(w http.ResponseWriter, r *http.Request) {
 	jobID := GetUUIDParam(r)
 	// Parse request body
 	var req struct {
-		Resources domain.JSON `json:"resources"`
+		Resources  *domain.JSON `json:"resources"`
+		ExternalID *string      `json:"externalID"`
 	}
 	if err := render.Decode(r, &req); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
 	// Complete the job
-	if err := h.commander.Complete(r.Context(), agent.ID, jobID, req.Resources); err != nil {
+	if err := h.commander.Complete(r.Context(), agent.ID, jobID, req.Resources, req.ExternalID); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}

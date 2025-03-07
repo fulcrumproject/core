@@ -18,6 +18,22 @@ type JobHandler struct {
 	}
 }
 
+// JobResources represents the resources in a job response
+type JobResources struct {
+	TS time.Time `json:"ts"`
+}
+
+// JobResponse represents the response for a job
+type JobResponse struct {
+	Resources  JobResources `json:"resources"`
+	ExternalID *string      `json:"externalId"`
+}
+
+type VMProps struct {
+	CPU    int `json:"cpu"`
+	Memory int `json:"memory"`
+}
+
 // NewJobHandler creates a new job handler
 func NewJobHandler(client FulcrumClient, vmManager *VMManager) *JobHandler {
 	return &JobHandler{
@@ -40,21 +56,17 @@ func (h *JobHandler) PollAndProcessJobs() error {
 	}
 	// First
 	job := jobs[0]
-
 	// Increment processed count
 	h.stats.processed++
-
 	// Claim the job
 	if err := h.client.ClaimJob(job.ID); err != nil {
 		log.Printf("Failed to claim job %s: %v", job.ID, err)
 		h.stats.failed++
 		return err
 	}
-
 	log.Printf("Processing job %s of type %s", job.ID, job.Action)
-
 	// Process the job
-	err = h.processJob(job)
+	resp, err := h.processJob(job)
 	if err != nil {
 		// Mark job as failed
 		log.Printf("Job %s failed: %v", job.ID, err)
@@ -66,11 +78,7 @@ func (h *JobHandler) PollAndProcessJobs() error {
 		}
 	} else {
 		// Job succeeded
-		// Fake resources
-		resources := map[string]interface{}{
-			"ts": time.Now().Format(time.RFC850),
-		}
-		if complErr := h.client.CompleteJob(job.ID, resources); complErr != nil {
+		if complErr := h.client.CompleteJob(job.ID, resp); complErr != nil {
 			log.Printf("Failed to mark job %s as completed: %v", job.ID, complErr)
 			return complErr
 		}
@@ -82,36 +90,66 @@ func (h *JobHandler) PollAndProcessJobs() error {
 }
 
 // processJob processes a job based on its type
-func (h *JobHandler) processJob(job *Job) error {
+func (h *JobHandler) processJob(job *Job) (any, error) {
 	switch job.Action {
-	case JobActionServiceCreate, JobActionServiceColdUpdate, JobActionServiceHotUpdate:
-		if job.Service.TargetProperties == nil {
-			return errors.New("missing target properties")
-		}
-		props := *job.Service.TargetProperties
-		switch job.Action {
-		case JobActionServiceCreate:
-			_, err := h.vmManager.CreateVM(job.Service.ID, job.Service.Name, props.CPU, props.Memory)
-			return err
-		case JobActionServiceColdUpdate, JobActionServiceHotUpdate:
-			return h.vmManager.UpdateVM(job.Service.ID, job.Service.Name, job.Service.TargetProperties.CPU, job.Service.TargetProperties.Memory)
-		default:
-			return fmt.Errorf("unknown job type: %s", job.Action)
-		}
+	case JobActionServiceCreate:
+		return h.createVM(job)
+	case JobActionServiceColdUpdate, JobActionServiceHotUpdate:
+		return h.vmUpdate(job)
 	case JobActionServiceStart:
-		return h.vmManager.StartVM(job.Service.ID)
+		return vmAction(job, h.vmManager.StartVM)
 	case JobActionServiceStop:
-		return h.vmManager.StopVM(job.Service.ID)
+		return vmAction(job, h.vmManager.StopVM)
 	case JobActionServiceDelete:
-		return h.vmManager.DeleteVM(job.Service.ID)
+		return vmAction(job, h.vmManager.DeleteVM)
 	default:
-		return fmt.Errorf("unknown job type: %s", job.Action)
+		return nil, fmt.Errorf("unknown job type: %s", job.Action)
 	}
 }
 
-type VMProps struct {
-	CPU    int `json:"cpu"`
-	Memory int `json:"memory"`
+func (h *JobHandler) createVM(job *Job) (any, error) {
+	if job.Service.TargetProperties == nil {
+		return nil, errors.New("missing target properties")
+	}
+	props := *job.Service.TargetProperties
+	vm, err := h.vmManager.CreateVM(job.Service.Name, props.CPU, props.Memory)
+	if err != nil {
+		return nil, err
+	}
+	return JobResponse{
+		Resources:  JobResources{TS: time.Time{}},
+		ExternalID: &vm.ID,
+	}, nil
+}
+
+func (h *JobHandler) vmUpdate(job *Job) (any, error) {
+	if job.Service.TargetProperties == nil {
+		return nil, errors.New("missing target properties")
+	}
+	props := *job.Service.TargetProperties
+	if job.Service.ExternalID == nil {
+		return nil, errors.New("missing externalId")
+	}
+	err := h.vmManager.UpdateVM(*job.Service.ExternalID, job.Service.Name, props.CPU, props.Memory)
+	if err != nil {
+		return nil, err
+	}
+	return JobResponse{
+		Resources: JobResources{TS: time.Time{}},
+	}, nil
+}
+
+func vmAction(job *Job, action func(string) error) (any, error) {
+	if job.Service.ExternalID == nil {
+		return nil, errors.New("missing externalId")
+	}
+	err := action(*job.Service.ExternalID)
+	if err != nil {
+		return nil, err
+	}
+	return JobResponse{
+		Resources: JobResources{TS: time.Time{}},
+	}, nil
 }
 
 // GetStats returns the job processing statistics

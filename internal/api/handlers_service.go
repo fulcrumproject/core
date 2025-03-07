@@ -154,6 +154,7 @@ type ServiceResponse struct {
 	AgentID           domain.UUID           `json:"agentId"`
 	ServiceTypeID     domain.UUID           `json:"serviceTypeId"`
 	GroupID           domain.UUID           `json:"groupId"`
+	ExternalID        *string               `json:"externalId,omitempty"`
 	Name              string                `json:"name"`
 	Attributes        domain.Attributes     `json:"attributes"`
 	CurrentState      domain.ServiceState   `json:"currentState"`
@@ -163,7 +164,7 @@ type ServiceResponse struct {
 	RetryCount        int                   `json:"retryCount,omitempty"`
 	CurrentProperties *domain.JSON          `json:"currentProperties,omitempty"`
 	TargetProperties  *domain.JSON          `json:"targetProperties,omitempty"`
-	Resources         map[string]any        `json:"resources"`
+	Resources         *domain.JSON          `json:"resources,omitempty"`
 	CreatedAt         JSONUTCTime           `json:"createdAt"`
 	UpdatedAt         JSONUTCTime           `json:"updatedAt"`
 
@@ -180,6 +181,7 @@ func serviceToResponse(s *domain.Service) *ServiceResponse {
 		AgentID:           s.AgentID,
 		ServiceTypeID:     s.ServiceTypeID,
 		GroupID:           s.GroupID,
+		ExternalID:        s.ExternalID,
 		Name:              s.Name,
 		Attributes:        s.Attributes,
 		CurrentState:      s.CurrentState,

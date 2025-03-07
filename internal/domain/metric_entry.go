@@ -50,7 +50,24 @@ func NewMetricEntryCommander(
 	}
 }
 
-// Create creates a new audit-entry with validation
+// Create creates a new audit-entry with externalID to simplify agent storage need
+func (s *MetricEntryCommander) CreateWithExternalID(
+	ctx context.Context,
+	typeName string,
+	agentID UUID,
+	externalID string,
+	resourceID string,
+	value float64,
+) (*MetricEntry, error) {
+	// Look up the service by external ID
+	service, err := s.serviceRepo.FindByExternalID(ctx, agentID, externalID)
+	if err != nil {
+		return nil, err
+	}
+	return s.Create(ctx, typeName, agentID, service.ID, resourceID, value)
+}
+
+// Create creates a new audit-entry
 func (s *MetricEntryCommander) Create(
 	ctx context.Context,
 	typeName string,

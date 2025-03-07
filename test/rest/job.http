@@ -122,8 +122,12 @@ Content-Type: application/json
             "duration": "10s",
             "output": "Service started successfully"
         }
-    }
+    },
+    "externalId": "123"
 }
+
+### Get Service
+GET {{baseUrl}}/services/{{serviceId}}
 
 ### Start the created service to trigger job creation
 POST {{baseUrl}}/services/{{serviceId}}/start

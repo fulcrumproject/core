@@ -159,6 +159,7 @@ classDiagram
     namespace Services {
         class Service {
             id : UUID
+            externalId : string
             name : string
             currentState : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]
             targetState : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]

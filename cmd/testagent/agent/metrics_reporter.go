@@ -30,33 +30,35 @@ func (r *MetricsReporter) Report() (int, error) {
 
 	allMetrics := []MetricEntry{}
 	for _, vm := range vms {
-		resID := fmt.Sprintf("vm-%s", vm.ID)
-		log.Printf("Reporting metrics for VM %s", resID)
-
+		if vm.State != VMStateSTARTED {
+			log.Printf("Not reporting metrics for VM %s state %s", vm.ID, vm.State)
+			continue
+		}
+		log.Printf("Reporting metrics for VM %s", vm.ID)
 		metrics := []MetricEntry{
 			{
 				TypeName:   MetricTypeVMCPUUsage,
 				Value:      vm.CPUUsage,
-				ResourceID: resID,
-				ServicelID: vm.ID,
+				ResourceID: vm.ID,
+				ExternalID: vm.ID,
 			},
 			{
 				TypeName:   MetricTypeVMMemoryUsage,
 				Value:      vm.MemoryUsage,
-				ResourceID: resID,
-				ServicelID: vm.ID,
+				ResourceID: vm.ID,
+				ExternalID: vm.ID,
 			},
 			{
 				TypeName:   MetricTypeVMDiskUsage,
 				Value:      vm.DiskUsage,
-				ResourceID: resID,
-				ServicelID: vm.ID,
+				ResourceID: vm.ID,
+				ExternalID: vm.ID,
 			},
 			{
 				TypeName:   MetricTypeVMNetworkThroughput,
 				Value:      vm.NetworkUsage,
-				ResourceID: resID,
-				ServicelID: vm.ID,
+				ResourceID: vm.ID,
+				ExternalID: vm.ID,
 			},
 		}
 

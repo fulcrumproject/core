@@ -165,7 +165,7 @@ func (s *JobCommander) Claim(ctx context.Context, agentID UUID, jobID UUID) erro
 }
 
 // Complete marks a job as completed
-func (s *JobCommander) Complete(ctx context.Context, agentID, jobID UUID, resources JSON) error {
+func (s *JobCommander) Complete(ctx context.Context, agentID, jobID UUID, resources *JSON, externalID *string) error {
 	job, err := s.repo.FindByID(ctx, jobID)
 	if err != nil {
 		return err
@@ -197,7 +197,12 @@ func (s *JobCommander) Complete(ctx context.Context, agentID, jobID UUID, resour
 	svc.FailedAction = nil
 	svc.ErrorMessage = nil
 	svc.RetryCount = 0
-	svc.Resources = resources
+	if resources != nil {
+		svc.Resources = resources
+	}
+	if externalID != nil {
+		svc.ExternalID = externalID
+	}
 	if svc.TargetProperties != nil {
 		svc.CurrentProperties = svc.TargetProperties
 		svc.TargetProperties = nil
