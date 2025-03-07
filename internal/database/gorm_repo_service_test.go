@@ -55,8 +55,8 @@ func TestServiceRepository(t *testing.T) {
 		service := &domain.Service{
 			Name:              "Test Service",
 			CurrentState:      domain.ServiceStarted,
-			CurrentAttributes: domain.Attributes{"key": []string{"value"}},
-			Resources:         map[string]interface{}{"cpu": 1},
+			CurrentProperties: &(domain.JSON{"key": "value"}),
+			Resources:         map[string]any{"cpu": 1},
 			AgentID:           agent.ID,
 			ServiceTypeID:     serviceType.ID,
 			GroupID:           serviceGroup.ID,
@@ -74,8 +74,9 @@ func TestServiceRepository(t *testing.T) {
 		service := &domain.Service{
 			Name:              "Test Service",
 			CurrentState:      domain.ServiceStarted,
-			CurrentAttributes: domain.Attributes{"key": []string{"value"}},
-			Resources:         map[string]interface{}{"cpu": "1"},
+			CurrentProperties: &(domain.JSON{"key": "value"}),
+			Attributes:        domain.Attributes{"key": []string{"value"}},
+			Resources:         map[string]any{"cpu": "1"},
 			AgentID:           agent.ID,
 			ServiceTypeID:     serviceType.ID,
 			GroupID:           serviceGroup.ID,
@@ -89,7 +90,7 @@ func TestServiceRepository(t *testing.T) {
 		assert.Equal(t, service.ID, found.ID)
 		assert.Equal(t, service.Name, found.Name)
 		assert.Equal(t, service.CurrentState, found.CurrentState)
-		assert.Equal(t, service.CurrentAttributes, found.CurrentAttributes)
+		assert.Equal(t, service.CurrentProperties, found.CurrentProperties)
 		assert.Equal(t, domain.JSON{"cpu": "1"}, found.Resources)
 		assert.Equal(t, service.AgentID, found.AgentID)
 		assert.Equal(t, service.ServiceTypeID, found.ServiceTypeID)
@@ -113,8 +114,9 @@ func TestServiceRepository(t *testing.T) {
 		service := &domain.Service{
 			Name:              "Test Service",
 			CurrentState:      domain.ServiceStarted,
-			CurrentAttributes: domain.Attributes{"key": []string{"value"}},
-			Resources:         map[string]interface{}{"cpu": "1"},
+			CurrentProperties: &(domain.JSON{"key": "value"}),
+			Attributes:        domain.Attributes{"key": []string{"value"}},
+			Resources:         map[string]any{"cpu": "1"},
 			AgentID:           agent.ID,
 			ServiceTypeID:     serviceType.ID,
 			GroupID:           serviceGroup.ID,
@@ -125,8 +127,8 @@ func TestServiceRepository(t *testing.T) {
 		// Update the service
 		service.Name = "Updated Service"
 		service.CurrentState = domain.ServiceStarted
-		service.CurrentAttributes = domain.Attributes{"key": []string{"updated"}}
-		service.Resources = map[string]interface{}{"cpu": "2"}
+		service.CurrentProperties = &(domain.JSON{"key": "value"})
+		service.Resources = map[string]any{"cpu": "2"}
 
 		err = repo.Save(context.Background(), service)
 		require.NoError(t, err)
@@ -136,7 +138,7 @@ func TestServiceRepository(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "Updated Service", found.Name)
 		assert.Equal(t, domain.ServiceStarted, found.CurrentState)
-		assert.Equal(t, domain.Attributes{"key": []string{"updated"}}, found.CurrentAttributes)
+		assert.Equal(t, &(domain.JSON{"key": "value"}), found.CurrentProperties)
 		assert.Equal(t, domain.JSON{"cpu": "2"}, found.Resources)
 	})
 

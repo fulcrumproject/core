@@ -165,8 +165,9 @@ classDiagram
             errorMessage : string
             failedAction : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
             retryCount : int
-            currentAttributes : map[string]string[]
-            targetAttributes : map[string]string[]
+            attributes : map[string]string[]
+            currentProperties : json
+            targetProperties : json
             resources : json
             createdAt : datetime
             updatedAt : datetime
@@ -271,8 +272,13 @@ classDiagram
    - State transitions: Creating → Created → Starting → Started → Stopping → Stopped → Deleting → Deleted
    - Supports both hot updates (while running) and cold updates (while stopped)
    - Tracks failed operations with error messages and retry counts
-   - Manages attribute changes through current and target attribute sets
+   - Contains attributes for metadata about the service
+    - Manages configuration changes through current and target properties
    - Stores service-specific resource configuration
+
+   Properties vs Attributes:
+   - Properties: JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger state transitions (hot or cold update depending on current state).
+   - Attributes: Metadata about the service that is set during creation and remains static throughout the service lifecycle. Used for provider and agent selection during service creation and more generally for identification, categorization, and filtering.
 
 4. **AgentType**
    - Defines the type classification for agents
@@ -500,13 +506,14 @@ The job management process follows these steps:
 3. **Job Processing**:
    - The agent performs the requested operation on the cloud provider
    - The agent maintains a secure connection with the job queue using token-based authentication
-   - During processing, the service state reflects the operation (Creating, Updating, Deleting)
+   - During processing, the service state reflects the operation (Creating, Starting, Stopping, HotUpdating, ColdUpdating, Deleting)
 
 4. **Job Completion**:
    - On successful completion, the agent calls `/api/v1/jobs/{id}/complete` with result data
    - The job state changes to "Completed"
    - A timestamp is recorded in the `completedAt` field
-   - The service state is updated accordingly (Created, Updated, Deleted)
+   - The service state is updated accordingly (Created, Started, Stopped, Deleted)
+   - For property updates, the `currentProperties` are set to match the `targetProperties` upon successful completion
 
 5. **Job Failure Handling**:
    - If an operation fails, the agent calls `/api/v1/jobs/{id}/fail` with error details

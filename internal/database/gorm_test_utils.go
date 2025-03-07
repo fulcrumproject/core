@@ -74,17 +74,8 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID doma
 		GroupID:           serviceGroupID,
 		CurrentState:      domain.ServiceStarted,
 		AgentID:           agentID,
-		CurrentAttributes: domain.Attributes{},
+		CurrentProperties: &(domain.JSON{}),
 		Resources:         domain.JSON{},
-	}
-}
-
-func createTestMetricType(t *testing.T) *domain.MetricType {
-	t.Helper()
-	randomSuffix := uuid.New().String()
-	return &domain.MetricType{
-		Name:       fmt.Sprintf("Test MetricType %s", randomSuffix),
-		EntityType: domain.MetricEntityTypeService,
 	}
 }
 

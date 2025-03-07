@@ -117,32 +117,3 @@ func (a Attributes) Validate() error {
 	}
 	return nil
 }
-
-// Equal compares two Attributes instances for equality
-// Returns true if both Attributes have the same keys and values
-func (a Attributes) Equal(other Attributes) bool {
-	// If lengths are different, they can't be equal
-	if len(a) != len(other) {
-		return false
-	}
-
-	// Check each key and its values
-	for key, values := range a {
-		otherValues, exists := other[key]
-		// If key doesn't exist in other, not equal
-		if !exists {
-			return false
-		}
-		// If arrays have different lengths, not equal
-		if len(values) != len(otherValues) {
-			return false
-		}
-		// Check each value in the array
-		for i, value := range values {
-			if value != otherValues[i] {
-				return false
-			}
-		}
-	}
-	return true
-}

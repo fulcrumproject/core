@@ -39,9 +39,16 @@ type Job struct {
 	State    JobState  `json:"state"`
 	Priority int       `json:"priority"`
 	Service  struct {
-		ID               string              `json:"id"`
-		Name             string              `json:"name"`
-		TargetAttributes map[string][]string `json:"targetAttributes"`
+		ID                string `json:"id"`
+		Name              string `json:"name"`
+		CurrentProperties *struct {
+			CPU    int `json:"cpu"`
+			Memory int `json:"memory"`
+		} `json:"currentProperties"`
+		TargetProperties *struct {
+			CPU    int `json:"cpu"`
+			Memory int `json:"memory"`
+		} `json:"targetProperties"`
 	} `json:"service"`
 }
 

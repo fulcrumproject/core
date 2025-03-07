@@ -74,6 +74,10 @@ Content-Type: application/json
     "attributes": {
         "environment": ["test"]
     },
+    "properties": {
+        "cpu": 4,
+        "memory": 12
+    },
     "agentId": "{{agentId}}",
     "serviceTypeId": "{{serviceTypeId}}",
     "groupId": "{{serviceGroupId}}"
@@ -112,7 +116,7 @@ Authorization: Bearer {{agentToken}}
 Content-Type: application/json
 
 {
-    "resultData": {
+    "resources": {
         "status": "success",
         "details": {
             "duration": "10s",
@@ -121,25 +125,9 @@ Content-Type: application/json
     }
 }
 
-### Update the created service to trigger job creation
-# @name updateService
-PATCH {{baseUrl}}/services/{{serviceId}}
+### Start the created service to trigger job creation
+POST {{baseUrl}}/services/{{serviceId}}/start
 Content-Type: application/json
-
-{
-    "name": "Updated Job Service",
-    "state": "Started",
-    "attributes": {
-        "environment": ["test", "updated"]
-    },
-    "resources": {
-        "cpu": 2,
-        "memory": "4GB"
-    },
-    "agentId": "{{agentId}}",
-    "serviceTypeId": "{{serviceTypeId}}",
-    "groupId": "{{serviceGroupId}}"
-}
 
 ### Get pending jobs for agent (requires authentication)
 # @name pendingJobs2

@@ -260,6 +260,8 @@ components:
           $ref: "#/components/schemas/ServiceState"
         attributes:
           $ref: "#/components/schemas/Attributes"
+        properties:
+          $ref: "#/components/schemas/JSONObject"
         resources:
           $ref: "#/components/schemas/JSONObject"
         agentId:
@@ -279,12 +281,14 @@ components:
           example: "web-server-01"
         currentState:
           $ref: "#/components/schemas/ServiceState"
-        currentAttributes:
+        attributes:
           $ref: "#/components/schemas/Attributes"
         targetState:
           $ref: "#/components/schemas/ServiceState"
-        targetAttributes:
-          $ref: "#/components/schemas/Attributes"
+        currentProperties:
+          $ref: "#/components/schemas/JSONObject"
+        targetProperties:
+          $ref: "#/components/schemas/JSONObject"
         failedAction:
           $ref: "#/components/schemas/ServiceAction"
         errorMessage:

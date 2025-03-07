@@ -41,24 +41,26 @@ func (h *ServiceHandler) Routes() func(r chi.Router) {
 }
 
 func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	var req struct {
+	var p struct {
 		GroupID       domain.UUID       `json:"groupId"`
 		AgentID       domain.UUID       `json:"agentId"`
 		ServiceTypeID domain.UUID       `json:"serviceTypeId"`
 		Name          string            `json:"name"`
 		Attributes    domain.Attributes `json:"attributes"`
+		Properties    domain.JSON       `json:"properties"`
 	}
-	if err := render.Decode(r, &req); err != nil {
+	if err := render.Decode(r, &p); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
 	service, err := h.commander.Create(
 		r.Context(),
-		req.AgentID,
-		req.ServiceTypeID,
-		req.GroupID,
-		req.Name,
-		req.Attributes,
+		p.AgentID,
+		p.ServiceTypeID,
+		p.GroupID,
+		p.Name,
+		p.Attributes,
+		p.Properties,
 	)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -97,7 +99,7 @@ func (h *ServiceHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	var p struct {
 		Name       *string              `json:"name"`
 		State      *domain.ServiceState `json:"state"`
-		Attributes *domain.Attributes   `json:"attributes"`
+		Properties *domain.JSON         `json:"properties"`
 	}
 	if err := render.Decode(r, &p); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
@@ -107,7 +109,7 @@ func (h *ServiceHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		r.Context(),
 		id,
 		p.Name,
-		p.Attributes,
+		p.Properties,
 	)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -153,13 +155,14 @@ type ServiceResponse struct {
 	ServiceTypeID     domain.UUID           `json:"serviceTypeId"`
 	GroupID           domain.UUID           `json:"groupId"`
 	Name              string                `json:"name"`
+	Attributes        domain.Attributes     `json:"attributes"`
 	CurrentState      domain.ServiceState   `json:"currentState"`
 	TargetState       *domain.ServiceState  `json:"targetState,omitempty"`
 	FailedAction      *domain.ServiceAction `json:"failedAction,omitempty"`
 	ErrorMessage      *string               `json:"errorMessage,omitempty"`
 	RetryCount        int                   `json:"retryCount,omitempty"`
-	CurrentAttributes domain.Attributes     `json:"currentAttributes"`
-	TargetAttributes  *domain.Attributes    `json:"targetAttributes,omitempty"`
+	CurrentProperties *domain.JSON          `json:"currentProperties,omitempty"`
+	TargetProperties  *domain.JSON          `json:"targetProperties,omitempty"`
 	Resources         map[string]any        `json:"resources"`
 	CreatedAt         JSONUTCTime           `json:"createdAt"`
 	UpdatedAt         JSONUTCTime           `json:"updatedAt"`
@@ -178,13 +181,14 @@ func serviceToResponse(s *domain.Service) *ServiceResponse {
 		ServiceTypeID:     s.ServiceTypeID,
 		GroupID:           s.GroupID,
 		Name:              s.Name,
+		Attributes:        s.Attributes,
 		CurrentState:      s.CurrentState,
 		TargetState:       s.TargetState,
 		FailedAction:      s.FailedAction,
 		ErrorMessage:      s.ErrorMessage,
 		RetryCount:        s.RetryCount,
-		CurrentAttributes: s.CurrentAttributes,
-		TargetAttributes:  s.TargetAttributes,
+		CurrentProperties: s.CurrentProperties,
+		TargetProperties:  s.TargetProperties,
 		Resources:         s.Resources,
 		CreatedAt:         JSONUTCTime(s.CreatedAt),
 		UpdatedAt:         JSONUTCTime(s.UpdatedAt),

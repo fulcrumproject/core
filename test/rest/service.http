@@ -78,8 +78,11 @@ Content-Type: application/json
 {
     "name": "Test Service",
     "attributes": {
-        "cpu": ["4"],
-        "memory": ["8"]
+        "tier": ["4"]
+    },
+    "properties": {
+        "cpu": 4,
+        "memory": 8
     },
     "agentId": "{{agentId}}",
     "serviceTypeId": "{{serviceTypeId}}",
@@ -110,9 +113,9 @@ PATCH {{baseUrl}}/services/{{serviceId}}
 Content-Type: application/json
 
 {
-    "attributes": {
-        "cpu": ["4"],
-        "memory": ["14"]
+    "properties": {
+        "cpu": 4,
+        "memory": 12
     }
 }
 
@@ -125,9 +128,9 @@ PATCH {{baseUrl}}/services/{{serviceId}}
 Content-Type: application/json
 
 {
-    "attributes": {
-        "cpu": ["8"],
-        "memory": ["16"]
+    "properties": {
+        "cpu": 4,
+        "memory": 16
     }
 }
 

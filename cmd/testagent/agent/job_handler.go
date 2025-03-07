@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -86,16 +85,16 @@ func (h *JobHandler) PollAndProcessJobs() error {
 func (h *JobHandler) processJob(job *Job) error {
 	switch job.Action {
 	case JobActionServiceCreate, JobActionServiceColdUpdate, JobActionServiceHotUpdate:
-		cpu, mem, err := CPUMemoryFromJob(job)
-		if err != nil {
-			return err
+		if job.Service.TargetProperties == nil {
+			return errors.New("missing target properties")
 		}
+		props := *job.Service.TargetProperties
 		switch job.Action {
 		case JobActionServiceCreate:
-			_, err = h.vmManager.CreateVM(job.Service.ID, job.Service.Name, cpu, mem)
+			_, err := h.vmManager.CreateVM(job.Service.ID, job.Service.Name, props.CPU, props.Memory)
 			return err
-		case JobActionServiceHotUpdate, JobActionServiceColdUpdate:
-			return h.vmManager.UpdateVM(job.Service.ID, job.Service.Name, cpu, mem)
+		case JobActionServiceColdUpdate, JobActionServiceHotUpdate:
+			return h.vmManager.UpdateVM(job.Service.ID, job.Service.Name, job.Service.TargetProperties.CPU, job.Service.TargetProperties.Memory)
 		default:
 			return fmt.Errorf("unknown job type: %s", job.Action)
 		}
@@ -110,30 +109,9 @@ func (h *JobHandler) processJob(job *Job) error {
 	}
 }
 
-func CPUMemoryFromJob(job *Job) (int, int, error) {
-	cpu := 2
-	memory := 1
-	if vv, ok := job.Service.TargetAttributes["cpu"]; ok {
-		if len(vv) == 0 {
-			return 0, 0, errors.New("no cpu value")
-		}
-		v, err := strconv.Atoi(vv[0])
-		if err != nil {
-			return 0, 0, errors.New("invalid cpu value")
-		}
-		cpu = v
-	}
-	if vv, ok := job.Service.TargetAttributes["memory"]; ok {
-		if len(vv) == 0 {
-			return 0, 0, errors.New("no memory value")
-		}
-		v, err := strconv.Atoi(vv[0])
-		if err != nil {
-			return 0, 0, errors.New("invalid memory value")
-		}
-		memory = v
-	}
-	return cpu, memory, nil
+type VMProps struct {
+	CPU    int `json:"cpu"`
+	Memory int `json:"memory"`
 }
 
 // GetStats returns the job processing statistics

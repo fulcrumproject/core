@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"fmt"
+	"reflect"
 )
 
 // ServiceState represents the possible states of a service
@@ -63,8 +64,9 @@ type Service struct {
 	ErrorMessage      *string
 	FailedAction      *ServiceAction
 	RetryCount        int
-	CurrentAttributes Attributes  `gorm:"type:jsonb"`
-	TargetAttributes  *Attributes `gorm:"type:jsonb"`
+	CurrentProperties *JSON      `gorm:"type:jsonb"`
+	TargetProperties  *JSON      `gorm:"type:jsonb"`
+	Attributes        Attributes `gorm:"type:jsonb"`
 
 	// Safe place for the Agent for store data
 	Resources JSON `gorm:"type:jsonb"`
@@ -102,6 +104,7 @@ func NewService(agentID UUID,
 	groupID UUID,
 	name string,
 	attributes Attributes,
+	properties JSON,
 ) *Service {
 	target := ServiceCreated
 	return &Service{
@@ -111,8 +114,9 @@ func NewService(agentID UUID,
 		Name:              name,
 		CurrentState:      ServiceCreating,
 		TargetState:       &target,
-		CurrentAttributes: attributes,
-		TargetAttributes:  nil,
+		Attributes:        attributes,
+		CurrentProperties: nil,
+		TargetProperties:  &properties,
 	}
 }
 
@@ -142,8 +146,9 @@ func (s *ServiceCommander) Create(
 	groupID UUID,
 	name string,
 	attributes Attributes,
+	properties JSON,
 ) (*Service, error) {
-	svc := NewService(agentID, serviceTypeID, groupID, name, attributes)
+	svc := NewService(agentID, serviceTypeID, groupID, name, attributes, properties)
 	if err := svc.Validate(); err != nil {
 		return nil, err
 	}
@@ -158,7 +163,7 @@ func (s *ServiceCommander) Create(
 }
 
 // Update handles service updates and creates a job for the agent
-func (s *ServiceCommander) Update(ctx context.Context, id UUID, name *string, attrs *Attributes) (*Service, error) {
+func (s *ServiceCommander) Update(ctx context.Context, id UUID, name *string, props *JSON) (*Service, error) {
 	svc, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -170,14 +175,14 @@ func (s *ServiceCommander) Update(ctx context.Context, id UUID, name *string, at
 		updateSvc = true
 		svc.Name = *name
 	}
-	// Attributes
-	if attrs != nil && !svc.CurrentAttributes.Equal(*attrs) {
+	// Properties
+	if props != nil && !reflect.DeepEqual(&svc.CurrentProperties, *props) {
 		updateSvc = true
 		trans, action, err := serviceUpdateNextStateAndAction(svc.CurrentState)
 		if err != nil {
 			return nil, InvalidInputError{Err: err}
 		}
-		svc.TargetAttributes = attrs
+		svc.TargetProperties = props
 		target := svc.CurrentState
 		svc.TargetState = &target
 		svc.CurrentState = trans

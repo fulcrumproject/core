@@ -198,10 +198,9 @@ func (s *JobCommander) Complete(ctx context.Context, agentID, jobID UUID, resour
 	svc.ErrorMessage = nil
 	svc.RetryCount = 0
 	svc.Resources = resources
-	isUpdate := job.Action == ServiceActionColdUpdate || job.Action == ServiceActionHotUpdate
-	if isUpdate && svc.TargetAttributes != nil {
-		svc.CurrentAttributes = *svc.TargetAttributes
-		svc.TargetAttributes = nil
+	if svc.TargetProperties != nil {
+		svc.CurrentProperties = svc.TargetProperties
+		svc.TargetProperties = nil
 	}
 	if err := svc.Validate(); err != nil {
 		return err
