@@ -140,11 +140,9 @@ func (a *Agent) reportMetrics(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			n, err := a.metricsReporter.Report()
+			_, err := a.metricsReporter.Report()
 			if err != nil {
 				log.Printf("Error reporting metrics: %v", err)
-			} else {
-				log.Printf("Metrics reported %d", n)
 			}
 		case <-a.stopCh:
 			return

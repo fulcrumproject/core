@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -95,16 +96,16 @@ func (m *VMManager) CreateVM(id, name string, cpu int, memory int) (*VM, error) 
 		NetworkUsage: 0,
 	}
 
-	m.vms[id] = vm
-
 	delay := m.randomDelay()
 	time.Sleep(delay)
 
 	// Simulate random failures
 	if m.shouldFail() {
 		vm.ErrorMessage = "Failed to create VM: simulated error"
-		return vm, nil
+		return vm, errors.New(vm.ErrorMessage)
 	}
+
+	m.vms[id] = vm
 
 	// Initialize VM properties
 	// vm.State = VMStateRUNNING
@@ -134,8 +135,8 @@ func (m *VMManager) UpdateVM(id, name string, cpu int, memory int) error {
 
 	// Simulate random failures
 	if m.shouldFail() {
-		vm.ErrorMessage = "Failed to start VM: simulated error"
-		return nil
+		vm.ErrorMessage = "Failed to update VM: simulated error"
+		return errors.New(vm.ErrorMessage)
 	}
 
 	// Initialize runtime properties
@@ -169,7 +170,7 @@ func (m *VMManager) StartVM(id string) error {
 	// Simulate random failures
 	if m.shouldFail() {
 		vm.ErrorMessage = "Failed to start VM: simulated error"
-		return nil
+		return errors.New(vm.ErrorMessage)
 	}
 
 	// Initialize runtime properties
@@ -201,7 +202,7 @@ func (m *VMManager) StopVM(id string) error {
 	// Simulate random failures
 	if m.shouldFail() {
 		vm.ErrorMessage = "Failed to stop VM: simulated error"
-		return nil
+		return errors.New(vm.ErrorMessage)
 	}
 
 	// Update VM properties
@@ -233,7 +234,7 @@ func (m *VMManager) DeleteVM(id string) error {
 	// Simulate random failures
 	if m.shouldFail() {
 		vm.ErrorMessage = "Failed to delete VM: simulated error"
-		return nil
+		return errors.New(vm.ErrorMessage)
 	}
 
 	// Mark as deleted
@@ -263,7 +264,7 @@ func (m *VMManager) Retry(id string) error {
 	// Simulate random failures
 	if m.shouldFail() {
 		vm.ErrorMessage = "Failed to delete VM: simulated error"
-		return nil
+		return errors.New(vm.ErrorMessage)
 	}
 
 	// Reset error

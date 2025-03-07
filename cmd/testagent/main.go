@@ -42,6 +42,9 @@ func main() {
 		log.Printf("Applied environment variable overrides")
 	}
 
+	// Print configuration
+	log.Printf("Config %#v", cfg)
+
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
 		log.Fatalf("Invalid configuration: %v", err)

@@ -2,6 +2,7 @@ package agent
 
 import (
 	"fmt"
+	"log"
 )
 
 // Metric type name constants
@@ -30,6 +31,8 @@ func (r *MetricsReporter) Report() (int, error) {
 	allMetrics := []MetricEntry{}
 	for _, vm := range vms {
 		resID := fmt.Sprintf("vm-%s", vm.ID)
+		log.Printf("Reporting metrics for VM %s", resID)
+
 		metrics := []MetricEntry{
 			{
 				TypeName:   MetricTypeVMCPUUsage,

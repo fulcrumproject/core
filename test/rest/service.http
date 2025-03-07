@@ -112,7 +112,7 @@ Content-Type: application/json
 {
     "attributes": {
         "cpu": ["4"],
-        "memory": ["12"]
+        "memory": ["14"]
     }
 }
 
@@ -130,6 +130,10 @@ Content-Type: application/json
         "memory": ["16"]
     }
 }
+
+### Retry Service Operation
+POST {{baseUrl}}/services/{{serviceId}}/retry
+Content-Type: application/json
 
 ### Delete a service NOT WORKING SEE TODO
 DELETE {{baseUrl}}/services/{{serviceId}}
