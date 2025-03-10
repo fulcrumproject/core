@@ -9,11 +9,6 @@ import (
 	internalConfig "fulcrumproject.org/core/internal/config"
 )
 
-const (
-	tag       = "env"
-	envPrefix = "TESTAGENT_"
-)
-
 // Config holds the configuration for the test agent
 type Config struct {
 	// Agent authentication
@@ -65,7 +60,7 @@ func LoadFromFile(filepath string) (*Config, error) {
 
 // LoadFromEnv overrides configuration with environment variables
 func (c *Config) LoadFromEnv() error {
-	return internalConfig.LoadEnvToStruct(c, envPrefix, tag)
+	return internalConfig.LoadEnvToStruct(c, "TESTAGENT_", "env")
 }
 
 // Validate checks if the configuration is valid

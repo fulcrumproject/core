@@ -45,9 +45,9 @@ type AgentConfig struct {
 
 // Fulcrum Job configuration
 type JobConfig struct {
-	Maintenance   time.Duration `json:"maintenance" env:"JOB_MAINTENANCE_DURATION"`
-	RetentionDays int           `json:"retention" env:"JOB_RETENTION_DURATION"`
-	TimeoutMins   int           `json:"timeout" env:"JOB_TIMEOUT_DURATION"`
+	Maintenance time.Duration `json:"maintenance" env:"JOB_MAINTENANCE_INTERVAL"`
+	Retention   time.Duration `json:"retention" env:"JOB_RETENTION_INTERVAL"`
+	Timeout     time.Duration `json:"timeout" env:"JOB_TIMEOUT_INTERVAL"`
 }
 
 // Fulcrum DB configuration
@@ -74,9 +74,9 @@ func DefaultConfig() *Config {
 	return &Config{
 		Port: 3000,
 		JobConfig: JobConfig{
-			Maintenance:   10 * time.Minute,
-			RetentionDays: 7,
-			TimeoutMins:   15,
+			Maintenance: 10 * time.Minute,
+			Retention:   3 * 24 * time.Hour,
+			Timeout:     15 * time.Minute,
 		},
 		AgentConfig: AgentConfig{
 			HealthTimeout: 5 * time.Minute,
@@ -129,10 +129,10 @@ func (c *Config) Validate() error {
 	if c.JobConfig.Maintenance <= 0 {
 		return fmt.Errorf("job maintenance duration must be positive")
 	}
-	if c.JobConfig.RetentionDays <= 0 {
+	if c.JobConfig.Retention <= 0 {
 		return fmt.Errorf("job retention duration must be positive")
 	}
-	if c.JobConfig.TimeoutMins <= 0 {
+	if c.JobConfig.Timeout <= 0 {
 		return fmt.Errorf("job timeout duration must be positive")
 	}
 

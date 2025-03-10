@@ -140,14 +140,14 @@ func JobMainenanceTask(cfg *config.JobConfig, jobRepo domain.JobRepository) {
 	for range ticker.C {
 		ctx := context.Background()
 
-		// Release jobs that have been processing for more than X minutes
-		releasedCount, _ := jobRepo.ReleaseStuckJobs(ctx, cfg.TimeoutMins)
+		// Release jobs that have been processing for too long
+		releasedCount, _ := jobRepo.ReleaseStuckJobs(ctx, cfg.Timeout)
 		if releasedCount > 0 {
 			log.Printf("Released %d stuck jobs", releasedCount)
 		}
 
-		// Delete completed/failed jobs older than X days
-		deletedCount, _ := jobRepo.DeleteOldCompletedJobs(ctx, cfg.RetentionDays)
+		// Delete completed/failed old jobs
+		deletedCount, _ := jobRepo.DeleteOldCompletedJobs(ctx, cfg.Retention)
 		if deletedCount > 0 {
 			log.Printf("Deleted %d old completed jobs", deletedCount)
 		}

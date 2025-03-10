@@ -273,10 +273,10 @@ type JobRepository interface {
 	// Maintenance operations
 
 	// ReleaseStuckJobs resets jobs that have been processing for too long
-	ReleaseStuckJobs(ctx context.Context, olderThanMinutes int) (int, error)
+	ReleaseStuckJobs(ctx context.Context, olderThan time.Duration) (int, error)
 
-	// DeleteOldCompletedJobs removes completed or failed jobs older than the specified days
-	DeleteOldCompletedJobs(ctx context.Context, olderThanDays int) (int, error)
+	// DeleteOldCompletedJobs removes completed or failed jobs older than the specified interval
+	DeleteOldCompletedJobs(ctx context.Context, olderThan time.Duration) (int, error)
 }
 
 type JobQuerier interface {

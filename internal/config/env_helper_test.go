@@ -10,7 +10,7 @@ import (
 func TestNestedStructEnvLoading(t *testing.T) {
 	// Set environment variables for testing
 	os.Setenv("FULCRUM_PORT", "8080")
-	os.Setenv("FULCRUM_JOB_MAINTENANCE_DURATION", "30m")
+	os.Setenv("FULCRUM_JOB_MAINTENANCE_INTERVAL", "30m")
 	os.Setenv("FULCRUM_AGENT_HEALTH_TIMEOUT", "10m")
 	os.Setenv("FULCRUM_DB_HOST", "testhost")
 	os.Setenv("FULCRUM_DB_PORT", "5433")
