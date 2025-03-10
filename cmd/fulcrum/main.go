@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -11,18 +13,37 @@ import (
 	"github.com/go-chi/render"
 
 	"fulcrumproject.org/core/internal/api"
+	"fulcrumproject.org/core/internal/config"
 	"fulcrumproject.org/core/internal/database"
 	"fulcrumproject.org/core/internal/domain"
 )
 
 func main() {
+	// Parse command line flags
+	configPath := flag.String("config", "", "Path to configuration file")
+	flag.Parse()
+
+	// Load configuration
+	cfg := config.DefaultConfig()
+	var err error
+	if configPath != nil && *configPath != "" {
+		// Load from file if specified
+		cfg, err = config.LoadFromFile(*configPath)
+		if err != nil {
+			log.Fatalf("Failed to load configuration from file: %v", err)
+		}
+		log.Printf("Loaded configuration from %s", *configPath)
+	}
+	// Override with environment variables
+	if err := cfg.LoadFromEnv(); err != nil {
+		log.Fatalf("Failed to load configuration from environment: %v", err)
+	}
+
 	// Initialize database
-	dbConfig := database.NewConfigFromEnv()
-	db, err := database.NewConnection(dbConfig)
+	db, err := database.NewConnection(&cfg.DBConfig)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-
 	// Seed with basic data if empty
 	if err := database.Seed(db); err != nil {
 		log.Fatalf("Failed to seed the database: %v", err)
@@ -89,24 +110,23 @@ func main() {
 	})
 
 	// Setup background job maintenance worker
-	go JobMainenanceTask(jobRepo)
+	go JobMainenanceTask(&cfg.JobConfig, jobRepo)
 
 	// Setup background worker to mark inactive agents as disconnected
-	go DisconnectUnhealthyAgentsTask(agentRepo)
+	go DisconnectUnhealthyAgentsTask(&cfg.AgentConfig, agentRepo)
 
 	// Start server
-	log.Println("Server starting on port 3000...")
-	if err := http.ListenAndServe(":3000", r); err != nil {
+	log.Printf("Server starting on port %d...", cfg.Port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), r); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
 
-func DisconnectUnhealthyAgentsTask(agentRepo domain.AgentRepository) {
-	inactiveTime := 5 * time.Minute
-	ticker := time.NewTicker(inactiveTime)
+func DisconnectUnhealthyAgentsTask(cfg *config.AgentConfig, agentRepo domain.AgentRepository) {
+	ticker := time.NewTicker(cfg.HealthTimeout)
 	for range ticker.C {
 		ctx := context.Background()
-		disconnectedCount, err := agentRepo.MarkInactiveAgentsAsDisconnected(ctx, inactiveTime)
+		disconnectedCount, err := agentRepo.MarkInactiveAgentsAsDisconnected(ctx, cfg.HealthTimeout)
 		if err != nil {
 			log.Printf("Error marking inactive agents as disconnected: %v", err)
 		} else if disconnectedCount > 0 {
@@ -115,19 +135,19 @@ func DisconnectUnhealthyAgentsTask(agentRepo domain.AgentRepository) {
 	}
 }
 
-func JobMainenanceTask(jobRepo domain.JobRepository) {
-	ticker := time.NewTicker(10 * time.Minute)
+func JobMainenanceTask(cfg *config.JobConfig, jobRepo domain.JobRepository) {
+	ticker := time.NewTicker(cfg.Maintenance)
 	for range ticker.C {
 		ctx := context.Background()
 
-		// Release jobs that have been processing for more than 30 minutes
-		releasedCount, _ := jobRepo.ReleaseStuckJobs(ctx, 30)
+		// Release jobs that have been processing for more than X minutes
+		releasedCount, _ := jobRepo.ReleaseStuckJobs(ctx, cfg.TimeoutMins)
 		if releasedCount > 0 {
 			log.Printf("Released %d stuck jobs", releasedCount)
 		}
 
-		// Delete completed/failed jobs older than 7 days
-		deletedCount, _ := jobRepo.DeleteOldCompletedJobs(ctx, 7)
+		// Delete completed/failed jobs older than X days
+		deletedCount, _ := jobRepo.DeleteOldCompletedJobs(ctx, cfg.RetentionDays)
 		if deletedCount > 0 {
 			log.Printf("Deleted %d old completed jobs", deletedCount)
 		}
