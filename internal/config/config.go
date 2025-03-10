@@ -112,7 +112,7 @@ func LoadFromFile(filepath string) (*Config, error) {
 // LoadFromEnv overrides configuration with environment variables
 func (c *Config) LoadFromEnv() error {
 	// Process all config fields including nested structs
-	if err := loadEnvToStruct(c, envPrefix, tag); err != nil {
+	if err := LoadEnvToStruct(c, envPrefix, tag); err != nil {
 		return err
 	}
 	return nil

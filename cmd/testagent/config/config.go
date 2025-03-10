@@ -4,27 +4,33 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
+
+	internalConfig "fulcrumproject.org/core/internal/config"
+)
+
+const (
+	tag       = "env"
+	envPrefix = "TESTAGENT_"
 )
 
 // Config holds the configuration for the test agent
 type Config struct {
 	// Agent authentication
-	AgentToken string `json:"agentToken"` // Authentication token for the agent
+	AgentToken string `json:"agentToken" env:"AGENT_TOKEN"` // Authentication token for the agent
 
 	// Fulcrum Core API connection
-	FulcrumAPIURL string `json:"fulcrumApiUrl"`
+	FulcrumAPIURL string `json:"fulcrumApiUrl" env:"FULCRUM_API_URL"`
 
 	// Simulation parameters
-	VMUpdateInterval     time.Duration `json:"vmUpdateInterval"`     // How often to perform VM operations
-	JobPollInterval      time.Duration `json:"jobPollInterval"`      // How often to poll for jobs
-	MetricReportInterval time.Duration `json:"metricReportInterval"` // How often to report metrics
+	VMUpdateInterval     time.Duration `json:"vmUpdateInterval" env:"VM_OPERATION_INTERVAL"`      // How often to perform VM operations
+	JobPollInterval      time.Duration `json:"jobPollInterval" env:"JOB_POLL_INTERVAL"`           // How often to poll for jobs
+	MetricReportInterval time.Duration `json:"metricReportInterval" env:"METRIC_REPORT_INTERVAL"` // How often to report metrics
 
 	// Simulation behavior
-	OperationDelayMin time.Duration `json:"operationDelayMin"` // Minimum time for operation
-	OperationDelayMax time.Duration `json:"operationDelayMax"` // Maximum time for operation
-	ErrorRate         float64       `json:"errorRate"`         // Probability of operation failure (0.0-1.0)
+	OperationDelayMin time.Duration `json:"operationDelayMin" env:"OPERATION_DELAY_MIN"` // Minimum time for operation
+	OperationDelayMax time.Duration `json:"operationDelayMax" env:"OPERATION_DELAY_MAX"` // Maximum time for operation
+	ErrorRate         float64       `json:"errorRate" env:"ERROR_RATE"`                  // Probability of operation failure (0.0-1.0)
 }
 
 // DefaultConfig returns the default configuration
@@ -59,65 +65,7 @@ func LoadFromFile(filepath string) (*Config, error) {
 
 // LoadFromEnv overrides configuration with environment variables
 func (c *Config) LoadFromEnv() error {
-	// Map environment variables to config fields
-	if v := os.Getenv("TESTAGENT_AGENT_TOKEN"); v != "" {
-		c.AgentToken = v
-	}
-
-	if v := os.Getenv("TESTAGENT_FULCRUM_API_URL"); v != "" {
-		c.FulcrumAPIURL = v
-	}
-
-	// Load numeric and duration parameters
-	if v := os.Getenv("TESTAGENT_VM_OPERATION_INTERVAL"); v != "" {
-		d, err := time.ParseDuration(v)
-		if err != nil {
-			return fmt.Errorf("invalid VM operation interval: %w", err)
-		}
-		c.VMUpdateInterval = d
-	}
-
-	if v := os.Getenv("TESTAGENT_JOB_POLL_INTERVAL"); v != "" {
-		d, err := time.ParseDuration(v)
-		if err != nil {
-			return fmt.Errorf("invalid job poll interval: %w", err)
-		}
-		c.JobPollInterval = d
-	}
-
-	if v := os.Getenv("TESTAGENT_METRIC_REPORT_INTERVAL"); v != "" {
-		d, err := time.ParseDuration(v)
-		if err != nil {
-			return fmt.Errorf("invalid metric report interval: %w", err)
-		}
-		c.MetricReportInterval = d
-	}
-
-	if v := os.Getenv("TESTAGENT_OPERATION_DELAY_MIN"); v != "" {
-		d, err := time.ParseDuration(v)
-		if err != nil {
-			return fmt.Errorf("invalid operation delay minimum: %w", err)
-		}
-		c.OperationDelayMin = d
-	}
-
-	if v := os.Getenv("TESTAGENT_OPERATION_DELAY_MAX"); v != "" {
-		d, err := time.ParseDuration(v)
-		if err != nil {
-			return fmt.Errorf("invalid operation delay maximum: %w", err)
-		}
-		c.OperationDelayMax = d
-	}
-
-	if v := os.Getenv("TESTAGENT_ERROR_RATE"); v != "" {
-		f, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			return fmt.Errorf("invalid error rate: %w", err)
-		}
-		c.ErrorRate = f
-	}
-
-	return nil
+	return internalConfig.LoadEnvToStruct(c, envPrefix, tag)
 }
 
 // Validate checks if the configuration is valid
