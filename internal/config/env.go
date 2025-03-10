@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// loadEnvToStruct loads environment variables into struct fields based on tags
+// loadEnvToStruct loads environment variables into struct fields and nested structs based on tags
 func loadEnvToStruct(target interface{}, prefix, tag string) error {
 	v := reflect.ValueOf(target).Elem()
 	t := v.Type()
@@ -23,6 +23,16 @@ func loadEnvToStruct(target interface{}, prefix, tag string) error {
 		}
 
 		// Get env tag or skip if not present
+		// Check if field is a struct that needs recursive processing
+		if fieldValue.Kind() == reflect.Struct {
+			// Skip time.Duration which is technically a struct but should be treated as primitive
+			if field.Type != reflect.TypeOf(time.Duration(0)) {
+				if err := loadEnvToStruct(fieldValue.Addr().Interface(), prefix, tag); err != nil {
+					return fmt.Errorf("error loading nested struct field %s: %w", field.Name, err)
+				}
+			}
+		}
+
 		envVar, ok := field.Tag.Lookup(tag)
 		if !ok || envVar == "" {
 			continue

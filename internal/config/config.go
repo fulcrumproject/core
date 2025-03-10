@@ -111,18 +111,8 @@ func LoadFromFile(filepath string) (*Config, error) {
 
 // LoadFromEnv overrides configuration with environment variables
 func (c *Config) LoadFromEnv() error {
-	// Process base config fields
+	// Process all config fields including nested structs
 	if err := loadEnvToStruct(c, envPrefix, tag); err != nil {
-		return err
-	}
-	// Process nested structs
-	if err := loadEnvToStruct(&c.JobConfig, envPrefix, tag); err != nil {
-		return err
-	}
-	if err := loadEnvToStruct(&c.AgentConfig, envPrefix, tag); err != nil {
-		return err
-	}
-	if err := loadEnvToStruct(&c.DBConfig, envPrefix, tag); err != nil {
 		return err
 	}
 	return nil
