@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
-	"strconv"
 	"time"
+)
+
+const (
+	tag       = "env"
+	envPrefix = "FULCRUM_"
 )
 
 var (
@@ -29,7 +32,7 @@ var (
 
 // Fulcrum configuration
 type Config struct {
-	Port        uint        `json:"port" env:"FULCRUM_PORT"`
+	Port        uint        `json:"port" env:"PORT"`
 	JobConfig   JobConfig   `json:"job"`
 	AgentConfig AgentConfig `json:"agent"`
 	DBConfig    DBConfig    `json:"db"`
@@ -37,25 +40,25 @@ type Config struct {
 
 // Fulcrum Agent configuration
 type AgentConfig struct {
-	HealthTimeout time.Duration `json:"healthTimeout" env:"FULCRUM_AGENT_HEALTH_TIMEOUT"`
+	HealthTimeout time.Duration `json:"healthTimeout" env:"AGENT_HEALTH_TIMEOUT"`
 }
 
 // Fulcrum Job configuration
 type JobConfig struct {
-	Maintenance   time.Duration `json:"maintenance" env:"FULCRUM_JOB_MAINTENANCE_DURATION"`
-	RetentionDays int           `json:"retention" env:"FULCRUM_JOB_RETENTION_DURATION"`
-	TimeoutMins   int           `json:"timeout" env:"FULCRUM_JOB_TIMEOUT_DURATION"`
+	Maintenance   time.Duration `json:"maintenance" env:"JOB_MAINTENANCE_DURATION"`
+	RetentionDays int           `json:"retention" env:"JOB_RETENTION_DURATION"`
+	TimeoutMins   int           `json:"timeout" env:"JOB_TIMEOUT_DURATION"`
 }
 
 // Fulcrum DB configuration
 type DBConfig struct {
-	Host     string `json:"host" env:"FULCRUM_DB_HOST"`
-	User     string `json:"user" env:"FULCRUM_DB_USER"`
-	Password string `json:"password" env:"FULCRUM_DB_PASSWORD"`
-	Name     string `json:"name" env:"FULCRUM_DB_NAME"`
-	Port     int    `json:"port" env:"FULCRUM_DB_PORT"`
-	SSLMode  string `json:"sslMode" env:"FULCRUM_DB_SSL_MODE"`
-	LogLevel string `json:"logLevel" env:"FULCRUM_DB_LOG_LEVEL"`
+	Host     string `json:"host" env:"DB_HOST"`
+	User     string `json:"user" env:"DB_USER"`
+	Password string `json:"password" env:"DB_PASSWORD"`
+	Name     string `json:"name" env:"DB_NAME"`
+	Port     int    `json:"port" env:"DB_PORT"`
+	SSLMode  string `json:"sslMode" env:"DB_SSL_MODE"`
+	LogLevel string `json:"logLevel" env:"DB_LOG_LEVEL"`
 }
 
 // DSN returns the PostgreSQL connection string
@@ -109,17 +112,17 @@ func LoadFromFile(filepath string) (*Config, error) {
 // LoadFromEnv overrides configuration with environment variables
 func (c *Config) LoadFromEnv() error {
 	// Process base config fields
-	if err := loadEnvToStruct(c); err != nil {
+	if err := loadEnvToStruct(c, envPrefix, tag); err != nil {
 		return err
 	}
 	// Process nested structs
-	if err := loadEnvToStruct(&c.JobConfig); err != nil {
+	if err := loadEnvToStruct(&c.JobConfig, envPrefix, tag); err != nil {
 		return err
 	}
-	if err := loadEnvToStruct(&c.AgentConfig); err != nil {
+	if err := loadEnvToStruct(&c.AgentConfig, envPrefix, tag); err != nil {
 		return err
 	}
-	if err := loadEnvToStruct(&c.DBConfig); err != nil {
+	if err := loadEnvToStruct(&c.DBConfig, envPrefix, tag); err != nil {
 		return err
 	}
 	return nil
@@ -169,80 +172,6 @@ func (c *Config) Validate() error {
 	}
 	if c.DBConfig.LogLevel != "" && !validLogLevels[c.DBConfig.LogLevel] {
 		return fmt.Errorf("invalid log level: %s", c.DBConfig.LogLevel)
-	}
-
-	return nil
-}
-
-// loadEnvToStruct loads environment variables into struct fields based on tags
-func loadEnvToStruct(target interface{}) error {
-	v := reflect.ValueOf(target).Elem()
-	t := v.Type()
-
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		fieldValue := v.Field(i)
-
-		// Skip unexported fields
-		if !fieldValue.CanSet() {
-			continue
-		}
-
-		// Get env tag or skip if not present
-		envVar, ok := field.Tag.Lookup("env")
-		if !ok || envVar == "" {
-			continue
-		}
-
-		// Get value from environment or skip if empty
-		envValue := os.Getenv(envVar)
-		if envValue == "" {
-			continue
-		}
-
-		// Set field value based on type
-		switch fieldValue.Kind() {
-		case reflect.String:
-			fieldValue.SetString(envValue)
-
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			if field.Type == reflect.TypeOf(time.Duration(0)) {
-				// Handle time.Duration
-				duration, err := time.ParseDuration(envValue)
-				if err != nil {
-					return fmt.Errorf("invalid duration value for %s: %w", envVar, err)
-				}
-				fieldValue.SetInt(int64(duration))
-			} else {
-				// Handle regular integers
-				val, err := strconv.ParseInt(envValue, 10, 64)
-				if err != nil {
-					return fmt.Errorf("invalid integer value for %s: %w", envVar, err)
-				}
-				fieldValue.SetInt(val)
-			}
-
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			val, err := strconv.ParseUint(envValue, 10, 64)
-			if err != nil {
-				return fmt.Errorf("invalid unsigned integer value for %s: %w", envVar, err)
-			}
-			fieldValue.SetUint(val)
-
-		case reflect.Float32, reflect.Float64:
-			val, err := strconv.ParseFloat(envValue, 64)
-			if err != nil {
-				return fmt.Errorf("invalid float value for %s: %w", envVar, err)
-			}
-			fieldValue.SetFloat(val)
-
-		case reflect.Bool:
-			val, err := strconv.ParseBool(envValue)
-			if err != nil {
-				return fmt.Errorf("invalid boolean value for %s: %w", envVar, err)
-			}
-			fieldValue.SetBool(val)
-		}
 	}
 
 	return nil
