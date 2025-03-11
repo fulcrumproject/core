@@ -10,7 +10,7 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-type gormMetricTypeRepository struct {
+type GormMetricTypeRepository struct {
 	*GormRepository[domain.MetricType]
 }
 
@@ -23,8 +23,8 @@ var applyMetricTypeSort = mapSortApplier(map[string]string{
 })
 
 // NewMetricTypeRepository creates a new instance of MetricTypeRepository
-func NewMetricTypeRepository(db *gorm.DB) domain.MetricTypeRepository {
-	repo := &gormMetricTypeRepository{
+func NewMetricTypeRepository(db *gorm.DB) *GormMetricTypeRepository {
+	repo := &GormMetricTypeRepository{
 		GormRepository: NewGormRepository[domain.MetricType](
 			db,
 			applyMetricTypeFilter,
@@ -37,7 +37,7 @@ func NewMetricTypeRepository(db *gorm.DB) domain.MetricTypeRepository {
 }
 
 // FindByName retrieves a metric type by name
-func (r *gormMetricTypeRepository) FindByName(ctx context.Context, name string) (*domain.MetricType, error) {
+func (r *GormMetricTypeRepository) FindByName(ctx context.Context, name string) (*domain.MetricType, error) {
 	var entity domain.MetricType
 	result := r.db.WithContext(ctx).Where("name = ?", name).First(&entity)
 	if result.Error != nil {

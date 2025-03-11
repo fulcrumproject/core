@@ -9,7 +9,7 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-type gormJobRepository struct {
+type GormJobRepository struct {
 	*GormRepository[domain.Job]
 }
 
@@ -28,8 +28,8 @@ var applyJobSort = mapSortApplier(map[string]string{
 })
 
 // NewJobRepository creates a new instance of JobRepository
-func NewJobRepository(db *gorm.DB) domain.JobRepository {
-	repo := &gormJobRepository{
+func NewJobRepository(db *gorm.DB) *GormJobRepository {
+	repo := &GormJobRepository{
 		GormRepository: NewGormRepository[domain.Job](
 			db,
 			applyJobFilter,
@@ -42,7 +42,7 @@ func NewJobRepository(db *gorm.DB) domain.JobRepository {
 }
 
 // GetPendingJobsForAgent retrieves pending jobs targeted for a specific agent
-func (r *gormJobRepository) GetPendingJobsForAgent(ctx context.Context, agentID domain.UUID, limit int) ([]*domain.Job, error) {
+func (r *GormJobRepository) GetPendingJobsForAgent(ctx context.Context, agentID domain.UUID, limit int) ([]*domain.Job, error) {
 	var jobs []*domain.Job
 	err := r.db.WithContext(ctx).
 		Preload("Service").
@@ -57,7 +57,7 @@ func (r *gormJobRepository) GetPendingJobsForAgent(ctx context.Context, agentID 
 }
 
 // ReleaseStuckJobs resets jobs that have been processing for too long
-func (r *gormJobRepository) ReleaseStuckJobs(ctx context.Context, olderThan time.Duration) (int, error) {
+func (r *GormJobRepository) ReleaseStuckJobs(ctx context.Context, olderThan time.Duration) (int, error) {
 	cutoffTime := time.Now().Add(-olderThan)
 	result := r.db.WithContext(ctx).Exec(
 		"UPDATE jobs SET state = ?, claimed_at = NULL WHERE state = ? AND claimed_at < ?",
@@ -70,7 +70,7 @@ func (r *gormJobRepository) ReleaseStuckJobs(ctx context.Context, olderThan time
 }
 
 // DeleteOldCompletedJobs removes completed or failed jobs older than the specified days
-func (r *gormJobRepository) DeleteOldCompletedJobs(ctx context.Context, olderThan time.Duration) (int, error) {
+func (r *GormJobRepository) DeleteOldCompletedJobs(ctx context.Context, olderThan time.Duration) (int, error) {
 	cutoffTime := time.Now().Add(-olderThan)
 	result := r.db.WithContext(ctx).Exec(
 		"DELETE FROM jobs WHERE (state = ? OR state = ?) AND completed_at < ?",

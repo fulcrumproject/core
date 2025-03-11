@@ -8,7 +8,7 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-type gormAgentTypeRepository struct {
+type GormAgentTypeRepository struct {
 	*GormRepository[domain.AgentType]
 }
 
@@ -21,8 +21,8 @@ var applyAgentTypeSort = mapSortApplier(map[string]string{
 })
 
 // NewAgentTypeRepository creates a new instance of AgentTypeRepository
-func NewAgentTypeRepository(db *gorm.DB) domain.AgentTypeRepository {
-	repo := &gormAgentTypeRepository{
+func NewAgentTypeRepository(db *gorm.DB) *GormAgentTypeRepository {
+	repo := &GormAgentTypeRepository{
 		GormRepository: NewGormRepository[domain.AgentType](
 			db,
 			applyAgentTypeFilter,
@@ -35,6 +35,6 @@ func NewAgentTypeRepository(db *gorm.DB) domain.AgentTypeRepository {
 }
 
 // Count returns the total number of agent types
-func (r *gormAgentTypeRepository) Count(ctx context.Context) (int64, error) {
+func (r *GormAgentTypeRepository) Count(ctx context.Context) (int64, error) {
 	return r.GormRepository.Count(ctx)
 }

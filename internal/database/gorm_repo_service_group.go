@@ -8,7 +8,7 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-type gormServiceGroupRepository struct {
+type GormServiceGroupRepository struct {
 	*GormRepository[domain.ServiceGroup]
 }
 
@@ -21,8 +21,8 @@ var applyServiceGroupSort = mapSortApplier(map[string]string{
 })
 
 // NewServiceGroupRepository creates a new instance of ServiceGroupRepository
-func NewServiceGroupRepository(db *gorm.DB) domain.ServiceGroupRepository {
-	repo := &gormServiceGroupRepository{
+func NewServiceGroupRepository(db *gorm.DB) *GormServiceGroupRepository {
+	repo := &GormServiceGroupRepository{
 		GormRepository: NewGormRepository[domain.ServiceGroup](
 			db,
 			applyServiceGroupFilter,
@@ -35,7 +35,7 @@ func NewServiceGroupRepository(db *gorm.DB) domain.ServiceGroupRepository {
 }
 
 // CountByService returns the number of service groups associated with a specific service
-func (r *gormServiceGroupRepository) CountByService(ctx context.Context, serviceID domain.UUID) (int64, error) {
+func (r *GormServiceGroupRepository) CountByService(ctx context.Context, serviceID domain.UUID) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&domain.ServiceGroup{}).
 		Joins("JOIN services ON services.group_id = service_groups.id").

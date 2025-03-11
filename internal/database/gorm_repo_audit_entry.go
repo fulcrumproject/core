@@ -6,7 +6,7 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-type gormAuditEntryRepository struct {
+type GormAuditEntryRepository struct {
 	*GormRepository[domain.AuditEntry]
 }
 
@@ -21,8 +21,8 @@ var applyAuditEntrySort = mapSortApplier(map[string]string{
 })
 
 // NewAuditEntryRepository creates a new instance of AuditEntryRepository
-func NewAuditEntryRepository(db *gorm.DB) domain.AuditEntryRepository {
-	repo := &gormAuditEntryRepository{
+func NewAuditEntryRepository(db *gorm.DB) *GormAuditEntryRepository {
+	repo := &GormAuditEntryRepository{
 		GormRepository: NewGormRepository[domain.AuditEntry](
 			db,
 			applyAuditEntryFilter,

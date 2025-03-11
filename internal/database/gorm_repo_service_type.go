@@ -8,7 +8,7 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-type gormServiceTypeRepository struct {
+type GormServiceTypeRepository struct {
 	*GormRepository[domain.ServiceType]
 }
 
@@ -21,8 +21,8 @@ var applyServiceTypeSort = mapSortApplier(map[string]string{
 })
 
 // NewServiceTypeRepository creates a new instance of ServiceTypeRepository
-func NewServiceTypeRepository(db *gorm.DB) domain.ServiceTypeRepository {
-	repo := &gormServiceTypeRepository{
+func NewServiceTypeRepository(db *gorm.DB) *GormServiceTypeRepository {
+	repo := &GormServiceTypeRepository{
 		GormRepository: NewGormRepository[domain.ServiceType](
 			db,
 			applyServiceTypeFilter,
@@ -35,6 +35,6 @@ func NewServiceTypeRepository(db *gorm.DB) domain.ServiceTypeRepository {
 }
 
 // Count returns the total number of service types
-func (r *gormServiceTypeRepository) Count(ctx context.Context) (int64, error) {
+func (r *GormServiceTypeRepository) Count(ctx context.Context) (int64, error) {
 	return r.GormRepository.Count(ctx)
 }

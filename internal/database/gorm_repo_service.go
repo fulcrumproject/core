@@ -9,7 +9,7 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-type gormServiceRepository struct {
+type GormServiceRepository struct {
 	*GormRepository[domain.Service]
 }
 
@@ -23,8 +23,8 @@ var applyServiceSort = mapSortApplier(map[string]string{
 })
 
 // NewServiceRepository creates a new instance of ServiceRepository
-func NewServiceRepository(db *gorm.DB) domain.ServiceRepository {
-	repo := &gormServiceRepository{
+func NewServiceRepository(db *gorm.DB) *GormServiceRepository {
+	repo := &GormServiceRepository{
 		GormRepository: NewGormRepository[domain.Service](
 			db,
 			applyServiceFilter,
@@ -36,7 +36,7 @@ func NewServiceRepository(db *gorm.DB) domain.ServiceRepository {
 	return repo
 }
 
-func (r *gormServiceRepository) CountByGroup(ctx context.Context, groupID domain.UUID) (int64, error) {
+func (r *GormServiceRepository) CountByGroup(ctx context.Context, groupID domain.UUID) (int64, error) {
 	var count int64
 	result := r.db.WithContext(ctx).Model(&domain.Service{}).Where("group_id = ?", groupID).Count(&count)
 	if result.Error != nil {
@@ -45,7 +45,7 @@ func (r *gormServiceRepository) CountByGroup(ctx context.Context, groupID domain
 	return count, nil
 }
 
-func (r *gormServiceRepository) CountByAgent(ctx context.Context, agentID domain.UUID) (int64, error) {
+func (r *GormServiceRepository) CountByAgent(ctx context.Context, agentID domain.UUID) (int64, error) {
 	var count int64
 	result := r.db.WithContext(ctx).Model(&domain.Service{}).Where("agent_id = ?", agentID).Count(&count)
 	if result.Error != nil {
@@ -55,7 +55,7 @@ func (r *gormServiceRepository) CountByAgent(ctx context.Context, agentID domain
 }
 
 // FindByExternalID retrieves a service by its external ID and agent ID
-func (r *gormServiceRepository) FindByExternalID(ctx context.Context, agentID domain.UUID, externalID string) (*domain.Service, error) {
+func (r *GormServiceRepository) FindByExternalID(ctx context.Context, agentID domain.UUID, externalID string) (*domain.Service, error) {
 	var service domain.Service
 
 	result := r.db.WithContext(ctx).

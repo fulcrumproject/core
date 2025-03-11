@@ -6,7 +6,7 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-type gormProviderRepository struct {
+type GormProviderRepository struct {
 	*GormRepository[domain.Provider]
 }
 
@@ -21,8 +21,8 @@ var applyProviderSort = mapSortApplier(map[string]string{
 })
 
 // NewProviderRepository creates a new instance of ProviderRepository
-func NewProviderRepository(db *gorm.DB) domain.ProviderRepository {
-	repo := &gormProviderRepository{
+func NewProviderRepository(db *gorm.DB) *GormProviderRepository {
+	repo := &GormProviderRepository{
 		GormRepository: NewGormRepository[domain.Provider](
 			db,
 			applyProviderFilter,

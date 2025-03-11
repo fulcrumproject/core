@@ -12,7 +12,7 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-type gormAgentRepository struct {
+type GormAgentRepository struct {
 	*GormRepository[domain.Agent]
 }
 
@@ -29,8 +29,8 @@ var applyAgentSort = mapSortApplier(map[string]string{
 })
 
 // NewAgentRepository creates a new instance of AgentRepository
-func NewAgentRepository(db *gorm.DB) domain.AgentRepository {
-	repo := &gormAgentRepository{
+func NewAgentRepository(db *gorm.DB) *GormAgentRepository {
+	repo := &GormAgentRepository{
 		GormRepository: NewGormRepository[domain.Agent](
 			db,
 			applyAgentFilter,
@@ -43,7 +43,7 @@ func NewAgentRepository(db *gorm.DB) domain.AgentRepository {
 }
 
 // CountByProvider returns the number of agents for a specific provider
-func (r *gormAgentRepository) CountByProvider(ctx context.Context, providerID domain.UUID) (int64, error) {
+func (r *GormAgentRepository) CountByProvider(ctx context.Context, providerID domain.UUID) (int64, error) {
 	var count int64
 	result := r.db.WithContext(ctx).Model(&domain.Agent{}).Where("provider_id = ?", providerID).Count(&count)
 	if result.Error != nil {
@@ -53,7 +53,7 @@ func (r *gormAgentRepository) CountByProvider(ctx context.Context, providerID do
 }
 
 // FindByTokenHash finds an agent by its token hash
-func (r *gormAgentRepository) FindByTokenHash(ctx context.Context, tokenHash string) (*domain.Agent, error) {
+func (r *GormAgentRepository) FindByTokenHash(ctx context.Context, tokenHash string) (*domain.Agent, error) {
 	var agent domain.Agent
 
 	err := r.db.WithContext(ctx).
@@ -72,7 +72,7 @@ func (r *gormAgentRepository) FindByTokenHash(ctx context.Context, tokenHash str
 }
 
 // MarkInactiveAgentsAsDisconnected marks agents that haven't updated their status in the given duration as disconnected
-func (r *gormAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Context, inactiveDuration time.Duration) (int64, error) {
+func (r *GormAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Context, inactiveDuration time.Duration) (int64, error) {
 	cutoffTime := time.Now().Add(-inactiveDuration)
 
 	result := r.db.WithContext(ctx).

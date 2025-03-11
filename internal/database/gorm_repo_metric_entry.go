@@ -8,7 +8,7 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-type gormMetricEntryRepository struct {
+type GormMetricEntryRepository struct {
 	*GormRepository[domain.MetricEntry]
 }
 
@@ -24,8 +24,8 @@ var applyMetricEntrySort = mapSortApplier(map[string]string{
 })
 
 // NewMetricEntryRepository creates a new instance of MetricEntryRepository
-func NewMetricEntryRepository(db *gorm.DB) domain.MetricEntryRepository {
-	repo := &gormMetricEntryRepository{
+func NewMetricEntryRepository(db *gorm.DB) *GormMetricEntryRepository {
+	repo := &GormMetricEntryRepository{
 		GormRepository: NewGormRepository[domain.MetricEntry](
 			db,
 			applyMetricEntryFilter,
@@ -38,7 +38,7 @@ func NewMetricEntryRepository(db *gorm.DB) domain.MetricEntryRepository {
 }
 
 // CountByMetricType counts the number of entries for a specific metric type
-func (r *gormMetricEntryRepository) CountByMetricType(ctx context.Context, typeID domain.UUID) (int64, error) {
+func (r *GormMetricEntryRepository) CountByMetricType(ctx context.Context, typeID domain.UUID) (int64, error) {
 	var count int64
 	result := r.db.WithContext(ctx).
 		Model(&domain.MetricEntry{}).
