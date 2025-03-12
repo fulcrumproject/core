@@ -2,6 +2,7 @@ __debug**
 .vscode/
 /tmp
 .env
+.env.local
 .DS_Store
 coverage.out
 .clinerules

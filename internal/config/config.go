@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -111,6 +113,8 @@ func LoadFromFile(filepath string) (*Config, error) {
 
 // LoadFromEnv overrides configuration with environment variables
 func (c *Config) LoadFromEnv() error {
+	_ = godotenv.Load(".env.local")
+	_ = godotenv.Load(".env")
 	// Process all config fields including nested structs
 	if err := LoadEnvToStruct(c, envPrefix, tag); err != nil {
 		return err
