@@ -6,11 +6,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DB_HOST=postgres
-      - DB_USER=fulcrum
-      - DB_PASSWORD=fulcrum_password
-      - DB_NAME=fulcrum_db
-      - DB_PORT=5432
+      - FULCRUM_DB_HOST=postgres
+      - FULCRUM_DB_USER=fulcrum
+      - FULCRUM_DB_PASSWORD=fulcrum_password
+      - FULCRUM_DB_NAME=fulcrum_db
+      - FULCRUM_DB_PORT=5432
+      - FULCRUM_DB_SSL_MODE=disable
     depends_on:
       postgres:
         condition: service_healthy
