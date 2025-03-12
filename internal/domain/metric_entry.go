@@ -32,21 +32,15 @@ func (p *MetricEntry) Validate() error {
 
 // MetricEntryCommander handles provider operations with validation
 type MetricEntryCommander struct {
-	repo           MetricEntryRepository
-	serviceRepo    ServiceRepository
-	metricTypeRepo MetricTypeRepository
+	store Store
 }
 
 // NewMetricEntryCommander creates a new MetricEntryService
 func NewMetricEntryCommander(
-	repo MetricEntryRepository,
-	serviceRepo ServiceRepository,
-	metricTypeRepo MetricTypeRepository,
+	store Store,
 ) *MetricEntryCommander {
 	return &MetricEntryCommander{
-		repo:           repo,
-		serviceRepo:    serviceRepo,
-		metricTypeRepo: metricTypeRepo,
+		store: store,
 	}
 }
 
@@ -60,7 +54,7 @@ func (s *MetricEntryCommander) CreateWithExternalID(
 	value float64,
 ) (*MetricEntry, error) {
 	// Look up the service by external ID
-	service, err := s.serviceRepo.FindByExternalID(ctx, agentID, externalID)
+	service, err := s.store.ServiceRepo().FindByExternalID(ctx, agentID, externalID)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +71,12 @@ func (s *MetricEntryCommander) Create(
 	value float64,
 ) (*MetricEntry, error) {
 	// Look up the service by external ID
-	service, err := s.serviceRepo.FindByID(ctx, serviceID)
+	service, err := s.store.ServiceRepo().FindByID(ctx, serviceID)
 	if err != nil {
 		return nil, err
 	}
 	// Look up the service type by name
-	metricType, err := s.metricTypeRepo.FindByName(ctx, typeName)
+	metricType, err := s.store.MetricTypeRepo().FindByName(ctx, typeName)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +91,7 @@ func (s *MetricEntryCommander) Create(
 	if err := metricEntry.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.repo.Create(ctx, metricEntry); err != nil {
+	if err := s.store.MetricEntryRepo().Create(ctx, metricEntry); err != nil {
 		return nil, err
 	}
 	return metricEntry, nil

@@ -27,18 +27,15 @@ func (*ServiceGroup) TableName() string {
 
 // ServiceGroupCommander handles service group operations with validation
 type ServiceGroupCommander struct {
-	repo        ServiceGroupRepository
-	serviceRepo ServiceRepository
+	store Store
 }
 
 // NewServiceGroupCommander creates a new ServiceGroupService
 func NewServiceGroupCommander(
-	serviceGroupRepo ServiceGroupRepository,
-	serviceRepo ServiceRepository,
+	store Store,
 ) *ServiceGroupCommander {
 	return &ServiceGroupCommander{
-		repo:        serviceGroupRepo,
-		serviceRepo: serviceRepo,
+		store: store,
 	}
 }
 
@@ -50,7 +47,7 @@ func (s *ServiceGroupCommander) Create(ctx context.Context, name string) (*Servi
 	if err := sg.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.repo.Create(ctx, sg); err != nil {
+	if err := s.store.ServiceGroupRepo().Create(ctx, sg); err != nil {
 		return nil, err
 	}
 	return sg, nil
@@ -58,7 +55,7 @@ func (s *ServiceGroupCommander) Create(ctx context.Context, name string) (*Servi
 
 // Save updates an existing service group with validation
 func (s *ServiceGroupCommander) Update(ctx context.Context, id UUID, name *string) (*ServiceGroup, error) {
-	sg, err := s.repo.FindByID(ctx, id)
+	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +65,7 @@ func (s *ServiceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 	if err := sg.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.repo.Save(ctx, sg); err != nil {
+	if err := s.store.ServiceGroupRepo().Save(ctx, sg); err != nil {
 		return nil, err
 	}
 	return sg, nil
@@ -76,18 +73,20 @@ func (s *ServiceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 
 // Delete removes an entity by ID
 func (s *ServiceGroupCommander) Delete(ctx context.Context, id UUID) error {
-	_, err := s.repo.FindByID(ctx, id)
+	_, err := s.store.ServiceGroupRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
-	numOfServices, err := s.serviceRepo.CountByGroup(ctx, id)
-	if err != nil {
-		return err
-	}
-	if numOfServices > 0 {
-		return errors.New("cannot delete service group with associated services")
-	}
-	return s.repo.Delete(ctx, id)
+	return s.store.Atomic(ctx, func(store Store) error {
+		numOfServices, err := store.ServiceRepo().CountByGroup(ctx, id)
+		if err != nil {
+			return err
+		}
+		if numOfServices > 0 {
+			return errors.New("cannot delete service group with associated services")
+		}
+		return store.ServiceGroupRepo().Delete(ctx, id)
+	})
 }
 
 // ServiceGroupRepository defines the interface for the ServiceGroup repository

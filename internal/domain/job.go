@@ -127,24 +127,21 @@ func NewJob(agentID, serviceID UUID, action ServiceAction, priority int) *Job {
 
 // JobCommander handles job operations
 type JobCommander struct {
-	repo        JobRepository
-	serviceRepo ServiceRepository
+	store Store
 }
 
 // NewJobCommander creates a new command executor
 func NewJobCommander(
-	jobRepo JobRepository,
-	serviceRepo ServiceRepository,
+	store Store,
 ) *JobCommander {
 	return &JobCommander{
-		repo:        jobRepo,
-		serviceRepo: serviceRepo,
+		store: store,
 	}
 }
 
 // Claim claims a job for an agent
 func (s *JobCommander) Claim(ctx context.Context, agentID UUID, jobID UUID) error {
-	job, err := s.repo.FindByID(ctx, jobID)
+	job, err := s.store.JobRepo().FindByID(ctx, jobID)
 	if err != nil {
 		return err
 	}
@@ -157,16 +154,12 @@ func (s *JobCommander) Claim(ctx context.Context, agentID UUID, jobID UUID) erro
 	job.State = JobProcessing
 	now := time.Now()
 	job.ClaimedAt = &now
-	err = s.repo.Save(ctx, job)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.store.JobRepo().Save(ctx, job)
 }
 
 // Complete marks a job as completed
 func (s *JobCommander) Complete(ctx context.Context, agentID, jobID UUID, resources *JSON, externalID *string) error {
-	job, err := s.repo.FindByID(ctx, jobID)
+	job, err := s.store.JobRepo().FindByID(ctx, jobID)
 	if err != nil {
 		return err
 	}
@@ -176,49 +169,49 @@ func (s *JobCommander) Complete(ctx context.Context, agentID, jobID UUID, resour
 	if job.State != JobProcessing {
 		return errors.New("cannot complete a job not in processing state")
 	}
-	// Update Job
-	job.State = JobCompleted
-	now := time.Now()
-	job.CompletedAt = &now
-	err = s.repo.Save(ctx, job)
-	if err != nil {
-		return err
-	}
-	// Update Service
-	svc, err := s.serviceRepo.FindByID(ctx, job.ServiceID)
+	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
 	if err != nil {
 		return err
 	}
 	if svc.TargetState == nil {
 		return errors.New("cannot complete a job on service that is not in transition")
 	}
-	svc.CurrentState = *svc.TargetState
-	svc.TargetState = nil
-	svc.FailedAction = nil
-	svc.ErrorMessage = nil
-	svc.RetryCount = 0
-	if resources != nil {
-		svc.Resources = resources
-	}
-	if externalID != nil {
-		svc.ExternalID = externalID
-	}
-	if svc.TargetProperties != nil {
-		svc.CurrentProperties = svc.TargetProperties
-		svc.TargetProperties = nil
-	}
-	if err := svc.Validate(); err != nil {
-		return err
-	}
-	if err := s.serviceRepo.Save(ctx, svc); err != nil {
-		return err
-	}
-	return nil
+	return s.store.Atomic(ctx, func(store Store) error {
+		job.State = JobCompleted
+		now := time.Now()
+		job.CompletedAt = &now
+
+		svc.CurrentState = *svc.TargetState
+		svc.TargetState = nil
+		svc.FailedAction = nil
+		svc.ErrorMessage = nil
+		svc.RetryCount = 0
+		if resources != nil {
+			svc.Resources = resources
+		}
+		if externalID != nil {
+			svc.ExternalID = externalID
+		}
+		if svc.TargetProperties != nil {
+			svc.CurrentProperties = svc.TargetProperties
+			svc.TargetProperties = nil
+		}
+
+		if err := svc.Validate(); err != nil {
+			return err
+		}
+
+		if err := store.JobRepo().Save(ctx, job); err != nil {
+			return err
+		}
+
+		return store.ServiceRepo().Save(ctx, svc)
+	})
 }
 
 // Fail marks a job as failed
 func (s *JobCommander) Fail(ctx context.Context, agentID UUID, jobID UUID, errorMessage string) error {
-	job, err := s.repo.FindByID(ctx, jobID)
+	job, err := s.store.JobRepo().FindByID(ctx, jobID)
 	if err != nil {
 		return err
 	}
@@ -228,27 +221,27 @@ func (s *JobCommander) Fail(ctx context.Context, agentID UUID, jobID UUID, error
 	if job.State != JobProcessing {
 		return errors.New("cannot fail a job not in processing state")
 	}
-	// Update Job
-	job.State = JobFailed
-	job.ErrorMessage = errorMessage
-	err = s.repo.Save(ctx, job)
+	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
 	if err != nil {
 		return err
 	}
-	// Update Service
-	svc, err := s.serviceRepo.FindByID(ctx, job.ServiceID)
-	if err != nil {
-		return err
-	}
-	svc.ErrorMessage = &errorMessage
-	svc.FailedAction = &job.Action
-	if err := svc.Validate(); err != nil {
-		return err
-	}
-	if err := s.serviceRepo.Save(ctx, svc); err != nil {
-		return err
-	}
-	return nil
+	return s.store.Atomic(ctx, func(store Store) error {
+		job.State = JobFailed
+		job.ErrorMessage = errorMessage
+
+		svc.ErrorMessage = &errorMessage
+		svc.FailedAction = &job.Action
+
+		if err := svc.Validate(); err != nil {
+			return err
+		}
+
+		if err := store.JobRepo().Save(ctx, job); err != nil {
+			return err
+		}
+
+		return store.ServiceRepo().Save(ctx, svc)
+	})
 }
 
 type JobRepository interface {

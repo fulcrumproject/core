@@ -49,18 +49,15 @@ func (m *MetricType) Validate() error {
 
 // MetricTypeCommander handles metric-type operations with validation
 type MetricTypeCommander struct {
-	repo      MetricTypeRepository
-	entryRepo MetricEntryRepository
+	store Store
 }
 
 // NewMetricTypeCommander creates a new MetricTypeService
 func NewMetricTypeCommander(
-	repo MetricTypeRepository,
-	entryRepo MetricEntryRepository,
+	store Store,
 ) *MetricTypeCommander {
 	return &MetricTypeCommander{
-		repo:      repo,
-		entryRepo: entryRepo,
+		store: store,
 	}
 }
 
@@ -77,7 +74,7 @@ func (s *MetricTypeCommander) Create(
 	if err := metricType.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.repo.Create(ctx, metricType); err != nil {
+	if err := s.store.MetricTypeRepo().Create(ctx, metricType); err != nil {
 		return nil, err
 	}
 	return metricType, nil
@@ -88,7 +85,7 @@ func (s *MetricTypeCommander) Update(ctx context.Context,
 	id UUID,
 	name *string,
 ) (*MetricType, error) {
-	metricType, err := s.repo.FindByID(ctx, id)
+	metricType, err := s.store.MetricTypeRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +95,7 @@ func (s *MetricTypeCommander) Update(ctx context.Context,
 	if err := metricType.Validate(); err != nil {
 		return nil, err
 	}
-	err = s.repo.Save(ctx, metricType)
+	err = s.store.MetricTypeRepo().Save(ctx, metricType)
 	if err != nil {
 		return nil, err
 	}
@@ -107,19 +104,20 @@ func (s *MetricTypeCommander) Update(ctx context.Context,
 
 // Delete removes a metric-type by ID after checking for dependencies
 func (s *MetricTypeCommander) Delete(ctx context.Context, id UUID) error {
-	_, err := s.repo.FindByID(ctx, id)
+	_, err := s.store.MetricTypeRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
-	// Check if metric-type has entries
-	numOfAgents, err := s.entryRepo.CountByMetricType(ctx, id)
-	if err != nil {
-		return err
-	}
-	if numOfAgents > 0 {
-		return errors.New("cannot delete metric-type with associated agents")
-	}
-	return s.repo.Delete(ctx, id)
+	return s.store.Atomic(ctx, func(store Store) error {
+		numOfEntries, err := store.MetricEntryRepo().CountByMetricType(ctx, id)
+		if err != nil {
+			return err
+		}
+		if numOfEntries > 0 {
+			return errors.New("cannot delete metric-type with associated entries")
+		}
+		return store.MetricTypeRepo().Delete(ctx, id)
+	})
 }
 
 type MetricTypeRepository interface {

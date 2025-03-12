@@ -126,19 +126,16 @@ func NewService(agentID UUID,
 
 // ServiceCommander handles service operations that require job creation
 type ServiceCommander struct {
-	repo    ServiceRepository
-	jobRepo JobRepository
+	store Store
 }
 
 // NewServiceCommander creates a new commander for services
 func NewServiceCommander(
-	serviceRepo ServiceRepository,
-	jobRepo JobRepository,
+	store Store,
 ) *ServiceCommander {
 	return &ServiceCommander{
-		// Composition: ServiceOperationService delegates to serviceRepo
-		repo:    serviceRepo,
-		jobRepo: jobRepo,
+		// Using store interface to access repositories
+		store: store,
 	}
 }
 
@@ -156,19 +153,28 @@ func (s *ServiceCommander) Create(
 	if err := svc.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.repo.Create(ctx, svc); err != nil {
+
+	// Execute within a transaction
+	var createdService *Service = svc
+	err := s.store.Atomic(ctx, func(store Store) error {
+		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
+			return err
+		}
+		job := NewJob(svc.AgentID, svc.ID, ServiceActionCreate, 1)
+		if err := store.JobRepo().Create(ctx, job); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
-	job := NewJob(svc.AgentID, svc.ID, ServiceActionCreate, 1)
-	if err := s.jobRepo.Create(ctx, job); err != nil {
-		return nil, err
-	}
-	return svc, nil
+	return createdService, nil
 }
 
 // Update handles service updates and creates a job for the agent
 func (s *ServiceCommander) Update(ctx context.Context, id UUID, name *string, props *JSON) (*Service, error) {
-	svc, err := s.repo.FindByID(ctx, id)
+	svc, err := s.store.ServiceRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -199,17 +205,28 @@ func (s *ServiceCommander) Update(ctx context.Context, id UUID, name *string, pr
 	if err := svc.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.repo.Save(ctx, svc); err != nil {
-		return nil, err
-	}
+
 	// Create Job if necessary
 	if job == nil {
+		// No job needed, just save the service
+		if err := s.store.ServiceRepo().Save(ctx, svc); err != nil {
+			return nil, err
+		}
 		return svc, nil
 	}
-	if err := s.jobRepo.Create(ctx, job); err != nil {
+
+	// Execute within a transaction when job is created
+	var updatedService *Service = svc
+	err = s.store.Atomic(ctx, func(store Store) error {
+		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+			return err
+		}
+		return store.JobRepo().Create(ctx, job)
+	})
+	if err != nil {
 		return nil, err
 	}
-	return svc, nil
+	return updatedService, nil
 }
 
 func serviceUpdateNextStateAndAction(state ServiceState) (ServiceState, ServiceAction, error) {
@@ -227,7 +244,7 @@ func (s *ServiceCommander) Transition(ctx context.Context, id UUID, target Servi
 	if err := target.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
-	svc, err := s.repo.FindByID(ctx, id)
+	svc, err := s.store.ServiceRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -240,18 +257,26 @@ func (s *ServiceCommander) Transition(ctx context.Context, id UUID, target Servi
 	if err := svc.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.repo.Save(ctx, svc); err != nil {
-		return nil, err
-	}
+
+	// Create job for transition
 	job := NewJob(svc.AgentID, svc.ID, action, 1)
-	if err := s.jobRepo.Create(ctx, job); err != nil {
+
+	// Execute within a transaction
+	var transitionedService *Service = svc
+	err = s.store.Atomic(ctx, func(store Store) error {
+		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+			return err
+		}
+		return store.JobRepo().Create(ctx, job)
+	})
+	if err != nil {
 		return nil, err
 	}
-	return svc, nil
+	return transitionedService, nil
 }
 
 func (s *ServiceCommander) Retry(ctx context.Context, id UUID) (*Service, error) {
-	svc, err := s.repo.FindByID(ctx, id)
+	svc, err := s.store.ServiceRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -263,14 +288,22 @@ func (s *ServiceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 	if err := svc.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.repo.Save(ctx, svc); err != nil {
-		return nil, err
-	}
+
+	// Create job for retry
 	job := NewJob(svc.AgentID, svc.ID, *svc.FailedAction, 1)
-	if err := s.jobRepo.Create(ctx, job); err != nil {
+
+	// Execute within a transaction
+	var retryService *Service = svc
+	err = s.store.Atomic(ctx, func(store Store) error {
+		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+			return err
+		}
+		return store.JobRepo().Create(ctx, job)
+	})
+	if err != nil {
 		return nil, err
 	}
-	return svc, nil
+	return retryService, nil
 }
 
 // serviceNextStateAndAction determines the intermediate state and action for a service transition

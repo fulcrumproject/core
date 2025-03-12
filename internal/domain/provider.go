@@ -63,18 +63,15 @@ func (p *Provider) Validate() error {
 
 // ProviderCommander handles provider operations with validation
 type ProviderCommander struct {
-	repo      ProviderRepository
-	agentRepo AgentRepository
+	store Store
 }
 
 // NewProviderCommander creates a new ProviderService
 func NewProviderCommander(
-	repo ProviderRepository,
-	agentRepo AgentRepository,
+	store Store,
 ) *ProviderCommander {
 	return &ProviderCommander{
-		repo:      repo,
-		agentRepo: agentRepo,
+		store: store,
 	}
 }
 
@@ -95,7 +92,7 @@ func (s *ProviderCommander) Create(
 	if err := provider.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.repo.Create(ctx, provider); err != nil {
+	if err := s.store.ProviderRepo().Create(ctx, provider); err != nil {
 		return nil, err
 	}
 	return provider, nil
@@ -109,7 +106,7 @@ func (s *ProviderCommander) Update(ctx context.Context,
 	countryCode *CountryCode,
 	attributes *Attributes,
 ) (*Provider, error) {
-	provider, err := s.repo.FindByID(ctx, id)
+	provider, err := s.store.ProviderRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +125,7 @@ func (s *ProviderCommander) Update(ctx context.Context,
 	if err := provider.Validate(); err != nil {
 		return nil, err
 	}
-	err = s.repo.Save(ctx, provider)
+	err = s.store.ProviderRepo().Save(ctx, provider)
 	if err != nil {
 		return nil, err
 	}
@@ -137,20 +134,20 @@ func (s *ProviderCommander) Update(ctx context.Context,
 
 // Delete removes a provider by ID after checking for dependencies
 func (s *ProviderCommander) Delete(ctx context.Context, id UUID) error {
-	_, err := s.repo.FindByID(ctx, id)
+	_, err := s.store.ProviderRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
-	// Check if provider has agents
-	numOfAgents, err := s.agentRepo.CountByProvider(ctx, id)
-	if err != nil {
-		return err
-	}
-	if numOfAgents > 0 {
-		return errors.New("cannot delete provider with associated agents")
-	}
-
-	return s.repo.Delete(ctx, id)
+	return s.store.Atomic(ctx, func(store Store) error {
+		numOfAgents, err := s.store.AgentRepo().CountByProvider(ctx, id)
+		if err != nil {
+			return err
+		}
+		if numOfAgents > 0 {
+			return errors.New("cannot delete provider with associated agents")
+		}
+		return store.ProviderRepo().Delete(ctx, id)
+	})
 }
 
 type ProviderRepository interface {

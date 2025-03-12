@@ -23,15 +23,15 @@ func (p *AuditEntry) Validate() error {
 
 // AuditEntryCommander handles provider operations with validation
 type AuditEntryCommander struct {
-	repo AuditEntryRepository
+	store Store
 }
 
 // NewAuditEntryCommander creates a new AuditEntryService
 func NewAuditEntryCommander(
-	repo AuditEntryRepository,
+	store Store,
 ) *AuditEntryCommander {
 	return &AuditEntryCommander{
-		repo: repo,
+		store: store,
 	}
 }
 
@@ -52,7 +52,7 @@ func (s *AuditEntryCommander) Create(
 	if err := auditEntry.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.repo.Create(ctx, auditEntry); err != nil {
+	if err := s.store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
 		return nil, err
 	}
 	return auditEntry, nil
