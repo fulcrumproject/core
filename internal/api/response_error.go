@@ -62,6 +62,14 @@ func ErrUnauthorized() render.Renderer {
 	}
 }
 
+func ErrForbidden() render.Renderer {
+	return &ErrResponse{
+		HTTPStatusCode: http.StatusForbidden,
+		StatusText:     "Forbidden",
+		ErrorText:      "You don't have permission to access this resource",
+	}
+}
+
 func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	render.Status(r, e.HTTPStatusCode)
 	return nil
