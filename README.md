@@ -27,14 +27,15 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 
 ```
 # Database Configuration
-DB_HOST=postgres
-DB_USER=fulcrum
-DB_PASSWORD=fulcrum_password
-DB_NAME=fulcrum_db
-DB_PORT=5432
+FULCRUM_DB_HOST=postgres
+FULCRUM_DB_USER=fulcrum
+FULCRUM_DB_PASSWORD=fulcrum_password
+FULCRUM_DB_NAME=fulcrum_db
+FULCRUM_DB_PORT=5432
+FULCRUM_DB_SSL_MODE=disable
 
 # Server Configuration
-PORT=3000
+FULCRUM_PORT=3000
 ```
 
 ### Running with Docker
