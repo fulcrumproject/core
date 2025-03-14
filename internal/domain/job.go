@@ -265,8 +265,8 @@ type JobRepository interface {
 
 	// Maintenance operations
 
-	// ReleaseStuckJobs resets jobs that have been processing for too long
-	ReleaseStuckJobs(ctx context.Context, olderThan time.Duration) (int, error)
+	// GetTimeOutJobs retrieves jobs that have been processing for too long and returns them
+	GetTimeOutJobs(ctx context.Context, olderThan time.Duration) ([]*Job, error)
 
 	// DeleteOldCompletedJobs removes completed or failed jobs older than the specified interval
 	DeleteOldCompletedJobs(ctx context.Context, olderThan time.Duration) (int, error)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 )
 
 // ServiceState represents the possible states of a service
@@ -326,6 +327,45 @@ func serviceNextStateAndAction(curr, target ServiceState) (ServiceState, Service
 		}
 	}
 	return "", "", fmt.Errorf("invalid transition from %s to %s", curr, target)
+}
+
+func (s *ServiceCommander) FailTimeoutServicesAndJobs(ctx context.Context, timeout time.Duration) (int, error) {
+	timedOutJobs, err := s.store.JobRepo().GetTimeOutJobs(ctx, timeout)
+	if err != nil {
+		return 0, fmt.Errorf("failed to retrive timeout jobs: %v", err)
+	}
+
+	counter := 0
+	errorMsg := "Job marked as failed due to exceeding maximum processing time"
+	for _, job := range timedOutJobs {
+		err := s.store.Atomic(ctx, func(s Store) error {
+			// Update job
+			job.State = JobFailed
+			job.ErrorMessage = errorMsg
+			now := time.Now()
+			job.CompletedAt = &now
+
+			// Update associated service status
+			svc, err := s.ServiceRepo().FindByID(ctx, job.ServiceID)
+			if err != nil {
+				return fmt.Errorf("failed to find service %s for timed out job: %w", job.ServiceID, err)
+			}
+
+			svc.ErrorMessage = &errorMsg
+			svc.FailedAction = &job.Action
+
+			if err := s.JobRepo().Save(ctx, job); err != nil {
+				return err
+			}
+			return s.ServiceRepo().Save(ctx, svc)
+		})
+		counter++
+		if err != nil {
+			return 0, fmt.Errorf("Error marking timed out job %s as failed: %v", job.ID, err)
+		}
+	}
+
+	return counter, nil
 }
 
 // ServiceRepository defines the interface for the Service repository

@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -278,5 +279,49 @@ func TestJobRepository(t *testing.T) {
 
 		// Verify priority ordering (highest first)
 		assert.GreaterOrEqual(t, limitedJobs[0].Priority, limitedJobs[1].Priority)
+	})
+
+	t.Run("GetTimeOutJobs", func(t *testing.T) {
+		// Create a job in processing state with an old created_at time
+		now := time.Now()
+		oldTime := now.Add(-2 * time.Hour) // 2 hours ago
+
+		oldJob := &domain.Job{
+			Action:    domain.ServiceActionCreate,
+			State:     domain.JobProcessing,
+			AgentID:   agent.ID,
+			ServiceID: service.ID,
+			Priority:  1,
+			// Set BaseEntity.CreatedAt directly since it's normally set during Insert
+			BaseEntity: domain.BaseEntity{
+				CreatedAt: oldTime,
+			},
+		}
+		err := repo.Create(context.Background(), oldJob)
+		require.NoError(t, err)
+
+		// Create a job in processing state with a recent created_at time (will use current time)
+		newJob := &domain.Job{
+			Action:    domain.ServiceActionStart,
+			State:     domain.JobProcessing,
+			AgentID:   agent.ID,
+			ServiceID: service.ID,
+			Priority:  2,
+			ClaimedAt: &now, // use current time for claimed time
+		}
+		err = repo.Create(context.Background(), newJob)
+		require.NoError(t, err)
+
+		// Call GetTimeOutJobs with a 1 hour threshold
+		timedOutJobs, err := repo.GetTimeOutJobs(context.Background(), 1*time.Hour)
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(timedOutJobs)) // Only the old job should be returned
+		assert.Equal(t, oldJob.ID, timedOutJobs[0].ID)
+
+		// Verify the recent job was not returned as timed out
+		updatedNewJob, err := repo.FindByID(context.Background(), newJob.ID)
+		require.NoError(t, err)
+		assert.Equal(t, domain.JobProcessing, updatedNewJob.State)
+		assert.NotContains(t, timedOutJobs, newJob.ID)
 	})
 }

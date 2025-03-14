@@ -101,7 +101,7 @@ func main() {
 	})
 
 	// Setup background job maintenance worker
-	go JobMainenanceTask(&cfg.JobConfig, store)
+	go JobMainenanceTask(&cfg.JobConfig, store, serviceCmd)
 
 	// Setup background worker to mark inactive agents as disconnected
 	go DisconnectUnhealthyAgentsTask(&cfg.AgentConfig, store)
@@ -117,6 +117,7 @@ func DisconnectUnhealthyAgentsTask(cfg *config.AgentConfig, store domain.Store) 
 	ticker := time.NewTicker(cfg.HealthTimeout)
 	for range ticker.C {
 		ctx := context.Background()
+		log.Println("Checking agents health ...")
 		disconnectedCount, err := store.AgentRepo().MarkInactiveAgentsAsDisconnected(ctx, cfg.HealthTimeout)
 		if err != nil {
 			log.Printf("Error marking inactive agents as disconnected: %v", err)
@@ -126,21 +127,27 @@ func DisconnectUnhealthyAgentsTask(cfg *config.AgentConfig, store domain.Store) 
 	}
 }
 
-func JobMainenanceTask(cfg *config.JobConfig, store domain.Store) {
+func JobMainenanceTask(cfg *config.JobConfig, store domain.Store, serviceCmd *domain.ServiceCommander) {
 	ticker := time.NewTicker(cfg.Maintenance)
 	for range ticker.C {
 		ctx := context.Background()
 
-		// Release jobs that have been processing for too long
-		releasedCount, _ := store.JobRepo().ReleaseStuckJobs(ctx, cfg.Timeout)
-		if releasedCount > 0 {
-			log.Printf("Released %d stuck jobs", releasedCount)
+		// Fail timeout jobs an services
+		log.Println("Checking timeout jobs ...")
+		failedCount, err := serviceCmd.FailTimeoutServicesAndJobs(ctx, cfg.Timeout)
+		if err != nil {
+			log.Printf("Failed to timeout jobs and services: %v", err)
+		} else {
+			log.Printf("Done fail %d timeout jobs.", failedCount)
 		}
 
 		// Delete completed/failed old jobs
-		deletedCount, _ := store.JobRepo().DeleteOldCompletedJobs(ctx, cfg.Retention)
-		if deletedCount > 0 {
-			log.Printf("Deleted %d old completed jobs", deletedCount)
+		log.Println("Deleting old jobs ...")
+		deletedCount, err := store.JobRepo().DeleteOldCompletedJobs(ctx, cfg.Retention)
+		if err != nil {
+			log.Printf("Failed delete old jobs: %v", err)
+		} else {
+			log.Printf("Deleted %d old jobs.", deletedCount)
 		}
 	}
 }

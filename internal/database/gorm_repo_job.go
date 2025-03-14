@@ -56,17 +56,20 @@ func (r *GormJobRepository) GetPendingJobsForAgent(ctx context.Context, agentID 
 	return jobs, nil
 }
 
-// ReleaseStuckJobs resets jobs that have been processing for too long
-func (r *GormJobRepository) ReleaseStuckJobs(ctx context.Context, olderThan time.Duration) (int, error) {
+// GetTimeOutJobs retrieves jobs that have been processing for too long and returns them
+func (r *GormJobRepository) GetTimeOutJobs(ctx context.Context, olderThan time.Duration) ([]*domain.Job, error) {
 	cutoffTime := time.Now().Add(-olderThan)
-	result := r.db.WithContext(ctx).Exec(
-		"UPDATE jobs SET state = ?, claimed_at = NULL WHERE state = ? AND claimed_at < ?",
-		domain.JobPending, domain.JobProcessing, cutoffTime,
-	)
-	if result.Error != nil {
-		return 0, result.Error
+
+	var timedOutJobs []*domain.Job
+	err := r.db.WithContext(ctx).
+		Where("state IN ? AND created_at < ?", []domain.JobState{domain.JobProcessing, domain.JobPending}, cutoffTime).
+		Find(&timedOutJobs).Error
+
+	if err != nil {
+		return nil, err
 	}
-	return int(result.RowsAffected), nil
+
+	return timedOutJobs, nil
 }
 
 // DeleteOldCompletedJobs removes completed or failed jobs older than the specified days

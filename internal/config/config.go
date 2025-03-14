@@ -76,9 +76,9 @@ func DefaultConfig() *Config {
 	return &Config{
 		Port: 3000,
 		JobConfig: JobConfig{
-			Maintenance: 10 * time.Minute,
+			Maintenance: 3 * time.Minute,
 			Retention:   3 * 24 * time.Hour,
-			Timeout:     15 * time.Minute,
+			Timeout:     5 * time.Minute,
 		},
 		AgentConfig: AgentConfig{
 			HealthTimeout: 5 * time.Minute,
