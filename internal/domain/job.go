@@ -79,24 +79,25 @@ func ParseJobState(s string) (JobState, error) {
 // Job represents a task to be executed by an agent
 type Job struct {
 	BaseEntity
-	// Immutables
-	AgentID   UUID          `gorm:"type:uuid;not null"`
-	ServiceID UUID          `gorm:"type:uuid;not null"`
-	State     JobState      `gorm:"type:varchar(20);not null"`
-	Action    ServiceAction `gorm:"type:varchar(50);not null"`
-	Priority  int           `gorm:"not null;default:1"`
-	// For state management
+
+	Action   ServiceAction `gorm:"type:varchar(50);not null"`
+	Priority int           `gorm:"not null;default:1"`
+
+	// State management
+	State        JobState   `gorm:"type:varchar(20);not null"`
 	ErrorMessage string     `gorm:"type:text"`
 	ClaimedAt    *time.Time `gorm:""`
 	CompletedAt  *time.Time `gorm:""`
 
 	// Relationships
-	Agent   *Agent   `gorm:"foreignKey:AgentID"`
-	Service *Service `gorm:"foreignKey:ServiceID"`
+	AgentID   UUID     `gorm:"type:uuid;not null"`
+	Agent     *Agent   `gorm:"foreignKey:AgentID"`
+	ServiceID UUID     `gorm:"type:uuid;not null"`
+	Service   *Service `gorm:"foreignKey:ServiceID"`
 }
 
 // TableName returns the table name for the job
-func (*Job) TableName() string {
+func (Job) TableName() string {
 	return "jobs"
 }
 
@@ -125,26 +126,59 @@ func NewJob(agentID, serviceID UUID, action ServiceAction, priority int) *Job {
 	}
 }
 
-// JobCommander handles job operations
-type JobCommander struct {
+// JobCommander defines the interface for job command operations
+type JobCommander interface {
+	// Claim claims a job for an agent
+	Claim(ctx context.Context, agentID UUID, jobID UUID) error
+
+	// Complete marks a job as completed
+	Complete(ctx context.Context, agentID UUID, jobID UUID, resources *JSON, externalID *string) error
+
+	// Fail marks a job as failed
+	Fail(ctx context.Context, agentID UUID, jobID UUID, errorMessage string) error
+}
+
+// jobCommander is the concrete implementation of JobCommander
+type jobCommander struct {
 	store Store
 }
 
 // NewJobCommander creates a new command executor
 func NewJobCommander(
 	store Store,
-) *JobCommander {
-	return &JobCommander{
+) *jobCommander {
+	return &jobCommander{
 		store: store,
 	}
 }
 
-// Claim claims a job for an agent
-func (s *JobCommander) Claim(ctx context.Context, agentID UUID, jobID UUID) error {
+func (s *jobCommander) Claim(ctx context.Context, agentID UUID, jobID UUID) error {
+	// Get the agent to retrieve its providerID
+	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
+	if err != nil {
+		return err
+	}
+
 	job, err := s.store.JobRepo().FindByID(ctx, jobID)
 	if err != nil {
 		return err
 	}
+
+	// Get the service and service group to get the broker ID
+	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
+	if err != nil {
+		return err
+	}
+
+	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, svc.GroupID)
+	if err != nil {
+		return err
+	}
+
+	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
+		return err
+	}
+
 	if job.AgentID != agentID {
 		return errors.New("cannot claim a job not assigned to the authenticated agent")
 	}
@@ -157,21 +191,38 @@ func (s *JobCommander) Claim(ctx context.Context, agentID UUID, jobID UUID) erro
 	return s.store.JobRepo().Save(ctx, job)
 }
 
-// Complete marks a job as completed
-func (s *JobCommander) Complete(ctx context.Context, agentID, jobID UUID, resources *JSON, externalID *string) error {
+func (s *jobCommander) Complete(ctx context.Context, agentID, jobID UUID, resources *JSON, externalID *string) error {
+	// Get the agent to retrieve its providerID
+	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
+	if err != nil {
+		return err
+	}
+
 	job, err := s.store.JobRepo().FindByID(ctx, jobID)
 	if err != nil {
 		return err
 	}
+
+	// Get the service and service group to get the broker ID
+	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
+	if err != nil {
+		return err
+	}
+
+	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, svc.GroupID)
+	if err != nil {
+		return err
+	}
+
+	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
+		return err
+	}
+
 	if job.AgentID != agentID {
 		return errors.New("cannot complete a job not assigned to the authenticated agent")
 	}
 	if job.State != JobProcessing {
 		return errors.New("cannot complete a job not in processing state")
-	}
-	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
-	if err != nil {
-		return err
 	}
 	if svc.TargetState == nil {
 		return errors.New("cannot complete a job on service that is not in transition")
@@ -209,21 +260,38 @@ func (s *JobCommander) Complete(ctx context.Context, agentID, jobID UUID, resour
 	})
 }
 
-// Fail marks a job as failed
-func (s *JobCommander) Fail(ctx context.Context, agentID UUID, jobID UUID, errorMessage string) error {
+func (s *jobCommander) Fail(ctx context.Context, agentID UUID, jobID UUID, errorMessage string) error {
+	// Get the agent to retrieve its providerID
+	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
+	if err != nil {
+		return err
+	}
+
 	job, err := s.store.JobRepo().FindByID(ctx, jobID)
 	if err != nil {
 		return err
 	}
+
+	// Get the service and service group to get the broker ID
+	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
+	if err != nil {
+		return err
+	}
+
+	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, svc.GroupID)
+	if err != nil {
+		return err
+	}
+
+	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
+		return err
+	}
+
 	if job.AgentID != agentID {
 		return errors.New("cannot fail a job not assigned to the authenticated agent")
 	}
 	if job.State != JobProcessing {
 		return errors.New("cannot fail a job not in processing state")
-	}
-	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
-	if err != nil {
-		return err
 	}
 	return s.store.Atomic(ctx, func(store Store) error {
 		job.State = JobFailed
@@ -245,6 +313,8 @@ func (s *JobCommander) Fail(ctx context.Context, agentID UUID, jobID UUID, error
 }
 
 type JobRepository interface {
+	JobQuerier
+
 	// Create creates a new job
 	Create(ctx context.Context, job *Job) error
 
@@ -253,20 +323,6 @@ type JobRepository interface {
 
 	// Delete removes a job by ID
 	Delete(ctx context.Context, id UUID) error
-
-	// FindByID retrieves a job by ID
-	FindByID(ctx context.Context, id UUID) (*Job, error)
-
-	// List retrieves a list of jobs based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[Job], error)
-
-	// GetPendingJobsForAgent retrieves pending jobs targeted for a specific agent
-	GetPendingJobsForAgent(ctx context.Context, agentID UUID, limit int) ([]*Job, error)
-
-	// Maintenance operations
-
-	// GetTimeOutJobs retrieves jobs that have been processing for too long and returns them
-	GetTimeOutJobs(ctx context.Context, olderThan time.Duration) ([]*Job, error)
 
 	// DeleteOldCompletedJobs removes completed or failed jobs older than the specified interval
 	DeleteOldCompletedJobs(ctx context.Context, olderThan time.Duration) (int, error)
@@ -281,4 +337,7 @@ type JobQuerier interface {
 
 	// GetPendingJobsForAgent retrieves pending jobs targeted for a specific agent
 	GetPendingJobsForAgent(ctx context.Context, agentID UUID, limit int) ([]*Job, error)
+
+	// GetTimeOutJobs retrieves jobs that have been processing for too long and returns them
+	GetTimeOutJobs(ctx context.Context, olderThan time.Duration) ([]*Job, error)
 }

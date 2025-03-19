@@ -2,12 +2,9 @@ package database
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
 	"fulcrumproject.org/core/internal/domain"
 )
@@ -35,6 +32,7 @@ func NewAgentRepository(db *gorm.DB) *GormAgentRepository {
 			db,
 			applyAgentFilter,
 			applyAgentSort,
+			agentAuthzFilterApplier,
 			[]string{"Provider", "AgentType"}, // Find preload paths
 			[]string{"Provider"},              // List preload paths (only Provider for list operations)
 		),
@@ -42,7 +40,6 @@ func NewAgentRepository(db *gorm.DB) *GormAgentRepository {
 	return repo
 }
 
-// CountByProvider returns the number of agents for a specific provider
 func (r *GormAgentRepository) CountByProvider(ctx context.Context, providerID domain.UUID) (int64, error) {
 	var count int64
 	result := r.db.WithContext(ctx).Model(&domain.Agent{}).Where("provider_id = ?", providerID).Count(&count)
@@ -52,36 +49,26 @@ func (r *GormAgentRepository) CountByProvider(ctx context.Context, providerID do
 	return count, nil
 }
 
-// FindByTokenHash finds an agent by its token hash
-func (r *GormAgentRepository) FindByTokenHash(ctx context.Context, tokenHash string) (*domain.Agent, error) {
-	var agent domain.Agent
-
-	err := r.db.WithContext(ctx).
-		Preload(clause.Associations).
-		Where("token_hash = ?", tokenHash).
-		First(&agent).Error
-
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, domain.NotFoundError{Err: fmt.Errorf("agent with token hash not found")}
-		}
-		return nil, err
-	}
-
-	return &agent, nil
-}
-
-// MarkInactiveAgentsAsDisconnected marks agents that haven't updated their status in the given duration as disconnected
 func (r *GormAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Context, inactiveDuration time.Duration) (int64, error) {
 	cutoffTime := time.Now().Add(-inactiveDuration)
 
 	result := r.db.WithContext(ctx).
 		Model(&domain.Agent{}).
 		Where("state = ?", domain.AgentConnected).
-		Where("last_status_update < ? OR last_status_update IS NULL", cutoffTime).
+		Where("last_state_update < ? OR last_state_update IS NULL", cutoffTime).
 		Updates(map[string]interface{}{
 			"state": domain.AgentDisconnected,
 		})
 
 	return result.RowsAffected, result.Error
+}
+
+// agentAuthzFilterApplier applies authorization scoping to agent queries
+func agentAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
+	if s.ProviderID != nil {
+		return q.Where("provider_id = ?", s.ProviderID)
+	} else if s.AgentID != nil {
+		return q.Where("id = ?", s.AgentID)
+	}
+	return q
 }

@@ -46,7 +46,6 @@ func TestAgentRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, agent.Name, found.Name)
 			assert.Equal(t, agent.State, found.State)
-			assert.Equal(t, agent.TokenHash, found.TokenHash)
 			assert.Equal(t, agent.CountryCode, found.CountryCode)
 			assert.Equal(t, agent.Attributes, found.Attributes)
 			assert.Equal(t, agent.ProviderID, found.ProviderID)

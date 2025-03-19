@@ -2,13 +2,16 @@ package domain
 
 import "context"
 
+// Store provides data access to all repositories and supports transactions.
 type Store interface {
-	// Transactional callback
+	// Atomic executes function in a transaction
 	Atomic(context.Context, func(Store) error) error
 
 	// Repositories
 	AgentTypeRepo() AgentTypeRepository
 	AgentRepo() AgentRepository
+	BrokerRepo() BrokerRepository
+	TokenRepo() TokenRepository
 	ProviderRepo() ProviderRepository
 	ServiceTypeRepo() ServiceTypeRepository
 	ServiceGroupRepo() ServiceGroupRepository

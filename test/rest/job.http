@@ -2,11 +2,12 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
 
 ### Create a provider for testing
 # @name createProvider
 POST {{baseUrl}}/providers
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Provider",
@@ -17,57 +18,64 @@ Content-Type: application/json
     }
 }
 
-### Extract provider ID
 @providerId = {{createProvider.response.body.$.id}}
-
-### Get an agent type for testing
-# @name getAgentTypes
-GET {{baseUrl}}/agent-types
-
-### Extract first agent type ID
-@agentTypeId = {{getAgentTypes.response.body.$.items[0].id}}
 
 ### Create an agent
 # @name createAgent
 POST {{baseUrl}}/agents
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Job Agent",
     "countryCode": "US",
-    "agentTypeId": "{{agentTypeId}}",
+    "agentTypeId": "11111111-1111-1111-1111-111111111111",
     "providerId": "{{providerId}}"
 }
 
-### Extract agent ID
 @agentId = {{createAgent.response.body.$.id}}
 
-### Extract agent token from response
-@agentToken = {{createAgent.response.body.$.token}}
+### Create a new agent token
+# @name createAgentToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
 
-### Get a service type for testing
-# @name getServiceTypes
-GET {{baseUrl}}/service-types
+{
+  "name": "Test Agent Token",
+  "role": "agent",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{agentId}}"
+}
 
-### Extract first service type ID
-@serviceTypeId = {{getServiceTypes.response.body.$.items[0].id}}
+@agentToken = {{createAgentToken.response.body.$.value}}
+
+
+### Create a new broker
+# @name createBroker
+POST {{baseUrl}}/brokers
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Test Broker"
+}
+
+@brokerId = {{createBroker.response.body.$.id}}
 
 ### Create a service group
 # @name createServiceGroup
 POST {{baseUrl}}/service-groups
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
-    "name": "Test Job Service Group"
+    "name": "Test Job Service Group",
+    "brokerId": "{{brokerId}}"
 }
 
-### Extract service group ID
 @serviceGroupId = {{createServiceGroup.response.body.$.id}}
 
 ### Create a service
 # @name createService
 POST {{baseUrl}}/services
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Job Service",
@@ -79,41 +87,42 @@ Content-Type: application/json
         "memory": 12
     },
     "agentId": "{{agentId}}",
-    "serviceTypeId": "{{serviceTypeId}}",
+    "serviceTypeId": "22222222-2222-2222-2222-222222222222",
     "groupId": "{{serviceGroupId}}"
 }
 
-### Extract service ID
 @serviceId = {{createService.response.body.$.id}}
 
 ### List all jobs
 GET {{baseUrl}}/jobs
+Authorization: Bearer {{adminToken}}
 
 ### List jobs with filters
 GET {{baseUrl}}/jobs?state=Pending
+Authorization: Bearer {{adminToken}}
 
 ### List jobs with pagination
 GET {{baseUrl}}/jobs?page=1&pageSize=10
+Authorization: Bearer {{adminToken}}
 
-### Get pending jobs for agent (requires authentication)
+### Get pending jobs for agent
 # @name pendingJobs
 GET {{baseUrl}}/jobs/pending
 Authorization: Bearer {{agentToken}}
 
-### Extract first job ID
 @jobId = {{pendingJobs.response.body.$.[0].id}}
 
 ### Get a job by ID
 GET {{baseUrl}}/jobs/{{jobId}}
+Authorization: Bearer {{adminToken}}
 
-### Claim a job (requires authentication)
+### Claim a job
 POST {{baseUrl}}/jobs/{{jobId}}/claim
 Authorization: Bearer {{agentToken}}
 
-### Complete a job (requires authentication)
+### Complete a job
 POST {{baseUrl}}/jobs/{{jobId}}/complete
 Authorization: Bearer {{agentToken}}
-Content-Type: application/json
 
 {
     "resources": {
@@ -123,32 +132,31 @@ Content-Type: application/json
             "output": "Service started successfully"
         }
     },
-    "externalId": "123"
+    "externalId": "$guid"
 }
 
 ### Get Service
 GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
 
 ### Start the created service to trigger job creation
 POST {{baseUrl}}/services/{{serviceId}}/start
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
-### Get pending jobs for agent (requires authentication)
+### Get pending jobs for agent
 # @name pendingJobs2
 GET {{baseUrl}}/jobs/pending
 Authorization: Bearer {{agentToken}}
 
-### Extract the second job ID
 @failJobId = {{pendingJobs2.response.body.$.[0].id}}
 
 ### Claim the job for failure testing
 POST {{baseUrl}}/jobs/{{failJobId}}/claim
 Authorization: Bearer {{agentToken}}
 
-### Fail a job (requires authentication)
+### Fail a job
 POST {{baseUrl}}/jobs/{{failJobId}}/fail
 Authorization: Bearer {{agentToken}}
-Content-Type: application/json
 
 {
     "errorMessage": "Update failed: dependency missing"
@@ -156,3 +164,4 @@ Content-Type: application/json
 
 ### Check the failed job status
 GET {{baseUrl}}/jobs/{{failJobId}}
+Authorization: Bearer {{adminToken}}

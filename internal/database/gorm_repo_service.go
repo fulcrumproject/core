@@ -14,12 +14,12 @@ type GormServiceRepository struct {
 }
 
 var applyServiceFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"name":         stringInFilterFieldApplier("name"),
-	"currentState": parserInFilterFieldApplier("current_state", domain.ParseServiceState),
+	"name":         stringInFilterFieldApplier("services.name"),
+	"currentState": parserInFilterFieldApplier("services.current_state", domain.ParseServiceState),
 })
 
 var applyServiceSort = mapSortApplier(map[string]string{
-	"name": "name",
+	"name": "services.name",
 })
 
 // NewServiceRepository creates a new instance of ServiceRepository
@@ -29,6 +29,7 @@ func NewServiceRepository(db *gorm.DB) *GormServiceRepository {
 			db,
 			applyServiceFilter,
 			applyServiceSort,
+			serviceAuthzFilterApplier,
 			[]string{"Agent", "ServiceType", "Group"}, // Find preload paths
 			[]string{"Agent", "ServiceType", "Group"}, // List preload paths
 		),
@@ -72,4 +73,15 @@ func (r *GormServiceRepository) FindByExternalID(ctx context.Context, agentID do
 		return nil, result.Error
 	}
 	return &service, nil
+}
+
+func serviceAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
+	if s.ProviderID != nil {
+		return q.Joins("INNER JOIN agents on agents.id = services.agent_id").Where("agents.provider_id", s.ProviderID)
+	} else if s.BrokerID != nil {
+		return q.Joins("INNER JOIN service_groups on service_groups.id = services.group_id").Where("service_groups.broker_id", s.BrokerID)
+	} else if s.AgentID != nil {
+		return q.Where("services.agent_id = ?", s.AgentID)
+	}
+	return q
 }

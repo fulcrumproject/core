@@ -27,6 +27,7 @@ func NewAgentTypeRepository(db *gorm.DB) *GormAgentTypeRepository {
 			db,
 			applyAgentTypeFilter,
 			applyAgentTypeSort,
+			nil,                      // No authz filters
 			[]string{"ServiceTypes"}, // Find preload paths
 			[]string{"ServiceTypes"}, // List preload paths
 		),

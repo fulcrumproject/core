@@ -35,3 +35,19 @@ func (e InvalidInputError) Error() string {
 func (e InvalidInputError) Unwrap() error {
 	return e.Err
 }
+
+type UnauthorizedError struct {
+	Err error
+}
+
+func NewUnauthorizedErrorf(format string, a ...any) UnauthorizedError {
+	return UnauthorizedError{Err: fmt.Errorf(format, a...)}
+}
+
+func (e UnauthorizedError) Error() string {
+	return fmt.Sprintf("unauthorized: %v", e.Err)
+}
+
+func (e UnauthorizedError) Unwrap() error {
+	return e.Err
+}

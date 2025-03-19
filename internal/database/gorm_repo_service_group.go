@@ -27,8 +27,9 @@ func NewServiceGroupRepository(db *gorm.DB) *GormServiceGroupRepository {
 			db,
 			applyServiceGroupFilter,
 			applyServiceGroupSort,
-			[]string{}, // No preload paths needed
-			[]string{}, // No preload paths needed
+			serviceGroupAuthzFilterApplier,
+			[]string{"Broker"}, // Preload broker for FindByID
+			[]string{"Broker"}, // Preload broker for List
 		),
 	}
 	return repo
@@ -45,4 +46,11 @@ func (r *GormServiceGroupRepository) CountByService(ctx context.Context, service
 		return 0, err
 	}
 	return count, nil
+}
+
+func serviceGroupAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
+	if s.BrokerID != nil {
+		return q.Where("broker_id = ?", s.BrokerID)
+	}
+	return q
 }

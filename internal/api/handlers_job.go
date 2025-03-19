@@ -13,13 +13,13 @@ import (
 // JobHandler handles HTTP requests for jobs
 type JobHandler struct {
 	querier   domain.JobQuerier
-	commander *domain.JobCommander
+	commander domain.JobCommander
 }
 
 // NewJobHandler creates a new JobHandler
 func NewJobHandler(
 	querier domain.JobQuerier,
-	commander *domain.JobCommander,
+	commander domain.JobCommander,
 ) *JobHandler {
 	return &JobHandler{
 		querier:   querier,
@@ -28,24 +28,24 @@ func NewJobHandler(
 }
 
 // Routes returns the router for job endpoints
-func (h *JobHandler) Routes(agentAuthMw func(http.Handler) http.Handler) func(r chi.Router) {
+func (h *JobHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
 	return func(r chi.Router) {
 		// Admin routes
-		r.Get("/", h.handleList)
+		r.With(authzMW(domain.SubjectJob, domain.ActionList)).Get("/", h.handleList)
 		r.Group(func(r chi.Router) {
 			r.Use(UUIDMiddleware)
-			r.Get("/{id}", h.handleGet)
+			r.With(authzMW(domain.SubjectJob, domain.ActionRead)).Get("/{id}", h.handleGet)
 		})
-		// Agent authenticated routes
+
+		// Agent job polling route
+		r.With(authzMW(domain.SubjectJob, domain.ActionListPending), AgentAuthMiddleware).Get("/pending", h.handleGetPendingJobs)
+
+		// Agent job action routes - all require agent authentication and UUID validation
 		r.Group(func(r chi.Router) {
-			r.Use(agentAuthMw)
-			r.Get("/pending", h.handleGetPendingJobs) // For agents to poll for jobs
-			r.Group(func(r chi.Router) {
-				r.Use(UUIDMiddleware)
-				r.Post("/{id}/claim", h.handleClaimJob)       // For agents to claim a job
-				r.Post("/{id}/complete", h.handleCompleteJob) // For agents to mark a job as completed
-				r.Post("/{id}/fail", h.handleFailJob)         // For agents to mark a job as failed
-			})
+			r.Use(UUIDMiddleware)
+			r.With(authzMW(domain.SubjectJob, domain.ActionClaim), AgentAuthMiddleware).Post("/{id}/claim", h.handleClaimJob)
+			r.With(authzMW(domain.SubjectJob, domain.ActionComplete), AgentAuthMiddleware).Post("/{id}/complete", h.handleCompleteJob)
+			r.With(authzMW(domain.SubjectJob, domain.ActionFail), AgentAuthMiddleware).Post("/{id}/fail", h.handleFailJob) // For agents to mark a job as failed
 		})
 	}
 }
@@ -67,7 +67,7 @@ func (h *JobHandler) handleList(w http.ResponseWriter, r *http.Request) {
 
 // handleGet handles GET /jobs/{id}
 func (h *JobHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	job, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
@@ -78,12 +78,6 @@ func (h *JobHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 // handleGetPendingJobs handles GET /jobs/pending
 func (h *JobHandler) handleGetPendingJobs(w http.ResponseWriter, r *http.Request) {
-	// Get authenticated agent from context (set by middleware)
-	agent := GetAuthenticatedAgent(r)
-	if agent == nil {
-		render.Render(w, r, ErrUnauthorized())
-		return
-	}
 	// Parse limit parameter
 	limitStr := r.URL.Query().Get("limit")
 	limit := 10 // Default
@@ -93,8 +87,10 @@ func (h *JobHandler) handleGetPendingJobs(w http.ResponseWriter, r *http.Request
 			limit = parsedLimit
 		}
 	}
+	// Get agent ID from context
+	agentID := MustGetAgentID(r)
 	// Get pending jobs for this agent
-	jobs, err := h.querier.GetPendingJobsForAgent(r.Context(), agent.ID, limit)
+	jobs, err := h.querier.GetPendingJobsForAgent(r.Context(), agentID, limit)
 	if err != nil {
 		render.Render(w, r, ErrInternal(err))
 		return
@@ -109,16 +105,12 @@ func (h *JobHandler) handleGetPendingJobs(w http.ResponseWriter, r *http.Request
 
 // handleClaimJob handles POST /jobs/{id}/claim
 func (h *JobHandler) handleClaimJob(w http.ResponseWriter, r *http.Request) {
-	// Get authenticated agent from context (set by middleware)
-	agent := GetAuthenticatedAgent(r)
-	if agent == nil {
-		render.Render(w, r, ErrUnauthorized())
-		return
-	}
+	// Get agent ID from context
+	agentID := MustGetAgentID(r)
 	// Get job ID from URL
-	jobID := GetUUIDParam(r)
+	jobID := MustGetUUIDParam(r)
 	// Claim job for this agent
-	if err := h.commander.Claim(r.Context(), agent.ID, jobID); err != nil {
+	if err := h.commander.Claim(r.Context(), agentID, jobID); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
@@ -127,14 +119,10 @@ func (h *JobHandler) handleClaimJob(w http.ResponseWriter, r *http.Request) {
 
 // handleCompleteJob handles POST /jobs/{id}/complete
 func (h *JobHandler) handleCompleteJob(w http.ResponseWriter, r *http.Request) {
-	// Get authenticated agent from context (set by middleware)
-	agent := GetAuthenticatedAgent(r)
-	if agent == nil {
-		render.Render(w, r, ErrUnauthorized())
-		return
-	}
+	// Get agent ID from context
+	agentID := MustGetAgentID(r)
 	// Get job ID from URL
-	jobID := GetUUIDParam(r)
+	jobID := MustGetUUIDParam(r)
 	// Parse request body
 	var req struct {
 		Resources  *domain.JSON `json:"resources"`
@@ -145,7 +133,7 @@ func (h *JobHandler) handleCompleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Complete the job
-	if err := h.commander.Complete(r.Context(), agent.ID, jobID, req.Resources, req.ExternalID); err != nil {
+	if err := h.commander.Complete(r.Context(), agentID, jobID, req.Resources, req.ExternalID); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
@@ -154,14 +142,10 @@ func (h *JobHandler) handleCompleteJob(w http.ResponseWriter, r *http.Request) {
 
 // handleFailJob handles POST /jobs/{id}/fail
 func (h *JobHandler) handleFailJob(w http.ResponseWriter, r *http.Request) {
-	// Get authenticated agent from context (set by middleware)
-	agent := GetAuthenticatedAgent(r)
-	if agent == nil {
-		render.Render(w, r, ErrUnauthorized())
-		return
-	}
+	// Get agent ID from context
+	agentID := MustGetAgentID(r)
 	// Get job ID from URL
-	jobID := GetUUIDParam(r)
+	jobID := MustGetUUIDParam(r)
 	// Parse request body
 	var p struct {
 		ErrorMessage string `json:"errorMessage"`
@@ -171,7 +155,7 @@ func (h *JobHandler) handleFailJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Fail the job
-	if err := h.commander.Fail(r.Context(), agent.ID, jobID, p.ErrorMessage); err != nil {
+	if err := h.commander.Fail(r.Context(), agentID, jobID, p.ErrorMessage); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}

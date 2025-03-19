@@ -23,12 +23,18 @@ func TestMetricEntryRepository(t *testing.T) {
 	serviceGroupRepo := NewServiceGroupRepository(testDB.DB)
 	serviceRepo := NewServiceRepository(testDB.DB)
 	metricTypeRepo := NewMetricTypeRepository(testDB.DB)
+	brokerRepo := NewBrokerRepository(testDB.DB)
 
 	ctx := context.Background()
 
+	// Create broker first (needed for service group)
+	broker := createTestBroker(t)
+	err := brokerRepo.Create(ctx, broker)
+	require.NoError(t, err)
+
 	// Create test dependencies
 	provider := createTestProvider(t, domain.ProviderEnabled)
-	err := providerRepo.Create(ctx, provider)
+	err = providerRepo.Create(ctx, provider)
 	require.NoError(t, err)
 
 	serviceType := createTestServiceType(t)
@@ -44,7 +50,7 @@ func TestMetricEntryRepository(t *testing.T) {
 	err = agentRepo.Create(ctx, agent)
 	require.NoError(t, err)
 
-	serviceGroup := createTestServiceGroup(t)
+	serviceGroup := createTestServiceGroup(t, broker.ID)
 	err = serviceGroupRepo.Create(ctx, serviceGroup)
 	require.NoError(t, err)
 

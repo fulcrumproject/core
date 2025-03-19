@@ -52,6 +52,9 @@ func main() {
 	// Initialize the store
 	store := database.NewStore(db)
 
+	// Initialize authenticator and authorizer
+	authenticator := database.NewTokenAuthenticator(store)
+
 	// Initialize commanders
 	serviceCmd := domain.NewServiceCommander(store)
 	serviceGroupCmd := domain.NewServiceGroupCommander(store)
@@ -61,6 +64,8 @@ func main() {
 	metricTypeCmd := domain.NewMetricTypeCommander(store)
 	auditEntryCmd := domain.NewAuditEntryCommander(store)
 	agentCmd := domain.NewAgentCommander(store)
+	brokerCmd := domain.NewBrokerCommander(store)
+	tokenCmd := domain.NewTokenCommander(store)
 
 	// Initialize handlers
 	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo())
@@ -73,6 +78,8 @@ func main() {
 	metricTypeHandler := api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd)
 	metricEntryHandler := api.NewMetricEntryHandler(store.MetricEntryRepo(), metricEntryCmd)
 	auditEntryHandler := api.NewAuditEntryHandler(store.AuditEntryRepo(), auditEntryCmd)
+	brokerHandler := api.NewBrokerHandler(store.BrokerRepo(), brokerCmd)
+	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -83,21 +90,25 @@ func main() {
 		middleware.Recoverer,
 		render.SetContentType(render.ContentTypeJSON),
 	)
-	// TODO refactor with global auth
-	agentAuthMiddleware := api.AgentAuthMiddleware(store.AgentRepo())
+
+	// Create auth middleware
+	authz := api.AuthzMiddleware(authenticator, domain.NewDefaultRuleAuthorizer())
 
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Route("/providers", providerHandler.Routes())
-		r.Route("/agent-types", agentTypeHandler.Routes())
-		r.Route("/service-types", serviceTypeHandler.Routes())
-		r.Route("/agents", agentHandler.Routes(agentAuthMiddleware))
-		r.Route("/service-groups", serviceGroupHandler.Routes())
-		r.Route("/services", serviceHandler.Routes())
-		r.Route("/metric-types", metricTypeHandler.Routes())
-		r.Route("/metric-entries", metricEntryHandler.Routes(agentAuthMiddleware))
-		r.Route("/audit-entries", auditEntryHandler.Routes())
-		r.Route("/jobs", jobHandler.Routes(agentAuthMiddleware))
+		// Register API endpoints
+		r.Route("/agent-types", agentTypeHandler.Routes(authz))
+		r.Route("/service-types", serviceTypeHandler.Routes(authz))
+		r.Route("/providers", providerHandler.Routes(authz))
+		r.Route("/agents", agentHandler.Routes(authz))
+		r.Route("/service-groups", serviceGroupHandler.Routes(authz))
+		r.Route("/services", serviceHandler.Routes(authz))
+		r.Route("/metric-types", metricTypeHandler.Routes(authz))
+		r.Route("/metric-entries", metricEntryHandler.Routes(authz))
+		r.Route("/audit-entries", auditEntryHandler.Routes(authz))
+		r.Route("/jobs", jobHandler.Routes(authz))
+		r.Route("/brokers", brokerHandler.Routes(authz))
+		r.Route("/tokens", tokenHandler.Routes(authz))
 	})
 
 	// Setup background job maintenance worker
@@ -127,7 +138,7 @@ func DisconnectUnhealthyAgentsTask(cfg *config.AgentConfig, store domain.Store) 
 	}
 }
 
-func JobMainenanceTask(cfg *config.JobConfig, store domain.Store, serviceCmd *domain.ServiceCommander) {
+func JobMainenanceTask(cfg *config.JobConfig, store domain.Store, serviceCmd domain.ServiceCommander) {
 	ticker := time.NewTicker(cfg.Maintenance)
 	for range ticker.C {
 		ctx := context.Background()

@@ -27,6 +27,7 @@ func NewServiceTypeRepository(db *gorm.DB) *GormServiceTypeRepository {
 			db,
 			applyServiceTypeFilter,
 			applyServiceTypeSort,
+			nil,        // No authz filters
 			[]string{}, // No preload paths needed
 			[]string{}, // No preload paths needed
 		),

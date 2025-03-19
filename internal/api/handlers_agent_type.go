@@ -17,18 +17,19 @@ func NewAgentTypeHandler(repo domain.AgentTypeRepository) *AgentTypeHandler {
 }
 
 // Routes returns the router with all agent type routes registered
-func (h *AgentTypeHandler) Routes() func(r chi.Router) {
+func (h *AgentTypeHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
+		r.With(authzMW(domain.SubjectAgentType, domain.ActionList)).Get("/", h.handleList)
 		r.Group(func(r chi.Router) {
 			r.Use(UUIDMiddleware)
-			r.Get("/{id}", h.handleGet)
+			r.With(authzMW(domain.SubjectAgentType, domain.ActionRead)).Get("/{id}", h.handleGet)
 		})
+
 	}
 }
 
 func (h *AgentTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	agentType, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())

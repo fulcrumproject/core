@@ -5,14 +5,15 @@ import "context"
 // AuditEntry represents an audit log entry
 type AuditEntry struct {
 	BaseEntity
+	// TODO Add Provider, Broker, Agent
 	AuthorityType string `gorm:"not null"`
 	AuthorityID   string `gorm:"not null"`
 	Type          string `gorm:"not null"`
-	Properties    JSON   `gorm:"column:properties;type:jsonb"`
+	Properties    JSON   `gorm:"type:jsonb"`
 }
 
 // TableName returns the table name for the audit entry
-func (*AuditEntry) TableName() string {
+func (AuditEntry) TableName() string {
 	return "audit_entries"
 }
 
@@ -21,22 +22,27 @@ func (p *AuditEntry) Validate() error {
 	return nil
 }
 
-// AuditEntryCommander handles provider operations with validation
-type AuditEntryCommander struct {
+// AuditEntryCommander defines the interface for audit entry command operations
+type AuditEntryCommander interface {
+	// Create creates a new audit entry
+	Create(ctx context.Context, authorityType, authorityID, auditType string, properties JSON) (*AuditEntry, error)
+}
+
+// auditEntryCommander is the concrete implementation of AuditEntryCommander
+type auditEntryCommander struct {
 	store Store
 }
 
 // NewAuditEntryCommander creates a new AuditEntryService
 func NewAuditEntryCommander(
 	store Store,
-) *AuditEntryCommander {
-	return &AuditEntryCommander{
+) *auditEntryCommander {
+	return &auditEntryCommander{
 		store: store,
 	}
 }
 
-// Create creates a new audit-entry with validation
-func (s *AuditEntryCommander) Create(
+func (s *auditEntryCommander) Create(
 	ctx context.Context,
 	authorityType,
 	authorityID,
@@ -59,11 +65,10 @@ func (s *AuditEntryCommander) Create(
 }
 
 type AuditEntryRepository interface {
+	AuditEntryQuerier
+
 	// Create stores a new audit entry
 	Create(ctx context.Context, entry *AuditEntry) error
-
-	// List retrieves a list of audit entries based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[AuditEntry], error)
 }
 
 type AuditEntryQuerier interface {

@@ -11,12 +11,12 @@ import (
 
 type MetricEntryHandler struct {
 	querier   domain.MetricEntryQuerier
-	commander *domain.MetricEntryCommander
+	commander domain.MetricEntryCommander
 }
 
 func NewMetricEntryHandler(
 	querier domain.MetricEntryQuerier,
-	commander *domain.MetricEntryCommander,
+	commander domain.MetricEntryCommander,
 ) *MetricEntryHandler {
 	return &MetricEntryHandler{
 		querier:   querier,
@@ -25,16 +25,10 @@ func NewMetricEntryHandler(
 }
 
 // Routes returns the router with all metric entry routes registered
-func (h *MetricEntryHandler) Routes(agentAuthMw func(http.Handler) http.Handler) func(r chi.Router) {
+func (h *MetricEntryHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Group(func(r chi.Router) {
-			r.Get("/", h.handleList)
-		})
-		// Agent authenticated routes
-		r.Group(func(r chi.Router) {
-			r.Use(agentAuthMw)
-			r.Post("/", h.handleCreate)
-		})
+		r.With(authzMW(domain.SubjectMetricEntry, domain.ActionList)).Get("/", h.handleList)
+		r.With(authzMW(domain.SubjectMetricEntry, domain.ActionCreate), AgentAuthMiddleware).Post("/", h.handleCreate)
 	}
 }
 
@@ -51,19 +45,15 @@ func (h *MetricEntryHandler) handleCreate(w http.ResponseWriter, r *http.Request
 		return
 	}
 	// Get agent ID from the authenticated agent in the context
-	agent := GetAuthenticatedAgent(r)
-	if agent == nil {
-		render.Render(w, r, ErrUnauthorized())
-		return
-	}
+	agentID := MustGetAgentID(r)
 	var (
 		metricEntry *domain.MetricEntry
 		err         error
 	)
 	if p.ServiceID != nil {
-		metricEntry, err = h.commander.Create(r.Context(), p.TypeName, agent.ID, *p.ServiceID, p.ResourceID, p.Value)
+		metricEntry, err = h.commander.Create(r.Context(), p.TypeName, agentID, *p.ServiceID, p.ResourceID, p.Value)
 	} else if p.ExternalID != nil {
-		metricEntry, err = h.commander.CreateWithExternalID(r.Context(), p.TypeName, agent.ID, *p.ExternalID, p.ResourceID, p.Value)
+		metricEntry, err = h.commander.CreateWithExternalID(r.Context(), p.TypeName, agentID, *p.ExternalID, p.ResourceID, p.Value)
 	} else {
 		render.Render(w, r, ErrInvalidRequest(errors.New("at least one of serviceId or externalId must be specified")))
 		return

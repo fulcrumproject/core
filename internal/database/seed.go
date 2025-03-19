@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/google/uuid"
@@ -13,6 +14,7 @@ func Seed(db *gorm.DB) error {
 	agentTypeRepo := NewAgentTypeRepository(db)
 	serviceTypeRepo := NewServiceTypeRepository(db)
 	metricTypeRepo := NewMetricTypeRepository(db)
+	tokenRepo := NewTokenRepository(db)
 
 	ctx := context.Background()
 
@@ -31,10 +33,16 @@ func Seed(db *gorm.DB) error {
 		return err
 	}
 
-	if na > 0 || ns > 0 || nm > 0 {
+	nt, err := tokenRepo.Count(ctx)
+	if err != nil {
+		return err
+	}
+
+	if na > 0 || ns > 0 || nm > 0 || nt > 0 {
 		return nil
 	}
 
+	// Create default entity types
 	// Fixed UUIDs for default types
 	dummyAgentTypeID := domain.UUID(uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	vmServiceTypeID := domain.UUID(uuid.MustParse("22222222-2222-2222-2222-222222222222"))
@@ -74,6 +82,25 @@ func Seed(db *gorm.DB) error {
 		if err := metricTypeRepo.Create(ctx, &metricTypes[i]); err != nil {
 			return err
 		}
+	}
+
+	// Create a default admin token for tests
+	adminTokenID := domain.UUID(uuid.MustParse("33333333-3333-3333-3333-333333333333"))
+	// Use a fixed token value for tests
+	const adminTokenValue = "admin-test-token"
+
+	adminToken := &domain.Token{
+		BaseEntity: domain.BaseEntity{
+			ID: adminTokenID,
+		},
+		Name:        "Admin Test Token",
+		PlainValue:  adminTokenValue,
+		HashedValue: domain.HashTokenValue(adminTokenValue),
+		Role:        domain.RoleFulcrumAdmin,
+		ExpireAt:    time.Now().AddDate(10, 0, 0), // 10 years in the future
+	}
+	if err := tokenRepo.Create(ctx, adminToken); err != nil {
+		return err
 	}
 
 	return nil

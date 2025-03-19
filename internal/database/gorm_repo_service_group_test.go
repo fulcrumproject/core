@@ -15,12 +15,17 @@ func TestServiceGroupRepository(t *testing.T) {
 	defer testDB.Cleanup(t)
 	repo := NewServiceGroupRepository(testDB.DB)
 
+	// Create a test broker to use for service groups
+	brokerRepo := NewBrokerRepository(testDB.DB)
+	broker := createTestBroker(t)
+	require.NoError(t, brokerRepo.Create(context.Background(), broker))
+
 	t.Run("Create", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			serviceGroup := createTestServiceGroup(t)
+			serviceGroup := createTestServiceGroup(t, broker.ID)
 
 			// Execute
 			err := repo.Create(ctx, serviceGroup)
@@ -43,7 +48,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			serviceGroup := createTestServiceGroup(t)
+			serviceGroup := createTestServiceGroup(t, broker.ID)
 			require.NoError(t, repo.Create(ctx, serviceGroup))
 
 			// Execute
@@ -71,9 +76,9 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			group1 := createTestServiceGroup(t)
+			group1 := createTestServiceGroup(t, broker.ID)
 			require.NoError(t, repo.Create(ctx, group1))
-			group2 := createTestServiceGroup(t)
+			group2 := createTestServiceGroup(t, broker.ID)
 			require.NoError(t, repo.Create(ctx, group2))
 
 			page := &domain.PageRequest{
@@ -93,7 +98,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			serviceGroup := createTestServiceGroup(t)
+			serviceGroup := createTestServiceGroup(t, broker.ID)
 			require.NoError(t, repo.Create(ctx, serviceGroup))
 
 			page := &domain.PageRequest{
@@ -115,10 +120,10 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			group1 := createTestServiceGroup(t)
+			group1 := createTestServiceGroup(t, broker.ID)
 			require.NoError(t, repo.Create(ctx, group1))
 
-			group2 := createTestServiceGroup(t)
+			group2 := createTestServiceGroup(t, broker.ID)
 			require.NoError(t, repo.Create(ctx, group2))
 
 			page := &domain.PageRequest{
@@ -146,7 +151,7 @@ func TestServiceGroupRepository(t *testing.T) {
 
 			// Setup - Create multiple service groups
 			for i := 0; i < 5; i++ {
-				group := createTestServiceGroup(t)
+				group := createTestServiceGroup(t, broker.ID)
 				require.NoError(t, repo.Create(ctx, group))
 			}
 
@@ -182,7 +187,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			serviceGroup := createTestServiceGroup(t)
+			serviceGroup := createTestServiceGroup(t, broker.ID)
 			require.NoError(t, repo.Create(ctx, serviceGroup))
 
 			// Update the service group
@@ -206,7 +211,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			serviceGroup := createTestServiceGroup(t)
+			serviceGroup := createTestServiceGroup(t, broker.ID)
 			require.NoError(t, repo.Create(ctx, serviceGroup))
 
 			// Execute

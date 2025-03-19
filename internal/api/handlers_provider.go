@@ -10,12 +10,12 @@ import (
 
 type ProviderHandler struct {
 	querier   domain.ProviderQuerier
-	commander *domain.ProviderCommander
+	commander domain.ProviderCommander
 }
 
 func NewProviderHandler(
 	querier domain.ProviderQuerier,
-	service *domain.ProviderCommander,
+	service domain.ProviderCommander,
 ) *ProviderHandler {
 	return &ProviderHandler{
 		querier:   querier,
@@ -24,15 +24,15 @@ func NewProviderHandler(
 }
 
 // Routes returns the router with all provider routes registered
-func (h *ProviderHandler) Routes() func(r chi.Router) {
+func (h *ProviderHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
-		r.Post("/", h.handleCreate)
+		r.With(authzMW(domain.SubjectProvider, domain.ActionList)).Get("/", h.handleList)
+		r.With(authzMW(domain.SubjectProvider, domain.ActionCreate)).Post("/", h.handleCreate)
 		r.Group(func(r chi.Router) {
 			r.Use(UUIDMiddleware)
-			r.Get("/{id}", h.handleGet)
-			r.Patch("/{id}", h.handleUpdate)
-			r.Delete("/{id}", h.handleDelete)
+			r.With(authzMW(domain.SubjectProvider, domain.ActionRead)).Get("/{id}", h.handleGet)
+			r.With(authzMW(domain.SubjectProvider, domain.ActionUpdate)).Patch("/{id}", h.handleUpdate)
+			r.With(authzMW(domain.SubjectProvider, domain.ActionDelete)).Delete("/{id}", h.handleDelete)
 		})
 	}
 }
@@ -58,7 +58,7 @@ func (h *ProviderHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProviderHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	provider, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
@@ -82,7 +82,7 @@ func (h *ProviderHandler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	var req struct {
 		Name        *string               `json:"name"`
 		State       *domain.ProviderState `json:"state"`
@@ -102,7 +102,7 @@ func (h *ProviderHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProviderHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	if err := h.commander.Delete(r.Context(), id); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return

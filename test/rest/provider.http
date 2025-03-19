@@ -2,11 +2,12 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
 
 ### Create a new provider
 # @name createProvider
 POST {{baseUrl}}/providers
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Provider",
@@ -18,19 +19,19 @@ Content-Type: application/json
     }
 }
 
-### Extract provider ID
-
 @providerId = {{createProvider.response.body.$.id}}
 
 ### Get a provider by ID
 GET {{baseUrl}}/providers/{{providerId}}
+Authorization: Bearer {{adminToken}}
 
 ### List all providers
 GET {{baseUrl}}/providers?name=Provider
+Authorization: Bearer {{adminToken}}
 
 ### Update a provider
 PATCH {{baseUrl}}/providers/{{providerId}}
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Provider Updated",
@@ -44,4 +45,5 @@ Content-Type: application/json
 
 ### Delete a provider
 DELETE {{baseUrl}}/providers/{{providerId}}
+Authorization: Bearer {{adminToken}}
 

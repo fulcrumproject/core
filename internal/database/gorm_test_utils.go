@@ -46,22 +46,22 @@ func createTestAgentWithStatusUpdate(t *testing.T, providerID, agentTypeID domai
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Agent{
-		Name:             fmt.Sprintf("Test Agent %s", randomSuffix),
-		State:            state,
-		TokenHash:        fmt.Sprintf("token-hash-%s", randomSuffix),
-		CountryCode:      "US",
-		Attributes:       domain.Attributes{"key": []string{"value"}},
-		ProviderID:       providerID,
-		AgentTypeID:      agentTypeID,
-		LastStatusUpdate: lastUpdate,
+		Name:            fmt.Sprintf("Test Agent %s", randomSuffix),
+		State:           state,
+		CountryCode:     "US",
+		Attributes:      domain.Attributes{"key": []string{"value"}},
+		ProviderID:      providerID,
+		AgentTypeID:     agentTypeID,
+		LastStateUpdate: lastUpdate,
 	}
 }
 
-func createTestServiceGroup(t *testing.T) *domain.ServiceGroup {
+func createTestServiceGroup(t *testing.T, brokerID domain.UUID) *domain.ServiceGroup {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.ServiceGroup{
-		Name: fmt.Sprintf("Test ServiceGroup %s", randomSuffix),
+		Name:     fmt.Sprintf("Test ServiceGroup %s", randomSuffix),
+		BrokerID: brokerID,
 	}
 }
 
@@ -77,6 +77,41 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID doma
 		CurrentProperties: &(domain.JSON{}),
 		Resources:         &(domain.JSON{}),
 	}
+}
+
+func createTestBroker(t *testing.T) *domain.Broker {
+	t.Helper()
+	randomSuffix := uuid.New().String()
+	return &domain.Broker{
+		Name: fmt.Sprintf("Test Broker %s", randomSuffix),
+	}
+}
+
+func createTestToken(t *testing.T, role domain.AuthRole, scopeID *domain.UUID) *domain.Token {
+	t.Helper()
+	randomSuffix := uuid.New().String()
+	token := &domain.Token{
+		Name:     fmt.Sprintf("Test Token %s", randomSuffix),
+		Role:     role,
+		ExpireAt: time.Now().Add(24 * time.Hour), // Expires in 24 hours
+	}
+
+	// Set the specific scope ID field based on role
+	if scopeID != nil {
+		switch role {
+		case domain.RoleProviderAdmin:
+			token.ProviderID = scopeID
+		case domain.RoleBroker:
+			token.BrokerID = scopeID
+		case domain.RoleAgent:
+			token.AgentID = scopeID
+		}
+	}
+	err := token.GenerateTokenValue()
+	if err != nil {
+		t.Fatalf("Failed to generate token value: %v", err)
+	}
+	return token
 }
 
 // createTestMetricTypeForEntity creates a test metric type for a specific entity type

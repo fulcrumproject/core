@@ -16,6 +16,11 @@ func TestJobRepository(t *testing.T) {
 	defer testDB.Cleanup(t)
 	repo := NewJobRepository(testDB.DB)
 
+	// Create broker first (needed for service group)
+	brokerRepo := NewBrokerRepository(testDB.DB)
+	broker := createTestBroker(t)
+	require.NoError(t, brokerRepo.Create(context.Background(), broker))
+
 	// Create dependencies first
 	providerRepo := NewProviderRepository(testDB.DB)
 	provider := &domain.Provider{
@@ -34,7 +39,6 @@ func TestJobRepository(t *testing.T) {
 	agent := &domain.Agent{
 		Name:        "Test Agent",
 		State:       domain.AgentConnected,
-		TokenHash:   "test-token-hash",
 		ProviderID:  provider.ID,
 		AgentTypeID: agentType.ID,
 	}
@@ -48,7 +52,8 @@ func TestJobRepository(t *testing.T) {
 
 	serviceGroupRepo := NewServiceGroupRepository(testDB.DB)
 	serviceGroup := &domain.ServiceGroup{
-		Name: "Test Service Group",
+		Name:     "Test Service Group",
+		BrokerID: broker.ID,
 	}
 	require.NoError(t, serviceGroupRepo.Create(context.Background(), serviceGroup))
 

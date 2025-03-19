@@ -10,12 +10,12 @@ import (
 
 type AgentHandler struct {
 	querier   domain.AgentQuerier
-	commander *domain.AgentCommander
+	commander domain.AgentCommander
 }
 
 func NewAgentHandler(
 	querier domain.AgentQuerier,
-	commander *domain.AgentCommander,
+	commander domain.AgentCommander,
 ) *AgentHandler {
 	return &AgentHandler{
 		querier:   querier,
@@ -24,23 +24,20 @@ func NewAgentHandler(
 }
 
 // Routes returns the router with all agent routes registered
-func (h *AgentHandler) Routes(agentAuthMw func(http.Handler) http.Handler) func(r chi.Router) {
+func (h *AgentHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
-		r.Post("/", h.handleCreate)
+		r.With(authzMW(domain.SubjectAgent, domain.ActionList)).Get("/", h.handleList)
+		r.With(authzMW(domain.SubjectAgent, domain.ActionCreate)).Post("/", h.handleCreate)
 		r.Group(func(r chi.Router) {
 			r.Use(UUIDMiddleware)
-			r.Get("/{id}", h.handleGet)
-			r.Patch("/{id}", h.handleUpdate)
-			r.Delete("/{id}", h.handleDelete)
-			r.Post("/{id}/rotate-token", h.handleRotateToken)
+			r.With(authzMW(domain.SubjectAgent, domain.ActionRead)).Get("/{id}", h.handleGet)
+			r.With(authzMW(domain.SubjectAgent, domain.ActionUpdate)).Patch("/{id}", h.handleUpdate)
+			r.With(authzMW(domain.SubjectAgent, domain.ActionDelete)).Delete("/{id}", h.handleDelete)
 		})
-		// Agent-authenticated routes TODO remove with global auth
-		r.Group(func(r chi.Router) {
-			r.Use(agentAuthMw)
-			r.Put("/me/status", h.handleUpdateStatus) // Endpoint for agents to update their status
-			r.Get("/me", h.handleGetMe)               // Endpoint for agents to get their own information
-		})
+		r.With(authzMW(domain.SubjectAgent, domain.ActionUpdateState), AgentAuthMiddleware).
+			Put("/me/status", h.handleUpdateStatusMe)
+		r.With(authzMW(domain.SubjectAgent, domain.ActionRead), AgentAuthMiddleware).
+			Get("/me", h.handleGetMe)
 	}
 }
 
@@ -68,20 +65,12 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
-	// Return the agent with the token (one time only)
-	resp := struct {
-		*AgentResponse
-		Token string `json:"token,omitempty"`
-	}{
-		AgentResponse: agentToResponse(agent),
-		Token:         agent.Token,
-	}
-	render.JSON(w, r, resp)
+	render.JSON(w, r, agentToResponse(agent))
 	render.Status(r, http.StatusCreated)
 }
 
 func (h *AgentHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	agent, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
@@ -93,10 +82,10 @@ func (h *AgentHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 // handleGetMe handles GET /agents/me
 // This endpoint allows agents to retrieve their own information
 func (h *AgentHandler) handleGetMe(w http.ResponseWriter, r *http.Request) {
-	// Get authenticated agent from context (set by middleware)
-	agent := GetAuthenticatedAgent(r)
-	if agent == nil {
-		render.Render(w, r, ErrUnauthorized())
+	agentID := MustGetAgentID(r)
+	agent, err := h.querier.FindByID(r.Context(), agentID)
+	if err != nil {
+		render.Render(w, r, ErrNotFound())
 		return
 	}
 	render.JSON(w, r, agentToResponse(agent))
@@ -117,7 +106,7 @@ func (h *AgentHandler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	var p struct {
 		Name        *string             `json:"name"`
 		State       *domain.AgentState  `json:"state"`
@@ -143,8 +132,27 @@ func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, agentToResponse(agent))
 }
 
+// handleUpdateStatusMe handles PUT /agents/me/status
+// This endpoint allows agents to update their own status
+func (h *AgentHandler) handleUpdateStatusMe(w http.ResponseWriter, r *http.Request) {
+	var p struct {
+		State domain.AgentState `json:"state"`
+	}
+	if err := render.Decode(r, &p); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+	agentID := MustGetAgentID(r)
+	agent, err := h.commander.UpdateState(r.Context(), agentID, p.State)
+	if err != nil {
+		render.Render(w, r, ErrDomain(err))
+		return
+	}
+	render.JSON(w, r, agentToResponse(agent))
+}
+
 func (h *AgentHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	_, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
@@ -157,46 +165,11 @@ func (h *AgentHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// handleRotateToken handles POST /agents/{id}/rotate-token
-func (h *AgentHandler) handleRotateToken(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
-	agent, err := h.commander.RotateToken(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-	render.JSON(w, r, agentToResponse(agent))
-}
-
-// handleUpdateStatus handles PUT /agents/me/status
-// This endpoint allows agents to update their own status
-func (h *AgentHandler) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
-	agent := GetAuthenticatedAgent(r)
-	if agent == nil {
-		render.Render(w, r, ErrUnauthorized())
-		return
-	}
-	var p struct {
-		State domain.AgentState `json:"state"`
-	}
-	if err := render.Decode(r, &p); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-	agent, err := h.commander.UpdateState(r.Context(), agent.ID, p.State)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-	render.JSON(w, r, agentToResponse(agent))
-}
-
 // AgentResponse represents the response body for agent operations
 type AgentResponse struct {
 	ID          domain.UUID        `json:"id"`
 	Name        string             `json:"name"`
 	State       domain.AgentState  `json:"state"`
-	Token       string             `json:"token,omitempty"`
 	CountryCode domain.CountryCode `json:"countryCode,omitempty"`
 	Attributes  domain.Attributes  `json:"attributes,omitempty"`
 	ProviderID  domain.UUID        `json:"providerId"`
@@ -213,7 +186,6 @@ func agentToResponse(a *domain.Agent) *AgentResponse {
 		ID:          a.ID,
 		Name:        a.Name,
 		State:       a.State,
-		Token:       a.Token,
 		CountryCode: a.CountryCode,
 		Attributes:  map[string][]string(a.Attributes),
 		ProviderID:  a.ProviderID,

@@ -2,11 +2,12 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
 
 ### Create a provider for testing
 # @name createProvider
 POST {{baseUrl}}/providers
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Service Provider",
@@ -17,63 +18,82 @@ Content-Type: application/json
     }
 }
 
-### Extract provider ID
 @providerId = {{createProvider.response.body.$.id}}
-
-### Get an agent type for testing
-# @name getAgentTypes
-GET {{baseUrl}}/agent-types
-
-### Extract first agent type ID
-@agentTypeId = {{getAgentTypes.response.body.$.items[0].id}}
-
-### Get a service type for testing
-# @name getServiceTypes
-GET {{baseUrl}}/service-types
-
-### Extract first agent type ID
-@serviceTypeId = {{getServiceTypes.response.body.$.items[0].id}}
 
 ### Create an agent
 # @name createAgent
 POST {{baseUrl}}/agents
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Agent",
     "countryCode": "US",
-    "agentTypeId": "{{agentTypeId}}",
+    "agentTypeId": "11111111-1111-1111-1111-111111111111",
     "providerId": "{{providerId}}"
 }
 
-### Extract agent ID
 @agentId = {{createAgent.response.body.$.id}}
 
-### Extract agent token for status update test
-@agentToken = {{createAgent.response.body.$.token}}
+### Create a new agent token
+# @name createAgentToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Test Agent Token",
+  "role": "agent",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{agentId}}"
+}
+
+@agentToken = {{createAgentToken.response.body.$.value}}
 
 ### Get agent's own information via authenticated endpoint
 # @name getAgentMe
 GET {{baseUrl}}/agents/me
-Content-Type: application/json
 Authorization: Bearer {{agentToken}}
+
+### Create a new broker
+# @name createBroker
+POST {{baseUrl}}/brokers
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Test Broker"
+}
+
+@brokerId = {{createBroker.response.body.$.id}}
+
+### Create a new broker token
+# @name createBrokerToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Test Broker Token",
+  "role": "broker",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{brokerId}}"
+}
+
+@brokerToken = {{createBrokerToken.response.body.$.value}}
 
 ### Create a service group
 # @name createServiceGroup
 POST {{baseUrl}}/service-groups
-Content-Type: application/json
+Authorization: Bearer {{brokerToken}}
 
 {
-    "name": "Test Service Group"
+    "name": "Test Service Group",
+    "brokerId": "{{brokerId}}"
 }
 
-### Extract service group ID
 @serviceGroupId = {{createServiceGroup.response.body.$.id}}
 
 ### Create a new service
 # @name createService
 POST {{baseUrl}}/services
-Content-Type: application/json
+Authorization: Bearer {{brokerToken}}
 
 {
     "name": "Test Service",
@@ -85,19 +105,19 @@ Content-Type: application/json
         "memory": 8
     },
     "agentId": "{{agentId}}",
-    "serviceTypeId": "{{serviceTypeId}}",
+    "serviceTypeId": "22222222-2222-2222-2222-222222222222",
     "groupId": "{{serviceGroupId}}"
 }
 
-### Extract service ID
 @serviceId = {{createService.response.body.$.id}}
 
 ### Get a service by ID
 GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
 
-### Update vm memory TODO resources not updated - is it correct?
+### Update name - Should not trigger a job
 PATCH {{baseUrl}}/services/{{serviceId}}
-Content-Type: application/json
+Authorization: Bearer {{brokerToken}}
 
 {
     "name": "Updated Service"
@@ -105,12 +125,12 @@ Content-Type: application/json
 
 ### Start Service
 POST {{baseUrl}}/services/{{serviceId}}/start
-Content-Type: application/json
+Authorization: Bearer {{brokerToken}}
 
 
 ### Hot update vm state
 PATCH {{baseUrl}}/services/{{serviceId}}
-Content-Type: application/json
+Authorization: Bearer {{brokerToken}}
 
 {
     "properties": {
@@ -121,11 +141,11 @@ Content-Type: application/json
 
 ### Stop Service
 POST {{baseUrl}}/services/{{serviceId}}/stop
-Content-Type: application/json
+Authorization: Bearer {{brokerToken}}
 
 ### Cold update vm state
 PATCH {{baseUrl}}/services/{{serviceId}}
-Content-Type: application/json
+Authorization: Bearer {{brokerToken}}
 
 {
     "properties": {
@@ -136,17 +156,21 @@ Content-Type: application/json
 
 ### Retry Service Operation
 POST {{baseUrl}}/services/{{serviceId}}/retry
-Content-Type: application/json
+Authorization: Bearer {{brokerToken}}
 
 ### Delete a service NOT WORKING SEE TODO
 DELETE {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
 
 ### List all services
 GET {{baseUrl}}/services
+Authorization: Bearer {{brokerToken}}
 
 ### List services with filters
-GET {{baseUrl}}/services?name=Test Service
+GET {{baseUrl}}/services?name=Updated Service
+Authorization: Bearer {{brokerToken}}
 
 ### List services with pagination
 GET {{baseUrl}}/services?page=1&pageSize=10
+Authorization: Bearer {{brokerToken}}
 

@@ -9,53 +9,53 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type PageApplier func(q *gorm.DB, r *domain.PageRequest) (*gorm.DB, error)
+type PageFilterApplier func(db *gorm.DB, r *domain.PageRequest) (*gorm.DB, error)
 
-type FilterFieldApplier func(q *gorm.DB, vv []string) (*gorm.DB, error)
+type FilterFieldApplier func(db *gorm.DB, vv []string) (*gorm.DB, error)
 
-func mapFilterApplier(fields map[string]FilterFieldApplier) PageApplier {
-	return func(q *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
+func mapFilterApplier(fields map[string]FilterFieldApplier) PageFilterApplier {
+	return func(db *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
 		if len(r.Filters) == 0 {
-			return q, nil
+			return db, nil
 		}
 
 		var err error
 		for field, values := range r.Filters {
 			applier, exists := fields[field]
 			if !exists {
-				return q, fmt.Errorf("cannot filter by field %s", field)
+				return db, fmt.Errorf("cannot filter by field %s", field)
 			}
-			if q, err = applier(q, values); err != nil {
+			if db, err = applier(db, values); err != nil {
 				return nil, err
 			}
 		}
-		return q, nil
+		return db, nil
 	}
 }
 
-func mapSortApplier(fields map[string]string) PageApplier {
-	return func(q *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
+func mapSortApplier(fields map[string]string) PageFilterApplier {
+	return func(db *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
 		if !r.Sort {
-			return q, nil
+			return db, nil
 		}
 		field, exists := fields[r.SortBy]
 		if !exists {
-			return q, fmt.Errorf("cannot sort by field %s", field)
+			return db, fmt.Errorf("cannot sort by field %s", field)
 		}
-		return q.Order(clause.OrderByColumn{Column: clause.Column{Name: field}, Desc: !r.SortAsc}), nil
+		return db.Order(clause.OrderByColumn{Column: clause.Column{Name: field}, Desc: !r.SortAsc}), nil
 	}
 }
 
-func applyPagination(q *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
+func applyPagination(db *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
 	offset := (r.Page - 1) * r.PageSize
-	q = q.Offset(offset).Limit(r.PageSize)
-	return q, nil
+	db = db.Offset(offset).Limit(r.PageSize)
+	return db, nil
 }
 
 func parserInFilterFieldApplier[T any](f string, t func(string) (T, error)) FilterFieldApplier {
-	return func(q *gorm.DB, vv []string) (*gorm.DB, error) {
+	return func(db *gorm.DB, vv []string) (*gorm.DB, error) {
 		if len(vv) == 0 {
-			return q, nil
+			return db, nil
 		}
 		values := make([]T, len(vv))
 		for _, v := range vv {
@@ -65,7 +65,7 @@ func parserInFilterFieldApplier[T any](f string, t func(string) (T, error)) Filt
 			}
 			values = append(values, value)
 		}
-		return q.Where(fmt.Sprintf("%s IN ?", f), values), nil
+		return db.Where(fmt.Sprintf("%s IN ?", f), values), nil
 	}
 }
 
@@ -78,8 +78,9 @@ func list[T any](
 	ctx context.Context,
 	db *gorm.DB,
 	page *domain.PageRequest,
-	filterApplier PageApplier,
-	sortApplier PageApplier,
+	filterApplier PageFilterApplier,
+	sortApplier PageFilterApplier,
+	authzFilterApplier AuthzFilterApplier,
 	preloadPaths []string,
 ) (*domain.PageResponse[T], error) {
 	var items []T
@@ -92,6 +93,11 @@ func list[T any](
 		var err error
 		if q, err = filterApplier(q, page); err != nil {
 			return nil, err
+		}
+	}
+	if authzFilterApplier != nil {
+		if id := domain.GetAuthIdentity(ctx); id != nil {
+			q = authzFilterApplier(id.Scope(), q)
 		}
 	}
 

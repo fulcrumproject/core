@@ -23,6 +23,10 @@ tags:
     description: Metrics collection and management
   - name: Audit
     description: Audit logging
+  - name: Brokers
+    description: Service broker management
+  - name: Tokens
+    description: Authentication token management
 
 servers:
   - url: http://localhost:3000/api/v1
@@ -36,7 +40,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: token
-      description: Agent authentication using bearer token. This token is generated when an agent is created.
+      description: Agent authentication using bearer token.
 
   schemas:
     PaginationParams:
@@ -86,6 +90,83 @@ components:
       type: object
       additionalProperties: true
       description: A generic JSON object
+
+    # Broker schemas
+    BrokerRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "Test Broker"
+
+    BrokerResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          example: "Test Broker"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Token schemas
+    AuthRole:
+      type: string
+      enum: [fulcrum_admin, provider_admin, broker, agent]
+      description: Access role for the token
+
+    TokenRequest:
+      type: object
+      required:
+        - name
+        - role
+        - expireAt
+      properties:
+        name:
+          type: string
+          example: "API Access Token"
+        role:
+          $ref: "#/components/schemas/AuthRole"
+        expireAt:
+          type: string
+          format: date-time
+          example: "2025-12-31T23:59:59Z"
+        scopeId:
+          $ref: "#/components/schemas/UUID"
+          description: "Required for provider_admin, broker, and agent roles. The ID of the related entity"
+
+    TokenResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          example: "API Access Token"
+        role:
+          $ref: "#/components/schemas/AuthRole"
+        expireAt:
+          type: string
+          format: date-time
+        scopeId:
+          $ref: "#/components/schemas/UUID"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        value:
+          type: string
+          description: "Plain token value. Only returned during token creation or regeneration"
+          example: "eyJhbGciOiJIUzI1NiIsInR5c..."
 
     # Agent schemas
     AgentState:
@@ -152,12 +233,6 @@ components:
     AgentCreateResponse:
       allOf:
         - $ref: "#/components/schemas/AgentResponse"
-        - type: object
-          properties:
-            token:
-              type: string
-              description: "Authentication token for the agent (only provided once at creation)"
-              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
     # Provider schemas
     ProviderState:
@@ -638,6 +713,292 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  #
+  # Broker endpoints
+  #
+  /brokers:
+    get:
+      summary: List brokers
+      tags:
+        - Brokers
+      description: Retrieves a paginated list of brokers
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of brokers
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/BrokerResponse"
+    post:
+      summary: Create a broker
+      tags:
+        - Brokers
+      description: Creates a new broker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrokerRequest"
+      responses:
+        "201":
+          description: Broker created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrokerResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /brokers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    get:
+      summary: Get a broker
+      tags:
+        - Brokers
+      description: Retrieves a specific broker by ID
+      responses:
+        "200":
+          description: The broker details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrokerResponse"
+        "404":
+          description: Broker not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      summary: Update a broker
+      tags:
+        - Brokers
+      description: Updates an existing broker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Updated Broker Name"
+      responses:
+        "200":
+          description: Broker updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrokerResponse"
+        "404":
+          description: Broker not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      summary: Delete a broker
+      tags:
+        - Brokers
+      description: Deletes a broker by ID
+      responses:
+        "204":
+          description: Broker deleted successfully
+        "404":
+          description: Broker not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  #
+  # Token endpoints
+  #
+  /tokens:
+    get:
+      summary: List tokens
+      tags:
+        - Tokens
+      description: Retrieves a paginated list of tokens
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of tokens
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TokenResponse"
+    post:
+      summary: Create a token
+      tags:
+        - Tokens
+      description: Creates a new authentication token. The plain token value is only returned in this response and cannot be retrieved later.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenRequest"
+      responses:
+        "201":
+          description: Token created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tokens/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    get:
+      summary: Get a token
+      tags:
+        - Tokens
+      description: Retrieves a specific token by ID. Note that the plain token value is not returned in this endpoint.
+      responses:
+        "200":
+          description: The token details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "404":
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      summary: Update a token
+      tags:
+        - Tokens
+      description: Updates an existing token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Updated Token Name"
+                role:
+                  $ref: "#/components/schemas/AuthRole"
+                expireAt:
+                  type: string
+                  format: date-time
+                scopeId:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Token updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "404":
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      summary: Delete a token
+      tags:
+        - Tokens
+      description: Deletes a token by ID
+      responses:
+        "204":
+          description: Token deleted successfully
+        "404":
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tokens/{id}/regenerate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    post:
+      summary: Regenerate token value
+      tags:
+        - Tokens
+      description: Regenerates the value for an existing token. The new plain token value is returned in the response and cannot be retrieved later.
+      responses:
+        "200":
+          description: Token value regenerated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "404":
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /providers/{id}:
     parameters:
       - name: id
@@ -818,32 +1179,6 @@ paths:
       responses:
         "204":
           description: Agent deleted successfully
-        "404":
-          description: Agent not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /agents/{id}/rotate-token:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          $ref: "#/components/schemas/UUID"
-    post:
-      summary: Rotate agent token
-      tags:
-        - Agents
-      description: Generates a new authentication token for the agent
-      responses:
-        "200":
-          description: New token generated successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AgentCreateResponse"
         "404":
           description: Agent not found
           content:

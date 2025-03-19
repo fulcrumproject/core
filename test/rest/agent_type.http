@@ -2,13 +2,15 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
 
 ### List all agent types
 # @name listAgentTypes
 GET {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
 
-### Extract first agent type ID
 @agentTypeId = {{listAgentTypes.response.body.items[0].id}}
 
 ### Get an agent type by ID
 GET {{baseUrl}}/agent-types/{{agentTypeId}}
+Authorization: Bearer {{adminToken}}

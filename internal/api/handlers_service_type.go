@@ -17,18 +17,18 @@ func NewServiceTypeHandler(repo domain.ServiceTypeRepository) *ServiceTypeHandle
 }
 
 // Routes returns the router with all service type routes registered
-func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
+func (h *ServiceTypeHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
+		r.With(authzMW(domain.SubjectServiceType, domain.ActionList)).Get("/", h.handleList)
 		r.Group(func(r chi.Router) {
 			r.Use(UUIDMiddleware)
-			r.Get("/{id}", h.handleGet)
+			r.With(authzMW(domain.SubjectServiceType, domain.ActionRead)).Get("/{id}", h.handleGet)
 		})
 	}
 }
 
 func (h *ServiceTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	serviceType, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))

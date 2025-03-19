@@ -8,8 +8,13 @@ import (
 // ServiceGroup represents a group of related services
 type ServiceGroup struct {
 	BaseEntity
-	Name     string    `gorm:"not null"`
+
+	Name string `gorm:"not null"`
+
+	// Relationships
 	Services []Service `gorm:"foreignKey:GroupID"`
+	BrokerID UUID      `gorm:"not null"`
+	Broker   *Broker   `gorm:"foreignKey:BrokerID"`
 }
 
 // Validate checks if the service group is valid
@@ -17,48 +22,77 @@ func (sg *ServiceGroup) Validate() error {
 	if sg.Name == "" {
 		return errors.New("service group name cannot be empty")
 	}
+	if sg.Broker == nil {
+		return errors.New("service group broker cannot be nil")
+	}
 	return nil
 }
 
 // TableName returns the table name for the service
-func (*ServiceGroup) TableName() string {
+func (ServiceGroup) TableName() string {
 	return "service_groups"
 }
 
-// ServiceGroupCommander handles service group operations with validation
-type ServiceGroupCommander struct {
+// ServiceGroupCommander defines the interface for service group command operations
+type ServiceGroupCommander interface {
+	// Create creates a new service group
+	Create(ctx context.Context, name string, brokerID UUID) (*ServiceGroup, error)
+
+	// Update updates an existing service group
+	Update(ctx context.Context, id UUID, name *string) (*ServiceGroup, error)
+
+	// Delete removes a service group by ID after checking for dependencies
+	Delete(ctx context.Context, id UUID) error
+}
+
+// serviceGroupCommander is the concrete implementation of ServiceGroupCommander
+type serviceGroupCommander struct {
 	store Store
 }
 
 // NewServiceGroupCommander creates a new ServiceGroupService
 func NewServiceGroupCommander(
 	store Store,
-) *ServiceGroupCommander {
-	return &ServiceGroupCommander{
+) *serviceGroupCommander {
+	return &serviceGroupCommander{
 		store: store,
 	}
 }
 
-// Create creates a new service group with validation
-func (s *ServiceGroupCommander) Create(ctx context.Context, name string) (*ServiceGroup, error) {
+func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerID UUID) (*ServiceGroup, error) {
+	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &brokerID}); err != nil {
+		return nil, err
+	}
+
+	// Check if broker exists
+	broker, err := s.store.BrokerRepo().FindByID(ctx, brokerID)
+	if err != nil {
+		return nil, NewInvalidInputErrorf("invalid broker: %s", brokerID)
+	}
 	sg := &ServiceGroup{
-		Name: name,
+		Name:     name,
+		BrokerID: brokerID,
+		Broker:   broker,
 	}
 	if err := sg.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.store.ServiceGroupRepo().Create(ctx, sg); err != nil {
+	if err = s.store.ServiceGroupRepo().Create(ctx, sg); err != nil {
 		return nil, err
 	}
 	return sg, nil
 }
 
-// Save updates an existing service group with validation
-func (s *ServiceGroupCommander) Update(ctx context.Context, id UUID, name *string) (*ServiceGroup, error) {
+func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *string) (*ServiceGroup, error) {
 	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+
+	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &sg.BrokerID}); err != nil {
+		return nil, err
+	}
+
 	if name != nil {
 		sg.Name = *name
 	}
@@ -71,12 +105,21 @@ func (s *ServiceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 	return sg, nil
 }
 
-// Delete removes an entity by ID
-func (s *ServiceGroupCommander) Delete(ctx context.Context, id UUID) error {
+func (s *serviceGroupCommander) Delete(ctx context.Context, id UUID) error {
 	_, err := s.store.ServiceGroupRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
+
+	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &sg.BrokerID}); err != nil {
+		return err
+	}
+
 	return s.store.Atomic(ctx, func(store Store) error {
 		numOfServices, err := store.ServiceRepo().CountByGroup(ctx, id)
 		if err != nil {
@@ -91,6 +134,8 @@ func (s *ServiceGroupCommander) Delete(ctx context.Context, id UUID) error {
 
 // ServiceGroupRepository defines the interface for the ServiceGroup repository
 type ServiceGroupRepository interface {
+	ServiceGroupQuerier
+
 	// Create creates a new entity
 	Create(ctx context.Context, entity *ServiceGroup) error
 
@@ -99,12 +144,6 @@ type ServiceGroupRepository interface {
 
 	// Delete removes an entity by ID
 	Delete(ctx context.Context, id UUID) error
-
-	// FindByID retrieves an entity by ID
-	FindByID(ctx context.Context, id UUID) (*ServiceGroup, error)
-
-	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[ServiceGroup], error)
 }
 
 // ServiceGroupRepository defines the interface for the ServiceGroup read-only queries

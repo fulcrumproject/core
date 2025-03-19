@@ -29,6 +29,7 @@ func NewMetricTypeRepository(db *gorm.DB) *GormMetricTypeRepository {
 			db,
 			applyMetricTypeFilter,
 			applyMetricTypeSort,
+			nil,        // No authz filters
 			[]string{}, // No preload paths needed
 			[]string{}, // No preload paths needed
 		),

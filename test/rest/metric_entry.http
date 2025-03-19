@@ -2,11 +2,12 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
 
 ### Create a provider for testing
 # @name createProvider
 POST {{baseUrl}}/providers
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Provider",
@@ -17,58 +18,65 @@ Content-Type: application/json
     }
 }
 
-### Extract provider ID
 @providerId = {{createProvider.response.body.$.id}}
-
-### Get an agent type for testing
-# @name getAgentTypes
-GET {{baseUrl}}/agent-types
-
-### Extract first agent type ID
-@agentTypeId = {{getAgentTypes.response.body.$.items[0].id}}
-
-### Get a service type for testing
-# @name getServiceTypes
-GET {{baseUrl}}/service-types
-
-### Extract first agent type ID
-@serviceTypeId = {{getServiceTypes.response.body.$.items[0].id}}
 
 ### Create an agent
 # @name createAgent
 POST {{baseUrl}}/agents
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Agent",
     "state": "Connected",
     "countryCode": "US",
-    "agentTypeId": "{{agentTypeId}}",
+    "agentTypeId": "11111111-1111-1111-1111-111111111111",
     "providerId": "{{providerId}}"
 }
 
-### Extract agent ID
 @agentId = {{createAgent.response.body.$.id}}
 
-### Extract agent token
-@agentToken = {{createAgent.response.body.$.token}}
+
+### Create a new agent token
+# @name createAgentToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Test Agent Token",
+  "role": "agent",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{agentId}}"
+}
+
+@agentToken = {{createAgentToken.response.body.$.value}}
+
+### Create a new broker
+# @name createBroker
+POST {{baseUrl}}/brokers
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Test Broker"
+}
+
+@brokerId = {{createBroker.response.body.$.id}}
 
 ### Create a service group
 # @name createServiceGroup
 POST {{baseUrl}}/service-groups
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
-    "name": "Test Service Group"
+    "name": "Test Job Service Group",
+    "brokerId": "{{brokerId}}"
 }
 
-### Extract service group ID
 @serviceGroupId = {{createServiceGroup.response.body.$.id}}
 
 ### Create a new service
 # @name createService
 POST {{baseUrl}}/services
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Service",
@@ -78,64 +86,87 @@ Content-Type: application/json
         "region": ["us-west"]
     },
     "agentId": "{{agentId}}",
-    "serviceTypeId": "{{serviceTypeId}}",
+    "serviceTypeId": "22222222-2222-2222-2222-222222222222",
     "groupId": "{{serviceGroupId}}"
 }
 
-### Extract service ID
 @serviceId = {{createService.response.body.$.id}}
+
+### Get pending jobs for agent
+# @name pendingJobs
+GET {{baseUrl}}/jobs/pending
+Authorization: Bearer {{agentToken}}
+
+@jobId = {{pendingJobs.response.body.$.[0].id}}
+
+### Claim a job
+POST {{baseUrl}}/jobs/{{jobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete a job (requires authentication
+# @name completeJob
+POST {{baseUrl}}/jobs/{{jobId}}/complete
+Authorization: Bearer {{agentToken}}
+
+{
+    "resources": {
+        "status": "success",
+        "details": {
+            "duration": "10s",
+            "output": "Service started successfully"
+        }
+    },
+    "externalId": "{{$guid}}"
+}
+
+### Get a service by ID
+# @name getService
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+@externalId = {{getService.response.body.$.externalId}}
 
 ### Create a metric type for testing
 # @name createMetricType
 POST {{baseUrl}}/metric-types
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
-    "name": "test-metric",
+    "name": "test-metric {{$guid}}",
     "entityType": "Service"
 }
 
-### Extract metric type ID
 @metricTypeId = {{createMetricType.response.body.$.id}}
+@metricTypeName = {{createMetricType.response.body.$.name}}
 
 ### Create a new metric entry using typeId
 # @name createMetricEntry
 POST {{baseUrl}}/metric-entries
-Content-Type: application/json
 Authorization: Bearer {{agentToken}}
 
 {
     "serviceId": "{{serviceId}}",
     "resourceId": "test-resource",
     "value": 42.5, 
-    "typeName": "test-metric"
-}
-
-### Create a metric type with a specific name for testing by name
-# @name createNamedMetricType
-POST {{baseUrl}}/metric-types
-Content-Type: application/json
-
-{
-    "name": "cpu-usage",
-    "entityType": "Service"
+    "typeName": "{{metricTypeName}}"
 }
 
 ### Create a new metric entry using typeName instead of typeId
 # @name createMetricEntryByName
 POST {{baseUrl}}/metric-entries
-Content-Type: application/json
 Authorization: Bearer {{agentToken}}
 
 {
-    "serviceId": "{{serviceId}}",
-    "resourceId": "cpu-resource",
+    "externalId": "{{externalId}}",
+    "resourceId": "test-resource",
     "value": 78.2, 
-    "typeName": "cpu-usage"
+    "typeName": "{{metricTypeName}}"
 }
 
 ### List all metric entries
 GET {{baseUrl}}/metric-entries
+Authorization: Bearer {{adminToken}}
 
 ### List metric entries with pagination
 GET {{baseUrl}}/metric-entries?page=1&pageSize=10
+Authorization: Bearer {{adminToken}}

@@ -36,6 +36,8 @@ func NewConnection(config *cfg.DBConfig) (*gorm.DB, error) {
 // autoMigrate performs automatic database migrations
 func autoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
+		&domain.Broker{},
+		&domain.Token{},
 		&domain.Provider{},
 		&domain.Agent{},
 		&domain.AgentType{},

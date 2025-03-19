@@ -27,9 +27,16 @@ func NewAuditEntryRepository(db *gorm.DB) *GormAuditEntryRepository {
 			db,
 			applyAuditEntryFilter,
 			applyAuditEntrySort,
+			auditEntryAuthzFilterApplier,
 			[]string{}, // No preload paths needed
 			[]string{}, // No preload paths needed
 		),
 	}
 	return repo
+}
+
+// auditEntryAuthzFilterApplier applies authorization scoping to audit entry queries
+func auditEntryAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
+	// TODO authz filter
+	return q
 }

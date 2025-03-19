@@ -14,17 +14,17 @@ type GormJobRepository struct {
 }
 
 var applyJobFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"action":    parserInFilterFieldApplier("action", domain.ParseServiceAction),
-	"state":     parserInFilterFieldApplier("state", domain.ParseJobState),
-	"agentId":   parserInFilterFieldApplier("agent_id", domain.ParseUUID),
-	"serviceId": parserInFilterFieldApplier("service_id", domain.ParseUUID),
+	"action":    parserInFilterFieldApplier("jobs.action", domain.ParseServiceAction),
+	"state":     parserInFilterFieldApplier("jobs.state", domain.ParseJobState),
+	"agentId":   parserInFilterFieldApplier("jobs.agent_id", domain.ParseUUID),
+	"serviceId": parserInFilterFieldApplier("jobs.service_id", domain.ParseUUID),
 })
 
 var applyJobSort = mapSortApplier(map[string]string{
-	"priority":    "priority",
-	"createdAt":   "created_at",
-	"claimedAt":   "claimed_at",
-	"completedAt": "completed_at",
+	"priority":    "jobs.priority",
+	"createdAt":   "jobs.created_at",
+	"claimedAt":   "jobs.claimed_at",
+	"completedAt": "jobs.completed_at",
 })
 
 // NewJobRepository creates a new instance of JobRepository
@@ -34,6 +34,7 @@ func NewJobRepository(db *gorm.DB) *GormJobRepository {
 			db,
 			applyJobFilter,
 			applyJobSort,
+			jobAuthzFilterApplier,
 			[]string{"Agent", "Service"}, // Find preload paths
 			[]string{"Agent", "Service"}, // List preload paths - empty for performance reasons
 		),
@@ -83,4 +84,16 @@ func (r *GormJobRepository) DeleteOldCompletedJobs(ctx context.Context, olderTha
 		return 0, result.Error
 	}
 	return int(result.RowsAffected), nil
+}
+
+// jobAuthzFilterApplier applies authorization scoping to job queries
+func jobAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
+	if s.ProviderID != nil {
+		return q.Joins("INNER JOIN agents on agents.id = jobs.agent_id").Where("agents.provider_id", s.ProviderID)
+	} else if s.BrokerID != nil {
+		return q.Joins("INNER JOIN services ON services.id = jobs.service_id INNER JOIN service_groups on service_groups.id = services.group_id").Where("service_groups.broker_id", s.BrokerID)
+	} else if s.AgentID != nil {
+		return q.Where("agent_id = ?", s.AgentID)
+	}
+	return q
 }

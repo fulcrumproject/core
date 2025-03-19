@@ -35,15 +35,20 @@ func ParseProviderState(value string) (ProviderState, error) {
 // Provider represents a cloud service provider
 type Provider struct {
 	BaseEntity
-	Name        string        `gorm:"not null"`
-	State       ProviderState `gorm:"not null"`
-	CountryCode CountryCode   `gorm:"size:2"`
-	Attributes  Attributes    `gorm:"type:jsonb"`
-	Agents      []Agent       `gorm:"foreignKey:ProviderID"`
+
+	Name        string      `gorm:"not null"`
+	CountryCode CountryCode `gorm:"size:2"`
+	Attributes  Attributes  `gorm:"type:jsonb"`
+
+	// State management
+	State ProviderState `gorm:"not null"`
+
+	// Relationships
+	Agents []Agent `gorm:"foreignKey:ProviderID"`
 }
 
 // TableName returns the table name for the provider
-func (*Provider) TableName() string {
+func (Provider) TableName() string {
 	return "providers"
 }
 
@@ -61,22 +66,33 @@ func (p *Provider) Validate() error {
 	return nil
 }
 
-// ProviderCommander handles provider operations with validation
-type ProviderCommander struct {
+// ProviderCommander defines the interface for provider command operations
+type ProviderCommander interface {
+	// Create creates a new provider
+	Create(ctx context.Context, name string, state ProviderState, countryCode CountryCode, attributes Attributes) (*Provider, error)
+
+	// Update updates a provider
+	Update(ctx context.Context, id UUID, name *string, state *ProviderState, countryCode *CountryCode, attributes *Attributes) (*Provider, error)
+
+	// Delete removes a provider by ID after checking for dependencies
+	Delete(ctx context.Context, id UUID) error
+}
+
+// providerCommander is the concrete implementation of ProviderCommander
+type providerCommander struct {
 	store Store
 }
 
 // NewProviderCommander creates a new ProviderService
 func NewProviderCommander(
 	store Store,
-) *ProviderCommander {
-	return &ProviderCommander{
+) *providerCommander {
+	return &providerCommander{
 		store: store,
 	}
 }
 
-// Create creates a new provider with validation
-func (s *ProviderCommander) Create(
+func (s *providerCommander) Create(
 	ctx context.Context,
 	name string,
 	state ProviderState,
@@ -98,14 +114,17 @@ func (s *ProviderCommander) Create(
 	return provider, nil
 }
 
-// Update updates a provider with validation
-func (s *ProviderCommander) Update(ctx context.Context,
+func (s *providerCommander) Update(ctx context.Context,
 	id UUID,
 	name *string,
 	state *ProviderState,
 	countryCode *CountryCode,
 	attributes *Attributes,
 ) (*Provider, error) {
+	if err := ValidateAuthScope(ctx, &AuthScope{ProviderID: &id}); err != nil {
+		return nil, err
+	}
+
 	provider, err := s.store.ProviderRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -132,8 +151,11 @@ func (s *ProviderCommander) Update(ctx context.Context,
 	return provider, nil
 }
 
-// Delete removes a provider by ID after checking for dependencies
-func (s *ProviderCommander) Delete(ctx context.Context, id UUID) error {
+func (s *providerCommander) Delete(ctx context.Context, id UUID) error {
+	if err := ValidateAuthScope(ctx, &AuthScope{ProviderID: &id}); err != nil {
+		return err
+	}
+
 	_, err := s.store.ProviderRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
@@ -146,11 +168,19 @@ func (s *ProviderCommander) Delete(ctx context.Context, id UUID) error {
 		if numOfAgents > 0 {
 			return errors.New("cannot delete provider with associated agents")
 		}
+
+		// Delete all tokens associated with this provider before deleting the provider
+		if err := store.TokenRepo().DeleteByProviderID(ctx, id); err != nil {
+			return err
+		}
+
 		return store.ProviderRepo().Delete(ctx, id)
 	})
 }
 
 type ProviderRepository interface {
+	ProviderQuerier
+
 	// Create creates a new entity
 	Create(ctx context.Context, entity *Provider) error
 
@@ -159,12 +189,6 @@ type ProviderRepository interface {
 
 	// Delete removes an entity by ID
 	Delete(ctx context.Context, id UUID) error
-
-	// FindByID retrieves an entity by ID
-	FindByID(ctx context.Context, id UUID) (*Provider, error)
-
-	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[Provider], error)
 }
 
 type ProviderQuerier interface {

@@ -26,6 +26,9 @@ func ErrDomain(err error) render.Renderer {
 	if errors.As(err, &domain.NotFoundError{}) {
 		return ErrNotFound()
 	}
+	if errors.As(err, &domain.UnauthorizedError{}) {
+		return ErrForbidden(err)
+	}
 	return ErrInternal(err)
 }
 
@@ -62,11 +65,11 @@ func ErrUnauthorized() render.Renderer {
 	}
 }
 
-func ErrForbidden() render.Renderer {
+func ErrForbidden(err error) render.Renderer {
 	return &ErrResponse{
 		HTTPStatusCode: http.StatusForbidden,
 		StatusText:     "Forbidden",
-		ErrorText:      "You don't have permission to access this resource",
+		ErrorText:      err.Error(),
 	}
 }
 

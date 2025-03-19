@@ -2,28 +2,42 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
+
+### Create a new broker
+# @name createBroker
+POST {{baseUrl}}/brokers
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Test Broker For Service Group"
+}
+
+@brokerId = {{createBroker.response.body.$.id}}
 
 ### Create a new service group
 # @name createServiceGroup
 POST {{baseUrl}}/service-groups
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
-    "name": "Database"
+    "name": "Database",
+    "brokerId": "{{brokerId}}"
 }
 
-### Extract service group ID
 @serviceGroupId = {{createServiceGroup.response.body.$.id}}
 
 ### Get a service group by ID
 GET {{baseUrl}}/service-groups/{{serviceGroupId}}
+Authorization: Bearer {{adminToken}}
 
 ### List all service groups
 GET {{baseUrl}}/service-groups?name=Database
+Authorization: Bearer {{adminToken}}
 
 ### Update a service group
 PATCH {{baseUrl}}/service-groups/{{serviceGroupId}}
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Database Services Updated"
@@ -31,3 +45,4 @@ Content-Type: application/json
 
 ### Delete a service group
 DELETE {{baseUrl}}/service-groups/{{serviceGroupId}}
+Authorization: Bearer {{adminToken}}

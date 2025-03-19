@@ -35,7 +35,7 @@ type MetricType struct {
 }
 
 // TableName returns the table name for the metric type
-func (*MetricType) TableName() string {
+func (MetricType) TableName() string {
 	return "metric_types"
 }
 
@@ -47,22 +47,34 @@ func (m *MetricType) Validate() error {
 	return nil
 }
 
-// MetricTypeCommander handles metric-type operations with validation
-type MetricTypeCommander struct {
+// MetricTypeCommander defines the interface for metric type command operations
+type MetricTypeCommander interface {
+	// Create creates a new metric-type
+	Create(ctx context.Context, name string, kind MetricEntityType) (*MetricType, error)
+
+	// Update updates a metric-type
+	Update(ctx context.Context, id UUID, name *string) (*MetricType, error)
+
+	// Delete removes a metric-type by ID after checking for dependencies
+	Delete(ctx context.Context, id UUID) error
+}
+
+// metricTypeCommander is the concrete implementation of MetricTypeCommander
+type metricTypeCommander struct {
 	store Store
 }
 
 // NewMetricTypeCommander creates a new MetricTypeService
 func NewMetricTypeCommander(
 	store Store,
-) *MetricTypeCommander {
-	return &MetricTypeCommander{
+) *metricTypeCommander {
+	return &metricTypeCommander{
 		store: store,
 	}
 }
 
-// Create creates a new metric-type with validation
-func (s *MetricTypeCommander) Create(
+// Create creates a new metric-type
+func (s *metricTypeCommander) Create(
 	ctx context.Context,
 	name string,
 	kind MetricEntityType,
@@ -80,8 +92,8 @@ func (s *MetricTypeCommander) Create(
 	return metricType, nil
 }
 
-// Update updates a metric-type with validation
-func (s *MetricTypeCommander) Update(ctx context.Context,
+// Update updates a metric-type
+func (s *metricTypeCommander) Update(ctx context.Context,
 	id UUID,
 	name *string,
 ) (*MetricType, error) {
@@ -103,7 +115,7 @@ func (s *MetricTypeCommander) Update(ctx context.Context,
 }
 
 // Delete removes a metric-type by ID after checking for dependencies
-func (s *MetricTypeCommander) Delete(ctx context.Context, id UUID) error {
+func (s *metricTypeCommander) Delete(ctx context.Context, id UUID) error {
 	_, err := s.store.MetricTypeRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
@@ -121,6 +133,8 @@ func (s *MetricTypeCommander) Delete(ctx context.Context, id UUID) error {
 }
 
 type MetricTypeRepository interface {
+	MetricTypeQuerier
+
 	// Create creates a new entity
 	Create(ctx context.Context, entity *MetricType) error
 
@@ -129,18 +143,6 @@ type MetricTypeRepository interface {
 
 	// Delete removes an entity by ID
 	Delete(ctx context.Context, id UUID) error
-
-	// FindByID retrieves an entity by ID
-	FindByID(ctx context.Context, id UUID) (*MetricType, error)
-
-	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[MetricType], error)
-
-	// FindByName retrieves a metric type by name
-	FindByName(ctx context.Context, name string) (*MetricType, error)
-
-	// Count returns the number of entities
-	Count(ctx context.Context) (int64, error)
 }
 
 type MetricTypeQuerier interface {

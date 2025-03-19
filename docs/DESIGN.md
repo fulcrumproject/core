@@ -24,7 +24,7 @@ graph TB
     UI[Fulcrum Core UI]
     FA[Fulcrum Administrators]
     CSPA[Cloud Service Provider Administrators]
-    MP[Marketplace/CEM]
+    MP[Service Broker]
     
     %% Cloud Service Providers containing Agents and Services
     subgraph CSP[Cloud Service Providers]
@@ -89,9 +89,9 @@ Cloud Service Provider Administrators manage specific provider instances within 
 - Handle provider-specific authentication and access controls
 - Coordinate with Fulcrum Administrators on cross-provider operations
 
-#### Marketplace Systems
+#### Service Broker
 
-Marketplace Systems are external platforms that can integrate with Fulcrum to automate service provisioning. They:
+Service Broker (eg. Marketplaces) are external platforms that can integrate with Fulcrum to automate service provisioning. They:
 
 - Initiate service creation requests through the Fulcrum API
 - Track provisioning status of requested services

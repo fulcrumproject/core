@@ -28,29 +28,38 @@ type WriteRepository[T any] interface {
 	Delete(ctx context.Context, id domain.UUID) error
 }
 
+type AuthzFilterApplier func(scope *domain.AuthScope, db *gorm.DB) *gorm.DB
+
+type Tabler interface {
+	TableName() string
+}
+
 // GormRepository provides a base implementation of Repository using GORM
-type GormRepository[T any] struct {
-	db               *gorm.DB
-	filterApplier    PageApplier
-	sortApplier      PageApplier
-	findPreloadPaths []string
-	listPreloadPaths []string
+type GormRepository[T Tabler] struct {
+	db                 *gorm.DB
+	filterApplier      PageFilterApplier
+	sortApplier        PageFilterApplier
+	findPreloadPaths   []string
+	listPreloadPaths   []string
+	authzFilterApplier AuthzFilterApplier
 }
 
 // NewGormRepository creates a new instance of GormRepository
-func NewGormRepository[T any](
+func NewGormRepository[T Tabler](
 	db *gorm.DB,
-	filterApplier PageApplier,
-	sortApplier PageApplier,
+	filterApplier PageFilterApplier,
+	sortApplier PageFilterApplier,
+	authzFilterApplier AuthzFilterApplier,
 	findPreloadPaths []string,
 	listPreloadPaths []string,
 ) *GormRepository[T] {
 	return &GormRepository[T]{
-		db:               db,
-		filterApplier:    filterApplier,
-		sortApplier:      sortApplier,
-		findPreloadPaths: findPreloadPaths,
-		listPreloadPaths: listPreloadPaths,
+		db:                 db,
+		filterApplier:      filterApplier,
+		sortApplier:        sortApplier,
+		findPreloadPaths:   findPreloadPaths,
+		listPreloadPaths:   listPreloadPaths,
+		authzFilterApplier: authzFilterApplier,
 	}
 }
 
@@ -80,13 +89,20 @@ func (r *GormRepository[T]) Delete(ctx context.Context, id domain.UUID) error {
 
 func (r *GormRepository[T]) FindByID(ctx context.Context, id domain.UUID) (*T, error) {
 	entity := new(T)
-	query := r.db.WithContext(ctx)
+	entityValue := *entity
+	db := r.db.WithContext(ctx)
 
 	for _, path := range r.findPreloadPaths {
-		query = query.Preload(path)
+		db = db.Preload(path)
 	}
 
-	err := query.First(entity, "id = ?", id).Error
+	if r.authzFilterApplier != nil {
+		if id := domain.GetAuthIdentity(ctx); id != nil {
+			db = r.authzFilterApplier(id.Scope(), db)
+		}
+	}
+
+	err := db.Take(entity, entityValue.TableName()+".id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.NotFoundError{Err: err}
@@ -104,15 +120,22 @@ func (r *GormRepository[T]) List(ctx context.Context, page *domain.PageRequest) 
 		page,
 		r.filterApplier,
 		r.sortApplier,
+		r.authzFilterApplier,
 		r.listPreloadPaths,
 	)
 }
 
 func (r *GormRepository[T]) Count(ctx context.Context) (int64, error) {
 	var count int64
-	query := r.db.WithContext(ctx).Model(new(T))
+	db := r.db.WithContext(ctx).Model(new(T))
 
-	result := query.Count(&count)
+	if r.authzFilterApplier != nil {
+		if id := domain.GetAuthIdentity(ctx); id != nil {
+			db = r.authzFilterApplier(id.Scope(), db)
+		}
+	}
+
+	result := db.Count(&count)
 	if result.Error != nil {
 		return 0, result.Error
 	}

@@ -10,12 +10,12 @@ import (
 
 type MetricTypeHandler struct {
 	querier   domain.MetricTypeQuerier
-	commander *domain.MetricTypeCommander
+	commander domain.MetricTypeCommander
 }
 
 func NewMetricTypeHandler(
 	repo domain.MetricTypeRepository,
-	commander *domain.MetricTypeCommander,
+	commander domain.MetricTypeCommander,
 ) *MetricTypeHandler {
 	return &MetricTypeHandler{
 		querier:   repo,
@@ -24,15 +24,15 @@ func NewMetricTypeHandler(
 }
 
 // Routes returns the router with all metric type routes registered
-func (h *MetricTypeHandler) Routes() func(r chi.Router) {
+func (h *MetricTypeHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
-		r.Post("/", h.handleCreate)
+		r.With(authzMW(domain.SubjectMetricType, domain.ActionList)).Get("/", h.handleList)
+		r.With(authzMW(domain.SubjectMetricType, domain.ActionCreate)).Post("/", h.handleCreate)
 		r.Group(func(r chi.Router) {
 			r.Use(UUIDMiddleware)
-			r.Get("/{id}", h.handleGet)
-			r.Patch("/{id}", h.handleUpdate)
-			r.Delete("/{id}", h.handleDelete)
+			r.With(authzMW(domain.SubjectMetricType, domain.ActionRead)).Get("/{id}", h.handleGet)
+			r.With(authzMW(domain.SubjectMetricType, domain.ActionUpdate)).Patch("/{id}", h.handleUpdate)
+			r.With(authzMW(domain.SubjectMetricType, domain.ActionDelete)).Delete("/{id}", h.handleDelete)
 		})
 	}
 }
@@ -56,7 +56,7 @@ func (h *MetricTypeHandler) handleCreate(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *MetricTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	metricType, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
@@ -80,7 +80,7 @@ func (h *MetricTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MetricTypeHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	var p struct {
 		Name *string `json:"name"`
 	}
@@ -97,7 +97,7 @@ func (h *MetricTypeHandler) handleUpdate(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *MetricTypeHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	_, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())

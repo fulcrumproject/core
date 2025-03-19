@@ -15,6 +15,11 @@ func TestServiceRepository(t *testing.T) {
 	defer testDB.Cleanup(t)
 	repo := NewServiceRepository(testDB.DB)
 
+	// Create broker first (needed for service group)
+	brokerRepo := NewBrokerRepository(testDB.DB)
+	broker := createTestBroker(t)
+	require.NoError(t, brokerRepo.Create(context.Background(), broker))
+
 	// Create provider first
 	providerRepo := NewProviderRepository(testDB.DB)
 	provider := &domain.Provider{
@@ -46,9 +51,7 @@ func TestServiceRepository(t *testing.T) {
 	require.NoError(t, serviceTypeRepo.Create(context.Background(), serviceType))
 
 	serviceGroupRepo := NewServiceGroupRepository(testDB.DB)
-	serviceGroup := &domain.ServiceGroup{
-		Name: "Test Service Group",
-	}
+	serviceGroup := createTestServiceGroup(t, broker.ID)
 	require.NoError(t, serviceGroupRepo.Create(context.Background(), serviceGroup))
 
 	t.Run("Create", func(t *testing.T) {

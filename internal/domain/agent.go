@@ -2,9 +2,6 @@ package domain
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -42,21 +39,24 @@ func ParseAgentState(value string) (AgentState, error) {
 // Agent represents a service manager agent
 type Agent struct {
 	BaseEntity
-	Name             string      `gorm:"not null"`
-	State            AgentState  `gorm:"not null"`
-	TokenHash        string      `gorm:"not null"`
-	Token            string      `gorm:"-"`
-	CountryCode      CountryCode `gorm:"size:2"`
-	Attributes       Attributes  `gorm:"type:jsonb"`
-	ProviderID       UUID        `gorm:"not null"`
-	AgentTypeID      UUID        `gorm:"not null"`
-	Provider         *Provider   `gorm:"foreignKey:ProviderID"`
-	AgentType        *AgentType  `gorm:"foreignKey:AgentTypeID"`
-	LastStatusUpdate time.Time   `gorm:"index"`
+
+	Name        string      `gorm:"not null"`
+	Attributes  Attributes  `gorm:"type:jsonb"`
+	CountryCode CountryCode `gorm:"size:2"`
+
+	// State management
+	State           AgentState `gorm:"not null"`
+	LastStateUpdate time.Time  `gorm:"index"`
+
+	// Relationships
+	AgentTypeID UUID       `gorm:"not null"`
+	AgentType   *AgentType `gorm:"foreignKey:AgentTypeID"`
+	ProviderID  UUID       `gorm:"not null"`
+	Provider    *Provider  `gorm:"foreignKey:ProviderID"`
 }
 
 // TableName returns the table name for the agent
-func (*Agent) TableName() string {
+func (Agent) TableName() string {
 	return "agents"
 }
 
@@ -68,50 +68,36 @@ func (a *Agent) Validate() error {
 	return nil
 }
 
-// GenerateToken creates a secure random token and sets the TokenHash field
-func (a *Agent) GenerateToken() (string, error) {
-	// Generate a secure random token (32 bytes = 256 bits)
-	tokenBytes := make([]byte, 32)
-	if _, err := rand.Read(tokenBytes); err != nil {
-		return "", fmt.Errorf("failed to generate token: %w", err)
-	}
+// AgentCommander defines the interface for agent command operations
+type AgentCommander interface {
+	// Create creates a new agent
+	Create(ctx context.Context, name string, countryCode CountryCode, attributes Attributes, providerID UUID, agentTypeID UUID) (*Agent, error)
 
-	// Convert to base64 for readability
-	a.Token = base64.URLEncoding.EncodeToString(tokenBytes)
+	// Update updates an agent
+	Update(ctx context.Context, id UUID, name *string, countryCode *CountryCode, attributes *Attributes, state *AgentState) (*Agent, error)
 
-	// Store only the hash of the token
-	a.TokenHash = HashToken(a.Token)
+	// Delete removes an agent by ID after checking for dependencies
+	Delete(ctx context.Context, id UUID) error
 
-	return a.Token, nil
+	// UpdateState updates the agent state and the related timestamp
+	UpdateState(ctx context.Context, id UUID, state AgentState) (*Agent, error)
 }
 
-// VerifyToken checks if a token matches the stored hash
-func (a *Agent) VerifyToken(token string) bool {
-	return a.TokenHash == HashToken(token)
-}
-
-// HashToken creates a secure hash of a token
-func HashToken(token string) string {
-	hash := sha256.Sum256([]byte(token))
-	return base64.StdEncoding.EncodeToString(hash[:])
-}
-
-// AgentCommander handles agent operations with validation
-type AgentCommander struct {
+// agentCommander is the concrete implementation of AgentCommander
+type agentCommander struct {
 	store Store
 }
 
-// NewAgentCommander creates a new AgentService
+// NewAgentCommander creates a new default AgentCommander
 func NewAgentCommander(
 	store Store,
-) *AgentCommander {
-	return &AgentCommander{
+) *agentCommander {
+	return &agentCommander{
 		store: store,
 	}
 }
 
-// Create creates a new agent with validation
-func (s *AgentCommander) Create(
+func (s *agentCommander) Create(
 	ctx context.Context,
 	name string,
 	countryCode CountryCode,
@@ -119,6 +105,10 @@ func (s *AgentCommander) Create(
 	providerID UUID,
 	agentTypeID UUID,
 ) (*Agent, error) {
+	if err := ValidateAuthScope(ctx, &AuthScope{ProviderID: &providerID}); err != nil {
+		return nil, err
+	}
+
 	agent := &Agent{
 		Name:        name,
 		State:       AgentDisconnected,
@@ -126,10 +116,6 @@ func (s *AgentCommander) Create(
 		Attributes:  attributes,
 		ProviderID:  providerID,
 		AgentTypeID: agentTypeID,
-	}
-	_, err := agent.GenerateToken()
-	if err != nil {
-		return nil, err
 	}
 	if err := agent.Validate(); err != nil {
 		return nil, err
@@ -140,8 +126,7 @@ func (s *AgentCommander) Create(
 	return agent, nil
 }
 
-// Update updates a agent with validation
-func (s *AgentCommander) Update(ctx context.Context,
+func (s *agentCommander) Update(ctx context.Context,
 	id UUID,
 	name *string,
 	countryCode *CountryCode,
@@ -152,6 +137,11 @@ func (s *AgentCommander) Update(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+
+	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &id, ProviderID: &agent.ProviderID}); err != nil {
+		return nil, err
+	}
+
 	if name != nil {
 		agent.Name = *name
 	}
@@ -174,13 +164,18 @@ func (s *AgentCommander) Update(ctx context.Context,
 	return agent, nil
 }
 
-// Delete removes a agent by ID after checking for dependencies
-func (s *AgentCommander) Delete(ctx context.Context, id UUID) error {
-	_, err := s.store.AgentRepo().FindByID(ctx, id)
+func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
+	agent, err := s.store.AgentRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
+
+	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &id, ProviderID: &agent.ProviderID}); err != nil {
+		return err
+	}
+
 	return s.store.Atomic(ctx, func(store Store) error {
+		// Prevent deletion if it has services present
 		numOfServices, err := store.ServiceRepo().CountByAgent(ctx, id)
 		if err != nil {
 			return err
@@ -188,38 +183,28 @@ func (s *AgentCommander) Delete(ctx context.Context, id UUID) error {
 		if numOfServices > 0 {
 			return errors.New("cannot delete agent with associated services")
 		}
+
+		// Delete all tokens associated with this agent before deleting the agent
+		if err := store.TokenRepo().DeleteByAgentID(ctx, id); err != nil {
+			return err
+		}
+
 		return store.AgentRepo().Delete(ctx, id)
 	})
 }
 
-// RotateToken regenerates the auth token
-func (s *AgentCommander) RotateToken(ctx context.Context, id UUID) (*Agent, error) {
+func (s *agentCommander) UpdateState(ctx context.Context, id UUID, state AgentState) (*Agent, error) {
 	agent, err := s.store.AgentRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	_, err = agent.GenerateToken()
-	if err != nil {
-		return nil, err
-	}
-	if err := agent.Validate(); err != nil {
-		return nil, err
-	}
-	err = s.store.AgentRepo().Save(ctx, agent)
-	if err != nil {
-		return nil, err
-	}
-	return agent, nil
-}
 
-// UpdateState updates the agent state and the related timestamp
-func (s *AgentCommander) UpdateState(ctx context.Context, id UUID, state AgentState) (*Agent, error) {
-	agent, err := s.store.AgentRepo().FindByID(ctx, id)
-	if err != nil {
+	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &id, ProviderID: &agent.ProviderID}); err != nil {
 		return nil, err
 	}
+
 	agent.State = state
-	agent.LastStatusUpdate = time.Now()
+	agent.LastStateUpdate = time.Now()
 	if err := agent.Validate(); err != nil {
 		return nil, err
 	}
@@ -231,6 +216,8 @@ func (s *AgentCommander) UpdateState(ctx context.Context, id UUID, state AgentSt
 }
 
 type AgentRepository interface {
+	AgentQuerier
+
 	// Create creates a new entity
 	Create(ctx context.Context, entity *Agent) error
 
@@ -239,18 +226,6 @@ type AgentRepository interface {
 
 	// Delete removes an entity by ID
 	Delete(ctx context.Context, id UUID) error
-
-	// FindByID retrieves an entity by ID
-	FindByID(ctx context.Context, id UUID) (*Agent, error)
-
-	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[Agent], error)
-
-	// CountByProvider returns the number of agents for a specific provider
-	CountByProvider(ctx context.Context, providerID UUID) (int64, error)
-
-	// FindByTokenHash finds an agent by its token hash
-	FindByTokenHash(ctx context.Context, tokenHash string) (*Agent, error)
 
 	// MarkInactiveAgentsAsDisconnected marks agents that haven't updated their status in the given duration as disconnected
 	MarkInactiveAgentsAsDisconnected(ctx context.Context, inactiveDuration time.Duration) (int64, error)
@@ -265,10 +240,4 @@ type AgentQuerier interface {
 
 	// CountByProvider returns the number of agents for a specific provider
 	CountByProvider(ctx context.Context, providerID UUID) (int64, error)
-
-	// FindByTokenHash finds an agent by its token hash
-	FindByTokenHash(ctx context.Context, tokenHash string) (*Agent, error)
-
-	// MarkInactiveAgentsAsDisconnected marks agents that haven't updated their status in the given duration as disconnected
-	MarkInactiveAgentsAsDisconnected(ctx context.Context, inactiveDuration time.Duration) (int64, error)
 }

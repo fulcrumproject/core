@@ -27,6 +27,7 @@ func NewProviderRepository(db *gorm.DB) *GormProviderRepository {
 			db,
 			applyProviderFilter,
 			applyProviderSort,
+			nil,        // No authz filters
 			[]string{}, // No preload paths needed
 			[]string{}, // No preload paths needed
 		),

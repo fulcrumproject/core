@@ -2,11 +2,12 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
 
 ### Create a provider for testing
 # @name createProvider
 POST {{baseUrl}}/providers
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Agent Provider",
@@ -17,20 +18,12 @@ Content-Type: application/json
     }
 }
 
-### Extract provider ID
 @providerId = {{createProvider.response.body.$.id}}
-
-### Get an agent type for testing
-# @name getAgentTypes
-GET {{baseUrl}}/agent-types
-
-### Extract first agent type ID
-@agentTypeId = {{getAgentTypes.response.body.$.items[0].id}}
 
 ### Create a new agent
 # @name createAgent
 POST {{baseUrl}}/agents
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Agent",
@@ -40,26 +33,32 @@ Content-Type: application/json
         "version": ["1.0.0"]
     },
     "providerId": "{{providerId}}",
-    "agentTypeId": "{{agentTypeId}}"
+    "agentTypeId": "11111111-1111-1111-1111-111111111111"
 }
 
-### Extract agent ID
 @agentId = {{createAgent.response.body.$.id}}
 
-### Extract agent token for status update test
-@agentToken = {{createAgent.response.body.$.token}}
+### Create a new agent token
+# @name createToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Test Agent Token",
+  "role": "agent",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{agentId}}"
+}
+
+@agentToken = {{createToken.response.body.$.value}}
 
 ### Get agent's own information via authenticated endpoint
 # @name getAgentMe
 GET {{baseUrl}}/agents/me
-Content-Type: application/json
 Authorization: Bearer {{agentToken}}
 
-
 ### Update agent status via authenticated endpoint
-# @name updateAgentStatus
 PUT {{baseUrl}}/agents/me/status
-Content-Type: application/json
 Authorization: Bearer {{agentToken}}
 
 {
@@ -68,19 +67,27 @@ Authorization: Bearer {{agentToken}}
 
 ### Get an agent by ID
 GET {{baseUrl}}/agents/{{agentId}}
+Authorization: Bearer {{agentToken}}
+
+### Get an agent by ID
+GET {{baseUrl}}/agents/{{agentId}}
+Authorization: Bearer {{adminToken}}
 
 ### List all agents
 GET {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
 
 ### List agents with filters
 GET {{baseUrl}}/agents?state=Connected&countryCode=US
+Authorization: Bearer {{adminToken}}
 
 ### List agents for specific provider
 GET {{baseUrl}}/agents?providerId={{providerId}}
+Authorization: Bearer {{adminToken}}
 
 ### Update an agent
 PATCH {{baseUrl}}/agents/{{agentId}}
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Agent Updated",
@@ -92,17 +99,23 @@ Content-Type: application/json
     }
 }
 
-### Rotate agent token
-# @name rotateAgentToken
-POST {{baseUrl}}/agents/{{agentId}}/rotate-token
-Content-Type: application/json
+### Create a new token for the agent
+# @name createNewToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "New Agent Token",
+  "role": "agent",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{agentId}}"
+}
 
 ### Extract new token
-@newAgentToken = {{rotateAgentToken.response.body.$.token}}
+@newAgentToken = {{createNewToken.response.body.$.value}}
 
-### Test new token by updating status with rotated token
+### Test new token by updating status with new token
 PUT {{baseUrl}}/agents/me/status
-Content-Type: application/json
 Authorization: Bearer {{newAgentToken}}
 
 {
@@ -113,6 +126,6 @@ Authorization: Bearer {{newAgentToken}}
 GET {{baseUrl}}/agents/me
 Authorization: Bearer {{newAgentToken}}
 
-
 ### Delete an agent
 DELETE {{baseUrl}}/agents/{{agentId}}
+Authorization: Bearer {{adminToken}}

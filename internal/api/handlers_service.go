@@ -10,12 +10,12 @@ import (
 
 type ServiceHandler struct {
 	querier   domain.ServiceQuerier
-	commander *domain.ServiceCommander
+	commander domain.ServiceCommander
 }
 
 func NewServiceHandler(
 	querier domain.ServiceQuerier,
-	commander *domain.ServiceCommander,
+	commander domain.ServiceCommander,
 ) *ServiceHandler {
 	return &ServiceHandler{
 		querier:   querier,
@@ -24,18 +24,18 @@ func NewServiceHandler(
 }
 
 // Routes returns the router with all service routes registered
-func (h *ServiceHandler) Routes() func(r chi.Router) {
+func (h *ServiceHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
-		r.Post("/", h.handleCreate)
+		r.With(authzMW(domain.SubjectService, domain.ActionList)).Get("/", h.handleList)
+		r.With(authzMW(domain.SubjectService, domain.ActionCreate)).Post("/", h.handleCreate)
 		r.Group(func(r chi.Router) {
 			r.Use(UUIDMiddleware)
-			r.Get("/{id}", h.handleGet)
-			r.Patch("/{id}", h.handleUpdate)
-			r.Post("/{id}/start", h.handleStart)
-			r.Post("/{id}/stop", h.handleStop)
-			r.Delete("/{id}", h.handleDelete)
-			r.Post("/{id}/retry", h.handleRetry)
+			r.With(authzMW(domain.SubjectService, domain.ActionRead)).Get("/{id}", h.handleGet)
+			r.With(authzMW(domain.SubjectService, domain.ActionUpdate)).Patch("/{id}", h.handleUpdate)
+			r.With(authzMW(domain.SubjectService, domain.ActionStart)).Post("/{id}/start", h.handleStart)
+			r.With(authzMW(domain.SubjectService, domain.ActionStop)).Post("/{id}/stop", h.handleStop)
+			r.With(authzMW(domain.SubjectService, domain.ActionDelete)).Delete("/{id}", h.handleDelete)
+			r.With(authzMW(domain.SubjectService, domain.ActionUpdate)).Post("/{id}/retry", h.handleRetry)
 		})
 	}
 }
@@ -71,7 +71,7 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServiceHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	service, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -95,7 +95,7 @@ func (h *ServiceHandler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServiceHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	var p struct {
 		Name       *string              `json:"name"`
 		State      *domain.ServiceState `json:"state"`
@@ -131,7 +131,7 @@ func (h *ServiceHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServiceHandler) handleTransition(w http.ResponseWriter, r *http.Request, t domain.ServiceState) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	if _, err := h.commander.Transition(r.Context(), id, t); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -140,7 +140,7 @@ func (h *ServiceHandler) handleTransition(w http.ResponseWriter, r *http.Request
 }
 
 func (h *ServiceHandler) handleRetry(w http.ResponseWriter, r *http.Request) {
-	id := GetUUIDParam(r)
+	id := MustGetUUIDParam(r)
 	if _, err := h.commander.Retry(r.Context(), id); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return

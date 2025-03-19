@@ -2,11 +2,12 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
 
 ### Create a new audit entry for an agent status change
 # @name createAgentAuditEntry
 POST {{baseUrl}}/audit-entries
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "authorityType": "agent",
@@ -22,7 +23,7 @@ Content-Type: application/json
 ### Create a new audit entry for a service configuration update
 # @name createServiceAuditEntry
 POST {{baseUrl}}/audit-entries
-Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
     "authorityType": "service",
@@ -39,15 +40,20 @@ Content-Type: application/json
 
 ### List all audit entries
 GET {{baseUrl}}/audit-entries
+Authorization: Bearer {{adminToken}}
 
 ### List audit entries with pagination
 GET {{baseUrl}}/audit-entries?page=1&pageSize=10
+Authorization: Bearer {{adminToken}}
 
 ### List audit entries filtered by authority type
 GET {{baseUrl}}/audit-entries?authorityType=agent
+Authorization: Bearer {{adminToken}}
 
 ### List audit entries filtered by type
 GET {{baseUrl}}/audit-entries?type=config_update
+Authorization: Bearer {{adminToken}}
 
 ### List audit entries with sorting
 GET {{baseUrl}}/audit-entries?sort=-createdAt
+Authorization: Bearer {{adminToken}}

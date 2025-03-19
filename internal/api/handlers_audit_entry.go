@@ -10,12 +10,12 @@ import (
 
 type AuditEntryHandler struct {
 	querier   domain.AuditEntryQuerier
-	commander *domain.AuditEntryCommander
+	commander domain.AuditEntryCommander
 }
 
 func NewAuditEntryHandler(
 	querier domain.AuditEntryRepository,
-	commander *domain.AuditEntryCommander,
+	commander domain.AuditEntryCommander,
 
 ) *AuditEntryHandler {
 	return &AuditEntryHandler{
@@ -25,10 +25,10 @@ func NewAuditEntryHandler(
 }
 
 // Routes returns the router with all audit entry routes registered
-func (h *AuditEntryHandler) Routes() func(r chi.Router) {
+func (h *AuditEntryHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
-		r.Post("/", h.handleCreate)
+		r.With(authzMW(domain.SubjectAuditEntry, domain.ActionList)).Get("/", h.handleList)
+		r.With(authzMW(domain.SubjectAuditEntry, domain.ActionCreate)).Post("/", h.handleCreate)
 	}
 }
 

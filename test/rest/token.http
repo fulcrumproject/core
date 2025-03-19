@@ -1,0 +1,101 @@
+# Token API Tests
+
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
+
+### List all tokens
+GET {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+
+### Create a new admin token
+# @name createAdminToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Test Admin Token",
+  "role": "fulcrum_admin",
+  "expireAt": "{{$datetime iso8601 1 y}}"
+}
+
+@adminTokenId = {{createAdminToken.response.body.$.id}}
+@adminTokenNew = {{createAdminToken.response.body.$.value}}
+
+### Get Token
+GET {{baseUrl}}/tokens/{{adminTokenId}}
+Authorization: Bearer {{adminTokenNew}}
+
+### Create a new provider
+# @name createProvider
+POST {{baseUrl}}/providers
+Authorization: Bearer {{adminTokenNew}}
+
+{
+    "name": "Provider",
+    "state": "Enabled",
+    "countryCode": "US",
+    "attributes": {
+        "regions": ["us-east-1", "us-west-2"],
+        "tier": ["enterprise"]
+    }
+}
+
+@providerId = {{createProvider.response.body.$.id}}
+
+### Create a new provider token
+# @name createProviderToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminTokenNew}}
+
+{
+  "name": "Test Provider Token",
+  "role": "provider_admin",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{providerId}}"
+}
+
+@providerTokenId = {{createProviderToken.response.body.$.id}}
+@providerToken = {{createProviderToken.response.body.$.value}}
+
+### Get Provider
+GET {{baseUrl}}/providers/{{providerId}}
+Authorization: Bearer {{providerToken}}
+
+### Create a new provider
+# @name createProvider2
+POST {{baseUrl}}/providers
+Authorization: Bearer {{adminTokenNew}}
+
+{
+    "name": "Provider 2",
+    "state": "Enabled",
+    "countryCode": "US",
+    "attributes": {
+        "regions": ["us-east-1", "us-west-2"],
+        "tier": ["enterprise"]
+    }
+}
+
+@providerId2 = {{createProvider2.response.body.$.id}}
+
+### Create a new provider token MUST FAIL
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{providerToken}}
+
+{
+  "name": "Test Provider Token",
+  "role": "provider_admin",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{providerId2}}"
+}
+
+### Create a new provider token
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{providerToken}}
+
+{
+  "name": "Test Provider Token",
+  "role": "provider_admin",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{providerId}}"
+}

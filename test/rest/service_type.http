@@ -2,13 +2,15 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
 
 ### List all service types
 # @name listServiceTypes
 GET {{baseUrl}}/service-types
+Authorization: Bearer {{adminToken}}
 
-### Extract first service type ID
 @serviceTypeId = {{listServiceTypes.response.body.items[0].id}}
 
 ### Get a service type by ID
 GET {{baseUrl}}/service-types/{{serviceTypeId}}
+Authorization: Bearer {{adminToken}}
