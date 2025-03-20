@@ -2,7 +2,7 @@ package api
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -19,7 +19,7 @@ type ErrResponse struct {
 }
 
 func ErrDomain(err error) render.Renderer {
-	log.Printf("API domain error %v", err)
+	slog.Error("API domain error", "error", err)
 	if errors.As(err, &domain.InvalidInputError{}) {
 		return ErrInvalidRequest(err)
 	}

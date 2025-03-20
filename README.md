@@ -36,6 +36,9 @@ FULCRUM_DB_SSL_MODE=disable
 
 # Server Configuration
 FULCRUM_PORT=3000
+
+# Logging Configuration
+FULCRUM_LOG_FORMAT=text    # Options: text, json
 ```
 
 ### Running with Docker

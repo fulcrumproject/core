@@ -4,8 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -16,6 +17,7 @@ import (
 	"fulcrumproject.org/core/internal/config"
 	"fulcrumproject.org/core/internal/database"
 	"fulcrumproject.org/core/internal/domain"
+	"fulcrumproject.org/core/internal/logging"
 )
 
 func main() {
@@ -30,23 +32,31 @@ func main() {
 		// Load from file if specified
 		cfg, err = config.LoadFromFile(*configPath)
 		if err != nil {
-			log.Fatalf("Failed to load configuration from file: %v", err)
+			fmt.Printf("Failed to load configuration from file: %v\n", err)
+			os.Exit(1)
 		}
-		log.Printf("Loaded configuration from %s", *configPath)
+		fmt.Printf("Loaded configuration from %s\n", *configPath)
 	}
 	// Override with environment variables
 	if err := cfg.LoadFromEnv(); err != nil {
-		log.Fatalf("Failed to load configuration from environment: %v", err)
+		fmt.Printf("Failed to load configuration from environment: %v\n", err)
+		os.Exit(1)
 	}
+
+	// Setup structured logger
+	logger := logging.NewLogger(cfg)
+	slog.SetDefault(logger)
 
 	// Initialize database
 	db, err := database.NewConnection(&cfg.DBConfig)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		slog.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
 	}
 	// Seed with basic data if empty
 	if err := database.Seed(db); err != nil {
-		log.Fatalf("Failed to seed the database: %v", err)
+		slog.Error("Failed to seed the database", "error", err)
+		os.Exit(1)
 	}
 
 	// Initialize the store
@@ -86,11 +96,16 @@ func main() {
 
 	// Middleware
 	r.Use(
-		middleware.Logger,
+		middleware.RequestID,
+		middleware.RequestLogger(&logging.SlogFormatter{Logger: logger}),
+		middleware.RealIP,
 		middleware.Recoverer,
 		render.SetContentType(render.ContentTypeJSON),
 	)
 
+	// Set a timeout value on the request context (ctx), that will signal
+	// through ctx.Done() that the request has timed out and further
+	// processing should be stopped.
 	// Create auth middleware
 	authz := api.AuthzMiddleware(authenticator, domain.NewDefaultRuleAuthorizer())
 
@@ -118,9 +133,10 @@ func main() {
 	go DisconnectUnhealthyAgentsTask(&cfg.AgentConfig, store)
 
 	// Start server
-	log.Printf("Server starting on port %d...", cfg.Port)
+	slog.Info("Server starting", "port", cfg.Port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), r); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		slog.Error("Failed to start server", "error", err)
+		os.Exit(1)
 	}
 }
 
@@ -128,12 +144,12 @@ func DisconnectUnhealthyAgentsTask(cfg *config.AgentConfig, store domain.Store) 
 	ticker := time.NewTicker(cfg.HealthTimeout)
 	for range ticker.C {
 		ctx := context.Background()
-		log.Println("Checking agents health ...")
+		slog.Info("Checking agents health")
 		disconnectedCount, err := store.AgentRepo().MarkInactiveAgentsAsDisconnected(ctx, cfg.HealthTimeout)
 		if err != nil {
-			log.Printf("Error marking inactive agents as disconnected: %v", err)
+			slog.Error("Error marking inactive agents as disconnected", "error", err)
 		} else if disconnectedCount > 0 {
-			log.Printf("Marked %d inactive agents as disconnected", disconnectedCount)
+			slog.Info("Marked inactive agents as disconnected", "count", disconnectedCount)
 		}
 	}
 }
@@ -144,21 +160,21 @@ func JobMainenanceTask(cfg *config.JobConfig, store domain.Store, serviceCmd dom
 		ctx := context.Background()
 
 		// Fail timeout jobs an services
-		log.Println("Checking timeout jobs ...")
+		slog.Info("Checking timeout jobs")
 		failedCount, err := serviceCmd.FailTimeoutServicesAndJobs(ctx, cfg.Timeout)
 		if err != nil {
-			log.Printf("Failed to timeout jobs and services: %v", err)
+			slog.Error("Failed to timeout jobs and services", "error", err)
 		} else {
-			log.Printf("Done fail %d timeout jobs.", failedCount)
+			slog.Info("Timeout jobs processed", "failed_count", failedCount)
 		}
 
 		// Delete completed/failed old jobs
-		log.Println("Deleting old jobs ...")
+		slog.Info("Deleting old jobs")
 		deletedCount, err := store.JobRepo().DeleteOldCompletedJobs(ctx, cfg.Retention)
 		if err != nil {
-			log.Printf("Failed delete old jobs: %v", err)
+			slog.Error("Failed to delete old jobs", "error", err)
 		} else {
-			log.Printf("Deleted %d old jobs.", deletedCount)
+			slog.Info("Old jobs deleted", "count", deletedCount)
 		}
 	}
 }

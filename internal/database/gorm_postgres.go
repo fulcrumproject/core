@@ -9,6 +9,7 @@ import (
 
 	cfg "fulcrumproject.org/core/internal/config"
 	"fulcrumproject.org/core/internal/domain"
+	"fulcrumproject.org/core/internal/logging"
 )
 
 // NewConnection creates a new database connection
@@ -16,7 +17,7 @@ func NewConnection(config *cfg.DBConfig) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: config.DSN(),
 	}), &gorm.Config{
-		Logger: logger.Default.LogMode(strToLogLevel(config.LogLevel)),
+		Logger: logging.NewGormLogger(config),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)

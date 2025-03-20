@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -30,6 +31,12 @@ var (
 		"warn":   true,
 		"info":   true,
 	}
+
+	// Validate log formats (text, json)
+	validLogFormats = map[string]bool{
+		"text": true,
+		"json": true,
+	}
 )
 
 // Fulcrum configuration
@@ -37,12 +44,24 @@ type Config struct {
 	Port        uint        `json:"port" env:"PORT"`
 	JobConfig   JobConfig   `json:"job"`
 	AgentConfig AgentConfig `json:"agent"`
+	LogConfig   LogConfig   `json:"log"`
 	DBConfig    DBConfig    `json:"db"`
 }
 
 // Fulcrum Agent configuration
 type AgentConfig struct {
 	HealthTimeout time.Duration `json:"healthTimeout" env:"AGENT_HEALTH_TIMEOUT"`
+}
+
+// Fulcrum Log configuration
+type LogConfig struct {
+	Format string `json:"format" env:"LOG_FORMAT"`
+	Level  string `json:"level" env:"LOG_LEVEL"`
+}
+
+// GetLogLevel converts a string log level to slog.Level
+func (c *LogConfig) GetLogLevel() slog.Level {
+	return logLevel(c.Level)
 }
 
 // Fulcrum Job configuration
@@ -54,13 +73,14 @@ type JobConfig struct {
 
 // Fulcrum DB configuration
 type DBConfig struct {
-	Host     string `json:"host" env:"DB_HOST"`
-	User     string `json:"user" env:"DB_USER"`
-	Password string `json:"password" env:"DB_PASSWORD"`
-	Name     string `json:"name" env:"DB_NAME"`
-	Port     int    `json:"port" env:"DB_PORT"`
-	SSLMode  string `json:"sslMode" env:"DB_SSL_MODE"`
-	LogLevel string `json:"logLevel" env:"DB_LOG_LEVEL"`
+	Host      string `json:"host" env:"DB_HOST"`
+	User      string `json:"user" env:"DB_USER"`
+	Password  string `json:"password" env:"DB_PASSWORD"`
+	Name      string `json:"name" env:"DB_NAME"`
+	Port      int    `json:"port" env:"DB_PORT"`
+	SSLMode   string `json:"sslMode" env:"DB_SSL_MODE"`
+	LogLevel  string `json:"logLevel" env:"DB_LOG_LEVEL"`
+	LogFormat string `json:"logFormat" env:"DB_LOG_FORMAT"`
 }
 
 // DSN returns the PostgreSQL connection string
@@ -71,10 +91,19 @@ func (c *DBConfig) DSN() string {
 	)
 }
 
+// GetLogLevel converts the string log level to gorm logger.LogLevel
+func (c *DBConfig) GetLogLevel() slog.Level {
+	return logLevel(c.LogLevel)
+}
+
 // DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
 	return &Config{
 		Port: 3000,
+		LogConfig: LogConfig{
+			Format: "text",
+			Level:  "info",
+		},
 		JobConfig: JobConfig{
 			Maintenance: 3 * time.Minute,
 			Retention:   3 * 24 * time.Hour,
@@ -129,6 +158,16 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("port cannot be 0")
 	}
 
+	// Validate log config
+	if c.LogConfig.Format != "" && !validLogFormats[c.LogConfig.Format] {
+		return fmt.Errorf("invalid log format: %s, must be one of: text, json",
+			c.LogConfig.Format)
+	}
+	if c.LogConfig.Level != "" && !validLogLevels[c.LogConfig.Level] {
+		return fmt.Errorf("invalid log level: %s, must be one of: silent, error, warn, info",
+			c.LogConfig.Level)
+	}
+
 	// Validate job config
 	if c.JobConfig.Maintenance <= 0 {
 		return fmt.Errorf("job maintenance duration must be positive")
@@ -169,4 +208,19 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+func logLevel(value string) slog.Level {
+	switch value {
+	case "silent":
+		return slog.Level(99) // Higher than any standard level
+	case "error":
+		return slog.LevelError
+	case "warn":
+		return slog.LevelWarn
+	case "info", "": // Default to info if empty
+		return slog.LevelInfo
+	default:
+		return slog.LevelInfo // Default to info for unknown levels
+	}
 }
