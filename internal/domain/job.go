@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // ServiceAction represents the type of operation a job performs
@@ -112,6 +114,12 @@ func (j *Job) Validate() error {
 	if j.Priority < 1 {
 		return errors.New("priority must be greater than 0")
 	}
+	if j.AgentID == uuid.Nil {
+		return fmt.Errorf("agent ID cannot be empty")
+	}
+	if j.ServiceID == uuid.Nil {
+		return fmt.Errorf("service ID cannot be empty")
+	}
 	return nil
 }
 
@@ -153,84 +161,63 @@ func NewJobCommander(
 }
 
 func (s *jobCommander) Claim(ctx context.Context, agentID UUID, jobID UUID) error {
-	// Get the agent to retrieve its providerID
-	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
-	if err != nil {
-		return err
-	}
-
 	job, err := s.store.JobRepo().FindByID(ctx, jobID)
 	if err != nil {
 		return err
 	}
-
-	// Get the service and service group to get the broker ID
 	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
 	if err != nil {
 		return err
 	}
 
-	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, svc.GroupID)
-	if err != nil {
-		return err
+	if err := s.validateJobAuthScope(ctx, agentID, svc.GroupID); err != nil {
+		return UnauthorizedError{Err: err}
 	}
 
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
-		return err
-	}
-
-	if job.AgentID != agentID {
-		return errors.New("cannot claim a job not assigned to the authenticated agent")
-	}
 	if job.State != JobPending {
-		return errors.New("cannot claim a job not in pending state")
+		return InvalidInputError{Err: errors.New("cannot claim a job not in pending state")}
 	}
 	job.State = JobProcessing
 	now := time.Now()
 	job.ClaimedAt = &now
+	if err := job.Validate(); err != nil {
+		return InvalidInputError{Err: err}
+	}
+
 	return s.store.JobRepo().Save(ctx, job)
 }
 
 func (s *jobCommander) Complete(ctx context.Context, agentID, jobID UUID, resources *JSON, externalID *string) error {
-	// Get the agent to retrieve its providerID
-	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
-	if err != nil {
-		return err
-	}
-
 	job, err := s.store.JobRepo().FindByID(ctx, jobID)
 	if err != nil {
 		return err
 	}
-
-	// Get the service and service group to get the broker ID
 	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
 	if err != nil {
 		return err
 	}
 
-	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, svc.GroupID)
-	if err != nil {
-		return err
+	if err := s.validateJobAuthScope(ctx, agentID, svc.GroupID); err != nil {
+		return UnauthorizedError{Err: err}
 	}
 
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
-		return err
-	}
-
-	if job.AgentID != agentID {
-		return errors.New("cannot complete a job not assigned to the authenticated agent")
-	}
 	if job.State != JobProcessing {
-		return errors.New("cannot complete a job not in processing state")
+		return InvalidInputError{Err: errors.New("cannot complete a job not in processing state")}
 	}
 	if svc.TargetState == nil {
-		return errors.New("cannot complete a job on service that is not in transition")
+		return InvalidInputError{Err: errors.New("cannot complete a job on service that is not in transition")}
 	}
+
 	return s.store.Atomic(ctx, func(store Store) error {
 		job.State = JobCompleted
 		now := time.Now()
 		job.CompletedAt = &now
+		if err := job.Validate(); err != nil {
+			return InvalidInputError{Err: err}
+		}
+		if err := store.JobRepo().Save(ctx, job); err != nil {
+			return err
+		}
 
 		svc.CurrentState = *svc.TargetState
 		svc.TargetState = nil
@@ -249,67 +236,59 @@ func (s *jobCommander) Complete(ctx context.Context, agentID, jobID UUID, resour
 		}
 
 		if err := svc.Validate(); err != nil {
-			return err
+			return InvalidInputError{Err: err}
 		}
-
-		if err := store.JobRepo().Save(ctx, job); err != nil {
-			return err
-		}
-
 		return store.ServiceRepo().Save(ctx, svc)
 	})
 }
 
 func (s *jobCommander) Fail(ctx context.Context, agentID UUID, jobID UUID, errorMessage string) error {
-	// Get the agent to retrieve its providerID
-	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
-	if err != nil {
-		return err
-	}
-
 	job, err := s.store.JobRepo().FindByID(ctx, jobID)
 	if err != nil {
 		return err
 	}
-
-	// Get the service and service group to get the broker ID
 	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
 	if err != nil {
 		return err
 	}
 
-	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, svc.GroupID)
-	if err != nil {
-		return err
+	if err := s.validateJobAuthScope(ctx, agentID, svc.GroupID); err != nil {
+		return UnauthorizedError{Err: err}
 	}
 
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
-		return err
-	}
-
-	if job.AgentID != agentID {
-		return errors.New("cannot fail a job not assigned to the authenticated agent")
-	}
 	if job.State != JobProcessing {
-		return errors.New("cannot fail a job not in processing state")
+		return InvalidInputError{Err: errors.New("cannot fail a job not in processing state")}
 	}
+
 	return s.store.Atomic(ctx, func(store Store) error {
 		job.State = JobFailed
 		job.ErrorMessage = errorMessage
-
-		svc.ErrorMessage = &errorMessage
-		svc.FailedAction = &job.Action
-
-		if err := svc.Validate(); err != nil {
-			return err
+		if err := job.Validate(); err != nil {
+			return InvalidInputError{Err: err}
 		}
-
 		if err := store.JobRepo().Save(ctx, job); err != nil {
 			return err
 		}
 
+		svc.ErrorMessage = &errorMessage
+		svc.FailedAction = &job.Action
+		if err := svc.Validate(); err != nil {
+			return InvalidInputError{Err: err}
+		}
 		return store.ServiceRepo().Save(ctx, svc)
 	})
+}
+
+func (s *jobCommander) validateJobAuthScope(ctx context.Context, agentID, groupID UUID) error {
+	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
+	if err != nil {
+		return err
+	}
+	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+	return ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID})
 }
 
 type JobRepository interface {
@@ -331,6 +310,9 @@ type JobRepository interface {
 type JobQuerier interface {
 	// FindByID retrieves a job by ID
 	FindByID(ctx context.Context, id UUID) (*Job, error)
+
+	// Exists checks if an entity with the given ID exists
+	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of jobs based on the provided filters
 	List(ctx context.Context, req *PageRequest) (*PageResponse[Job], error)

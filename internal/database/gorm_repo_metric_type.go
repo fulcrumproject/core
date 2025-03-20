@@ -5,8 +5,6 @@ import (
 
 	"context"
 
-	"errors"
-
 	"fulcrumproject.org/core/internal/domain"
 )
 
@@ -43,7 +41,7 @@ func (r *GormMetricTypeRepository) FindByName(ctx context.Context, name string) 
 	result := r.db.WithContext(ctx).Where("name = ?", name).First(&entity)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return nil, domain.NotFoundError{Err: errors.New("metric type not found")}
+			return nil, domain.NotFoundError{Err: result.Error}
 		}
 		return nil, result.Error
 	}

@@ -175,23 +175,29 @@ func (s *tokenCommander) Create(
 		switch role {
 		case RoleProviderAdmin:
 			// Validate provider exists and set ID
-			_, err := s.store.ProviderRepo().FindByID(ctx, *scopeID)
+			exists, err := s.store.ProviderRepo().Exists(ctx, *scopeID)
 			if err != nil {
-				return nil, fmt.Errorf("invalid provider ID: %w", err)
+				return nil, err
+			}
+			if !exists {
+				return nil, NewInvalidInputErrorf("invalid provider ID: %w", err)
 			}
 			token.ProviderID = scopeID
 		case RoleBroker:
 			// Validate broker exists and set ID
-			_, err := s.store.BrokerRepo().FindByID(ctx, *scopeID)
+			exists, err := s.store.BrokerRepo().Exists(ctx, *scopeID)
 			if err != nil {
-				return nil, fmt.Errorf("invalid broker ID: %w", err)
+				return nil, err
+			}
+			if !exists {
+				return nil, NewInvalidInputErrorf("invalid broker ID: %w", err)
 			}
 			token.BrokerID = scopeID
 		case RoleAgent:
 			// Validate agent exists, set agent ID, and copy the provider ID
 			agent, err := s.store.AgentRepo().FindByID(ctx, *scopeID)
 			if err != nil {
-				return nil, fmt.Errorf("invalid agent ID: %w", err)
+				return nil, NewInvalidInputErrorf("invalid agent ID: %w", err)
 			}
 			token.AgentID = scopeID
 
@@ -203,7 +209,7 @@ func (s *tokenCommander) Create(
 
 	err := ValidateAuthScope(ctx, &AuthScope{ProviderID: token.ProviderID, AgentID: token.AgentID, BrokerID: token.BrokerID})
 	if err != nil {
-		return nil, err
+		return nil, UnauthorizedError{Err: err}
 	}
 
 	err = token.GenerateTokenValue()
@@ -212,7 +218,7 @@ func (s *tokenCommander) Create(
 	}
 
 	if err := token.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
 
 	if err := s.store.TokenRepo().Create(ctx, token); err != nil {
@@ -232,6 +238,11 @@ func (s *tokenCommander) Update(ctx context.Context,
 		return nil, err
 	}
 
+	err = ValidateAuthScope(ctx, &AuthScope{ProviderID: token.ProviderID, AgentID: token.AgentID, BrokerID: token.BrokerID})
+	if err != nil {
+		return nil, UnauthorizedError{Err: err}
+	}
+
 	if name != nil {
 		token.Name = *name
 	}
@@ -240,8 +251,9 @@ func (s *tokenCommander) Update(ctx context.Context,
 	}
 
 	if err := token.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
+
 	err = s.store.TokenRepo().Save(ctx, token)
 	if err != nil {
 		return nil, err
@@ -250,14 +262,14 @@ func (s *tokenCommander) Update(ctx context.Context,
 }
 
 func (s *tokenCommander) Delete(ctx context.Context, id UUID) error {
-	_, err := s.store.TokenRepo().FindByID(ctx, id)
+	token, err := s.store.TokenRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.store.TokenRepo().FindByID(ctx, id)
+	err = ValidateAuthScope(ctx, &AuthScope{ProviderID: token.ProviderID, AgentID: token.AgentID, BrokerID: token.BrokerID})
 	if err != nil {
-		return err
+		return UnauthorizedError{Err: err}
 	}
 
 	return s.store.TokenRepo().Delete(ctx, id)
@@ -269,13 +281,18 @@ func (s *tokenCommander) Regenerate(ctx context.Context, id UUID) (*Token, error
 		return nil, err
 	}
 
+	err = ValidateAuthScope(ctx, &AuthScope{ProviderID: token.ProviderID, AgentID: token.AgentID, BrokerID: token.BrokerID})
+	if err != nil {
+		return nil, UnauthorizedError{Err: err}
+	}
+
 	err = token.GenerateTokenValue()
 	if err != nil {
 		return nil, err
 	}
 
 	if err := token.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
 
 	err = s.store.TokenRepo().Save(ctx, token)

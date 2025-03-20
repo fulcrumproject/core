@@ -2,6 +2,8 @@ package domain
 
 import (
 	"context"
+	"errors"
+	"fmt"
 )
 
 // AuthRule represents a rule that maps a subject-action pair to the roles that have permission
@@ -56,12 +58,12 @@ func NewDefaultRuleAuthorizer() *RuleAuthorizer {
 // Authorize checks if the given identity has permission to perform the action on the subject within the provided context
 func (a *RuleAuthorizer) Authorize(_ context.Context, identity AuthIdentity, subject AuthSubject, action AuthAction) error {
 	if identity == nil {
-		return NewUnauthorizedErrorf("missing identity for authorization")
+		return errors.New("missing identity for authorization")
 	}
 
 	// Check if the role has permission for the subject:action pair
 	if !a.hasPermission(subject, action, identity.Role()) {
-		return NewUnauthorizedErrorf("role %s does not have permission %s on %s", identity.Role(), action, subject)
+		return fmt.Errorf("role %s does not have permission %s on %s", identity.Role(), action, subject)
 	}
 
 	return nil

@@ -2,6 +2,9 @@ package domain
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/google/uuid"
 )
 
 // MetricEntry represents a metric measurement for a specific resource
@@ -27,7 +30,18 @@ func (MetricEntry) TableName() string {
 
 // Validate ensures all MetricEntry fields are valid
 func (p *MetricEntry) Validate() error {
-	// TODO
+	if p.ResourceID == "" {
+		return fmt.Errorf("resource ID cannot be empty")
+	}
+	if p.TypeID == uuid.Nil {
+		return fmt.Errorf("metric type ID cannot be empty")
+	}
+	if p.AgentID == uuid.Nil {
+		return fmt.Errorf("agent ID cannot be empty")
+	}
+	if p.ServiceID == uuid.Nil {
+		return fmt.Errorf("service ID cannot be empty")
+	}
 	return nil
 }
 
@@ -62,30 +76,11 @@ func (s *metricEntryCommander) CreateWithExternalID(
 	resourceID string,
 	value float64,
 ) (*MetricEntry, error) {
-	// Get the agent to retrieve its providerID
-	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
+	svc, err := s.store.ServiceRepo().FindByExternalID(ctx, agentID, externalID)
 	if err != nil {
 		return nil, err
 	}
-
-	// Look up the service by external ID to get the service group and broker ID
-	service, err := s.store.ServiceRepo().FindByExternalID(ctx, agentID, externalID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the service group to get the broker ID
-	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, service.GroupID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
-		return nil, err
-	}
-
-	// Look up the service by external ID
-	return s.Create(ctx, typeName, agentID, service.ID, resourceID, value)
+	return s.Create(ctx, typeName, agentID, svc.ID, resourceID, value)
 }
 
 func (s *metricEntryCommander) Create(
@@ -96,49 +91,60 @@ func (s *metricEntryCommander) Create(
 	resourceID string,
 	value float64,
 ) (*MetricEntry, error) {
-	// Get the agent to retrieve its providerID
-	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
+	svc, err := s.store.ServiceRepo().FindByID(ctx, serviceID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Look up the service by external ID
-	service, err := s.store.ServiceRepo().FindByID(ctx, serviceID)
-	if err != nil {
-		return nil, err
+	// Validate the auth scope
+	if err := s.validateMetricEntryAuthScope(ctx, agentID, svc.GroupID); err != nil {
+		return nil, UnauthorizedError{Err: err}
 	}
 
-	// Get the service group to get the broker ID
-	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, service.GroupID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
-		return nil, err
-	}
-
-	// Look up the service by external ID
-	// Look up the service type by name
+	// Look up the metric type by name
 	metricType, err := s.store.MetricTypeRepo().FindByName(ctx, typeName)
 	if err != nil {
 		return nil, err
 	}
-	// TODO check id's exist with cache
+
+	// Validate metric type exists
+	metricTypeExists, err := s.store.MetricTypeRepo().Exists(ctx, metricType.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !metricTypeExists {
+		return nil, InvalidInputError{Err: fmt.Errorf("metric type with ID %s does not exist", metricType.ID)}
+	}
+
 	metricEntry := &MetricEntry{
 		AgentID:    agentID,
-		ServiceID:  service.ID,
+		ServiceID:  svc.ID,
 		ResourceID: resourceID,
 		Value:      value,
 		TypeID:     metricType.ID,
 	}
 	if err := metricEntry.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
+
 	if err := s.store.MetricEntryRepo().Create(ctx, metricEntry); err != nil {
 		return nil, err
 	}
 	return metricEntry, nil
+}
+
+func (s *metricEntryCommander) validateMetricEntryAuthScope(ctx context.Context, agentID, groupID UUID) error {
+	// Get the agent to retrieve its providerID for authorization
+	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
+	if err != nil {
+		return err
+	}
+	// Get the service group to get the broker ID
+	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+	return ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID})
 }
 
 type MetricEntryRepository interface {
@@ -151,6 +157,9 @@ type MetricEntryRepository interface {
 type MetricEntryQuerier interface {
 	// List retrieves a list of metric entries based on the provided filters
 	List(ctx context.Context, req *PageRequest) (*PageResponse[MetricEntry], error)
+
+	// Exists checks if an entity with the given ID exists
+	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// CountByMetricType counts the number of entries for a specific metric type
 	CountByMetricType(ctx context.Context, typeID UUID) (int64, error)

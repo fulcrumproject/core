@@ -2,9 +2,12 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // ServiceState represents the possible states of a service
@@ -74,23 +77,40 @@ type Service struct {
 	Resources *JSON `gorm:"type:jsonb"`
 
 	// Relationships
-	GroupID UUID          `gorm:"not null" json:"groupId"`
-	Group   *ServiceGroup `gorm:"foreignKey:GroupID"`
-	AgentID UUID          `gorm:"not null"`
-	Agent   *Agent        `gorm:"foreignKey:AgentID"`
-	// ProviderID    UUID          `gorm:"not null"`
-	// Provider      *Provider     `gorm:"foreignKey:ProviderID"`
-	// BrokerID      UUID          `gorm:"not null"`
-	// Broker        *Provider     `gorm:"foreignKey:BrokerID"`
-	ServiceTypeID UUID         `gorm:"not null"`
-	ServiceType   *ServiceType `gorm:"foreignKey:ServiceTypeID"`
+	GroupID       UUID          `gorm:"not null" json:"groupId"`
+	Group         *ServiceGroup `gorm:"foreignKey:GroupID"`
+	AgentID       UUID          `gorm:"not null"`
+	Agent         *Agent        `gorm:"foreignKey:AgentID"`
+	ServiceTypeID UUID          `gorm:"not null"`
+	ServiceType   *ServiceType  `gorm:"foreignKey:ServiceTypeID"`
 }
 
 // Validate a service
 func (s Service) Validate() error {
-	// TODO
+	if s.Name == "" {
+		return errors.New("service name cannot be empty")
+	}
 	if err := s.CurrentState.Validate(); err != nil {
 		return err
+	}
+	if s.TargetState != nil {
+		if err := s.TargetState.Validate(); err != nil {
+			return err
+		}
+	}
+	if s.GroupID == uuid.Nil {
+		return errors.New("service group ID cannot be nil")
+	}
+	if s.AgentID == uuid.Nil {
+		return errors.New("service agent ID cannot be nil")
+	}
+	if s.ServiceTypeID == uuid.Nil {
+		return errors.New("service type ID cannot be nil")
+	}
+	if s.Attributes != nil {
+		if err := s.Attributes.Validate(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -164,34 +184,23 @@ func (s *serviceCommander) Create(
 	attributes Attributes,
 	properties JSON,
 ) (*Service, error) {
-	// Get the agent to retrieve its providerID
-	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the service group to get the broker ID
-	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, groupID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
-		return nil, err
+	if err := s.validateServiceAuthScope(ctx, agentID, groupID); err != nil {
+		return nil, UnauthorizedError{Err: err}
 	}
 
 	svc := NewService(agentID, serviceTypeID, groupID, name, attributes, properties)
 	if err := svc.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
 
-	// Execute within a transaction
-	var createdService *Service = svc
-	err = s.store.Atomic(ctx, func(store Store) error {
+	err := s.store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
 			return err
 		}
 		job := NewJob(svc.AgentID, svc.ID, ServiceActionCreate, 1)
+		if err := job.Validate(); err != nil {
+			return InvalidInputError{Err: err}
+		}
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
@@ -200,7 +209,7 @@ func (s *serviceCommander) Create(
 	if err != nil {
 		return nil, err
 	}
-	return createdService, nil
+	return svc, nil
 }
 
 func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, props *JSON) (*Service, error) {
@@ -209,29 +218,19 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 		return nil, err
 	}
 
-	// Get the agent to retrieve its providerID
-	agent, err := s.store.AgentRepo().FindByID(ctx, svc.AgentID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the service group to get the broker ID
-	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, svc.GroupID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &svc.AgentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
-		return nil, err
+	if err := s.validateServiceAuthScope(ctx, svc.AgentID, svc.GroupID); err != nil {
+		return nil, UnauthorizedError{Err: err}
 	}
 
 	updateSvc := false
 	var job *Job
+
 	// Name
 	if name != nil && svc.Name != *name {
 		updateSvc = true
 		svc.Name = *name
 	}
+
 	// Properties
 	if props != nil && !reflect.DeepEqual(&svc.CurrentProperties, *props) {
 		updateSvc = true
@@ -244,16 +243,20 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 		svc.TargetState = &target
 		svc.CurrentState = trans
 		job = NewJob(svc.AgentID, svc.ID, action, 1)
+		if err := job.Validate(); err != nil {
+			return nil, InvalidInputError{Err: err}
+		}
 	}
+
 	// Update Service
 	if !updateSvc {
 		return svc, nil
 	}
+
 	if err := svc.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
 
-	// Create Job if necessary
 	if job == nil {
 		// No job needed, just save the service
 		if err := s.store.ServiceRepo().Save(ctx, svc); err != nil {
@@ -297,20 +300,8 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 		return nil, err
 	}
 
-	// Get the agent to retrieve its providerID
-	agent, err := s.store.AgentRepo().FindByID(ctx, svc.AgentID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the service group to get the broker ID
-	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, svc.GroupID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &svc.AgentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
-		return nil, err
+	if err := s.validateServiceAuthScope(ctx, svc.AgentID, svc.GroupID); err != nil {
+		return nil, UnauthorizedError{Err: err}
 	}
 
 	trans, action, err := serviceNextStateAndAction(svc.CurrentState, target)
@@ -320,11 +311,14 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 	svc.CurrentState = trans
 	svc.TargetState = &target
 	if err := svc.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
 
 	// Create job for transition
 	job := NewJob(svc.AgentID, svc.ID, action, 1)
+	if err := job.Validate(); err != nil {
+		return nil, InvalidInputError{Err: err}
+	}
 
 	// Execute within a transaction
 	var transitionedService *Service = svc
@@ -346,20 +340,8 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 		return nil, err
 	}
 
-	// Get the agent to retrieve its providerID
-	agent, err := s.store.AgentRepo().FindByID(ctx, svc.AgentID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the service group to get the broker ID
-	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, svc.GroupID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &svc.AgentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID}); err != nil {
-		return nil, err
+	if err := s.validateServiceAuthScope(ctx, svc.AgentID, svc.GroupID); err != nil {
+		return nil, UnauthorizedError{Err: err}
 	}
 
 	if svc.FailedAction == nil {
@@ -368,11 +350,14 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 	}
 	svc.RetryCount += 1
 	if err := svc.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
 
 	// Create job for retry
 	job := NewJob(svc.AgentID, svc.ID, *svc.FailedAction, 1)
+	if err := job.Validate(); err != nil {
+		return nil, InvalidInputError{Err: err}
+	}
 
 	// Execute within a transaction
 	var retryService *Service = svc
@@ -408,6 +393,18 @@ func serviceNextStateAndAction(curr, target ServiceState) (ServiceState, Service
 		}
 	}
 	return "", "", fmt.Errorf("invalid transition from %s to %s", curr, target)
+}
+
+func (s *serviceCommander) validateServiceAuthScope(ctx context.Context, agentID, groupID UUID) error {
+	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
+	if err != nil {
+		return err
+	}
+	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+	return ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID})
 }
 
 func (s *serviceCommander) FailTimeoutServicesAndJobs(ctx context.Context, timeout time.Duration) (int, error) {
@@ -467,6 +464,9 @@ type ServiceRepository interface {
 type ServiceQuerier interface {
 	// FindByID retrieves an entity by ID
 	FindByID(ctx context.Context, id UUID) (*Service, error)
+
+	// Exists checks if an entity with the given ID exists
+	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// FindByExternalID retrieves a service by its external ID and agent ID
 	FindByExternalID(ctx context.Context, agentID UUID, externalID string) (*Service, error)

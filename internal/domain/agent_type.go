@@ -28,6 +28,9 @@ type AgentTypeQuerier interface {
 	// FindByID retrieves an entity by ID
 	FindByID(ctx context.Context, id UUID) (*AgentType, error)
 
+	// Exists checks if an entity with the given ID exists
+	Exists(ctx context.Context, id UUID) (bool, error)
+
 	// List retrieves a list of entities based on the provided filters
 	List(ctx context.Context, req *PageRequest) (*PageResponse[AgentType], error)
 

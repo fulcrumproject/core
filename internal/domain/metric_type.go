@@ -42,7 +42,10 @@ func (MetricType) TableName() string {
 // Validate ensures all MetricType fields are valid
 func (m *MetricType) Validate() error {
 	if err := m.EntityType.Validate(); err != nil {
-		return err
+		return fmt.Errorf("invalid entity type: %w", err)
+	}
+	if m.Name == "" {
+		return fmt.Errorf("metric type name cannot be empty")
 	}
 	return nil
 }
@@ -84,7 +87,7 @@ func (s *metricTypeCommander) Create(
 		EntityType: kind,
 	}
 	if err := metricType.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
 	if err := s.store.MetricTypeRepo().Create(ctx, metricType); err != nil {
 		return nil, err
@@ -105,7 +108,7 @@ func (s *metricTypeCommander) Update(ctx context.Context,
 		metricType.Name = *name
 	}
 	if err := metricType.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
 	err = s.store.MetricTypeRepo().Save(ctx, metricType)
 	if err != nil {
@@ -126,7 +129,7 @@ func (s *metricTypeCommander) Delete(ctx context.Context, id UUID) error {
 			return err
 		}
 		if numOfEntries > 0 {
-			return errors.New("cannot delete metric-type with associated entries")
+			return InvalidInputError{Err: errors.New("cannot delete metric-type with associated entries")}
 		}
 		return store.MetricTypeRepo().Delete(ctx, id)
 	})
@@ -148,6 +151,9 @@ type MetricTypeRepository interface {
 type MetricTypeQuerier interface {
 	// FindByID retrieves an entity by ID
 	FindByID(ctx context.Context, id UUID) (*MetricType, error)
+
+	// Exists checks if an entity with the given ID exists
+	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
 	List(ctx context.Context, req *PageRequest) (*PageResponse[MetricType], error)

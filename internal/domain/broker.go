@@ -58,7 +58,7 @@ func (s *brokerCommander) Create(
 		Name: name,
 	}
 	if err := broker.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
 	if err := s.store.BrokerRepo().Create(ctx, broker); err != nil {
 		return nil, err
@@ -71,19 +71,21 @@ func (s *brokerCommander) Update(ctx context.Context,
 	name *string,
 ) (*Broker, error) {
 	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &id}); err != nil {
-		return nil, err
+		return nil, UnauthorizedError{Err: err}
 	}
 
 	broker, err := s.store.BrokerRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+
 	if name != nil {
 		broker.Name = *name
 	}
 	if err := broker.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
+
 	err = s.store.BrokerRepo().Save(ctx, broker)
 	if err != nil {
 		return nil, err
@@ -93,13 +95,14 @@ func (s *brokerCommander) Update(ctx context.Context,
 
 func (s *brokerCommander) Delete(ctx context.Context, id UUID) error {
 	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &id}); err != nil {
-		return err
+		return UnauthorizedError{Err: err}
 	}
 
 	_, err := s.store.BrokerRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
+
 	return s.store.Atomic(ctx, func(store Store) error {
 		// Delete all tokens associated with this broker before deleting the broker
 		if err := store.TokenRepo().DeleteByBrokerID(ctx, id); err != nil {
@@ -126,6 +129,9 @@ type BrokerRepository interface {
 type BrokerQuerier interface {
 	// FindByID retrieves an entity by ID
 	FindByID(ctx context.Context, id UUID) (*Broker, error)
+
+	// Exists checks if an entity with the given ID exists
+	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
 	List(ctx context.Context, req *PageRequest) (*PageResponse[Broker], error)

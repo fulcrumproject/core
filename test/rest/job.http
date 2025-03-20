@@ -132,7 +132,7 @@ Authorization: Bearer {{agentToken}}
             "output": "Service started successfully"
         }
     },
-    "externalId": "$guid"
+    "externalId": "{{$guid}}"
 }
 
 ### Get Service

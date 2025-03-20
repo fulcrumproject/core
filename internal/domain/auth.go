@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -48,6 +49,19 @@ const (
 	SubjectToken        AuthSubject = "token"
 )
 
+// Validate ensures the AuthSubject is one of the predefined values
+func (s AuthSubject) Validate() error {
+	switch s {
+	case SubjectProvider, SubjectBroker, SubjectAgent, SubjectAgentType,
+		SubjectService, SubjectServiceType, SubjectServiceGroup,
+		SubjectJob, SubjectMetricType, SubjectMetricEntry,
+		SubjectAuditEntry, SubjectToken:
+		return nil
+	default:
+		return fmt.Errorf("invalid auth subject: %s", s)
+	}
+}
+
 // AuthAction defines the operation performed on a resource
 type AuthAction string
 
@@ -69,6 +83,18 @@ const (
 	ActionFail          AuthAction = "fail"
 	ActionListPending   AuthAction = "list_pending"
 )
+
+// Validate ensures the AuthAction is one of the predefined values
+func (a AuthAction) Validate() error {
+	switch a {
+	case ActionCreate, ActionRead, ActionUpdate, ActionDelete, ActionList,
+		ActionUpdateState, ActionGenerateToken, ActionStart, ActionStop,
+		ActionClaim, ActionComplete, ActionFail, ActionListPending:
+		return nil
+	default:
+		return fmt.Errorf("invalid auth action: %s", a)
+	}
+}
 
 type AuthIdentity interface {
 	ID() UUID
@@ -106,7 +132,7 @@ type Authorizer interface {
 
 func ValidateAuthScope(ctx context.Context, target *AuthScope) error {
 	if target == nil {
-		return NewUnauthorizedErrorf("nil authorization target scope")
+		return errors.New("nil authorization target scope")
 	}
 
 	id := GetAuthIdentity(ctx)
@@ -115,7 +141,7 @@ func ValidateAuthScope(ctx context.Context, target *AuthScope) error {
 	}
 	source := id.Scope()
 	if source == nil {
-		return NewUnauthorizedErrorf("nil authorization source scope")
+		return errors.New("nil authorization source scope")
 	}
 
 	// If all fields are nil in the caller scope, it has unrestricted access (admin)
@@ -125,17 +151,17 @@ func ValidateAuthScope(ctx context.Context, target *AuthScope) error {
 
 	// Provider check: If source requires a provider, caller must have same provider
 	if source.ProviderID != nil && (target.ProviderID == nil || *target.ProviderID != *source.ProviderID) {
-		return NewUnauthorizedErrorf("provider out of authorization scope")
+		return errors.New("provider out of authorization scope")
 	}
 
 	// Agent check: If source requires an agent, caller must have same agent
 	if source.AgentID != nil && (target.AgentID == nil || *target.AgentID != *source.AgentID) {
-		return NewUnauthorizedErrorf("agent out of authorization scope")
+		return errors.New("agent out of authorization scope")
 	}
 
 	// Broker check: If source requires a broker, caller must have same broker
 	if source.BrokerID != nil && (target.BrokerID == nil || *target.BrokerID != *source.BrokerID) {
-		return NewUnauthorizedErrorf("broker out of authorization scope")
+		return errors.New("broker out of authorization scope")
 	}
 
 	return nil

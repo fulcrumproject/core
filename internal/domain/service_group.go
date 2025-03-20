@@ -3,6 +3,8 @@ package domain
 import (
 	"context"
 	"errors"
+
+	"github.com/google/uuid"
 )
 
 // ServiceGroup represents a group of related services
@@ -22,7 +24,7 @@ func (sg *ServiceGroup) Validate() error {
 	if sg.Name == "" {
 		return errors.New("service group name cannot be empty")
 	}
-	if sg.Broker == nil {
+	if sg.BrokerID == uuid.Nil {
 		return errors.New("service group broker cannot be nil")
 	}
 	return nil
@@ -61,7 +63,7 @@ func NewServiceGroupCommander(
 
 func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerID UUID) (*ServiceGroup, error) {
 	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &brokerID}); err != nil {
-		return nil, err
+		return nil, UnauthorizedError{Err: err}
 	}
 
 	// Check if broker exists
@@ -75,7 +77,7 @@ func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerI
 		Broker:   broker,
 	}
 	if err := sg.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
 	if err = s.store.ServiceGroupRepo().Create(ctx, sg); err != nil {
 		return nil, err
@@ -90,14 +92,14 @@ func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 	}
 
 	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &sg.BrokerID}); err != nil {
-		return nil, err
+		return nil, UnauthorizedError{Err: err}
 	}
 
 	if name != nil {
 		sg.Name = *name
 	}
 	if err := sg.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
 	if err := s.store.ServiceGroupRepo().Save(ctx, sg); err != nil {
 		return nil, err
@@ -106,18 +108,13 @@ func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 }
 
 func (s *serviceGroupCommander) Delete(ctx context.Context, id UUID) error {
-	_, err := s.store.ServiceGroupRepo().FindByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
 	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
 	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &sg.BrokerID}); err != nil {
-		return err
+		return UnauthorizedError{Err: err}
 	}
 
 	return s.store.Atomic(ctx, func(store Store) error {

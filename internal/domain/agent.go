@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // AgentState represents the possible states of an Agent
@@ -62,8 +64,28 @@ func (Agent) TableName() string {
 
 // Validate ensures all agent fields are valid
 func (a *Agent) Validate() error {
+	if a.Name == "" {
+		return fmt.Errorf("agent name cannot be empty")
+	}
 	if err := a.State.Validate(); err != nil {
 		return err
+	}
+	if a.LastStateUpdate.IsZero() {
+		return fmt.Errorf("state last update cannot be empty")
+	}
+	if a.AgentTypeID == uuid.Nil {
+		return fmt.Errorf("agent type ID cannot be empty")
+	}
+	if a.ProviderID == uuid.Nil {
+		return fmt.Errorf("provider ID cannot be empty")
+	}
+	if err := a.CountryCode.Validate(); err != nil {
+		return err
+	}
+	if a.Attributes != nil {
+		if err := a.Attributes.Validate(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -106,20 +128,37 @@ func (s *agentCommander) Create(
 	agentTypeID UUID,
 ) (*Agent, error) {
 	if err := ValidateAuthScope(ctx, &AuthScope{ProviderID: &providerID}); err != nil {
+		return nil, UnauthorizedError{Err: err}
+	}
+
+	providerExists, err := s.store.ProviderRepo().Exists(ctx, providerID)
+	if err != nil {
 		return nil, err
+	}
+	if !providerExists {
+		return nil, NewInvalidInputErrorf("provider with ID %s does not exist", providerID)
+	}
+	agentTypeExists, err := s.store.AgentTypeRepo().Exists(ctx, agentTypeID)
+	if err != nil {
+		return nil, err
+	}
+	if !agentTypeExists {
+		return nil, NewInvalidInputErrorf("agent type with ID %s does not exist", agentTypeID)
 	}
 
 	agent := &Agent{
-		Name:        name,
-		State:       AgentDisconnected,
-		CountryCode: countryCode,
-		Attributes:  attributes,
-		ProviderID:  providerID,
-		AgentTypeID: agentTypeID,
+		Name:            name,
+		State:           AgentDisconnected,
+		LastStateUpdate: time.Now(),
+		CountryCode:     countryCode,
+		Attributes:      attributes,
+		ProviderID:      providerID,
+		AgentTypeID:     agentTypeID,
 	}
 	if err := agent.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
+
 	if err := s.store.AgentRepo().Create(ctx, agent); err != nil {
 		return nil, err
 	}
@@ -139,7 +178,7 @@ func (s *agentCommander) Update(ctx context.Context,
 	}
 
 	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &id, ProviderID: &agent.ProviderID}); err != nil {
-		return nil, err
+		return nil, UnauthorizedError{Err: err}
 	}
 
 	if name != nil {
@@ -155,8 +194,9 @@ func (s *agentCommander) Update(ctx context.Context,
 		agent.State = *state
 	}
 	if err := agent.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
+
 	err = s.store.AgentRepo().Save(ctx, agent)
 	if err != nil {
 		return nil, err
@@ -171,7 +211,7 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 	}
 
 	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &id, ProviderID: &agent.ProviderID}); err != nil {
-		return err
+		return UnauthorizedError{Err: err}
 	}
 
 	return s.store.Atomic(ctx, func(store Store) error {
@@ -200,14 +240,15 @@ func (s *agentCommander) UpdateState(ctx context.Context, id UUID, state AgentSt
 	}
 
 	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &id, ProviderID: &agent.ProviderID}); err != nil {
-		return nil, err
+		return nil, UnauthorizedError{Err: err}
 	}
 
 	agent.State = state
 	agent.LastStateUpdate = time.Now()
 	if err := agent.Validate(); err != nil {
-		return nil, err
+		return nil, InvalidInputError{Err: err}
 	}
+
 	err = s.store.AgentRepo().Save(ctx, agent)
 	if err != nil {
 		return nil, err
@@ -234,6 +275,9 @@ type AgentRepository interface {
 type AgentQuerier interface {
 	// FindByID retrieves an entity by ID
 	FindByID(ctx context.Context, id UUID) (*Agent, error)
+
+	// Exists checks if an entity with the given ID exists
+	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
 	List(ctx context.Context, req *PageRequest) (*PageResponse[Agent], error)

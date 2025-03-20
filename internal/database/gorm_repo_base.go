@@ -19,6 +19,7 @@ type ReadRepository[T any] interface {
 	FindByID(ctx context.Context, id domain.UUID) (*T, error)
 	List(ctx context.Context, page *domain.PageRequest) (*domain.PageResponse[T], error)
 	Count(ctx context.Context, conditions ...interface{}) (int64, error)
+	Exists(ctx context.Context, id domain.UUID) (bool, error)
 }
 
 // Repository defines the generic repository interface
@@ -141,4 +142,29 @@ func (r *GormRepository[T]) Count(ctx context.Context) (int64, error) {
 	}
 
 	return count, nil
+}
+
+func (r *GormRepository[T]) Exists(ctx context.Context, id domain.UUID) (bool, error) {
+	var exists bool
+	entity := new(T)
+	entityValue := *entity
+	db := r.db.WithContext(ctx)
+
+	if r.authzFilterApplier != nil {
+		if authID := domain.GetAuthIdentity(ctx); authID != nil {
+			db = r.authzFilterApplier(authID.Scope(), db)
+		}
+	}
+
+	query := db.Select("1").
+		Table(entityValue.TableName()).
+		Where(entityValue.TableName()+".id = ?", id).
+		Limit(1)
+
+	err := query.Find(&exists).Error
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
