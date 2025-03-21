@@ -154,15 +154,18 @@ type JobCommander interface {
 
 // jobCommander is the concrete implementation of JobCommander
 type jobCommander struct {
-	store Store
+	store          Store
+	auditCommander AuditEntryCommander
 }
 
 // NewJobCommander creates a new command executor
 func NewJobCommander(
 	store Store,
+	auditCommander AuditEntryCommander,
 ) *jobCommander {
 	return &jobCommander{
-		store: store,
+		store:          store,
+		auditCommander: auditCommander,
 	}
 }
 
@@ -198,6 +201,8 @@ func (s *jobCommander) Complete(ctx context.Context, jobID UUID, resources *JSON
 	if err != nil {
 		return err
 	}
+	// Store the original service state for diff
+	originalSvc := *svc
 	if svc.TargetState == nil {
 		return InvalidInputError{Err: errors.New("cannot complete a job on service that is not in transition")}
 	}
@@ -232,7 +237,16 @@ func (s *jobCommander) Complete(ctx context.Context, jobID UUID, resources *JSON
 		if err := svc.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
-		return store.ServiceRepo().Save(ctx, svc)
+		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+			return err
+		}
+
+		// Create audit entry for service update after job completion
+		_, err := s.auditCommander.CreateCtxWithDiff(
+			ctx,
+			EventTypeServiceTransitioned,
+			&svc.ID, &svc.ProviderID, &svc.AgentID, &svc.BrokerID, &originalSvc, svc)
+		return err
 	})
 }
 
@@ -249,6 +263,8 @@ func (s *jobCommander) Fail(ctx context.Context, jobID UUID, errorMessage string
 	if err != nil {
 		return err
 	}
+	// Store the original service state for diff
+	originalSvc := *svc
 
 	return s.store.Atomic(ctx, func(store Store) error {
 		job.State = JobFailed
@@ -265,7 +281,14 @@ func (s *jobCommander) Fail(ctx context.Context, jobID UUID, errorMessage string
 		if err := svc.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
-		return store.ServiceRepo().Save(ctx, svc)
+		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+			return err
+		}
+
+		// Create audit entry for service update after job failure
+		_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceTransitioned,
+			&svc.ID, &svc.ProviderID, &svc.AgentID, &svc.BrokerID, &originalSvc, svc)
+		return err
 	})
 }
 

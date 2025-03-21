@@ -5,7 +5,6 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	cfg "fulcrumproject.org/core/internal/config"
 	"fulcrumproject.org/core/internal/domain"
@@ -17,7 +16,8 @@ func NewConnection(config *cfg.DBConfig) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: config.DSN(),
 	}), &gorm.Config{
-		Logger: logging.NewGormLogger(config),
+		Logger:                                   logging.NewGormLogger(config),
+		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
@@ -50,18 +50,4 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.MetricEntry{},
 		&domain.AuditEntry{},
 	)
-}
-
-// strToLogLevel converts the log level from the string to the actual gorm value
-func strToLogLevel(value string) logger.LogLevel {
-	switch value {
-	case "silent":
-		return logger.Silent
-	case "error":
-		return logger.Error
-	case "warn":
-		return logger.Warn
-	default:
-		return logger.Info
-	}
 }

@@ -63,16 +63,18 @@ func main() {
 	store := database.NewStore(db)
 
 	// Initialize commanders
-	serviceCmd := domain.NewServiceCommander(store)
-	serviceGroupCmd := domain.NewServiceGroupCommander(store)
-	providerCmd := domain.NewProviderCommander(store)
-	jobCmd := domain.NewJobCommander(store)
-	metricEntryCmd := domain.NewMetricEntryCommander(store)
-	metricTypeCmd := domain.NewMetricTypeCommander(store)
+	// Initialize audit commander first since it's needed by other commanders
 	auditEntryCmd := domain.NewAuditEntryCommander(store)
-	agentCmd := domain.NewAgentCommander(store)
-	brokerCmd := domain.NewBrokerCommander(store)
-	tokenCmd := domain.NewTokenCommander(store)
+
+	serviceCmd := domain.NewServiceCommander(store, auditEntryCmd)
+	serviceGroupCmd := domain.NewServiceGroupCommander(store, auditEntryCmd)
+	providerCmd := domain.NewProviderCommander(store, auditEntryCmd)
+	jobCmd := domain.NewJobCommander(store, auditEntryCmd)
+	metricEntryCmd := domain.NewMetricEntryCommander(store)
+	metricTypeCmd := domain.NewMetricTypeCommander(store, auditEntryCmd)
+	agentCmd := domain.NewAgentCommander(store, auditEntryCmd)
+	brokerCmd := domain.NewBrokerCommander(store, auditEntryCmd)
+	tokenCmd := domain.NewTokenCommander(store, auditEntryCmd)
 
 	// Initialize auth and authorizer
 	auth := database.NewTokenAuthenticator(store)

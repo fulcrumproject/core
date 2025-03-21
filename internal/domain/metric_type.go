@@ -30,8 +30,8 @@ func (t MetricEntityType) Validate() error {
 // MetricType represents a type of metric that can be collected
 type MetricType struct {
 	BaseEntity
-	Name       string           `gorm:"not null;unique"`
-	EntityType MetricEntityType `gorm:"not null"`
+	Name       string           `json:"name" gorm:"not null;unique"`
+	EntityType MetricEntityType `json:"entityType" gorm:"not null"`
 }
 
 // TableName returns the table name for the metric type
@@ -64,15 +64,18 @@ type MetricTypeCommander interface {
 
 // metricTypeCommander is the concrete implementation of MetricTypeCommander
 type metricTypeCommander struct {
-	store Store
+	store          Store
+	auditCommander AuditEntryCommander
 }
 
 // NewMetricTypeCommander creates a new MetricTypeService
 func NewMetricTypeCommander(
 	store Store,
+	auditCommander AuditEntryCommander,
 ) *metricTypeCommander {
 	return &metricTypeCommander{
-		store: store,
+		store:          store,
+		auditCommander: auditCommander,
 	}
 }
 
@@ -82,14 +85,29 @@ func (s *metricTypeCommander) Create(
 	name string,
 	kind MetricEntityType,
 ) (*MetricType, error) {
-	metricType := &MetricType{
-		Name:       name,
-		EntityType: kind,
-	}
-	if err := metricType.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
-	}
-	if err := s.store.MetricTypeRepo().Create(ctx, metricType); err != nil {
+	var metricType *MetricType
+	err := s.store.Atomic(ctx, func(store Store) error {
+		metricType = &MetricType{
+			Name:       name,
+			EntityType: kind,
+		}
+		if err := metricType.Validate(); err != nil {
+			return InvalidInputError{Err: err}
+		}
+
+		if err := store.MetricTypeRepo().Create(ctx, metricType); err != nil {
+			return err
+		}
+
+		_, err := s.auditCommander.CreateCtx(
+			ctx,
+			EventTypeMetricTypeCreated,
+			JSON{"state": metricType},
+			&metricType.ID, nil, nil, nil)
+		return err
+	})
+
+	if err != nil {
 		return nil, err
 	}
 	return metricType, nil
@@ -100,26 +118,43 @@ func (s *metricTypeCommander) Update(ctx context.Context,
 	id UUID,
 	name *string,
 ) (*MetricType, error) {
-	metricType, err := s.store.MetricTypeRepo().FindByID(ctx, id)
+	beforeMetricType, err := s.store.MetricTypeRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+
+	// Store a copy of the metricType before modifications for audit diff
+	beforeMetricTypeCopy := *beforeMetricType
+
 	if name != nil {
-		metricType.Name = *name
+		beforeMetricType.Name = *name
 	}
-	if err := metricType.Validate(); err != nil {
+	if err := beforeMetricType.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
-	err = s.store.MetricTypeRepo().Save(ctx, metricType)
+
+	err = s.store.Atomic(ctx, func(store Store) error {
+		err := store.MetricTypeRepo().Save(ctx, beforeMetricType)
+		if err != nil {
+			return err
+		}
+
+		_, err = s.auditCommander.CreateCtxWithDiff(
+			ctx,
+			EventTypeMetricTypeUpdated,
+			&id, nil, nil, nil,
+			&beforeMetricTypeCopy, beforeMetricType)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
-	return metricType, nil
+	return beforeMetricType, nil
 }
 
 // Delete removes a metric-type by ID after checking for dependencies
 func (s *metricTypeCommander) Delete(ctx context.Context, id UUID) error {
-	_, err := s.store.MetricTypeRepo().FindByID(ctx, id)
+	metricType, err := s.store.MetricTypeRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -131,7 +166,15 @@ func (s *metricTypeCommander) Delete(ctx context.Context, id UUID) error {
 		if numOfEntries > 0 {
 			return InvalidInputError{Err: errors.New("cannot delete metric-type with associated entries")}
 		}
-		return store.MetricTypeRepo().Delete(ctx, id)
+
+		if err := store.MetricTypeRepo().Delete(ctx, id); err != nil {
+			return err
+		}
+
+		_, err = s.auditCommander.CreateCtx(
+			ctx, EventTypeMetricTypeDeleted,
+			JSON{"state": metricType}, &id, nil, nil, nil)
+		return err
 	})
 }
 

@@ -24,7 +24,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			auditEntry := &domain.AuditEntry{
 				AuthorityType: domain.AuthorityTypeAgent,
 				AuthorityID:   "test-agent-id",
-				EventType:     domain.EventTypeStatusChange,
+				EventType:     domain.EventTypeAgentUpdated,
 				Properties: domain.JSON{
 					"old_status": "new",
 					"new_status": "active",
@@ -50,9 +50,9 @@ func TestAuditEntryRepository(t *testing.T) {
 				authorityID   string
 				entryType     domain.EventType
 			}{
-				{domain.AuthorityTypeAgent, "agent-1", domain.EventTypeStatusChange},
-				{domain.AuthorityTypeAdmin, "service-1", domain.EventTypeConfigUpdate},
-				{domain.AuthorityTypeAgent, "agent-2", domain.EventTypeStatusChange},
+				{domain.AuthorityTypeAgent, "agent-1", domain.EventTypeAgentUpdated},
+				{domain.AuthorityTypeAdmin, "service-1", domain.EventTypeServiceUpdated},
+				{domain.AuthorityTypeAgent, "agent-2", domain.EventTypeAgentUpdated},
 			}
 
 			for _, e := range entries {
@@ -103,7 +103,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
-				Filters:  map[string][]string{"eventType": {string(domain.EventTypeStatusChange)}},
+				Filters:  map[string][]string{"eventType": {string(domain.EventTypeAgentUpdated)}},
 			}
 
 			// Execute
@@ -113,7 +113,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 2)
 			for _, item := range result.Items {
-				assert.Equal(t, domain.EventTypeStatusChange, item.EventType)
+				assert.Equal(t, domain.EventTypeAgentUpdated, item.EventType)
 			}
 		})
 
@@ -123,7 +123,7 @@ func TestAuditEntryRepository(t *testing.T) {
 				entry := &domain.AuditEntry{
 					AuthorityType: domain.AuthorityTypeAgent,
 					AuthorityID:   "agent-sort",
-					EventType:     domain.EventTypeUpdated,
+					EventType:     domain.EventTypeAgentUpdated,
 					Properties:    domain.JSON{"test": "data"},
 				}
 				err := repo.Create(ctx, entry)
@@ -157,7 +157,7 @@ func TestAuditEntryRepository(t *testing.T) {
 				entry := &domain.AuditEntry{
 					AuthorityType: domain.AuthorityTypeAgent,
 					AuthorityID:   "agent-page",
-					EventType:     domain.EventTypeCreated,
+					EventType:     domain.EventTypeAgentCreated,
 					Properties:    domain.JSON{"test": "data"},
 				}
 				err := repo.Create(ctx, entry)

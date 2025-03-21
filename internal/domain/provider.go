@@ -36,15 +36,15 @@ func ParseProviderState(value string) (ProviderState, error) {
 type Provider struct {
 	BaseEntity
 
-	Name        string      `gorm:"not null"`
-	CountryCode CountryCode `gorm:"size:2"`
-	Attributes  Attributes  `gorm:"type:jsonb"`
+	Name        string      `json:"name" gorm:"not null"`
+	CountryCode CountryCode `json:"countryCode,omitempty" gorm:"size:2"`
+	Attributes  Attributes  `json:"attributes,omitempty" gorm:"type:jsonb"`
 
 	// State management
-	State ProviderState `gorm:"not null"`
+	State ProviderState `json:"state" gorm:"not null"`
 
 	// Relationships
-	Agents []Agent `gorm:"foreignKey:ProviderID"`
+	Agents []Agent `json:"agents,omitempty" gorm:"foreignKey:ProviderID"`
 }
 
 // TableName returns the table name for the provider
@@ -83,15 +83,18 @@ type ProviderCommander interface {
 
 // providerCommander is the concrete implementation of ProviderCommander
 type providerCommander struct {
-	store Store
+	store          Store
+	auditCommander AuditEntryCommander
 }
 
 // NewProviderCommander creates a new ProviderService
 func NewProviderCommander(
 	store Store,
+	auditCommander AuditEntryCommander,
 ) *providerCommander {
 	return &providerCommander{
-		store: store,
+		store:          store,
+		auditCommander: auditCommander,
 	}
 }
 
@@ -102,16 +105,30 @@ func (s *providerCommander) Create(
 	countryCode CountryCode,
 	attributes Attributes,
 ) (*Provider, error) {
-	provider := &Provider{
-		Name:        name,
-		State:       state,
-		CountryCode: countryCode,
-		Attributes:  attributes,
-	}
-	if err := provider.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
-	}
-	if err := s.store.ProviderRepo().Create(ctx, provider); err != nil {
+	var provider *Provider
+	err := s.store.Atomic(ctx, func(store Store) error {
+		provider = &Provider{
+			Name:        name,
+			State:       state,
+			CountryCode: countryCode,
+			Attributes:  attributes,
+		}
+		if err := provider.Validate(); err != nil {
+			return InvalidInputError{Err: err}
+		}
+
+		if err := store.ProviderRepo().Create(ctx, provider); err != nil {
+			return err
+		}
+
+		_, err := s.auditCommander.CreateCtx(
+			ctx,
+			EventTypeProviderCreated,
+			JSON{"state": provider},
+			&provider.ID, &provider.ID, nil, nil)
+		return err
+	})
+	if err != nil {
 		return nil, err
 	}
 	return provider, nil
@@ -124,35 +141,56 @@ func (s *providerCommander) Update(ctx context.Context,
 	countryCode *CountryCode,
 	attributes *Attributes,
 ) (*Provider, error) {
-	provider, err := s.store.ProviderRepo().FindByID(ctx, id)
+	beforeProvider, err := s.store.ProviderRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
+	// Store a copy of the provider before modifications for audit diff
+	beforeProviderCopy := *beforeProvider
+
 	if name != nil {
-		provider.Name = *name
+		beforeProvider.Name = *name
 	}
 	if state != nil {
-		provider.State = *state
+		beforeProvider.State = *state
 	}
 	if countryCode != nil {
-		provider.CountryCode = *countryCode
+		beforeProvider.CountryCode = *countryCode
 	}
 	if attributes != nil {
-		provider.Attributes = *attributes
+		beforeProvider.Attributes = *attributes
 	}
-	if err := provider.Validate(); err != nil {
+	if err := beforeProvider.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
-	err = s.store.ProviderRepo().Save(ctx, provider)
+	err = s.store.Atomic(ctx, func(store Store) error {
+		err := store.ProviderRepo().Save(ctx, beforeProvider)
+		if err != nil {
+			return err
+		}
+
+		_, err = s.auditCommander.CreateCtxWithDiff(
+			ctx,
+			EventTypeProviderUpdated,
+			&id, &id, nil, nil,
+			&beforeProviderCopy, beforeProvider)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
-	return provider, nil
+	return beforeProvider, nil
 }
 
 func (s *providerCommander) Delete(ctx context.Context, id UUID) error {
+	// Get provider before deletion for audit purposes
+	provider, err := s.store.ProviderRepo().FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
 	return s.store.Atomic(ctx, func(store Store) error {
 		numOfAgents, err := s.store.AgentRepo().CountByProvider(ctx, id)
 		if err != nil {
@@ -167,7 +205,15 @@ func (s *providerCommander) Delete(ctx context.Context, id UUID) error {
 			return err
 		}
 
-		return store.ProviderRepo().Delete(ctx, id)
+		if err := store.ProviderRepo().Delete(ctx, id); err != nil {
+			return err
+		}
+
+		_, err = s.auditCommander.CreateCtx(
+			ctx,
+			EventTypeProviderDeleted,
+			JSON{"state": provider}, &id, &id, nil, nil)
+		return err
 	})
 }
 

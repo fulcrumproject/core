@@ -59,34 +59,34 @@ func (s ServiceState) Validate() error {
 type Service struct {
 	BaseEntity
 
-	Name       string     `gorm:"not null"`
-	Attributes Attributes `gorm:"type:jsonb"`
+	Name       string     `json:"name" gorm:"not null"`
+	Attributes Attributes `json:"attributes,omitempty" gorm:"type:jsonb"`
 
 	// State management
-	CurrentState      ServiceState `gorm:"not null"`
-	TargetState       *ServiceState
-	ErrorMessage      *string
-	FailedAction      *ServiceAction
-	RetryCount        int
-	CurrentProperties *JSON `gorm:"type:jsonb"`
-	TargetProperties  *JSON `gorm:"type:jsonb"`
+	CurrentState      ServiceState   `json:"currentState" gorm:"not null"`
+	TargetState       *ServiceState  `json:"targetState,omitempty"`
+	ErrorMessage      *string        `json:"errorMessage,omitempty"`
+	FailedAction      *ServiceAction `json:"failedAction,omitempty"`
+	RetryCount        int            `json:"retryCount"`
+	CurrentProperties *JSON          `json:"currentProperties,omitempty" gorm:"type:jsonb"`
+	TargetProperties  *JSON          `json:"targetProperties,omitempty" gorm:"type:jsonb"`
 
 	// To store an external ID for the agent's use to facilitate metric reporting
-	ExternalID *string `gorm:"uniqueIndex:service_external_id_uniq"`
+	ExternalID *string `json:"externalId,omitempty" gorm:"uniqueIndex:service_external_id_uniq"`
 	// Safe place for the Agent for store data
-	Resources *JSON `gorm:"type:jsonb"`
+	Resources *JSON `json:"resources,omitempty" gorm:"type:jsonb"`
 
 	// Relationships
-	ProviderID    UUID          `gorm:"not null"`
-	Provider      *Provider     `gorm:"foreignKey:ProviderID"`
-	BrokerID      UUID          `gorm:"not null"`
-	Broker        *Broker       `gorm:"foreignKey:BrokerID"`
+	ProviderID    UUID          `json:"providerId" gorm:"not null"`
+	Provider      *Provider     `json:"-" gorm:"foreignKey:ProviderID"`
+	BrokerID      UUID          `json:"brokerId" gorm:"not null"`
+	Broker        *Broker       `json:"-" gorm:"foreignKey:BrokerID"`
 	GroupID       UUID          `gorm:"not null" json:"groupId"`
-	Group         *ServiceGroup `gorm:"foreignKey:GroupID"`
-	AgentID       UUID          `gorm:"not null"`
-	Agent         *Agent        `gorm:"foreignKey:AgentID"`
-	ServiceTypeID UUID          `gorm:"not null"`
-	ServiceType   *ServiceType  `gorm:"foreignKey:ServiceTypeID"`
+	Group         *ServiceGroup `json:"-" gorm:"foreignKey:GroupID"`
+	AgentID       UUID          `json:"agentId" gorm:"not null"`
+	Agent         *Agent        `json:"-" gorm:"foreignKey:AgentID"`
+	ServiceTypeID UUID          `json:"serviceTypeId" gorm:"not null"`
+	ServiceType   *ServiceType  `json:"-" gorm:"foreignKey:ServiceTypeID"`
 }
 
 // Validate a service
@@ -144,16 +144,18 @@ type ServiceCommander interface {
 
 // serviceCommander is the concrete implementation of ServiceCommander
 type serviceCommander struct {
-	store Store
+	store          Store
+	auditCommander AuditEntryCommander
 }
 
 // NewServiceCommander creates a new commander for services
 func NewServiceCommander(
 	store Store,
+	auditCommander AuditEntryCommander,
 ) *serviceCommander {
 	return &serviceCommander{
-		// Using store interface to access repositories
-		store: store,
+		store:          store,
+		auditCommander: auditCommander,
 	}
 }
 
@@ -205,7 +207,17 @@ func (s *serviceCommander) Create(
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-		return nil
+
+		// Create audit entry
+		_, err := s.auditCommander.CreateCtx(
+			ctx,
+			EventTypeServiceCreated,
+			JSON{"state": svc},
+			&svc.ID,
+			&svc.ProviderID,
+			&svc.AgentID,
+			&svc.BrokerID)
+		return err
 	})
 	if err != nil {
 		return nil, err
@@ -218,6 +230,9 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 	if err != nil {
 		return nil, err
 	}
+
+	// Store original service for audit diff
+	originalSvc := *svc
 
 	updateSvc := false
 	var job *Job
@@ -256,7 +271,17 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 
 	if job == nil {
 		// No job needed, just save the service
-		if err := s.store.ServiceRepo().Save(ctx, svc); err != nil {
+		err = s.store.Atomic(ctx, func(store Store) error {
+			if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+				return err
+			}
+
+			// Create audit entry with diff when no job is needed
+			_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceUpdated,
+				&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID, &originalSvc, svc)
+			return err
+		})
+		if err != nil {
 			return nil, err
 		}
 		return svc, nil
@@ -268,7 +293,15 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
 		}
-		return store.JobRepo().Create(ctx, job)
+		if err := store.JobRepo().Create(ctx, job); err != nil {
+			return err
+		}
+
+		// Create audit entry with diff when job is created
+		_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceUpdated,
+			&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID,
+			&originalSvc, svc)
+		return err
 	})
 	if err != nil {
 		return nil, err
@@ -294,6 +327,9 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 		return nil, err
 	}
 
+	// Store original service for audit diff
+	originalSvc := *svc
+
 	trans, action, err := serviceNextStateAndAction(svc.CurrentState, target)
 	if err != nil {
 		return nil, InvalidInputError{Err: err}
@@ -316,7 +352,15 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
 		}
-		return store.JobRepo().Create(ctx, job)
+		if err := store.JobRepo().Create(ctx, job); err != nil {
+			return err
+		}
+
+		// Create audit entry with diff for service transition
+		_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceTransitioned,
+			&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID,
+			&originalSvc, svc)
+		return err
 	})
 	if err != nil {
 		return nil, err
@@ -330,6 +374,9 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 	if err != nil {
 		return nil, err
 	}
+
+	// Store original service for audit diff
+	originalSvc := *svc
 
 	if svc.FailedAction == nil {
 		// Nothing to retry
@@ -352,7 +399,14 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
 		}
-		return store.JobRepo().Create(ctx, job)
+		if err := store.JobRepo().Create(ctx, job); err != nil {
+			return err
+		}
+
+		// Create audit entry with diff for service retry
+		_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceRetried,
+			&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID, &originalSvc, svc)
+		return err
 	})
 	if err != nil {
 		return nil, err

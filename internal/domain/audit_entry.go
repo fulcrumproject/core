@@ -1,6 +1,12 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/wI2L/jsondiff"
+)
 
 // AuthorityType defines the type of entity being audited
 type AuthorityType string
@@ -19,13 +25,42 @@ const (
 
 // Predefined event types
 const (
-	EventTypeStatusChange      EventType = "status_change"
-	EventTypeConfigUpdate      EventType = "config_update"
-	EventTypeCreated           EventType = "created"
-	EventTypeUpdated           EventType = "updated"
-	EventTypeDeleted           EventType = "deleted"
-	EventTypeExecutionStart    EventType = "execution_start"
-	EventTypeExecutionComplete EventType = "execution_complete"
+	// Agent commands
+	EventTypeAgentCreated EventType = "agent_created"
+	EventTypeAgentUpdated EventType = "agent_updated"
+	EventTypeAgentDeleted EventType = "agent_deleted"
+
+	// Broker commands
+	EventTypeBrokerCreated EventType = "broker_created"
+	EventTypeBrokerUpdated EventType = "broker_updated"
+	EventTypeBrokerDeleted EventType = "broker_deleted"
+
+	// Service commands
+	EventTypeServiceCreated      EventType = "service_created"
+	EventTypeServiceUpdated      EventType = "service_updated"
+	EventTypeServiceTransitioned EventType = "service_transitioned"
+	EventTypeServiceRetried      EventType = "service_retried"
+
+	// Provider commands
+	EventTypeProviderCreated EventType = "provider_created"
+	EventTypeProviderUpdated EventType = "provider_updated"
+	EventTypeProviderDeleted EventType = "provider_deleted"
+
+	// ServiceGroup commands
+	EventTypeServiceGroupCreated EventType = "service_group_created"
+	EventTypeServiceGroupUpdated EventType = "service_group_updated"
+	EventTypeServiceGroupDeleted EventType = "service_group_deleted"
+
+	// Token commands
+	EventTypeTokenCreated     EventType = "token_created"
+	EventTypeTokenUpdated     EventType = "token_updated"
+	EventTypeTokenDeleted     EventType = "token_deleted"
+	EventTypeTokenRegenerated EventType = "token_regenerate"
+
+	// MetricType commands
+	EventTypeMetricTypeCreated EventType = "metric_type_created"
+	EventTypeMetricTypeUpdated EventType = "metric_type_updated"
+	EventTypeMetricTypeDeleted EventType = "metric_type_deleted"
 )
 
 // AuditEntry represents an audit log entry
@@ -36,13 +71,11 @@ type AuditEntry struct {
 	AuthorityID   string        `gorm:"not null"`
 	EventType     EventType     `gorm:"not null"`
 	Properties    JSON          `gorm:"type:jsonb"`
+	EntityID      *UUID         `gorm:"index"`
 
-	ProviderID *UUID
-	Provider   *Provider `gorm:"foreignKey:ProviderID"`
-	AgentID    *UUID
-	Agent      *Agent `gorm:"foreignKey:AgentID"`
-	BrokerID   *UUID
-	Broker     *Broker `gorm:"foreignKey:BrokerID"`
+	ProviderID *UUID `gorm:"type:uuid"`
+	AgentID    *UUID `gorm:"type:uuid"`
+	BrokerID   *UUID `gorm:"type:uuid"`
 }
 
 // TableName returns the table name for the audit entry
@@ -58,7 +91,17 @@ func (p *AuditEntry) Validate() error {
 // AuditEntryCommander defines the interface for audit entry command operations
 type AuditEntryCommander interface {
 	// Create creates a new audit entry
-	Create(ctx context.Context, authorityType AuthorityType, authorityID string, eventType EventType, properties JSON, providerID, agentID, brokerID *UUID) (*AuditEntry, error)
+	Create(ctx context.Context, authorityType AuthorityType, authorityID string, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error)
+
+	// CreateWithDiff creates an audit entry with a diff between two entity states
+	CreateWithDiff(ctx context.Context, authorityType AuthorityType, authorityID string, eventType EventType,
+		entityID, providerID, agentID, brokerID *UUID, beforeEntity, afterEntity interface{}) (*AuditEntry, error)
+
+	// CreateCtx extracts authority info from context and creates an audit entry
+	CreateCtx(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error)
+
+	// CreateCtxWithDiff extracts authority info from context and creates an audit entry with diff
+	CreateCtxWithDiff(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, beforeEntity, afterEntity interface{}) (*AuditEntry, error)
 }
 
 // auditEntryCommander is the concrete implementation of AuditEntryCommander
@@ -81,6 +124,7 @@ func (s *auditEntryCommander) Create(
 	authorityID string,
 	eventType EventType,
 	properties JSON,
+	entityID,
 	providerID, agentID, brokerID *UUID,
 ) (*AuditEntry, error) {
 	auditEntry := &AuditEntry{
@@ -88,6 +132,7 @@ func (s *auditEntryCommander) Create(
 		AuthorityID:   authorityID,
 		EventType:     eventType,
 		Properties:    properties,
+		EntityID:      entityID,
 		ProviderID:    providerID,
 		AgentID:       agentID,
 		BrokerID:      brokerID,
@@ -99,6 +144,86 @@ func (s *auditEntryCommander) Create(
 		return nil, err
 	}
 	return auditEntry, nil
+}
+
+// CreateWithDiff creates an audit entry with a JSON diff between two entity states using jsondiff
+func (s *auditEntryCommander) CreateWithDiff(
+	ctx context.Context,
+	authorityType AuthorityType,
+	authorityID string,
+	eventType EventType,
+	entityID, providerID, agentID, brokerID *UUID,
+	beforeEntity, afterEntity interface{},
+) (*AuditEntry, error) {
+	// Convert entities to JSON
+	beforeJSON, err := json.Marshal(beforeEntity)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal 'before' entity: %w", err)
+	}
+
+	afterJSON, err := json.Marshal(afterEntity)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal 'after' entity: %w", err)
+	}
+
+	// Generate RFC 6902 JSON Patch using jsondiff
+	patch, err := jsondiff.CompareJSON(beforeJSON, afterJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate diff: %w", err)
+	}
+
+	// Store diff in properties
+	properties := JSON{
+		"diff": patch,
+	}
+
+	// Create the audit entry
+	return s.Create(ctx, authorityType, authorityID, eventType, properties, entityID, providerID, agentID, brokerID)
+}
+
+// CreateCtx extracts authority info from context and creates an audit entry
+func (s *auditEntryCommander) CreateCtx(
+	ctx context.Context,
+	eventType EventType,
+	properties JSON,
+	entityID, providerID, agentID, brokerID *UUID,
+) (*AuditEntry, error) {
+	authorityType, authorityID := ExtractAuditAuthority(ctx)
+	return s.Create(ctx, authorityType, authorityID, eventType, properties, entityID, providerID, agentID, brokerID)
+}
+
+// CreateCtxWithDiff extracts authority info from context and creates an audit entry with diff
+func (s *auditEntryCommander) CreateCtxWithDiff(
+	ctx context.Context,
+	eventType EventType,
+	entityID, providerID, agentID, brokerID *UUID,
+	beforeEntity, afterEntity interface{},
+) (*AuditEntry, error) {
+	authorityType, authorityID := ExtractAuditAuthority(ctx)
+	return s.CreateWithDiff(ctx, authorityType, authorityID, eventType, entityID, providerID, agentID, brokerID, beforeEntity, afterEntity)
+}
+
+// ExtractAuditAuthority extracts authority information from context
+// Returns the authority type and ID for audit entries
+func ExtractAuditAuthority(ctx context.Context) (AuthorityType, string) {
+	identity := MustGetAuthIdentity(ctx)
+
+	// Map role to authority type
+	var authorityType AuthorityType
+	switch identity.Role() {
+	case RoleFulcrumAdmin:
+		authorityType = AuthorityTypeAdmin
+	case RoleProviderAdmin:
+		authorityType = AuthorityTypeProvider
+	case RoleAgent:
+		authorityType = AuthorityTypeAgent
+	case RoleBroker:
+		authorityType = AuthorityTypeBroker
+	default:
+		authorityType = AuthorityTypeInternal
+	}
+
+	return authorityType, identity.ID().String()
 }
 
 type AuditEntryRepository interface {

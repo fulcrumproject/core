@@ -9,9 +9,9 @@ import (
 
 // BaseEntity provides common fields for all entities
 type BaseEntity struct {
-	ID        UUID      `gorm:"type:uuid;primary_key"`
-	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	ID        UUID      `json:"id" gorm:"type:uuid;primary_key"`
+	CreatedAt time.Time `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt time.Time `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP"`
 }
 
 // BeforeCreate ensures UUID is set before creating a record

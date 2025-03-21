@@ -42,19 +42,19 @@ func ParseAgentState(value string) (AgentState, error) {
 type Agent struct {
 	BaseEntity
 
-	Name        string      `gorm:"not null"`
-	Attributes  Attributes  `gorm:"type:jsonb"`
-	CountryCode CountryCode `gorm:"size:2"`
+	Name        string      `json:"name" gorm:"not null"`
+	Attributes  Attributes  `json:"attributes,omitempty" gorm:"type:jsonb"`
+	CountryCode CountryCode `json:"countryCode,omitempty" gorm:"size:2"`
 
 	// State management
-	State           AgentState `gorm:"not null"`
-	LastStateUpdate time.Time  `gorm:"index"`
+	State           AgentState `json:"state" gorm:"not null"`
+	LastStateUpdate time.Time  `json:"lastStateUpdate" gorm:"index"`
 
 	// Relationships
-	AgentTypeID UUID       `gorm:"not null"`
-	AgentType   *AgentType `gorm:"foreignKey:AgentTypeID"`
-	ProviderID  UUID       `gorm:"not null"`
-	Provider    *Provider  `gorm:"foreignKey:ProviderID"`
+	AgentTypeID UUID       `json:"agentTypeId" gorm:"not null"`
+	AgentType   *AgentType `json:"agentType,omitempty" gorm:"foreignKey:AgentTypeID"`
+	ProviderID  UUID       `json:"providerId" gorm:"not null"`
+	Provider    *Provider  `json:"-" gorm:"foreignKey:ProviderID"`
 }
 
 // TableName returns the table name for the agent
@@ -107,15 +107,18 @@ type AgentCommander interface {
 
 // agentCommander is the concrete implementation of AgentCommander
 type agentCommander struct {
-	store Store
+	store          Store
+	auditCommander AuditEntryCommander
 }
 
 // NewAgentCommander creates a new default AgentCommander
 func NewAgentCommander(
 	store Store,
+	auditCommander AuditEntryCommander,
 ) *agentCommander {
 	return &agentCommander{
-		store: store,
+		store:          store,
+		auditCommander: auditCommander,
 	}
 }
 
@@ -142,20 +145,31 @@ func (s *agentCommander) Create(
 		return nil, NewInvalidInputErrorf("agent type with ID %s does not exist", agentTypeID)
 	}
 
-	agent := &Agent{
-		Name:            name,
-		State:           AgentDisconnected,
-		LastStateUpdate: time.Now(),
-		CountryCode:     countryCode,
-		Attributes:      attributes,
-		ProviderID:      providerID,
-		AgentTypeID:     agentTypeID,
-	}
-	if err := agent.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
-	}
+	var agent *Agent
+	err = s.store.Atomic(ctx, func(store Store) error {
+		agent = &Agent{
+			Name:            name,
+			State:           AgentDisconnected,
+			LastStateUpdate: time.Now(),
+			CountryCode:     countryCode,
+			Attributes:      attributes,
+			ProviderID:      providerID,
+			AgentTypeID:     agentTypeID,
+		}
+		if err := agent.Validate(); err != nil {
+			return InvalidInputError{Err: err}
+		}
 
-	if err := s.store.AgentRepo().Create(ctx, agent); err != nil {
+		if err := store.AgentRepo().Create(ctx, agent); err != nil {
+			return err
+		}
+
+		_, err := s.auditCommander.CreateCtx(
+			ctx, EventTypeAgentCreated, JSON{"state": agent},
+			&agent.ID, &providerID, nil, nil)
+		return err
+	})
+	if err != nil {
 		return nil, err
 	}
 	return agent, nil
@@ -168,35 +182,55 @@ func (s *agentCommander) Update(ctx context.Context,
 	attributes *Attributes,
 	state *AgentState,
 ) (*Agent, error) {
-	agent, err := s.store.AgentRepo().FindByID(ctx, id)
+	beforeAgent, err := s.store.AgentRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
+	// Store a copy of the agent before modifications for audit diff
+	beforeAgentCopy := *beforeAgent
+
 	if name != nil {
-		agent.Name = *name
+		beforeAgent.Name = *name
 	}
 	if countryCode != nil {
-		agent.CountryCode = *countryCode
+		beforeAgent.CountryCode = *countryCode
 	}
 	if attributes != nil {
-		agent.Attributes = *attributes
+		beforeAgent.Attributes = *attributes
 	}
 	if state != nil {
-		agent.State = *state
+		beforeAgent.State = *state
 	}
-	if err := agent.Validate(); err != nil {
+	if err := beforeAgent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
-	err = s.store.AgentRepo().Save(ctx, agent)
+	err = s.store.Atomic(ctx, func(store Store) error {
+		err := store.AgentRepo().Save(ctx, beforeAgent)
+		if err != nil {
+			return err
+		}
+		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
+			&id, &beforeAgent.ProviderID, nil, nil, &beforeAgentCopy, beforeAgent)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
-	return agent, nil
+	return beforeAgent, nil
 }
 
 func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
+	// Get agent before deletion for audit purposes
+	agent, err := s.store.AgentRepo().FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// Store provider ID for audit entry
+	providerID := agent.ProviderID
+
 	return s.store.Atomic(ctx, func(store Store) error {
 		// Prevent deletion if it has services present
 		numOfServices, err := store.ServiceRepo().CountByAgent(ctx, id)
@@ -206,33 +240,51 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 		if numOfServices > 0 {
 			return errors.New("cannot delete agent with associated services")
 		}
-
 		// Delete all tokens associated with this agent before deleting the agent
+
 		if err := store.TokenRepo().DeleteByAgentID(ctx, id); err != nil {
 			return err
 		}
 
-		return store.AgentRepo().Delete(ctx, id)
+		if err := store.AgentRepo().Delete(ctx, id); err != nil {
+			return err
+		}
+
+		_, err = s.auditCommander.CreateCtx(ctx, EventTypeAgentDeleted,
+			JSON{"state": agent}, &id, &providerID, nil, nil)
+		return err
 	})
 }
 
 func (s *agentCommander) UpdateState(ctx context.Context, id UUID, state AgentState) (*Agent, error) {
-	agent, err := s.store.AgentRepo().FindByID(ctx, id)
+	beforeAgent, err := s.store.AgentRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	agent.State = state
-	agent.LastStateUpdate = time.Now()
-	if err := agent.Validate(); err != nil {
+	// Store a copy of the agent before modifications for audit diff
+	beforeAgentCopy := *beforeAgent
+
+	beforeAgent.State = state
+	beforeAgent.LastStateUpdate = time.Now()
+	if err := beforeAgent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
-	err = s.store.AgentRepo().Save(ctx, agent)
+	err = s.store.Atomic(ctx, func(store Store) error {
+		err := store.AgentRepo().Save(ctx, beforeAgent)
+		if err != nil {
+			return err
+		}
+
+		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
+			&id, &beforeAgent.ProviderID, nil, nil, &beforeAgentCopy, beforeAgent)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
-	return agent, nil
+	return beforeAgent, nil
 }
 
 type AgentRepository interface {

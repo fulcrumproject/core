@@ -8,7 +8,7 @@ import (
 // Broker represents a service broker
 type Broker struct {
 	BaseEntity
-	Name string `gorm:"not null"`
+	Name string `json:"name" gorm:"not null"`
 }
 
 // TableName returns the table name for the broker
@@ -38,15 +38,18 @@ type BrokerCommander interface {
 
 // brokerCommander is the concrete implementation of BrokerCommander
 type brokerCommander struct {
-	store Store
+	store          Store
+	auditCommander AuditEntryCommander
 }
 
 // NewBrokerCommander creates a new BrokerCommander
 func NewBrokerCommander(
 	store Store,
+	auditCommander AuditEntryCommander,
 ) *brokerCommander {
 	return &brokerCommander{
-		store: store,
+		store:          store,
+		auditCommander: auditCommander,
 	}
 }
 
@@ -54,13 +57,28 @@ func (s *brokerCommander) Create(
 	ctx context.Context,
 	name string,
 ) (*Broker, error) {
-	broker := &Broker{
-		Name: name,
-	}
-	if err := broker.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
-	}
-	if err := s.store.BrokerRepo().Create(ctx, broker); err != nil {
+	var broker *Broker
+	err := s.store.Atomic(ctx, func(store Store) error {
+		broker = &Broker{
+			Name: name,
+		}
+		if err := broker.Validate(); err != nil {
+			return InvalidInputError{Err: err}
+		}
+
+		if err := store.BrokerRepo().Create(ctx, broker); err != nil {
+			return err
+		}
+
+		_, err := s.auditCommander.CreateCtx(
+			ctx,
+			EventTypeBrokerCreated,
+			JSON{"state": broker},
+			&broker.ID, nil, nil, &broker.ID)
+		return err
+	})
+
+	if err != nil {
 		return nil, err
 	}
 	return broker, nil
@@ -70,33 +88,64 @@ func (s *brokerCommander) Update(ctx context.Context,
 	id UUID,
 	name *string,
 ) (*Broker, error) {
-	broker, err := s.store.BrokerRepo().FindByID(ctx, id)
+	beforeBroker, err := s.store.BrokerRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
+	// Store a copy of the broker before modifications for audit diff
+	beforeBrokerCopy := *beforeBroker
+
 	if name != nil {
-		broker.Name = *name
+		beforeBroker.Name = *name
 	}
-	if err := broker.Validate(); err != nil {
+	if err := beforeBroker.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
-	err = s.store.BrokerRepo().Save(ctx, broker)
+	err = s.store.Atomic(ctx, func(store Store) error {
+		err := store.BrokerRepo().Save(ctx, beforeBroker)
+		if err != nil {
+			return err
+		}
+
+		_, err = s.auditCommander.CreateCtxWithDiff(
+			ctx,
+			EventTypeBrokerUpdated,
+			&id, nil, nil, &id,
+			&beforeBrokerCopy, beforeBroker)
+		return err
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	return broker, nil
+	return beforeBroker, nil
 }
 
 func (s *brokerCommander) Delete(ctx context.Context, id UUID) error {
+	// Get broker before deletion for audit purposes
+	broker, err := s.store.BrokerRepo().FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
 	return s.store.Atomic(ctx, func(store Store) error {
 		// Delete all tokens associated with this broker before deleting the broker
 		if err := store.TokenRepo().DeleteByBrokerID(ctx, id); err != nil {
 			return err
 		}
 
-		return store.BrokerRepo().Delete(ctx, id)
+		if err := store.BrokerRepo().Delete(ctx, id); err != nil {
+			return err
+		}
+
+		_, err := s.auditCommander.CreateCtx(
+			ctx,
+			EventTypeBrokerDeleted,
+			JSON{"state": broker},
+			&id, nil, nil, &id)
+		return err
 	})
 }
 
