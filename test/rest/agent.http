@@ -111,7 +111,6 @@ Authorization: Bearer {{adminToken}}
   "scopeId": "{{agentId}}"
 }
 
-### Extract new token
 @newAgentToken = {{createNewToken.response.body.$.value}}
 
 ### Test new token by updating status with new token

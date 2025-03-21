@@ -127,10 +127,6 @@ func (s *agentCommander) Create(
 	providerID UUID,
 	agentTypeID UUID,
 ) (*Agent, error) {
-	if err := ValidateAuthScope(ctx, &AuthScope{ProviderID: &providerID}); err != nil {
-		return nil, UnauthorizedError{Err: err}
-	}
-
 	providerExists, err := s.store.ProviderRepo().Exists(ctx, providerID)
 	if err != nil {
 		return nil, err
@@ -177,10 +173,6 @@ func (s *agentCommander) Update(ctx context.Context,
 		return nil, err
 	}
 
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &id, ProviderID: &agent.ProviderID}); err != nil {
-		return nil, UnauthorizedError{Err: err}
-	}
-
 	if name != nil {
 		agent.Name = *name
 	}
@@ -205,15 +197,6 @@ func (s *agentCommander) Update(ctx context.Context,
 }
 
 func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
-	agent, err := s.store.AgentRepo().FindByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &id, ProviderID: &agent.ProviderID}); err != nil {
-		return UnauthorizedError{Err: err}
-	}
-
 	return s.store.Atomic(ctx, func(store Store) error {
 		// Prevent deletion if it has services present
 		numOfServices, err := store.ServiceRepo().CountByAgent(ctx, id)
@@ -237,10 +220,6 @@ func (s *agentCommander) UpdateState(ctx context.Context, id UUID, state AgentSt
 	agent, err := s.store.AgentRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
-	}
-
-	if err := ValidateAuthScope(ctx, &AuthScope{AgentID: &id, ProviderID: &agent.ProviderID}); err != nil {
-		return nil, UnauthorizedError{Err: err}
 	}
 
 	agent.State = state
@@ -280,8 +259,11 @@ type AgentQuerier interface {
 	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[Agent], error)
+	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Agent], error)
 
 	// CountByProvider returns the number of agents for a specific provider
 	CountByProvider(ctx context.Context, providerID UUID) (int64, error)
+
+	// Retrieve the auth scope for the entity
+	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
 }

@@ -1,43 +1,47 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/google/uuid"
 )
 
 type AgentHandler struct {
 	querier   domain.AgentQuerier
 	commander domain.AgentCommander
+	authz     domain.Authorizer
 }
 
 func NewAgentHandler(
 	querier domain.AgentQuerier,
 	commander domain.AgentCommander,
+	authz domain.Authorizer,
 ) *AgentHandler {
 	return &AgentHandler{
 		querier:   querier,
 		commander: commander,
+		authz:     authz,
 	}
 }
 
 // Routes returns the router with all agent routes registered
-func (h *AgentHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
+func (h *AgentHandler) Routes() func(r chi.Router) {
+
 	return func(r chi.Router) {
-		r.With(authzMW(domain.SubjectAgent, domain.ActionList)).Get("/", h.handleList)
-		r.With(authzMW(domain.SubjectAgent, domain.ActionCreate)).Post("/", h.handleCreate)
+		r.Get("/", h.handleList)
+		r.Post("/", h.handleCreate)
 		r.Group(func(r chi.Router) {
-			r.Use(UUIDMiddleware)
-			r.With(authzMW(domain.SubjectAgent, domain.ActionRead)).Get("/{id}", h.handleGet)
-			r.With(authzMW(domain.SubjectAgent, domain.ActionUpdate)).Patch("/{id}", h.handleUpdate)
-			r.With(authzMW(domain.SubjectAgent, domain.ActionDelete)).Delete("/{id}", h.handleDelete)
+			r.Use(IDMiddleware)
+			r.Get("/{id}", h.handleGet)
+			r.Patch("/{id}", h.handleUpdate)
+			r.Delete("/{id}", h.handleDelete)
 		})
-		r.With(authzMW(domain.SubjectAgent, domain.ActionUpdateState), AgentAuthMiddleware).
-			Put("/me/status", h.handleUpdateStatusMe)
-		r.With(authzMW(domain.SubjectAgent, domain.ActionRead), AgentAuthMiddleware).
-			Get("/me", h.handleGetMe)
+		r.Put("/me/status", h.handleUpdateStatusMe)
+		r.Get("/me", h.handleGetMe)
 	}
 }
 
@@ -51,6 +55,11 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := render.Decode(r, &p); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+	scope := domain.AuthScope{ProviderID: &p.ProviderID}
+	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectAgent, domain.ActionCreate, &scope); err != nil {
+		render.Render(w, r, ErrDomain(err))
 		return
 	}
 	agent, err := h.commander.Create(
@@ -70,7 +79,12 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AgentHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := MustGetUUIDParam(r)
+	id := MustGetID(r)
+	_, err := h.authorize(r.Context(), id, domain.ActionRead)
+	if err != nil {
+		render.Render(w, r, ErrUnauthorized(err))
+		return
+	}
 	agent, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
@@ -82,7 +96,11 @@ func (h *AgentHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 // handleGetMe handles GET /agents/me
 // This endpoint allows agents to retrieve their own information
 func (h *AgentHandler) handleGetMe(w http.ResponseWriter, r *http.Request) {
-	agentID := MustGetAgentID(r)
+	agentID, err := MustGetAgentID(r.Context())
+	if err != nil {
+		render.Render(w, r, ErrDomain(err))
+		return
+	}
 	agent, err := h.querier.FindByID(r.Context(), agentID)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
@@ -92,12 +110,17 @@ func (h *AgentHandler) handleGetMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AgentHandler) handleList(w http.ResponseWriter, r *http.Request) {
+	id := domain.MustGetAuthIdentity(r.Context())
+	if err := h.authz.Authorize(id, domain.SubjectAgent, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
+		render.Render(w, r, ErrUnauthorized(err))
+		return
+	}
 	pag, err := parsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-	result, err := h.querier.List(r.Context(), pag)
+	result, err := h.querier.List(r.Context(), id.Scope(), pag)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -106,7 +129,12 @@ func (h *AgentHandler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := MustGetUUIDParam(r)
+	id := MustGetID(r)
+	_, err := h.authorize(r.Context(), id, domain.ActionUpdate)
+	if err != nil {
+		render.Render(w, r, ErrUnauthorized(err))
+		return
+	}
 	var p struct {
 		Name        *string             `json:"name"`
 		State       *domain.AgentState  `json:"state"`
@@ -142,7 +170,11 @@ func (h *AgentHandler) handleUpdateStatusMe(w http.ResponseWriter, r *http.Reque
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-	agentID := MustGetAgentID(r)
+	agentID, err := MustGetAgentID(r.Context())
+	if err != nil {
+		render.Render(w, r, ErrDomain(err))
+		return
+	}
 	agent, err := h.commander.UpdateState(r.Context(), agentID, p.State)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -152,8 +184,13 @@ func (h *AgentHandler) handleUpdateStatusMe(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *AgentHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id := MustGetUUIDParam(r)
-	_, err := h.querier.FindByID(r.Context(), id)
+	id := MustGetID(r)
+	_, err := h.authorize(r.Context(), id, domain.ActionDelete)
+	if err != nil {
+		render.Render(w, r, ErrUnauthorized(err))
+		return
+	}
+	_, err = h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
 		return
@@ -200,4 +237,28 @@ func agentToResponse(a *domain.Agent) *AgentResponse {
 		response.AgentType = agentTypeToResponse(a.AgentType)
 	}
 	return response
+}
+
+// TODO review with agents/me
+func MustGetAgentID(ctx context.Context) (domain.UUID, error) {
+	id := domain.MustGetAuthIdentity(ctx)
+	if !id.IsRole(domain.RoleAgent) {
+		return uuid.Nil, domain.NewUnauthorizedErrorf("must be authenticated as agent")
+	}
+	if id.Scope().AgentID == nil {
+		return uuid.Nil, domain.NewUnauthorizedErrorf("agent with nil scope")
+	}
+	return *id.Scope().AgentID, nil
+}
+
+func (h *AgentHandler) authorize(ctx context.Context, id domain.UUID, action domain.AuthAction) (*domain.AuthScope, error) {
+	scope, err := h.querier.AuthScope(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	err = h.authz.AuthorizeCtx(ctx, domain.SubjectAgent, action, scope)
+	if err != nil {
+		return nil, err
+	}
+	return scope, nil
 }

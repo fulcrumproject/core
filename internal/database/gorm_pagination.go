@@ -82,6 +82,7 @@ func list[T any](
 	sortApplier PageFilterApplier,
 	authzFilterApplier AuthzFilterApplier,
 	preloadPaths []string,
+	authScope *domain.AuthScope,
 ) (*domain.PageResponse[T], error) {
 	var items []T
 
@@ -95,10 +96,8 @@ func list[T any](
 			return nil, err
 		}
 	}
-	if authzFilterApplier != nil {
-		if id := domain.GetAuthIdentity(ctx); id != nil {
-			q = authzFilterApplier(id.Scope(), q)
-		}
+	if authzFilterApplier != nil && authScope != nil {
+		q = authzFilterApplier(authScope, q)
 	}
 
 	// Get total count

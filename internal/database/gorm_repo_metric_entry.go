@@ -30,7 +30,7 @@ func NewMetricEntryRepository(db *gorm.DB) *GormMetricEntryRepository {
 			db,
 			applyMetricEntryFilter,
 			applyMetricEntrySort,
-			metricEntryAuthzFilterApplier,
+			allAuthzFilterApplier,
 			[]string{"Agent", "Service", "Type"}, // Find preload paths
 			[]string{"Agent", "Service", "Type"}, // List preload paths
 		),
@@ -48,14 +48,6 @@ func (r *GormMetricEntryRepository) CountByMetricType(ctx context.Context, typeI
 	return count, result.Error
 }
 
-// metricEntryAuthzFilterApplier applies authorization scoping to metric entry queries
-func metricEntryAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
-	if s.ProviderID != nil {
-		return q.Joins("INNER JOIN agents on agents.id = metric_entries.agent_id").Where("agents.provider_id", s.ProviderID)
-	} else if s.BrokerID != nil {
-		return q.Joins("INNER JOIN services ON services.id = metric_entries.service_id INNER JOIN service_groups on service_groups.id = services.group_id").Where("service_groups.broker_id", s.BrokerID)
-	} else if s.AgentID != nil {
-		return q.Where("agent_id = ?", s.AgentID)
-	}
-	return q
+func (r *GormMetricEntryRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+	return r.getAuthScope(ctx, id, "provider_id", "agent_id", "broker_id")
 }

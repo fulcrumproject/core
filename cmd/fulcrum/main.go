@@ -62,9 +62,6 @@ func main() {
 	// Initialize the store
 	store := database.NewStore(db)
 
-	// Initialize authenticator and authorizer
-	authenticator := database.NewTokenAuthenticator(store)
-
 	// Initialize commanders
 	serviceCmd := domain.NewServiceCommander(store)
 	serviceGroupCmd := domain.NewServiceGroupCommander(store)
@@ -77,19 +74,23 @@ func main() {
 	brokerCmd := domain.NewBrokerCommander(store)
 	tokenCmd := domain.NewTokenCommander(store)
 
+	// Initialize auth and authorizer
+	auth := database.NewTokenAuthenticator(store)
+	authz := domain.NewDefaultRuleAuthorizer()
+
 	// Initialize handlers
-	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo())
-	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo())
-	providerHandler := api.NewProviderHandler(store.ProviderRepo(), providerCmd)
-	agentHandler := api.NewAgentHandler(store.AgentRepo(), agentCmd)
-	serviceGroupHandler := api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd)
-	serviceHandler := api.NewServiceHandler(store.ServiceRepo(), serviceCmd)
-	jobHandler := api.NewJobHandler(store.JobRepo(), jobCmd)
-	metricTypeHandler := api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd)
-	metricEntryHandler := api.NewMetricEntryHandler(store.MetricEntryRepo(), metricEntryCmd)
-	auditEntryHandler := api.NewAuditEntryHandler(store.AuditEntryRepo(), auditEntryCmd)
-	brokerHandler := api.NewBrokerHandler(store.BrokerRepo(), brokerCmd)
-	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd)
+	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo(), authz)
+	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), authz)
+	providerHandler := api.NewProviderHandler(store.ProviderRepo(), providerCmd, authz)
+	agentHandler := api.NewAgentHandler(store.AgentRepo(), agentCmd, authz)
+	serviceGroupHandler := api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, authz)
+	serviceHandler := api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, authz)
+	jobHandler := api.NewJobHandler(store.JobRepo(), jobCmd, authz)
+	metricTypeHandler := api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, authz)
+	metricEntryHandler := api.NewMetricEntryHandler(store.MetricEntryRepo(), store.ServiceRepo(), metricEntryCmd, authz)
+	auditEntryHandler := api.NewAuditEntryHandler(store.AuditEntryRepo(), auditEntryCmd, authz)
+	brokerHandler := api.NewBrokerHandler(store.BrokerRepo(), brokerCmd, authz)
+	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), authz)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -103,34 +104,30 @@ func main() {
 		render.SetContentType(render.ContentTypeJSON),
 	)
 
-	// Set a timeout value on the request context (ctx), that will signal
-	// through ctx.Done() that the request has timed out and further
-	// processing should be stopped.
-	// Create auth middleware
-	authz := api.AuthzMiddleware(authenticator, domain.NewDefaultRuleAuthorizer())
+	authMiddleware := api.AuthMiddleware(auth)
 
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Register API endpoints
-		r.Route("/agent-types", agentTypeHandler.Routes(authz))
-		r.Route("/service-types", serviceTypeHandler.Routes(authz))
-		r.Route("/providers", providerHandler.Routes(authz))
-		r.Route("/agents", agentHandler.Routes(authz))
-		r.Route("/service-groups", serviceGroupHandler.Routes(authz))
-		r.Route("/services", serviceHandler.Routes(authz))
-		r.Route("/metric-types", metricTypeHandler.Routes(authz))
-		r.Route("/metric-entries", metricEntryHandler.Routes(authz))
-		r.Route("/audit-entries", auditEntryHandler.Routes(authz))
-		r.Route("/jobs", jobHandler.Routes(authz))
-		r.Route("/brokers", brokerHandler.Routes(authz))
-		r.Route("/tokens", tokenHandler.Routes(authz))
+		r.Use(authMiddleware)
+		r.Route("/agent-types", agentTypeHandler.Routes())
+		r.Route("/service-types", serviceTypeHandler.Routes())
+		r.Route("/providers", providerHandler.Routes())
+		r.Route("/agents", agentHandler.Routes())
+		r.Route("/service-groups", serviceGroupHandler.Routes())
+		r.Route("/services", serviceHandler.Routes())
+		r.Route("/metric-types", metricTypeHandler.Routes())
+		r.Route("/metric-entries", metricEntryHandler.Routes())
+		r.Route("/audit-entries", auditEntryHandler.Routes())
+		r.Route("/jobs", jobHandler.Routes())
+		r.Route("/brokers", brokerHandler.Routes())
+		r.Route("/tokens", tokenHandler.Routes())
 	})
 
 	// Setup background job maintenance worker
-	go JobMainenanceTask(&cfg.JobConfig, store, serviceCmd)
+	// go JobMainenanceTask(&cfg.JobConfig, store, serviceCmd)
 
 	// Setup background worker to mark inactive agents as disconnected
-	go DisconnectUnhealthyAgentsTask(&cfg.AgentConfig, store)
+	// go DisconnectUnhealthyAgentsTask(&cfg.AgentConfig, store)
 
 	// Start server
 	slog.Info("Server starting", "port", cfg.Port)

@@ -27,7 +27,7 @@ func ErrDomain(err error) render.Renderer {
 		return ErrNotFound()
 	}
 	if errors.As(err, &domain.UnauthorizedError{}) {
-		return ErrForbidden(err)
+		return ErrUnauthorized(err)
 	}
 	return ErrInternal(err)
 }
@@ -57,7 +57,7 @@ func ErrInternal(err error) render.Renderer {
 	}
 }
 
-func ErrUnauthorized() render.Renderer {
+func ErrUnauthenticated() render.Renderer {
 	return &ErrResponse{
 		HTTPStatusCode: http.StatusUnauthorized,
 		StatusText:     "Unauthorized",
@@ -65,7 +65,7 @@ func ErrUnauthorized() render.Renderer {
 	}
 }
 
-func ErrForbidden(err error) render.Renderer {
+func ErrUnauthorized(err error) render.Renderer {
 	return &ErrResponse{
 		HTTPStatusCode: http.StatusForbidden,
 		StatusText:     "Forbidden",

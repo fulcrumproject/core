@@ -47,3 +47,8 @@ func (r *GormMetricTypeRepository) FindByName(ctx context.Context, name string) 
 	}
 	return &entity, nil
 }
+
+func (r *GormMetricTypeRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+	// Metric types don't have scoping IDs as they are global resources
+	return &domain.AuthScope{}, nil
+}

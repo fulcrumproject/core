@@ -77,6 +77,10 @@ type Service struct {
 	Resources *JSON `gorm:"type:jsonb"`
 
 	// Relationships
+	ProviderID    UUID          `gorm:"not null"`
+	Provider      *Provider     `gorm:"foreignKey:ProviderID"`
+	BrokerID      UUID          `gorm:"not null"`
+	Broker        *Broker       `gorm:"foreignKey:BrokerID"`
 	GroupID       UUID          `gorm:"not null" json:"groupId"`
 	Group         *ServiceGroup `gorm:"foreignKey:GroupID"`
 	AgentID       UUID          `gorm:"not null"`
@@ -118,28 +122,6 @@ func (s Service) Validate() error {
 // TableName returns the table name for the service
 func (Service) TableName() string {
 	return "services"
-}
-
-// NewService creates a new service with the right stuff
-func NewService(agentID UUID,
-	serviceTypeID UUID,
-	groupID UUID,
-	name string,
-	attributes Attributes,
-	properties JSON,
-) *Service {
-	target := ServiceCreated
-	return &Service{
-		GroupID:           groupID,
-		AgentID:           agentID,
-		ServiceTypeID:     serviceTypeID,
-		Name:              name,
-		CurrentState:      ServiceCreating,
-		TargetState:       &target,
-		Attributes:        attributes,
-		CurrentProperties: nil,
-		TargetProperties:  &properties,
-	}
 }
 
 // ServiceCommander defines the interface for service command operations
@@ -184,20 +166,39 @@ func (s *serviceCommander) Create(
 	attributes Attributes,
 	properties JSON,
 ) (*Service, error) {
-	if err := s.validateServiceAuthScope(ctx, agentID, groupID); err != nil {
-		return nil, UnauthorizedError{Err: err}
+	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
+	if err != nil {
+		return nil, err
+	}
+	group, err := s.store.ServiceGroupRepo().FindByID(ctx, groupID)
+	if err != nil {
+		return nil, err
 	}
 
-	svc := NewService(agentID, serviceTypeID, groupID, name, attributes, properties)
+	target := ServiceCreated
+	svc := &Service{
+		BrokerID:          group.BrokerID,
+		GroupID:           groupID,
+		ProviderID:        agent.ProviderID,
+		AgentID:           agentID,
+		ServiceTypeID:     serviceTypeID,
+		Name:              name,
+		CurrentState:      ServiceCreating,
+		TargetState:       &target,
+		Attributes:        attributes,
+		CurrentProperties: nil,
+		TargetProperties:  &properties,
+	}
+
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
-	err := s.store.Atomic(ctx, func(store Store) error {
+	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
 			return err
 		}
-		job := NewJob(svc.AgentID, svc.ID, ServiceActionCreate, 1)
+		job := NewJob(svc, ServiceActionCreate, 1)
 		if err := job.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -216,10 +217,6 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 	svc, err := s.store.ServiceRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
-	}
-
-	if err := s.validateServiceAuthScope(ctx, svc.AgentID, svc.GroupID); err != nil {
-		return nil, UnauthorizedError{Err: err}
 	}
 
 	updateSvc := false
@@ -242,7 +239,7 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 		target := svc.CurrentState
 		svc.TargetState = &target
 		svc.CurrentState = trans
-		job = NewJob(svc.AgentID, svc.ID, action, 1)
+		job = NewJob(svc, action, 1)
 		if err := job.Validate(); err != nil {
 			return nil, InvalidInputError{Err: err}
 		}
@@ -292,16 +289,9 @@ func serviceUpdateNextStateAndAction(state ServiceState) (ServiceState, ServiceA
 }
 
 func (s *serviceCommander) Transition(ctx context.Context, id UUID, target ServiceState) (*Service, error) {
-	if err := target.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
-	}
 	svc, err := s.store.ServiceRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
-	}
-
-	if err := s.validateServiceAuthScope(ctx, svc.AgentID, svc.GroupID); err != nil {
-		return nil, UnauthorizedError{Err: err}
 	}
 
 	trans, action, err := serviceNextStateAndAction(svc.CurrentState, target)
@@ -315,7 +305,7 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 	}
 
 	// Create job for transition
-	job := NewJob(svc.AgentID, svc.ID, action, 1)
+	job := NewJob(svc, action, 1)
 	if err := job.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
@@ -331,6 +321,7 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 	if err != nil {
 		return nil, err
 	}
+
 	return transitionedService, nil
 }
 
@@ -338,10 +329,6 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 	svc, err := s.store.ServiceRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
-	}
-
-	if err := s.validateServiceAuthScope(ctx, svc.AgentID, svc.GroupID); err != nil {
-		return nil, UnauthorizedError{Err: err}
 	}
 
 	if svc.FailedAction == nil {
@@ -354,7 +341,7 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 	}
 
 	// Create job for retry
-	job := NewJob(svc.AgentID, svc.ID, *svc.FailedAction, 1)
+	job := NewJob(svc, *svc.FailedAction, 1)
 	if err := job.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
@@ -370,6 +357,7 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 	if err != nil {
 		return nil, err
 	}
+
 	return retryService, nil
 }
 
@@ -393,18 +381,6 @@ func serviceNextStateAndAction(curr, target ServiceState) (ServiceState, Service
 		}
 	}
 	return "", "", fmt.Errorf("invalid transition from %s to %s", curr, target)
-}
-
-func (s *serviceCommander) validateServiceAuthScope(ctx context.Context, agentID, groupID UUID) error {
-	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
-	if err != nil {
-		return err
-	}
-	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, groupID)
-	if err != nil {
-		return err
-	}
-	return ValidateAuthScope(ctx, &AuthScope{AgentID: &agentID, ProviderID: &agent.ProviderID, BrokerID: &sg.BrokerID})
 }
 
 func (s *serviceCommander) FailTimeoutServicesAndJobs(ctx context.Context, timeout time.Duration) (int, error) {
@@ -472,11 +448,14 @@ type ServiceQuerier interface {
 	FindByExternalID(ctx context.Context, agentID UUID, externalID string) (*Service, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[Service], error)
+	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Service], error)
 
 	// CountByGroup returns the number of services in a specific group
 	CountByGroup(ctx context.Context, groupID UUID) (int64, error)
 
 	// CountByAgent returns the number of services handled by a specific agent
 	CountByAgent(ctx context.Context, agentID UUID) (int64, error)
+
+	// Retrieve the auth scope for the entity
+	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
 }

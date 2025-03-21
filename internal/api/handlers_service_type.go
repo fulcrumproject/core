@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -10,25 +11,38 @@ import (
 
 type ServiceTypeHandler struct {
 	querier domain.ServiceTypeQuerier
+	authz   domain.Authorizer
 }
 
-func NewServiceTypeHandler(repo domain.ServiceTypeRepository) *ServiceTypeHandler {
-	return &ServiceTypeHandler{querier: repo}
+func NewServiceTypeHandler(
+	querier domain.ServiceTypeQuerier,
+	authz domain.Authorizer,
+) *ServiceTypeHandler {
+	return &ServiceTypeHandler{
+		querier: querier,
+		authz:   authz,
+	}
 }
 
 // Routes returns the router with all service type routes registered
-func (h *ServiceTypeHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
+func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
+
 	return func(r chi.Router) {
-		r.With(authzMW(domain.SubjectServiceType, domain.ActionList)).Get("/", h.handleList)
+		r.Get("/", h.handleList)
 		r.Group(func(r chi.Router) {
-			r.Use(UUIDMiddleware)
-			r.With(authzMW(domain.SubjectServiceType, domain.ActionRead)).Get("/{id}", h.handleGet)
+			r.Use(IDMiddleware)
+			r.Get("/{id}", h.handleGet)
 		})
 	}
 }
 
 func (h *ServiceTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := MustGetUUIDParam(r)
+	id := MustGetID(r)
+	_, err := h.authorize(r.Context(), id, domain.ActionRead)
+	if err != nil {
+		render.Render(w, r, ErrUnauthorized(err))
+		return
+	}
 	serviceType, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -38,12 +52,17 @@ func (h *ServiceTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServiceTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
+	id := domain.MustGetAuthIdentity(r.Context())
+	if err := h.authz.Authorize(id, domain.SubjectServiceType, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
+		render.Render(w, r, ErrUnauthorized(err))
+		return
+	}
 	pag, err := parsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-	result, err := h.querier.List(r.Context(), pag)
+	result, err := h.querier.List(r.Context(), id.Scope(), pag)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -67,4 +86,16 @@ func serviceTypeToResponse(st *domain.ServiceType) *ServiceTypeResponse {
 		CreatedAt: JSONUTCTime(st.CreatedAt),
 		UpdatedAt: JSONUTCTime(st.UpdatedAt),
 	}
+}
+
+func (h *ServiceTypeHandler) authorize(ctx context.Context, id domain.UUID, action domain.AuthAction) (*domain.AuthScope, error) {
+	scope, err := h.querier.AuthScope(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	err = h.authz.AuthorizeCtx(ctx, domain.SubjectServiceType, action, scope)
+	if err != nil {
+		return nil, err
+	}
+	return scope, nil
 }

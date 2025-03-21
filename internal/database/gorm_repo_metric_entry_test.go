@@ -54,7 +54,7 @@ func TestMetricEntryRepository(t *testing.T) {
 	err = serviceGroupRepo.Create(ctx, serviceGroup)
 	require.NoError(t, err)
 
-	service := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID)
+	service := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, broker.ID)
 	err = serviceRepo.Create(ctx, service)
 	require.NoError(t, err)
 
@@ -73,6 +73,8 @@ func TestMetricEntryRepository(t *testing.T) {
 			AgentID:    agent.ID,
 			ServiceID:  service.ID,
 			ResourceID: "test-resource",
+			ProviderID: provider.ID,
+			BrokerID:   broker.ID,
 			Value:      42.5,
 			TypeID:     metricTypeService.ID,
 		}
@@ -84,7 +86,7 @@ func TestMetricEntryRepository(t *testing.T) {
 		assert.NotZero(t, metricEntry.UpdatedAt)
 
 		// Use the utility function to create a metric entry
-		metricEntryFromUtil := createTestMetricEntry(t, agent.ID, service.ID, metricTypeAgent.ID)
+		metricEntryFromUtil := createTestMetricEntry(t, agent.ID, service.ID, metricTypeAgent.ID, provider.ID, broker.ID)
 
 		err = repo.Create(context.Background(), metricEntryFromUtil)
 		require.NoError(t, err)
@@ -111,6 +113,8 @@ func TestMetricEntryRepository(t *testing.T) {
 					AgentID:    agent.ID,
 					ServiceID:  service.ID,
 					ResourceID: e.resourceID,
+					ProviderID: provider.ID,
+					BrokerID:   broker.ID,
 					Value:      e.value,
 					TypeID:     metricTypeService.ID,
 				}
@@ -123,7 +127,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				PageSize: 10,
 			}
 
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 
@@ -140,7 +144,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				Filters:  map[string][]string{"agentId": {agent.ID.String()}},
 			}
 
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 			for _, item := range result.Items {
@@ -150,11 +154,11 @@ func TestMetricEntryRepository(t *testing.T) {
 
 		t.Run("success - list with type filter", func(t *testing.T) {
 			// Create entries with different types
-			entryService := createTestMetricEntry(t, agent.ID, service.ID, metricTypeService.ID)
+			entryService := createTestMetricEntry(t, agent.ID, service.ID, metricTypeService.ID, provider.ID, broker.ID)
 			err := repo.Create(context.Background(), entryService)
 			require.NoError(t, err)
 
-			entryAgent := createTestMetricEntry(t, agent.ID, service.ID, metricTypeAgent.ID)
+			entryAgent := createTestMetricEntry(t, agent.ID, service.ID, metricTypeAgent.ID, provider.ID, broker.ID)
 			err = repo.Create(context.Background(), entryAgent)
 			require.NoError(t, err)
 
@@ -165,7 +169,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				Filters:  map[string][]string{"typeId": {metricTypeService.ID.String()}},
 			}
 
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 1)
 			for _, item := range result.Items {
@@ -187,6 +191,8 @@ func TestMetricEntryRepository(t *testing.T) {
 					AgentID:    agent.ID,
 					ServiceID:  service.ID,
 					ResourceID: "sort-test",
+					ProviderID: provider.ID,
+					BrokerID:   broker.ID,
 					Value:      value,
 					TypeID:     metricTypeService.ID,
 				}
@@ -202,7 +208,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				SortAsc:  false, // Descending order
 			}
 
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 			// Verify descending order
@@ -218,6 +224,8 @@ func TestMetricEntryRepository(t *testing.T) {
 					AgentID:    agent.ID,
 					ServiceID:  service.ID,
 					ResourceID: "pagination-test",
+					ProviderID: provider.ID,
+					BrokerID:   broker.ID,
 					Value:      float64(i * 10),
 					TypeID:     metricTypeService.ID,
 				}
@@ -231,7 +239,7 @@ func TestMetricEntryRepository(t *testing.T) {
 			}
 
 			// First page
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)
@@ -240,7 +248,7 @@ func TestMetricEntryRepository(t *testing.T) {
 
 			// Second page
 			page.Page = 2
-			result, err = repo.List(context.Background(), page)
+			result, err = repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)

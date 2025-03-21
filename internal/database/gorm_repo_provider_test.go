@@ -58,7 +58,7 @@ func TestProviderRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -79,7 +79,7 @@ func TestProviderRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -103,7 +103,7 @@ func TestProviderRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -133,7 +133,7 @@ func TestProviderRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -159,7 +159,7 @@ func TestProviderRepository(t *testing.T) {
 			}
 
 			// Execute first page
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert first page
 			require.NoError(t, err)
@@ -170,7 +170,7 @@ func TestProviderRepository(t *testing.T) {
 
 			// Execute second page
 			page.Page = 2
-			result, err = repo.List(ctx, page)
+			result, err = repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert second page
 			require.NoError(t, err)

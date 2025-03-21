@@ -61,6 +61,8 @@ func TestServiceRepository(t *testing.T) {
 			CurrentProperties: &(domain.JSON{"key": "value"}),
 			Resources:         &(domain.JSON{"cpu": "1"}),
 			AgentID:           agent.ID,
+			ProviderID:        provider.ID, // Set ProviderID to the created provider's ID
+			BrokerID:          broker.ID,   // Set BrokerID to the created broker's ID
 			ServiceTypeID:     serviceType.ID,
 			GroupID:           serviceGroup.ID,
 		}
@@ -81,6 +83,8 @@ func TestServiceRepository(t *testing.T) {
 			Attributes:        domain.Attributes{"key": []string{"value"}},
 			Resources:         &(domain.JSON{"cpu": "1"}),
 			AgentID:           agent.ID,
+			ProviderID:        provider.ID, // Set ProviderID
+			BrokerID:          broker.ID,   // Set BrokerID
 			ServiceTypeID:     serviceType.ID,
 			GroupID:           serviceGroup.ID,
 		}
@@ -121,6 +125,8 @@ func TestServiceRepository(t *testing.T) {
 			Attributes:        domain.Attributes{"key": []string{"value"}},
 			Resources:         &(domain.JSON{"cpu": "1"}),
 			AgentID:           agent.ID,
+			ProviderID:        provider.ID, // Set ProviderID
+			BrokerID:          broker.ID,   // Set BrokerID
 			ServiceTypeID:     serviceType.ID,
 			GroupID:           serviceGroup.ID,
 		}
@@ -151,6 +157,8 @@ func TestServiceRepository(t *testing.T) {
 			Name:          "Test Service",
 			CurrentState:  domain.ServiceStarted,
 			AgentID:       agent.ID,
+			ProviderID:    provider.ID, // Set ProviderID
+			BrokerID:      broker.ID,   // Set BrokerID
 			ServiceTypeID: serviceType.ID,
 			GroupID:       serviceGroup.ID,
 		}
@@ -172,9 +180,9 @@ func TestServiceRepository(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
 			// Create multiple services
 			services := []*domain.Service{
-				{Name: "Service A", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-				{Name: "Service B", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-				{Name: "Service C", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service A", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, BrokerID: broker.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service B", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, BrokerID: broker.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service C", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, BrokerID: broker.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
 			}
 			for _, service := range services {
 				err := repo.Create(context.Background(), service)
@@ -186,7 +194,7 @@ func TestServiceRepository(t *testing.T) {
 				PageSize: 10,
 			}
 
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 			// Verify relationships are loaded
@@ -202,7 +210,7 @@ func TestServiceRepository(t *testing.T) {
 				Filters:  map[string][]string{"name": {"Service A"}},
 			}
 
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 1)
 			assert.Equal(t, "Service A", result.Items[0].Name)
@@ -215,7 +223,7 @@ func TestServiceRepository(t *testing.T) {
 				Filters:  map[string][]string{"currentState": {string(domain.ServiceStarted)}},
 			}
 
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 1)
 			for _, item := range result.Items {
@@ -232,7 +240,7 @@ func TestServiceRepository(t *testing.T) {
 				SortAsc:  false, // Descending order
 			}
 
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 			// Verify descending order
@@ -247,6 +255,8 @@ func TestServiceRepository(t *testing.T) {
 				service := &domain.Service{
 					Name:          "Paginated Service",
 					CurrentState:  domain.ServiceStarted,
+					ProviderID:    provider.ID, // Set ProviderID
+					BrokerID:      broker.ID,   // Set BrokerID
 					AgentID:       agent.ID,
 					ServiceTypeID: serviceType.ID,
 					GroupID:       serviceGroup.ID,
@@ -261,7 +271,7 @@ func TestServiceRepository(t *testing.T) {
 			}
 
 			// First page
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)
@@ -270,7 +280,7 @@ func TestServiceRepository(t *testing.T) {
 
 			// Second page
 			page.Page = 2
-			result, err = repo.List(context.Background(), page)
+			result, err = repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)
@@ -284,6 +294,8 @@ func TestServiceRepository(t *testing.T) {
 			Name:          "Group Test Service",
 			CurrentState:  domain.ServiceStarted,
 			AgentID:       agent.ID,
+			ProviderID:    provider.ID, // Set ProviderID
+			BrokerID:      broker.ID,   // Set BrokerID
 			ServiceTypeID: serviceType.ID,
 			GroupID:       serviceGroup.ID,
 		}

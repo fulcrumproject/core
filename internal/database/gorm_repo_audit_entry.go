@@ -1,6 +1,8 @@
 package database
 
 import (
+	"context"
+
 	"gorm.io/gorm"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -13,7 +15,7 @@ type GormAuditEntryRepository struct {
 var applyAuditEntryFilter = mapFilterApplier(map[string]FilterFieldApplier{
 	"authorityType": stringInFilterFieldApplier("authority_type"),
 	"authorityId":   parserInFilterFieldApplier("authority_id", domain.ParseUUID),
-	"type":          stringInFilterFieldApplier("type"),
+	"eventType":     stringInFilterFieldApplier("event_type"),
 })
 
 var applyAuditEntrySort = mapSortApplier(map[string]string{
@@ -27,7 +29,7 @@ func NewAuditEntryRepository(db *gorm.DB) *GormAuditEntryRepository {
 			db,
 			applyAuditEntryFilter,
 			applyAuditEntrySort,
-			auditEntryAuthzFilterApplier,
+			allAuthzFilterApplier,
 			[]string{}, // No preload paths needed
 			[]string{}, // No preload paths needed
 		),
@@ -35,8 +37,6 @@ func NewAuditEntryRepository(db *gorm.DB) *GormAuditEntryRepository {
 	return repo
 }
 
-// auditEntryAuthzFilterApplier applies authorization scoping to audit entry queries
-func auditEntryAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
-	// TODO authz filter
-	return q
+func (r *GormAuditEntryRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+	return r.getAuthScope(ctx, id, "audit_entries", "provider_id", "agent_id", "broker_id")
 }

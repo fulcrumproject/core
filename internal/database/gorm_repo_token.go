@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"log/slog"
 
 	"gorm.io/gorm"
 
@@ -30,7 +31,7 @@ func NewTokenRepository(db *gorm.DB) *GormTokenRepository {
 			db,
 			applyTokenFilter,
 			applyTokenSort,
-			tokenAuthzFilterApplier,
+			allAuthzFilterApplier,
 			[]string{}, // No preload paths needed for finding by ID
 			[]string{}, // No preload paths needed for list
 		),
@@ -41,13 +42,17 @@ func NewTokenRepository(db *gorm.DB) *GormTokenRepository {
 // FindByHashedValue finds a token by its hashed value
 func (r *GormTokenRepository) FindByHashedValue(ctx context.Context, hashedValue string) (*domain.Token, error) {
 	var token domain.Token
-	err := r.db.WithContext(ctx).Where("hashed_value = ?", hashedValue).First(&token).Error
+	err := r.db.WithContext(ctx).
+		Model(&domain.Token{}).
+		Where("hashed_value = ?", hashedValue).
+		First(&token).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, domain.NotFoundError{Err: err}
 		}
 		return nil, err
 	}
+	slog.Debug("token retrived", slog.Any("id", token.ID), slog.Any("role", token.Role), slog.String("name", token.Name))
 	return &token, nil
 }
 
@@ -84,13 +89,7 @@ func (r *GormTokenRepository) DeleteByBrokerID(ctx context.Context, brokerID dom
 	return nil
 }
 
-func tokenAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
-	if s.ProviderID != nil {
-		return q.Where("provider_id", s.ProviderID)
-	} else if s.BrokerID != nil {
-		return q.Where("broker_id", s.BrokerID)
-	} else if s.AgentID != nil {
-		return q.Where("agent_id", s.AgentID)
-	}
-	return q
+// AuthScope returns the auth scope for the token
+func (r *GormTokenRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+	return r.getAuthScope(ctx, id, "tokens", "provider_id", "agent_id", "broker_id")
 }

@@ -39,3 +39,9 @@ func NewServiceTypeRepository(db *gorm.DB) *GormServiceTypeRepository {
 func (r *GormServiceTypeRepository) Count(ctx context.Context) (int64, error) {
 	return r.GormRepository.Count(ctx)
 }
+
+// AuthScope returns the auth scope for the service type
+func (r *GormServiceTypeRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+	// Service types don't have scoping IDs as they are global resources
+	return &domain.AuthScope{}, nil
+}

@@ -1,6 +1,8 @@
 package database
 
 import (
+	"context"
+
 	"gorm.io/gorm"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -39,4 +41,9 @@ func brokerAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
 		return q.Where("id = ?", s.BrokerID)
 	}
 	return q
+}
+
+// AuthScope returns the auth scope for the broker
+func (r *GormBrokerRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+	return r.getAuthScope(ctx, id, "brokers", "id as broker_id")
 }

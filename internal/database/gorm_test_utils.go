@@ -65,7 +65,7 @@ func createTestServiceGroup(t *testing.T, brokerID domain.UUID) *domain.ServiceG
 	}
 }
 
-func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID domain.UUID) *domain.Service {
+func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, providerID, brokerID domain.UUID) *domain.Service {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Service{
@@ -73,6 +73,8 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID doma
 		ServiceTypeID:     serviceTypeID,
 		GroupID:           serviceGroupID,
 		CurrentState:      domain.ServiceStarted,
+		ProviderID:        providerID,
+		BrokerID:          brokerID,
 		AgentID:           agentID,
 		CurrentProperties: &(domain.JSON{}),
 		Resources:         &(domain.JSON{}),
@@ -125,13 +127,15 @@ func createTestMetricTypeForEntity(t *testing.T, entityType domain.MetricEntityT
 }
 
 // createTestMetricEntry creates a test metric entry with all required relationships
-func createTestMetricEntry(t *testing.T, agentID, serviceID, typeID domain.UUID) *domain.MetricEntry {
+func createTestMetricEntry(t *testing.T, agentID, serviceID, typeID, providerID, brokerID domain.UUID) *domain.MetricEntry {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.MetricEntry{
 		AgentID:    agentID,
 		ServiceID:  serviceID,
 		ResourceID: fmt.Sprintf("resource-%s", randomSuffix),
+		ProviderID: providerID,
+		BrokerID:   brokerID,
 		Value:      42.0,
 		TypeID:     typeID,
 	}

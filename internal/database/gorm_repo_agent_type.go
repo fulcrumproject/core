@@ -39,3 +39,9 @@ func NewAgentTypeRepository(db *gorm.DB) *GormAgentTypeRepository {
 func (r *GormAgentTypeRepository) Count(ctx context.Context) (int64, error) {
 	return r.GormRepository.Count(ctx)
 }
+
+// AuthScope returns the auth scope for the agent type
+func (r *GormAgentTypeRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+	// Agent types don't have scoping IDs as they are global resources
+	return &domain.AuthScope{}, nil
+}

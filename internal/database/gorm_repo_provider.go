@@ -1,6 +1,8 @@
 package database
 
 import (
+	"context"
+
 	"gorm.io/gorm"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -33,4 +35,9 @@ func NewProviderRepository(db *gorm.DB) *GormProviderRepository {
 		),
 	}
 	return repo
+}
+
+// AuthScope returns the auth scope for the provider
+func (r *GormProviderRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+	return r.getAuthScope(ctx, id, "id as provider_id")
 }

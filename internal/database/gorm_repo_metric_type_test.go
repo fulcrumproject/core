@@ -139,7 +139,7 @@ func TestMetricTypeRepository(t *testing.T) {
 				PageSize: 10,
 			}
 
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 		})
@@ -151,7 +151,7 @@ func TestMetricTypeRepository(t *testing.T) {
 				Filters:  map[string][]string{"name": {"CPU Usage"}},
 			}
 
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 1)
 			for _, item := range result.Items {
@@ -179,7 +179,7 @@ func TestMetricTypeRepository(t *testing.T) {
 				SortAsc:  false, // Descending order
 			}
 
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 			// Verify descending order
@@ -205,7 +205,7 @@ func TestMetricTypeRepository(t *testing.T) {
 			}
 
 			// First page
-			result, err := repo.List(context.Background(), page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)
@@ -214,7 +214,7 @@ func TestMetricTypeRepository(t *testing.T) {
 
 			// Second page
 			page.Page = 2
-			result, err = repo.List(context.Background(), page)
+			result, err = repo.List(context.Background(), &domain.EmptyAuthScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)

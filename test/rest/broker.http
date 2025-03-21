@@ -59,11 +59,11 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/brokers/{{brokerId}}
 Authorization: Bearer {{brokerToken}}
 
-### Get brokers SHOULD FAIL 403
+### Get brokers
 GET {{baseUrl}}/brokers
 Authorization: Bearer {{brokerToken}}
 
-### Get brokers SHOULD FAIL 404
+### Get brokers SHOULD FAIL 403
 GET {{baseUrl}}/brokers/{{brokerId2}}
 Authorization: Bearer {{brokerToken}}
 

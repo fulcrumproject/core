@@ -67,8 +67,14 @@ func (r *GormAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Conte
 func agentAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
 	if s.ProviderID != nil {
 		return q.Where("provider_id = ?", s.ProviderID)
-	} else if s.AgentID != nil {
+	}
+	if s.AgentID != nil {
 		return q.Where("id = ?", s.AgentID)
 	}
 	return q
+}
+
+// AuthScope returns the auth scope for the agent
+func (r *GormAgentRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+	return r.getAuthScope(ctx, id, "provider_id", "id as agent_id")
 }

@@ -139,7 +139,7 @@ Authorization: Bearer {{adminToken}}
 @metricTypeId = {{createMetricType.response.body.$.id}}
 @metricTypeName = {{createMetricType.response.body.$.name}}
 
-### Create a new metric entry using typeId
+### Create a new metric entry using serviceId
 # @name createMetricEntry
 POST {{baseUrl}}/metric-entries
 Authorization: Bearer {{agentToken}}
@@ -151,7 +151,7 @@ Authorization: Bearer {{agentToken}}
     "typeName": "{{metricTypeName}}"
 }
 
-### Create a new metric entry using typeName instead of typeId
+### Create a new metric entry using externatId
 # @name createMetricEntryByName
 POST {{baseUrl}}/metric-entries
 Authorization: Bearer {{agentToken}}

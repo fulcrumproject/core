@@ -8,6 +8,8 @@ import (
 
 type authContextKey string
 
+var EmptyAuthScope = AuthScope{}
+
 const (
 	identityContextKey = authContextKey("identity")
 )
@@ -71,7 +73,6 @@ const (
 	ActionRead   AuthAction = "read"
 	ActionUpdate AuthAction = "update"
 	ActionDelete AuthAction = "delete"
-	ActionList   AuthAction = "list"
 
 	// Special actions
 	ActionUpdateState   AuthAction = "update_state"
@@ -87,7 +88,7 @@ const (
 // Validate ensures the AuthAction is one of the predefined values
 func (a AuthAction) Validate() error {
 	switch a {
-	case ActionCreate, ActionRead, ActionUpdate, ActionDelete, ActionList,
+	case ActionCreate, ActionRead, ActionUpdate, ActionDelete,
 		ActionUpdateState, ActionGenerateToken, ActionStart, ActionStop,
 		ActionClaim, ActionComplete, ActionFail, ActionListPending:
 		return nil
@@ -120,25 +121,33 @@ func WithAuthIdentity(ctx context.Context, id AuthIdentity) context.Context {
 	return context.WithValue(ctx, identityContextKey, id)
 }
 
-// GetAuthIdentity retrieves the authenticated identity from the request context
-func GetAuthIdentity(ctx context.Context) AuthIdentity {
-	id, _ := ctx.Value(identityContextKey).(AuthIdentity)
+// MustGetAuthIdentity retrieves the authenticated identity from the request context
+func MustGetAuthIdentity(ctx context.Context) AuthIdentity {
+	id, ok := ctx.Value(identityContextKey).(AuthIdentity)
+	if !ok {
+		panic("cannot find identity in context")
+	}
 	return id
 }
 
 type Authorizer interface {
-	Authorize(ctx context.Context, identity AuthIdentity, subject AuthSubject, action AuthAction) error
+	Authorize(identity AuthIdentity, subject AuthSubject, action AuthAction, scope *AuthScope) error
+	AuthorizeCtx(ctx context.Context, subject AuthSubject, action AuthAction, scope *AuthScope) error
 }
 
-func ValidateAuthScope(ctx context.Context, target *AuthScope) error {
+type AuthScopeRetriever interface {
+	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
+}
+
+func ValidateAuthScope(id AuthIdentity, target *AuthScope) error {
+	if id == nil {
+		return errors.New("nil identity")
+	}
+
 	if target == nil {
 		return errors.New("nil authorization target scope")
 	}
 
-	id := GetAuthIdentity(ctx)
-	if id == nil {
-		return nil
-	}
 	source := id.Scope()
 	if source == nil {
 		return errors.New("nil authorization source scope")
@@ -150,18 +159,18 @@ func ValidateAuthScope(ctx context.Context, target *AuthScope) error {
 	}
 
 	// Provider check: If source requires a provider, caller must have same provider
-	if source.ProviderID != nil && (target.ProviderID == nil || *target.ProviderID != *source.ProviderID) {
-		return errors.New("provider out of authorization scope")
+	if source.ProviderID != nil && target.ProviderID != nil && *target.ProviderID != *source.ProviderID {
+		return errors.New("invalid provider authorization scope")
 	}
 
 	// Agent check: If source requires an agent, caller must have same agent
-	if source.AgentID != nil && (target.AgentID == nil || *target.AgentID != *source.AgentID) {
-		return errors.New("agent out of authorization scope")
+	if source.AgentID != nil && target.AgentID != nil && *target.AgentID != *source.AgentID {
+		return errors.New("invalid agent authorization scope")
 	}
 
 	// Broker check: If source requires a broker, caller must have same broker
-	if source.BrokerID != nil && (target.BrokerID == nil || *target.BrokerID != *source.BrokerID) {
-		return errors.New("broker out of authorization scope")
+	if source.BrokerID != nil && target.BrokerID != nil && *target.BrokerID != *source.BrokerID {
+		return errors.New("invalid broker authorization scope")
 	}
 
 	return nil

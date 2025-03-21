@@ -124,14 +124,11 @@ func (s *providerCommander) Update(ctx context.Context,
 	countryCode *CountryCode,
 	attributes *Attributes,
 ) (*Provider, error) {
-	if err := ValidateAuthScope(ctx, &AuthScope{ProviderID: &id}); err != nil {
-		return nil, UnauthorizedError{Err: err}
-	}
-
 	provider, err := s.store.ProviderRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+
 	if name != nil {
 		provider.Name = *name
 	}
@@ -156,10 +153,6 @@ func (s *providerCommander) Update(ctx context.Context,
 }
 
 func (s *providerCommander) Delete(ctx context.Context, id UUID) error {
-	if err := ValidateAuthScope(ctx, &AuthScope{ProviderID: &id}); err != nil {
-		return UnauthorizedError{Err: err}
-	}
-
 	return s.store.Atomic(ctx, func(store Store) error {
 		numOfAgents, err := s.store.AgentRepo().CountByProvider(ctx, id)
 		if err != nil {
@@ -199,5 +192,8 @@ type ProviderQuerier interface {
 	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[Provider], error)
+	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Provider], error)
+
+	// Retrieve the auth scope for the entity
+	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
 }

@@ -62,15 +62,11 @@ func NewServiceGroupCommander(
 }
 
 func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerID UUID) (*ServiceGroup, error) {
-	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &brokerID}); err != nil {
-		return nil, UnauthorizedError{Err: err}
-	}
-
-	// Check if broker exists
 	broker, err := s.store.BrokerRepo().FindByID(ctx, brokerID)
 	if err != nil {
 		return nil, NewInvalidInputErrorf("invalid broker: %s", brokerID)
 	}
+
 	sg := &ServiceGroup{
 		Name:     name,
 		BrokerID: brokerID,
@@ -79,6 +75,7 @@ func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerI
 	if err := sg.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
+
 	if err = s.store.ServiceGroupRepo().Create(ctx, sg); err != nil {
 		return nil, err
 	}
@@ -91,16 +88,13 @@ func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 		return nil, err
 	}
 
-	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &sg.BrokerID}); err != nil {
-		return nil, UnauthorizedError{Err: err}
-	}
-
 	if name != nil {
 		sg.Name = *name
 	}
 	if err := sg.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
+
 	if err := s.store.ServiceGroupRepo().Save(ctx, sg); err != nil {
 		return nil, err
 	}
@@ -108,15 +102,6 @@ func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 }
 
 func (s *serviceGroupCommander) Delete(ctx context.Context, id UUID) error {
-	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &sg.BrokerID}); err != nil {
-		return UnauthorizedError{Err: err}
-	}
-
 	return s.store.Atomic(ctx, func(store Store) error {
 		numOfServices, err := store.ServiceRepo().CountByGroup(ctx, id)
 		if err != nil {
@@ -149,5 +134,8 @@ type ServiceGroupQuerier interface {
 	FindByID(ctx context.Context, id UUID) (*ServiceGroup, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[ServiceGroup], error)
+	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[ServiceGroup], error)
+
+	// Retrieve the auth scope for the entity
+	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
 }

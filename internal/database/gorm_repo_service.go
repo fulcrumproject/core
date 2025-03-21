@@ -29,7 +29,7 @@ func NewServiceRepository(db *gorm.DB) *GormServiceRepository {
 			db,
 			applyServiceFilter,
 			applyServiceSort,
-			serviceAuthzFilterApplier,
+			allAuthzFilterApplier,
 			[]string{"Agent", "ServiceType", "Group"}, // Find preload paths
 			[]string{"Agent", "ServiceType", "Group"}, // List preload paths
 		),
@@ -75,13 +75,6 @@ func (r *GormServiceRepository) FindByExternalID(ctx context.Context, agentID do
 	return &service, nil
 }
 
-func serviceAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
-	if s.ProviderID != nil {
-		return q.Joins("INNER JOIN agents on agents.id = services.agent_id").Where("agents.provider_id", s.ProviderID)
-	} else if s.BrokerID != nil {
-		return q.Joins("INNER JOIN service_groups on service_groups.id = services.group_id").Where("service_groups.broker_id", s.BrokerID)
-	} else if s.AgentID != nil {
-		return q.Where("services.agent_id = ?", s.AgentID)
-	}
-	return q
+func (r *GormServiceRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+	return r.getAuthScope(ctx, id, "provider_id", "agent_id", "broker_id")
 }

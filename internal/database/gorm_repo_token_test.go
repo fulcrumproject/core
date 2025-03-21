@@ -113,7 +113,7 @@ func TestTokenRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -135,7 +135,7 @@ func TestTokenRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -163,7 +163,7 @@ func TestTokenRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -193,7 +193,7 @@ func TestTokenRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)

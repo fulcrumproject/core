@@ -20,12 +20,12 @@ type Token struct {
 	ExpireAt    time.Time `gorm:"not null"`
 
 	// Relationships
-	ProviderID *UUID     `gorm:"type:uuid"`
+	ProviderID *UUID
 	Provider   *Provider `gorm:"foreignKey:ProviderID"`
-	BrokerID   *UUID     `gorm:"type:uuid"`
-	Broker     *Broker   `gorm:"foreignKey:BrokerID"`
-	AgentID    *UUID     `gorm:"type:uuid"`
-	Agent      *Agent    `gorm:"foreignKey:AgentID"`
+	BrokerID   *UUID
+	Broker     *Broker `gorm:"foreignKey:BrokerID"`
+	AgentID    *UUID
+	Agent      *Agent `gorm:"foreignKey:AgentID"`
 }
 
 // TableName returns the table name for the token
@@ -165,8 +165,8 @@ func (s *tokenCommander) Create(
 	}
 
 	// Non admin can create only token with the same role
-	id := GetAuthIdentity(ctx)
-	if id != nil && !id.IsRole(RoleFulcrumAdmin) && role != id.Role() {
+	id := MustGetAuthIdentity(ctx)
+	if !id.IsRole(RoleFulcrumAdmin) && role != id.Role() {
 		return nil, NewInvalidInputErrorf("role %s not allowed", role)
 	}
 
@@ -207,12 +207,7 @@ func (s *tokenCommander) Create(
 		}
 	}
 
-	err := ValidateAuthScope(ctx, &AuthScope{ProviderID: token.ProviderID, AgentID: token.AgentID, BrokerID: token.BrokerID})
-	if err != nil {
-		return nil, UnauthorizedError{Err: err}
-	}
-
-	err = token.GenerateTokenValue()
+	err := token.GenerateTokenValue()
 	if err != nil {
 		return nil, err
 	}
@@ -238,11 +233,6 @@ func (s *tokenCommander) Update(ctx context.Context,
 		return nil, err
 	}
 
-	err = ValidateAuthScope(ctx, &AuthScope{ProviderID: token.ProviderID, AgentID: token.AgentID, BrokerID: token.BrokerID})
-	if err != nil {
-		return nil, UnauthorizedError{Err: err}
-	}
-
 	if name != nil {
 		token.Name = *name
 	}
@@ -258,20 +248,11 @@ func (s *tokenCommander) Update(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+
 	return token, nil
 }
 
 func (s *tokenCommander) Delete(ctx context.Context, id UUID) error {
-	token, err := s.store.TokenRepo().FindByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	err = ValidateAuthScope(ctx, &AuthScope{ProviderID: token.ProviderID, AgentID: token.AgentID, BrokerID: token.BrokerID})
-	if err != nil {
-		return UnauthorizedError{Err: err}
-	}
-
 	return s.store.TokenRepo().Delete(ctx, id)
 }
 
@@ -279,11 +260,6 @@ func (s *tokenCommander) Regenerate(ctx context.Context, id UUID) (*Token, error
 	token, err := s.store.TokenRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
-	}
-
-	err = ValidateAuthScope(ctx, &AuthScope{ProviderID: token.ProviderID, AgentID: token.AgentID, BrokerID: token.BrokerID})
-	if err != nil {
-		return nil, UnauthorizedError{Err: err}
 	}
 
 	err = token.GenerateTokenValue()
@@ -330,8 +306,11 @@ type TokenQuerier interface {
 	FindByID(ctx context.Context, id UUID) (*Token, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[Token], error)
+	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Token], error)
 
 	// FindByHashedValue finds a token by its hashed value
 	FindByHashedValue(ctx context.Context, hashedValue string) (*Token, error)
+
+	// Retrieve the auth scope for the entity
+	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
 }

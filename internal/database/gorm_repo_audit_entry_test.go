@@ -22,9 +22,9 @@ func TestAuditEntryRepository(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			// Setup
 			auditEntry := &domain.AuditEntry{
-				AuthorityType: "agent",
+				AuthorityType: domain.AuthorityTypeAgent,
 				AuthorityID:   "test-agent-id",
-				Type:          "status_change",
+				EventType:     domain.EventTypeStatusChange,
 				Properties: domain.JSON{
 					"old_status": "new",
 					"new_status": "active",
@@ -46,20 +46,20 @@ func TestAuditEntryRepository(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
 			// Create multiple audit entries
 			entries := []struct {
-				authorityType string
+				authorityType domain.AuthorityType
 				authorityID   string
-				entryType     string
+				entryType     domain.EventType
 			}{
-				{"agent", "agent-1", "status_change"},
-				{"service", "service-1", "config_update"},
-				{"agent", "agent-2", "status_change"},
+				{domain.AuthorityTypeAgent, "agent-1", domain.EventTypeStatusChange},
+				{domain.AuthorityTypeAdmin, "service-1", domain.EventTypeConfigUpdate},
+				{domain.AuthorityTypeAgent, "agent-2", domain.EventTypeStatusChange},
 			}
 
 			for _, e := range entries {
 				entry := &domain.AuditEntry{
 					AuthorityType: e.authorityType,
 					AuthorityID:   e.authorityID,
-					Type:          e.entryType,
+					EventType:     e.entryType,
 					Properties: domain.JSON{
 						"test": "data",
 					},
@@ -74,7 +74,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -85,17 +85,17 @@ func TestAuditEntryRepository(t *testing.T) {
 			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
-				Filters:  map[string][]string{"authorityType": {"agent"}},
+				Filters:  map[string][]string{"authorityType": {string(domain.AuthorityTypeAgent)}},
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 2)
 			for _, item := range result.Items {
-				assert.Equal(t, "agent", item.AuthorityType)
+				assert.Equal(t, domain.AuthorityTypeAgent, item.AuthorityType)
 			}
 		})
 
@@ -103,17 +103,17 @@ func TestAuditEntryRepository(t *testing.T) {
 			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
-				Filters:  map[string][]string{"type": {"status_change"}},
+				Filters:  map[string][]string{"eventType": {string(domain.EventTypeStatusChange)}},
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 2)
 			for _, item := range result.Items {
-				assert.Equal(t, "status_change", item.Type)
+				assert.Equal(t, domain.EventTypeStatusChange, item.EventType)
 			}
 		})
 
@@ -121,9 +121,9 @@ func TestAuditEntryRepository(t *testing.T) {
 			// Create entries with different timestamps
 			for i := 0; i < 3; i++ {
 				entry := &domain.AuditEntry{
-					AuthorityType: "agent",
+					AuthorityType: domain.AuthorityTypeAgent,
 					AuthorityID:   "agent-sort",
-					Type:          "test_sort",
+					EventType:     domain.EventTypeUpdated,
 					Properties:    domain.JSON{"test": "data"},
 				}
 				err := repo.Create(ctx, entry)
@@ -140,7 +140,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -155,9 +155,9 @@ func TestAuditEntryRepository(t *testing.T) {
 			// Create multiple audit entries
 			for i := 0; i < 5; i++ {
 				entry := &domain.AuditEntry{
-					AuthorityType: "agent",
+					AuthorityType: domain.AuthorityTypeAgent,
 					AuthorityID:   "agent-page",
-					Type:          "test_pagination",
+					EventType:     domain.EventTypeCreated,
 					Properties:    domain.JSON{"test": "data"},
 				}
 				err := repo.Create(ctx, entry)
@@ -170,7 +170,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			}
 
 			// Execute first page
-			result, err := repo.List(ctx, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert first page
 			require.NoError(t, err)
@@ -181,7 +181,7 @@ func TestAuditEntryRepository(t *testing.T) {
 
 			// Execute second page
 			page.Page = 2
-			result, err = repo.List(ctx, page)
+			result, err = repo.List(ctx, &domain.EmptyAuthScope, page)
 
 			// Assert second page
 			require.NoError(t, err)

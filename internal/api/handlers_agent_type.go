@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -10,26 +11,38 @@ import (
 
 type AgentTypeHandler struct {
 	querier domain.AgentTypeQuerier
+	authz   domain.Authorizer
 }
 
-func NewAgentTypeHandler(repo domain.AgentTypeRepository) *AgentTypeHandler {
-	return &AgentTypeHandler{querier: repo}
+func NewAgentTypeHandler(
+	querier domain.AgentTypeQuerier,
+	authz domain.Authorizer,
+) *AgentTypeHandler {
+	return &AgentTypeHandler{
+		querier: querier,
+		authz:   authz,
+	}
 }
 
 // Routes returns the router with all agent type routes registered
-func (h *AgentTypeHandler) Routes(authzMW AuthzMiddlewareFunc) func(r chi.Router) {
+func (h *AgentTypeHandler) Routes() func(r chi.Router) {
 	return func(r chi.Router) {
-		r.With(authzMW(domain.SubjectAgentType, domain.ActionList)).Get("/", h.handleList)
+		r.Get("/", h.handleList)
 		r.Group(func(r chi.Router) {
-			r.Use(UUIDMiddleware)
-			r.With(authzMW(domain.SubjectAgentType, domain.ActionRead)).Get("/{id}", h.handleGet)
+			r.Use(IDMiddleware)
+			r.Get("/{id}", h.handleGet)
 		})
 
 	}
 }
 
 func (h *AgentTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := MustGetUUIDParam(r)
+	id := MustGetID(r)
+	_, err := h.authorize(r.Context(), id, domain.ActionRead)
+	if err != nil {
+		render.Render(w, r, ErrUnauthorized(err))
+		return
+	}
 	agentType, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
@@ -39,12 +52,17 @@ func (h *AgentTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AgentTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
+	id := domain.MustGetAuthIdentity(r.Context())
+	if err := h.authz.Authorize(id, domain.SubjectServiceType, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
+		render.Render(w, r, ErrUnauthorized(err))
+		return
+	}
 	pag, err := parsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-	result, err := h.querier.List(r.Context(), pag)
+	result, err := h.querier.List(r.Context(), id.Scope(), pag)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -74,4 +92,16 @@ func agentTypeToResponse(at *domain.AgentType) *AgentTypeResponse {
 		response.ServiceTypes = append(response.ServiceTypes, serviceTypeToResponse(&st))
 	}
 	return response
+}
+
+func (h *AgentTypeHandler) authorize(ctx context.Context, id domain.UUID, action domain.AuthAction) (*domain.AuthScope, error) {
+	scope, err := h.querier.AuthScope(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	err = h.authz.AuthorizeCtx(ctx, domain.SubjectAgentType, action, scope)
+	if err != nil {
+		return nil, err
+	}
+	return scope, nil
 }

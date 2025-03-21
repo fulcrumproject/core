@@ -32,8 +32,11 @@ type AgentTypeQuerier interface {
 	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[AgentType], error)
+	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[AgentType], error)
 
 	// Count returns the number of entities
 	Count(ctx context.Context) (int64, error)
+
+	// Retrieve the auth scope for the entity
+	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
 }

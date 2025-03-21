@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"gorm.io/gorm"
 
@@ -17,8 +18,8 @@ type Entity interface {
 // ReadRepository defines the generic repository interface
 type ReadRepository[T any] interface {
 	FindByID(ctx context.Context, id domain.UUID) (*T, error)
-	List(ctx context.Context, page *domain.PageRequest) (*domain.PageResponse[T], error)
-	Count(ctx context.Context, conditions ...interface{}) (int64, error)
+	List(ctx context.Context, authScope *domain.AuthScope, page *domain.PageRequest) (*domain.PageResponse[T], error)
+	Count(ctx context.Context) (int64, error)
 	Exists(ctx context.Context, id domain.UUID) (bool, error)
 }
 
@@ -97,12 +98,6 @@ func (r *GormRepository[T]) FindByID(ctx context.Context, id domain.UUID) (*T, e
 		db = db.Preload(path)
 	}
 
-	if r.authzFilterApplier != nil {
-		if id := domain.GetAuthIdentity(ctx); id != nil {
-			db = r.authzFilterApplier(id.Scope(), db)
-		}
-	}
-
 	err := db.Take(entity, entityValue.TableName()+".id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -114,7 +109,7 @@ func (r *GormRepository[T]) FindByID(ctx context.Context, id domain.UUID) (*T, e
 	return entity, nil
 }
 
-func (r *GormRepository[T]) List(ctx context.Context, page *domain.PageRequest) (*domain.PageResponse[T], error) {
+func (r *GormRepository[T]) List(ctx context.Context, authScope *domain.AuthScope, page *domain.PageRequest) (*domain.PageResponse[T], error) {
 	return list[T](
 		ctx,
 		r.db,
@@ -123,18 +118,13 @@ func (r *GormRepository[T]) List(ctx context.Context, page *domain.PageRequest) 
 		r.sortApplier,
 		r.authzFilterApplier,
 		r.listPreloadPaths,
+		authScope,
 	)
 }
 
 func (r *GormRepository[T]) Count(ctx context.Context) (int64, error) {
 	var count int64
 	db := r.db.WithContext(ctx).Model(new(T))
-
-	if r.authzFilterApplier != nil {
-		if id := domain.GetAuthIdentity(ctx); id != nil {
-			db = r.authzFilterApplier(id.Scope(), db)
-		}
-	}
 
 	result := db.Count(&count)
 	if result.Error != nil {
@@ -150,12 +140,6 @@ func (r *GormRepository[T]) Exists(ctx context.Context, id domain.UUID) (bool, e
 	entityValue := *entity
 	db := r.db.WithContext(ctx)
 
-	if r.authzFilterApplier != nil {
-		if authID := domain.GetAuthIdentity(ctx); authID != nil {
-			db = r.authzFilterApplier(authID.Scope(), db)
-		}
-	}
-
 	query := db.Select("1").
 		Table(entityValue.TableName()).
 		Where(entityValue.TableName()+".id = ?", id).
@@ -167,4 +151,41 @@ func (r *GormRepository[T]) Exists(ctx context.Context, id domain.UUID) (bool, e
 	}
 
 	return exists, nil
+}
+
+func allAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
+	if s.ProviderID != nil {
+		return q.Where("provider_id = ?", s.ProviderID)
+	}
+	if s.BrokerID != nil {
+		return q.Where("broker_id = ?", s.BrokerID)
+	}
+	if s.AgentID != nil {
+		return q.Where("agent_id = ?", s.AgentID)
+	}
+	return q
+}
+
+// getAuthScope retrieves auth scope for an entity with specified scope fields
+func (r *GormRepository[T]) getAuthScope(ctx context.Context, id domain.UUID, scopeFields ...string) (*domain.AuthScope, error) {
+	var scope domain.AuthScope
+	entity := new(T)
+	entityValue := *entity
+
+	slog.Info(entityValue.TableName())
+	err := r.db.
+		WithContext(ctx).
+		Table(entityValue.TableName()).
+		Select(scopeFields).
+		Where("id = ?", id).
+		Scan(&scope).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.NotFoundError{Err: err}
+		}
+		return nil, err
+	}
+
+	return &scope, nil
 }

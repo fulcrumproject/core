@@ -4,40 +4,6 @@
 @baseUrl = http://localhost:3000/api/v1
 @adminToken = admin-test-token
 
-### Create a new audit entry for an agent status change
-# @name createAgentAuditEntry
-POST {{baseUrl}}/audit-entries
-Authorization: Bearer {{adminToken}}
-
-{
-    "authorityType": "agent",
-    "authorityId": "test-agent-id",
-    "type": "status_change",
-    "properties": {
-        "old_status": "new",
-        "new_status": "active",
-        "reason": "agent connected"
-    }
-}
-
-### Create a new audit entry for a service configuration update
-# @name createServiceAuditEntry
-POST {{baseUrl}}/audit-entries
-Authorization: Bearer {{adminToken}}
-
-{
-    "authorityType": "service",
-    "authorityId": "test-service-id",
-    "type": "config_update",
-    "properties": {
-        "changes": {
-            "memory": "2GB -> 4GB",
-            "cpu": "1 -> 2"
-        },
-        "updatedBy": "system"
-    }
-}
-
 ### List all audit entries
 GET {{baseUrl}}/audit-entries
 Authorization: Bearer {{adminToken}}
@@ -51,7 +17,7 @@ GET {{baseUrl}}/audit-entries?authorityType=agent
 Authorization: Bearer {{adminToken}}
 
 ### List audit entries filtered by type
-GET {{baseUrl}}/audit-entries?type=config_update
+GET {{baseUrl}}/audit-entries?eventType=config_update
 Authorization: Bearer {{adminToken}}
 
 ### List audit entries with sorting

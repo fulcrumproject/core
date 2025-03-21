@@ -70,10 +70,6 @@ func (s *brokerCommander) Update(ctx context.Context,
 	id UUID,
 	name *string,
 ) (*Broker, error) {
-	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &id}); err != nil {
-		return nil, UnauthorizedError{Err: err}
-	}
-
 	broker, err := s.store.BrokerRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -94,15 +90,6 @@ func (s *brokerCommander) Update(ctx context.Context,
 }
 
 func (s *brokerCommander) Delete(ctx context.Context, id UUID) error {
-	if err := ValidateAuthScope(ctx, &AuthScope{BrokerID: &id}); err != nil {
-		return UnauthorizedError{Err: err}
-	}
-
-	_, err := s.store.BrokerRepo().FindByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
 	return s.store.Atomic(ctx, func(store Store) error {
 		// Delete all tokens associated with this broker before deleting the broker
 		if err := store.TokenRepo().DeleteByBrokerID(ctx, id); err != nil {
@@ -134,5 +121,11 @@ type BrokerQuerier interface {
 	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, req *PageRequest) (*PageResponse[Broker], error)
+	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Broker], error)
+
+	// Count returns the total number of entities
+	Count(ctx context.Context) (int64, error)
+
+	// Retrieve the auth scope for the entity
+	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
 }

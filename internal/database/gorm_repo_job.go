@@ -34,7 +34,7 @@ func NewJobRepository(db *gorm.DB) *GormJobRepository {
 			db,
 			applyJobFilter,
 			applyJobSort,
-			jobAuthzFilterApplier,
+			allAuthzFilterApplier,
 			[]string{"Agent", "Service"}, // Find preload paths
 			[]string{"Agent", "Service"}, // List preload paths - empty for performance reasons
 		),
@@ -86,14 +86,6 @@ func (r *GormJobRepository) DeleteOldCompletedJobs(ctx context.Context, olderTha
 	return int(result.RowsAffected), nil
 }
 
-// jobAuthzFilterApplier applies authorization scoping to job queries
-func jobAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
-	if s.ProviderID != nil {
-		return q.Joins("INNER JOIN agents on agents.id = jobs.agent_id").Where("agents.provider_id", s.ProviderID)
-	} else if s.BrokerID != nil {
-		return q.Joins("INNER JOIN services ON services.id = jobs.service_id INNER JOIN service_groups on service_groups.id = services.group_id").Where("service_groups.broker_id", s.BrokerID)
-	} else if s.AgentID != nil {
-		return q.Where("agent_id = ?", s.AgentID)
-	}
-	return q
+func (r *GormJobRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+	return r.getAuthScope(ctx, id, "provider_id", "agent_id", "broker_id")
 }
