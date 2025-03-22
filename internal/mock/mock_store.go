@@ -8,60 +8,90 @@ import (
 
 // Store provides a simple implementation of the Store interface for testing
 // All repository methods return nil (no implementation)
-type Store struct{}
+type Store struct {
+	agentTypeRepo    *MockAgentTypeRepo
+	agentRepo        *MockAgentRepo
+	brokerRepo       *MockBrokerRepo
+	tokenRepo        *MockTokenRepo
+	providerRepo     *MockProviderRepo
+	serviceTypeRepo  *MockServiceTypeRepo
+	serviceGroupRepo *MockServiceGroupRepo
+	serviceRepo      *MockServiceRepo
+	jobRepo          *MockJobRepo
+	auditEntryRepo   *MockAuditEntryRepo
+	metricTypeRepo   *MockMetricTypeRepo
+	metricEntryRepo  *MockMetricEntryRepo
+}
 
 // Ensure MockStore implements Store
 var _ domain.Store = (*Store)(nil)
 
-// Atomic implements the Store.Atomic method
 func (m *Store) Atomic(ctx context.Context, fn func(domain.Store) error) error {
 	return fn(m)
 }
 
 func (m *Store) BrokerRepo() domain.BrokerRepository {
-	panic("not implemented")
+	return m.brokerRepo
 }
 
 func (m *Store) TokenRepo() domain.TokenRepository {
-	panic("not implemented")
+	return m.tokenRepo
 }
 
 func (m *Store) AgentTypeRepo() domain.AgentTypeRepository {
-	panic("not implemented")
+	return m.agentTypeRepo
 }
 
 func (m *Store) AgentRepo() domain.AgentRepository {
-	panic("not implemented")
+	return m.agentRepo
 }
 
 func (m *Store) ProviderRepo() domain.ProviderRepository {
-	panic("not implemented")
+	return m.providerRepo
 }
 
 func (m *Store) ServiceTypeRepo() domain.ServiceTypeRepository {
-	panic("not implemented")
+	return m.serviceTypeRepo
 }
 
 func (m *Store) ServiceGroupRepo() domain.ServiceGroupRepository {
-	panic("not implemented")
+	return m.serviceGroupRepo
 }
 
 func (m *Store) ServiceRepo() domain.ServiceRepository {
-	panic("not implemented")
+	return m.serviceRepo
 }
 
 func (m *Store) JobRepo() domain.JobRepository {
-	panic("not implemented")
+	return m.jobRepo
 }
 
 func (m *Store) AuditEntryRepo() domain.AuditEntryRepository {
-	panic("not implemented")
+	return m.auditEntryRepo
 }
 
 func (m *Store) MetricTypeRepo() domain.MetricTypeRepository {
-	panic("not implemented")
+	return m.metricTypeRepo
 }
 
 func (m *Store) MetricEntryRepo() domain.MetricEntryRepository {
-	panic("not implemented")
+	return m.metricEntryRepo
+}
+
+// NewMockStore creates and initializes a new mock store
+func NewMockStore() *Store {
+	return &Store{
+		agentTypeRepo:    &MockAgentTypeRepo{},
+		agentRepo:        &MockAgentRepo{},
+		brokerRepo:       &MockBrokerRepo{},
+		tokenRepo:        &MockTokenRepo{},
+		providerRepo:     &MockProviderRepo{},
+		serviceTypeRepo:  &MockServiceTypeRepo{},
+		serviceGroupRepo: &MockServiceGroupRepo{},
+		serviceRepo:      &MockServiceRepo{},
+		jobRepo:          &MockJobRepo{},
+		auditEntryRepo:   &MockAuditEntryRepo{},
+		metricTypeRepo:   &MockMetricTypeRepo{},
+		metricEntryRepo:  &MockMetricEntryRepo{},
+	}
 }
