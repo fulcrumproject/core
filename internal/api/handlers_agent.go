@@ -74,8 +74,8 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+	w.WriteHeader(http.StatusCreated)
 	render.JSON(w, r, agentToResponse(agent))
-	render.Status(r, http.StatusCreated)
 }
 
 func (h *AgentHandler) handleGet(w http.ResponseWriter, r *http.Request) {
