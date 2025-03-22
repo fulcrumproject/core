@@ -80,80 +80,44 @@ func TestNewServiceHandler(t *testing.T) {
 
 // TestServiceHandlerRoutes tests that routes are properly registered
 func TestServiceHandlerRoutes(t *testing.T) {
-	// We'll use a stub for the actual handler to avoid executing real handler logic
-	stubHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	// Create mocks
+	serviceQuerier := &mockServiceQuerier{}
+	agentQuerier := &mockAgentQuerier{}
+	serviceGroupQuerier := &mockServiceGroupQuerier{}
+	commander := &mockServiceCommander{}
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
-	// Create a test router and register routes
+	// Create the handler
+	handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
+
+	// Execute
+	routeFunc := handler.Routes()
+	assert.NotNil(t, routeFunc)
+
+	// Create a chi router and apply the routes
 	r := chi.NewRouter()
+	routeFunc(r)
 
-	// Instead of using the actual handlers which require auth context,
-	// we'll manually register routes with our stub handler
-	r.Route("/services", func(r chi.Router) {
-		// Register the routes
-		r.Get("/", stubHandler)
-		r.Post("/", stubHandler)
-		r.Group(func(r chi.Router) {
-			r.Use(func(next http.Handler) http.Handler {
-				return next
-			})
-			r.Get("/{id}", stubHandler)
-			r.Patch("/{id}", stubHandler)
-			r.Post("/{id}/start", stubHandler)
-			r.Post("/{id}/stop", stubHandler)
-			r.Delete("/{id}", stubHandler)
-			r.Post("/{id}/retry", stubHandler)
-		})
-	})
+	// Assert that endpoints are registered
+	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		// Check expected routes exist
+		switch {
+		case method == "GET" && route == "/":
+		case method == "POST" && route == "/":
+		case method == "GET" && route == "/{id}":
+		case method == "PATCH" && route == "/{id}":
+		case method == "POST" && route == "/{id}/start":
+		case method == "POST" && route == "/{id}/stop":
+		case method == "DELETE" && route == "/{id}":
+		case method == "POST" && route == "/{id}/retry":
+		default:
+			return fmt.Errorf("unexpected route: %s %s", method, route)
+		}
+		return nil
+	}
 
-	// Test GET route
-	req := httptest.NewRequest("GET", "/services", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test POST route
-	req = httptest.NewRequest("POST", "/services", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test GET /{id} route
-	req = httptest.NewRequest("GET", "/services/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test PATCH /{id} route
-	req = httptest.NewRequest("PATCH", "/services/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test POST /{id}/start route
-	req = httptest.NewRequest("POST", "/services/550e8400-e29b-41d4-a716-446655440000/start", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test POST /{id}/stop route
-	req = httptest.NewRequest("POST", "/services/550e8400-e29b-41d4-a716-446655440000/stop", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test DELETE /{id} route
-	req = httptest.NewRequest("DELETE", "/services/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test POST /{id}/retry route
-	req = httptest.NewRequest("POST", "/services/550e8400-e29b-41d4-a716-446655440000/retry", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
+	err := chi.Walk(r, walkFunc)
+	assert.NoError(t, err)
 }
 
 // TestServiceHandleCreate tests the handleCreate method

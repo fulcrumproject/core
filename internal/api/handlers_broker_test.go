@@ -660,60 +660,39 @@ func TestNewBrokerHandler(t *testing.T) {
 
 // TestBrokerHandlerRoutes tests that routes are properly registered
 func TestBrokerHandlerRoutes(t *testing.T) {
-	// We'll use a stub for the actual handler to avoid executing real handler logic
-	stubHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	// Create mocks
+	querier := &mockBrokerQuerier{}
+	commander := &mockBrokerCommander{}
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
-	// Create a test router and register routes
+	// Create the handler
+	handler := NewBrokerHandler(querier, commander, authz)
+
+	// Execute
+	routeFunc := handler.Routes()
+	assert.NotNil(t, routeFunc)
+
+	// Create a chi router and apply the routes
 	r := chi.NewRouter()
+	routeFunc(r)
 
-	// Instead of using the actual handlers which require auth context,
-	// we'll manually register routes with our stub handler
-	r.Route("/brokers", func(r chi.Router) {
-		// Register the GET / and POST / routes
-		r.Get("/", stubHandler)
-		r.Post("/", stubHandler)
+	// Assert that endpoints are registered
+	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		// Check expected routes exist
+		switch {
+		case method == "GET" && route == "/":
+		case method == "POST" && route == "/":
+		case method == "GET" && route == "/{id}":
+		case method == "PATCH" && route == "/{id}":
+		case method == "DELETE" && route == "/{id}":
+		default:
+			return fmt.Errorf("unexpected route: %s %s", method, route)
+		}
+		return nil
+	}
 
-		// Register the /{id} routes with IDMiddleware
-		r.Group(func(r chi.Router) {
-			r.Use(IDMiddleware)
-			r.Get("/{id}", stubHandler)
-			r.Patch("/{id}", stubHandler)
-			r.Delete("/{id}", stubHandler)
-		})
-	})
-
-	// Test route existence by creating test requests
-	// Test GET /brokers
-	req := httptest.NewRequest("GET", "/brokers", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test POST /brokers
-	req = httptest.NewRequest("POST", "/brokers", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test GET /brokers/{id}
-	req = httptest.NewRequest("GET", "/brokers/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test PATCH /brokers/{id}
-	req = httptest.NewRequest("PATCH", "/brokers/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test DELETE /brokers/{id}
-	req = httptest.NewRequest("DELETE", "/brokers/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
+	err := chi.Walk(r, walkFunc)
+	assert.NoError(t, err)
 }
 
 // TestBrokerToResponse tests the brokerToResponse function

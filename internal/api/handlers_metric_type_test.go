@@ -32,59 +32,39 @@ func TestNewMetricTypeHandler(t *testing.T) {
 
 // TestMetricTypeHandlerRoutes tests that routes are properly registered
 func TestMetricTypeHandlerRoutes(t *testing.T) {
-	// We'll use a stub for the actual handler to avoid executing real handler logic
-	stubHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	// Create mocks
+	querier := &mockMetricTypeQuerier{}
+	commander := &mockMetricTypeCommander{}
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
-	// Create a test router and register routes
+	// Create the handler
+	handler := NewMetricTypeHandler(querier, commander, authz)
+
+	// Execute
+	routeFunc := handler.Routes()
+	assert.NotNil(t, routeFunc)
+
+	// Create a chi router and apply the routes
 	r := chi.NewRouter()
+	routeFunc(r)
 
-	// Instead of using the actual handlers which require auth context,
-	// we'll manually register routes with our stub handler
-	r.Route("/metric-types", func(r chi.Router) {
-		// Register the routes
-		r.Get("/", stubHandler)
-		r.Post("/", stubHandler)
-		r.Group(func(r chi.Router) {
-			r.Use(func(next http.Handler) http.Handler {
-				return next
-			})
-			r.Get("/{id}", stubHandler)
-			r.Patch("/{id}", stubHandler)
-			r.Delete("/{id}", stubHandler)
-		})
-	})
+	// Assert that endpoints are registered
+	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		// Check expected routes exist
+		switch {
+		case method == "GET" && route == "/":
+		case method == "POST" && route == "/":
+		case method == "GET" && route == "/{id}":
+		case method == "PATCH" && route == "/{id}":
+		case method == "DELETE" && route == "/{id}":
+		default:
+			return fmt.Errorf("unexpected route: %s %s", method, route)
+		}
+		return nil
+	}
 
-	// Test GET route
-	req := httptest.NewRequest("GET", "/metric-types", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test POST route
-	req = httptest.NewRequest("POST", "/metric-types", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test GET /{id} route
-	req = httptest.NewRequest("GET", "/metric-types/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test PATCH /{id} route
-	req = httptest.NewRequest("PATCH", "/metric-types/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test DELETE /{id} route
-	req = httptest.NewRequest("DELETE", "/metric-types/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
+	err := chi.Walk(r, walkFunc)
+	assert.NoError(t, err)
 }
 
 // TestMetricTypeHandleCreate tests the handleCreate method

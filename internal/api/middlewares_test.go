@@ -12,6 +12,200 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// MockAuthenticator implements domain.Authenticator for testing
+type MockAuthenticator struct {
+	ValidToken       string
+	IdentityToReturn domain.AuthIdentity
+	ShouldReturnNil  bool
+}
+
+func (m *MockAuthenticator) Authenticate(ctx context.Context, token string) domain.AuthIdentity {
+	if m.ShouldReturnNil || token != m.ValidToken {
+		return nil
+	}
+	return m.IdentityToReturn
+}
+
+func TestExtractTokenFromRequest(t *testing.T) {
+	tests := []struct {
+		name          string
+		headers       map[string]string
+		expectedToken string
+	}{
+		{
+			name: "Valid Bearer Token",
+			headers: map[string]string{
+				"Authorization": "Bearer token123",
+			},
+			expectedToken: "token123",
+		},
+		{
+			name:          "Missing Authorization Header",
+			headers:       map[string]string{},
+			expectedToken: "",
+		},
+		{
+			name: "Authorization Header Without Bearer Prefix",
+			headers: map[string]string{
+				"Authorization": "token123",
+			},
+			expectedToken: "",
+		},
+		{
+			name: "Empty Token After Bearer Prefix",
+			headers: map[string]string{
+				"Authorization": "Bearer ",
+			},
+			expectedToken: "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			for key, value := range tc.headers {
+				req.Header.Set(key, value)
+			}
+
+			token := extractTokenFromRequest(req)
+			assert.Equal(t, tc.expectedToken, token)
+		})
+	}
+}
+
+// Simple test for AuthMiddleware that verifies the middleware behavior
+func TestAuthMiddleware(t *testing.T) {
+	// Define test cases
+	tests := []struct {
+		name           string
+		token          string
+		authenticator  *MockAuthenticator
+		expectedStatus int
+	}{
+		{
+			name:  "Valid Token",
+			token: "valid-token",
+			authenticator: &MockAuthenticator{
+				ValidToken:       "valid-token",
+				IdentityToReturn: NewMockAuthFulcrumAdmin(),
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:  "No Token",
+			token: "",
+			authenticator: &MockAuthenticator{
+				ValidToken:       "valid-token",
+				IdentityToReturn: NewMockAuthFulcrumAdmin(),
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:  "Invalid Token",
+			token: "invalid-token",
+			authenticator: &MockAuthenticator{
+				ValidToken:       "valid-token",
+				IdentityToReturn: NewMockAuthFulcrumAdmin(),
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:  "Auth Fails",
+			token: "valid-token",
+			authenticator: &MockAuthenticator{
+				ValidToken:      "valid-token",
+				ShouldReturnNil: true,
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a simple test handler that always returns OK
+			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Always return OK for the test handler
+				w.WriteHeader(http.StatusOK)
+			})
+
+			// Create middleware chain
+			middleware := AuthMiddleware(tc.authenticator)
+			handler := middleware(testHandler)
+
+			// Create request with appropriate token
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			if tc.token != "" {
+				req.Header.Set("Authorization", "Bearer "+tc.token)
+			}
+
+			// Execute the request
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, req)
+
+			// Verify status code
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}
+
+// TestAuthMiddlewareContext tests that the middleware adds the identity to the context
+func TestAuthMiddlewareContext(t *testing.T) {
+	validToken := "valid-token"
+	testIdentity := NewMockAuthFulcrumAdmin()
+
+	// Create authenticator that returns identity for valid token
+	auth := &MockAuthenticator{
+		ValidToken:       validToken,
+		IdentityToReturn: testIdentity,
+	}
+
+	// Create a test handler that checks for identity in context
+	var identityFound bool
+	var capturedIdentity domain.AuthIdentity
+
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Use defer/recover to safely try to get identity
+		defer func() {
+			recover() // Just recover and continue
+		}()
+
+		// Try to access identity - if it exists, capture it
+		capturedIdentity = domain.MustGetAuthIdentity(r.Context())
+		identityFound = (capturedIdentity != nil)
+
+		w.WriteHeader(http.StatusOK)
+	})
+
+	// Create middleware
+	middleware := AuthMiddleware(auth)
+	handler := middleware(testHandler)
+
+	// Test with valid token
+	t.Run("Valid token adds identity to context", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("Authorization", "Bearer "+validToken)
+
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.True(t, identityFound, "Identity should be found in context")
+		assert.Equal(t, testIdentity.ID(), capturedIdentity.ID())
+		assert.Equal(t, testIdentity.Role(), capturedIdentity.Role())
+	})
+
+	// Test with invalid token
+	t.Run("Invalid token does not add identity", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("Authorization", "Bearer invalid-token")
+
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+	})
+}
+
 func TestIDMiddleware(t *testing.T) {
 	// Create test cases
 	tests := []struct {

@@ -342,52 +342,35 @@ func TestNewAgentTypeHandler(t *testing.T) {
 
 // TestAgentTypeHandlerRoutes tests that routes are properly registered
 func TestAgentTypeHandlerRoutes(t *testing.T) {
-	// We'll use a stub for the actual handler to avoid executing real handler logic
-	stubHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	// Create mocks
+	querier := &mockAgentTypeQuerier{}
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
-	// Create a test router and register routes
+	// Create the handler
+	handler := NewAgentTypeHandler(querier, authz)
+
+	// Execute
+	routeFunc := handler.Routes()
+	assert.NotNil(t, routeFunc)
+
+	// Create a chi router and apply the routes
 	r := chi.NewRouter()
+	routeFunc(r)
 
-	// Instead of using the actual handlers which require auth context,
-	// we'll manually register routes with our stub handler
-	r.Route("/agent-types", func(r chi.Router) {
-		// Register the GET / route
-		r.Get("/", stubHandler)
-
-		// Register the /{id} routes with IDMiddleware
-		r.Group(func(r chi.Router) {
-			r.Use(IDMiddleware)
-			r.Get("/{id}", stubHandler)
-		})
-	})
-
-	// Test route existence by creating test requests
-	// We don't need to execute them, just confirm they route correctly
-
-	// Test GET /agent-types
-	req := httptest.NewRequest("GET", "/agent-types", nil)
-	// Add mock auth identity to the context
-	authIdentity := MockAuthIdentity{
-		id: uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"),
+	// Assert that endpoints are registered
+	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		// Check expected routes exist
+		switch {
+		case method == "GET" && route == "/":
+		case method == "GET" && route == "/{id}":
+		default:
+			return fmt.Errorf("unexpected route: %s %s", method, route)
+		}
+		return nil
 	}
-	req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	// If route doesn't exist, chi would return 404, but our handler logic would be called instead
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
 
-	// Test GET /agent-types/{id}
-	req = httptest.NewRequest("GET", "/agent-types/550e8400-e29b-41d4-a716-446655440000", nil)
-	// Add mock auth identity to the context
-	authIdentity = MockAuthIdentity{
-		id: uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"),
-	}
-	req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
+	err := chi.Walk(r, walkFunc)
+	assert.NoError(t, err)
 }
 
 // TestAgentTypeToResponse tests the agentTypeToResponse function

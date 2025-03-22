@@ -181,27 +181,35 @@ func TestNewAuditEntryHandler(t *testing.T) {
 
 // TestAuditEntryHandlerRoutes tests that routes are properly registered
 func TestAuditEntryHandlerRoutes(t *testing.T) {
-	// We'll use a stub for the actual handler to avoid executing real handler logic
-	stubHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	// Create mocks
+	querier := &mockAuditEntryQuerier{}
+	commander := &mockAuditEntryCommander{}
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
-	// Create a test router and register routes
+	// Create the handler
+	handler := NewAuditEntryHandler(querier, commander, authz)
+
+	// Execute
+	routeFunc := handler.Routes()
+	assert.NotNil(t, routeFunc)
+
+	// Create a chi router and apply the routes
 	r := chi.NewRouter()
+	routeFunc(r)
 
-	// Instead of using the actual handlers which require auth context,
-	// we'll manually register routes with our stub handler
-	r.Route("/audit-entries", func(r chi.Router) {
-		// Register the GET / route
-		r.Get("/", stubHandler)
-	})
+	// Assert that endpoints are registered
+	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		// Check expected routes exist
+		switch {
+		case method == "GET" && route == "/":
+		default:
+			return fmt.Errorf("unexpected route: %s %s", method, route)
+		}
+		return nil
+	}
 
-	// Test route existence by creating test requests
-	// Test GET /audit-entries
-	req := httptest.NewRequest("GET", "/audit-entries", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
+	err := chi.Walk(r, walkFunc)
+	assert.NoError(t, err)
 }
 
 // TestAuditEntryToResponse tests the auditEntryToResponse function

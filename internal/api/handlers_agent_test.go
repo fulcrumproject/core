@@ -956,78 +956,41 @@ func TestNewAgentHandler(t *testing.T) {
 
 // TestAgentHandlerRoutes tests that routes are properly registered
 func TestAgentHandlerRoutes(t *testing.T) {
-	// We'll use a stub for the actual handler to avoid executing real handler logic
-	stubHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	// Create mocks
+	querier := &mockAgentQuerier{}
+	commander := &mockAgentCommander{}
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
-	// Create a test router and register routes
+	// Create the handler
+	handler := NewAgentHandler(querier, commander, authz)
+
+	// Execute
+	routeFunc := handler.Routes()
+	assert.NotNil(t, routeFunc)
+
+	// Create a chi router and apply the routes
 	r := chi.NewRouter()
+	routeFunc(r)
 
-	// Instead of using the actual handlers which require auth context,
-	// we'll manually register routes with our stub handler
-	r.Route("/agents", func(r chi.Router) {
-		// Register the GET / route
-		r.Get("/", stubHandler)
-		// Register the POST / route
-		r.Post("/", stubHandler)
-		// Register the GET /me route
-		r.Get("/me", stubHandler)
-		// Register the PATCH /me/state route
-		r.Patch("/me/state", stubHandler)
-		// Register routes with ID parameter
-		r.Route("/{id}", func(r chi.Router) {
-			// Register the GET /{id} route
-			r.Get("/", stubHandler)
-			// Register the PUT /{id} route
-			r.Put("/", stubHandler)
-			// Register the DELETE /{id} route
-			r.Delete("/", stubHandler)
-		})
-	})
+	// Assert that endpoints are registered
+	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		// Check expected routes exist
+		switch {
+		case method == "GET" && route == "/":
+		case method == "POST" && route == "/":
+		case method == "GET" && route == "/me":
+		case method == "PUT" && route == "/me/status":
+		case method == "GET" && route == "/{id}":
+		case method == "PATCH" && route == "/{id}":
+		case method == "DELETE" && route == "/{id}":
+		default:
+			return fmt.Errorf("unexpected route: %s %s", method, route)
+		}
+		return nil
+	}
 
-	// Test route existence by creating test requests
-	// Test GET /agents
-	req := httptest.NewRequest("GET", "/agents", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test POST /agents
-	req = httptest.NewRequest("POST", "/agents", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test GET /agents/me
-	req = httptest.NewRequest("GET", "/agents/me", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test PATCH /agents/me/state
-	req = httptest.NewRequest("PATCH", "/agents/me/state", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test GET /agents/{id}
-	req = httptest.NewRequest("GET", "/agents/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test PUT /agents/{id}
-	req = httptest.NewRequest("PUT", "/agents/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test DELETE /agents/{id}
-	req = httptest.NewRequest("DELETE", "/agents/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
+	err := chi.Walk(r, walkFunc)
+	assert.NoError(t, err)
 }
 
 // TestAgentToResponse tests the agentToResponse function

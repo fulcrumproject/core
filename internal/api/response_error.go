@@ -75,5 +75,6 @@ func ErrUnauthorized(err error) render.Renderer {
 
 func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	render.Status(r, e.HTTPStatusCode)
+	w.WriteHeader(e.HTTPStatusCode)
 	return nil
 }

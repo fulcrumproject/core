@@ -29,38 +29,35 @@ func TestNewServiceTypeHandler(t *testing.T) {
 
 // TestServiceTypeHandlerRoutes tests that routes are properly registered
 func TestServiceTypeHandlerRoutes(t *testing.T) {
-	// We'll use a stub for the actual handler to avoid executing real handler logic
-	stubHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	// Create mocks
+	querier := &mockServiceTypeQuerier{}
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
-	// Create a test router and register routes
+	// Create the handler
+	handler := NewServiceTypeHandler(querier, authz)
+
+	// Execute
+	routeFunc := handler.Routes()
+	assert.NotNil(t, routeFunc)
+
+	// Create a chi router and apply the routes
 	r := chi.NewRouter()
+	routeFunc(r)
 
-	// Instead of using the actual handlers which require auth context,
-	// we'll manually register routes with our stub handler
-	r.Route("/service-types", func(r chi.Router) {
-		// Register the routes
-		r.Get("/", stubHandler)
-		r.Group(func(r chi.Router) {
-			r.Use(func(next http.Handler) http.Handler {
-				return next
-			})
-			r.Get("/{id}", stubHandler)
-		})
-	})
+	// Assert that endpoints are registered
+	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		// Check expected routes exist
+		switch {
+		case method == "GET" && route == "/":
+		case method == "GET" && route == "/{id}":
+		default:
+			return fmt.Errorf("unexpected route: %s %s", method, route)
+		}
+		return nil
+	}
 
-	// Test GET route
-	req := httptest.NewRequest("GET", "/service-types", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test GET /{id} route
-	req = httptest.NewRequest("GET", "/service-types/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
+	err := chi.Walk(r, walkFunc)
+	assert.NoError(t, err)
 }
 
 // TestServiceTypeHandleGet tests the handleGet method
