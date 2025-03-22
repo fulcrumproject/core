@@ -44,8 +44,8 @@ func Seed(db *gorm.DB) error {
 
 	// Create default entity types
 	// Fixed UUIDs for default types
-	dummyAgentTypeID := domain.UUID(uuid.MustParse("11111111-1111-1111-1111-111111111111"))
-	vmServiceTypeID := domain.UUID(uuid.MustParse("22222222-2222-2222-2222-222222222222"))
+	dummyAgentTypeID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	vmServiceTypeID := uuid.MustParse("22222222-2222-2222-2222-222222222222")
 
 	// Create vm service type
 	vmServiceType := domain.ServiceType{
@@ -85,7 +85,7 @@ func Seed(db *gorm.DB) error {
 	}
 
 	// Create a default admin token for tests
-	adminTokenID := domain.UUID(uuid.MustParse("33333333-3333-3333-3333-333333333333"))
+	adminTokenID := uuid.MustParse("33333333-3333-3333-3333-333333333333")
 	// Use a fixed token value for tests
 	const adminTokenValue = "admin-test-token"
 

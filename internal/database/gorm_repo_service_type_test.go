@@ -60,7 +60,7 @@ func TestServiceTypeRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Execute
-			found, err := repo.FindByID(ctx, domain.UUID(uuid.New()))
+			found, err := repo.FindByID(ctx, uuid.New())
 
 			// Assert
 			assert.Nil(t, found)

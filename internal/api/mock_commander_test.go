@@ -2,217 +2,239 @@ package api
 
 import (
 	"context"
-	"time"
+	"fmt"
 
 	"fulcrumproject.org/core/internal/domain"
 )
 
-// MockAgentCommander mock
-type MockAgentCommander struct{}
-
-var _ domain.AgentCommander = (*MockAgentCommander)(nil)
-
-func (m *MockAgentCommander) Create(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
-	panic("not implemented")
+// mockAgentCommander is a custom mock for AgentCommander
+type mockAgentCommander struct {
+	createFunc      func(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error)
+	updateFunc      func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, state *domain.AgentState) (*domain.Agent, error)
+	deleteFunc      func(ctx context.Context, id domain.UUID) error
+	updateStateFunc func(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error)
 }
 
-func (m *MockAgentCommander) Update(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, state *domain.AgentState) (*domain.Agent, error) {
-	panic("not implemented")
+func (m *mockAgentCommander) Create(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, name, countryCode, attributes, providerID, agentTypeID)
+	}
+	return nil, fmt.Errorf("create not mocked")
 }
 
-func (m *MockAgentCommander) Delete(ctx context.Context, id domain.UUID) error {
-	panic("not implemented")
+func (m *mockAgentCommander) Update(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, state *domain.AgentState) (*domain.Agent, error) {
+	if m.updateFunc != nil {
+		return m.updateFunc(ctx, id, name, countryCode, attributes, state)
+	}
+	return nil, fmt.Errorf("update not mocked")
 }
 
-func (m *MockAgentCommander) UpdateState(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error) {
-	panic("not implemented")
+func (m *mockAgentCommander) Delete(ctx context.Context, id domain.UUID) error {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx, id)
+	}
+	return fmt.Errorf("delete not mocked")
 }
 
-// MockAuditEntryCommander mock
-type MockAuditEntryCommander struct{}
-
-var _ domain.AuditEntryCommander = (*MockAuditEntryCommander)(nil)
-
-func (m *MockAuditEntryCommander) Create(
-	ctx context.Context,
-	authorityType domain.AuthorityType,
-	authorityID string,
-	eventType domain.EventType,
-	properties domain.JSON,
-	entityID, providerID, agentID, brokerID *domain.UUID,
-) (*domain.AuditEntry, error) {
-	panic("not implemented")
+func (m *mockAgentCommander) UpdateState(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error) {
+	if m.updateStateFunc != nil {
+		return m.updateStateFunc(ctx, id, state)
+	}
+	return nil, fmt.Errorf("update state not mocked")
 }
 
-func (m *MockAuditEntryCommander) CreateWithDiff(
-	ctx context.Context,
-	authorityType domain.AuthorityType,
-	authorityID string,
-	eventType domain.EventType,
-	entityID, providerID, agentID, brokerID *domain.UUID,
-	beforeEntity, afterEntity interface{},
-) (*domain.AuditEntry, error) {
-	panic("not implemented")
+// mockAuditEntryCommander is a custom mock for AuditEntryCommander
+type mockAuditEntryCommander struct {
+	createFunc            func(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error)
+	createWithDiffFunc    func(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error)
+	createCtxFunc         func(ctx context.Context, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error)
+	createCtxWithDiffFunc func(ctx context.Context, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error)
 }
 
-func (m *MockAuditEntryCommander) CreateCtx(
-	ctx context.Context,
-	eventType domain.EventType,
-	properties domain.JSON,
-	entityID, providerID, agentID, brokerID *domain.UUID,
-) (*domain.AuditEntry, error) {
-	panic("not implemented")
+func (m *mockAuditEntryCommander) Create(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error) {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, authorityType, authorityID, eventType, properties, entityID, providerID, agentID, brokerID)
+	}
+	return nil, fmt.Errorf("create not mocked")
 }
 
-func (m *MockAuditEntryCommander) CreateCtxWithDiff(
-	ctx context.Context,
-	eventType domain.EventType,
-	entityID, providerID, agentID, brokerID *domain.UUID,
-	beforeEntity, afterEntity interface{},
-) (*domain.AuditEntry, error) {
-	panic("not implemented")
+func (m *mockAuditEntryCommander) CreateWithDiff(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error) {
+	if m.createWithDiffFunc != nil {
+		return m.createWithDiffFunc(ctx, authorityType, authorityID, eventType, entityID, providerID, agentID, brokerID, beforeEntity, afterEntity)
+	}
+	return nil, fmt.Errorf("createWithDiff not mocked")
 }
 
-// MockBrokerCommander mock
-type MockBrokerCommander struct{}
-
-var _ domain.BrokerCommander = (*MockBrokerCommander)(nil)
-
-func (m *MockBrokerCommander) Create(ctx context.Context, name string) (*domain.Broker, error) {
-	panic("not implemented")
+func (m *mockAuditEntryCommander) CreateCtx(ctx context.Context, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error) {
+	if m.createCtxFunc != nil {
+		return m.createCtxFunc(ctx, eventType, properties, entityID, providerID, agentID, brokerID)
+	}
+	return nil, fmt.Errorf("createCtx not mocked")
 }
 
-func (m *MockBrokerCommander) Update(ctx context.Context, id domain.UUID, name *string) (*domain.Broker, error) {
-	panic("not implemented")
+func (m *mockAuditEntryCommander) CreateCtxWithDiff(ctx context.Context, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error) {
+	if m.createCtxWithDiffFunc != nil {
+		return m.createCtxWithDiffFunc(ctx, eventType, entityID, providerID, agentID, brokerID, beforeEntity, afterEntity)
+	}
+	return nil, fmt.Errorf("createCtxWithDiff not mocked")
 }
 
-func (m *MockBrokerCommander) Delete(ctx context.Context, id domain.UUID) error {
-	panic("not implemented")
+// mockBrokerCommander is a custom mock for BrokerCommander
+type mockBrokerCommander struct {
+	createFunc func(ctx context.Context, name string) (*domain.Broker, error)
+	updateFunc func(ctx context.Context, id domain.UUID, name *string) (*domain.Broker, error)
+	deleteFunc func(ctx context.Context, id domain.UUID) error
 }
 
-// MockJobCommander mock
-type MockJobCommander struct{}
-
-var _ domain.JobCommander = (*MockJobCommander)(nil)
-
-func (m *MockJobCommander) Claim(ctx context.Context, jobID domain.UUID) error {
-	panic("not implemented")
+func (m *mockBrokerCommander) Create(ctx context.Context, name string) (*domain.Broker, error) {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, name)
+	}
+	return nil, fmt.Errorf("create not mocked")
 }
 
-func (m *MockJobCommander) Complete(ctx context.Context, jobID domain.UUID, resources *domain.JSON, externalID *string) error {
-	panic("not implemented")
+func (m *mockBrokerCommander) Update(ctx context.Context, id domain.UUID, name *string) (*domain.Broker, error) {
+	if m.updateFunc != nil {
+		return m.updateFunc(ctx, id, name)
+	}
+	return nil, fmt.Errorf("update not mocked")
 }
 
-func (m *MockJobCommander) Fail(ctx context.Context, jobID domain.UUID, errorMessage string) error {
-	panic("not implemented")
+func (m *mockBrokerCommander) Delete(ctx context.Context, id domain.UUID) error {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx, id)
+	}
+	return fmt.Errorf("delete not mocked")
 }
 
-// MockServiceCommander mock
-type MockServiceCommander struct{}
-
-var _ domain.ServiceCommander = (*MockServiceCommander)(nil)
-
-func (m *MockServiceCommander) Create(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, attributes domain.Attributes, properties domain.JSON) (*domain.Service, error) {
-	panic("not implemented")
+// mockJobCommander is a custom mock for JobCommander
+type mockJobCommander struct {
+	claimFunc    func(ctx context.Context, jobID domain.UUID) error
+	completeFunc func(ctx context.Context, jobID domain.UUID, resources *domain.JSON, externalID *string) error
+	failFunc     func(ctx context.Context, jobID domain.UUID, errorMessage string) error
 }
 
-func (m *MockServiceCommander) Update(ctx context.Context, id domain.UUID, name *string, props *domain.JSON) (*domain.Service, error) {
-	panic("not implemented")
+func (m *mockJobCommander) Claim(ctx context.Context, jobID domain.UUID) error {
+	if m.claimFunc != nil {
+		return m.claimFunc(ctx, jobID)
+	}
+	return nil
 }
 
-func (m *MockServiceCommander) Transition(ctx context.Context, id domain.UUID, target domain.ServiceState) (*domain.Service, error) {
-	panic("not implemented")
+func (m *mockJobCommander) Complete(ctx context.Context, jobID domain.UUID, resources *domain.JSON, externalID *string) error {
+	if m.completeFunc != nil {
+		return m.completeFunc(ctx, jobID, resources, externalID)
+	}
+	return nil
 }
 
-func (m *MockServiceCommander) Retry(ctx context.Context, id domain.UUID) (*domain.Service, error) {
-	panic("not implemented")
+func (m *mockJobCommander) Fail(ctx context.Context, jobID domain.UUID, errorMessage string) error {
+	if m.failFunc != nil {
+		return m.failFunc(ctx, jobID, errorMessage)
+	}
+	return nil
 }
 
-func (m *MockServiceCommander) FailTimeoutServicesAndJobs(ctx context.Context, timeout time.Duration) (int, error) {
-	panic("not implemented")
+// MockMetricEntryCommander mocks the MetricEntryCommander interface
+type mockMetricEntryCommander struct {
+	createFunc               func(ctx context.Context, typeName string, agentID domain.UUID, serviceID domain.UUID, resourceID string, value float64) (*domain.MetricEntry, error)
+	createWithExternalIDFunc func(ctx context.Context, typeName string, agentID domain.UUID, externalID string, resourceID string, value float64) (*domain.MetricEntry, error)
 }
 
-// MockTokenCommander mock
-type MockTokenCommander struct{}
-
-var _ domain.TokenCommander = (*MockTokenCommander)(nil)
-
-func (m *MockTokenCommander) Create(ctx context.Context, name string, role domain.AuthRole, expireAt time.Time, scopeID *domain.UUID) (*domain.Token, error) {
-	panic("not implemented")
+func (m *mockMetricEntryCommander) Create(ctx context.Context, typeName string, agentID domain.UUID, serviceID domain.UUID, resourceID string, value float64) (*domain.MetricEntry, error) {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, typeName, agentID, serviceID, resourceID, value)
+	}
+	return nil, fmt.Errorf("create not mocked")
 }
 
-func (m *MockTokenCommander) Update(ctx context.Context, id domain.UUID, name *string, expireAt *time.Time) (*domain.Token, error) {
-	panic("not implemented")
+func (m *mockMetricEntryCommander) CreateWithExternalID(ctx context.Context, typeName string, agentID domain.UUID, externalID string, resourceID string, value float64) (*domain.MetricEntry, error) {
+	if m.createWithExternalIDFunc != nil {
+		return m.createWithExternalIDFunc(ctx, typeName, agentID, externalID, resourceID, value)
+	}
+	return nil, fmt.Errorf("createWithExternalID not mocked")
 }
 
-func (m *MockTokenCommander) Delete(ctx context.Context, id domain.UUID) error {
-	panic("not implemented")
+// mockMetricTypeCommander is a custom mock for MetricTypeCommander
+type mockMetricTypeCommander struct {
+	createFunc func(ctx context.Context, name string, entityType domain.MetricEntityType) (*domain.MetricType, error)
+	updateFunc func(ctx context.Context, id domain.UUID, name *string) (*domain.MetricType, error)
+	deleteFunc func(ctx context.Context, id domain.UUID) error
 }
 
-func (m *MockTokenCommander) Regenerate(ctx context.Context, id domain.UUID) (*domain.Token, error) {
-	panic("not implemented")
+func (m *mockMetricTypeCommander) Create(ctx context.Context, name string, entityType domain.MetricEntityType) (*domain.MetricType, error) {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, name, entityType)
+	}
+	return nil, fmt.Errorf("create not mocked")
 }
 
-// MockProviderCommander mock
-type MockProviderCommander struct{}
-
-var _ domain.ProviderCommander = (*MockProviderCommander)(nil)
-
-func (m *MockProviderCommander) Create(ctx context.Context, name string, state domain.ProviderState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Provider, error) {
-	panic("not implemented")
+func (m *mockMetricTypeCommander) Update(ctx context.Context, id domain.UUID, name *string) (*domain.MetricType, error) {
+	if m.updateFunc != nil {
+		return m.updateFunc(ctx, id, name)
+	}
+	return nil, fmt.Errorf("update not mocked")
 }
 
-func (m *MockProviderCommander) Update(ctx context.Context, id domain.UUID, name *string, state *domain.ProviderState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Provider, error) {
-	panic("not implemented")
+func (m *mockMetricTypeCommander) Delete(ctx context.Context, id domain.UUID) error {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx, id)
+	}
+	return fmt.Errorf("delete not mocked")
 }
 
-func (m *MockProviderCommander) Delete(ctx context.Context, id domain.UUID) error {
-	panic("not implemented")
+// mockProviderCommander is a custom mock for ProviderCommander
+type mockProviderCommander struct {
+	createFunc func(ctx context.Context, name string, state domain.ProviderState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Provider, error)
+	updateFunc func(ctx context.Context, id domain.UUID, name *string, state *domain.ProviderState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Provider, error)
+	deleteFunc func(ctx context.Context, id domain.UUID) error
 }
 
-// MockMetricEntryCommander mock
-type MockMetricEntryCommander struct{}
-
-var _ domain.MetricEntryCommander = (*MockMetricEntryCommander)(nil)
-
-func (m *MockMetricEntryCommander) Create(ctx context.Context, typeName string, agentID domain.UUID, serviceID domain.UUID, resourceID string, value float64) (*domain.MetricEntry, error) {
-	panic("not implemented")
+func (m *mockProviderCommander) Create(ctx context.Context, name string, state domain.ProviderState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Provider, error) {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, name, state, countryCode, attributes)
+	}
+	return nil, fmt.Errorf("create not mocked")
 }
 
-func (m *MockMetricEntryCommander) CreateWithExternalID(ctx context.Context, typeName string, agentID domain.UUID, externalID string, resourceID string, value float64) (*domain.MetricEntry, error) {
-	panic("not implemented")
+func (m *mockProviderCommander) Update(ctx context.Context, id domain.UUID, name *string, state *domain.ProviderState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Provider, error) {
+	if m.updateFunc != nil {
+		return m.updateFunc(ctx, id, name, state, countryCode, attributes)
+	}
+	return nil, fmt.Errorf("update not mocked")
 }
 
-// MockServiceGroupCommander mock
-type MockServiceGroupCommander struct{}
-
-var _ domain.ServiceGroupCommander = (*MockServiceGroupCommander)(nil)
-
-func (m *MockServiceGroupCommander) Create(ctx context.Context, name string, brokerID domain.UUID) (*domain.ServiceGroup, error) {
-	panic("not implemented")
+func (m *mockProviderCommander) Delete(ctx context.Context, id domain.UUID) error {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx, id)
+	}
+	return fmt.Errorf("delete not mocked")
 }
 
-func (m *MockServiceGroupCommander) Update(ctx context.Context, id domain.UUID, name *string) (*domain.ServiceGroup, error) {
-	panic("not implemented")
+// mockServiceGroupCommander is a custom mock for ServiceGroupCommander
+type mockServiceGroupCommander struct {
+	createFunc func(ctx context.Context, name string, brokerID domain.UUID) (*domain.ServiceGroup, error)
+	updateFunc func(ctx context.Context, id domain.UUID, name *string) (*domain.ServiceGroup, error)
+	deleteFunc func(ctx context.Context, id domain.UUID) error
 }
 
-func (m *MockServiceGroupCommander) Delete(ctx context.Context, id domain.UUID) error {
-	panic("not implemented")
+func (m *mockServiceGroupCommander) Create(ctx context.Context, name string, brokerID domain.UUID) (*domain.ServiceGroup, error) {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, name, brokerID)
+	}
+	return nil, fmt.Errorf("create not mocked")
 }
 
-// MockMetricTypeCommander mock
-type MockMetricTypeCommander struct{}
-
-var _ domain.MetricTypeCommander = (*MockMetricTypeCommander)(nil)
-
-func (m *MockMetricTypeCommander) Create(ctx context.Context, name string, kind domain.MetricEntityType) (*domain.MetricType, error) {
-	panic("not implemented")
+func (m *mockServiceGroupCommander) Update(ctx context.Context, id domain.UUID, name *string) (*domain.ServiceGroup, error) {
+	if m.updateFunc != nil {
+		return m.updateFunc(ctx, id, name)
+	}
+	return nil, fmt.Errorf("update not mocked")
 }
 
-func (m *MockMetricTypeCommander) Update(ctx context.Context, id domain.UUID, name *string) (*domain.MetricType, error) {
-	panic("not implemented")
-}
-
-func (m *MockMetricTypeCommander) Delete(ctx context.Context, id domain.UUID) error {
-	panic("not implemented")
+func (m *mockServiceGroupCommander) Delete(ctx context.Context, id domain.UUID) error {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx, id)
+	}
+	return fmt.Errorf("delete not mocked")
 }

@@ -16,69 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockAuditEntryQuerier is a custom mock for AuditEntryQuerier
-type mockAuditEntryQuerier struct {
-	MockAuditEntryQuerier
-	listFunc      func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error)
-	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
-}
-
-func (m *mockAuditEntryQuerier) List(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error) {
-	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
-	}
-	return &domain.PageResponse[domain.AuditEntry]{
-		Items:       []domain.AuditEntry{},
-		TotalItems:  0,
-		CurrentPage: 1,
-		TotalPages:  0,
-		HasNext:     false,
-	}, nil
-}
-
-func (m *mockAuditEntryQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	if m.authScopeFunc != nil {
-		return m.authScopeFunc(ctx, id)
-	}
-	return &domain.EmptyAuthScope, nil
-}
-
-// mockAuditEntryCommander is a custom mock for AuditEntryCommander
-type mockAuditEntryCommander struct {
-	createFunc            func(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error)
-	createWithDiffFunc    func(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error)
-	createCtxFunc         func(ctx context.Context, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error)
-	createCtxWithDiffFunc func(ctx context.Context, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error)
-}
-
-func (m *mockAuditEntryCommander) Create(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error) {
-	if m.createFunc != nil {
-		return m.createFunc(ctx, authorityType, authorityID, eventType, properties, entityID, providerID, agentID, brokerID)
-	}
-	return nil, fmt.Errorf("create not mocked")
-}
-
-func (m *mockAuditEntryCommander) CreateWithDiff(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error) {
-	if m.createWithDiffFunc != nil {
-		return m.createWithDiffFunc(ctx, authorityType, authorityID, eventType, entityID, providerID, agentID, brokerID, beforeEntity, afterEntity)
-	}
-	return nil, fmt.Errorf("createWithDiff not mocked")
-}
-
-func (m *mockAuditEntryCommander) CreateCtx(ctx context.Context, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error) {
-	if m.createCtxFunc != nil {
-		return m.createCtxFunc(ctx, eventType, properties, entityID, providerID, agentID, brokerID)
-	}
-	return nil, fmt.Errorf("createCtx not mocked")
-}
-
-func (m *mockAuditEntryCommander) CreateCtxWithDiff(ctx context.Context, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error) {
-	if m.createCtxWithDiffFunc != nil {
-		return m.createCtxWithDiffFunc(ctx, eventType, entityID, providerID, agentID, brokerID, beforeEntity, afterEntity)
-	}
-	return nil, fmt.Errorf("createCtxWithDiff not mocked")
-}
-
 // TestAuditEntryHandleList tests the handleList method
 func TestAuditEntryHandleList(t *testing.T) {
 	// Setup test cases
@@ -97,15 +34,15 @@ func TestAuditEntryHandleList(t *testing.T) {
 				// Setup the mock to return test audit entries
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-				providerID := domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"))
-				entityID := domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"))
+				providerID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+				entityID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 
 				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error) {
 					return &domain.PageResponse[domain.AuditEntry]{
 						Items: []domain.AuditEntry{
 							{
 								BaseEntity: domain.BaseEntity{
-									ID:        domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
+									ID:        uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
@@ -118,7 +55,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 							},
 							{
 								BaseEntity: domain.BaseEntity{
-									ID:        domain.UUID(uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")),
+									ID:        uuid.MustParse("880e8400-e29b-41d4-a716-446655440000"),
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
@@ -174,7 +111,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 			// Setup mocks
 			querier := &mockAuditEntryQuerier{}
 			commander := &mockAuditEntryCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -233,7 +170,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 func TestNewAuditEntryHandler(t *testing.T) {
 	querier := &mockAuditEntryQuerier{}
 	commander := &mockAuditEntryCommander{}
-	authz := NewMockAuthorizer(true)
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
 	handler := NewAuditEntryHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -271,14 +208,14 @@ func TestAuditEntryHandlerRoutes(t *testing.T) {
 func TestAuditEntryToResponse(t *testing.T) {
 	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-	providerID := domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"))
-	agentID := domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"))
-	brokerID := domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"))
-	entityID := domain.UUID(uuid.MustParse("880e8400-e29b-41d4-a716-446655440000"))
+	providerID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+	agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
+	brokerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
+	entityID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 
 	auditEntry := &domain.AuditEntry{
 		BaseEntity: domain.BaseEntity{
-			ID:        domain.UUID(uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")),
+			ID:        uuid.MustParse("990e8400-e29b-41d4-a716-446655440000"),
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},

@@ -95,7 +95,7 @@ func TestIDMiddleware(t *testing.T) {
 func TestMustGetID(t *testing.T) {
 	// Test the happy path
 	testUUID := uuid.New()
-	testID := domain.UUID(testUUID)
+	testID := testUUID
 	r := httptest.NewRequest("GET", "/test", nil)
 
 	// Set the ID in the context using the same key as IDMiddleware

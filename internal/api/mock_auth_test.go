@@ -13,7 +13,7 @@ func NewMockAuthFulcrumAdmin() *MockAuthIdentity {
 }
 
 func NewMockAuthProviderAdmin() *MockAuthIdentity {
-	providerID := domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"))
+	providerID := uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")
 	return &MockAuthIdentity{
 		id:         uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
 		role:       domain.RoleProviderAdmin,
@@ -22,8 +22,8 @@ func NewMockAuthProviderAdmin() *MockAuthIdentity {
 }
 
 func NewMockAuthAgent() *MockAuthIdentity {
-	agentID := domain.UUID(uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"))
-	providerID := domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"))
+	agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
+	providerID := uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")
 
 	return &MockAuthIdentity{
 		id:         uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
@@ -34,7 +34,7 @@ func NewMockAuthAgent() *MockAuthIdentity {
 }
 
 func NewMockAuthBroker() *MockAuthIdentity {
-	bokerID := domain.UUID(uuid.MustParse("091c2e30-0706-11f0-a319-460683de5083"))
+	bokerID := uuid.MustParse("091c2e30-0706-11f0-a319-460683de5083")
 	return &MockAuthIdentity{
 		id:       uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
 		role:     domain.RoleBroker,

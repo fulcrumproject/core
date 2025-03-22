@@ -17,69 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockBrokerQuerier is a custom mock for BrokerQuerier
-type mockBrokerQuerier struct {
-	MockBrokerQuerier
-	findByIDFunc  func(ctx context.Context, id domain.UUID) (*domain.Broker, error)
-	listFunc      func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Broker], error)
-	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
-}
-
-func (m *mockBrokerQuerier) FindByID(ctx context.Context, id domain.UUID) (*domain.Broker, error) {
-	if m.findByIDFunc != nil {
-		return m.findByIDFunc(ctx, id)
-	}
-	return nil, domain.NewNotFoundErrorf("broker not found")
-}
-
-func (m *mockBrokerQuerier) List(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Broker], error) {
-	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
-	}
-	return &domain.PageResponse[domain.Broker]{
-		Items:       []domain.Broker{},
-		TotalItems:  0,
-		CurrentPage: 1,
-		TotalPages:  0,
-		HasNext:     false,
-	}, nil
-}
-
-func (m *mockBrokerQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	if m.authScopeFunc != nil {
-		return m.authScopeFunc(ctx, id)
-	}
-	return &domain.EmptyAuthScope, nil
-}
-
-// mockBrokerCommander is a custom mock for BrokerCommander
-type mockBrokerCommander struct {
-	createFunc func(ctx context.Context, name string) (*domain.Broker, error)
-	updateFunc func(ctx context.Context, id domain.UUID, name *string) (*domain.Broker, error)
-	deleteFunc func(ctx context.Context, id domain.UUID) error
-}
-
-func (m *mockBrokerCommander) Create(ctx context.Context, name string) (*domain.Broker, error) {
-	if m.createFunc != nil {
-		return m.createFunc(ctx, name)
-	}
-	return nil, fmt.Errorf("create not mocked")
-}
-
-func (m *mockBrokerCommander) Update(ctx context.Context, id domain.UUID, name *string) (*domain.Broker, error) {
-	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name)
-	}
-	return nil, fmt.Errorf("update not mocked")
-}
-
-func (m *mockBrokerCommander) Delete(ctx context.Context, id domain.UUID) error {
-	if m.deleteFunc != nil {
-		return m.deleteFunc(ctx, id)
-	}
-	return fmt.Errorf("delete not mocked")
-}
-
 // TestBrokerHandleCreate tests the handleCreate method
 func TestBrokerHandleCreate(t *testing.T) {
 	// Setup test cases
@@ -108,7 +45,7 @@ func TestBrokerHandleCreate(t *testing.T) {
 
 					return &domain.Broker{
 						BaseEntity: domain.BaseEntity{
-							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
@@ -132,7 +69,7 @@ func TestBrokerHandleCreate(t *testing.T) {
 				commander.createFunc = func(ctx context.Context, name string) (*domain.Broker, error) {
 					return &domain.Broker{
 						BaseEntity: domain.BaseEntity{
-							ID: domain.UUID(uuid.New()),
+							ID: uuid.New(),
 						},
 						Name: name,
 					}, nil
@@ -175,7 +112,7 @@ func TestBrokerHandleCreate(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
 			commander := &mockBrokerCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -230,7 +167,7 @@ func TestBrokerHandleGet(t *testing.T) {
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Broker, error) {
 					return &domain.Broker{
 						BaseEntity: domain.BaseEntity{
-							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
@@ -297,7 +234,7 @@ func TestBrokerHandleGet(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
 			commander := &mockBrokerCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -357,7 +294,7 @@ func TestBrokerHandleList(t *testing.T) {
 						Items: []domain.Broker{
 							{
 								BaseEntity: domain.BaseEntity{
-									ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+									ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
@@ -365,7 +302,7 @@ func TestBrokerHandleList(t *testing.T) {
 							},
 							{
 								BaseEntity: domain.BaseEntity{
-									ID:        domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
+									ID:        uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
@@ -416,7 +353,7 @@ func TestBrokerHandleList(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
 			commander := &mockBrokerCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -504,7 +441,7 @@ func TestBrokerHandleUpdate(t *testing.T) {
 
 					return &domain.Broker{
 						BaseEntity: domain.BaseEntity{
-							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
@@ -577,7 +514,7 @@ func TestBrokerHandleUpdate(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
 			commander := &mockBrokerCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -678,7 +615,7 @@ func TestBrokerHandleDelete(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
 			commander := &mockBrokerCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -712,7 +649,7 @@ func TestBrokerHandleDelete(t *testing.T) {
 func TestNewBrokerHandler(t *testing.T) {
 	querier := &mockBrokerQuerier{}
 	commander := &mockBrokerCommander{}
-	authz := NewMockAuthorizer(true)
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
 	handler := NewBrokerHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -786,7 +723,7 @@ func TestBrokerToResponse(t *testing.T) {
 
 	broker := &domain.Broker{
 		BaseEntity: domain.BaseEntity{
-			ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+			ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},
@@ -848,7 +785,7 @@ func TestBrokerAuthorize(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, authz)
 
 			// Create the handler
@@ -856,7 +793,7 @@ func TestBrokerAuthorize(t *testing.T) {
 
 			// Execute authorize
 			ctx := context.Background()
-			id := domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"))
+			id := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 			action := domain.ActionRead
 
 			scope, err := handler.authorize(ctx, id, action)

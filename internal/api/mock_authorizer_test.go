@@ -25,9 +25,3 @@ func (m *MockAuthorizer) AuthorizeCtx(ctx context.Context, subject domain.AuthSu
 	}
 	return nil
 }
-
-func NewMockAuthorizer(shouldSucceed bool) *MockAuthorizer {
-	return &MockAuthorizer{
-		ShouldSucceed: shouldSucceed,
-	}
-}

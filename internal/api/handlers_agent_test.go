@@ -17,77 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockAgentQuerier is a custom mock for AgentQuerier
-type mockAgentQuerier struct {
-	MockAgentQuerier
-	findByIDFunc  func(ctx context.Context, id domain.UUID) (*domain.Agent, error)
-	listFunc      func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error)
-	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
-}
-
-func (m *mockAgentQuerier) FindByID(ctx context.Context, id domain.UUID) (*domain.Agent, error) {
-	if m.findByIDFunc != nil {
-		return m.findByIDFunc(ctx, id)
-	}
-	return nil, domain.NewNotFoundErrorf("agent not found")
-}
-
-func (m *mockAgentQuerier) List(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
-	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
-	}
-	return &domain.PageResponse[domain.Agent]{
-		Items:       []domain.Agent{},
-		TotalItems:  0,
-		CurrentPage: 1,
-		TotalPages:  0,
-		HasNext:     false,
-	}, nil
-}
-
-func (m *mockAgentQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	if m.authScopeFunc != nil {
-		return m.authScopeFunc(ctx, id)
-	}
-	return &domain.EmptyAuthScope, nil
-}
-
-// mockAgentCommander is a custom mock for AgentCommander
-type mockAgentCommander struct {
-	createFunc      func(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error)
-	updateFunc      func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, state *domain.AgentState) (*domain.Agent, error)
-	deleteFunc      func(ctx context.Context, id domain.UUID) error
-	updateStateFunc func(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error)
-}
-
-func (m *mockAgentCommander) Create(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
-	if m.createFunc != nil {
-		return m.createFunc(ctx, name, countryCode, attributes, providerID, agentTypeID)
-	}
-	return nil, fmt.Errorf("create not mocked")
-}
-
-func (m *mockAgentCommander) Update(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, state *domain.AgentState) (*domain.Agent, error) {
-	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name, countryCode, attributes, state)
-	}
-	return nil, fmt.Errorf("update not mocked")
-}
-
-func (m *mockAgentCommander) Delete(ctx context.Context, id domain.UUID) error {
-	if m.deleteFunc != nil {
-		return m.deleteFunc(ctx, id)
-	}
-	return fmt.Errorf("delete not mocked")
-}
-
-func (m *mockAgentCommander) UpdateState(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error) {
-	if m.updateStateFunc != nil {
-		return m.updateStateFunc(ctx, id, state)
-	}
-	return nil, fmt.Errorf("update state not mocked")
-}
-
 // TestHandleCreate tests the handleCreate method
 func TestHandleCreate(t *testing.T) {
 	// Setup test cases
@@ -118,7 +47,7 @@ func TestHandleCreate(t *testing.T) {
 				commander.createFunc = func(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
-							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440001")),
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440001"),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
@@ -157,7 +86,7 @@ func TestHandleCreate(t *testing.T) {
 				commander.createFunc = func(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
-							ID: domain.UUID(uuid.New()),
+							ID: uuid.New(),
 						},
 						Name:            name,
 						State:           domain.AgentDisconnected,
@@ -206,7 +135,7 @@ func TestHandleCreate(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -261,7 +190,7 @@ func TestAgentHandleGet(t *testing.T) {
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
-							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
@@ -270,8 +199,8 @@ func TestAgentHandleGet(t *testing.T) {
 						Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
 						State:           domain.AgentConnected,
 						LastStateUpdate: createdAt,
-						ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
-						AgentTypeID:     domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
+						ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+						AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 					}, nil
 				}
 
@@ -341,7 +270,7 @@ func TestAgentHandleGet(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -399,7 +328,7 @@ func TestHandleGetMe(t *testing.T) {
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
-							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
@@ -408,8 +337,8 @@ func TestHandleGetMe(t *testing.T) {
 						Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
 						State:           domain.AgentConnected,
 						LastStateUpdate: createdAt,
-						ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
-						AgentTypeID:     domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
+						ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+						AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 					}, nil
 				}
 			},
@@ -445,7 +374,7 @@ func TestHandleGetMe(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander)
 
 			// Create the handler
@@ -498,7 +427,7 @@ func TestAgentHandleList(t *testing.T) {
 						Items: []domain.Agent{
 							{
 								BaseEntity: domain.BaseEntity{
-									ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+									ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
@@ -507,12 +436,12 @@ func TestAgentHandleList(t *testing.T) {
 								Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
 								State:           domain.AgentConnected,
 								LastStateUpdate: createdAt,
-								ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
-								AgentTypeID:     domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
+								ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+								AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 							},
 							{
 								BaseEntity: domain.BaseEntity{
-									ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440001")),
+									ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440001"),
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
@@ -521,8 +450,8 @@ func TestAgentHandleList(t *testing.T) {
 								Attributes:      domain.Attributes{"test": []string{"value3", "value4"}},
 								State:           domain.AgentDisconnected,
 								LastStateUpdate: createdAt,
-								ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
-								AgentTypeID:     domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
+								ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+								AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 							},
 						},
 						TotalItems:  2,
@@ -561,7 +490,7 @@ func TestAgentHandleList(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -636,7 +565,7 @@ func TestHandleUpdate(t *testing.T) {
 					attrVal := domain.Attributes{"test": []string{"value3", "value4"}}
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
-							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
@@ -645,8 +574,8 @@ func TestHandleUpdate(t *testing.T) {
 						Attributes:      attrVal,
 						State:           domain.AgentConnected,
 						LastStateUpdate: createdAt,
-						ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
-						AgentTypeID:     domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
+						ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+						AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 					}, nil
 				}
 			},
@@ -721,7 +650,7 @@ func TestHandleUpdate(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -782,7 +711,7 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 				commander.updateStateFunc = func(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
-							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
@@ -791,8 +720,8 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 						Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
 						State:           state,
 						LastStateUpdate: updatedAt,
-						ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
-						AgentTypeID:     domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
+						ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+						AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 					}, nil
 				}
 			},
@@ -850,7 +779,7 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander)
 
 			// Create the handler
@@ -982,7 +911,7 @@ func TestHandleDelete(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -1016,7 +945,7 @@ func TestHandleDelete(t *testing.T) {
 func TestNewAgentHandler(t *testing.T) {
 	querier := &mockAgentQuerier{}
 	commander := &mockAgentCommander{}
-	authz := NewMockAuthorizer(true)
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
 	handler := NewAgentHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -1108,7 +1037,7 @@ func TestAgentToResponse(t *testing.T) {
 
 	agent := &domain.Agent{
 		BaseEntity: domain.BaseEntity{
-			ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+			ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},
@@ -1117,8 +1046,8 @@ func TestAgentToResponse(t *testing.T) {
 		Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
 		State:           domain.AgentConnected,
 		LastStateUpdate: createdAt,
-		ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
-		AgentTypeID:     domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
+		ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+		AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 	}
 
 	response := agentToResponse(agent)

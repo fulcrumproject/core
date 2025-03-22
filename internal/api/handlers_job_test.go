@@ -17,77 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockJobQuerier is a custom mock for JobQuerier
-type mockJobQuerier struct {
-	MockJobQuerier
-	findByIDFunc               func(ctx context.Context, id domain.UUID) (*domain.Job, error)
-	listFunc                   func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error)
-	getPendingJobsForAgentFunc func(ctx context.Context, agentID domain.UUID, limit int) ([]*domain.Job, error)
-	authScopeFunc              func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
-}
-
-func (m *mockJobQuerier) FindByID(ctx context.Context, id domain.UUID) (*domain.Job, error) {
-	if m.findByIDFunc != nil {
-		return m.findByIDFunc(ctx, id)
-	}
-	return nil, domain.NewNotFoundErrorf("job not found")
-}
-
-func (m *mockJobQuerier) List(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
-	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
-	}
-	return &domain.PageResponse[domain.Job]{
-		Items:       []domain.Job{},
-		TotalItems:  0,
-		CurrentPage: 1,
-		TotalPages:  0,
-		HasNext:     false,
-	}, nil
-}
-
-func (m *mockJobQuerier) GetPendingJobsForAgent(ctx context.Context, agentID domain.UUID, limit int) ([]*domain.Job, error) {
-	if m.getPendingJobsForAgentFunc != nil {
-		return m.getPendingJobsForAgentFunc(ctx, agentID, limit)
-	}
-	return []*domain.Job{}, nil
-}
-
-func (m *mockJobQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	if m.authScopeFunc != nil {
-		return m.authScopeFunc(ctx, id)
-	}
-	return &domain.EmptyAuthScope, nil
-}
-
-// mockJobCommander is a custom mock for JobCommander
-type mockJobCommander struct {
-	claimFunc    func(ctx context.Context, jobID domain.UUID) error
-	completeFunc func(ctx context.Context, jobID domain.UUID, resources *domain.JSON, externalID *string) error
-	failFunc     func(ctx context.Context, jobID domain.UUID, errorMessage string) error
-}
-
-func (m *mockJobCommander) Claim(ctx context.Context, jobID domain.UUID) error {
-	if m.claimFunc != nil {
-		return m.claimFunc(ctx, jobID)
-	}
-	return nil
-}
-
-func (m *mockJobCommander) Complete(ctx context.Context, jobID domain.UUID, resources *domain.JSON, externalID *string) error {
-	if m.completeFunc != nil {
-		return m.completeFunc(ctx, jobID, resources, externalID)
-	}
-	return nil
-}
-
-func (m *mockJobCommander) Fail(ctx context.Context, jobID domain.UUID, errorMessage string) error {
-	if m.failFunc != nil {
-		return m.failFunc(ctx, jobID, errorMessage)
-	}
-	return nil
-}
-
 // TestJobHandleList tests the handleList method
 func TestJobHandleList(t *testing.T) {
 	// Setup test cases
@@ -111,28 +40,28 @@ func TestJobHandleList(t *testing.T) {
 						Items: []domain.Job{
 							{
 								BaseEntity: domain.BaseEntity{
-									ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+									ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
-								ProviderID: domain.UUID(uuid.MustParse("650e8400-e29b-41d4-a716-446655440000")),
-								BrokerID:   domain.UUID(uuid.MustParse("750e8400-e29b-41d4-a716-446655440000")),
-								AgentID:    domain.UUID(uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")),
-								ServiceID:  domain.UUID(uuid.MustParse("950e8400-e29b-41d4-a716-446655440000")),
+								ProviderID: uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
+								BrokerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
+								AgentID:    uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
+								ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 								Action:     domain.ServiceActionCreate,
 								State:      domain.JobPending,
 								Priority:   1,
 							},
 							{
 								BaseEntity: domain.BaseEntity{
-									ID:        domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
+									ID:        uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
-								ProviderID: domain.UUID(uuid.MustParse("650e8400-e29b-41d4-a716-446655440000")),
-								BrokerID:   domain.UUID(uuid.MustParse("750e8400-e29b-41d4-a716-446655440000")),
-								AgentID:    domain.UUID(uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")),
-								ServiceID:  domain.UUID(uuid.MustParse("950e8400-e29b-41d4-a716-446655440000")),
+								ProviderID: uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
+								BrokerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
+								AgentID:    uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
+								ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 								Action:     domain.ServiceActionDelete,
 								State:      domain.JobCompleted,
 								Priority:   2,
@@ -174,7 +103,7 @@ func TestJobHandleList(t *testing.T) {
 			// Setup mocks
 			querier := &mockJobQuerier{}
 			commander := &mockJobCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -235,14 +164,14 @@ func TestJobHandleGet(t *testing.T) {
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Job, error) {
 					return &domain.Job{
 						BaseEntity: domain.BaseEntity{
-							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						ProviderID: domain.UUID(uuid.MustParse("650e8400-e29b-41d4-a716-446655440000")),
-						BrokerID:   domain.UUID(uuid.MustParse("750e8400-e29b-41d4-a716-446655440000")),
-						AgentID:    domain.UUID(uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")),
-						ServiceID:  domain.UUID(uuid.MustParse("950e8400-e29b-41d4-a716-446655440000")),
+						ProviderID: uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
+						BrokerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
+						AgentID:    uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
+						ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 						Action:     domain.ServiceActionCreate,
 						State:      domain.JobPending,
 						Priority:   1,
@@ -292,7 +221,7 @@ func TestJobHandleGet(t *testing.T) {
 			// Setup mocks
 			querier := &mockJobQuerier{}
 			commander := &mockJobCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -339,34 +268,34 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 				// Setup the mock to return pending jobs
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-				agentID := domain.UUID(uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"))
+				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 
 				querier.getPendingJobsForAgentFunc = func(ctx context.Context, requestedAgentID domain.UUID, limit int) ([]*domain.Job, error) {
 					return []*domain.Job{
 						{
 							BaseEntity: domain.BaseEntity{
-								ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+								ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 								CreatedAt: createdAt,
 								UpdatedAt: updatedAt,
 							},
-							ProviderID: domain.UUID(uuid.MustParse("650e8400-e29b-41d4-a716-446655440000")),
-							BrokerID:   domain.UUID(uuid.MustParse("750e8400-e29b-41d4-a716-446655440000")),
+							ProviderID: uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
+							BrokerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
 							AgentID:    agentID,
-							ServiceID:  domain.UUID(uuid.MustParse("950e8400-e29b-41d4-a716-446655440000")),
+							ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 							Action:     domain.ServiceActionCreate,
 							State:      domain.JobPending,
 							Priority:   1,
 						},
 						{
 							BaseEntity: domain.BaseEntity{
-								ID:        domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
+								ID:        uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 								CreatedAt: createdAt,
 								UpdatedAt: updatedAt,
 							},
-							ProviderID: domain.UUID(uuid.MustParse("650e8400-e29b-41d4-a716-446655440000")),
-							BrokerID:   domain.UUID(uuid.MustParse("750e8400-e29b-41d4-a716-446655440000")),
+							ProviderID: uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
+							BrokerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
 							AgentID:    agentID,
-							ServiceID:  domain.UUID(uuid.MustParse("950e8400-e29b-41d4-a716-446655440000")),
+							ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 							Action:     domain.ServiceActionDelete,
 							State:      domain.JobPending,
 							Priority:   2,
@@ -391,7 +320,7 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 			// Setup mocks
 			querier := &mockJobQuerier{}
 			commander := &mockJobCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -484,7 +413,7 @@ func TestJobHandleClaimJob(t *testing.T) {
 			// Setup mocks
 			querier := &mockJobQuerier{}
 			commander := &mockJobCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -604,7 +533,7 @@ func TestJobHandleCompleteJob(t *testing.T) {
 			// Setup mocks
 			querier := &mockJobQuerier{}
 			commander := &mockJobCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -722,7 +651,7 @@ func TestJobHandleFailJob(t *testing.T) {
 			// Setup mocks
 			querier := &mockJobQuerier{}
 			commander := &mockJobCommander{}
-			authz := NewMockAuthorizer(true)
+			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -762,14 +691,14 @@ func TestJobToResponse(t *testing.T) {
 
 	job := &domain.Job{
 		BaseEntity: domain.BaseEntity{
-			ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
+			ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},
-		ProviderID:   domain.UUID(uuid.MustParse("650e8400-e29b-41d4-a716-446655440000")),
-		BrokerID:     domain.UUID(uuid.MustParse("750e8400-e29b-41d4-a716-446655440000")),
-		AgentID:      domain.UUID(uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")),
-		ServiceID:    domain.UUID(uuid.MustParse("950e8400-e29b-41d4-a716-446655440000")),
+		ProviderID:   uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
+		BrokerID:     uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
+		AgentID:      uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
+		ServiceID:    uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 		Action:       domain.ServiceActionCreate,
 		State:        domain.JobProcessing,
 		Priority:     1,
@@ -798,9 +727,9 @@ func TestJobToResponse(t *testing.T) {
 // TestNewJobHandler tests the NewJobHandler function
 func TestNewJobHandler(t *testing.T) {
 	// Create mocks
-	querier := &MockJobQuerier{}
-	commander := &MockJobCommander{}
-	authz := NewMockAuthorizer(true)
+	querier := &mockJobQuerier{}
+	commander := &mockJobCommander{}
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
 	// Execute
 	handler := NewJobHandler(querier, commander, authz)
@@ -815,9 +744,9 @@ func TestNewJobHandler(t *testing.T) {
 // TestJobHandlerRoutes tests the Routes function
 func TestJobHandlerRoutes(t *testing.T) {
 	// Create mocks
-	querier := &MockJobQuerier{}
-	commander := &MockJobCommander{}
-	authz := NewMockAuthorizer(true)
+	querier := &mockJobQuerier{}
+	commander := &mockJobCommander{}
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
 	// Create the handler
 	handler := NewJobHandler(querier, commander, authz)
