@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"fulcrumproject.org/core/internal/domain"
-	"fulcrumproject.org/core/internal/mock"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +19,7 @@ import (
 
 // mockBrokerQuerier is a custom mock for BrokerQuerier
 type mockBrokerQuerier struct {
-	mock.BrokerQuerier
+	MockBrokerQuerier
 	findByIDFunc  func(ctx context.Context, id domain.UUID) (*domain.Broker, error)
 	listFunc      func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Broker], error)
 	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
@@ -87,7 +86,7 @@ func TestBrokerHandleCreate(t *testing.T) {
 	testCases := []struct {
 		name           string
 		requestBody    string
-		mockSetup      func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
@@ -96,7 +95,7 @@ func TestBrokerHandleCreate(t *testing.T) {
 			requestBody: `{
 				"name": "TestBroker"
 			}`,
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -128,7 +127,7 @@ func TestBrokerHandleCreate(t *testing.T) {
 		{
 			name:        "InvalidRequest",
 			requestBody: `{invalid json`,
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Create mock for the commander even though it won't reach it
 				commander.createFunc = func(ctx context.Context, name string) (*domain.Broker, error) {
 					return &domain.Broker{
@@ -147,18 +146,18 @@ func TestBrokerHandleCreate(t *testing.T) {
 			requestBody: `{
 				"name": "TestBroker"
 			}`,
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 			},
-			expectedStatus: http.StatusBadRequest, // The handler returns ErrDomain for auth failures
+			expectedStatus: http.StatusForbidden, // The handler returns ErrDomain for auth failures
 		},
 		{
 			name: "CommanderError",
 			requestBody: `{
 				"name": "TestBroker"
 			}`,
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -176,7 +175,7 @@ func TestBrokerHandleCreate(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
 			commander := &mockBrokerCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -187,9 +186,7 @@ func TestBrokerHandleCreate(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			// Add auth identity to context for authorization
-			authIdentity := MockAdminIdentity{
-				id: domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-			}
+			authIdentity := NewMockAuthFulcrumAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -215,14 +212,14 @@ func TestBrokerHandleGet(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -256,7 +253,7 @@ func TestBrokerHandleGet(t *testing.T) {
 		{
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -273,7 +270,7 @@ func TestBrokerHandleGet(t *testing.T) {
 		{
 			name: "Unauthorized",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 
@@ -286,7 +283,7 @@ func TestBrokerHandleGet(t *testing.T) {
 		{
 			name: "AuthScopeError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 					return nil, domain.NewNotFoundErrorf("scope not found")
 				}
@@ -300,7 +297,7 @@ func TestBrokerHandleGet(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
 			commander := &mockBrokerCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -317,9 +314,7 @@ func TestBrokerHandleGet(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context for authorization
-			authIdentity := MockAdminIdentity{
-				id: domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-			}
+			authIdentity := NewMockAuthFulcrumAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -344,12 +339,12 @@ func TestBrokerHandleList(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -388,7 +383,7 @@ func TestBrokerHandleList(t *testing.T) {
 		},
 		{
 			name: "Unauthorized",
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 			},
@@ -396,7 +391,7 @@ func TestBrokerHandleList(t *testing.T) {
 		},
 		{
 			name: "InvalidPageRequest",
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 			},
@@ -404,7 +399,7 @@ func TestBrokerHandleList(t *testing.T) {
 		},
 		{
 			name: "ListError",
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -421,7 +416,7 @@ func TestBrokerHandleList(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
 			commander := &mockBrokerCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -437,9 +432,7 @@ func TestBrokerHandleList(t *testing.T) {
 			}
 
 			// Add auth identity to context for authorization
-			authIdentity := MockAdminIdentity{
-				id: domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-			}
+			authIdentity := NewMockAuthFulcrumAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -483,7 +476,7 @@ func TestBrokerHandleUpdate(t *testing.T) {
 		name           string
 		id             string
 		requestBody    string
-		mockSetup      func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
@@ -493,7 +486,7 @@ func TestBrokerHandleUpdate(t *testing.T) {
 			requestBody: `{
 				"name": "UpdatedBroker"
 			}`,
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -533,7 +526,7 @@ func TestBrokerHandleUpdate(t *testing.T) {
 			requestBody: `{
 				"invalid": json
 			`,
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Auth should not be called for invalid requests
 				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 					return &domain.EmptyAuthScope, nil
@@ -547,7 +540,7 @@ func TestBrokerHandleUpdate(t *testing.T) {
 			requestBody: `{
 				"name": "UpdatedBroker"
 			}`,
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 
@@ -563,7 +556,7 @@ func TestBrokerHandleUpdate(t *testing.T) {
 			requestBody: `{
 				"name": "UpdatedBroker"
 			}`,
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -584,7 +577,7 @@ func TestBrokerHandleUpdate(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
 			commander := &mockBrokerCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -602,9 +595,7 @@ func TestBrokerHandleUpdate(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context for authorization
-			authIdentity := MockAdminIdentity{
-				id: domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-			}
+			authIdentity := NewMockAuthFulcrumAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -630,13 +621,13 @@ func TestBrokerHandleDelete(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -653,7 +644,7 @@ func TestBrokerHandleDelete(t *testing.T) {
 		{
 			name: "Unauthorized",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 
@@ -666,7 +657,7 @@ func TestBrokerHandleDelete(t *testing.T) {
 		{
 			name: "DeleteError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, commander *mockBrokerCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -678,7 +669,7 @@ func TestBrokerHandleDelete(t *testing.T) {
 					return fmt.Errorf("delete error")
 				}
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusInternalServerError,
 		},
 	}
 
@@ -687,7 +678,7 @@ func TestBrokerHandleDelete(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
 			commander := &mockBrokerCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -704,9 +695,7 @@ func TestBrokerHandleDelete(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context for authorization
-			authIdentity := MockAdminIdentity{
-				id: domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-			}
+			authIdentity := NewMockAuthFulcrumAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -723,7 +712,7 @@ func TestBrokerHandleDelete(t *testing.T) {
 func TestNewBrokerHandler(t *testing.T) {
 	querier := &mockBrokerQuerier{}
 	commander := &mockBrokerCommander{}
-	authz := mock.NewMockAuthorizer(true)
+	authz := NewMockAuthorizer(true)
 
 	handler := NewBrokerHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -817,12 +806,12 @@ func TestBrokerAuthorize(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name        string
-		mockSetup   func(querier *mockBrokerQuerier, authz *mock.MockAuthorizer)
+		mockSetup   func(querier *mockBrokerQuerier, authz *MockAuthorizer)
 		expectError bool
 	}{
 		{
 			name: "Success",
-			mockSetup: func(querier *mockBrokerQuerier, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -834,7 +823,7 @@ func TestBrokerAuthorize(t *testing.T) {
 		},
 		{
 			name: "AuthScopeError",
-			mockSetup: func(querier *mockBrokerQuerier, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, authz *MockAuthorizer) {
 				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 					return nil, domain.NewNotFoundErrorf("scope not found")
 				}
@@ -843,7 +832,7 @@ func TestBrokerAuthorize(t *testing.T) {
 		},
 		{
 			name: "AuthorizationError",
-			mockSetup: func(querier *mockBrokerQuerier, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockBrokerQuerier, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 
@@ -859,7 +848,7 @@ func TestBrokerAuthorize(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
 			querier := &mockBrokerQuerier{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, authz)
 
 			// Create the handler

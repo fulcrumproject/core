@@ -6,9 +6,9 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-// Store provides a simple implementation of the Store interface for testing
+// MockStore provides a simple implementation of the MockStore interface for testing
 // All repository methods return nil (no implementation)
-type Store struct {
+type MockStore struct {
 	agentTypeRepo    *MockAgentTypeRepo
 	agentRepo        *MockAgentRepo
 	brokerRepo       *MockBrokerRepo
@@ -24,63 +24,63 @@ type Store struct {
 }
 
 // Ensure MockStore implements Store
-var _ domain.Store = (*Store)(nil)
+var _ domain.Store = (*MockStore)(nil)
 
-func (m *Store) Atomic(ctx context.Context, fn func(domain.Store) error) error {
+func (m *MockStore) Atomic(ctx context.Context, fn func(domain.Store) error) error {
 	return fn(m)
 }
 
-func (m *Store) BrokerRepo() domain.BrokerRepository {
+func (m *MockStore) BrokerRepo() domain.BrokerRepository {
 	return m.brokerRepo
 }
 
-func (m *Store) TokenRepo() domain.TokenRepository {
+func (m *MockStore) TokenRepo() domain.TokenRepository {
 	return m.tokenRepo
 }
 
-func (m *Store) AgentTypeRepo() domain.AgentTypeRepository {
+func (m *MockStore) AgentTypeRepo() domain.AgentTypeRepository {
 	return m.agentTypeRepo
 }
 
-func (m *Store) AgentRepo() domain.AgentRepository {
+func (m *MockStore) AgentRepo() domain.AgentRepository {
 	return m.agentRepo
 }
 
-func (m *Store) ProviderRepo() domain.ProviderRepository {
+func (m *MockStore) ProviderRepo() domain.ProviderRepository {
 	return m.providerRepo
 }
 
-func (m *Store) ServiceTypeRepo() domain.ServiceTypeRepository {
+func (m *MockStore) ServiceTypeRepo() domain.ServiceTypeRepository {
 	return m.serviceTypeRepo
 }
 
-func (m *Store) ServiceGroupRepo() domain.ServiceGroupRepository {
+func (m *MockStore) ServiceGroupRepo() domain.ServiceGroupRepository {
 	return m.serviceGroupRepo
 }
 
-func (m *Store) ServiceRepo() domain.ServiceRepository {
+func (m *MockStore) ServiceRepo() domain.ServiceRepository {
 	return m.serviceRepo
 }
 
-func (m *Store) JobRepo() domain.JobRepository {
+func (m *MockStore) JobRepo() domain.JobRepository {
 	return m.jobRepo
 }
 
-func (m *Store) AuditEntryRepo() domain.AuditEntryRepository {
+func (m *MockStore) AuditEntryRepo() domain.AuditEntryRepository {
 	return m.auditEntryRepo
 }
 
-func (m *Store) MetricTypeRepo() domain.MetricTypeRepository {
+func (m *MockStore) MetricTypeRepo() domain.MetricTypeRepository {
 	return m.metricTypeRepo
 }
 
-func (m *Store) MetricEntryRepo() domain.MetricEntryRepository {
+func (m *MockStore) MetricEntryRepo() domain.MetricEntryRepository {
 	return m.metricEntryRepo
 }
 
 // NewMockStore creates and initializes a new mock store
-func NewMockStore() *Store {
-	return &Store{
+func NewMockStore() *MockStore {
+	return &MockStore{
 		agentTypeRepo:    &MockAgentTypeRepo{},
 		agentRepo:        &MockAgentRepo{},
 		brokerRepo:       &MockBrokerRepo{},

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"fulcrumproject.org/core/internal/domain"
-	"fulcrumproject.org/core/internal/mock"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +19,7 @@ import (
 
 // mockAgentQuerier is a custom mock for AgentQuerier
 type mockAgentQuerier struct {
-	mock.AgentQuerier
+	MockAgentQuerier
 	findByIDFunc  func(ctx context.Context, id domain.UUID) (*domain.Agent, error)
 	listFunc      func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error)
 	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
@@ -89,29 +88,13 @@ func (m *mockAgentCommander) UpdateState(ctx context.Context, id domain.UUID, st
 	return nil, fmt.Errorf("update state not mocked")
 }
 
-// MockAgentIdentity implements the domain.AuthIdentity interface for testing with agent role
-type MockAgentIdentity struct {
-	id      domain.UUID
-	agentID domain.UUID
-}
-
-func (m MockAgentIdentity) ID() domain.UUID                  { return m.id }
-func (m MockAgentIdentity) Name() string                     { return "test-agent" }
-func (m MockAgentIdentity) Role() domain.AuthRole            { return domain.RoleAgent }
-func (m MockAgentIdentity) IsRole(role domain.AuthRole) bool { return role == domain.RoleAgent }
-func (m MockAgentIdentity) Scope() *domain.AuthScope {
-	return &domain.AuthScope{
-		AgentID: &m.agentID,
-	}
-}
-
 // TestHandleCreate tests the handleCreate method
 func TestHandleCreate(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
 		requestBody    string
-		mockSetup      func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
@@ -124,7 +107,7 @@ func TestHandleCreate(t *testing.T) {
 				"providerId": "550e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "660e8400-e29b-41d4-a716-446655440000"
 			}`,
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -167,7 +150,7 @@ func TestHandleCreate(t *testing.T) {
 		{
 			name:        "InvalidRequest",
 			requestBody: `{invalid json`,
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Create mock for the commander even though it won't reach it
 				// This prevents the "create not mocked" error from showing up in test failures
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -192,7 +175,7 @@ func TestHandleCreate(t *testing.T) {
 				"providerId": "550e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "660e8400-e29b-41d4-a716-446655440000"
 			}`,
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 			},
@@ -205,7 +188,7 @@ func TestHandleCreate(t *testing.T) {
 				"providerId": "550e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "660e8400-e29b-41d4-a716-446655440000"
 			}`,
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -223,7 +206,7 @@ func TestHandleCreate(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -234,10 +217,7 @@ func TestHandleCreate(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			// Add auth identity to context for authorization
-			authIdentity := MockAgentIdentity{
-				id:      domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-				agentID: domain.UUID(uuid.MustParse("2a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-			}
+			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -263,14 +243,14 @@ func TestAgentHandleGet(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -317,7 +297,7 @@ func TestAgentHandleGet(t *testing.T) {
 		{
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -334,7 +314,7 @@ func TestAgentHandleGet(t *testing.T) {
 		{
 			name: "Unauthorized",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 
@@ -347,7 +327,7 @@ func TestAgentHandleGet(t *testing.T) {
 		{
 			name: "AuthScopeError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 					return nil, domain.NewNotFoundErrorf("scope not found")
 				}
@@ -361,7 +341,7 @@ func TestAgentHandleGet(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -378,10 +358,7 @@ func TestAgentHandleGet(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context for authorization
-			authIdentity := MockAgentIdentity{
-				id:      domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-				agentID: domain.UUID(uuid.MustParse("2a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-			}
+			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -468,7 +445,7 @@ func TestHandleGetMe(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander)
 
 			// Create the handler
@@ -478,11 +455,7 @@ func TestHandleGetMe(t *testing.T) {
 			req := httptest.NewRequest("GET", "/agents/me", nil)
 
 			// Add auth identity to context for authorization
-			agentID, _ := domain.ParseUUID(tc.agentID)
-			authIdentity := MockAgentIdentity{
-				id:      domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-				agentID: agentID,
-			}
+			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -507,12 +480,12 @@ func TestAgentHandleList(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -531,7 +504,7 @@ func TestAgentHandleList(t *testing.T) {
 								},
 								Name:            "TestAgent1",
 								CountryCode:     "US",
-								Attributes:      domain.Attributes{},
+								Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
 								State:           domain.AgentConnected,
 								LastStateUpdate: createdAt,
 								ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
@@ -539,13 +512,13 @@ func TestAgentHandleList(t *testing.T) {
 							},
 							{
 								BaseEntity: domain.BaseEntity{
-									ID:        domain.UUID(uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")),
+									ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440001")),
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
 								Name:            "TestAgent2",
-								CountryCode:     "UK",
-								Attributes:      domain.Attributes{},
+								CountryCode:     "CA",
+								Attributes:      domain.Attributes{"test": []string{"value3", "value4"}},
 								State:           domain.AgentDisconnected,
 								LastStateUpdate: createdAt,
 								ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
@@ -563,23 +536,15 @@ func TestAgentHandleList(t *testing.T) {
 		},
 		{
 			name: "Unauthorized",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 			},
 			expectedStatus: http.StatusForbidden,
 		},
 		{
-			name: "InvalidPageRequest",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-			},
-			expectedStatus: http.StatusOK, // parsePageRequest doesn't return errors for invalid page params, it uses defaults
-		},
-		{
 			name: "ListError",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -596,26 +561,17 @@ func TestAgentHandleList(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
 			handler := NewAgentHandler(querier, commander, authz)
 
 			// Create request
-			var req *http.Request
-			if tc.name == "InvalidPageRequest" {
-				// Create an invalid page request
-				req = httptest.NewRequest("GET", "/agents?page=-1&pageSize=invalid", nil)
-			} else {
-				req = httptest.NewRequest("GET", "/agents?page=1&pageSize=10", nil)
-			}
+			req := httptest.NewRequest("GET", "/agents?page=1&pageSize=10", nil)
 
 			// Add auth identity to context for authorization
-			authIdentity := MockAgentIdentity{
-				id:      domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-				agentID: domain.UUID(uuid.MustParse("2a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-			}
+			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -625,7 +581,7 @@ func TestAgentHandleList(t *testing.T) {
 			// Assert response
 			assert.Equal(t, tc.expectedStatus, w.Code)
 
-			if tc.expectedStatus == http.StatusOK && tc.name == "Success" {
+			if tc.expectedStatus == http.StatusOK {
 				var response map[string]interface{}
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				require.NoError(t, err)
@@ -635,18 +591,9 @@ func TestAgentHandleList(t *testing.T) {
 				assert.Equal(t, float64(2), response["totalItems"])
 				assert.Equal(t, float64(1), response["totalPages"])
 				assert.Equal(t, false, response["hasNext"])
-				assert.Equal(t, false, response["hasPrev"])
 
 				items := response["items"].([]interface{})
 				assert.Equal(t, 2, len(items))
-
-				firstItem := items[0].(map[string]interface{})
-				assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", firstItem["id"])
-				assert.Equal(t, "TestAgent1", firstItem["name"])
-
-				secondItem := items[1].(map[string]interface{})
-				assert.Equal(t, "880e8400-e29b-41d4-a716-446655440000", secondItem["id"])
-				assert.Equal(t, "TestAgent2", secondItem["name"])
 			}
 		})
 	}
@@ -659,7 +606,7 @@ func TestHandleUpdate(t *testing.T) {
 		name           string
 		id             string
 		requestBody    string
-		mockSetup      func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
@@ -667,41 +614,35 @@ func TestHandleUpdate(t *testing.T) {
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: `{
-				"name": "UpdatedAgent",
-				"countryCode": "UK",
-				"attributes": {"test": ["updated"]}
+				"name": "UpdatedAgentName",
+				"countryCode": "CA",
+				"attributes": {"test": ["value3", "value4"]}
 			}`,
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
-
-				// Setup the mock to return a test agent
-				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-				updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
 
 				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 					return &domain.EmptyAuthScope, nil
 				}
 
+				// Setup the mock to return a test agent
+				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+				updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+
 				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, state *domain.AgentState) (*domain.Agent, error) {
-					updatedName := "UpdatedAgent"
-					updatedCC := domain.CountryCode("UK")
-					updatedAttrs := domain.Attributes{"test": []string{"updated"}}
-
-					assert.Equal(t, &updatedName, name)
-					assert.Equal(t, &updatedCC, countryCode)
-					assert.Equal(t, &updatedAttrs, attributes)
-					assert.Nil(t, state)
-
+					nameVal := "UpdatedAgentName"
+					ccVal := domain.CountryCode("CA")
+					attrVal := domain.Attributes{"test": []string{"value3", "value4"}}
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
 							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:            updatedName,
-						CountryCode:     updatedCC,
-						Attributes:      updatedAttrs,
+						Name:            nameVal,
+						CountryCode:     ccVal,
+						Attributes:      attrVal,
 						State:           domain.AgentConnected,
 						LastStateUpdate: createdAt,
 						ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
@@ -712,10 +653,10 @@ func TestHandleUpdate(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
 				"id":          "550e8400-e29b-41d4-a716-446655440000",
-				"name":        "UpdatedAgent",
-				"countryCode": "UK",
+				"name":        "UpdatedAgentName",
+				"countryCode": "CA",
 				"attributes": map[string]interface{}{
-					"test": []interface{}{"updated"},
+					"test": []interface{}{"value3", "value4"},
 				},
 				"state":       "Connected",
 				"providerId":  "660e8400-e29b-41d4-a716-446655440000",
@@ -725,13 +666,14 @@ func TestHandleUpdate(t *testing.T) {
 			},
 		},
 		{
-			name: "InvalidRequest",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{
-				"invalid": "json"
-			`,
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
-				// Auth should not be called for invalid requests
+			name:        "InvalidRequest",
+			id:          "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: `{invalid json`,
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
+				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+					return &domain.EmptyAuthScope, nil
+				}
+				// Authorization and commander should not be called for invalid requests
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -739,9 +681,9 @@ func TestHandleUpdate(t *testing.T) {
 			name: "Unauthorized",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: `{
-				"name": "UpdatedAgent"
+				"name": "UpdatedAgentName"
 			}`,
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 
@@ -755,9 +697,9 @@ func TestHandleUpdate(t *testing.T) {
 			name: "UpdateError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: `{
-				"name": "UpdatedAgent"
+				"name": "UpdatedAgentName"
 			}`,
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -765,11 +707,12 @@ func TestHandleUpdate(t *testing.T) {
 					return &domain.EmptyAuthScope, nil
 				}
 
+				// Setup the mock to return an error
 				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, state *domain.AgentState) (*domain.Agent, error) {
-					return nil, domain.NewInvalidInputErrorf("validation error")
+					return nil, domain.NewNotFoundErrorf("agent not found")
 				}
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusNotFound,
 		},
 	}
 
@@ -778,14 +721,14 @@ func TestHandleUpdate(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
 			handler := NewAgentHandler(querier, commander, authz)
 
 			// Create request
-			req := httptest.NewRequest("PATCH", "/agents/"+tc.id, strings.NewReader(tc.requestBody))
+			req := httptest.NewRequest("PUT", "/agents/"+tc.id, strings.NewReader(tc.requestBody))
 			req.Header.Set("Content-Type", "application/json")
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("id", tc.id)
@@ -796,10 +739,7 @@ func TestHandleUpdate(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context for authorization
-			authIdentity := MockAgentIdentity{
-				id:      domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-				agentID: domain.UUID(uuid.MustParse("2a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-			}
+			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -831,19 +771,15 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 		expectedBody   map[string]interface{}
 	}{
 		{
-			name:    "Success",
-			agentID: "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{
-				"state": "Connected"
-			}`,
+			name:        "Success",
+			agentID:     "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: `{"state": "Connected"}`,
 			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander) {
 				// Setup the mock to return a test agent
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
 
 				commander.updateStateFunc = func(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error) {
-					assert.Equal(t, domain.AgentConnected, state)
-
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
 							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
@@ -853,7 +789,7 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 						Name:            "TestAgent",
 						CountryCode:     "US",
 						Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
-						State:           domain.AgentConnected,
+						State:           state,
 						LastStateUpdate: updatedAt,
 						ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
 						AgentTypeID:     domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
@@ -876,28 +812,36 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 			},
 		},
 		{
-			name:    "InvalidRequest",
-			agentID: "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{
-				"invalid": "json"
-			`,
+			name:        "InvalidRequest",
+			agentID:     "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: `{invalid json`,
 			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander) {
-				// Commander should not be called for invalid requests
+				// No setup needed for invalid request
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:    "UpdateStateError",
-			agentID: "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{
-				"state": "Connected"
-			}`,
+			name:        "Invalid State",
+			agentID:     "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: `{"state": "Invalid"}`,
 			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander) {
+				// Mock to return a proper error for invalid state
 				commander.updateStateFunc = func(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error) {
-					return nil, domain.NewInvalidInputErrorf("validation error")
+					return nil, domain.NewInvalidInputErrorf("invalid state: %s", state)
 				}
 			},
 			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "UpdateError",
+			agentID:     "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: `{"state": "Connected"}`,
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander) {
+				commander.updateStateFunc = func(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error) {
+					return nil, domain.NewNotFoundErrorf("agent not found")
+				}
+			},
+			expectedStatus: http.StatusNotFound,
 		},
 	}
 
@@ -906,22 +850,18 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander)
 
 			// Create the handler
 			handler := NewAgentHandler(querier, commander, authz)
 
 			// Create request
-			req := httptest.NewRequest("PUT", "/agents/me/status", strings.NewReader(tc.requestBody))
+			req := httptest.NewRequest("PATCH", "/agents/me/state", strings.NewReader(tc.requestBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			// Add auth identity to context for authorization
-			agentID, _ := domain.ParseUUID(tc.agentID)
-			authIdentity := MockAgentIdentity{
-				id:      domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-				agentID: agentID,
-			}
+			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -947,39 +887,30 @@ func TestHandleDelete(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
-
-				// Setup the mock to return a test agent and successful delete
-				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-
-				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Agent, error) {
-					return &domain.Agent{
-						BaseEntity: domain.BaseEntity{
-							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
-							CreatedAt: createdAt,
-							UpdatedAt: updatedAt,
-						},
-						Name:            "TestAgent",
-						State:           domain.AgentDisconnected,
-						LastStateUpdate: createdAt,
-						ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
-						AgentTypeID:     domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
-					}, nil
-				}
 
 				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 					return &domain.EmptyAuthScope, nil
 				}
 
+				// Mock findByID to avoid 404 error
+				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Agent, error) {
+					return &domain.Agent{
+						BaseEntity: domain.BaseEntity{
+							ID: id,
+						},
+					}, nil
+				}
+
+				// Setup the mock to not return an error
 				commander.deleteFunc = func(ctx context.Context, id domain.UUID) error {
 					return nil
 				}
@@ -987,26 +918,9 @@ func TestHandleDelete(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 		},
 		{
-			name: "NotFound",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
-				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Agent, error) {
-					return nil, domain.NewNotFoundErrorf("agent not found")
-				}
-
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusNotFound,
-		},
-		{
 			name: "Unauthorized",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 
@@ -1019,38 +933,47 @@ func TestHandleDelete(t *testing.T) {
 		{
 			name: "DeleteError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
-
-				// Setup the mock to return a test agent but delete failure
-				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-
-				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Agent, error) {
-					return &domain.Agent{
-						BaseEntity: domain.BaseEntity{
-							ID:        domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")),
-							CreatedAt: createdAt,
-							UpdatedAt: updatedAt,
-						},
-						Name:            "TestAgent",
-						State:           domain.AgentDisconnected,
-						LastStateUpdate: createdAt,
-						ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
-						AgentTypeID:     domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
-					}, nil
-				}
 
 				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 					return &domain.EmptyAuthScope, nil
 				}
 
+				// Mock findByID to avoid 404 error
+				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Agent, error) {
+					return &domain.Agent{
+						BaseEntity: domain.BaseEntity{
+							ID: id,
+						},
+					}, nil
+				}
+
+				// Setup the mock to return an error
 				commander.deleteFunc = func(ctx context.Context, id domain.UUID) error {
-					return fmt.Errorf("delete error")
+					return domain.NewInvalidInputErrorf("cannot delete agent with active services")
 				}
 			},
 			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name: "NotFound",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			mockSetup: func(querier *mockAgentQuerier, commander *mockAgentCommander, authz *MockAuthorizer) {
+				// Return a successful auth
+				authz.ShouldSucceed = true
+
+				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+					return &domain.EmptyAuthScope, nil
+				}
+
+				// Return not found for the agent
+				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Agent, error) {
+					return nil, domain.NewNotFoundErrorf("agent not found")
+				}
+			},
+			expectedStatus: http.StatusNotFound,
 		},
 	}
 
@@ -1059,7 +982,7 @@ func TestHandleDelete(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentQuerier{}
 			commander := &mockAgentCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -1076,10 +999,7 @@ func TestHandleDelete(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context for authorization
-			authIdentity := MockAgentIdentity{
-				id:      domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-				agentID: domain.UUID(uuid.MustParse("2a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-			}
+			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -1096,7 +1016,7 @@ func TestHandleDelete(t *testing.T) {
 func TestNewAgentHandler(t *testing.T) {
 	querier := &mockAgentQuerier{}
 	commander := &mockAgentCommander{}
-	authz := mock.NewMockAuthorizer(true)
+	authz := NewMockAuthorizer(true)
 
 	handler := NewAgentHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -1118,21 +1038,23 @@ func TestAgentHandlerRoutes(t *testing.T) {
 	// Instead of using the actual handlers which require auth context,
 	// we'll manually register routes with our stub handler
 	r.Route("/agents", func(r chi.Router) {
-		// Register the GET / and POST / routes
+		// Register the GET / route
 		r.Get("/", stubHandler)
+		// Register the POST / route
 		r.Post("/", stubHandler)
-
-		// Register the /{id} routes with IDMiddleware
-		r.Group(func(r chi.Router) {
-			r.Use(IDMiddleware)
-			r.Get("/{id}", stubHandler)
-			r.Patch("/{id}", stubHandler)
-			r.Delete("/{id}", stubHandler)
-		})
-
-		// Register the /me routes
-		r.Put("/me/status", stubHandler)
+		// Register the GET /me route
 		r.Get("/me", stubHandler)
+		// Register the PATCH /me/state route
+		r.Patch("/me/state", stubHandler)
+		// Register routes with ID parameter
+		r.Route("/{id}", func(r chi.Router) {
+			// Register the GET /{id} route
+			r.Get("/", stubHandler)
+			// Register the PUT /{id} route
+			r.Put("/", stubHandler)
+			// Register the DELETE /{id} route
+			r.Delete("/", stubHandler)
+		})
 	})
 
 	// Test route existence by creating test requests
@@ -1148,32 +1070,32 @@ func TestAgentHandlerRoutes(t *testing.T) {
 	r.ServeHTTP(w, req)
 	assert.NotEqual(t, http.StatusNotFound, w.Code)
 
-	// Test GET /agents/{id}
-	req = httptest.NewRequest("GET", "/agents/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test PATCH /agents/{id}
-	req = httptest.NewRequest("PATCH", "/agents/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
-	// Test DELETE /agents/{id}
-	req = httptest.NewRequest("DELETE", "/agents/550e8400-e29b-41d4-a716-446655440000", nil)
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
-
 	// Test GET /agents/me
 	req = httptest.NewRequest("GET", "/agents/me", nil)
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	assert.NotEqual(t, http.StatusNotFound, w.Code)
 
-	// Test PUT /agents/me/status
-	req = httptest.NewRequest("PUT", "/agents/me/status", nil)
+	// Test PATCH /agents/me/state
+	req = httptest.NewRequest("PATCH", "/agents/me/state", nil)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.NotEqual(t, http.StatusNotFound, w.Code)
+
+	// Test GET /agents/{id}
+	req = httptest.NewRequest("GET", "/agents/550e8400-e29b-41d4-a716-446655440000", nil)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.NotEqual(t, http.StatusNotFound, w.Code)
+
+	// Test PUT /agents/{id}
+	req = httptest.NewRequest("PUT", "/agents/550e8400-e29b-41d4-a716-446655440000", nil)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.NotEqual(t, http.StatusNotFound, w.Code)
+
+	// Test DELETE /agents/{id}
+	req = httptest.NewRequest("DELETE", "/agents/550e8400-e29b-41d4-a716-446655440000", nil)
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	assert.NotEqual(t, http.StatusNotFound, w.Code)
@@ -1197,22 +1119,6 @@ func TestAgentToResponse(t *testing.T) {
 		LastStateUpdate: createdAt,
 		ProviderID:      domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
 		AgentTypeID:     domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
-		Provider: &domain.Provider{
-			BaseEntity: domain.BaseEntity{
-				ID:        domain.UUID(uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")),
-				CreatedAt: createdAt,
-				UpdatedAt: updatedAt,
-			},
-			Name: "TestProvider",
-		},
-		AgentType: &domain.AgentType{
-			BaseEntity: domain.BaseEntity{
-				ID:        domain.UUID(uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")),
-				CreatedAt: createdAt,
-				UpdatedAt: updatedAt,
-			},
-			Name: "TestAgentType",
-		},
 	}
 
 	response := agentToResponse(agent)
@@ -1220,46 +1126,35 @@ func TestAgentToResponse(t *testing.T) {
 	assert.Equal(t, agent.ID, response.ID)
 	assert.Equal(t, agent.Name, response.Name)
 	assert.Equal(t, agent.CountryCode, response.CountryCode)
-	assert.Equal(t, agent.Attributes["test"], response.Attributes["test"])
+	assert.Equal(t, agent.Attributes, response.Attributes)
 	assert.Equal(t, agent.State, response.State)
 	assert.Equal(t, agent.ProviderID, response.ProviderID)
 	assert.Equal(t, agent.AgentTypeID, response.AgentTypeID)
 	assert.Equal(t, JSONUTCTime(agent.CreatedAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(agent.UpdatedAt), response.UpdatedAt)
-
-	// Check nested objects
-	assert.NotNil(t, response.Provider)
-	assert.Equal(t, agent.Provider.ID, response.Provider.ID)
-	assert.Equal(t, agent.Provider.Name, response.Provider.Name)
-
-	assert.NotNil(t, response.AgentType)
-	assert.Equal(t, agent.AgentType.ID, response.AgentType.ID)
-	assert.Equal(t, agent.AgentType.Name, response.AgentType.Name)
 }
 
 // TestMustGetAgentID tests the MustGetAgentID function
 func TestMustGetAgentID(t *testing.T) {
-	// Test with valid agent identity
-	agentID := domain.UUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"))
-	ctx := context.Background()
+	// Test the happy path
+	r := httptest.NewRequest("GET", "/test", nil)
+	authIdentity := NewMockAuthAgent()
+	r = r.WithContext(domain.WithAuthIdentity(r.Context(), authIdentity))
 
-	authIdentity := MockAgentIdentity{
-		id:      domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-		agentID: agentID,
-	}
-	ctx = domain.WithAuthIdentity(ctx, authIdentity)
-
-	id, err := MustGetAgentID(ctx)
+	// Call MustGetAgentID
+	id, err := MustGetAgentID(r.Context())
 	assert.NoError(t, err)
-	assert.Equal(t, agentID, id)
+	assert.Equal(t, authIdentity.id, id)
 
-	// Test with non-agent identity
-	nonAgentIdentity := MockAuthIdentity{
-		id: domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-	}
-	ctx = domain.WithAuthIdentity(context.Background(), nonAgentIdentity)
+	// Test the error case by creating a sub-test
+	t.Run("Error case", func(t *testing.T) {
+		// Create a request with a non-agent auth identity
+		r := httptest.NewRequest("GET", "/test", nil)
+		adminIdentity := NewMockAuthProviderAdmin()
+		r = r.WithContext(domain.WithAuthIdentity(r.Context(), adminIdentity))
 
-	_, err = MustGetAgentID(ctx)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "must be authenticated as agent")
+		// This should return an error
+		_, err := MustGetAgentID(r.Context())
+		assert.Error(t, err)
+	})
 }

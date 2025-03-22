@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"fulcrumproject.org/core/internal/domain"
-	"fulcrumproject.org/core/internal/mock"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +18,7 @@ import (
 
 // mockAgentTypeQuerier is a custom mock for AgentTypeQuerier that allows us to set up expected values and error returns
 type mockAgentTypeQuerier struct {
-	mock.AgentTypeQuerier
+	MockAgentTypeQuerier
 	findByIDFunc  func(ctx context.Context, id domain.UUID) (*domain.AgentType, error)
 	listFunc      func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error)
 	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
@@ -52,34 +51,20 @@ func (m *mockAgentTypeQuerier) AuthScope(ctx context.Context, id domain.UUID) (*
 	return &domain.EmptyAuthScope, nil
 }
 
-// MockAuthIdentity implements the domain.AuthIdentity interface for testing
-type MockAuthIdentity struct {
-	id   domain.UUID
-	role domain.AuthRole
-}
-
-func (m MockAuthIdentity) ID() domain.UUID                  { return m.id }
-func (m MockAuthIdentity) Name() string                     { return "test-user" }
-func (m MockAuthIdentity) Role() domain.AuthRole            { return m.role }
-func (m MockAuthIdentity) IsRole(role domain.AuthRole) bool { return m.role == role }
-func (m MockAuthIdentity) Scope() *domain.AuthScope {
-	return &domain.EmptyAuthScope
-}
-
 // TestHandleGet tests the handleGet method
 func TestHandleGet(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockAgentTypeQuerier, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockAgentTypeQuerier, authz *MockAuthorizer)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -131,7 +116,7 @@ func TestHandleGet(t *testing.T) {
 		{
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -148,7 +133,7 @@ func TestHandleGet(t *testing.T) {
 		{
 			name: "Unauthorized",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 
@@ -161,7 +146,7 @@ func TestHandleGet(t *testing.T) {
 		{
 			name: "AuthScopeError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
 				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 					return nil, domain.NewNotFoundErrorf("scope not found")
 				}
@@ -174,7 +159,7 @@ func TestHandleGet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentTypeQuerier{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, authz)
 
 			// Create the handler
@@ -192,7 +177,9 @@ func TestHandleGet(t *testing.T) {
 
 			// Add auth identity to context for authorization
 			authIdentity := MockAuthIdentity{
-				id: domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"))}
+				id:   domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
+				role: domain.RoleFulcrumAdmin,
+			}
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -217,13 +204,13 @@ func TestHandleList(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockAgentTypeQuerier, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockAgentTypeQuerier, authz *MockAuthorizer)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
 		{
 			name: "Success",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -287,7 +274,7 @@ func TestHandleList(t *testing.T) {
 		},
 		{
 			name: "Unauthorized",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 			},
@@ -295,7 +282,7 @@ func TestHandleList(t *testing.T) {
 		},
 		{
 			name: "InvalidPageRequest",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -323,7 +310,7 @@ func TestHandleList(t *testing.T) {
 		},
 		{
 			name: "ListError",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -340,7 +327,7 @@ func TestHandleList(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentTypeQuerier{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, authz)
 
 			// Create the handler
@@ -380,7 +367,7 @@ func TestHandleList(t *testing.T) {
 // TestNewAgentTypeHandler tests the constructor
 func TestNewAgentTypeHandler(t *testing.T) {
 	querier := &mockAgentTypeQuerier{}
-	authz := mock.NewMockAuthorizer(true)
+	authz := NewMockAuthorizer(true)
 
 	handler := NewAgentTypeHandler(querier, authz)
 	assert.NotNil(t, handler)

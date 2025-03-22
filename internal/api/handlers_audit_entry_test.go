@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"fulcrumproject.org/core/internal/domain"
-	"fulcrumproject.org/core/internal/mock"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +18,7 @@ import (
 
 // mockAuditEntryQuerier is a custom mock for AuditEntryQuerier
 type mockAuditEntryQuerier struct {
-	mock.AuditEntryQuerier
+	MockAuditEntryQuerier
 	listFunc      func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error)
 	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
 }
@@ -80,31 +79,18 @@ func (m *mockAuditEntryCommander) CreateCtxWithDiff(ctx context.Context, eventTy
 	return nil, fmt.Errorf("createCtxWithDiff not mocked")
 }
 
-// MockAdminIdentity implements the domain.AuthIdentity interface for testing with admin role
-type MockAdminIdentity struct {
-	id domain.UUID
-}
-
-func (m MockAdminIdentity) ID() domain.UUID                  { return m.id }
-func (m MockAdminIdentity) Name() string                     { return "test-admin" }
-func (m MockAdminIdentity) Role() domain.AuthRole            { return domain.RoleFulcrumAdmin }
-func (m MockAdminIdentity) IsRole(role domain.AuthRole) bool { return role == domain.RoleFulcrumAdmin }
-func (m MockAdminIdentity) Scope() *domain.AuthScope {
-	return &domain.EmptyAuthScope
-}
-
 // TestAuditEntryHandleList tests the handleList method
 func TestAuditEntryHandleList(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *mock.MockAuthorizer)
+		mockSetup      func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *MockAuthorizer)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
 		{
 			name: "Success",
-			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -155,7 +141,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 		},
 		{
 			name: "Unauthorized",
-			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
 			},
@@ -163,7 +149,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 		},
 		{
 			name: "InvalidPageRequest",
-			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 			},
@@ -171,7 +157,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 		},
 		{
 			name: "ListError",
-			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *mock.MockAuthorizer) {
+			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
@@ -188,7 +174,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 			// Setup mocks
 			querier := &mockAuditEntryQuerier{}
 			commander := &mockAuditEntryCommander{}
-			authz := mock.NewMockAuthorizer(true)
+			authz := NewMockAuthorizer(true)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -204,9 +190,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 			}
 
 			// Add auth identity to context for authorization
-			authIdentity := MockAdminIdentity{
-				id: domain.UUID(uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")),
-			}
+			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -249,7 +233,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 func TestNewAuditEntryHandler(t *testing.T) {
 	querier := &mockAuditEntryQuerier{}
 	commander := &mockAuditEntryCommander{}
-	authz := mock.NewMockAuthorizer(true)
+	authz := NewMockAuthorizer(true)
 
 	handler := NewAuditEntryHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
