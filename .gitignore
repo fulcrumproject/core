@@ -4,5 +4,5 @@ __debug**
 .env
 .env.local
 .DS_Store
-coverage.out
+coverage.*
 .clinerules
