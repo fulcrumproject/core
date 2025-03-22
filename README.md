@@ -2,6 +2,26 @@
 
 Fulcrum Core is a comprehensive cloud infrastructure management system designed to orchestrate and monitor distributed cloud resources across multiple providers. It serves as a centralized control plane for managing cloud service providers, their deployed agents, and the various services these agents provision and maintain.
 
+Fulcrum is currently under active development. New agents and features are being actively developed and will soon be available under this organization's repositories. We welcome contributions from the community - please see our [CONTRIBUTING.md](CONTRIBUTING.md) guide for more details on how to get involved.
+
+## Table of Contents
+
+- [Fulcrum Core](#fulcrum-core)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Configuration](#configuration)
+    - [Running with Docker](#running-with-docker)
+    - [Running locally](#running-locally)
+  - [Testing](#testing)
+  - [API Documentation](#api-documentation)
+  - [Project Structure](#project-structure)
+  - [Design Documentation](#design-documentation)
+  - [Troubleshooting](#troubleshooting)
+    - [Common Issues](#common-issues)
+  - [License](#license)
+
 ## Features
 
 - Manage multiple cloud service providers through a unified interface
@@ -22,23 +42,37 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 
 ### Configuration
 
-1. Clone the repository
+1. Clone the repository:
+```bash
+git clone https://github.com/your-organization/fulcrum-core.git
+```
 2. Copy `.env.example` to `.env` and adjust the values as needed:
 
 ```
 # Database Configuration
-FULCRUM_DB_HOST=postgres
-FULCRUM_DB_USER=fulcrum
-FULCRUM_DB_PASSWORD=fulcrum_password
-FULCRUM_DB_NAME=fulcrum_db
+FULCRUM_DB_HOST=localhost
 FULCRUM_DB_PORT=5432
+FULCRUM_DB_USER=fulcrum
+FULCRUM_DB_PASSWORD=your_secure_password
+FULCRUM_DB_NAME=fulcrum_db
 FULCRUM_DB_SSL_MODE=disable
+FULCRUM_DB_LOG_LEVEL=warn
+FULCRUM_DB_LOG_FORMAT=text
 
 # Server Configuration
 FULCRUM_PORT=3000
 
 # Logging Configuration
-FULCRUM_LOG_FORMAT=text    # Options: text, json
+FULCRUM_LOG_FORMAT=text
+FULCRUM_LOG_LEVEL=info
+
+# Job Configuration
+FULCRUM_JOB_MAINTENANCE_INTERVAL=3m
+FULCRUM_JOB_RETENTION_INTERVAL=72h
+FULCRUM_JOB_TIMEOUT_INTERVAL=5m
+
+# Agent Configuration
+FULCRUM_AGENT_HEALTH_TIMEOUT=5m
 ```
 
 ### Running with Docker
@@ -55,17 +89,14 @@ To restart with a clean database:
 docker compose down -v && docker compose up --build
 ```
 
-To run only the database:
+### Running locally
 
+1. Make sure your `.env` file is configured
+2. Run only the database:
 ```bash
 docker compose up postgres
 ```
-
-### Running Locally
-
-1. Make sure your `.env` file is configured
-2. Start the application:
-
+3. Start the application:
 ```bash
 go run cmd/fulcrum/main.go
 ```
@@ -80,6 +111,20 @@ go install github.com/cosmtrek/air@latest
 air
 ```
 
+## Testing
+
+To run the test suite:
+
+```bash
+go test ./...
+```
+
+For tests with coverage report:
+
+```bash
+go test ./... -coverprofile=coverage.out && go tool cover -html=coverage.out
+```
+
 ## API Documentation
 
 Fulcrum Core's API is documented using the OpenAPI 3.0 specification. The specification is available in the [openapi.yaml](docs/openapi.yaml) file in the project root. This file can be imported into tools like Swagger UI, Postman, or other OpenAPI compatible tools to explore and test the API.
@@ -88,16 +133,37 @@ An online version of the API documentation is also available at: TBD
 
 ## Project Structure
 
-- `cmd/fulcrum/`: Application entry point
-- `internal/api/`: HTTP handlers and routes
-- `internal/database/`: Database implementations of repositories
-- `internal/domain/`: Domain models and repository interfaces
-- `internal/service/`: Business logic services
-- `rest-tests/`: HTTP test files for API testing
+```
+fulcrum-core/
+├── cmd/             # Application entry points
+│   └── fulcrum/     # Main application entry point
+├── docs/            # Documentation
+├── internal/        # Private application and library code
+│   ├── api/         # HTTP handlers and routes
+│   ├── config/      # Configuration handling
+│   ├── database/    # Database implementations of repositories
+│   ├── domain/      # Domain models and repository interfaces
+│   └── logging/     # Logging utilities
+├── scripts/         # Utility scripts
+└── test/            # Test files
+    └── rest/        # HTTP test files for API testing
 
-## Detailed Design Documentation
+```
+## Design Documentation
 
 For a comprehensive overview of Fulcrum Core's architecture, data model, and component interactions, please refer to the [DESIGN.md](docs/DESIGN.md) document.
+
+## Troubleshooting
+
+### Common Issues
+
+- **Database Connection Failures**: Ensure your PostgreSQL server is running and the connection details in `.env` are correct.
+
+- **Permission Issues in Docker**: If you encounter permission issues with Docker volumes, try running `docker compose down -v` to remove volumes and then restart.
+
+- **Hot Reload Not Working**: Make sure you have the latest version of Air installed and your `.air.toml` file is correctly configured.
+
+For more support, please [open an issue](https://github.com/your-organization/fulcrum-core/issues) on our GitHub repository.
 
 ## License
 

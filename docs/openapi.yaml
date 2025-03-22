@@ -157,6 +157,12 @@ components:
           format: date-time
         scopeId:
           $ref: "#/components/schemas/UUID"
+          description: "For provider_admin role - the provider ID; for broker role - the broker ID; for agent role - the agent ID"
+        agentId:
+          $ref: "#/components/schemas/UUID"
+          description: "For agent role tokens only - the agent ID"
+        providerId:
+          $ref: "#/components/schemas/UUID"
         createdAt:
           type: string
           format: date-time
@@ -1024,7 +1030,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-    put:
+    patch:
       summary: Update a provider
       tags:
         - Providers
@@ -1225,6 +1231,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /agents/me:
+    get:
+      summary: Get current agent
+      tags:
+        - Agents
+      description: Retrieves information about the currently authenticated agent
+      security:
+        - AgentAuth: []
+      responses:
+        "200":
+          description: The agent details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   #
   # Agent Type endpoints
   #
@@ -1369,7 +1397,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-    put:
+    patch:
       summary: Update a service
       tags:
         - Services
@@ -1508,30 +1536,6 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/ServiceTypeResponse"
-    post:
-      summary: Create a service type
-      tags:
-        - Services
-      description: Creates a new service type
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ServiceTypeRequest"
-      responses:
-        "201":
-          description: Service type created successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ServiceTypeResponse"
-        "400":
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
 
   /service-types/{id}:
     parameters:
@@ -1643,7 +1647,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-    put:
+    patch:
       summary: Update a service group
       tags:
         - Services
@@ -1959,7 +1963,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-    put:
+    patch:
       summary: Update a metric type
       tags:
         - Metrics
