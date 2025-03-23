@@ -1,0 +1,389 @@
+package domain
+
+import (
+	"testing"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestServiceAction_Validate(t *testing.T) {
+	tests := []struct {
+		name       string
+		action     ServiceAction
+		wantErr    bool
+		errMessage string
+	}{
+		{
+			name:    "Valid ServiceActionCreate",
+			action:  ServiceActionCreate,
+			wantErr: false,
+		},
+		{
+			name:    "Valid ServiceActionStart",
+			action:  ServiceActionStart,
+			wantErr: false,
+		},
+		{
+			name:    "Valid ServiceActionStop",
+			action:  ServiceActionStop,
+			wantErr: false,
+		},
+		{
+			name:    "Valid ServiceActionHotUpdate",
+			action:  ServiceActionHotUpdate,
+			wantErr: false,
+		},
+		{
+			name:    "Valid ServiceActionColdUpdate",
+			action:  ServiceActionColdUpdate,
+			wantErr: false,
+		},
+		{
+			name:    "Valid ServiceActionDelete",
+			action:  ServiceActionDelete,
+			wantErr: false,
+		},
+		{
+			name:       "Invalid action",
+			action:     "InvalidAction",
+			wantErr:    true,
+			errMessage: "invalid job type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.action.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errMessage != "" {
+					assert.Contains(t, err.Error(), tt.errMessage)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestParseServiceAction(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		want       ServiceAction
+		wantErr    bool
+		errMessage string
+	}{
+		{
+			name:    "Parse ServiceActionCreate",
+			input:   string(ServiceActionCreate),
+			want:    ServiceActionCreate,
+			wantErr: false,
+		},
+		{
+			name:    "Parse ServiceActionStart",
+			input:   string(ServiceActionStart),
+			want:    ServiceActionStart,
+			wantErr: false,
+		},
+		{
+			name:    "Parse ServiceActionStop",
+			input:   string(ServiceActionStop),
+			want:    ServiceActionStop,
+			wantErr: false,
+		},
+		{
+			name:    "Parse ServiceActionHotUpdate",
+			input:   string(ServiceActionHotUpdate),
+			want:    ServiceActionHotUpdate,
+			wantErr: false,
+		},
+		{
+			name:    "Parse ServiceActionColdUpdate",
+			input:   string(ServiceActionColdUpdate),
+			want:    ServiceActionColdUpdate,
+			wantErr: false,
+		},
+		{
+			name:    "Parse ServiceActionDelete",
+			input:   string(ServiceActionDelete),
+			want:    ServiceActionDelete,
+			wantErr: false,
+		},
+		{
+			name:       "Parse invalid action",
+			input:      "InvalidAction",
+			wantErr:    true,
+			errMessage: "invalid job type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseServiceAction(tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errMessage != "" {
+					assert.Contains(t, err.Error(), tt.errMessage)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestJobState_Validate(t *testing.T) {
+	tests := []struct {
+		name       string
+		state      JobState
+		wantErr    bool
+		errMessage string
+	}{
+		{
+			name:    "Valid JobPending",
+			state:   JobPending,
+			wantErr: false,
+		},
+		{
+			name:    "Valid JobProcessing",
+			state:   JobProcessing,
+			wantErr: false,
+		},
+		{
+			name:    "Valid JobCompleted",
+			state:   JobCompleted,
+			wantErr: false,
+		},
+		{
+			name:    "Valid JobFailed",
+			state:   JobFailed,
+			wantErr: false,
+		},
+		{
+			name:       "Invalid state",
+			state:      "InvalidState",
+			wantErr:    true,
+			errMessage: "invalid job state",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.state.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errMessage != "" {
+					assert.Contains(t, err.Error(), tt.errMessage)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestParseJobState(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		want       JobState
+		wantErr    bool
+		errMessage string
+	}{
+		{
+			name:    "Parse JobPending",
+			input:   string(JobPending),
+			want:    JobPending,
+			wantErr: false,
+		},
+		{
+			name:    "Parse JobProcessing",
+			input:   string(JobProcessing),
+			want:    JobProcessing,
+			wantErr: false,
+		},
+		{
+			name:    "Parse JobCompleted",
+			input:   string(JobCompleted),
+			want:    JobCompleted,
+			wantErr: false,
+		},
+		{
+			name:    "Parse JobFailed",
+			input:   string(JobFailed),
+			want:    JobFailed,
+			wantErr: false,
+		},
+		{
+			name:       "Parse invalid state",
+			input:      "InvalidState",
+			wantErr:    true,
+			errMessage: "invalid job state",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseJobState(tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errMessage != "" {
+					assert.Contains(t, err.Error(), tt.errMessage)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestJob_TableName(t *testing.T) {
+	job := Job{}
+	assert.Equal(t, "jobs", job.TableName())
+}
+
+func TestJob_Validate(t *testing.T) {
+	validID := uuid.New()
+
+	tests := []struct {
+		name       string
+		job        *Job
+		wantErr    bool
+		errMessage string
+	}{
+		{
+			name: "Valid job",
+			job: &Job{
+				Action:    ServiceActionCreate,
+				State:     JobPending,
+				Priority:  1,
+				AgentID:   validID,
+				ServiceID: validID,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Invalid action",
+			job: &Job{
+				Action:    "InvalidAction",
+				State:     JobPending,
+				Priority:  1,
+				AgentID:   validID,
+				ServiceID: validID,
+			},
+			wantErr:    true,
+			errMessage: "invalid action",
+		},
+		{
+			name: "Invalid state",
+			job: &Job{
+				Action:    ServiceActionCreate,
+				State:     "InvalidState",
+				Priority:  1,
+				AgentID:   validID,
+				ServiceID: validID,
+			},
+			wantErr:    true,
+			errMessage: "invalid state",
+		},
+		{
+			name: "Invalid priority",
+			job: &Job{
+				Action:    ServiceActionCreate,
+				State:     JobPending,
+				Priority:  0,
+				AgentID:   validID,
+				ServiceID: validID,
+			},
+			wantErr:    true,
+			errMessage: "priority must be greater than 0",
+		},
+		{
+			name: "Empty agent ID",
+			job: &Job{
+				Action:    ServiceActionCreate,
+				State:     JobPending,
+				Priority:  1,
+				AgentID:   uuid.Nil,
+				ServiceID: validID,
+			},
+			wantErr:    true,
+			errMessage: "agent ID cannot be empty",
+		},
+		{
+			name: "Empty service ID",
+			job: &Job{
+				Action:    ServiceActionCreate,
+				State:     JobPending,
+				Priority:  1,
+				AgentID:   validID,
+				ServiceID: uuid.Nil,
+			},
+			wantErr:    true,
+			errMessage: "service ID cannot be empty",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.job.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errMessage != "" {
+					assert.Contains(t, err.Error(), tt.errMessage)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestNewJob(t *testing.T) {
+	agentID := uuid.New()
+	providerID := uuid.New()
+	brokerID := uuid.New()
+	serviceID := uuid.New()
+
+	service := &Service{
+		BaseEntity: BaseEntity{
+			ID: serviceID,
+		},
+		ProviderID: providerID,
+		AgentID:    agentID,
+		BrokerID:   brokerID,
+	}
+
+	action := ServiceActionCreate
+	priority := 5
+
+	job := NewJob(service, action, priority)
+
+	assert.Equal(t, brokerID, job.BrokerID)
+	assert.Equal(t, providerID, job.ProviderID)
+	assert.Equal(t, agentID, job.AgentID)
+	assert.Equal(t, serviceID, job.ServiceID)
+	assert.Equal(t, JobPending, job.State)
+	assert.Equal(t, action, job.Action)
+	assert.Equal(t, priority, job.Priority)
+}
+
+// Helper function to create a job with specific state
+func createJobWithState(id uuid.UUID, state JobState) *Job {
+	return &Job{
+		BaseEntity: BaseEntity{
+			ID: id,
+		},
+		Action:     ServiceActionCreate,
+		State:      state,
+		Priority:   1,
+		AgentID:    uuid.New(),
+		ServiceID:  uuid.New(),
+		ProviderID: uuid.New(),
+		BrokerID:   uuid.New(),
+	}
+}
