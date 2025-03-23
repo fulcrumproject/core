@@ -234,4 +234,24 @@ func TestProviderRepository(t *testing.T) {
 			assert.ErrorAs(t, err, &domain.NotFoundError{})
 		})
 	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		t.Run("success - returns provider-only auth scope", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			provider := createTestProvider(t, domain.ProviderEnabled)
+			require.NoError(t, repo.Create(ctx, provider))
+
+			// Execute
+			scope, err := repo.AuthScope(ctx, provider.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotNil(t, scope.ProviderID, "ProviderID should not be nil")
+			assert.Equal(t, provider.ID, *scope.ProviderID, "ProviderID should match the provider's ID")
+			assert.Nil(t, scope.AgentID, "AgentID should be nil for providers")
+			assert.Nil(t, scope.BrokerID, "BrokerID should be nil for providers")
+		})
+	})
 }

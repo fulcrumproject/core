@@ -312,4 +312,80 @@ func TestServiceRepository(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, int64(0), count)
 	})
+
+	t.Run("CountByAgent", func(t *testing.T) {
+		// Create a service for the agent
+		service := &domain.Service{
+			Name:          "Agent Test Service",
+			CurrentState:  domain.ServiceStarted,
+			AgentID:       agent.ID,
+			ProviderID:    provider.ID,
+			BrokerID:      broker.ID,
+			ServiceTypeID: serviceType.ID,
+			GroupID:       serviceGroup.ID,
+		}
+		err := repo.Create(context.Background(), service)
+		require.NoError(t, err)
+
+		// Test count by agent
+		count, err := repo.CountByAgent(context.Background(), agent.ID)
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, count, int64(1), "Should find at least one service for the agent")
+
+		// Test count for non-existent agent
+		nonExistentAgentID := domain.NewUUID()
+		count, err = repo.CountByAgent(context.Background(), nonExistentAgentID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), count, "Should return zero for non-existent agent")
+	})
+
+	t.Run("FindByExternalID", func(t *testing.T) {
+		// Create a service with an external ID
+		externalID := "ext-123456"
+		service := &domain.Service{
+			Name:          "External ID Test Service",
+			CurrentState:  domain.ServiceStarted,
+			ExternalID:    &externalID,
+			AgentID:       agent.ID,
+			ProviderID:    provider.ID,
+			BrokerID:      broker.ID,
+			ServiceTypeID: serviceType.ID,
+			GroupID:       serviceGroup.ID,
+		}
+		err := repo.Create(context.Background(), service)
+		require.NoError(t, err)
+
+		// Test finding by external ID
+		found, err := repo.FindByExternalID(context.Background(), agent.ID, externalID)
+		require.NoError(t, err)
+		assert.NotNil(t, found, "Should find service by external ID")
+		assert.Equal(t, service.ID, found.ID, "IDs should match")
+		assert.Equal(t, externalID, *found.ExternalID, "External IDs should match")
+		assert.Equal(t, agent.ID, found.AgentID, "Agent IDs should match")
+
+		// Test with valid agent ID but non-existent external ID
+		nonExistentExternalID := "non-existent-id"
+		found, err = repo.FindByExternalID(context.Background(), agent.ID, nonExistentExternalID)
+		assert.Error(t, err, "Should return error for non-existent external ID")
+		assert.IsType(t, domain.NotFoundError{}, err, "Error should be NotFoundError")
+		assert.Nil(t, found, "Result should be nil")
+
+		// Test with non-existent agent ID but valid external ID
+		nonExistentAgentID := domain.NewUUID()
+		found, err = repo.FindByExternalID(context.Background(), nonExistentAgentID, externalID)
+		assert.Error(t, err, "Should return error for non-existent agent ID")
+		assert.IsType(t, domain.NotFoundError{}, err, "Error should be NotFoundError")
+		assert.Nil(t, found, "Result should be nil")
+	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		service := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, broker.ID)
+		require.NoError(t, repo.Create(context.Background(), service))
+
+		scope, err := repo.AuthScope(context.Background(), service.ID)
+		require.NoError(t, err)
+		assert.Equal(t, provider.ID, *scope.ProviderID, "Provider ID should match")
+		assert.Equal(t, agent.ID, *scope.AgentID, "Agent ID should match")
+		assert.Equal(t, broker.ID, *scope.BrokerID, "Broker ID should match")
+	})
 }

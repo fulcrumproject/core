@@ -226,4 +226,71 @@ func TestServiceGroupRepository(t *testing.T) {
 			assert.ErrorAs(t, err, &domain.NotFoundError{})
 		})
 	})
+
+	t.Run("CountByService", func(t *testing.T) {
+		t.Run("success - returns correct count", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create a service group
+			serviceGroup := createTestServiceGroup(t, broker.ID)
+			require.NoError(t, repo.Create(ctx, serviceGroup))
+
+			// Now we need to create a service linked to this group
+			// First, create required dependencies for the service
+			providerRepo := NewProviderRepository(testDB.DB)
+			provider := createTestProvider(t, domain.ProviderEnabled)
+			require.NoError(t, providerRepo.Create(ctx, provider))
+
+			agentTypeRepo := NewAgentTypeRepository(testDB.DB)
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+
+			agentRepo := NewAgentRepository(testDB.DB)
+			agent := createTestAgent(t, provider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, agent))
+
+			serviceTypeRepo := NewServiceTypeRepository(testDB.DB)
+			serviceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType))
+
+			// Create the service linked to the group
+			serviceRepo := NewServiceRepository(testDB.DB)
+			service := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, broker.ID)
+			require.NoError(t, serviceRepo.Create(ctx, service))
+
+			// Execute count by service
+			count, err := repo.CountByService(ctx, service.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.Equal(t, int64(1), count, "Should find exactly one service group for the service")
+
+			// Test count for non-existent service
+			nonExistentServiceID := domain.NewUUID()
+			count, err = repo.CountByService(ctx, nonExistentServiceID)
+			require.NoError(t, err)
+			assert.Equal(t, int64(0), count, "Should return zero for non-existent service")
+		})
+	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		t.Run("success - returns broker-only auth scope", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create a service group
+			serviceGroup := createTestServiceGroup(t, broker.ID)
+			require.NoError(t, repo.Create(ctx, serviceGroup))
+
+			// Execute
+			scope, err := repo.AuthScope(ctx, serviceGroup.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotNil(t, scope, "AuthScope should not return nil")
+			assert.NotNil(t, scope.BrokerID, "BrokerID should not be nil")
+			assert.Equal(t, broker.ID, *scope.BrokerID, "BrokerID should match the broker's ID")
+			assert.Nil(t, scope.ProviderID, "ProviderID should be nil for service groups")
+			assert.Nil(t, scope.AgentID, "AgentID should be nil for service groups")
+		})
+	})
 }

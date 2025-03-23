@@ -221,4 +221,22 @@ func TestMetricTypeRepository(t *testing.T) {
 			assert.True(t, result.HasPrev)
 		})
 	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		t.Run("success - returns empty auth scope", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create a metric type
+			metricType := &domain.MetricType{
+				Name:       "Scope Test Metric",
+				EntityType: domain.MetricEntityTypeService,
+			}
+			require.NoError(t, repo.Create(ctx, metricType))
+
+			// Execute with existing metric type ID
+			scope, err := repo.AuthScope(ctx, metricType.ID)
+			require.NoError(t, err)
+			assert.Equal(t, &domain.AuthScope{}, scope, "Should return empty auth scope for metric types")
+		})
+	})
 }

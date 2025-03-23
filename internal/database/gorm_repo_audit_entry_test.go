@@ -190,4 +190,45 @@ func TestAuditEntryRepository(t *testing.T) {
 			assert.True(t, result.HasPrev)
 		})
 	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		t.Run("success - returns correct auth scope", func(t *testing.T) {
+			// Setup - create an audit entry with all scope IDs set
+			providerID := domain.NewUUID()
+			agentID := domain.NewUUID()
+			brokerID := domain.NewUUID()
+
+			auditEntry := &domain.AuditEntry{
+				AuthorityType: domain.AuthorityTypeAdmin,
+				AuthorityID:   "admin-test",
+				EventType:     domain.EventTypeAgentCreated,
+				Properties:    domain.JSON{"test": "scoped audit entry"},
+				ProviderID:    &providerID,
+				AgentID:       &agentID,
+				BrokerID:      &brokerID,
+			}
+
+			err := repo.Create(ctx, auditEntry)
+			require.NoError(t, err)
+
+			// Execute
+			scope, err := repo.AuthScope(ctx, auditEntry.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotNil(t, scope, "AuthScope should not return nil")
+			assert.Equal(t, providerID, *scope.ProviderID, "Should return the correct provider ID")
+			assert.Equal(t, agentID, *scope.AgentID, "Should return the correct agent ID")
+			assert.Equal(t, brokerID, *scope.BrokerID, "Should return the correct broker ID")
+
+			// Test with non-existent entry
+			nonExistentID := domain.NewUUID()
+			nonExistentScope, err := repo.AuthScope(ctx, nonExistentID)
+
+			// The implementation appears to return an empty scope rather than an error for non-existent IDs
+			require.NoError(t, err)
+			assert.NotNil(t, nonExistentScope)
+			assert.Equal(t, &domain.AuthScope{}, nonExistentScope, "Should return an empty scope for non-existent entry")
+		})
+	})
 }

@@ -25,8 +25,8 @@ type GormStore struct {
 	metricEntryRepo  domain.MetricEntryRepository
 }
 
-// NewStore creates a new GormStore instance
-func NewStore(db *gorm.DB) *GormStore {
+// NewGormStore creates a new GormStore instance
+func NewGormStore(db *gorm.DB) *GormStore {
 	return &GormStore{
 		db: db,
 	}
@@ -36,7 +36,7 @@ func NewStore(db *gorm.DB) *GormStore {
 func (s *GormStore) Atomic(ctx context.Context, fn func(domain.Store) error) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Create a new store with the transaction
-		txStore := NewStore(tx)
+		txStore := NewGormStore(tx)
 		// Execute the function with the transaction store
 		return fn(txStore)
 	})

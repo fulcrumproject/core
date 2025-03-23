@@ -225,4 +225,23 @@ func TestAgentTypeRepository(t *testing.T) {
 			assert.Equal(t, result.TotalItems, count)
 		})
 	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		t.Run("success - returns empty auth scope", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			agentType := createTestAgentType(t)
+			require.NoError(t, repo.Create(ctx, agentType))
+
+			// Execute with existing agent type ID
+			scope, err := repo.AuthScope(ctx, agentType.ID)
+
+			// Assert - should return empty scope for any ID since agent types are global resources
+			require.NoError(t, err)
+			assert.NotNil(t, scope)
+			assert.Equal(t, &domain.AuthScope{}, scope, "Should return empty auth scope for agent types")
+		})
+	})
+
 }

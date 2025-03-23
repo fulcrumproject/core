@@ -33,7 +33,7 @@ Authorization: Bearer {{adminToken}}
         "version": ["1.0.0"]
     },
     "providerId": "{{providerId}}",
-    "agentTypeId": "11111111-1111-1111-1111-111111111111"
+    "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec"
 }
 
 @agentId = {{createAgent.response.body.$.id}}

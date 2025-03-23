@@ -51,7 +51,7 @@ func (h *TokenHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		Name     string          `json:"name"`
 		Role     domain.AuthRole `json:"role"`
 		ExpireAt time.Time       `json:"expireAt"`
-		ScopeID  *domain.UUID    `json:"scopeId"`
+		ScopeID  *domain.UUID    `json:"scopeId,omitempty"`
 	}
 	if err := render.Decode(r, &req); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))

@@ -26,6 +26,15 @@ func TestTokenRepository(t *testing.T) {
 	broker := createTestBroker(t)
 	require.NoError(t, NewBrokerRepository(tdb.DB).Create(context.Background(), broker))
 
+	// Create an agent type and agent for agent token tests
+	agentTypeRepo := NewAgentTypeRepository(tdb.DB)
+	agentType := createTestAgentType(t)
+	require.NoError(t, agentTypeRepo.Create(context.Background(), agentType))
+
+	agentRepo := NewAgentRepository(tdb.DB)
+	agent := createTestAgent(t, provider.ID, agentType.ID, domain.AgentConnected)
+	require.NoError(t, agentRepo.Create(context.Background(), agent))
+
 	t.Run("Create", func(t *testing.T) {
 		t.Run("success - admin token", func(t *testing.T) {
 			ctx := context.Background()
@@ -283,6 +292,192 @@ func TestTokenRepository(t *testing.T) {
 			// Assert
 			assert.Nil(t, found)
 			assert.ErrorAs(t, err, &domain.NotFoundError{})
+		})
+	})
+
+	t.Run("DeleteByAgentID", func(t *testing.T) {
+		t.Run("success - deletes tokens with matching agent ID", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup - create agent tokens
+			// For agent tokens, we need a valid agent with valid provider ID
+			agentToken1 := &domain.Token{
+				Name:        "Agent Token 1",
+				Role:        domain.RoleAgent,
+				HashedValue: "agent-token-hash-1",
+				ExpireAt:    time.Now().Add(24 * time.Hour),
+				AgentID:     &agent.ID,
+				ProviderID:  &provider.ID, // Agent tokens need provider ID too
+			}
+			require.NoError(t, agentToken1.GenerateTokenValue())
+			require.NoError(t, repo.Create(ctx, agentToken1))
+
+			agentToken2 := &domain.Token{
+				Name:        "Agent Token 2",
+				Role:        domain.RoleAgent,
+				HashedValue: "agent-token-hash-2",
+				ExpireAt:    time.Now().Add(24 * time.Hour),
+				AgentID:     &agent.ID,
+				ProviderID:  &provider.ID,
+			}
+			require.NoError(t, agentToken2.GenerateTokenValue())
+			require.NoError(t, repo.Create(ctx, agentToken2))
+
+			// Create a token with a different role that shouldn't be affected
+			otherToken := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			require.NoError(t, repo.Create(ctx, otherToken))
+
+			// Execute
+			err := repo.DeleteByAgentID(ctx, agent.ID)
+
+			// Assert
+			require.NoError(t, err)
+
+			// Verify agent tokens are deleted
+			_, err = repo.FindByID(ctx, agentToken1.ID)
+			assert.ErrorAs(t, err, &domain.NotFoundError{}, "Agent token 1 should be deleted")
+
+			_, err = repo.FindByID(ctx, agentToken2.ID)
+			assert.ErrorAs(t, err, &domain.NotFoundError{}, "Agent token 2 should be deleted")
+
+			// Verify other tokens are not affected
+			otherFound, err := repo.FindByID(ctx, otherToken.ID)
+			assert.NoError(t, err)
+			assert.NotNil(t, otherFound, "Other token should not be affected")
+		})
+	})
+
+	t.Run("DeleteByProviderID", func(t *testing.T) {
+		t.Run("success - deletes tokens with matching provider ID", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup - create provider tokens
+			providerToken1 := &domain.Token{
+				Name:        "Provider Token 1",
+				Role:        domain.RoleProviderAdmin,
+				HashedValue: "provider-token-hash-1",
+				ExpireAt:    time.Now().Add(24 * time.Hour),
+				ProviderID:  &provider.ID,
+			}
+			require.NoError(t, providerToken1.GenerateTokenValue())
+			require.NoError(t, repo.Create(ctx, providerToken1))
+
+			providerToken2 := &domain.Token{
+				Name:        "Provider Token 2",
+				Role:        domain.RoleProviderAdmin,
+				HashedValue: "provider-token-hash-2",
+				ExpireAt:    time.Now().Add(24 * time.Hour),
+				ProviderID:  &provider.ID,
+			}
+			require.NoError(t, providerToken2.GenerateTokenValue())
+			require.NoError(t, repo.Create(ctx, providerToken2))
+
+			// Create a token with a different role that shouldn't be affected
+			otherToken := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			require.NoError(t, repo.Create(ctx, otherToken))
+
+			// Execute
+			err := repo.DeleteByProviderID(ctx, provider.ID)
+
+			// Assert
+			require.NoError(t, err)
+
+			// Verify provider tokens are deleted
+			_, err = repo.FindByID(ctx, providerToken1.ID)
+			assert.ErrorAs(t, err, &domain.NotFoundError{}, "Provider token 1 should be deleted")
+
+			_, err = repo.FindByID(ctx, providerToken2.ID)
+			assert.ErrorAs(t, err, &domain.NotFoundError{}, "Provider token 2 should be deleted")
+
+			// Verify other tokens are not affected
+			otherFound, err := repo.FindByID(ctx, otherToken.ID)
+			assert.NoError(t, err)
+			assert.NotNil(t, otherFound, "Other token should not be affected")
+		})
+	})
+
+	t.Run("DeleteByBrokerID", func(t *testing.T) {
+		t.Run("success - deletes tokens with matching broker ID", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup - create broker tokens
+			brokerToken1 := &domain.Token{
+				Name:        "Broker Token 1",
+				Role:        domain.RoleBroker,
+				HashedValue: "broker-token-hash-1",
+				ExpireAt:    time.Now().Add(24 * time.Hour),
+				BrokerID:    &broker.ID,
+			}
+			require.NoError(t, brokerToken1.GenerateTokenValue())
+			require.NoError(t, repo.Create(ctx, brokerToken1))
+
+			brokerToken2 := &domain.Token{
+				Name:        "Broker Token 2",
+				Role:        domain.RoleBroker,
+				HashedValue: "broker-token-hash-2",
+				ExpireAt:    time.Now().Add(24 * time.Hour),
+				BrokerID:    &broker.ID,
+			}
+			require.NoError(t, brokerToken2.GenerateTokenValue())
+			require.NoError(t, repo.Create(ctx, brokerToken2))
+
+			// Create a token with a different role that shouldn't be affected
+			otherToken := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			require.NoError(t, repo.Create(ctx, otherToken))
+
+			// Execute
+			err := repo.DeleteByBrokerID(ctx, broker.ID)
+
+			// Assert
+			require.NoError(t, err)
+
+			// Verify broker tokens are deleted
+			_, err = repo.FindByID(ctx, brokerToken1.ID)
+			assert.ErrorAs(t, err, &domain.NotFoundError{}, "Broker token 1 should be deleted")
+
+			_, err = repo.FindByID(ctx, brokerToken2.ID)
+			assert.ErrorAs(t, err, &domain.NotFoundError{}, "Broker token 2 should be deleted")
+
+			// Verify other tokens are not affected
+			otherFound, err := repo.FindByID(ctx, otherToken.ID)
+			assert.NoError(t, err)
+			assert.NotNil(t, otherFound, "Other token should not be affected")
+		})
+	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		t.Run("success - returns correct auth scope", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create tokens with different roles and scope IDs
+			adminToken := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			require.NoError(t, repo.Create(ctx, adminToken))
+
+			providerToken := &domain.Token{
+				Name:        "Provider Scope Test",
+				Role:        domain.RoleProviderAdmin,
+				HashedValue: "provider-token-hash-scope",
+				ExpireAt:    time.Now().Add(24 * time.Hour),
+				ProviderID:  &provider.ID,
+			}
+			require.NoError(t, providerToken.GenerateTokenValue())
+			require.NoError(t, repo.Create(ctx, providerToken))
+
+			// For auth scope tests, test different types of tokens
+			// Admin token (empty scope)
+			adminScope, err := repo.AuthScope(ctx, adminToken.ID)
+			require.NoError(t, err)
+			assert.Nil(t, adminScope.ProviderID, "Admin token should have nil provider ID")
+			assert.Nil(t, adminScope.BrokerID, "Admin token should have nil broker ID")
+			assert.Nil(t, adminScope.AgentID, "Admin token should have nil agent ID")
+
+			// Provider token (provider scope)
+			providerScope, err := repo.AuthScope(ctx, providerToken.ID)
+			require.NoError(t, err)
+			assert.NotNil(t, providerScope.ProviderID, "Provider token should have provider ID")
+			assert.Equal(t, provider.ID, *providerScope.ProviderID, "Provider ID should match")
+			assert.Nil(t, providerScope.BrokerID, "Provider token should have nil broker ID")
+			assert.Nil(t, providerScope.AgentID, "Provider token should have nil agent ID")
 		})
 	})
 }

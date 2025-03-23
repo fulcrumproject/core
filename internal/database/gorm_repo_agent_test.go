@@ -307,4 +307,80 @@ func TestAgentRepository(t *testing.T) {
 			assert.Equal(t, int64(0), count, "Should not mark any agents as disconnected")
 		})
 	})
+
+	t.Run("CountByProvider", func(t *testing.T) {
+		t.Run("success - returns correct count", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create a provider
+			provider := createTestProvider(t, domain.ProviderEnabled)
+			require.NoError(t, providerRepo.Create(ctx, provider))
+
+			// Create a provider with no agents (to test zero count)
+			emptyProvider := createTestProvider(t, domain.ProviderEnabled)
+			require.NoError(t, providerRepo.Create(ctx, emptyProvider))
+
+			// Create an agent type
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+
+			// Create multiple agents for our test provider
+			expectedCount := int64(3)
+			for i := 0; i < int(expectedCount); i++ {
+				agent := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+				require.NoError(t, agentRepo.Create(ctx, agent))
+			}
+
+			// Execute count for the provider with agents
+			count, err := agentRepo.CountByProvider(ctx, provider.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.Equal(t, expectedCount, count, "Should return the correct count of agents")
+
+			// Execute count for the provider with no agents
+			emptyCount, err := agentRepo.CountByProvider(ctx, emptyProvider.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.Equal(t, int64(0), emptyCount, "Should return zero for provider with no agents")
+		})
+	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		t.Run("success - returns correct auth scope", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create a provider
+			provider := createTestProvider(t, domain.ProviderEnabled)
+			require.NoError(t, providerRepo.Create(ctx, provider))
+
+			// Create an agent type
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+
+			// Create an agent
+			agent := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+			require.NoError(t, agentRepo.Create(ctx, agent))
+
+			// Execute
+			scope, err := agentRepo.AuthScope(ctx, agent.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotNil(t, scope, "AuthScope should not return nil")
+			assert.NotNil(t, scope.ProviderID, "ProviderID should not be nil")
+			assert.Equal(t, provider.ID, *scope.ProviderID, "Should return the provider ID in the scope")
+			assert.NotNil(t, scope.AgentID, "AgentID should not be nil")
+			assert.Equal(t, agent.ID, *scope.AgentID, "Should return the agent ID in the scope")
+			assert.Nil(t, scope.BrokerID, "BrokerID should be nil for agents")
+
+			// Test with non-existent agent - checking the actual behavior
+			nonExistentID := domain.NewUUID()
+			nonExistentScope, err := agentRepo.AuthScope(ctx, nonExistentID)
+			require.NoError(t, err, "AuthScope should not return an error for non-existent agent")
+			assert.NotNil(t, nonExistentScope, "Should return an empty auth scope")
+			assert.Equal(t, &domain.AuthScope{}, nonExistentScope, "Should return empty auth scope for non-existent agent")
+		})
+	})
 }

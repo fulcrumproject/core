@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// Initialize the store
-	store := database.NewStore(db)
+	store := database.NewGormStore(db)
 
 	// Initialize commanders
 	// Initialize audit commander first since it's needed by other commanders
@@ -129,7 +129,7 @@ func main() {
 	// go JobMainenanceTask(&cfg.JobConfig, store, serviceCmd)
 
 	// Setup background worker to mark inactive agents as disconnected
-	// go DisconnectUnhealthyAgentsTask(&cfg.AgentConfig, store)
+	go DisconnectUnhealthyAgentsTask(&cfg.AgentConfig, store)
 
 	// Start server
 	slog.Info("Server starting", "port", cfg.Port)
@@ -139,6 +139,7 @@ func main() {
 	}
 }
 
+// TODO move to proper worker
 func DisconnectUnhealthyAgentsTask(cfg *config.AgentConfig, store domain.Store) {
 	ticker := time.NewTicker(cfg.HealthTimeout)
 	for range ticker.C {
@@ -153,6 +154,7 @@ func DisconnectUnhealthyAgentsTask(cfg *config.AgentConfig, store domain.Store) 
 	}
 }
 
+// TODO move to proper worker
 func JobMainenanceTask(cfg *config.JobConfig, store domain.Store, serviceCmd domain.ServiceCommander) {
 	ticker := time.NewTicker(cfg.Maintenance)
 	for range ticker.C {

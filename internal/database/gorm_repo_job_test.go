@@ -292,4 +292,89 @@ func TestJobRepository(t *testing.T) {
 		assert.Equal(t, domain.JobProcessing, updatedNewJob.State)
 		assert.NotContains(t, timedOutJobs, newJob.ID)
 	})
+
+	t.Run("DeleteOldCompletedJobs", func(t *testing.T) {
+		// Create completed jobs with varying completion times
+		now := time.Now()
+
+		// Create jobs with completion times at different intervals
+		oldCompletedJob := domain.NewJob(service, domain.ServiceActionStop, 1)
+		oldCompletedJob.State = domain.JobCompleted
+		oldCompletedTime := now.Add(-48 * time.Hour) // 2 days ago
+		oldCompletedJob.CompletedAt = &oldCompletedTime
+		require.NoError(t, repo.Create(context.Background(), oldCompletedJob))
+
+		oldFailedJob := domain.NewJob(service, domain.ServiceActionStart, 1)
+		oldFailedJob.State = domain.JobFailed
+		oldFailedTime := now.Add(-36 * time.Hour) // 1.5 days ago
+		oldFailedJob.CompletedAt = &oldFailedTime
+		require.NoError(t, repo.Create(context.Background(), oldFailedJob))
+
+		recentCompletedJob := domain.NewJob(service, domain.ServiceActionHotUpdate, 1)
+		recentCompletedJob.State = domain.JobCompleted
+		recentCompletedTime := now.Add(-12 * time.Hour) // 12 hours ago
+		recentCompletedJob.CompletedAt = &recentCompletedTime
+		require.NoError(t, repo.Create(context.Background(), recentCompletedJob))
+
+		pendingJob := domain.NewJob(service, domain.ServiceActionHotUpdate, 1)
+		pendingJob.State = domain.JobPending
+		require.NoError(t, repo.Create(context.Background(), pendingJob))
+
+		// Call DeleteOldCompletedJobs with a 24-hour threshold
+		count, err := repo.DeleteOldCompletedJobs(context.Background(), 24*time.Hour)
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, 2, count, "Should delete exactly two old jobs")
+
+		// Verify that old jobs were deleted
+		_, err = repo.FindByID(context.Background(), oldCompletedJob.ID)
+		assert.Error(t, err, "Old completed job should be deleted")
+		assert.IsType(t, domain.NotFoundError{}, err)
+
+		_, err = repo.FindByID(context.Background(), oldFailedJob.ID)
+		assert.Error(t, err, "Old failed job should be deleted")
+		assert.IsType(t, domain.NotFoundError{}, err)
+
+		// Verify that recent and pending jobs still exist
+		stillExists, err := repo.FindByID(context.Background(), recentCompletedJob.ID)
+		assert.NoError(t, err, "Recent completed job should still exist")
+		assert.Equal(t, recentCompletedJob.ID, stillExists.ID)
+
+		stillExists, err = repo.FindByID(context.Background(), pendingJob.ID)
+		assert.NoError(t, err, "Pending job should still exist")
+		assert.Equal(t, pendingJob.ID, stillExists.ID)
+	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		t.Run("success - returns correct auth scope", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create a new job with known IDs
+			job := domain.NewJob(service, domain.ServiceActionCreate, 1)
+
+			// The job should have provider, agent, and broker IDs from the service
+			require.NotNil(t, service.ProviderID)
+			require.NotNil(t, service.AgentID)
+			require.NotNil(t, service.BrokerID)
+
+			// Save job to database
+			require.NoError(t, repo.Create(ctx, job))
+
+			// Get job's auth scope
+			scope, err := repo.AuthScope(ctx, job.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotNil(t, scope, "AuthScope should not return nil")
+
+			// Verify auth scope contains the correct IDs
+			assert.NotNil(t, scope.ProviderID, "ProviderID should not be nil")
+			assert.Equal(t, service.ProviderID, *scope.ProviderID, "Should return the correct provider ID")
+			assert.NotNil(t, scope.AgentID, "AgentID should not be nil")
+			assert.Equal(t, service.AgentID, *scope.AgentID, "Should return the correct agent ID")
+			assert.NotNil(t, scope.BrokerID, "BrokerID should not be nil")
+			assert.Equal(t, service.BrokerID, *scope.BrokerID, "Should return the correct broker ID")
+		})
+	})
 }

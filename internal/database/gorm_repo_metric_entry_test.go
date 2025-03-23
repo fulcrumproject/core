@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -253,6 +254,86 @@ func TestMetricEntryRepository(t *testing.T) {
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)
 			assert.True(t, result.HasPrev)
+		})
+	})
+
+	t.Run("CountByMetricType", func(t *testing.T) {
+		t.Run("success - counts entries for a specific metric type", func(t *testing.T) {
+			// Clear existing entries for better test isolation
+			testDB.DB.Exec("DELETE FROM metric_entries")
+
+			// Create entries for service metric type
+			const serviceEntryCount = 3
+			for i := 0; i < serviceEntryCount; i++ {
+				entry := &domain.MetricEntry{
+					AgentID:    agent.ID,
+					ServiceID:  service.ID,
+					ResourceID: fmt.Sprintf("count-service-%d", i),
+					ProviderID: provider.ID,
+					BrokerID:   broker.ID,
+					Value:      float64(i * 10),
+					TypeID:     metricTypeService.ID,
+				}
+				err := repo.Create(context.Background(), entry)
+				require.NoError(t, err)
+			}
+
+			// Create entries for agent metric type
+			const agentEntryCount = 5
+			for i := 0; i < agentEntryCount; i++ {
+				entry := &domain.MetricEntry{
+					AgentID:    agent.ID,
+					ServiceID:  service.ID,
+					ResourceID: fmt.Sprintf("count-agent-%d", i),
+					ProviderID: provider.ID,
+					BrokerID:   broker.ID,
+					Value:      float64(i * 10),
+					TypeID:     metricTypeAgent.ID,
+				}
+				err := repo.Create(context.Background(), entry)
+				require.NoError(t, err)
+			}
+
+			// Count entries for service metric type
+			serviceCount, err := repo.CountByMetricType(context.Background(), metricTypeService.ID)
+			require.NoError(t, err)
+			assert.Equal(t, int64(serviceEntryCount), serviceCount, "Should return correct count for service metric type")
+
+			// Count entries for agent metric type
+			agentCount, err := repo.CountByMetricType(context.Background(), metricTypeAgent.ID)
+			require.NoError(t, err)
+			assert.Equal(t, int64(agentEntryCount), agentCount, "Should return correct count for agent metric type")
+
+			// Count entries for non-existent metric type
+			nonExistentTypeID := domain.NewUUID()
+			nonExistentCount, err := repo.CountByMetricType(context.Background(), nonExistentTypeID)
+			require.NoError(t, err)
+			assert.Equal(t, int64(0), nonExistentCount, "Should return zero for non-existent metric type")
+		})
+	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		t.Run("success - returns correct auth scope", func(t *testing.T) {
+			// Create a metric entry with all scope fields set
+			metricEntry := &domain.MetricEntry{
+				AgentID:    agent.ID,
+				ServiceID:  service.ID,
+				ResourceID: "auth-scope-test",
+				ProviderID: provider.ID,
+				BrokerID:   broker.ID,
+				Value:      42.0,
+				TypeID:     metricTypeService.ID,
+			}
+			err := repo.Create(context.Background(), metricEntry)
+			require.NoError(t, err)
+
+			// Get the auth scope
+			scope, err := repo.AuthScope(context.Background(), metricEntry.ID)
+			require.NoError(t, err)
+			assert.NotNil(t, scope, "AuthScope should not return nil")
+			assert.Equal(t, provider.ID, *scope.ProviderID, "Should return the correct provider ID")
+			assert.Equal(t, agent.ID, *scope.AgentID, "Should return the correct agent ID")
+			assert.Equal(t, broker.ID, *scope.BrokerID, "Should return the correct broker ID")
 		})
 	})
 }

@@ -58,7 +58,7 @@ func (h *BrokerHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
+	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, brokerToResponse(broker))
 }
 

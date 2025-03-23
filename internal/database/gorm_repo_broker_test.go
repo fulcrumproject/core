@@ -210,4 +210,26 @@ func TestBrokerRepository(t *testing.T) {
 			assert.ErrorAs(t, err, &domain.NotFoundError{})
 		})
 	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		t.Run("success - returns correct auth scope", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			broker := createTestBroker(t)
+			require.NoError(t, repo.Create(ctx, broker))
+
+			// Execute
+			scope, err := repo.AuthScope(ctx, broker.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotNil(t, scope, "AuthScope should not return nil")
+			assert.NotNil(t, scope.BrokerID, "BrokerID should not be nil")
+			assert.Equal(t, broker.ID, *scope.BrokerID, "Should return the broker ID in the scope")
+			assert.Nil(t, scope.ProviderID, "ProviderID should be nil for brokers")
+			assert.Nil(t, scope.AgentID, "AgentID should be nil for brokers")
+		})
+	})
+
 }

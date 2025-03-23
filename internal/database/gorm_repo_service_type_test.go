@@ -205,4 +205,19 @@ func TestServiceTypeRepository(t *testing.T) {
 			assert.Greater(t, count, int64(1))
 		})
 	})
+
+	t.Run("AuthScope", func(t *testing.T) {
+		t.Run("success - returns empty auth scope", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create a service type
+			serviceType := createTestServiceType(t)
+			require.NoError(t, repo.Create(ctx, serviceType))
+
+			// Execute with existing service type ID
+			scope, err := repo.AuthScope(ctx, serviceType.ID)
+			require.NoError(t, err)
+			assert.Equal(t, &domain.AuthScope{}, scope, "Should return empty auth scope for service types")
+		})
+	})
 }
