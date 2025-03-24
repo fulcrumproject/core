@@ -39,7 +39,7 @@ jobs:
           FULCRUM_DB_HOST: localhost
           FULCRUM_DB_PORT: 5432
           FULCRUM_DB_USER: fulcrum
-          FULCRUM_DB_PASSWORD: fulcrum_password
+          FULCRUM_DB_PASSWORD: fulcrum_wrong_password
           FULCRUM_DB_NAME: fulcrum_db
           FULCRUM_DB_SSL_MODE: disable
         run: |
