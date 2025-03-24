@@ -47,9 +47,13 @@ jobs:
           FULCRUM_DB_PORT: ${{ env.TEST_DB_PORT }}
           FULCRUM_DB_SSL_MODE: disable
           FULCRUM_DB_NAME: ${{ env.TEST_DB_NAME }}
-          FULCRUM_DB_USER: ${{ env.TEST_DB_USER }}
+          FULCRUM_DB_USER: ${{ env.TEST_DB_PORT }}
           FULCRUM_DB_PASSWORD: ${{ env.TEST_DB_PASSWORD }}
         run: |
+          echo ${{ env.TEST_DB_NAME }}
+          echo ${{ env.TEST_DB_PORT }}
+          echo ${{ env.TEST_DB_PORT }}
+          echo ${{ env.TEST_DB_PASSWORD }}
           go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
           go tool cover -func=coverage.out
 

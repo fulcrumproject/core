@@ -22,9 +22,8 @@ func NewTestDB(t *testing.T) *TestDB {
 	appConfig := config.DefaultConfig()
 	appConfig.LoadFromEnv()
 
-	// Connect to postgres database to create the test database
-	adminConfig := getAdminDBConfig(&appConfig.DBConfig)
-	adminDB, err := NewConnection(&adminConfig)
+	// Connect to default fulcrum database to create the test database
+	adminDB, err := NewConnection(&appConfig.DBConfig)
 	if err != nil {
 		t.Fatalf("Failed to connect to postgres database: %v", err)
 	}
@@ -68,8 +67,9 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 	}
 
 	// Connect to postgres database to delete the test database
-	adminConfig := getAdminDBConfig(nil)
-	adminDB, err := NewConnection(&adminConfig)
+	appConfig := config.DefaultConfig()
+	appConfig.LoadFromEnv()
+	adminDB, err := NewConnection(&appConfig.DBConfig)
 	if err != nil {
 		t.Errorf("Failed to connect to postgres database: %v", err)
 		return
@@ -92,24 +92,4 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 	if err := adminDB.Exec(sql).Error; err != nil {
 		t.Errorf("Failed to drop test database: %v", err)
 	}
-}
-
-// getAdminDBConfig returns a database configuration for connecting to the postgres admin database
-// If baseConfig is nil, it will use defaults from the config package
-func getAdminDBConfig(baseConfig *config.DBConfig) config.DBConfig {
-	var adminConfig config.DBConfig
-
-	if baseConfig != nil {
-		// Copy the base configuration
-		adminConfig = *baseConfig
-	} else {
-		// Use defaults from config package
-		defaultConfig := config.DefaultConfig()
-		adminConfig = defaultConfig.DBConfig
-	}
-
-	// Override the database name to connect to postgres admin database
-	// adminConfig.Name = "postgres"
-
-	return adminConfig
 }
