@@ -16,7 +16,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: fulcrum
           POSTGRES_USER: fulcrum
-          POSTGRES_DB: fulcrum_test
+          POSTGRES_DB: fulcrum_db
         ports:
           - 5432:5432
         options: >-
@@ -40,7 +40,7 @@ jobs:
           FULCRUM_DB_PORT: 5432
           FULCRUM_DB_USER: fulcrum
           FULCRUM_DB_PASSWORD: fulcrum
-          FULCRUM_DB_NAME: fulcrum_test
+          FULCRUM_DB_NAME: fulcrum_db
           FULCRUM_DB_SSL_MODE: disable
         run: |
           go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
