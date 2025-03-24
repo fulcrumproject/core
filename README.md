@@ -129,7 +129,7 @@ go test ./... -coverprofile=coverage.out && go tool cover -html=coverage.out
 
 Fulcrum Core's API is documented using the OpenAPI 3.0 specification. The specification is available in the [openapi.yaml](docs/openapi.yaml) file in the project root. This file can be imported into tools like Swagger UI, Postman, or other OpenAPI compatible tools to explore and test the API.
 
-An online version of the API documentation is also available at: TBD
+An online version of the API documentation will be available soon.
 
 ## Project Structure
 
