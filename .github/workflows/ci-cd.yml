@@ -14,7 +14,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: fulcrum
+          POSTGRES_PASSWORD: fulcrum_password
           POSTGRES_USER: fulcrum
           POSTGRES_DB: fulcrum_db
         ports:
@@ -39,7 +39,7 @@ jobs:
           FULCRUM_DB_HOST: localhost
           FULCRUM_DB_PORT: 5432
           FULCRUM_DB_USER: fulcrum
-          FULCRUM_DB_PASSWORD: fulcrum
+          FULCRUM_DB_PASSWORD: fulcrum_password
           FULCRUM_DB_NAME: fulcrum_db
           FULCRUM_DB_SSL_MODE: disable
         run: |
