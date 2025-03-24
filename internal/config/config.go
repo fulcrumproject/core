@@ -85,10 +85,12 @@ type DBConfig struct {
 
 // DSN returns the PostgreSQL connection string
 func (c *DBConfig) DSN() string {
-	return fmt.Sprintf(
+	dns := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
 		c.Host, c.User, c.Password, c.Name, c.Port, c.SSLMode,
 	)
+	fmt.Printf("DSN %s", dns)
+	return dns
 }
 
 // GetLogLevel converts the string log level to gorm logger.LogLevel

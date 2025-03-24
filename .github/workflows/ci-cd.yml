@@ -43,7 +43,7 @@ jobs:
           FULCRUM_DB_NAME: fulcrum_test
           FULCRUM_DB_SSL_MODE: disable
         run: |
-          go test -race -coverprofile=coverage.out -covermode=atomic ./...
+          go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
           go tool cover -func=coverage.out
 
       - name: Upload coverage report to Codecov
