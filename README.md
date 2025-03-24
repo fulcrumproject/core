@@ -144,7 +144,6 @@ fulcrum-core/
 │   ├── database/    # Database implementations of repositories
 │   ├── domain/      # Domain models and repository interfaces
 │   └── logging/     # Logging utilities
-├── scripts/         # Utility scripts
 └── test/            # Test files
     └── rest/        # HTTP test files for API testing
 
