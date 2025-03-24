@@ -41,7 +41,7 @@ jobs:
           FULCRUM_DB_USER: fulcrum
           FULCRUM_DB_PASSWORD: fulcrum
           FULCRUM_DB_NAME: fulcrum_test
-          FULCRUM_DB_SSL_MODE: enable
+          FULCRUM_DB_SSL_MODE: require
         run: |
           go test -race -coverprofile=coverage.out -covermode=atomic ./...
           go tool cover -func=coverage.out
