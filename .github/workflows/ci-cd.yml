@@ -21,9 +21,9 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: ${{TEST_DB_PASSWORD}}
-          POSTGRES_USER: ${{TEST_DB_USER}}
-          POSTGRES_DB: ${{TEST_DB_NAME}}
+          POSTGRES_PASSWORD: ${{ env.TEST_DB_PASSWORD }}
+          POSTGRES_USER: ${{ env.TEST_DB_USER }}
+          POSTGRES_DB: ${{ env.TEST_DB_NAME }}
         ports:
           - 5432:5432
         options: >-
@@ -44,11 +44,11 @@ jobs:
       - name: Unit Tests with Coverage
         env:
           FULCRUM_DB_HOST: localhost
-          FULCRUM_DB_PORT: ${{TEST_DB_PORT}}
+          FULCRUM_DB_PORT: ${{ env.TEST_DB_PORT }}
           FULCRUM_DB_SSL_MODE: disable
-          FULCRUM_DB_NAME: ${{TEST_DB_NAME}}
-          FULCRUM_DB_USER: ${{TEST_DB_USER}}
-          FULCRUM_DB_PASSWORD: ${{TEST_DB_PASSWORD}}
+          FULCRUM_DB_NAME: ${{ env.TEST_DB_NAME }}
+          FULCRUM_DB_USER: ${{ env.TEST_DB_USER }}
+          FULCRUM_DB_PASSWORD: ${{ env.TEST_DB_PASSWORD }}
         run: |
           go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
           go tool cover -func=coverage.out
