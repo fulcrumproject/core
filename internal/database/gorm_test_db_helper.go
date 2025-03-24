@@ -109,7 +109,7 @@ func getAdminDBConfig(baseConfig *config.DBConfig) config.DBConfig {
 	}
 
 	// Override the database name to connect to postgres admin database
-	adminConfig.Name = "postgres"
+	// adminConfig.Name = "postgres"
 
 	return adminConfig
 }
