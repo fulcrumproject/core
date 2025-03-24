@@ -36,7 +36,7 @@ jobs:
 
       - name: Unit Tests with Coverage
         env:
-          FULCRUM_DB_HOST: localhost
+          FULCRUM_DB_HOST: postgres
           FULCRUM_DB_PORT: 5432
           FULCRUM_DB_USER: fulcrum
           FULCRUM_DB_PASSWORD: fulcrum

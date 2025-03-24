@@ -89,7 +89,7 @@ func (c *DBConfig) DSN() string {
 		"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
 		c.Host, c.User, c.Password, c.Name, c.Port, c.SSLMode,
 	)
-	fmt.Printf("DSN %s", dns)
+	fmt.Printf("DSN %s\n", dns)
 	return dns
 }
 
