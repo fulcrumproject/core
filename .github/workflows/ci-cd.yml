@@ -1,5 +1,12 @@
 name: CI/CD Pipeline
 
+env:
+  TEST_DB_HOST: localhost
+  TEST_DB_PORT: 5432
+  TEST_DB_USER: fulcrum
+  TEST_DB_PASSWORD: fulcrum_password
+  TEST_DB_NAME: fulcrum_test
+
 on:
   push:
     branches: [dev, main, "release/*"]
@@ -14,9 +21,9 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: fulcrum_password
-          POSTGRES_USER: fulcrum
-          POSTGRES_DB: fulcrum_test
+          POSTGRES_PASSWORD: ${{TEST_DB_PASSWORD}}
+          POSTGRES_USER: ${{TEST_DB_USER}}
+          POSTGRES_DB: ${{TEST_DB_NAME}}
         ports:
           - 5432:5432
         options: >-
@@ -37,11 +44,11 @@ jobs:
       - name: Unit Tests with Coverage
         env:
           FULCRUM_DB_HOST: localhost
-          FULCRUM_DB_PORT: 5432
-          FULCRUM_DB_USER: fulcrum
-          FULCRUM_DB_PASSWORD: fulcrum_password
-          FULCRUM_DB_NAME: fulcrum_test
+          FULCRUM_DB_PORT: ${{TEST_DB_PORT}}
           FULCRUM_DB_SSL_MODE: disable
+          FULCRUM_DB_NAME: ${{TEST_DB_NAME}}
+          FULCRUM_DB_USER: ${{TEST_DB_USER}}
+          FULCRUM_DB_PASSWORD: ${{TEST_DB_PASSWORD}}
         run: |
           go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
           go tool cover -func=coverage.out
