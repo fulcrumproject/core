@@ -24,6 +24,7 @@ Fulcrum is currently under active development. New agents and features are being
   - [Troubleshooting](#troubleshooting)
     - [Common Issues](#common-issues)
   - [License](LICENSE.md)
+  - [Vision and support](VISIONANDSUPPORT.md)
 
 ## Features
 
