@@ -2,7 +2,7 @@
 
 Fulcrum Core is a comprehensive cloud infrastructure management system designed to orchestrate and monitor distributed cloud resources across multiple providers. It serves as a centralized control plane for managing cloud service providers, their deployed agents, and the various services these agents provision and maintain.
 
-**Fulcrum is proudly supported by [CISPE.cloud](https://www.cispe.cloud), which has contributed financial resources, expertise, and strategic guidance to the project.**  
+**Fulcrum project is proudly supported by [CISPE.cloud](https://www.cispe.cloud), which has contributed financial resources, expertise, and strategic guidance to the project.**  
 This support reflects CISPE's commitment to enabling open, sovereign, and interoperable cloud solutions across Europe.
 
 Fulcrum is currently under active development. New agents and features are being actively developed and will soon be available under this organization's repositories. We welcome contributions from the community – please see our [CONTRIBUTING.md](CONTRIBUTING.md) guide for more details on how to get involved.
