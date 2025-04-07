@@ -5,4 +5,4 @@ __debug**
 .env.local
 .DS_Store
 coverage.*
-.clinerules
+.roorules

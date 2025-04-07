@@ -878,6 +878,7 @@ func (m *MockServiceRepository) Create(ctx context.Context, service *Service) er
 	if m.createFunc != nil {
 		return m.createFunc(ctx, service)
 	}
+	service.ID = NewUUID()
 	return nil
 }
 

@@ -22,6 +22,111 @@ func TestAuditEntry_Validate(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestNewEventAudit(t *testing.T) {
+	entityID := uuid.New()
+	providerID := uuid.New()
+	agentID := uuid.New()
+	brokerID := uuid.New()
+	properties := JSON{"key": "value"}
+
+	entry := NewEventAudit(
+		AuthorityTypeAdmin,
+		"admin-1",
+		EventTypeAgentCreated,
+		properties,
+		&entityID,
+		&providerID,
+		&agentID,
+		&brokerID,
+	)
+
+	assert.Equal(t, AuthorityTypeAdmin, entry.AuthorityType)
+	assert.Equal(t, "admin-1", entry.AuthorityID)
+	assert.Equal(t, EventTypeAgentCreated, entry.EventType)
+	assert.Equal(t, properties, entry.Properties)
+	assert.Equal(t, entityID, *entry.EntityID)
+	assert.Equal(t, providerID, *entry.ProviderID)
+	assert.Equal(t, agentID, *entry.AgentID)
+	assert.Equal(t, brokerID, *entry.BrokerID)
+}
+
+func TestAuditEntry_GenerateDiff(t *testing.T) {
+	type testEntity struct {
+		Name  string `json:"name"`
+		Value int    `json:"value"`
+	}
+
+	beforeEntity := testEntity{
+		Name:  "before",
+		Value: 10,
+	}
+
+	afterEntity := testEntity{
+		Name:  "after",
+		Value: 20,
+	}
+
+	// Unmarshalable entity that will cause json.Marshal to fail
+	type badEntity struct {
+		BadField func() `json:"bad_field"`
+	}
+
+	badEntityInstance := badEntity{
+		BadField: func() {},
+	}
+
+	tests := []struct {
+		name       string
+		before     interface{}
+		after      interface{}
+		wantErr    bool
+		errorCheck func(t *testing.T, err error)
+	}{
+		{
+			name:    "Success",
+			before:  beforeEntity,
+			after:   afterEntity,
+			wantErr: false,
+		},
+		{
+			name:    "Marshal before entity error",
+			before:  badEntityInstance,
+			after:   afterEntity,
+			wantErr: true,
+			errorCheck: func(t *testing.T, err error) {
+				assert.Contains(t, err.Error(), "failed to marshal 'before' entity")
+			},
+		},
+		{
+			name:    "Marshal after entity error",
+			before:  beforeEntity,
+			after:   badEntityInstance,
+			wantErr: true,
+			errorCheck: func(t *testing.T, err error) {
+				assert.Contains(t, err.Error(), "failed to marshal 'after' entity")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			audit := &AuditEntry{}
+			err := audit.GenerateDiff(tt.before, tt.after)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errorCheck != nil {
+					tt.errorCheck(t, err)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, audit.Properties)
+				assert.Contains(t, audit.Properties, "diff")
+			}
+		})
+	}
+}
+
 func TestAuditEntry_TableName(t *testing.T) {
 	auditEntry := AuditEntry{}
 	assert.Equal(t, "audit_entries", auditEntry.TableName())

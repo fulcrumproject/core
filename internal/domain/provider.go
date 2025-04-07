@@ -47,9 +47,35 @@ type Provider struct {
 	Agents []Agent `json:"agents,omitempty" gorm:"foreignKey:ProviderID"`
 }
 
+// NewProvider creates a new Provider without validation
+func NewProvider(name string, state ProviderState, countryCode CountryCode, attributes Attributes) *Provider {
+	return &Provider{
+		Name:        name,
+		State:       state,
+		CountryCode: countryCode,
+		Attributes:  attributes,
+	}
+}
+
 // TableName returns the table name for the provider
 func (Provider) TableName() string {
 	return "providers"
+}
+
+// Update updates the provider fields if the pointers are non-nil
+func (p *Provider) Update(name *string, state *ProviderState, countryCode *CountryCode, attributes *Attributes) {
+	if name != nil {
+		p.Name = *name
+	}
+	if state != nil {
+		p.State = *state
+	}
+	if countryCode != nil {
+		p.CountryCode = *countryCode
+	}
+	if attributes != nil {
+		p.Attributes = *attributes
+	}
 }
 
 // Validate ensures all Provider fields are valid
@@ -107,20 +133,18 @@ func (s *providerCommander) Create(
 ) (*Provider, error) {
 	var provider *Provider
 	err := s.store.Atomic(ctx, func(store Store) error {
-		provider = &Provider{
-			Name:        name,
-			State:       state,
-			CountryCode: countryCode,
-			Attributes:  attributes,
-		}
+		// Create and validate
+		provider = NewProvider(name, state, countryCode, attributes)
 		if err := provider.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
 
+		// Save
 		if err := store.ProviderRepo().Create(ctx, provider); err != nil {
 			return err
 		}
 
+		// Create audit trail
 		_, err := s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeProviderCreated,
@@ -141,47 +165,42 @@ func (s *providerCommander) Update(ctx context.Context,
 	countryCode *CountryCode,
 	attributes *Attributes,
 ) (*Provider, error) {
-	beforeProvider, err := s.store.ProviderRepo().FindByID(ctx, id)
+	// Find the provider
+	provider, err := s.store.ProviderRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	// Store a copy of the provider before modifications for audit diff
-	beforeProviderCopy := *beforeProvider
+	beforeProviderCopy := *provider
 
-	if name != nil {
-		beforeProvider.Name = *name
-	}
-	if state != nil {
-		beforeProvider.State = *state
-	}
-	if countryCode != nil {
-		beforeProvider.CountryCode = *countryCode
-	}
-	if attributes != nil {
-		beforeProvider.Attributes = *attributes
-	}
-	if err := beforeProvider.Validate(); err != nil {
+	// Update the provider using entity method
+	provider.Update(name, state, countryCode, attributes)
+
+	// Validate the updated provider
+	if err := provider.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
+	// Save and create audit entry
 	err = s.store.Atomic(ctx, func(store Store) error {
-		err := store.ProviderRepo().Save(ctx, beforeProvider)
-		if err != nil {
+		// Save
+		if err := store.ProviderRepo().Save(ctx, provider); err != nil {
 			return err
 		}
 
+		// Create audit trail
 		_, err = s.auditCommander.CreateCtxWithDiff(
 			ctx,
 			EventTypeProviderUpdated,
 			&id, &id, nil, nil,
-			&beforeProviderCopy, beforeProvider)
+			&beforeProviderCopy, provider)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-	return beforeProvider, nil
+	return provider, nil
 }
 
 func (s *providerCommander) Delete(ctx context.Context, id UUID) error {
@@ -192,6 +211,7 @@ func (s *providerCommander) Delete(ctx context.Context, id UUID) error {
 	}
 
 	return s.store.Atomic(ctx, func(store Store) error {
+		// Validate type - check for dependencies
 		numOfAgents, err := s.store.AgentRepo().CountByProvider(ctx, id)
 		if err != nil {
 			return err
@@ -205,10 +225,12 @@ func (s *providerCommander) Delete(ctx context.Context, id UUID) error {
 			return err
 		}
 
+		// Save (delete) the provider
 		if err := store.ProviderRepo().Delete(ctx, id); err != nil {
 			return err
 		}
 
+		// Create audit trail
 		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeProviderDeleted,

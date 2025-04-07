@@ -57,6 +57,19 @@ type Agent struct {
 	Provider    *Provider  `json:"-" gorm:"foreignKey:ProviderID"`
 }
 
+// NewAgent creates a new agent with proper validation
+func NewAgent(name string, countryCode CountryCode, attributes Attributes, providerID UUID, agentTypeID UUID) *Agent {
+	return &Agent{
+		Name:            name,
+		State:           AgentDisconnected,
+		LastStateUpdate: time.Now(),
+		CountryCode:     countryCode,
+		Attributes:      attributes,
+		ProviderID:      providerID,
+		AgentTypeID:     agentTypeID,
+	}
+}
+
 // TableName returns the table name for the agent
 func (Agent) TableName() string {
 	return "agents"
@@ -88,6 +101,32 @@ func (a *Agent) Validate() error {
 		}
 	}
 	return nil
+}
+
+// UpdateStatus updates the agent's state and last update timestamp
+func (a *Agent) UpdateStatus(newState AgentState) {
+	a.State = newState
+	a.LastStateUpdate = time.Now()
+}
+
+// UpdateHeartbeat updates the last state update timestamp without changing the state
+func (a *Agent) UpdateHeartbeat() {
+	a.LastStateUpdate = time.Now()
+}
+
+// RegisterMetadata updates the agent's metadata properties (name, country code, attributes)
+func (a *Agent) RegisterMetadata(name *string, countryCode *CountryCode, attributes *Attributes) {
+	if name != nil {
+		a.Name = *name
+	}
+
+	if countryCode != nil {
+		a.CountryCode = *countryCode
+	}
+
+	if attributes != nil {
+		a.Attributes = *attributes
+	}
 }
 
 // AgentCommander defines the interface for agent command operations
@@ -130,6 +169,7 @@ func (s *agentCommander) Create(
 	providerID UUID,
 	agentTypeID UUID,
 ) (*Agent, error) {
+	// Validate references
 	providerExists, err := s.store.ProviderRepo().Exists(ctx, providerID)
 	if err != nil {
 		return nil, err
@@ -145,26 +185,17 @@ func (s *agentCommander) Create(
 		return nil, NewInvalidInputErrorf("agent type with ID %s does not exist", agentTypeID)
 	}
 
+	// Create and save
 	var agent *Agent
 	err = s.store.Atomic(ctx, func(store Store) error {
-		agent = &Agent{
-			Name:            name,
-			State:           AgentDisconnected,
-			LastStateUpdate: time.Now(),
-			CountryCode:     countryCode,
-			Attributes:      attributes,
-			ProviderID:      providerID,
-			AgentTypeID:     agentTypeID,
-		}
+		agent = NewAgent(name, countryCode, attributes, providerID, agentTypeID)
 		if err := agent.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
-
 		if err := store.AgentRepo().Create(ctx, agent); err != nil {
 			return err
 		}
-
-		_, err := s.auditCommander.CreateCtx(
+		_, err = s.auditCommander.CreateCtx(
 			ctx, EventTypeAgentCreated, JSON{"state": agent},
 			&agent.ID, &providerID, nil, nil)
 		return err
@@ -182,57 +213,51 @@ func (s *agentCommander) Update(ctx context.Context,
 	attributes *Attributes,
 	state *AgentState,
 ) (*Agent, error) {
-	beforeAgent, err := s.store.AgentRepo().FindByID(ctx, id)
+	// Find it
+	agent, err := s.store.AgentRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+	beforeAgent := *agent
 
-	// Store a copy of the agent before modifications for audit diff
-	beforeAgentCopy := *beforeAgent
-
-	if name != nil {
-		beforeAgent.Name = *name
-	}
-	if countryCode != nil {
-		beforeAgent.CountryCode = *countryCode
-	}
-	if attributes != nil {
-		beforeAgent.Attributes = *attributes
-	}
+	// Update and validate
 	if state != nil {
-		beforeAgent.State = *state
+		agent.UpdateStatus(*state)
 	}
-	if err := beforeAgent.Validate(); err != nil {
+	if name != nil || countryCode != nil || attributes != nil {
+		agent.RegisterMetadata(name, countryCode, attributes)
+	}
+	if err := agent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
+	// Save and audit
 	err = s.store.Atomic(ctx, func(store Store) error {
-		err := store.AgentRepo().Save(ctx, beforeAgent)
+		err := store.AgentRepo().Save(ctx, agent)
 		if err != nil {
 			return err
 		}
 		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
-			&id, &beforeAgent.ProviderID, nil, nil, &beforeAgentCopy, beforeAgent)
+			&id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-	return beforeAgent, nil
+	return agent, nil
 }
 
 func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
-	// Get agent before deletion for audit purposes
+	// Find it
 	agent, err := s.store.AgentRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
-
-	// Store provider ID for audit entry
 	providerID := agent.ProviderID
 
+	// Delete and audit
 	return s.store.Atomic(ctx, func(store Store) error {
-		// Prevent deletion if it has services present
+		// Check dependencies
 		numOfServices, err := store.ServiceRepo().CountByAgent(ctx, id)
 		if err != nil {
 			return err
@@ -240,16 +265,13 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 		if numOfServices > 0 {
 			return errors.New("cannot delete agent with associated services")
 		}
-		// Delete all tokens associated with this agent before deleting the agent
 
 		if err := store.TokenRepo().DeleteByAgentID(ctx, id); err != nil {
 			return err
 		}
-
 		if err := store.AgentRepo().Delete(ctx, id); err != nil {
 			return err
 		}
-
 		_, err = s.auditCommander.CreateCtx(ctx, EventTypeAgentDeleted,
 			JSON{"state": agent}, &id, &providerID, nil, nil)
 		return err
@@ -257,34 +279,33 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 }
 
 func (s *agentCommander) UpdateState(ctx context.Context, id UUID, state AgentState) (*Agent, error) {
-	beforeAgent, err := s.store.AgentRepo().FindByID(ctx, id)
+	// Find it
+	agent, err := s.store.AgentRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+	beforeAgent := *agent
 
-	// Store a copy of the agent before modifications for audit diff
-	beforeAgentCopy := *beforeAgent
-
-	beforeAgent.State = state
-	beforeAgent.LastStateUpdate = time.Now()
-	if err := beforeAgent.Validate(); err != nil {
+	// Update and validate
+	agent.UpdateStatus(state)
+	if err := agent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
+	// Save and audit
 	err = s.store.Atomic(ctx, func(store Store) error {
-		err := store.AgentRepo().Save(ctx, beforeAgent)
+		err := store.AgentRepo().Save(ctx, agent)
 		if err != nil {
 			return err
 		}
-
 		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
-			&id, &beforeAgent.ProviderID, nil, nil, &beforeAgentCopy, beforeAgent)
+			&id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-	return beforeAgent, nil
+	return agent, nil
 }
 
 type AgentRepository interface {

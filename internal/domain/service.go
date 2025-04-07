@@ -89,6 +89,121 @@ type Service struct {
 	ServiceType   *ServiceType  `json:"-" gorm:"foreignKey:ServiceTypeID"`
 }
 
+// NewService creates a new Service without validation
+func NewService(
+	brokerID UUID,
+	groupID UUID,
+	providerID UUID,
+	agentID UUID,
+	serviceTypeID UUID,
+	name string,
+	attributes Attributes,
+	properties *JSON,
+) *Service {
+	target := ServiceCreated
+	return &Service{
+		BrokerID:         brokerID,
+		GroupID:          groupID,
+		ProviderID:       providerID,
+		AgentID:          agentID,
+		ServiceTypeID:    serviceTypeID,
+		Name:             name,
+		CurrentState:     ServiceCreating,
+		TargetState:      &target,
+		Attributes:       attributes,
+		TargetProperties: properties,
+	}
+}
+
+// Update updates the service
+func (s *Service) Update(name *string, props *JSON) (bool, *ServiceAction, error) {
+	var (
+		updated bool
+		action  *ServiceAction
+	)
+	if name != nil {
+		updated = true
+		s.Name = *name
+	}
+
+	if props != nil && !reflect.DeepEqual(&s.CurrentProperties, *props) {
+		updated = true
+
+		transState, targetAction, err := serviceUpdateNextStateAndAction(s.CurrentState)
+		if err != nil {
+			return false, nil, err
+		}
+
+		// Create and validate - use entity method
+		target := s.CurrentState
+		s.TargetProperties = props
+		s.CurrentState = transState
+		s.TargetState = &target
+
+		action = &targetAction
+	}
+
+	return updated, action, nil
+}
+
+// serviceUpdateNextStateAndAction determines the transition state and action when updating a service's properties based on its current state
+func serviceUpdateNextStateAndAction(state ServiceState) (ServiceState, ServiceAction, error) {
+	switch state {
+	case ServiceStopped:
+		return ServiceColdUpdating, ServiceActionColdUpdate, nil
+	case ServiceStarted:
+		return ServiceHotUpdating, ServiceActionHotUpdate, nil
+	default:
+		return "", "", NewInvalidInputErrorf("cannot update attributes on a service with state %v", state)
+	}
+}
+
+// Transition sets the service states for a transition
+func (s *Service) Transition(targetState ServiceState) (*ServiceAction, error) {
+	transState, action, err := serviceNextStateAndAction(s.CurrentState, targetState)
+	if err != nil {
+		return nil, InvalidInputError{Err: err}
+	}
+
+	s.CurrentState = transState
+	s.TargetState = &targetState
+
+	return &action, nil
+}
+
+// serviceNextStateAndAction determines the intermediate state and action for a service transition
+func serviceNextStateAndAction(curr, target ServiceState) (ServiceState, ServiceAction, error) {
+	switch curr {
+	case ServiceCreated:
+		if target == ServiceStarted {
+			return ServiceStarting, ServiceActionStart, nil
+		}
+	case ServiceStarted:
+		if target == ServiceStopped {
+			return ServiceStopping, ServiceActionStop, nil
+		}
+	case ServiceStopped:
+		if target == ServiceStarted {
+			return ServiceStarting, ServiceActionStart, nil
+		}
+		if target == ServiceDeleted {
+			return ServiceDeleting, ServiceActionDelete, nil
+		}
+	}
+	return "", "", fmt.Errorf("invalid transition from %s to %s", curr, target)
+}
+
+// RetryFailedAction prepares a service for retry and returns a job for the failed action
+func (s *Service) RetryFailedAction() *ServiceAction {
+	if s.FailedAction == nil {
+		return nil
+	}
+
+	s.RetryCount += 1
+
+	return s.FailedAction
+}
+
 // Validate a service
 func (s Service) Validate() error {
 	if s.Name == "" {
@@ -168,6 +283,7 @@ func (s *serviceCommander) Create(
 	attributes Attributes,
 	properties JSON,
 ) (*Service, error) {
+	// Find and check dependencies
 	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
 	if err != nil {
 		return nil, err
@@ -177,39 +293,34 @@ func (s *serviceCommander) Create(
 		return nil, err
 	}
 
-	target := ServiceCreated
-	svc := &Service{
-		BrokerID:          group.BrokerID,
-		GroupID:           groupID,
-		ProviderID:        agent.ProviderID,
-		AgentID:           agentID,
-		ServiceTypeID:     serviceTypeID,
-		Name:              name,
-		CurrentState:      ServiceCreating,
-		TargetState:       &target,
-		Attributes:        attributes,
-		CurrentProperties: nil,
-		TargetProperties:  &properties,
-	}
-
+	// Create and validate
+	svc := NewService(
+		group.BrokerID,
+		groupID,
+		agent.ProviderID,
+		agentID,
+		serviceTypeID,
+		name,
+		attributes,
+		&properties,
+	)
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
+	// Save, audit and create job
 	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
 			return err
 		}
 		job := NewJob(svc, ServiceActionCreate, 1)
 		if err := job.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return err
 		}
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-
-		// Create audit entry
-		_, err := s.auditCommander.CreateCtx(
+		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeServiceCreated,
 			JSON{"state": svc},
@@ -222,142 +333,91 @@ func (s *serviceCommander) Create(
 	if err != nil {
 		return nil, err
 	}
+
 	return svc, nil
 }
 
 func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, props *JSON) (*Service, error) {
+	// Find it
 	svc, err := s.store.ServiceRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Store original service for audit diff
+	// Audit copy
 	originalSvc := *svc
 
-	updateSvc := false
-	var job *Job
-
-	// Name
-	if name != nil && svc.Name != *name {
-		updateSvc = true
-		svc.Name = *name
+	// Update
+	updateSvc, action, err := svc.Update(name, props)
+	if err != nil {
+		return nil, err
 	}
-
-	// Properties
-	if props != nil && !reflect.DeepEqual(&svc.CurrentProperties, *props) {
-		updateSvc = true
-		trans, action, err := serviceUpdateNextStateAndAction(svc.CurrentState)
-		if err != nil {
-			return nil, InvalidInputError{Err: err}
-		}
-		svc.TargetProperties = props
-		target := svc.CurrentState
-		svc.TargetState = &target
-		svc.CurrentState = trans
-		job = NewJob(svc, action, 1)
-		if err := job.Validate(); err != nil {
-			return nil, InvalidInputError{Err: err}
-		}
-	}
-
-	// Update Service
-	if !updateSvc {
-		return svc, nil
-	}
-
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
-	if job == nil {
-		// No job needed, just save the service
-		err = s.store.Atomic(ctx, func(store Store) error {
+	// Save, audit and create job
+	err = s.store.Atomic(ctx, func(store Store) error {
+		if updateSvc {
 			if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 				return err
 			}
-
-			// Create audit entry with diff when no job is needed
-			_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceUpdated,
-				&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID, &originalSvc, svc)
-			return err
-		})
-		if err != nil {
-			return nil, err
+			if _, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceUpdated,
+				&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID,
+				&originalSvc, svc); err != nil {
+				return err
+			}
 		}
-		return svc, nil
-	}
-
-	// Execute within a transaction when job is created
-	var updatedService *Service = svc
-	err = s.store.Atomic(ctx, func(store Store) error {
-		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
-			return err
+		if action != nil {
+			job := NewJob(svc, *action, 1)
+			if err := job.Validate(); err != nil {
+				return err
+			}
+			if err := store.JobRepo().Create(ctx, job); err != nil {
+				return err
+			}
 		}
-		if err := store.JobRepo().Create(ctx, job); err != nil {
-			return err
-		}
-
-		// Create audit entry with diff when job is created
-		_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceUpdated,
-			&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID,
-			&originalSvc, svc)
-		return err
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return updatedService, nil
-}
 
-// serviceUpdateNextStateAndAction determines the transition state and action when updating a service's properties based on its current state
-func serviceUpdateNextStateAndAction(state ServiceState) (ServiceState, ServiceAction, error) {
-	switch state {
-	case ServiceStopped:
-		return ServiceColdUpdating, ServiceActionColdUpdate, nil
-	case ServiceStarted:
-		return ServiceHotUpdating, ServiceActionHotUpdate, nil
-	default:
-		return "", "", NewInvalidInputErrorf("cannot update attributes on a service with state %v", state)
-	}
+	return svc, nil
 }
 
 func (s *serviceCommander) Transition(ctx context.Context, id UUID, target ServiceState) (*Service, error) {
+	// Find it
 	svc, err := s.store.ServiceRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Store original service for audit diff
+	// Audit copy
 	originalSvc := *svc
 
-	trans, action, err := serviceNextStateAndAction(svc.CurrentState, target)
+	// Transition
+	action, err := svc.Transition(target)
 	if err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, err
 	}
-	svc.CurrentState = trans
-	svc.TargetState = &target
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
-	// Create job for transition
-	job := NewJob(svc, action, 1)
-	if err := job.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
-	}
-
-	// Execute within a transaction
-	var transitionedService *Service = svc
+	// Save, audit and create job if needed
 	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+			return err
+		}
+		job := NewJob(svc, *action, 1)
+		if err := job.Validate(); err != nil {
 			return err
 		}
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-
-		// Create audit entry with diff for service transition
-		_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceTransitioned,
+		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceTransitioned,
 			&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID,
 			&originalSvc, svc)
 		return err
@@ -366,45 +426,41 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 		return nil, err
 	}
 
-	return transitionedService, nil
+	return svc, nil
 }
 
 func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error) {
+	// Find it
 	svc, err := s.store.ServiceRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Store original service for audit diff
+	// Audit copy
 	originalSvc := *svc
 
-	if svc.FailedAction == nil {
-		// Nothing to retry
-		return svc, nil
-	}
-	svc.RetryCount += 1
+	// Retry
+	action := svc.RetryFailedAction()
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
-
-	// Create job for retry
-	job := NewJob(svc, *svc.FailedAction, 1)
-	if err := job.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+	if action == nil {
+		return svc, nil // Nothing to retry
 	}
 
-	// Execute within a transaction
-	var retryService *Service = svc
+	// Save, audit and create job if needed
 	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+			return err
+		}
+		job := NewJob(svc, *action, 1)
+		if err := job.Validate(); err != nil {
 			return err
 		}
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-
-		// Create audit entry with diff for service retry
-		_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceRetried,
+		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceRetried,
 			&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID, &originalSvc, svc)
 		return err
 	})
@@ -412,29 +468,7 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 		return nil, err
 	}
 
-	return retryService, nil
-}
-
-// serviceNextStateAndAction determines the intermediate state and action for a service transition
-func serviceNextStateAndAction(curr, target ServiceState) (ServiceState, ServiceAction, error) {
-	switch curr {
-	case ServiceCreated:
-		if target == ServiceStarted {
-			return ServiceStarting, ServiceActionStart, nil
-		}
-	case ServiceStarted:
-		if target == ServiceStopped {
-			return ServiceStopping, ServiceActionStop, nil
-		}
-	case ServiceStopped:
-		if target == ServiceStarted {
-			return ServiceStarting, ServiceActionStart, nil
-		}
-		if target == ServiceDeleted {
-			return ServiceDeleting, ServiceActionDelete, nil
-		}
-	}
-	return "", "", fmt.Errorf("invalid transition from %s to %s", curr, target)
+	return svc, nil
 }
 
 func (s *serviceCommander) FailTimeoutServicesAndJobs(ctx context.Context, timeout time.Duration) (int, error) {
@@ -474,6 +508,38 @@ func (s *serviceCommander) FailTimeoutServicesAndJobs(ctx context.Context, timeo
 	}
 
 	return counter, nil
+}
+
+// HandleJobComplete updates the service state when a job completes successfully
+func (s *Service) HandleJobComplete(resources *JSON, externalID *string) error {
+	if s.TargetState == nil {
+		return InvalidInputError{Err: errors.New("cannot complete a job on service that is not in transition")}
+	}
+
+	s.CurrentState = *s.TargetState
+	s.TargetState = nil
+	s.FailedAction = nil
+	s.ErrorMessage = nil
+	s.RetryCount = 0
+
+	if resources != nil {
+		s.Resources = resources
+	}
+	if externalID != nil {
+		s.ExternalID = externalID
+	}
+	if s.TargetProperties != nil {
+		s.CurrentProperties = s.TargetProperties
+		s.TargetProperties = nil
+	}
+
+	return nil
+}
+
+// HandleJobFailure updates the service state when a job fails
+func (s *Service) HandleJobFailure(errorMessage string, action ServiceAction) {
+	s.ErrorMessage = &errorMessage
+	s.FailedAction = &action
 }
 
 // ServiceRepository defines the interface for the Service repository

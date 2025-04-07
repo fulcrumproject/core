@@ -75,6 +75,7 @@ func TestJobRepository(t *testing.T) {
 	t.Run("Create", func(t *testing.T) {
 		job := domain.NewJob(service, domain.ServiceActionCreate, 1)
 
+		// Use the existing err variable
 		err := repo.Create(context.Background(), job)
 		require.NoError(t, err)
 		assert.NotEmpty(t, job.ID)
@@ -150,11 +151,11 @@ func TestJobRepository(t *testing.T) {
 	t.Run("List", func(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
 			// Create multiple jobs
-			jobs := []*domain.Job{
-				domain.NewJob(service, domain.ServiceActionCreate, 1),
-				domain.NewJob(service, domain.ServiceActionColdUpdate, 2),
-				domain.NewJob(service, domain.ServiceActionDelete, 3),
-			}
+			job1 := domain.NewJob(service, domain.ServiceActionCreate, 1)
+			job2 := domain.NewJob(service, domain.ServiceActionColdUpdate, 2)
+			job3 := domain.NewJob(service, domain.ServiceActionDelete, 3)
+
+			jobs := []*domain.Job{job1, job2, job3}
 			for _, job := range jobs {
 				err := repo.Create(context.Background(), job)
 				require.NoError(t, err)
@@ -224,11 +225,11 @@ func TestJobRepository(t *testing.T) {
 
 	t.Run("GetPendingJobsForAgent", func(t *testing.T) {
 		// Create multiple pending jobs for the agent
-		pendingJobs := []*domain.Job{
-			domain.NewJob(service, domain.ServiceActionCreate, 1),
-			domain.NewJob(service, domain.ServiceActionHotUpdate, 2),
-			domain.NewJob(service, domain.ServiceActionDelete, 3),
-		}
+		job1 := domain.NewJob(service, domain.ServiceActionCreate, 1)
+		job2 := domain.NewJob(service, domain.ServiceActionHotUpdate, 2)
+		job3 := domain.NewJob(service, domain.ServiceActionDelete, 3)
+
+		pendingJobs := []*domain.Job{job1, job2, job3}
 		for _, job := range pendingJobs {
 			err := repo.Create(context.Background(), job)
 			require.NoError(t, err)
@@ -275,6 +276,7 @@ func TestJobRepository(t *testing.T) {
 
 		// Create a job in processing state with a recent created_at time (will use current time)
 		newJob := domain.NewJob(service, domain.ServiceActionStart, 2)
+		require.NoError(t, err)
 		newJob.State = domain.JobProcessing
 		newJob.ClaimedAt = &now // use current time for claimed time
 		err = repo.Create(context.Background(), newJob)
