@@ -130,9 +130,9 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 				brokerRepo := &MockBrokerRepository{}
 				store.WithBrokerRepo(brokerRepo)
 
-				// Mock broker FindByID with error
-				brokerRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Broker, error) {
-					return nil, NewNotFoundErrorf("broker not found")
+				// Mock broker Exists with error
+				brokerRepo.existsFunc = func(ctx context.Context, id UUID) (bool, error) {
+					return false, nil
 				}
 
 				// Make atomic work correctly
@@ -141,7 +141,7 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 				}
 			},
 			wantErr:    true,
-			errMessage: "invalid broker",
+			errMessage: "broker with ID",
 		},
 		{
 			name: "Validation error",

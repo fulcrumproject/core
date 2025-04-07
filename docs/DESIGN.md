@@ -1,4 +1,4 @@
-# Fulcrum Core
+# Fulcrum Core Design
 
 ## Introduction
 
@@ -13,6 +13,14 @@ The system is built as a RESTful API and enables organizations to:
 - Collect and analyze metrics from agents and services
 - Maintain a comprehensive audit trail of all system operations
 - Coordinate service operations with agents through a robust job queue system
+
+## Documentation Structure
+
+This document provides a high-level overview of the Fulcrum Core system design. For more detailed information, please refer to:
+
+- [ARCHITECTURE.md](ARCHITECTURE.md): Detailed description of the system's layered architecture, package structure, and implementation patterns
+- [AUTH.md](AUTH.md): Comprehensive authorization rules and role-based permissions
+- [openapi.yaml](openapi.yaml): Complete API specification in OpenAPI format
 
 ## Context
 
@@ -117,6 +125,18 @@ classDiagram
     Service "1" --> "0..N" Job : related to
     ServiceGroup "1" --> "0..N" Service : groups
     MetricType "1" --> "0..N" MetricEntry : categorizes
+    Broker "1" --> "0..N" Token : has many
+    Provider "1" --> "0..N" Token : has many
+    Agent "1" --> "0..N" Token : has many
+    Agent "1" --> "0..N" MetricEntry : generates
+    Service "1" --> "0..N" MetricEntry : monitored via
+    Broker "1" --> "0..N" Service : provisions
+    Broker "1" --> "0..N" ServiceGroup : owns
+    Provider "1" --> "0..N" Service : hosts
+    AuditEntry "0..N" <-- "1" Agent : audited via
+    AuditEntry "0..N" <-- "1" Service : audited via
+    AuditEntry "0..N" <-- "1" Broker : audited via
+    AuditEntry "0..N" <-- "1" Provider : audited via
 
     namespace Providers {
         class Provider {
@@ -181,6 +201,13 @@ classDiagram
             updatedAt : datetime
         }
         
+        class Broker {
+            id : UUID
+            name : string
+            createdAt : datetime
+            updatedAt : datetime
+        }
+        
         class Job {
             id : UUID
             action : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
@@ -191,6 +218,21 @@ classDiagram
             errorMessage : string
             claimedAt : datetime
             completedAt : datetime
+            createdAt : datetime
+            updatedAt : datetime
+        }
+    }
+
+    namespace Security {
+        class Token {
+            id : UUID
+            name : string
+            role : enum[fulcrum_admin|provider_admin|broker|agent]
+            hashedValue : string
+            expireAt : datetime
+            providerID : UUID
+            brokerID : UUID
+            agentID : UUID
             createdAt : datetime
             updatedAt : datetime
         }
@@ -302,6 +344,19 @@ classDiagram
    - Tracks execution timing through claimedAt and completedAt
    - Records error details for failed operations
 
+8. **Broker (Service Broker)**
+  - Represents an external platform that integrates with Fulcrum to provision services
+  - Has a name and unique identifier for API integration
+  - May have multiple tokens with broker role for authentication
+
+9. **Token**
+  - Provides secure authentication mechanism for system access
+  - Supports different roles: FulcrumAdmin, ProviderAdmin, Broker, Agent
+  - Contains hashed value stored in database to verify authentication
+  - Has expiration date for enhanced security
+  - Scoped to specific Provider, Broker, or Agent based on role
+  - Note: The current token implementation is a facility to handle authentication locally and will be replaced with an external authentication standard mechanism in the future, such as OAuth 2.0, OpenID Connect, or SAML
+
 ##### Metrics
 
 1. **MetricEntry**
@@ -325,8 +380,20 @@ classDiagram
    - Stores detailed event information in properties
    - Provides audit trail for system operations and changes
 
+##### Security
 
-## Architecture
+Fulcrum Core implements a comprehensive authorization system with role-based access control (RBAC):
+
+- Four predefined roles: FulcrumAdmin, ProviderAdmin, Broker, and Agent
+- Fine-grained permission control for different resource types and actions
+- Context-aware permissions based on resource ownership and relationships
+
+The authentication system currently uses tokens, which will be replaced with an industry-standard external authentication mechanism in the future, such as OAuth 2.0, OpenID Connect, or SAML.
+
+For detailed information about roles, permissions, and authorization rules, refer to [AUTH.md](AUTH.md).
+
+
+## Technical Overview
 
 Fulcrum Core is built with Go, leveraging its concurrency model and performance characteristics to handle distributed infrastructure management efficiently. The system follows clean architecture principles, with clear separation of domain logic, data access, and API layers. The core technology stack includes:
 
@@ -334,53 +401,7 @@ Fulcrum Core is built with Go, leveraging its concurrency model and performance 
 - **Database**: PostgreSQL with GORM for object-relational mapping
 - **Containerization**: Docker and Docker Compose for deployment
 
-### Architectural Layers
-
-Fulcrum Core follows a clean, layered architecture to ensure separation of concerns, testability, and maintainability. The codebase is organized into the following layers:
-
-1. **API Layer** (`internal/api/`)
-   - Handles HTTP requests and responses using Chi router
-   - Implements RESTful endpoints for all system entities
-   - Manages request validation, error handling, and response formatting
-   - Translates between HTTP/JSON and domain entities
-   - Includes authentication middleware
-
-2. **Service Layer** (`internal/service/`)
-   - Contains business logic that spans multiple entities
-   - Implements transaction management for complex operations
-   - Coordinates between repositories for multi-entity operations
-
-3. **Domain Layer** (`internal/domain/`)
-   - Contains core business entities and logic
-   - Defines repository interfaces for data access abstraction
-   - Implements value objects and entity state definitions
-   - Remains technology-agnostic with no external dependencies
-
-4. **Database Layer** (`internal/database/`)
-   - Implements repository interfaces defined in the domain layer
-   - Uses GORM to translate between domain entities and database models
-   - Handles database-specific concerns like transactions and migrations
-   - Includes testing utilities for database-backed unit tests
-
-5. **Application Layer** (`cmd/fulcrum/`)
-   - Serves as the application entry point
-   - Configures dependencies and wires components together
-   - Manages application lifecycle and environment configuration
-   - Initializes and coordinates all system components
-   - Sets up background job maintenance workers
-
-This layered approach allows for clear separation between business logic and infrastructure concerns, enabling easier testing, maintenance, and future extensions. The system follows the Dependency Inversion Principle, with higher layers defining interfaces that lower layers implement, ensuring that dependencies point inward toward the domain core.
-
-### API Documentation
-
-The Fulcrum Core API is fully documented using the OpenAPI 3.0 specification. The [openapi.yaml](openapi.yaml) file in the project root provides a comprehensive description of all API endpoints, including:
-
-- Complete endpoint documentation for all resources
-- Request and response schemas
-- Security schemes for authentication
-- Parameter details and examples
-
-This specification can be used with tools like Swagger UI or Redoc to generate interactive API documentation, making it easier for developers to understand and integrate with the Fulcrum Core API.
+For detailed information about the system's architecture, layers, and implementation patterns, refer to [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ### Services, Agents, and Jobs
 

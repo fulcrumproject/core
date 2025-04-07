@@ -27,6 +27,27 @@ type MetricEntry struct {
 	Broker     *Broker     `gorm:"foreignKey:BrokerID"`
 }
 
+// NewMetricEntry creates a new metric entry
+func NewMetricEntry(
+	brokerID UUID,
+	providerID UUID,
+	agentID UUID,
+	serviceID UUID,
+	resourceID string,
+	typeID UUID,
+	value float64,
+) *MetricEntry {
+	return &MetricEntry{
+		BrokerID:   brokerID,
+		ProviderID: providerID,
+		AgentID:    agentID,
+		ServiceID:  serviceID,
+		ResourceID: resourceID,
+		TypeID:     typeID,
+		Value:      value,
+	}
+}
+
 // TableName returns the table name for the metric entry
 func (MetricEntry) TableName() string {
 	return "metric_entries"
@@ -63,7 +84,7 @@ type metricEntryCommander struct {
 	store Store
 }
 
-// NewMetricEntryCommander creates a new MetricEntryService
+// NewMetricEntryCommander creates a new MetricEntryCommander
 func NewMetricEntryCommander(
 	store Store,
 ) *metricEntryCommander {
@@ -80,11 +101,57 @@ func (s *metricEntryCommander) CreateWithExternalID(
 	resourceID string,
 	value float64,
 ) (*MetricEntry, error) {
+	// 1. Validate agent exists
+	ok, err := s.store.AgentRepo().Exists(ctx, agentID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, NewInvalidInputErrorf("invalid agent ID %s", agentID)
+	}
+
+	// 2. Find service by external ID
 	svc, err := s.store.ServiceRepo().FindByExternalID(ctx, agentID, externalID)
 	if err != nil {
 		return nil, err
 	}
-	return s.Create(ctx, typeName, agentID, svc.ID, resourceID, value)
+
+	// 3. Validate type compatibility
+	metricType, err := s.store.MetricTypeRepo().FindByName(ctx, typeName)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. Check metric type exists
+	metricTypeExists, err := s.store.MetricTypeRepo().Exists(ctx, metricType.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !metricTypeExists {
+		return nil, InvalidInputError{Err: fmt.Errorf("metric type with ID %s does not exist", metricType.ID)}
+	}
+
+	// 5. Create and validate
+	metricEntry := NewMetricEntry(
+		svc.BrokerID,
+		svc.ProviderID,
+		agentID,
+		svc.ID,
+		resourceID,
+		metricType.ID,
+		value,
+	)
+
+	if err := metricEntry.Validate(); err != nil {
+		return nil, InvalidInputError{Err: err}
+	}
+
+	// 6. Save
+	if err := s.store.MetricEntryRepo().Create(ctx, metricEntry); err != nil {
+		return nil, err
+	}
+
+	return metricEntry, nil
 }
 
 func (s *metricEntryCommander) Create(
@@ -95,6 +162,7 @@ func (s *metricEntryCommander) Create(
 	resourceID string,
 	value float64,
 ) (*MetricEntry, error) {
+	// 1. Validate agent exists
 	ok, err := s.store.AgentRepo().Exists(ctx, agentID)
 	if err != nil {
 		return nil, err
@@ -103,18 +171,19 @@ func (s *metricEntryCommander) Create(
 		return nil, NewInvalidInputErrorf("invalid agent ID %s", agentID)
 	}
 
+	// 2. Find service
 	svc, err := s.store.ServiceRepo().FindByID(ctx, serviceID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Look up the metric type by name
+	// 3. Validate type compatibility
 	metricType, err := s.store.MetricTypeRepo().FindByName(ctx, typeName)
 	if err != nil {
 		return nil, err
 	}
 
-	// Validate metric type exists
+	// 4. Check metric type exists
 	metricTypeExists, err := s.store.MetricTypeRepo().Exists(ctx, metricType.ID)
 	if err != nil {
 		return nil, err
@@ -123,22 +192,26 @@ func (s *metricEntryCommander) Create(
 		return nil, InvalidInputError{Err: fmt.Errorf("metric type with ID %s does not exist", metricType.ID)}
 	}
 
-	metricEntry := &MetricEntry{
-		BrokerID:   svc.BrokerID,
-		ProviderID: svc.ProviderID,
-		AgentID:    agentID,
-		ServiceID:  svc.ID,
-		ResourceID: resourceID,
-		Value:      value,
-		TypeID:     metricType.ID,
-	}
+	// 5. Create and validate
+	metricEntry := NewMetricEntry(
+		svc.BrokerID,
+		svc.ProviderID,
+		agentID,
+		svc.ID,
+		resourceID,
+		metricType.ID,
+		value,
+	)
+
 	if err := metricEntry.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
+	// 6. Save
 	if err := s.store.MetricEntryRepo().Create(ctx, metricEntry); err != nil {
 		return nil, err
 	}
+
 	return metricEntry, nil
 }
 

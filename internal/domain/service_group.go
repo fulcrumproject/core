@@ -30,6 +30,22 @@ func (sg *ServiceGroup) Validate() error {
 	return nil
 }
 
+// NewServiceGroup creates a new service group with validation
+func NewServiceGroup(name string, brokerID UUID) *ServiceGroup {
+	return &ServiceGroup{
+		Name:     name,
+		BrokerID: brokerID,
+	}
+}
+
+// Update updates the service group properties and performs validation
+func (sg *ServiceGroup) Update(name *string) error {
+	if name != nil {
+		sg.Name = *name
+	}
+	return sg.Validate()
+}
+
 // TableName returns the table name for the service
 func (ServiceGroup) TableName() string {
 	return "service_groups"
@@ -65,23 +81,24 @@ func NewServiceGroupCommander(
 }
 
 func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerID UUID) (*ServiceGroup, error) {
-	var sg *ServiceGroup
-	err := s.store.Atomic(ctx, func(store Store) error {
-		broker, err := store.BrokerRepo().FindByID(ctx, brokerID)
-		if err != nil {
-			return NewInvalidInputErrorf("invalid broker: %s", brokerID)
-		}
+	// Validate references
+	brokerExists, err := s.store.BrokerRepo().Exists(ctx, brokerID)
+	if err != nil {
+		return nil, err
+	}
+	if !brokerExists {
+		return nil, NewInvalidInputErrorf("broker with ID %s does not exist", brokerID)
+	}
 
-		sg = &ServiceGroup{
-			Name:     name,
-			BrokerID: brokerID,
-			Broker:   broker,
-		}
+	// Create and save
+	var sg *ServiceGroup
+	err = s.store.Atomic(ctx, func(store Store) error {
+		sg = NewServiceGroup(name, brokerID)
 		if err := sg.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
 
-		if err = store.ServiceGroupRepo().Create(ctx, sg); err != nil {
+		if err := store.ServiceGroupRepo().Create(ctx, sg); err != nil {
 			return err
 		}
 
@@ -90,70 +107,72 @@ func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerI
 			EventTypeServiceGroupCreated,
 			JSON{"state": sg},
 			&sg.ID, nil, nil, &brokerID)
+
 		return err
 	})
-
 	if err != nil {
 		return nil, err
 	}
+
 	return sg, nil
 }
 
 func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *string) (*ServiceGroup, error) {
-	beforeSg, err := s.store.ServiceGroupRepo().FindByID(ctx, id)
+	// Validate references
+	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Store a copy of the serviceGroup before modifications for audit diff
-	beforeSgCopy := *beforeSg
+	// Store a copy for audit diff
+	beforeSgCopy := *sg
 
-	// Apply updates
-	if name != nil {
-		beforeSg.Name = *name
+	// Update and validate
+	if err := sg.Update(name); err != nil {
+		return nil, InvalidInputError{Err: err}
 	}
-	if err := beforeSg.Validate(); err != nil {
+	if err := sg.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
+	// Save and audit
 	err = s.store.Atomic(ctx, func(store Store) error {
-		if err := store.ServiceGroupRepo().Save(ctx, beforeSg); err != nil {
+		if err := store.ServiceGroupRepo().Save(ctx, sg); err != nil {
 			return err
 		}
 
 		_, err := s.auditCommander.CreateCtxWithDiff(
 			ctx,
 			EventTypeServiceGroupUpdated,
-			&id, nil, nil, &beforeSg.BrokerID,
-			&beforeSgCopy, beforeSg)
+			&id, nil, nil, &sg.BrokerID,
+			&beforeSgCopy, sg)
 		return err
 	})
-
 	if err != nil {
 		return nil, err
 	}
-	return beforeSg, nil
+
+	return sg, nil
 }
 
 func (s *serviceGroupCommander) Delete(ctx context.Context, id UUID) error {
-	// Get service group before deletion for audit purposes
+	// Validate references
 	sg, err := s.store.ServiceGroupRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	// Store broker ID for audit entry
-	brokerID := sg.BrokerID
+	// Validate delete conditions
+	numOfServices, err := s.store.ServiceRepo().CountByGroup(ctx, id)
+	if err != nil {
+		return err
+	}
+	if numOfServices > 0 {
+		return errors.New("cannot delete service group with associated services")
+	}
 
+	// Delete and audit
 	return s.store.Atomic(ctx, func(store Store) error {
-		numOfServices, err := store.ServiceRepo().CountByGroup(ctx, id)
-		if err != nil {
-			return err
-		}
-		if numOfServices > 0 {
-			return errors.New("cannot delete service group with associated services")
-		}
-
 		if err := store.ServiceGroupRepo().Delete(ctx, id); err != nil {
 			return err
 		}
@@ -161,7 +180,7 @@ func (s *serviceGroupCommander) Delete(ctx context.Context, id UUID) error {
 		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeServiceGroupDeleted,
-			JSON{"state": sg}, &id, nil, nil, &brokerID)
+			JSON{"state": sg}, &id, nil, nil, &sg.BrokerID)
 		return err
 	})
 }

@@ -28,6 +28,72 @@ type Token struct {
 	Agent      *Agent    `json:"-" gorm:"foreignKey:AgentID"`
 }
 
+// NewToken is an helper method to create a token with appropriate scope settings
+func NewToken(
+	ctx context.Context,
+	store Store,
+	name string,
+	role AuthRole,
+	expireAt time.Time,
+	scopeID *UUID,
+) (*Token, error) {
+	// Create token with basic fields
+	token := &Token{
+		Name:     name,
+		Role:     role,
+		ExpireAt: expireAt,
+	}
+
+	// Set scope IDs based on role
+	if scopeID != nil {
+		switch role {
+		case RoleProviderAdmin:
+			// Validate provider exists and set ID
+			exists, err := store.ProviderRepo().Exists(ctx, *scopeID)
+			if err != nil {
+				return nil, err
+			}
+			if !exists {
+				return nil, NewInvalidInputErrorf("invalid provider ID: %v", scopeID)
+			}
+			token.ProviderID = scopeID
+		case RoleBroker:
+			// Validate broker exists and set ID
+			exists, err := store.BrokerRepo().Exists(ctx, *scopeID)
+			if err != nil {
+				return nil, err
+			}
+			if !exists {
+				return nil, NewInvalidInputErrorf("invalid broker ID: %v", scopeID)
+			}
+			token.BrokerID = scopeID
+		case RoleAgent:
+			// Validate agent exists, set agent ID, and copy the provider ID
+			agent, err := store.AgentRepo().FindByID(ctx, *scopeID)
+			if err != nil {
+				return nil, NewInvalidInputErrorf("invalid agent ID: %v", err)
+			}
+			token.AgentID = scopeID
+
+			// Make a copy of the agent's provider ID and set it
+			providerID := agent.ProviderID
+			token.ProviderID = &providerID
+		}
+	}
+
+	err := token.GenerateTokenValue()
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate again after setting scope IDs and generating token
+	if err := token.Validate(); err != nil {
+		return nil, InvalidInputError{Err: err}
+	}
+
+	return token, nil
+}
+
 // TableName returns the table name for the token
 func (Token) TableName() string {
 	return "tokens"
@@ -121,6 +187,17 @@ func HashTokenValue(value string) string {
 	return base64.StdEncoding.EncodeToString(hash[:])
 }
 
+// Update updates the token properties
+func (t *Token) Update(name *string, expireAt *time.Time) error {
+	if name != nil {
+		t.Name = *name
+	}
+	if expireAt != nil {
+		t.ExpireAt = *expireAt
+	}
+	return t.Validate()
+}
+
 // TokenCommander defines the interface for token command operations
 type TokenCommander interface {
 	// Create creates a new token
@@ -160,74 +237,23 @@ func (s *tokenCommander) Create(
 	expireAt time.Time,
 	scopeID *UUID,
 ) (*Token, error) {
-	var token *Token
-	var err error
-
-	// Non admin can create only token with the same role
+	// Validate permissions
 	id := MustGetAuthIdentity(ctx)
 	if !id.IsRole(RoleFulcrumAdmin) && role != id.Role() {
 		return nil, NewInvalidInputErrorf("role %s not allowed", role)
 	}
 
-	err = s.store.Atomic(ctx, func(store Store) error {
-		// Create token with basic fields
-		token = &Token{
-			Name:     name,
-			Role:     role,
-			ExpireAt: expireAt,
-		}
-
-		// Validate scope entity exists and set the appropriate IDs
-		if scopeID != nil {
-			switch role {
-			case RoleProviderAdmin:
-				// Validate provider exists and set ID
-				exists, err := store.ProviderRepo().Exists(ctx, *scopeID)
-				if err != nil {
-					return err
-				}
-				if !exists {
-					return NewInvalidInputErrorf("invalid provider ID: %v", scopeID)
-				}
-				token.ProviderID = scopeID
-			case RoleBroker:
-				// Validate broker exists and set ID
-				exists, err := store.BrokerRepo().Exists(ctx, *scopeID)
-				if err != nil {
-					return err
-				}
-				if !exists {
-					return NewInvalidInputErrorf("invalid broker ID: %v", scopeID)
-				}
-				token.BrokerID = scopeID
-			case RoleAgent:
-				// Validate agent exists, set agent ID, and copy the provider ID
-				agent, err := store.AgentRepo().FindByID(ctx, *scopeID)
-				if err != nil {
-					return NewInvalidInputErrorf("invalid agent ID: %v", err)
-				}
-				token.AgentID = scopeID
-
-				// Make a copy of the agent's provider ID and set it
-				providerID := agent.ProviderID
-				token.ProviderID = &providerID
-			}
-		}
-
-		err := token.GenerateTokenValue()
+	// Create, save and audit
+	var token *Token
+	err := s.store.Atomic(ctx, func(store Store) error {
+		var err error
+		token, err = NewToken(ctx, store, name, role, expireAt, scopeID)
 		if err != nil {
 			return err
 		}
-
-		if err := token.Validate(); err != nil {
-			return InvalidInputError{Err: err}
-		}
-
 		if err := store.TokenRepo().Create(ctx, token); err != nil {
 			return err
 		}
-
-		// Create audit entry with token
 		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeTokenCreated,
@@ -238,10 +264,10 @@ func (s *tokenCommander) Create(
 			token.BrokerID)
 		return err
 	})
-
 	if err != nil {
 		return nil, err
 	}
+
 	return token, nil
 }
 
@@ -250,49 +276,39 @@ func (s *tokenCommander) Update(ctx context.Context,
 	name *string,
 	expireAt *time.Time,
 ) (*Token, error) {
-	beforeToken, err := s.store.TokenRepo().FindByID(ctx, id)
+	// Validate token exists
+	token, err := s.store.TokenRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Make a copy of the token before changes for audit diff
-	beforeTokenCopy := *beforeToken
+	// Make a copy for audit diff
+	beforeTokenCopy := *token
 
-	if name != nil {
-		beforeToken.Name = *name
-	}
-	if expireAt != nil {
-		beforeToken.ExpireAt = *expireAt
-	}
-
-	if err := beforeToken.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
-	}
-
+	// Update, save and audit
 	err = s.store.Atomic(ctx, func(store Store) error {
-		err := store.TokenRepo().Save(ctx, beforeToken)
-		if err != nil {
+		if err := token.Update(name, expireAt); err != nil {
 			return err
 		}
-
-		// Create audit entry with diff
+		if err := store.TokenRepo().Save(ctx, token); err != nil {
+			return err
+		}
 		_, err = s.auditCommander.CreateCtxWithDiff(
 			ctx,
 			EventTypeTokenUpdated,
 			&id,
-			beforeToken.ProviderID,
-			beforeToken.AgentID,
-			beforeToken.BrokerID,
+			token.ProviderID,
+			token.AgentID,
+			token.BrokerID,
 			&beforeTokenCopy,
-			beforeToken)
+			token)
 		return err
 	})
-
 	if err != nil {
 		return nil, err
 	}
 
-	return beforeToken, nil
+	return token, nil
 }
 
 func (s *tokenCommander) Delete(ctx context.Context, id UUID) error {
@@ -302,12 +318,12 @@ func (s *tokenCommander) Delete(ctx context.Context, id UUID) error {
 		return err
 	}
 
+	// Delete and audit
 	return s.store.Atomic(ctx, func(store Store) error {
 		if err := store.TokenRepo().Delete(ctx, id); err != nil {
 			return err
 		}
 
-		// Create audit entry for token deletion
 		_, err := s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeTokenDeleted,
@@ -321,42 +337,35 @@ func (s *tokenCommander) Delete(ctx context.Context, id UUID) error {
 }
 
 func (s *tokenCommander) Regenerate(ctx context.Context, id UUID) (*Token, error) {
-	beforeToken, err := s.store.TokenRepo().FindByID(ctx, id)
+	// Validate token exists
+	token, err := s.store.TokenRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
+	// Regenerate, save and audit
 	err = s.store.Atomic(ctx, func(store Store) error {
-		err := beforeToken.GenerateTokenValue()
-		if err != nil {
+		if err := token.GenerateTokenValue(); err != nil {
 			return err
 		}
-
-		if err := beforeToken.Validate(); err != nil {
-			return InvalidInputError{Err: err}
-		}
-
-		err = store.TokenRepo().Save(ctx, beforeToken)
-		if err != nil {
+		if err := store.TokenRepo().Save(ctx, token); err != nil {
 			return err
 		}
-
-		// Create audit entry for token regeneration
 		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeTokenRegenerated,
-			JSON{"state": beforeToken},
+			JSON{"state": token},
 			&id,
-			beforeToken.ProviderID,
-			beforeToken.AgentID,
-			beforeToken.BrokerID)
+			token.ProviderID,
+			token.AgentID,
+			token.BrokerID)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return beforeToken, nil
+	return token, nil
 }
 
 type TokenRepository interface {

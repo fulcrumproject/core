@@ -11,6 +11,13 @@ type Broker struct {
 	Name string `json:"name" gorm:"not null"`
 }
 
+// NewBroker creates a new broker with proper validation
+func NewBroker(name string) *Broker {
+	return &Broker{
+		Name: name,
+	}
+}
+
 // TableName returns the table name for the broker
 func (Broker) TableName() string {
 	return "brokers"
@@ -58,14 +65,16 @@ func (s *brokerCommander) Create(
 	name string,
 ) (*Broker, error) {
 	var broker *Broker
-	err := s.store.Atomic(ctx, func(store Store) error {
-		broker = &Broker{
-			Name: name,
-		}
-		if err := broker.Validate(); err != nil {
-			return InvalidInputError{Err: err}
-		}
+	var err error
 
+	// Create and validate
+	broker = NewBroker(name)
+	if err := broker.Validate(); err != nil {
+		return nil, InvalidInputError{Err: err}
+	}
+
+	// Save and audit
+	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := store.BrokerRepo().Create(ctx, broker); err != nil {
 			return err
 		}
@@ -88,23 +97,27 @@ func (s *brokerCommander) Update(ctx context.Context,
 	id UUID,
 	name *string,
 ) (*Broker, error) {
-	beforeBroker, err := s.store.BrokerRepo().FindByID(ctx, id)
+	// Find it
+	broker, err := s.store.BrokerRepo().FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	// Store a copy of the broker before modifications for audit diff
-	beforeBrokerCopy := *beforeBroker
+	beforeBroker := *broker
 
+	// Update and validate
 	if name != nil {
-		beforeBroker.Name = *name
+		broker.Name = *name
 	}
-	if err := beforeBroker.Validate(); err != nil {
+
+	if err := broker.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
+	// Save and audit
 	err = s.store.Atomic(ctx, func(store Store) error {
-		err := store.BrokerRepo().Save(ctx, beforeBroker)
+		err := store.BrokerRepo().Save(ctx, broker)
 		if err != nil {
 			return err
 		}
@@ -113,23 +126,24 @@ func (s *brokerCommander) Update(ctx context.Context,
 			ctx,
 			EventTypeBrokerUpdated,
 			&id, nil, nil, &id,
-			&beforeBrokerCopy, beforeBroker)
+			&beforeBroker, broker)
 		return err
 	})
 
 	if err != nil {
 		return nil, err
 	}
-	return beforeBroker, nil
+	return broker, nil
 }
 
 func (s *brokerCommander) Delete(ctx context.Context, id UUID) error {
-	// Get broker before deletion for audit purposes
+	// Find it
 	broker, err := s.store.BrokerRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
+	// Delete and audit
 	return s.store.Atomic(ctx, func(store Store) error {
 		// Delete all tokens associated with this broker before deleting the broker
 		if err := store.TokenRepo().DeleteByBrokerID(ctx, id); err != nil {

@@ -78,6 +78,56 @@ type AuditEntry struct {
 	BrokerID   *UUID `gorm:"type:uuid"`
 }
 
+// NewEventAudit creates a new audit entry for simple event audits
+func NewEventAudit(
+	authorityType AuthorityType,
+	authorityID string,
+	eventType EventType,
+	properties JSON,
+	entityID, providerID, agentID, brokerID *UUID,
+) *AuditEntry {
+	return &AuditEntry{
+		AuthorityType: authorityType,
+		AuthorityID:   authorityID,
+		EventType:     eventType,
+		Properties:    properties,
+		EntityID:      entityID,
+		ProviderID:    providerID,
+		AgentID:       agentID,
+		BrokerID:      brokerID,
+	}
+}
+
+// GenerateDiff calculates and stores the diff between two entity states
+func (p *AuditEntry) GenerateDiff(beforeEntity, afterEntity interface{}) error {
+	// Convert entities to JSON
+	beforeJSON, err := json.Marshal(beforeEntity)
+	if err != nil {
+		return fmt.Errorf("failed to marshal 'before' entity: %w", err)
+	}
+
+	afterJSON, err := json.Marshal(afterEntity)
+	if err != nil {
+		return fmt.Errorf("failed to marshal 'after' entity: %w", err)
+	}
+
+	// Generate RFC 6902 JSON Patch using jsondiff
+	patch, err := jsondiff.CompareJSON(beforeJSON, afterJSON)
+	if err != nil {
+		return fmt.Errorf("failed to generate diff: %w", err)
+	}
+
+	// Initialize properties if nil
+	if p.Properties == nil {
+		p.Properties = JSON{}
+	}
+
+	// Store diff in properties
+	p.Properties["diff"] = patch
+
+	return nil
+}
+
 // TableName returns the table name for the audit entry
 func (AuditEntry) TableName() string {
 	return "audit_entries"
@@ -127,22 +177,28 @@ func (s *auditEntryCommander) Create(
 	entityID,
 	providerID, agentID, brokerID *UUID,
 ) (*AuditEntry, error) {
-	auditEntry := &AuditEntry{
-		AuthorityType: authorityType,
-		AuthorityID:   authorityID,
-		EventType:     eventType,
-		Properties:    properties,
-		EntityID:      entityID,
-		ProviderID:    providerID,
-		AgentID:       agentID,
-		BrokerID:      brokerID,
-	}
+	// Collect data - all data is already provided via parameters
+
+	// Create and validate
+	auditEntry := NewEventAudit(
+		authorityType,
+		authorityID,
+		eventType,
+		properties,
+		entityID,
+		providerID,
+		agentID,
+		brokerID,
+	)
 	if err := auditEntry.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
+
+	// Save
 	if err := s.store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
 		return nil, err
 	}
+
 	return auditEntry, nil
 }
 
@@ -155,30 +211,35 @@ func (s *auditEntryCommander) CreateWithDiff(
 	entityID, providerID, agentID, brokerID *UUID,
 	beforeEntity, afterEntity interface{},
 ) (*AuditEntry, error) {
-	// Convert entities to JSON
-	beforeJSON, err := json.Marshal(beforeEntity)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal 'before' entity: %w", err)
+	// Collect data - all data is already provided via parameters
+
+	// Create and validate
+	auditEntry := NewEventAudit(
+		authorityType,
+		authorityID,
+		eventType,
+		nil, // We'll generate the properties with the diff
+		entityID,
+		providerID,
+		agentID,
+		brokerID,
+	)
+
+	// Generate diff
+	if err := auditEntry.GenerateDiff(beforeEntity, afterEntity); err != nil {
+		return nil, err
 	}
 
-	afterJSON, err := json.Marshal(afterEntity)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal 'after' entity: %w", err)
+	if err := auditEntry.Validate(); err != nil {
+		return nil, InvalidInputError{Err: err}
 	}
 
-	// Generate RFC 6902 JSON Patch using jsondiff
-	patch, err := jsondiff.CompareJSON(beforeJSON, afterJSON)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate diff: %w", err)
+	// Save
+	if err := s.store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		return nil, err
 	}
 
-	// Store diff in properties
-	properties := JSON{
-		"diff": patch,
-	}
-
-	// Create the audit entry
-	return s.Create(ctx, authorityType, authorityID, eventType, properties, entityID, providerID, agentID, brokerID)
+	return auditEntry, nil
 }
 
 // CreateCtx extracts authority info from context and creates an audit entry
@@ -188,7 +249,10 @@ func (s *auditEntryCommander) CreateCtx(
 	properties JSON,
 	entityID, providerID, agentID, brokerID *UUID,
 ) (*AuditEntry, error) {
+	// Collect data - extract authority information from context
 	authorityType, authorityID := ExtractAuditAuthority(ctx)
+
+	// Create and validate, save (delegated to Create method)
 	return s.Create(ctx, authorityType, authorityID, eventType, properties, entityID, providerID, agentID, brokerID)
 }
 
@@ -199,7 +263,10 @@ func (s *auditEntryCommander) CreateCtxWithDiff(
 	entityID, providerID, agentID, brokerID *UUID,
 	beforeEntity, afterEntity interface{},
 ) (*AuditEntry, error) {
+	// Collect data - extract authority information from context
 	authorityType, authorityID := ExtractAuditAuthority(ctx)
+
+	// Create and validate, save (delegated to CreateWithDiff method)
 	return s.CreateWithDiff(ctx, authorityType, authorityID, eventType, entityID, providerID, agentID, brokerID, beforeEntity, afterEntity)
 }
 

@@ -140,6 +140,48 @@ func NewJob(svc *Service, action ServiceAction, priority int) *Job {
 	}
 }
 
+// Claim marks a job as claimed by an agent
+func (j *Job) Claim() error {
+	if j.State != JobPending {
+		return fmt.Errorf("cannot claim a job not in pending state")
+	}
+	j.State = JobProcessing
+	now := time.Now()
+	j.ClaimedAt = &now
+	return nil
+}
+
+// Complete marks a job as successfully completed
+func (j *Job) Complete() error {
+	if j.State != JobProcessing {
+		return fmt.Errorf("cannot complete a job not in processing state")
+	}
+	j.State = JobCompleted
+	now := time.Now()
+	j.CompletedAt = &now
+	return nil
+}
+
+// Fail records job failure with error details
+func (j *Job) Fail(errorMessage string) error {
+	if j.State != JobProcessing {
+		return fmt.Errorf("cannot fail a job not in processing state")
+	}
+	j.State = JobFailed
+	j.ErrorMessage = errorMessage
+	return nil
+}
+
+// Retry increments retry count and updates state
+func (j *Job) Retry() error {
+	if j.State != JobFailed {
+		return fmt.Errorf("cannot retry a job not in failed state")
+	}
+	j.State = JobPending
+	j.ErrorMessage = ""
+	return nil
+}
+
 // JobCommander defines the interface for job command operations
 type JobCommander interface {
 	// Claim claims a job for an agent
@@ -175,13 +217,7 @@ func (s *jobCommander) Claim(ctx context.Context, jobID UUID) error {
 		return err
 	}
 
-	if job.State != JobPending {
-		return InvalidInputError{Err: errors.New("cannot claim a job not in pending state")}
-	}
-	job.State = JobProcessing
-	now := time.Now()
-	job.ClaimedAt = &now
-	if err := job.Validate(); err != nil {
+	if err := job.Claim(); err != nil {
 		return InvalidInputError{Err: err}
 	}
 
@@ -193,55 +229,36 @@ func (s *jobCommander) Complete(ctx context.Context, jobID UUID, resources *JSON
 	if err != nil {
 		return err
 	}
-	if job.State != JobProcessing {
-		return InvalidInputError{Err: errors.New("cannot complete a job not in processing state")}
-	}
 
 	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
 	if err != nil {
 		return err
 	}
-	// Store the original service state for diff
-	originalSvc := *svc
+
 	if svc.TargetState == nil {
 		return InvalidInputError{Err: errors.New("cannot complete a job on service that is not in transition")}
 	}
 
+	originalSvc := *svc
+
 	return s.store.Atomic(ctx, func(store Store) error {
-		job.State = JobCompleted
-		now := time.Now()
-		job.CompletedAt = &now
-		if err := job.Validate(); err != nil {
+		if err := job.Complete(); err != nil {
 			return InvalidInputError{Err: err}
 		}
 		if err := store.JobRepo().Save(ctx, job); err != nil {
 			return err
 		}
 
-		svc.CurrentState = *svc.TargetState
-		svc.TargetState = nil
-		svc.FailedAction = nil
-		svc.ErrorMessage = nil
-		svc.RetryCount = 0
-		if resources != nil {
-			svc.Resources = resources
+		// Coordinate with service
+		if err := svc.HandleJobComplete(resources, externalID); err != nil {
+			return InvalidInputError{Err: err}
 		}
-		if externalID != nil {
-			svc.ExternalID = externalID
-		}
-		if svc.TargetProperties != nil {
-			svc.CurrentProperties = svc.TargetProperties
-			svc.TargetProperties = nil
-		}
-
 		if err := svc.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
 		}
-
-		// Create audit entry for service update after job completion
 		_, err := s.auditCommander.CreateCtxWithDiff(
 			ctx,
 			EventTypeServiceTransitioned,
@@ -255,37 +272,31 @@ func (s *jobCommander) Fail(ctx context.Context, jobID UUID, errorMessage string
 	if err != nil {
 		return err
 	}
-	if job.State != JobProcessing {
-		return InvalidInputError{Err: errors.New("cannot fail a job not in processing state")}
-	}
 
 	svc, err := s.store.ServiceRepo().FindByID(ctx, job.ServiceID)
 	if err != nil {
 		return err
 	}
-	// Store the original service state for diff
+
 	originalSvc := *svc
 
 	return s.store.Atomic(ctx, func(store Store) error {
-		job.State = JobFailed
-		job.ErrorMessage = errorMessage
-		if err := job.Validate(); err != nil {
+		if err := job.Fail(errorMessage); err != nil {
 			return InvalidInputError{Err: err}
 		}
+
 		if err := store.JobRepo().Save(ctx, job); err != nil {
 			return err
 		}
 
-		svc.ErrorMessage = &errorMessage
-		svc.FailedAction = &job.Action
+		// Coordinate with service
+		svc.HandleJobFailure(errorMessage, job.Action)
 		if err := svc.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
 		}
-
-		// Create audit entry for service update after job failure
 		_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceTransitioned,
 			&svc.ID, &svc.ProviderID, &svc.AgentID, &svc.BrokerID, &originalSvc, svc)
 		return err

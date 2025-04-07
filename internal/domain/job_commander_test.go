@@ -240,14 +240,22 @@ func TestJobCommander_Complete(t *testing.T) {
 			name: "Job not in processing state",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				jobRepo := &MockJobRepository{}
+				serviceRepo := &MockServiceRepository{}
 
 				pendingJob := createJobWithState(jobID, JobPending)
+				pendingJob.ServiceID = serviceID
 
 				jobRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Job, error) {
 					return pendingJob, nil
 				}
 
+				service := createService()
+				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
+					return service, nil
+				}
+
 				store.WithJobRepo(jobRepo)
+				store.WithServiceRepo(serviceRepo)
 			},
 			resources:  &resources,
 			externalID: &externalID,
@@ -552,14 +560,22 @@ func TestJobCommander_Fail(t *testing.T) {
 			name: "Job not in processing state",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				jobRepo := &MockJobRepository{}
+				serviceRepo := &MockServiceRepository{}
 
 				pendingJob := createJobWithState(jobID, JobPending)
+				pendingJob.ServiceID = serviceID
 
 				jobRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Job, error) {
 					return pendingJob, nil
 				}
 
+				service := createService()
+				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
+					return service, nil
+				}
+
 				store.WithJobRepo(jobRepo)
+				store.WithServiceRepo(serviceRepo)
 			},
 			errorMessage:  errorMessage,
 			wantErr:       true,
