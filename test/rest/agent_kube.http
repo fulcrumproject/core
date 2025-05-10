@@ -1,0 +1,307 @@
+### Test Agent Job Lifecycle
+### This test replicates the full lifecycle test from job_handler_test.go in agent-kube
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
+
+### Create a provider for testing
+# @name createProvider
+POST {{baseUrl}}/providers
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Test K8s Provider",
+    "state": "Enabled",
+    "countryCode": "IT",
+    "attributes": {
+        "type": ["kubernetes"]
+    }
+}
+
+@providerId = {{createProvider.response.body.$.id}}
+
+### Create an agent
+# @name createAgent
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Kube Agent Test",
+    "countryCode": "IT",
+    "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
+    "providerId": "{{providerId}}"
+}
+
+@agentId = {{createAgent.response.body.$.id}}
+
+### Create a new agent token
+# @name createAgentToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Kube Agent Token",
+  "role": "agent",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{agentId}}"
+}
+
+@agentToken = {{createAgentToken.response.body.$.value}}
+
+### Create a new broker
+# @name createBroker
+POST {{baseUrl}}/brokers
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Test K8s Broker"
+}
+
+@brokerId = {{createBroker.response.body.$.id}}
+
+### Create a broker token
+# @name createBrokerToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Test Broker Token",
+  "role": "broker",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{brokerId}}"
+}
+
+@brokerToken = {{createBrokerToken.response.body.$.value}}
+
+### Create a service group
+# @name createServiceGroup
+POST {{baseUrl}}/service-groups
+Authorization: Bearer {{brokerToken}}
+
+{
+    "name": "Test K8s Cluster Group",
+    "brokerId": "{{brokerId}}"
+}
+
+@serviceGroupId = {{createServiceGroup.response.body.$.id}}
+
+### Step 1: Create a K8s cluster service with 1 node (id: node1, size: s1, state: on)
+# @name createService
+POST {{baseUrl}}/services
+Authorization: Bearer {{brokerToken}}
+
+{
+    "name": "test-cluster-{{$guid}}",
+    "attributes": {
+        "environment": ["test"]
+    },
+    "properties": {
+        "nodes": [
+            {
+                "id": "node1",
+                "size": "s1",
+                "state": "on"
+            }
+        ]
+    },
+    "agentId": "{{agentId}}",
+    "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
+    "groupId": "{{serviceGroupId}}"
+}
+
+@serviceId = {{createService.response.body.$.id}}
+
+### Verify service creation job is created
+# @name getJobs1
+GET {{baseUrl}}/jobs?serviceId={{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+### Verify service is in Created state
+# @name getService1
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Step 2: Start the cluster service
+# @name startService
+POST {{baseUrl}}/services/{{serviceId}}/start
+Authorization: Bearer {{brokerToken}}
+
+### Verify service is in Started state
+# @name getService2
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Step 3: Update the cluster by adding a second node (node2)
+# @name updateService3
+PATCH {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+{
+    "properties": {
+        "nodes": [
+            {
+                "id": "node1",
+                "size": "s1",
+                "state": "on"
+            },
+            {
+                "id": "node2",
+                "size": "s2",
+                "state": "on"
+            }
+        ]
+    }
+}
+
+### Verify service has two nodes
+# @name getService3
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Step 4: Update the cluster turning node2 off while keeping node1 running
+# @name updateService4
+PATCH {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+{
+    "properties": {
+        "nodes": [
+            {
+                "id": "node1",
+                "size": "s1",
+                "state": "on"
+            },
+            {
+                "id": "node2",
+                "size": "s2",
+                "state": "off"
+            }
+        ]
+    }
+}
+
+### Verify service has node2 off
+# @name getService4
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Step 5: Turn node2 back on
+# @name updateService3
+PATCH {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+{
+    "properties": {
+        "nodes": [
+            {
+                "id": "node1",
+                "size": "s1",
+                "state": "on"
+            },
+            {
+                "id": "node2",
+                "size": "s2",
+                "state": "on"
+            }
+        ]
+    }
+}
+
+### Verify service has node2 on again
+# @name getService5
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Step 6: Turn node2 off again
+# @name updateService6
+PATCH {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+{
+    "properties": {
+        "nodes": [
+            {
+                "id": "node1",
+                "size": "s1",
+                "state": "on"
+            },
+            {
+                "id": "node2",
+                "size": "s2",
+                "state": "off"
+            }
+        ]
+    }
+}
+
+### Verify service has node2 off again
+# @name getService6
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Step 7: Stop the entire cluster service
+# @name stopService
+POST {{baseUrl}}/services/{{serviceId}}/stop
+Authorization: Bearer {{brokerToken}}
+
+### Verify service is stopped
+# @name getService7
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Step 8: Update service to remove node2 from the cluster
+# @name updateService8
+PATCH {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+{
+    "properties": {
+        "nodes": [
+            {
+                "id": "node1",
+                "size": "s1",
+                "state": "on"
+            }
+        ]
+    }
+}
+
+### Verify service only has node1
+# @name getService8
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Step 9: Start the cluster service again
+# @name startServiceAgain
+POST {{baseUrl}}/services/{{serviceId}}/start
+Authorization: Bearer {{brokerToken}}
+
+### Verify service is started again
+# @name getService9
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Step 10: Stop the cluster service again
+# @name stopServiceAgain
+POST {{baseUrl}}/services/{{serviceId}}/stop
+Authorization: Bearer {{brokerToken}}
+
+### Verify service is stopped again
+# @name getService10
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Step 11: Delete the cluster service
+# @name deleteService
+DELETE {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Verify service is deleted
+# @name getService11
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{brokerToken}}
+
+### Retry Service Operation
+POST {{baseUrl}}/services/{{serviceId}}/retry
+Authorization: Bearer {{brokerToken}}
