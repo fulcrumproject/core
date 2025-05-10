@@ -101,7 +101,7 @@ Authorization: Bearer {{brokerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "on"
+                "state": "On"
             }
         ]
     },
@@ -116,6 +116,11 @@ Authorization: Bearer {{brokerToken}}
 # @name getJobs1
 GET {{baseUrl}}/jobs?serviceId={{serviceId}}
 Authorization: Bearer {{adminToken}}
+
+### Get services
+# @name getServices1
+GET {{baseUrl}}/services?page=1
+Authorization: Bearer {{agentToken}}
 
 ### Verify service is in Created state
 # @name getService1
@@ -143,12 +148,12 @@ Authorization: Bearer {{brokerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "on"
+                "state": "On"
             },
             {
                 "id": "node2",
                 "size": "s2",
-                "state": "on"
+                "state": "On"
             }
         ]
     }
@@ -170,12 +175,12 @@ Authorization: Bearer {{brokerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "on"
+                "state": "On"
             },
             {
                 "id": "node2",
                 "size": "s2",
-                "state": "off"
+                "state": "Off"
             }
         ]
     }
@@ -197,12 +202,12 @@ Authorization: Bearer {{brokerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "on"
+                "state": "On"
             },
             {
                 "id": "node2",
                 "size": "s2",
-                "state": "on"
+                "state": "On"
             }
         ]
     }
@@ -224,12 +229,12 @@ Authorization: Bearer {{brokerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "on"
+                "state": "On"
             },
             {
                 "id": "node2",
                 "size": "s2",
-                "state": "off"
+                "state": "Off"
             }
         ]
     }
@@ -261,7 +266,7 @@ Authorization: Bearer {{brokerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "on"
+                "state": "On"
             }
         ]
     }
