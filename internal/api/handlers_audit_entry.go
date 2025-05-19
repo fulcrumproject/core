@@ -77,7 +77,7 @@ func auditEntryToResponse(ae *domain.AuditEntry) *AuditEntryResponse {
 		Properties:    ae.Properties,
 		ProviderID:    ae.ProviderID,
 		AgentID:       ae.AgentID,
-		BrokerID:      ae.BrokerID,
+		BrokerID:      ae.ConsumerID,
 		CreatedAt:     JSONUTCTime(ae.CreatedAt),
 		UpdatedAt:     JSONUTCTime(ae.UpdatedAt),
 	}

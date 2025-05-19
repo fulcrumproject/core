@@ -234,7 +234,7 @@ func TestAuditEntryToResponse(t *testing.T) {
 		EntityID:      &entityID,
 		ProviderID:    &providerID,
 		AgentID:       &agentID,
-		BrokerID:      &brokerID,
+		ConsumerID:    &brokerID,
 	}
 
 	response := auditEntryToResponse(auditEntry)
@@ -246,7 +246,7 @@ func TestAuditEntryToResponse(t *testing.T) {
 	assert.Equal(t, auditEntry.Properties, response.Properties)
 	assert.Equal(t, auditEntry.ProviderID, response.ProviderID)
 	assert.Equal(t, auditEntry.AgentID, response.AgentID)
-	assert.Equal(t, auditEntry.BrokerID, response.BrokerID)
+	assert.Equal(t, auditEntry.ConsumerID, response.BrokerID)
 	assert.Equal(t, JSONUTCTime(auditEntry.CreatedAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(auditEntry.UpdatedAt), response.UpdatedAt)
 }

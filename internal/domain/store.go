@@ -10,9 +10,7 @@ type Store interface {
 	// Repositories
 	AgentTypeRepo() AgentTypeRepository
 	AgentRepo() AgentRepository
-	BrokerRepo() BrokerRepository
 	TokenRepo() TokenRepository
-	ProviderRepo() ProviderRepository
 	ServiceTypeRepo() ServiceTypeRepository
 	ServiceGroupRepo() ServiceGroupRepository
 	ServiceRepo() ServiceRepository
@@ -20,4 +18,5 @@ type Store interface {
 	AuditEntryRepo() AuditEntryRepository
 	MetricTypeRepo() MetricTypeRepository
 	MetricEntryRepo() MetricEntryRepository
+	ParticipantRepo() ParticipantRepository
 }

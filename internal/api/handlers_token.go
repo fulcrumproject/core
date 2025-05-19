@@ -61,7 +61,7 @@ func (h *TokenHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	if req.ScopeID != nil {
 		switch req.Role {
 		case domain.RoleProviderAdmin:
-			scope.ProviderID = req.ScopeID
+			scope.ParticipantID = req.ScopeID
 		case domain.RoleBroker:
 			scope.BrokerID = req.ScopeID
 		case domain.RoleAgent:

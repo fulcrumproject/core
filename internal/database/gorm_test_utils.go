@@ -60,8 +60,8 @@ func createTestServiceGroup(t *testing.T, brokerID domain.UUID) *domain.ServiceG
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.ServiceGroup{
-		Name:     fmt.Sprintf("Test ServiceGroup %s", randomSuffix),
-		BrokerID: brokerID,
+		Name:          fmt.Sprintf("Test ServiceGroup %s", randomSuffix),
+		ParticipantID: brokerID,
 	}
 }
 
@@ -74,7 +74,7 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, pro
 		GroupID:           serviceGroupID,
 		CurrentState:      domain.ServiceStarted,
 		ProviderID:        providerID,
-		BrokerID:          brokerID,
+		ConsumerID:        brokerID,
 		AgentID:           agentID,
 		CurrentProperties: &(domain.JSON{}),
 		Resources:         &(domain.JSON{}),
@@ -135,7 +135,7 @@ func createTestMetricEntry(t *testing.T, agentID, serviceID, typeID, providerID,
 		ServiceID:  serviceID,
 		ResourceID: fmt.Sprintf("resource-%s", randomSuffix),
 		ProviderID: providerID,
-		BrokerID:   brokerID,
+		ConsumerID: brokerID,
 		Value:      42.0,
 		TypeID:     typeID,
 	}

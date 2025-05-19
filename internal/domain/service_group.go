@@ -14,9 +14,9 @@ type ServiceGroup struct {
 	Name string `json:"name" gorm:"not null"`
 
 	// Relationships
-	Services []Service `json:"-" gorm:"foreignKey:GroupID"`
-	BrokerID UUID      `json:"brokerId" gorm:"not null"`
-	Broker   *Broker   `json:"-" gorm:"foreignKey:BrokerID"`
+	Services      []Service    `json:"-" gorm:"foreignKey:GroupID"`
+	ParticipantID UUID         `json:"brokerId" gorm:"not null"`
+	Participant   *Participant `json:"-" gorm:"foreignKey:ParticipantID"`
 }
 
 // Validate checks if the service group is valid
@@ -24,7 +24,7 @@ func (sg *ServiceGroup) Validate() error {
 	if sg.Name == "" {
 		return errors.New("service group name cannot be empty")
 	}
-	if sg.BrokerID == uuid.Nil {
+	if sg.ParticipantID == uuid.Nil {
 		return errors.New("service group broker cannot be nil")
 	}
 	return nil
@@ -33,8 +33,8 @@ func (sg *ServiceGroup) Validate() error {
 // NewServiceGroup creates a new service group with validation
 func NewServiceGroup(name string, brokerID UUID) *ServiceGroup {
 	return &ServiceGroup{
-		Name:     name,
-		BrokerID: brokerID,
+		Name:          name,
+		ParticipantID: brokerID,
 	}
 }
 
@@ -82,7 +82,7 @@ func NewServiceGroupCommander(
 
 func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerID UUID) (*ServiceGroup, error) {
 	// Validate references
-	brokerExists, err := s.store.BrokerRepo().Exists(ctx, brokerID)
+	brokerExists, err := s.store.ParticipantRepo().Exists(ctx, brokerID)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 		_, err := s.auditCommander.CreateCtxWithDiff(
 			ctx,
 			EventTypeServiceGroupUpdated,
-			&id, nil, nil, &sg.BrokerID,
+			&id, nil, nil, &sg.ParticipantID,
 			&beforeSgCopy, sg)
 		return err
 	})
@@ -180,7 +180,7 @@ func (s *serviceGroupCommander) Delete(ctx context.Context, id UUID) error {
 		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeServiceGroupDeleted,
-			JSON{"state": sg}, &id, nil, nil, &sg.BrokerID)
+			JSON{"state": sg}, &id, nil, nil, &sg.ParticipantID)
 		return err
 	})
 }

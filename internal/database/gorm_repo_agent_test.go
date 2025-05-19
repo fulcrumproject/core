@@ -369,8 +369,8 @@ func TestAgentRepository(t *testing.T) {
 			// Assert
 			require.NoError(t, err)
 			assert.NotNil(t, scope, "AuthScope should not return nil")
-			assert.NotNil(t, scope.ProviderID, "ProviderID should not be nil")
-			assert.Equal(t, provider.ID, *scope.ProviderID, "Should return the provider ID in the scope")
+			assert.NotNil(t, scope.ParticipantID, "ProviderID should not be nil")
+			assert.Equal(t, provider.ID, *scope.ParticipantID, "Should return the provider ID in the scope")
 			assert.NotNil(t, scope.AgentID, "AgentID should not be nil")
 			assert.Equal(t, agent.ID, *scope.AgentID, "Should return the agent ID in the scope")
 			assert.Nil(t, scope.BrokerID, "BrokerID should be nil for agents")

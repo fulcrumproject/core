@@ -219,7 +219,7 @@ func jobToResponse(job *domain.Job) *JobResponse {
 		ID:           job.ID,
 		AgentID:      job.AgentID,
 		ProviderID:   job.ProviderID,
-		BrokerID:     job.BrokerID,
+		BrokerID:     job.ConsumerID,
 		ServiceID:    job.ServiceID,
 		Action:       job.Action,
 		State:        job.State,

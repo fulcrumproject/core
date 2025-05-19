@@ -151,7 +151,7 @@ func TestServiceHandleCreate(t *testing.T) {
 				// Setup the agent querier to return auth scope
 				agentQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 					assert.Equal(t, agentID, id)
-					return &domain.AuthScope{ProviderID: &providerID, AgentID: &agentID}, nil
+					return &domain.AuthScope{ParticipantID: &providerID, AgentID: &agentID}, nil
 				}
 
 				// Setup the service group querier to return auth scope
@@ -179,7 +179,7 @@ func TestServiceHandleCreate(t *testing.T) {
 						AgentID:           agentID,
 						ServiceTypeID:     serviceTypeID,
 						GroupID:           groupID,
-						BrokerID:          brokerID,
+						ConsumerID:        brokerID,
 						ProviderID:        providerID,
 						Attributes:        domain.Attributes{"key": []string{"value"}},
 						CurrentState:      domain.ServiceCreated,
@@ -260,7 +260,7 @@ func TestServiceHandleCreate(t *testing.T) {
 				agentID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 				providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 				agentQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{ProviderID: &providerID, AgentID: &agentID}, nil
+					return &domain.AuthScope{ParticipantID: &providerID, AgentID: &agentID}, nil
 				}
 
 				// Return an unsuccessful auth
@@ -288,7 +288,7 @@ func TestServiceHandleCreate(t *testing.T) {
 
 				// Setup the agent querier to return auth scope
 				agentQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{ProviderID: &providerID, AgentID: &agentID}, nil
+					return &domain.AuthScope{ParticipantID: &providerID, AgentID: &agentID}, nil
 				}
 
 				// Setup the service group querier to return auth scope
@@ -391,7 +391,7 @@ func TestServiceHandleGet(t *testing.T) {
 						AgentID:       agentID,
 						ServiceTypeID: serviceTypeID,
 						GroupID:       groupID,
-						BrokerID:      brokerID,
+						ConsumerID:    brokerID,
 						ProviderID:    providerID,
 						Attributes:    domain.Attributes{"key": []string{"value"}},
 						CurrentState:  domain.ServiceStarted,
@@ -528,7 +528,7 @@ func TestServiceHandleList(t *testing.T) {
 								AgentID:       agentID,
 								ServiceTypeID: serviceTypeID,
 								GroupID:       groupID,
-								BrokerID:      brokerID,
+								ConsumerID:    brokerID,
 								ProviderID:    providerID,
 								Attributes:    domain.Attributes{"key": []string{"value"}},
 								CurrentState:  domain.ServiceStarted,
@@ -543,7 +543,7 @@ func TestServiceHandleList(t *testing.T) {
 								AgentID:       agentID,
 								ServiceTypeID: serviceTypeID,
 								GroupID:       groupID,
-								BrokerID:      brokerID,
+								ConsumerID:    brokerID,
 								ProviderID:    providerID,
 								Attributes:    domain.Attributes{"key": []string{"value2"}},
 								CurrentState:  domain.ServiceStopped,
@@ -692,7 +692,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 						AgentID:           agentID,
 						ServiceTypeID:     serviceTypeID,
 						GroupID:           groupID,
-						BrokerID:          brokerID,
+						ConsumerID:        brokerID,
 						ProviderID:        providerID,
 						Attributes:        domain.Attributes{"key": []string{"value"}},
 						CurrentState:      domain.ServiceStarted,
@@ -870,7 +870,7 @@ func TestServiceHandleTransition(t *testing.T) {
 							AgentID:       agentID,
 							ServiceTypeID: serviceTypeID,
 							GroupID:       groupID,
-							BrokerID:      brokerID,
+							ConsumerID:    brokerID,
 							ProviderID:    providerID,
 							Attributes:    domain.Attributes{"key": []string{"value"}},
 							CurrentState:  state,
@@ -1003,7 +1003,7 @@ func TestServiceHandleRetry(t *testing.T) {
 						AgentID:       agentID,
 						ServiceTypeID: serviceTypeID,
 						GroupID:       groupID,
-						BrokerID:      brokerID,
+						ConsumerID:    brokerID,
 						ProviderID:    providerID,
 						Attributes:    domain.Attributes{"key": []string{"value"}},
 						CurrentState:  domain.ServiceStarted,
@@ -1112,7 +1112,7 @@ func TestServiceToResponse(t *testing.T) {
 		AgentID:           agentID,
 		ServiceTypeID:     serviceTypeID,
 		GroupID:           groupID,
-		BrokerID:          brokerID,
+		ConsumerID:        brokerID,
 		ProviderID:        providerID,
 		ExternalID:        &externalID,
 		Attributes:        domain.Attributes{"key": []string{"value"}},

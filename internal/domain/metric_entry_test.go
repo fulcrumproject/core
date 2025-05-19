@@ -32,7 +32,7 @@ func TestMetricEntry_Validate(t *testing.T) {
 				AgentID:    validID,
 				ServiceID:  validID,
 				ProviderID: validID,
-				BrokerID:   validID,
+				ConsumerID: validID,
 			},
 			wantErr: false,
 		},
@@ -45,7 +45,7 @@ func TestMetricEntry_Validate(t *testing.T) {
 				AgentID:    validID,
 				ServiceID:  validID,
 				ProviderID: validID,
-				BrokerID:   validID,
+				ConsumerID: validID,
 			},
 			wantErr:    true,
 			errMessage: "resource ID cannot be empty",
@@ -59,7 +59,7 @@ func TestMetricEntry_Validate(t *testing.T) {
 				AgentID:    validID,
 				ServiceID:  validID,
 				ProviderID: validID,
-				BrokerID:   validID,
+				ConsumerID: validID,
 			},
 			wantErr:    true,
 			errMessage: "metric type ID cannot be empty",
@@ -73,7 +73,7 @@ func TestMetricEntry_Validate(t *testing.T) {
 				AgentID:    uuid.Nil,
 				ServiceID:  validID,
 				ProviderID: validID,
-				BrokerID:   validID,
+				ConsumerID: validID,
 			},
 			wantErr:    true,
 			errMessage: "agent ID cannot be empty",
@@ -87,7 +87,7 @@ func TestMetricEntry_Validate(t *testing.T) {
 				AgentID:    validID,
 				ServiceID:  uuid.Nil,
 				ProviderID: validID,
-				BrokerID:   validID,
+				ConsumerID: validID,
 			},
 			wantErr:    true,
 			errMessage: "service ID cannot be empty",
@@ -153,7 +153,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 						ID: serviceID,
 					},
 					ProviderID: providerID,
-					BrokerID:   brokerID,
+					ConsumerID: brokerID,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					assert.Equal(t, serviceID, id)
@@ -187,7 +187,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 					assert.Equal(t, agentID, entry.AgentID)
 					assert.Equal(t, serviceID, entry.ServiceID)
 					assert.Equal(t, providerID, entry.ProviderID)
-					assert.Equal(t, brokerID, entry.BrokerID)
+					assert.Equal(t, brokerID, entry.ConsumerID)
 					return nil
 				}
 			},
@@ -260,7 +260,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 						ID: serviceID,
 					},
 					ProviderID: providerID,
-					BrokerID:   brokerID,
+					ConsumerID: brokerID,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					return service, nil
@@ -294,7 +294,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 						ID: serviceID,
 					},
 					ProviderID: providerID,
-					BrokerID:   brokerID,
+					ConsumerID: brokerID,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					return service, nil
@@ -342,7 +342,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 						ID: serviceID,
 					},
 					ProviderID: providerID,
-					BrokerID:   brokerID,
+					ConsumerID: brokerID,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					return service, nil
@@ -395,7 +395,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 				assert.Equal(t, agentID, entry.AgentID)
 				assert.Equal(t, serviceID, entry.ServiceID)
 				assert.Equal(t, providerID, entry.ProviderID)
-				assert.Equal(t, brokerID, entry.BrokerID)
+				assert.Equal(t, brokerID, entry.ConsumerID)
 			}
 		})
 	}

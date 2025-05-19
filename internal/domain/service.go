@@ -78,9 +78,9 @@ type Service struct {
 
 	// Relationships
 	ProviderID    UUID          `json:"providerId" gorm:"not null"`
-	Provider      *Provider     `json:"-" gorm:"foreignKey:ProviderID"`
-	BrokerID      UUID          `json:"brokerId" gorm:"not null"`
-	Broker        *Broker       `json:"-" gorm:"foreignKey:BrokerID"`
+	Provider      *Participant  `json:"-" gorm:"foreignKey:ParticipantID"`
+	ConsumerID    UUID          `json:"consumerId" gorm:"not null"`
+	Consumer      *Participant  `json:"-" gorm:"foreignKey:ParticipantID"`
 	GroupID       UUID          `gorm:"not null" json:"groupId"`
 	Group         *ServiceGroup `json:"-" gorm:"foreignKey:GroupID"`
 	AgentID       UUID          `json:"agentId" gorm:"not null"`
@@ -91,7 +91,7 @@ type Service struct {
 
 // NewService creates a new Service without validation
 func NewService(
-	brokerID UUID,
+	consumerID UUID,
 	groupID UUID,
 	providerID UUID,
 	agentID UUID,
@@ -102,7 +102,7 @@ func NewService(
 ) *Service {
 	target := ServiceCreated
 	return &Service{
-		BrokerID:         brokerID,
+		ConsumerID:       consumerID,
 		GroupID:          groupID,
 		ProviderID:       providerID,
 		AgentID:          agentID,
@@ -295,7 +295,7 @@ func (s *serviceCommander) Create(
 
 	// Create and validate
 	svc := NewService(
-		group.BrokerID,
+		group.ParticipantID,
 		groupID,
 		agent.ProviderID,
 		agentID,
@@ -327,7 +327,7 @@ func (s *serviceCommander) Create(
 			&svc.ID,
 			&svc.ProviderID,
 			&svc.AgentID,
-			&svc.BrokerID)
+			&svc.ConsumerID)
 		return err
 	})
 	if err != nil {
@@ -363,7 +363,7 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 				return err
 			}
 			if _, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceUpdated,
-				&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID,
+				&id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID,
 				&originalSvc, svc); err != nil {
 				return err
 			}
@@ -418,7 +418,7 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 			return err
 		}
 		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceTransitioned,
-			&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID,
+			&id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID,
 			&originalSvc, svc)
 		return err
 	})
@@ -461,7 +461,7 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 			return err
 		}
 		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceRetried,
-			&id, &svc.ProviderID, &svc.AgentID, &svc.BrokerID, &originalSvc, svc)
+			&id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
 		return err
 	})
 	if err != nil {

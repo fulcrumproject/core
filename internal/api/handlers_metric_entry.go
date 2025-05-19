@@ -146,7 +146,7 @@ func metricEntryToResponse(me *domain.MetricEntry) *MetricEntryResponse {
 		ID:         me.ID,
 		AgentID:    me.AgentID,
 		ProviderID: me.ProviderID,
-		BrokerID:   me.BrokerID,
+		BrokerID:   me.ConsumerID,
 		ServiceID:  me.ServiceID,
 		ResourceID: me.ResourceID,
 		Value:      me.Value,

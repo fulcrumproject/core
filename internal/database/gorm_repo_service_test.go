@@ -62,7 +62,7 @@ func TestServiceRepository(t *testing.T) {
 			Resources:         &(domain.JSON{"cpu": "1"}),
 			AgentID:           agent.ID,
 			ProviderID:        provider.ID, // Set ProviderID to the created provider's ID
-			BrokerID:          broker.ID,   // Set BrokerID to the created broker's ID
+			ConsumerID:        broker.ID,   // Set BrokerID to the created broker's ID
 			ServiceTypeID:     serviceType.ID,
 			GroupID:           serviceGroup.ID,
 		}
@@ -84,7 +84,7 @@ func TestServiceRepository(t *testing.T) {
 			Resources:         &(domain.JSON{"cpu": "1"}),
 			AgentID:           agent.ID,
 			ProviderID:        provider.ID, // Set ProviderID
-			BrokerID:          broker.ID,   // Set BrokerID
+			ConsumerID:        broker.ID,   // Set BrokerID
 			ServiceTypeID:     serviceType.ID,
 			GroupID:           serviceGroup.ID,
 		}
@@ -126,7 +126,7 @@ func TestServiceRepository(t *testing.T) {
 			Resources:         &(domain.JSON{"cpu": "1"}),
 			AgentID:           agent.ID,
 			ProviderID:        provider.ID, // Set ProviderID
-			BrokerID:          broker.ID,   // Set BrokerID
+			ConsumerID:        broker.ID,   // Set BrokerID
 			ServiceTypeID:     serviceType.ID,
 			GroupID:           serviceGroup.ID,
 		}
@@ -158,7 +158,7 @@ func TestServiceRepository(t *testing.T) {
 			CurrentState:  domain.ServiceStarted,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID, // Set ProviderID
-			BrokerID:      broker.ID,   // Set BrokerID
+			ConsumerID:    broker.ID,   // Set BrokerID
 			ServiceTypeID: serviceType.ID,
 			GroupID:       serviceGroup.ID,
 		}
@@ -180,9 +180,9 @@ func TestServiceRepository(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
 			// Create multiple services
 			services := []*domain.Service{
-				{Name: "Service A", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, BrokerID: broker.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-				{Name: "Service B", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, BrokerID: broker.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-				{Name: "Service C", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, BrokerID: broker.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service A", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: broker.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service B", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: broker.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service C", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: broker.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
 			}
 			for _, service := range services {
 				err := repo.Create(context.Background(), service)
@@ -256,7 +256,7 @@ func TestServiceRepository(t *testing.T) {
 					Name:          "Paginated Service",
 					CurrentState:  domain.ServiceStarted,
 					ProviderID:    provider.ID, // Set ProviderID
-					BrokerID:      broker.ID,   // Set BrokerID
+					ConsumerID:    broker.ID,   // Set BrokerID
 					AgentID:       agent.ID,
 					ServiceTypeID: serviceType.ID,
 					GroupID:       serviceGroup.ID,
@@ -295,7 +295,7 @@ func TestServiceRepository(t *testing.T) {
 			CurrentState:  domain.ServiceStarted,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID, // Set ProviderID
-			BrokerID:      broker.ID,   // Set BrokerID
+			ConsumerID:    broker.ID,   // Set BrokerID
 			ServiceTypeID: serviceType.ID,
 			GroupID:       serviceGroup.ID,
 		}
@@ -320,7 +320,7 @@ func TestServiceRepository(t *testing.T) {
 			CurrentState:  domain.ServiceStarted,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID,
-			BrokerID:      broker.ID,
+			ConsumerID:    broker.ID,
 			ServiceTypeID: serviceType.ID,
 			GroupID:       serviceGroup.ID,
 		}
@@ -348,7 +348,7 @@ func TestServiceRepository(t *testing.T) {
 			ExternalID:    &externalID,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID,
-			BrokerID:      broker.ID,
+			ConsumerID:    broker.ID,
 			ServiceTypeID: serviceType.ID,
 			GroupID:       serviceGroup.ID,
 		}
@@ -384,7 +384,7 @@ func TestServiceRepository(t *testing.T) {
 
 		scope, err := repo.AuthScope(context.Background(), service.ID)
 		require.NoError(t, err)
-		assert.Equal(t, provider.ID, *scope.ProviderID, "Provider ID should match")
+		assert.Equal(t, provider.ID, *scope.ParticipantID, "Provider ID should match")
 		assert.Equal(t, agent.ID, *scope.AgentID, "Agent ID should match")
 		assert.Equal(t, broker.ID, *scope.BrokerID, "Broker ID should match")
 	})

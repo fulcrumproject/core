@@ -57,7 +57,7 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-	scope := domain.AuthScope{ProviderID: &p.ProviderID}
+	scope := domain.AuthScope{ParticipantID: &p.ProviderID}
 	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectAgent, domain.ActionCreate, &scope); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return

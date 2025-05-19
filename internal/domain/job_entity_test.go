@@ -355,7 +355,7 @@ func TestNewJob(t *testing.T) {
 		},
 		ProviderID: providerID,
 		AgentID:    agentID,
-		BrokerID:   brokerID,
+		ConsumerID: brokerID,
 	}
 
 	action := ServiceActionCreate
@@ -363,7 +363,7 @@ func TestNewJob(t *testing.T) {
 
 	job := NewJob(service, action, priority)
 
-	assert.Equal(t, brokerID, job.BrokerID)
+	assert.Equal(t, brokerID, job.ConsumerID)
 	assert.Equal(t, providerID, job.ProviderID)
 	assert.Equal(t, agentID, job.AgentID)
 	assert.Equal(t, serviceID, job.ServiceID)
@@ -384,6 +384,6 @@ func createJobWithState(id uuid.UUID, state JobState) *Job {
 		AgentID:    uuid.New(),
 		ServiceID:  uuid.New(),
 		ProviderID: uuid.New(),
-		BrokerID:   uuid.New(),
+		ConsumerID: uuid.New(),
 	}
 }

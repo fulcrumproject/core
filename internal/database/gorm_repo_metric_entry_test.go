@@ -75,7 +75,7 @@ func TestMetricEntryRepository(t *testing.T) {
 			ServiceID:  service.ID,
 			ResourceID: "test-resource",
 			ProviderID: provider.ID,
-			BrokerID:   broker.ID,
+			ConsumerID: broker.ID,
 			Value:      42.5,
 			TypeID:     metricTypeService.ID,
 		}
@@ -115,7 +115,7 @@ func TestMetricEntryRepository(t *testing.T) {
 					ServiceID:  service.ID,
 					ResourceID: e.resourceID,
 					ProviderID: provider.ID,
-					BrokerID:   broker.ID,
+					ConsumerID: broker.ID,
 					Value:      e.value,
 					TypeID:     metricTypeService.ID,
 				}
@@ -193,7 +193,7 @@ func TestMetricEntryRepository(t *testing.T) {
 					ServiceID:  service.ID,
 					ResourceID: "sort-test",
 					ProviderID: provider.ID,
-					BrokerID:   broker.ID,
+					ConsumerID: broker.ID,
 					Value:      value,
 					TypeID:     metricTypeService.ID,
 				}
@@ -226,7 +226,7 @@ func TestMetricEntryRepository(t *testing.T) {
 					ServiceID:  service.ID,
 					ResourceID: "pagination-test",
 					ProviderID: provider.ID,
-					BrokerID:   broker.ID,
+					ConsumerID: broker.ID,
 					Value:      float64(i * 10),
 					TypeID:     metricTypeService.ID,
 				}
@@ -270,7 +270,7 @@ func TestMetricEntryRepository(t *testing.T) {
 					ServiceID:  service.ID,
 					ResourceID: fmt.Sprintf("count-service-%d", i),
 					ProviderID: provider.ID,
-					BrokerID:   broker.ID,
+					ConsumerID: broker.ID,
 					Value:      float64(i * 10),
 					TypeID:     metricTypeService.ID,
 				}
@@ -286,7 +286,7 @@ func TestMetricEntryRepository(t *testing.T) {
 					ServiceID:  service.ID,
 					ResourceID: fmt.Sprintf("count-agent-%d", i),
 					ProviderID: provider.ID,
-					BrokerID:   broker.ID,
+					ConsumerID: broker.ID,
 					Value:      float64(i * 10),
 					TypeID:     metricTypeAgent.ID,
 				}
@@ -320,7 +320,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				ServiceID:  service.ID,
 				ResourceID: "auth-scope-test",
 				ProviderID: provider.ID,
-				BrokerID:   broker.ID,
+				ConsumerID: broker.ID,
 				Value:      42.0,
 				TypeID:     metricTypeService.ID,
 			}
@@ -331,7 +331,7 @@ func TestMetricEntryRepository(t *testing.T) {
 			scope, err := repo.AuthScope(context.Background(), metricEntry.ID)
 			require.NoError(t, err)
 			assert.NotNil(t, scope, "AuthScope should not return nil")
-			assert.Equal(t, provider.ID, *scope.ProviderID, "Should return the correct provider ID")
+			assert.Equal(t, provider.ID, *scope.ParticipantID, "Should return the correct provider ID")
 			assert.Equal(t, agent.ID, *scope.AgentID, "Should return the correct agent ID")
 			assert.Equal(t, broker.ID, *scope.BrokerID, "Should return the correct broker ID")
 		})

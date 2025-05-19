@@ -52,8 +52,8 @@ func TestJobRepository(t *testing.T) {
 
 	serviceGroupRepo := NewServiceGroupRepository(testDB.DB)
 	serviceGroup := &domain.ServiceGroup{
-		Name:     "Test Service Group",
-		BrokerID: broker.ID,
+		Name:          "Test Service Group",
+		ParticipantID: broker.ID,
 	}
 	require.NoError(t, serviceGroupRepo.Create(context.Background(), serviceGroup))
 
@@ -67,7 +67,7 @@ func TestJobRepository(t *testing.T) {
 		AgentID:           agent.ID,
 		ServiceTypeID:     serviceType.ID,
 		GroupID:           serviceGroup.ID,
-		BrokerID:          broker.ID,
+		ConsumerID:        broker.ID,
 		ProviderID:        provider.ID,
 	}
 	require.NoError(t, serviceRepo.Create(context.Background(), service))
@@ -358,7 +358,7 @@ func TestJobRepository(t *testing.T) {
 			// The job should have provider, agent, and broker IDs from the service
 			require.NotNil(t, service.ProviderID)
 			require.NotNil(t, service.AgentID)
-			require.NotNil(t, service.BrokerID)
+			require.NotNil(t, service.ConsumerID)
 
 			// Save job to database
 			require.NoError(t, repo.Create(ctx, job))
@@ -371,12 +371,12 @@ func TestJobRepository(t *testing.T) {
 			assert.NotNil(t, scope, "AuthScope should not return nil")
 
 			// Verify auth scope contains the correct IDs
-			assert.NotNil(t, scope.ProviderID, "ProviderID should not be nil")
-			assert.Equal(t, service.ProviderID, *scope.ProviderID, "Should return the correct provider ID")
+			assert.NotNil(t, scope.ParticipantID, "ProviderID should not be nil")
+			assert.Equal(t, service.ProviderID, *scope.ParticipantID, "Should return the correct provider ID")
 			assert.NotNil(t, scope.AgentID, "AgentID should not be nil")
 			assert.Equal(t, service.AgentID, *scope.AgentID, "Should return the correct agent ID")
 			assert.NotNil(t, scope.BrokerID, "BrokerID should not be nil")
-			assert.Equal(t, service.BrokerID, *scope.BrokerID, "Should return the correct broker ID")
+			assert.Equal(t, service.ConsumerID, *scope.BrokerID, "Should return the correct broker ID")
 		})
 	})
 }

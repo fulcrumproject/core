@@ -17,7 +17,7 @@ func TestServiceCommander_Create(t *testing.T) {
 	serviceTypeID := uuid.New()
 	groupID := uuid.New()
 	providerID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	validName := "Web Server"
 	validAttributes := Attributes{"tier": {"premium"}}
 	validProperties := JSON{"port": 8080}
@@ -61,7 +61,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					BrokerID: brokerID,
+					ParticipantID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					assert.Equal(t, groupID, id)
@@ -168,7 +168,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					BrokerID: brokerID,
+					ParticipantID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil
@@ -210,7 +210,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					BrokerID: brokerID,
+					ParticipantID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil
@@ -260,7 +260,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					BrokerID: brokerID,
+					ParticipantID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil
@@ -316,7 +316,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					BrokerID: brokerID,
+					ParticipantID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil
@@ -444,7 +444,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        brokerID,
 					Name:              validName,
 					CurrentState:      ServiceStopped,
 					CurrentProperties: &validProperties,
@@ -499,7 +499,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        brokerID,
 					Name:              validName,
 					CurrentState:      ServiceStopped,
 					CurrentProperties: &validProperties,
@@ -565,7 +565,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        brokerID,
 					Name:              validName,
 					CurrentState:      ServiceStarted,
 					CurrentProperties: &validProperties,
@@ -629,7 +629,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        brokerID,
 					Name:              validName,
 					CurrentState:      ServiceCreating,
 					CurrentProperties: &validProperties,
@@ -659,7 +659,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        brokerID,
 					Name:              validName,
 					CurrentState:      ServiceStopped,
 					CurrentProperties: &validProperties,
@@ -700,7 +700,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
 					ProviderID:        providerID,
-					BrokerID:          brokerID,
+					ConsumerID:        brokerID,
 					Name:              validName,
 					CurrentState:      ServiceStopped,
 					CurrentProperties: &validProperties,
@@ -747,7 +747,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        brokerID,
 					Name:              validName,
 					CurrentState:      ServiceStopped,
 					CurrentProperties: &validProperties,
@@ -857,7 +857,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -920,7 +920,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -983,7 +983,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1044,7 +1044,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1073,7 +1073,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1114,7 +1114,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1160,7 +1160,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1266,7 +1266,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1301,7 +1301,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1361,7 +1361,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1402,7 +1402,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1448,7 +1448,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    brokerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",

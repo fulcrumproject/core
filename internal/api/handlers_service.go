@@ -75,7 +75,7 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
-	scope := &domain.AuthScope{BrokerID: serviceGroupScope.BrokerID, ProviderID: agentScope.ProviderID, AgentID: &p.AgentID}
+	scope := &domain.AuthScope{BrokerID: serviceGroupScope.BrokerID, ParticipantID: agentScope.ParticipantID, AgentID: &p.AgentID}
 	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectService, domain.ActionCreate, scope); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -254,7 +254,7 @@ func serviceToResponse(s *domain.Service) *ServiceResponse {
 	resp := &ServiceResponse{
 		ID:                s.ID,
 		ProviderID:        s.ProviderID,
-		BrokerID:          s.BrokerID,
+		BrokerID:          s.ConsumerID,
 		AgentID:           s.AgentID,
 		ServiceTypeID:     s.ServiceTypeID,
 		GroupID:           s.GroupID,

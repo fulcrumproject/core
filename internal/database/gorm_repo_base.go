@@ -154,8 +154,8 @@ func (r *GormRepository[T]) Exists(ctx context.Context, id domain.UUID) (bool, e
 }
 
 func allAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
-	if s.ProviderID != nil {
-		return q.Where("provider_id = ?", s.ProviderID)
+	if s.ParticipantID != nil {
+		return q.Where("provider_id = ?", s.ParticipantID)
 	}
 	if s.BrokerID != nil {
 		return q.Where("broker_id = ?", s.BrokerID)

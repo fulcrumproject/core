@@ -133,7 +133,7 @@ func TestJobCommander_Complete(t *testing.T) {
 		job.ServiceID = serviceID
 		job.AgentID = agentID
 		job.ProviderID = providerID
-		job.BrokerID = brokerID
+		job.ConsumerID = brokerID
 		job.ClaimedAt = &now
 		return job
 	}
@@ -153,7 +153,7 @@ func TestJobCommander_Complete(t *testing.T) {
 			TargetState:   &targetState,
 			AgentID:       agentID,
 			ProviderID:    providerID,
-			BrokerID:      brokerID,
+			ConsumerID:    brokerID,
 		}
 	}
 
@@ -468,7 +468,7 @@ func TestJobCommander_Fail(t *testing.T) {
 		job.ServiceID = serviceID
 		job.AgentID = agentID
 		job.ProviderID = providerID
-		job.BrokerID = brokerID
+		job.ConsumerID = brokerID
 		job.ClaimedAt = &now
 		return job
 	}
@@ -488,7 +488,7 @@ func TestJobCommander_Fail(t *testing.T) {
 			TargetState:   &targetState,
 			AgentID:       agentID,
 			ProviderID:    providerID,
-			BrokerID:      brokerID,
+			ConsumerID:    brokerID,
 		}
 	}
 

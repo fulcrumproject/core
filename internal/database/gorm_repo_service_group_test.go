@@ -289,7 +289,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			assert.NotNil(t, scope, "AuthScope should not return nil")
 			assert.NotNil(t, scope.BrokerID, "BrokerID should not be nil")
 			assert.Equal(t, broker.ID, *scope.BrokerID, "BrokerID should match the broker's ID")
-			assert.Nil(t, scope.ProviderID, "ProviderID should be nil for service groups")
+			assert.Nil(t, scope.ParticipantID, "ProviderID should be nil for service groups")
 			assert.Nil(t, scope.AgentID, "AgentID should be nil for service groups")
 		})
 	})

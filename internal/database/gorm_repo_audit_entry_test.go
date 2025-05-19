@@ -205,7 +205,7 @@ func TestAuditEntryRepository(t *testing.T) {
 				Properties:    domain.JSON{"test": "scoped audit entry"},
 				ProviderID:    &providerID,
 				AgentID:       &agentID,
-				BrokerID:      &brokerID,
+				ConsumerID:    &brokerID,
 			}
 
 			err := repo.Create(ctx, auditEntry)
@@ -217,7 +217,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			// Assert
 			require.NoError(t, err)
 			assert.NotNil(t, scope, "AuthScope should not return nil")
-			assert.Equal(t, providerID, *scope.ProviderID, "Should return the correct provider ID")
+			assert.Equal(t, providerID, *scope.ParticipantID, "Should return the correct provider ID")
 			assert.Equal(t, agentID, *scope.AgentID, "Should return the correct agent ID")
 			assert.Equal(t, brokerID, *scope.BrokerID, "Should return the correct broker ID")
 

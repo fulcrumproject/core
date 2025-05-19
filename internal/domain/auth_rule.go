@@ -95,69 +95,63 @@ func (a *RuleAuthorizer) hasPermission(subject AuthSubject, action AuthAction, r
 
 // Default authorization rules for the system
 var defaultAuthzRules = []AuthRule{
-	// Provider permissions
-	{Subject: SubjectProvider, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
-	{Subject: SubjectProvider, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin}},
-	{Subject: SubjectProvider, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin}},
-	{Subject: SubjectProvider, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin}},
-
-	// Broker permissions
-	{Subject: SubjectBroker, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
-	{Subject: SubjectBroker, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin}},
-	{Subject: SubjectBroker, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin}},
-	{Subject: SubjectBroker, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin}},
+	// Participant permissions
+	{Subject: SubjectParticipant, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectParticipant, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin}},
+	{Subject: SubjectParticipant, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectParticipant, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin}},
 
 	// Agent permissions
-	{Subject: SubjectAgent, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker, RoleAgent}},
-	{Subject: SubjectAgent, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin}},
-	{Subject: SubjectAgent, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin}},
-	{Subject: SubjectAgent, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin}},
-	{Subject: SubjectAgent, Action: ActionUpdateState, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleAgent}},
+	{Subject: SubjectAgent, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant, RoleAgent}},
+	{Subject: SubjectAgent, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectAgent, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectAgent, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectAgent, Action: ActionUpdateState, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant, RoleAgent}},
 
 	// AgentType permissions
-	{Subject: SubjectAgentType, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker, RoleAgent}},
+	{Subject: SubjectAgentType, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant, RoleAgent}},
 
 	// Service permissions
-	{Subject: SubjectService, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker, RoleAgent}},
-	{Subject: SubjectService, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleBroker}},
-	{Subject: SubjectService, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleBroker}},
-	{Subject: SubjectService, Action: ActionStart, Roles: []AuthRole{RoleFulcrumAdmin, RoleBroker}},
-	{Subject: SubjectService, Action: ActionStop, Roles: []AuthRole{RoleFulcrumAdmin, RoleBroker}},
-	{Subject: SubjectService, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin, RoleBroker}},
+	{Subject: SubjectService, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant, RoleAgent}},
+	{Subject: SubjectService, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectService, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectService, Action: ActionStart, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectService, Action: ActionStop, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectService, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 
 	// ServiceType permissions
-	{Subject: SubjectServiceType, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker, RoleAgent}},
+	{Subject: SubjectServiceType, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant, RoleAgent}},
 
 	// ServiceGroup permissions
-	{Subject: SubjectServiceGroup, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
-	{Subject: SubjectServiceGroup, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleBroker}},
-	{Subject: SubjectServiceGroup, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleBroker}},
-	{Subject: SubjectServiceGroup, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin, RoleBroker}},
+	{Subject: SubjectServiceGroup, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectServiceGroup, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectServiceGroup, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectServiceGroup, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 
 	// Job permissions
-	{Subject: SubjectJob, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker, RoleAgent}},
+	{Subject: SubjectJob, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant, RoleAgent}},
 	{Subject: SubjectJob, Action: ActionClaim, Roles: []AuthRole{RoleAgent}},
 	{Subject: SubjectJob, Action: ActionComplete, Roles: []AuthRole{RoleAgent}},
 	{Subject: SubjectJob, Action: ActionFail, Roles: []AuthRole{RoleAgent}},
 	{Subject: SubjectJob, Action: ActionListPending, Roles: []AuthRole{RoleAgent}},
 
 	// MetricType permissions
-	{Subject: SubjectMetricType, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker, RoleAgent}},
+	{Subject: SubjectMetricType, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant, RoleAgent}},
 	{Subject: SubjectMetricType, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin}},
 	{Subject: SubjectMetricType, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin}},
 	{Subject: SubjectMetricType, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin}},
 
 	// MetricEntry permissions
-	{Subject: SubjectMetricEntry, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
+	{Subject: SubjectMetricEntry, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 	{Subject: SubjectMetricEntry, Action: ActionCreate, Roles: []AuthRole{RoleAgent}},
 
 	// AuditEntry permissions
-	{Subject: SubjectAuditEntry, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
+	{Subject: SubjectAuditEntry, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 
 	// Token permissions
-	{Subject: SubjectToken, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
-	{Subject: SubjectToken, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
-	{Subject: SubjectToken, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
-	{Subject: SubjectToken, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
-	{Subject: SubjectToken, Action: ActionGenerateToken, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
+	{Subject: SubjectToken, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectToken, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectToken, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectToken, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+	{Subject: SubjectToken, Action: ActionGenerateToken, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 }

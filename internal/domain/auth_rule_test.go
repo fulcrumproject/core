@@ -12,7 +12,7 @@ func TestAuthRule_String(t *testing.T) {
 	rule := AuthRule{
 		Subject: SubjectAgent,
 		Action:  ActionCreate,
-		Roles:   []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin},
+		Roles:   []AuthRole{RoleFulcrumAdmin, RoleParticipant},
 	}
 
 	assert.Equal(t, "agent:create", rule.String())
@@ -21,8 +21,8 @@ func TestAuthRule_String(t *testing.T) {
 func TestNewRuleAuthorizer(t *testing.T) {
 	// Create some test rules
 	rules := []AuthRule{
-		{Subject: SubjectAgent, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin}},
-		{Subject: SubjectService, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
+		{Subject: SubjectAgent, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+		{Subject: SubjectService, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 	}
 
 	// Create a new authorizer with these rules
@@ -36,11 +36,10 @@ func TestNewRuleAuthorizer(t *testing.T) {
 	assert.Contains(t, authorizer.rules[SubjectAgent], ActionCreate)
 	assert.Contains(t, authorizer.rules[SubjectService], ActionRead)
 	assert.True(t, authorizer.rules[SubjectAgent][ActionCreate][RoleFulcrumAdmin])
-	assert.True(t, authorizer.rules[SubjectAgent][ActionCreate][RoleProviderAdmin])
-	assert.False(t, authorizer.rules[SubjectAgent][ActionCreate][RoleBroker])
+	assert.True(t, authorizer.rules[SubjectAgent][ActionCreate][RoleParticipant])
 	assert.True(t, authorizer.rules[SubjectService][ActionRead][RoleFulcrumAdmin])
-	assert.True(t, authorizer.rules[SubjectService][ActionRead][RoleProviderAdmin])
-	assert.True(t, authorizer.rules[SubjectService][ActionRead][RoleBroker])
+	assert.True(t, authorizer.rules[SubjectService][ActionRead][RoleParticipant])
+	assert.True(t, authorizer.rules[SubjectService][ActionRead][RoleParticipant])
 }
 
 func TestNewDefaultRuleAuthorizer(t *testing.T) {
@@ -48,17 +47,17 @@ func TestNewDefaultRuleAuthorizer(t *testing.T) {
 	authorizer := NewDefaultRuleAuthorizer()
 
 	// Spot check some rules
-	assert.True(t, authorizer.hasPermission(SubjectProvider, ActionRead, RoleFulcrumAdmin))
-	assert.True(t, authorizer.hasPermission(SubjectAgent, ActionCreate, RoleProviderAdmin))
-	assert.True(t, authorizer.hasPermission(SubjectService, ActionRead, RoleBroker))
+	assert.True(t, authorizer.hasPermission(SubjectParticipant, ActionRead, RoleFulcrumAdmin))
+	assert.True(t, authorizer.hasPermission(SubjectAgent, ActionCreate, RoleParticipant))
+	assert.True(t, authorizer.hasPermission(SubjectService, ActionRead, RoleParticipant))
 	assert.False(t, authorizer.hasPermission(SubjectAgent, ActionCreate, RoleAgent))
 }
 
 func TestRuleAuthorizer_hasPermission(t *testing.T) {
 	// Create a simple authorizer with a few rules
 	authorizer := NewRuleAuthorizer(
-		AuthRule{Subject: SubjectAgent, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin}},
-		AuthRule{Subject: SubjectService, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
+		AuthRule{Subject: SubjectAgent, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+		AuthRule{Subject: SubjectService, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 	)
 
 	tests := []struct {
@@ -79,15 +78,8 @@ func TestRuleAuthorizer_hasPermission(t *testing.T) {
 			name:     "ProviderAdmin can create agent",
 			subject:  SubjectAgent,
 			action:   ActionCreate,
-			role:     RoleProviderAdmin,
+			role:     RoleParticipant,
 			expected: true,
-		},
-		{
-			name:     "Broker cannot create agent",
-			subject:  SubjectAgent,
-			action:   ActionCreate,
-			role:     RoleBroker,
-			expected: false,
 		},
 		{
 			name:     "Agent cannot create agent",
@@ -104,10 +96,10 @@ func TestRuleAuthorizer_hasPermission(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "Broker can read service",
+			name:     "Participant can read service",
 			subject:  SubjectService,
 			action:   ActionRead,
-			role:     RoleBroker,
+			role:     RoleParticipant,
 			expected: true,
 		},
 		{
@@ -144,11 +136,11 @@ func TestRuleAuthorizer_hasPermission(t *testing.T) {
 func TestRuleAuthorizer_Authorize(t *testing.T) {
 	// Create a simple authorizer with a few rules
 	authorizer := NewRuleAuthorizer(
-		AuthRule{Subject: SubjectAgent, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin}},
-		AuthRule{Subject: SubjectService, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
+		AuthRule{Subject: SubjectAgent, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+		AuthRule{Subject: SubjectService, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 	)
 
-	providerID := uuid.New()
+	participantID := uuid.New()
 	agentID := uuid.New()
 	brokerID := uuid.New()
 
@@ -172,40 +164,28 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "ProviderAdmin can create agent in own provider",
+			name: "ProviderAdmin can create agent in own participant",
 			setupMockID: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleProviderAdmin).
-					WithProviderID(&providerID)
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{ProviderID: &providerID},
+			targetScope: &AuthScope{ParticipantID: &participantID},
 			wantErr:     false,
 		},
 		{
-			name: "ProviderAdmin cannot create agent in different provider",
+			name: "ProviderAdmin cannot create agent in different participant",
 			setupMockID: func() AuthIdentity {
-				myProviderID := uuid.New() // Different provider ID
-				return NewMockAuthIdentity(uuid.New(), RoleProviderAdmin).
-					WithProviderID(&myProviderID)
+				myProviderID := uuid.New() // Different participant ID
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&myProviderID)
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{ProviderID: &providerID},
+			targetScope: &AuthScope{ParticipantID: &participantID},
 			wantErr:     true,
-			errContains: "invalid provider authorization scope",
-		},
-		{
-			name: "Broker cannot create agent",
-			setupMockID: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleBroker).
-					WithBrokerID(&brokerID)
-			},
-			subject:     SubjectAgent,
-			action:      ActionCreate,
-			targetScope: &AuthScope{},
-			wantErr:     true,
-			errContains: "does not have permission",
+			errContains: "invalid participant authorization scope",
 		},
 		{
 			name: "Agent can't create agent (not in role list)",
@@ -220,14 +200,14 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			errContains: "does not have permission",
 		},
 		{
-			name: "Broker can read service in own broker",
+			name: "Participant can read service in own scope",
 			setupMockID: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleBroker).
-					WithBrokerID(&brokerID)
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&brokerID)
 			},
 			subject:     SubjectService,
 			action:      ActionRead,
-			targetScope: &AuthScope{BrokerID: &brokerID},
+			targetScope: &AuthScope{ParticipantID: &brokerID},
 			wantErr:     false,
 		},
 		{
@@ -274,11 +254,11 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 func TestRuleAuthorizer_AuthorizeCtx(t *testing.T) {
 	baseCtx := context.Background()
 	authorizer := NewRuleAuthorizer(
-		AuthRule{Subject: SubjectAgent, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin}},
-		AuthRule{Subject: SubjectService, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker}},
+		AuthRule{Subject: SubjectAgent, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
+		AuthRule{Subject: SubjectService, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 	)
 
-	providerID := uuid.New()
+	participantID := uuid.New()
 
 	tests := []struct {
 		name        string
@@ -313,12 +293,12 @@ func TestRuleAuthorizer_AuthorizeCtx(t *testing.T) {
 		{
 			name: "Provider admin with matching scope",
 			setupCtx: func() context.Context {
-				identity := NewMockAuthIdentity(uuid.New(), RoleProviderAdmin).WithProviderID(&providerID)
+				identity := NewMockAuthIdentity(uuid.New(), RoleParticipant).WithParticipantID(&participantID)
 				return ContextWithMockAuth(baseCtx, identity)
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{ProviderID: &providerID},
+			targetScope: &AuthScope{ParticipantID: &participantID},
 			wantErr:     false,
 		},
 		{

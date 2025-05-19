@@ -57,8 +57,8 @@ func (m MockAuthIdentity) Role() domain.AuthRole            { return m.role }
 func (m MockAuthIdentity) IsRole(role domain.AuthRole) bool { return role == m.role }
 func (m MockAuthIdentity) Scope() *domain.AuthScope {
 	return &domain.AuthScope{
-		AgentID:    m.agentID,
-		ProviderID: m.providerID,
-		BrokerID:   m.brokerID,
+		AgentID:       m.agentID,
+		ParticipantID: m.providerID,
+		BrokerID:      m.brokerID,
 	}
 }

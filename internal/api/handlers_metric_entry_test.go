@@ -102,7 +102,7 @@ func TestMetricEntryHandleList(t *testing.T) {
 								},
 								ServiceID:  serviceID,
 								AgentID:    agentID,
-								BrokerID:   brokerID,
+								ConsumerID: brokerID,
 								ProviderID: providerID,
 								TypeID:     typeID,
 								ResourceID: "resource-1",
@@ -116,7 +116,7 @@ func TestMetricEntryHandleList(t *testing.T) {
 								},
 								ServiceID:  serviceID,
 								AgentID:    agentID,
-								BrokerID:   brokerID,
+								ConsumerID: brokerID,
 								ProviderID: providerID,
 								TypeID:     typeID,
 								ResourceID: "resource-2",
@@ -240,7 +240,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 							ID: serviceID,
 						},
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: brokerID,
 						ProviderID: providerID,
 					}, nil
 				}
@@ -266,7 +266,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 						},
 						ServiceID:  serviceID,
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: brokerID,
 						ProviderID: providerID,
 						TypeID:     typeID,
 						ResourceID: resourceID,
@@ -299,7 +299,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 							ID: serviceID,
 						},
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: brokerID,
 						ProviderID: providerID,
 					}, nil
 				}
@@ -325,7 +325,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 						},
 						ServiceID:  serviceID,
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: brokerID,
 						ProviderID: providerID,
 						TypeID:     typeID,
 						ResourceID: resourceID,
@@ -378,7 +378,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 							ID: serviceID,
 						},
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: brokerID,
 						ProviderID: providerID,
 					}, nil
 				}
@@ -407,7 +407,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 							ID: serviceID,
 						},
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: brokerID,
 						ProviderID: providerID,
 					}, nil
 				}
@@ -444,7 +444,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 							ID: serviceID,
 						},
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: brokerID,
 						ProviderID: providerID,
 					}, nil
 				}
@@ -526,7 +526,7 @@ func TestMetricEntryToResponse(t *testing.T) {
 		},
 		ServiceID:  serviceID,
 		AgentID:    agentID,
-		BrokerID:   brokerID,
+		ConsumerID: brokerID,
 		ProviderID: providerID,
 		TypeID:     typeID,
 		ResourceID: "resource-1",
@@ -560,7 +560,7 @@ func TestMetricEntryToResponse(t *testing.T) {
 	assert.Equal(t, metricEntry.Value, response.Value)
 	assert.Equal(t, metricEntry.AgentID, response.AgentID)
 	assert.Equal(t, metricEntry.ServiceID, response.ServiceID)
-	assert.Equal(t, metricEntry.BrokerID, response.BrokerID)
+	assert.Equal(t, metricEntry.ConsumerID, response.BrokerID)
 	assert.Equal(t, metricEntry.ProviderID, response.ProviderID)
 	assert.Equal(t, metricEntry.TypeID.String(), response.TypeID)
 	assert.Equal(t, JSONUTCTime(metricEntry.CreatedAt), response.CreatedAt)

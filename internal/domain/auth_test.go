@@ -20,13 +20,8 @@ func TestAuthRole_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Valid ProviderAdmin role",
-			role:    RoleProviderAdmin,
-			wantErr: false,
-		},
-		{
-			name:    "Valid Broker role",
-			role:    RoleBroker,
+			name:    "Valid Participant role",
+			role:    RoleParticipant,
 			wantErr: false,
 		},
 		{
@@ -61,13 +56,8 @@ func TestAuthSubject_Validate(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Valid Provider subject",
-			subject: SubjectProvider,
-			wantErr: false,
-		},
-		{
-			name:    "Valid Broker subject",
-			subject: SubjectBroker,
+			name:    "Valid Participant subject",
+			subject: SubjectParticipant,
 			wantErr: false,
 		},
 		{
@@ -248,12 +238,10 @@ func TestAuthContextFunctions(t *testing.T) {
 }
 
 func TestValidateAuthScope(t *testing.T) {
-	providerID := uuid.New()
+	participantID := uuid.New()
 	agentID := uuid.New()
-	brokerID := uuid.New()
-	differentProviderID := uuid.New()
 	differentAgentID := uuid.New()
-	differentBrokerID := uuid.New()
+	differentParticipantID := uuid.New()
 
 	tests := []struct {
 		name          string
@@ -286,34 +274,33 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleFulcrumAdmin)
 			},
 			targetScope: &AuthScope{
-				ProviderID: &providerID,
-				AgentID:    &agentID,
-				BrokerID:   &brokerID,
+				ParticipantID: &participantID,
+				AgentID:       &agentID,
 			},
 			wantErr: false,
 		},
 		{
-			name: "ProviderAdmin with matching provider",
+			name: "Participant with matching participant",
 			setupIdentity: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleProviderAdmin).
-					WithProviderID(&providerID)
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
 			},
 			targetScope: &AuthScope{
-				ProviderID: &providerID,
+				ParticipantID: &participantID,
 			},
 			wantErr: false,
 		},
 		{
-			name: "ProviderAdmin with non-matching provider",
+			name: "Participant with non-matching participant",
 			setupIdentity: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleProviderAdmin).
-					WithProviderID(&providerID)
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
 			},
 			targetScope: &AuthScope{
-				ProviderID: &differentProviderID,
+				ParticipantID: &differentParticipantID,
 			},
 			wantErr:     true,
-			errContains: "invalid provider authorization scope",
+			errContains: "invalid participant authorization scope",
 		},
 		{
 			name: "Agent with matching agent",
@@ -339,33 +326,33 @@ func TestValidateAuthScope(t *testing.T) {
 			errContains: "invalid agent authorization scope",
 		},
 		{
-			name: "Broker with matching broker",
+			name: "Participant with matching participant",
 			setupIdentity: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleBroker).
-					WithBrokerID(&brokerID)
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
 			},
 			targetScope: &AuthScope{
-				BrokerID: &brokerID,
+				ParticipantID: &participantID,
 			},
 			wantErr: false,
 		},
 		{
-			name: "Broker with non-matching broker",
+			name: "Participant with non-matching participant",
 			setupIdentity: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleBroker).
-					WithBrokerID(&brokerID)
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
 			},
 			targetScope: &AuthScope{
-				BrokerID: &differentBrokerID,
+				ParticipantID: &differentParticipantID,
 			},
 			wantErr:     true,
-			errContains: "invalid broker authorization scope",
+			errContains: "invalid participant authorization scope",
 		},
 		{
-			name: "ProviderAdmin with no scope provider ID is valid",
+			name: "Participant with no scope participant ID is valid",
 			setupIdentity: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleProviderAdmin).
-					WithProviderID(&providerID)
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
 			},
 			targetScope: &AuthScope{},
 			wantErr:     false,
@@ -380,10 +367,10 @@ func TestValidateAuthScope(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "Broker with no scope broker ID is valid",
+			name: "Participant with no scope participant ID is valid",
 			setupIdentity: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleBroker).
-					WithBrokerID(&brokerID)
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
 			},
 			targetScope: &AuthScope{},
 			wantErr:     false,

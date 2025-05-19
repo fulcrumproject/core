@@ -176,7 +176,7 @@ func TestGormTokenIdentity_Scope(t *testing.T) {
 
 	// Assert
 	assert.NotNil(t, scope)
-	assert.Equal(t, providerID, *scope.ProviderID)
+	assert.Equal(t, providerID, *scope.ParticipantID)
 	assert.Equal(t, brokerID, *scope.BrokerID)
 	assert.Equal(t, agentID, *scope.AgentID)
 }
