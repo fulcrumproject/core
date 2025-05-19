@@ -16,18 +16,15 @@ func TestJobRepository(t *testing.T) {
 	defer testDB.Cleanup(t)
 	repo := NewJobRepository(testDB.DB)
 
-	// Create broker first (needed for service group)
-	brokerRepo := NewBrokerRepository(testDB.DB)
-	broker := createTestBroker(t)
-	require.NoError(t, brokerRepo.Create(context.Background(), broker))
+	// Create participants (needed for service group and provider role)
+	participantRepo := NewParticipantRepository(testDB.DB)
+	consumer := createTestParticipant(t, domain.ParticipantEnabled)
+	require.NoError(t, participantRepo.Create(context.Background(), consumer))
 
 	// Create dependencies first
-	providerRepo := NewProviderRepository(testDB.DB)
-	provider := &domain.Provider{
-		Name:  "Test Provider",
-		State: domain.ProviderEnabled,
-	}
-	require.NoError(t, providerRepo.Create(context.Background(), provider))
+	provider := createTestParticipant(t, domain.ParticipantEnabled)
+	provider.Name = "Test Provider"
+	require.NoError(t, participantRepo.Create(context.Background(), provider))
 
 	agentTypeRepo := NewAgentTypeRepository(testDB.DB)
 	agentType := &domain.AgentType{
@@ -37,10 +34,10 @@ func TestJobRepository(t *testing.T) {
 
 	agentRepo := NewAgentRepository(testDB.DB)
 	agent := &domain.Agent{
-		Name:        "Test Agent",
-		State:       domain.AgentConnected,
-		ProviderID:  provider.ID,
-		AgentTypeID: agentType.ID,
+		Name:          "Test Agent",
+		State:         domain.AgentConnected,
+		ParticipantID: provider.ID,
+		AgentTypeID:   agentType.ID,
 	}
 	require.NoError(t, agentRepo.Create(context.Background(), agent))
 
@@ -53,7 +50,7 @@ func TestJobRepository(t *testing.T) {
 	serviceGroupRepo := NewServiceGroupRepository(testDB.DB)
 	serviceGroup := &domain.ServiceGroup{
 		Name:          "Test Service Group",
-		ParticipantID: broker.ID,
+		ParticipantID: consumer.ID,
 	}
 	require.NoError(t, serviceGroupRepo.Create(context.Background(), serviceGroup))
 
@@ -67,7 +64,7 @@ func TestJobRepository(t *testing.T) {
 		AgentID:           agent.ID,
 		ServiceTypeID:     serviceType.ID,
 		GroupID:           serviceGroup.ID,
-		ConsumerID:        broker.ID,
+		ConsumerID:        consumer.ID,
 		ProviderID:        provider.ID,
 	}
 	require.NoError(t, serviceRepo.Create(context.Background(), service))
@@ -371,12 +368,10 @@ func TestJobRepository(t *testing.T) {
 			assert.NotNil(t, scope, "AuthScope should not return nil")
 
 			// Verify auth scope contains the correct IDs
-			assert.NotNil(t, scope.ParticipantID, "ProviderID should not be nil")
-			assert.Equal(t, service.ProviderID, *scope.ParticipantID, "Should return the correct provider ID")
+			assert.NotNil(t, scope.ParticipantID, "ParticipantID should not be nil")
+			assert.Equal(t, service.ProviderID, *scope.ParticipantID, "Should return the correct participant ID")
 			assert.NotNil(t, scope.AgentID, "AgentID should not be nil")
 			assert.Equal(t, service.AgentID, *scope.AgentID, "Should return the correct agent ID")
-			assert.NotNil(t, scope.BrokerID, "BrokerID should not be nil")
-			assert.Equal(t, service.ConsumerID, *scope.BrokerID, "Should return the correct broker ID")
 		})
 	})
 }

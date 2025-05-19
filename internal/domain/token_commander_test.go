@@ -158,12 +158,12 @@ func TestTokenCommander_Create(t *testing.T) {
 				store.WithAgentRepo(agentRepo)
 
 				// Mock agent FindByID
-				agentProviderID := uuid.New()
+				providerID := uuid.New()
 				agent := &Agent{
 					BaseEntity: BaseEntity{
 						ID: validID,
 					},
-					ProviderID: agentProviderID, // Changed from ProviderID
+					ParticipantID: providerID, // Changed from ProviderID
 				}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
 					assert.Equal(t, validID, id)
@@ -177,7 +177,7 @@ func TestTokenCommander_Create(t *testing.T) {
 					assert.Equal(t, RoleAgent, token.Role)
 					assert.NotEmpty(t, token.HashedValue)
 					assert.Equal(t, &validID, token.AgentID)
-					assert.Equal(t, &agentProviderID, token.ParticipantID) // Changed from ProviderID
+					assert.Equal(t, &providerID, token.ParticipantID) // Changed from ProviderID
 					return nil
 				}
 

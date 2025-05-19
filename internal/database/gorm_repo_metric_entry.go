@@ -49,5 +49,5 @@ func (r *GormMetricEntryRepository) CountByMetricType(ctx context.Context, typeI
 }
 
 func (r *GormMetricEntryRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	return r.getAuthScope(ctx, id, "provider_id", "agent_id", "broker_id")
+	return r.getAuthScope(ctx, id, "participant_id", "agent_id")
 }

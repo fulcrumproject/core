@@ -65,9 +65,8 @@ func NewToken(
 			token.AgentID = scopeID
 
 			// Make a copy of the agent's participant ID and set it
-			// Agent.ProviderID will be changed to Agent.ParticipantID in a later step
-			if agent.ProviderID != (UUID{}) { // Check if ParticipantID is not nil UUID
-				participantID := agent.ProviderID // This assumes agent.ParticipantID is already updated
+			if agent.ParticipantID != (UUID{}) { // Check if ParticipantID is not empty UUID
+				participantID := agent.ParticipantID
 				token.ParticipantID = &participantID
 			} else {
 				// This case should ideally not happen if an agent always belongs to a participant

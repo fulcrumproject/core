@@ -18,7 +18,7 @@ func TestAgentRepository(t *testing.T) {
 
 	// Create repository instances
 	agentRepo := NewAgentRepository(tdb.DB)
-	providerRepo := NewProviderRepository(tdb.DB)
+	participantRepo := NewParticipantRepository(tdb.DB)
 	agentTypeRepo := NewAgentTypeRepository(tdb.DB)
 
 	t.Run("Create", func(t *testing.T) {
@@ -26,13 +26,13 @@ func TestAgentRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			provider := createTestProvider(t, domain.ProviderEnabled)
-			require.NoError(t, providerRepo.Create(ctx, provider))
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
 
 			agentType := createTestAgentType(t)
 			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
 
-			agent := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+			agent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
 
 			// Execute
 			err := agentRepo.Create(ctx, agent)
@@ -48,9 +48,9 @@ func TestAgentRepository(t *testing.T) {
 			assert.Equal(t, agent.State, found.State)
 			assert.Equal(t, agent.CountryCode, found.CountryCode)
 			assert.Equal(t, agent.Attributes, found.Attributes)
-			assert.Equal(t, agent.ProviderID, found.ProviderID)
+			assert.Equal(t, agent.ParticipantID, found.ParticipantID)
 			assert.Equal(t, agent.AgentTypeID, found.AgentTypeID)
-			assert.NotNil(t, found.Provider)
+			assert.NotNil(t, found.Participant)
 			assert.NotNil(t, found.AgentType)
 		})
 	})
@@ -60,15 +60,15 @@ func TestAgentRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			provider := createTestProvider(t, domain.ProviderEnabled)
-			require.NoError(t, providerRepo.Create(ctx, provider))
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
 
 			agentType := createTestAgentType(t)
 			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
 
-			agent1 := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+			agent1 := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
 			require.NoError(t, agentRepo.Create(ctx, agent1))
-			agent2 := createTestAgent(t, provider.ID, agentType.ID, domain.AgentConnected)
+			agent2 := createTestAgent(t, participant.ID, agentType.ID, domain.AgentConnected)
 			require.NoError(t, agentRepo.Create(ctx, agent2))
 
 			page := &domain.PageRequest{
@@ -82,8 +82,8 @@ func TestAgentRepository(t *testing.T) {
 			// Assert
 			require.NoError(t, err)
 			assert.Greater(t, len(result.Items), 0)
-			// Verify Provider is preloaded but not AgentType (as per repository config)
-			assert.NotNil(t, result.Items[0].Provider)
+			// Verify Participant is preloaded but not AgentType (as per repository config)
+			assert.NotNil(t, result.Items[0].Participant)
 			assert.Nil(t, result.Items[0].AgentType)
 		})
 
@@ -111,17 +111,17 @@ func TestAgentRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			provider := createTestProvider(t, domain.ProviderEnabled)
-			require.NoError(t, providerRepo.Create(ctx, provider))
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
 
 			agentType := createTestAgentType(t)
 			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
 
-			agent1 := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+			agent1 := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
 			agent1.Name = "A Agent"
 			require.NoError(t, agentRepo.Create(ctx, agent1))
 
-			agent2 := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+			agent2 := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
 			agent2.Name = "B Agent"
 			require.NoError(t, agentRepo.Create(ctx, agent2))
 
@@ -146,15 +146,15 @@ func TestAgentRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			provider := createTestProvider(t, domain.ProviderEnabled)
-			require.NoError(t, providerRepo.Create(ctx, provider))
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
 
 			agentType := createTestAgentType(t)
 			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
 
 			// Create multiple agents
 			for i := 0; i < 5; i++ {
-				agent := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+				agent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
 				require.NoError(t, agentRepo.Create(ctx, agent))
 			}
 
@@ -190,13 +190,13 @@ func TestAgentRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			provider := createTestProvider(t, domain.ProviderEnabled)
-			require.NoError(t, providerRepo.Create(ctx, provider))
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
 
 			agentType := createTestAgentType(t)
 			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
 
-			agent := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+			agent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
 			require.NoError(t, agentRepo.Create(ctx, agent))
 
 			// Read
@@ -230,13 +230,13 @@ func TestAgentRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			provider := createTestProvider(t, domain.ProviderEnabled)
-			require.NoError(t, providerRepo.Create(ctx, provider))
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
 
 			agentType := createTestAgentType(t)
 			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
 
-			agent := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+			agent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
 			require.NoError(t, agentRepo.Create(ctx, agent))
 
 			// Execute
@@ -257,22 +257,22 @@ func TestAgentRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			provider := createTestProvider(t, domain.ProviderEnabled)
-			require.NoError(t, providerRepo.Create(ctx, provider))
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
 
 			agentType := createTestAgentType(t)
 			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
 
 			// Create a connected agent with recent status update (should NOT be marked as disconnected)
-			recentAgent := createTestAgentWithStatusUpdate(t, provider.ID, agentType.ID, domain.AgentConnected, time.Now().Add(-2*time.Minute))
+			recentAgent := createTestAgentWithStatusUpdate(t, participant.ID, agentType.ID, domain.AgentConnected, time.Now().Add(-2*time.Minute))
 			require.NoError(t, agentRepo.Create(ctx, recentAgent))
 
 			// Create a connected agent with old status update (should be marked as disconnected)
-			oldAgent := createTestAgentWithStatusUpdate(t, provider.ID, agentType.ID, domain.AgentConnected, time.Now().Add(-10*time.Minute))
+			oldAgent := createTestAgentWithStatusUpdate(t, participant.ID, agentType.ID, domain.AgentConnected, time.Now().Add(-10*time.Minute))
 			require.NoError(t, agentRepo.Create(ctx, oldAgent))
 
 			// Create a disconnected agent with old status update (should NOT be marked as disconnected because it's already disconnected)
-			discoAgent := createTestAgentWithStatusUpdate(t, provider.ID, agentType.ID, domain.AgentDisconnected, time.Now().Add(-10*time.Minute))
+			discoAgent := createTestAgentWithStatusUpdate(t, participant.ID, agentType.ID, domain.AgentDisconnected, time.Now().Add(-10*time.Minute))
 			require.NoError(t, agentRepo.Create(ctx, discoAgent))
 
 			// Execute the method with 5-minute inactive duration
@@ -308,17 +308,17 @@ func TestAgentRepository(t *testing.T) {
 		})
 	})
 
-	t.Run("CountByProvider", func(t *testing.T) {
+	t.Run("CountByParticipant", func(t *testing.T) {
 		t.Run("success - returns correct count", func(t *testing.T) {
 			ctx := context.Background()
 
-			// Create a provider
-			provider := createTestProvider(t, domain.ProviderEnabled)
-			require.NoError(t, providerRepo.Create(ctx, provider))
+			// Create a participant
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
 
-			// Create a provider with no agents (to test zero count)
-			emptyProvider := createTestProvider(t, domain.ProviderEnabled)
-			require.NoError(t, providerRepo.Create(ctx, emptyProvider))
+			// Create a participant with no agents (to test zero count)
+			emptyParticipant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, emptyParticipant))
 
 			// Create an agent type
 			agentType := createTestAgentType(t)
@@ -327,19 +327,19 @@ func TestAgentRepository(t *testing.T) {
 			// Create multiple agents for our test provider
 			expectedCount := int64(3)
 			for i := 0; i < int(expectedCount); i++ {
-				agent := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+				agent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
 				require.NoError(t, agentRepo.Create(ctx, agent))
 			}
 
-			// Execute count for the provider with agents
-			count, err := agentRepo.CountByProvider(ctx, provider.ID)
+			// Execute count for the participant with agents
+			count, err := agentRepo.CountByParticipant(ctx, participant.ID)
 
 			// Assert
 			require.NoError(t, err)
 			assert.Equal(t, expectedCount, count, "Should return the correct count of agents")
 
-			// Execute count for the provider with no agents
-			emptyCount, err := agentRepo.CountByProvider(ctx, emptyProvider.ID)
+			// Execute count for the participant with no agents
+			emptyCount, err := agentRepo.CountByParticipant(ctx, emptyParticipant.ID)
 
 			// Assert
 			require.NoError(t, err)
@@ -351,16 +351,16 @@ func TestAgentRepository(t *testing.T) {
 		t.Run("success - returns correct auth scope", func(t *testing.T) {
 			ctx := context.Background()
 
-			// Create a provider
-			provider := createTestProvider(t, domain.ProviderEnabled)
-			require.NoError(t, providerRepo.Create(ctx, provider))
+			// Create a participant
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
 
 			// Create an agent type
 			agentType := createTestAgentType(t)
 			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
 
 			// Create an agent
-			agent := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+			agent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
 			require.NoError(t, agentRepo.Create(ctx, agent))
 
 			// Execute
@@ -369,11 +369,10 @@ func TestAgentRepository(t *testing.T) {
 			// Assert
 			require.NoError(t, err)
 			assert.NotNil(t, scope, "AuthScope should not return nil")
-			assert.NotNil(t, scope.ParticipantID, "ProviderID should not be nil")
-			assert.Equal(t, provider.ID, *scope.ParticipantID, "Should return the provider ID in the scope")
+			assert.NotNil(t, scope.ParticipantID, "ParticipantID should not be nil")
+			assert.Equal(t, participant.ID, *scope.ParticipantID, "Should return the participant ID in the scope")
 			assert.NotNil(t, scope.AgentID, "AgentID should not be nil")
 			assert.Equal(t, agent.ID, *scope.AgentID, "Should return the agent ID in the scope")
-			assert.Nil(t, scope.BrokerID, "BrokerID should be nil for agents")
 
 			// Test with non-existent agent - checking the actual behavior
 			nonExistentID := domain.NewUUID()

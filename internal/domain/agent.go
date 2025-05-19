@@ -51,10 +51,10 @@ type Agent struct {
 	LastStateUpdate time.Time  `json:"lastStateUpdate" gorm:"index"`
 
 	// Relationships
-	AgentTypeID UUID         `json:"agentTypeId" gorm:"not null"`
-	AgentType   *AgentType   `json:"agentType,omitempty" gorm:"foreignKey:AgentTypeID"`
-	ProviderID  UUID         `json:"participantId" gorm:"not null"`
-	Provider    *Participant `json:"-" gorm:"foreignKey:ParticipantID"`
+	AgentTypeID   UUID         `json:"agentTypeId" gorm:"not null"`
+	AgentType     *AgentType   `json:"agentType,omitempty" gorm:"foreignKey:AgentTypeID"`
+	ParticipantID UUID         `json:"participantId" gorm:"not null"`
+	Participant   *Participant `json:"-" gorm:"foreignKey:ParticipantID"`
 }
 
 // NewAgent creates a new agent with proper validation
@@ -65,7 +65,7 @@ func NewAgent(name string, countryCode CountryCode, attributes Attributes, parti
 		LastStateUpdate: time.Now(),
 		CountryCode:     countryCode,
 		Attributes:      attributes,
-		ProviderID:      participantID,
+		ParticipantID:   participantID,
 		AgentTypeID:     agentTypeID,
 	}
 }
@@ -89,7 +89,7 @@ func (a *Agent) Validate() error {
 	if a.AgentTypeID == uuid.Nil {
 		return fmt.Errorf("agent type ID cannot be empty")
 	}
-	if a.ProviderID == uuid.Nil {
+	if a.ParticipantID == uuid.Nil {
 		return fmt.Errorf("participant ID cannot be empty")
 	}
 	if err := a.CountryCode.Validate(); err != nil {
@@ -247,7 +247,7 @@ func (s *agentCommander) Update(ctx context.Context,
 			return err
 		}
 		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
-			&id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+			&id, &agent.ParticipantID, nil, nil, &beforeAgent, agent)
 		return err
 	})
 	if err != nil {
@@ -262,7 +262,7 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 	if err != nil {
 		return err
 	}
-	participantID := agent.ProviderID
+	participantID := agent.ParticipantID
 
 	// Delete and audit
 	return s.store.Atomic(ctx, func(store Store) error {
@@ -308,7 +308,7 @@ func (s *agentCommander) UpdateState(ctx context.Context, id UUID, state AgentSt
 			return err
 		}
 		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
-			&id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+			&id, &agent.ParticipantID, nil, nil, &beforeAgent, agent)
 		return err
 	})
 	if err != nil {

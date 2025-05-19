@@ -49,7 +49,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: agentID,
 					},
-					ProviderID: providerID,
+					ParticipantID: providerID,
 				}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
 					assert.Equal(t, agentID, id)
@@ -129,7 +129,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: agentID,
 					},
-					ProviderID: providerID,
+					ParticipantID: providerID,
 				}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
 					return agent, nil
@@ -157,7 +157,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: agentID,
 					},
-					ProviderID: providerID,
+					ParticipantID: providerID,
 				}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
 					return agent, nil
@@ -199,7 +199,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: agentID,
 					},
-					ProviderID: providerID,
+					ParticipantID: providerID,
 				}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
 					return agent, nil
@@ -249,7 +249,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: agentID,
 					},
-					ProviderID: providerID,
+					ParticipantID: providerID,
 				}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
 					return agent, nil
@@ -305,7 +305,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: agentID,
 					},
-					ProviderID: providerID,
+					ParticipantID: providerID,
 				}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
 					return agent, nil

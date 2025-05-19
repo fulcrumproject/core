@@ -76,5 +76,5 @@ func (r *GormServiceRepository) FindByExternalID(ctx context.Context, agentID do
 }
 
 func (r *GormServiceRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	return r.getAuthScope(ctx, id, "provider_id", "agent_id", "broker_id")
+	return r.getAuthScope(ctx, id, "participant_id", "agent_id")
 }

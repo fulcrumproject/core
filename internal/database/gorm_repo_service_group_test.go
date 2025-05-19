@@ -15,17 +15,17 @@ func TestServiceGroupRepository(t *testing.T) {
 	defer testDB.Cleanup(t)
 	repo := NewServiceGroupRepository(testDB.DB)
 
-	// Create a test broker to use for service groups
-	brokerRepo := NewBrokerRepository(testDB.DB)
-	broker := createTestBroker(t)
-	require.NoError(t, brokerRepo.Create(context.Background(), broker))
+	// Create a test participant to use for service groups
+	participantRepo := NewParticipantRepository(testDB.DB)
+	participant := createTestParticipant(t, domain.ParticipantEnabled)
+	require.NoError(t, participantRepo.Create(context.Background(), participant))
 
 	t.Run("Create", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			serviceGroup := createTestServiceGroup(t, broker.ID)
+			serviceGroup := createTestServiceGroup(t, participant.ID)
 
 			// Execute
 			err := repo.Create(ctx, serviceGroup)
@@ -48,7 +48,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			serviceGroup := createTestServiceGroup(t, broker.ID)
+			serviceGroup := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, serviceGroup))
 
 			// Execute
@@ -76,9 +76,9 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			group1 := createTestServiceGroup(t, broker.ID)
+			group1 := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, group1))
-			group2 := createTestServiceGroup(t, broker.ID)
+			group2 := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, group2))
 
 			page := &domain.PageRequest{
@@ -98,7 +98,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			serviceGroup := createTestServiceGroup(t, broker.ID)
+			serviceGroup := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, serviceGroup))
 
 			page := &domain.PageRequest{
@@ -120,10 +120,10 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			group1 := createTestServiceGroup(t, broker.ID)
+			group1 := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, group1))
 
-			group2 := createTestServiceGroup(t, broker.ID)
+			group2 := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, group2))
 
 			page := &domain.PageRequest{
@@ -151,7 +151,7 @@ func TestServiceGroupRepository(t *testing.T) {
 
 			// Setup - Create multiple service groups
 			for i := 0; i < 5; i++ {
-				group := createTestServiceGroup(t, broker.ID)
+				group := createTestServiceGroup(t, participant.ID)
 				require.NoError(t, repo.Create(ctx, group))
 			}
 
@@ -187,7 +187,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			serviceGroup := createTestServiceGroup(t, broker.ID)
+			serviceGroup := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, serviceGroup))
 
 			// Update the service group
@@ -211,7 +211,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			serviceGroup := createTestServiceGroup(t, broker.ID)
+			serviceGroup := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, serviceGroup))
 
 			// Execute
@@ -232,14 +232,14 @@ func TestServiceGroupRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Create a service group
-			serviceGroup := createTestServiceGroup(t, broker.ID)
+			serviceGroup := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, serviceGroup))
 
 			// Now we need to create a service linked to this group
 			// First, create required dependencies for the service
-			providerRepo := NewProviderRepository(testDB.DB)
-			provider := createTestProvider(t, domain.ProviderEnabled)
-			require.NoError(t, providerRepo.Create(ctx, provider))
+			provider := createTestParticipant(t, domain.ParticipantEnabled)
+			provider.Name = "Test Provider"
+			require.NoError(t, participantRepo.Create(ctx, provider))
 
 			agentTypeRepo := NewAgentTypeRepository(testDB.DB)
 			agentType := createTestAgentType(t)
@@ -255,7 +255,7 @@ func TestServiceGroupRepository(t *testing.T) {
 
 			// Create the service linked to the group
 			serviceRepo := NewServiceRepository(testDB.DB)
-			service := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, broker.ID)
+			service := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, participant.ID)
 			require.NoError(t, serviceRepo.Create(ctx, service))
 
 			// Execute count by service
@@ -274,11 +274,11 @@ func TestServiceGroupRepository(t *testing.T) {
 	})
 
 	t.Run("AuthScope", func(t *testing.T) {
-		t.Run("success - returns broker-only auth scope", func(t *testing.T) {
+		t.Run("success - returns participant-only auth scope", func(t *testing.T) {
 			ctx := context.Background()
 
 			// Create a service group
-			serviceGroup := createTestServiceGroup(t, broker.ID)
+			serviceGroup := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, serviceGroup))
 
 			// Execute
@@ -287,9 +287,8 @@ func TestServiceGroupRepository(t *testing.T) {
 			// Assert
 			require.NoError(t, err)
 			assert.NotNil(t, scope, "AuthScope should not return nil")
-			assert.NotNil(t, scope.BrokerID, "BrokerID should not be nil")
-			assert.Equal(t, broker.ID, *scope.BrokerID, "BrokerID should match the broker's ID")
-			assert.Nil(t, scope.ParticipantID, "ProviderID should be nil for service groups")
+			assert.NotNil(t, scope.ParticipantID, "ParticipantID should not be nil")
+			assert.Equal(t, participant.ID, *scope.ParticipantID, "ParticipantID should match the participant's ID")
 			assert.Nil(t, scope.AgentID, "AgentID should be nil for service groups")
 		})
 	})

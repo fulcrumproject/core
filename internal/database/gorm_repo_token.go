@@ -67,21 +67,10 @@ func (r *GormTokenRepository) DeleteByAgentID(ctx context.Context, agentID domai
 	return nil
 }
 
-// DeleteByProviderID removes all tokens associated with a provider ID
-func (r *GormTokenRepository) DeleteByProviderID(ctx context.Context, providerID domain.UUID) error {
-	// Delete all tokens with the given provider ID
-	result := r.db.WithContext(ctx).Where("provider_id = ?", providerID).Delete(&domain.Token{})
-	if result.Error != nil {
-		return result.Error
-	}
-
-	return nil
-}
-
-// DeleteByBrokerID removes all tokens associated with a broker ID
-func (r *GormTokenRepository) DeleteByBrokerID(ctx context.Context, brokerID domain.UUID) error {
-	// Delete all tokens with the given broker ID
-	result := r.db.WithContext(ctx).Where("broker_id = ?", brokerID).Delete(&domain.Token{})
+// DeleteByParticipantID removes all tokens associated with a participant ID
+func (r *GormTokenRepository) DeleteByParticipantID(ctx context.Context, participantID domain.UUID) error {
+	// Delete all tokens with the given participant ID
+	result := r.db.WithContext(ctx).Where("participant_id = ?", participantID).Delete(&domain.Token{})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -91,5 +80,5 @@ func (r *GormTokenRepository) DeleteByBrokerID(ctx context.Context, brokerID dom
 
 // AuthScope returns the auth scope for the token
 func (r *GormTokenRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	return r.getAuthScope(ctx, id, "tokens", "provider_id", "agent_id", "broker_id")
+	return r.getAuthScope(ctx, id, "participant_id", "agent_id")
 }

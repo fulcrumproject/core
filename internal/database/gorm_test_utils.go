@@ -18,11 +18,11 @@ func createTestServiceType(t *testing.T) *domain.ServiceType {
 	}
 }
 
-func createTestProvider(t *testing.T, state domain.ProviderState) *domain.Provider {
+func createTestParticipant(t *testing.T, state domain.ParticipantState) *domain.Participant {
 	t.Helper()
 	randomSuffix := uuid.New().String()
-	return &domain.Provider{
-		Name:        fmt.Sprintf("Test Provider %s", randomSuffix),
+	return &domain.Participant{
+		Name:        fmt.Sprintf("Test Participant %s", randomSuffix),
 		State:       state,
 		CountryCode: "US",
 		Attributes:  domain.Attributes{"key": []string{"value"}},
@@ -36,13 +36,13 @@ func createTestAgentType(t *testing.T) *domain.AgentType {
 	}
 }
 
-func createTestAgent(t *testing.T, providerID, agentTypeID domain.UUID, state domain.AgentState) *domain.Agent {
+func createTestAgent(t *testing.T, participantID, agentTypeID domain.UUID, state domain.AgentState) *domain.Agent {
 	t.Helper()
-	return createTestAgentWithStatusUpdate(t, providerID, agentTypeID, state, time.Now())
+	return createTestAgentWithStatusUpdate(t, participantID, agentTypeID, state, time.Now())
 }
 
 // Helper function to create a test agent with a specific LastStatusUpdate time
-func createTestAgentWithStatusUpdate(t *testing.T, providerID, agentTypeID domain.UUID, state domain.AgentState, lastUpdate time.Time) *domain.Agent {
+func createTestAgentWithStatusUpdate(t *testing.T, participantID, agentTypeID domain.UUID, state domain.AgentState, lastUpdate time.Time) *domain.Agent {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Agent{
@@ -50,22 +50,22 @@ func createTestAgentWithStatusUpdate(t *testing.T, providerID, agentTypeID domai
 		State:           state,
 		CountryCode:     "US",
 		Attributes:      domain.Attributes{"key": []string{"value"}},
-		ProviderID:      providerID,
+		ParticipantID:   participantID,
 		AgentTypeID:     agentTypeID,
 		LastStateUpdate: lastUpdate,
 	}
 }
 
-func createTestServiceGroup(t *testing.T, brokerID domain.UUID) *domain.ServiceGroup {
+func createTestServiceGroup(t *testing.T, participantID domain.UUID) *domain.ServiceGroup {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.ServiceGroup{
 		Name:          fmt.Sprintf("Test ServiceGroup %s", randomSuffix),
-		ParticipantID: brokerID,
+		ParticipantID: participantID,
 	}
 }
 
-func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, providerID, brokerID domain.UUID) *domain.Service {
+func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, providerParticipantID, consumerParticipantID domain.UUID) *domain.Service {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Service{
@@ -73,19 +73,11 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, pro
 		ServiceTypeID:     serviceTypeID,
 		GroupID:           serviceGroupID,
 		CurrentState:      domain.ServiceStarted,
-		ProviderID:        providerID,
-		ConsumerID:        brokerID,
+		ProviderID:        providerParticipantID,
+		ConsumerID:        consumerParticipantID,
 		AgentID:           agentID,
 		CurrentProperties: &(domain.JSON{}),
 		Resources:         &(domain.JSON{}),
-	}
-}
-
-func createTestBroker(t *testing.T) *domain.Broker {
-	t.Helper()
-	randomSuffix := uuid.New().String()
-	return &domain.Broker{
-		Name: fmt.Sprintf("Test Broker %s", randomSuffix),
 	}
 }
 
@@ -101,10 +93,8 @@ func createTestToken(t *testing.T, role domain.AuthRole, scopeID *domain.UUID) *
 	// Set the specific scope ID field based on role
 	if scopeID != nil {
 		switch role {
-		case domain.RoleProviderAdmin:
-			token.ProviderID = scopeID
-		case domain.RoleBroker:
-			token.BrokerID = scopeID
+		case domain.RoleParticipant:
+			token.ParticipantID = scopeID
 		case domain.RoleAgent:
 			token.AgentID = scopeID
 		}
@@ -127,15 +117,15 @@ func createTestMetricTypeForEntity(t *testing.T, entityType domain.MetricEntityT
 }
 
 // createTestMetricEntry creates a test metric entry with all required relationships
-func createTestMetricEntry(t *testing.T, agentID, serviceID, typeID, providerID, brokerID domain.UUID) *domain.MetricEntry {
+func createTestMetricEntry(t *testing.T, agentID, serviceID, typeID, providerParticipantID, consumerParticipantID domain.UUID) *domain.MetricEntry {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.MetricEntry{
 		AgentID:    agentID,
 		ServiceID:  serviceID,
 		ResourceID: fmt.Sprintf("resource-%s", randomSuffix),
-		ProviderID: providerID,
-		ConsumerID: brokerID,
+		ProviderID: providerParticipantID,
+		ConsumerID: consumerParticipantID,
 		Value:      42.0,
 		TypeID:     typeID,
 	}

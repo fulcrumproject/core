@@ -297,7 +297,7 @@ func (s *serviceCommander) Create(
 	svc := NewService(
 		group.ParticipantID,
 		groupID,
-		agent.ProviderID,
+		agent.ParticipantID,
 		agentID,
 		serviceTypeID,
 		name,

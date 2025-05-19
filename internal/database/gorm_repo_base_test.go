@@ -17,22 +17,22 @@ func TestGormRepository_Exists(t *testing.T) {
 
 	// We'll use the agent repository as a concrete example to test the base repository's methods
 	agentRepo := NewAgentRepository(tdb.DB)
-	providerRepo := NewProviderRepository(tdb.DB)
+	participantRepo := NewParticipantRepository(tdb.DB)
 	agentTypeRepo := NewAgentTypeRepository(tdb.DB)
 
 	t.Run("success - returns true for existing entity", func(t *testing.T) {
 		ctx := context.Background()
 
-		// Create a provider
-		provider := createTestProvider(t, domain.ProviderEnabled)
-		require.NoError(t, providerRepo.Create(ctx, provider))
+		// Create a participant
+		participant := createTestParticipant(t, domain.ParticipantEnabled)
+		require.NoError(t, participantRepo.Create(ctx, participant))
 
 		// Create an agent type
 		agentType := createTestAgentType(t)
 		require.NoError(t, agentTypeRepo.Create(ctx, agentType))
 
 		// Create an agent
-		agent := createTestAgent(t, provider.ID, agentType.ID, domain.AgentNew)
+		agent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
 		require.NoError(t, agentRepo.Create(ctx, agent))
 
 		// Execute the Exists method
