@@ -79,32 +79,31 @@ func (m *mockAuditEntryCommander) CreateCtxWithDiff(ctx context.Context, eventTy
 	return nil, fmt.Errorf("createCtxWithDiff not mocked")
 }
 
-// mockBrokerCommander is a custom mock for BrokerCommander
-type mockBrokerCommander struct {
-	createFunc func(ctx context.Context, name string) (*domain.Broker, error)
-	updateFunc func(ctx context.Context, id domain.UUID, name *string) (*domain.Broker, error)
+type mockParticipantCommander struct {
+	createFunc func(ctx context.Context, name string, state domain.ParticipantState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error)
+	updateFunc func(ctx context.Context, id domain.UUID, name *string, state *domain.ParticipantState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Participant, error)
 	deleteFunc func(ctx context.Context, id domain.UUID) error
 }
 
-func (m *mockBrokerCommander) Create(ctx context.Context, name string) (*domain.Broker, error) {
+func (m *mockParticipantCommander) Create(ctx context.Context, name string, state domain.ParticipantState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error) {
 	if m.createFunc != nil {
-		return m.createFunc(ctx, name)
+		return m.createFunc(ctx, name, state, countryCode, attributes)
 	}
-	return nil, fmt.Errorf("create not mocked")
+	return nil, nil
 }
 
-func (m *mockBrokerCommander) Update(ctx context.Context, id domain.UUID, name *string) (*domain.Broker, error) {
+func (m *mockParticipantCommander) Update(ctx context.Context, id domain.UUID, name *string, state *domain.ParticipantState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Participant, error) {
 	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name)
+		return m.updateFunc(ctx, id, name, state, countryCode, attributes)
 	}
-	return nil, fmt.Errorf("update not mocked")
+	return nil, nil
 }
 
-func (m *mockBrokerCommander) Delete(ctx context.Context, id domain.UUID) error {
+func (m *mockParticipantCommander) Delete(ctx context.Context, id domain.UUID) error {
 	if m.deleteFunc != nil {
 		return m.deleteFunc(ctx, id)
 	}
-	return fmt.Errorf("delete not mocked")
+	return nil
 }
 
 // mockJobCommander is a custom mock for JobCommander
@@ -177,34 +176,6 @@ func (m *mockMetricTypeCommander) Update(ctx context.Context, id domain.UUID, na
 }
 
 func (m *mockMetricTypeCommander) Delete(ctx context.Context, id domain.UUID) error {
-	if m.deleteFunc != nil {
-		return m.deleteFunc(ctx, id)
-	}
-	return fmt.Errorf("delete not mocked")
-}
-
-// mockProviderCommander is a custom mock for ProviderCommander
-type mockProviderCommander struct {
-	createFunc func(ctx context.Context, name string, state domain.ProviderState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Provider, error)
-	updateFunc func(ctx context.Context, id domain.UUID, name *string, state *domain.ProviderState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Provider, error)
-	deleteFunc func(ctx context.Context, id domain.UUID) error
-}
-
-func (m *mockProviderCommander) Create(ctx context.Context, name string, state domain.ProviderState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Provider, error) {
-	if m.createFunc != nil {
-		return m.createFunc(ctx, name, state, countryCode, attributes)
-	}
-	return nil, fmt.Errorf("create not mocked")
-}
-
-func (m *mockProviderCommander) Update(ctx context.Context, id domain.UUID, name *string, state *domain.ProviderState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Provider, error) {
-	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name, state, countryCode, attributes)
-	}
-	return nil, fmt.Errorf("update not mocked")
-}
-
-func (m *mockProviderCommander) Delete(ctx context.Context, id domain.UUID) error {
 	if m.deleteFunc != nil {
 		return m.deleteFunc(ctx, id)
 	}

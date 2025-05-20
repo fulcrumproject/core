@@ -64,7 +64,7 @@ func (r *GormAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Conte
 }
 
 // agentAuthzFilterApplier applies authorization scoping to agent queries
-func agentAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
+func agentAuthzFilterApplier(s *domain.AuthIdentityScope, q *gorm.DB) *gorm.DB {
 	if s.ParticipantID != nil {
 		return q.Where("participant_id = ?", s.ParticipantID)
 	}

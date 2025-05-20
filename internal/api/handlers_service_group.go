@@ -44,19 +44,19 @@ func (h *ServiceGroupHandler) Routes() func(r chi.Router) {
 
 func (h *ServiceGroupHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	var q struct {
-		Name     string      `json:"name"`
-		BrokerID domain.UUID `json:"brokerId"`
+		Name       string      `json:"name"`
+		ConsumerID domain.UUID `json:"consumerId"`
 	}
 	if err := render.Decode(r, &q); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-	scope := domain.AuthScope{BrokerID: &q.BrokerID}
+	scope := domain.AuthScope{ConsumerID: &q.ConsumerID}
 	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectServiceGroup, domain.ActionCreate, &scope); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
-	sg, err := h.commander.Create(r.Context(), q.Name, q.BrokerID)
+	sg, err := h.commander.Create(r.Context(), q.Name, q.ConsumerID)
 	if err != nil {
 		render.Render(w, r, ErrInternal(err))
 		return

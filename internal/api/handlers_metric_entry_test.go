@@ -91,7 +91,7 @@ func TestMetricEntryHandleList(t *testing.T) {
 				providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 				typeID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
 					return &domain.PageResponse[domain.MetricEntry]{
 						Items: []domain.MetricEntry{
 							{
@@ -146,7 +146,7 @@ func TestMetricEntryHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},

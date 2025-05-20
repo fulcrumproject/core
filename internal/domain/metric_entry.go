@@ -224,7 +224,7 @@ type MetricEntryRepository interface {
 
 type MetricEntryQuerier interface {
 	// List retrieves a list of metric entries based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[MetricEntry], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[MetricEntry], error)
 
 	// Exists checks if an entity with the given ID exists
 	Exists(ctx context.Context, id UUID) (bool, error)

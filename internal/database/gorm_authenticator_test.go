@@ -23,7 +23,7 @@ func (m *MockTokenRepo) FindByHashedValue(ctx context.Context, hashedValue strin
 func (m *MockTokenRepo) FindByID(ctx context.Context, id domain.UUID) (*domain.Token, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-func (m *MockTokenRepo) List(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
+func (m *MockTokenRepo) List(ctx context.Context, authIdentityScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
 	return nil, fmt.Errorf("not implemented")
 }
 func (m *MockTokenRepo) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {

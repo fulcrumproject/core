@@ -56,7 +56,7 @@ func TestHandleCreate(t *testing.T) {
 						Attributes:      attributes,
 						State:           domain.AgentDisconnected,
 						LastStateUpdate: createdAt,
-						ProviderID:      providerID,
+						ParticipantID:   providerID,
 						AgentTypeID:     agentTypeID,
 					}, nil
 				}
@@ -199,7 +199,7 @@ func TestAgentHandleGet(t *testing.T) {
 						Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
 						State:           domain.AgentConnected,
 						LastStateUpdate: createdAt,
-						ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+						ParticipantID:   uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 						AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 					}, nil
 				}
@@ -337,7 +337,7 @@ func TestHandleGetMe(t *testing.T) {
 						Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
 						State:           domain.AgentConnected,
 						LastStateUpdate: createdAt,
-						ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+						ParticipantID:   uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 						AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 					}, nil
 				}
@@ -422,7 +422,7 @@ func TestAgentHandleList(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
 					return &domain.PageResponse[domain.Agent]{
 						Items: []domain.Agent{
 							{
@@ -436,7 +436,7 @@ func TestAgentHandleList(t *testing.T) {
 								Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
 								State:           domain.AgentConnected,
 								LastStateUpdate: createdAt,
-								ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+								ParticipantID:   uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 								AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 							},
 							{
@@ -450,7 +450,7 @@ func TestAgentHandleList(t *testing.T) {
 								Attributes:      domain.Attributes{"test": []string{"value3", "value4"}},
 								State:           domain.AgentDisconnected,
 								LastStateUpdate: createdAt,
-								ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+								ParticipantID:   uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 								AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 							},
 						},
@@ -477,7 +477,7 @@ func TestAgentHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -574,7 +574,7 @@ func TestHandleUpdate(t *testing.T) {
 						Attributes:      attrVal,
 						State:           domain.AgentConnected,
 						LastStateUpdate: createdAt,
-						ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+						ParticipantID:   uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 						AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 					}, nil
 				}
@@ -720,7 +720,7 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 						Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
 						State:           state,
 						LastStateUpdate: updatedAt,
-						ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+						ParticipantID:   uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 						AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 					}, nil
 				}
@@ -1009,7 +1009,7 @@ func TestAgentToResponse(t *testing.T) {
 		Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
 		State:           domain.AgentConnected,
 		LastStateUpdate: createdAt,
-		ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+		ParticipantID:   uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 		AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 	}
 
@@ -1020,7 +1020,7 @@ func TestAgentToResponse(t *testing.T) {
 	assert.Equal(t, agent.CountryCode, response.CountryCode)
 	assert.Equal(t, agent.Attributes, response.Attributes)
 	assert.Equal(t, agent.State, response.State)
-	assert.Equal(t, agent.ProviderID, response.ProviderID)
+	assert.Equal(t, agent.ParticipantID, response.ParticipantID)
 	assert.Equal(t, agent.AgentTypeID, response.AgentTypeID)
 	assert.Equal(t, JSONUTCTime(agent.CreatedAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(agent.UpdatedAt), response.UpdatedAt)

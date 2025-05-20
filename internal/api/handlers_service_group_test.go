@@ -331,7 +331,7 @@ func TestServiceGroupHandleList(t *testing.T) {
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				brokerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
 					return &domain.PageResponse[domain.ServiceGroup]{
 						Items: []domain.ServiceGroup{
 							{
@@ -376,7 +376,7 @@ func TestServiceGroupHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},

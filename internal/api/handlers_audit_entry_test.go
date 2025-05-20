@@ -37,7 +37,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 				providerID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 				entityID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error) {
 					return &domain.PageResponse[domain.AuditEntry]{
 						Items: []domain.AuditEntry{
 							{
@@ -48,7 +48,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 								},
 								AuthorityType: domain.AuthorityTypeAdmin,
 								AuthorityID:   "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
-								EventType:     domain.EventTypeProviderCreated,
+								EventType:     domain.EventTypeParticipantCreated,
 								Properties:    domain.JSON{"key": "value"},
 								EntityID:      &entityID,
 								ProviderID:    &providerID,
@@ -61,7 +61,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 								},
 								AuthorityType: domain.AuthorityTypeAdmin,
 								AuthorityID:   "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
-								EventType:     domain.EventTypeProviderUpdated,
+								EventType:     domain.EventTypeParticipantUpdated,
 								Properties:    domain.JSON{"key": "updated"},
 								EntityID:      &entityID,
 								ProviderID:    &providerID,
@@ -98,7 +98,7 @@ func TestAuditEntryHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},

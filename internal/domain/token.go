@@ -375,7 +375,7 @@ type TokenQuerier interface {
 	FindByID(ctx context.Context, id UUID) (*Token, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Token], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Token], error)
 
 	// FindByHashedValue finds a token by its hashed value
 	FindByHashedValue(ctx context.Context, hashedValue string) (*Token, error)

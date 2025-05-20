@@ -77,7 +77,7 @@ func TestAgentRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := agentRepo.List(ctx, &domain.EmptyAuthScope, page)
+			result, err := agentRepo.List(ctx, &domain.EmptyAuthIdentityScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -98,7 +98,7 @@ func TestAgentRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := agentRepo.List(ctx, &domain.EmptyAuthScope, page)
+			result, err := agentRepo.List(ctx, &domain.EmptyAuthIdentityScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -134,7 +134,7 @@ func TestAgentRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := agentRepo.List(ctx, &domain.EmptyAuthScope, page)
+			result, err := agentRepo.List(ctx, &domain.EmptyAuthIdentityScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -164,7 +164,7 @@ func TestAgentRepository(t *testing.T) {
 			}
 
 			// Execute first page
-			result, err := agentRepo.List(ctx, &domain.EmptyAuthScope, page)
+			result, err := agentRepo.List(ctx, &domain.EmptyAuthIdentityScope, page)
 
 			// Assert first page
 			require.NoError(t, err)
@@ -175,7 +175,7 @@ func TestAgentRepository(t *testing.T) {
 
 			// Execute second page
 			page.Page = 2
-			result, err = agentRepo.List(ctx, &domain.EmptyAuthScope, page)
+			result, err = agentRepo.List(ctx, &domain.EmptyAuthIdentityScope, page)
 
 			// Assert second page
 			require.NoError(t, err)

@@ -68,12 +68,11 @@ func main() {
 
 	serviceCmd := domain.NewServiceCommander(store, auditEntryCmd)
 	serviceGroupCmd := domain.NewServiceGroupCommander(store, auditEntryCmd)
-	providerCmd := domain.NewProviderCommander(store, auditEntryCmd)
+	participantCmd := domain.NewParticipantCommander(store, auditEntryCmd)
 	jobCmd := domain.NewJobCommander(store, auditEntryCmd)
 	metricEntryCmd := domain.NewMetricEntryCommander(store)
 	metricTypeCmd := domain.NewMetricTypeCommander(store, auditEntryCmd)
 	agentCmd := domain.NewAgentCommander(store, auditEntryCmd)
-	brokerCmd := domain.NewBrokerCommander(store, auditEntryCmd)
 	tokenCmd := domain.NewTokenCommander(store, auditEntryCmd)
 
 	// Initialize auth and authorizer
@@ -83,7 +82,7 @@ func main() {
 	// Initialize handlers
 	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo(), authz)
 	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), authz)
-	providerHandler := api.NewProviderHandler(store.ProviderRepo(), providerCmd, authz)
+	participantHandler := api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, authz)
 	agentHandler := api.NewAgentHandler(store.AgentRepo(), agentCmd, authz)
 	serviceGroupHandler := api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, authz)
 	serviceHandler := api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, authz)
@@ -91,7 +90,6 @@ func main() {
 	metricTypeHandler := api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, authz)
 	metricEntryHandler := api.NewMetricEntryHandler(store.MetricEntryRepo(), store.ServiceRepo(), metricEntryCmd, authz)
 	auditEntryHandler := api.NewAuditEntryHandler(store.AuditEntryRepo(), auditEntryCmd, authz)
-	brokerHandler := api.NewBrokerHandler(store.BrokerRepo(), brokerCmd, authz)
 	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), authz)
 
 	// Initialize router
@@ -113,7 +111,7 @@ func main() {
 		r.Use(authMiddleware)
 		r.Route("/agent-types", agentTypeHandler.Routes())
 		r.Route("/service-types", serviceTypeHandler.Routes())
-		r.Route("/providers", providerHandler.Routes())
+		r.Route("/participants", participantHandler.Routes())
 		r.Route("/agents", agentHandler.Routes())
 		r.Route("/service-groups", serviceGroupHandler.Routes())
 		r.Route("/services", serviceHandler.Routes())
@@ -121,7 +119,6 @@ func main() {
 		r.Route("/metric-entries", metricEntryHandler.Routes())
 		r.Route("/audit-entries", auditEntryHandler.Routes())
 		r.Route("/jobs", jobHandler.Routes())
-		r.Route("/brokers", brokerHandler.Routes())
 		r.Route("/tokens", tokenHandler.Routes())
 	})
 

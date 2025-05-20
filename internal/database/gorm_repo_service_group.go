@@ -48,7 +48,7 @@ func (r *GormServiceGroupRepository) CountByService(ctx context.Context, service
 	return count, nil
 }
 
-func serviceGroupAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
+func serviceGroupAuthzFilterApplier(s *domain.AuthIdentityScope, q *gorm.DB) *gorm.DB {
 	if s.ParticipantID != nil {
 		return q.Where("participant_id = ?", s.ParticipantID)
 	}

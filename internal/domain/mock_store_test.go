@@ -230,7 +230,7 @@ type MockAgentTypeRepository struct {
 	updateFunc    func(ctx context.Context, agentType *AgentType) error
 	deleteFunc    func(ctx context.Context, id UUID) error
 	findByIDFunc  func(ctx context.Context, id UUID) (*AgentType, error)
-	listFunc      func(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[AgentType], error)
+	listFunc      func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[AgentType], error)
 	existsFunc    func(ctx context.Context, id UUID) (bool, error)
 	countFunc     func(ctx context.Context) (int64, error)
 	authScopeFunc func(ctx context.Context, id UUID) (*AuthScope, error)
@@ -264,9 +264,9 @@ func (m *MockAgentTypeRepository) FindByID(ctx context.Context, id UUID) (*Agent
 	return nil, NewNotFoundErrorf("agent type not found")
 }
 
-func (m *MockAgentTypeRepository) List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[AgentType], error) {
+func (m *MockAgentTypeRepository) List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[AgentType], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, authIdentityScope, req)
 	}
 	return &PageResponse[AgentType]{
 		Items:       []AgentType{},
@@ -311,7 +311,7 @@ type MockAgentRepository struct {
 	updateFunc                           func(ctx context.Context, agent *Agent) error
 	deleteFunc                           func(ctx context.Context, id UUID) error
 	findByIDFunc                         func(ctx context.Context, id UUID) (*Agent, error)
-	listFunc                             func(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Agent], error)
+	listFunc                             func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Agent], error)
 	existsFunc                           func(ctx context.Context, id UUID) (bool, error)
 	countByProviderFunc                  func(ctx context.Context, providerID UUID) (int64, error)
 	authScopeFunc                        func(ctx context.Context, id UUID) (*AuthScope, error)
@@ -346,9 +346,9 @@ func (m *MockAgentRepository) FindByID(ctx context.Context, id UUID) (*Agent, er
 	return nil, NewNotFoundErrorf("agent not found")
 }
 
-func (m *MockAgentRepository) List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Agent], error) {
+func (m *MockAgentRepository) List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Agent], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, authIdentityScope, req)
 	}
 	return &PageResponse[Agent]{
 		Items:       []Agent{},
@@ -402,7 +402,7 @@ type MockParticipantRepository struct {
 	saveFunc      func(ctx context.Context, participant *Participant) error
 	deleteFunc    func(ctx context.Context, id UUID) error
 	findByIDFunc  func(ctx context.Context, id UUID) (*Participant, error)
-	listFunc      func(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Participant], error)
+	listFunc      func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Participant], error)
 	existsFunc    func(ctx context.Context, id UUID) (bool, error)
 	authScopeFunc func(ctx context.Context, id UUID) (*AuthScope, error)
 }
@@ -435,9 +435,9 @@ func (m *MockParticipantRepository) FindByID(ctx context.Context, id UUID) (*Par
 	return nil, NewNotFoundErrorf("participant not found")
 }
 
-func (m *MockParticipantRepository) List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Participant], error) {
+func (m *MockParticipantRepository) List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Participant], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, authIdentityScope, req)
 	}
 	return &PageResponse[Participant]{
 		Items:       []Participant{},
@@ -468,7 +468,7 @@ type MockTokenRepository struct {
 	updateFunc                func(ctx context.Context, token *Token) error
 	deleteFunc                func(ctx context.Context, id UUID) error
 	findByIDFunc              func(ctx context.Context, id UUID) (*Token, error)
-	listFunc                  func(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Token], error)
+	listFunc                  func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Token], error)
 	existsFunc                func(ctx context.Context, id UUID) (bool, error)
 	authScopeFunc             func(ctx context.Context, id UUID) (*AuthScope, error)
 	findByHashedValueFunc     func(ctx context.Context, hashedValue string) (*Token, error)
@@ -505,9 +505,9 @@ func (m *MockTokenRepository) FindByID(ctx context.Context, id UUID) (*Token, er
 	return nil, NewNotFoundErrorf("token not found")
 }
 
-func (m *MockTokenRepository) List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Token], error) {
+func (m *MockTokenRepository) List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Token], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, authIdentityScope, req)
 	}
 	return &PageResponse[Token]{
 		Items:       []Token{},
@@ -577,7 +577,7 @@ type MockServiceTypeRepository struct {
 	updateFunc    func(ctx context.Context, serviceType *ServiceType) error
 	deleteFunc    func(ctx context.Context, id UUID) error
 	findByIDFunc  func(ctx context.Context, id UUID) (*ServiceType, error)
-	listFunc      func(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[ServiceType], error)
+	listFunc      func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[ServiceType], error)
 	existsFunc    func(ctx context.Context, id UUID) (bool, error)
 	countFunc     func(ctx context.Context) (int64, error)
 	authScopeFunc func(ctx context.Context, id UUID) (*AuthScope, error)
@@ -611,9 +611,9 @@ func (m *MockServiceTypeRepository) FindByID(ctx context.Context, id UUID) (*Ser
 	return nil, NewNotFoundErrorf("service type not found")
 }
 
-func (m *MockServiceTypeRepository) List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[ServiceType], error) {
+func (m *MockServiceTypeRepository) List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[ServiceType], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, authIdentityScope, req)
 	}
 	return &PageResponse[ServiceType]{
 		Items:       []ServiceType{},
@@ -659,7 +659,7 @@ type MockServiceGroupRepository struct {
 	updateFunc    func(ctx context.Context, serviceGroup *ServiceGroup) error
 	deleteFunc    func(ctx context.Context, id UUID) error
 	findByIDFunc  func(ctx context.Context, id UUID) (*ServiceGroup, error)
-	listFunc      func(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[ServiceGroup], error)
+	listFunc      func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[ServiceGroup], error)
 	existsFunc    func(ctx context.Context, id UUID) (bool, error)
 	countFunc     func(ctx context.Context) (int64, error)
 	authScopeFunc func(ctx context.Context, id UUID) (*AuthScope, error)
@@ -693,9 +693,9 @@ func (m *MockServiceGroupRepository) FindByID(ctx context.Context, id UUID) (*Se
 	return nil, NewNotFoundErrorf("service group not found")
 }
 
-func (m *MockServiceGroupRepository) List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[ServiceGroup], error) {
+func (m *MockServiceGroupRepository) List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[ServiceGroup], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, authIdentityScope, req)
 	}
 	return &PageResponse[ServiceGroup]{
 		Items:       []ServiceGroup{},
@@ -743,7 +743,7 @@ type MockServiceRepository struct {
 	deleteFunc           func(ctx context.Context, id UUID) error
 	findByIDFunc         func(ctx context.Context, id UUID) (*Service, error)
 	findByExternalIDFunc func(ctx context.Context, agentID UUID, externalID string) (*Service, error)
-	listFunc             func(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Service], error)
+	listFunc             func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Service], error)
 	existsFunc           func(ctx context.Context, id UUID) (bool, error)
 	countByGroupFunc     func(ctx context.Context, groupID UUID) (int64, error)
 	countByAgentFunc     func(ctx context.Context, agentID UUID) (int64, error)
@@ -786,9 +786,9 @@ func (m *MockServiceRepository) FindByExternalID(ctx context.Context, agentID UU
 	return nil, NewNotFoundErrorf("service not found")
 }
 
-func (m *MockServiceRepository) List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Service], error) {
+func (m *MockServiceRepository) List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Service], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, authIdentityScope, req)
 	}
 	return &PageResponse[Service]{
 		Items:       []Service{},
@@ -842,7 +842,7 @@ type MockJobRepository struct {
 	saveFunc                   func(ctx context.Context, job *Job) error
 	deleteFunc                 func(ctx context.Context, id UUID) error
 	findByIDFunc               func(ctx context.Context, id UUID) (*Job, error)
-	listFunc                   func(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Job], error)
+	listFunc                   func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Job], error)
 	existsFunc                 func(ctx context.Context, id UUID) (bool, error)
 	getPendingJobsForAgentFunc func(ctx context.Context, agentID UUID, limit int) ([]*Job, error)
 	getTimeOutJobsFunc         func(ctx context.Context, timeout time.Duration) ([]*Job, error)
@@ -878,9 +878,9 @@ func (m *MockJobRepository) FindByID(ctx context.Context, id UUID) (*Job, error)
 	return nil, NewNotFoundErrorf("job not found")
 }
 
-func (m *MockJobRepository) List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Job], error) {
+func (m *MockJobRepository) List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Job], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, authIdentityScope, req)
 	}
 	return &PageResponse[Job]{
 		Items:       []Job{},
@@ -937,7 +937,7 @@ func (m *MockJobRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope,
 // MockAuditEntryRepository implements the AuditEntryRepository interface for testing
 type MockAuditEntryRepository struct {
 	createFunc    func(ctx context.Context, auditEntry *AuditEntry) error
-	listFunc      func(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[AuditEntry], error)
+	listFunc      func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[AuditEntry], error)
 	authScopeFunc func(ctx context.Context, id UUID) (*AuthScope, error)
 }
 
@@ -948,9 +948,9 @@ func (m *MockAuditEntryRepository) Create(ctx context.Context, auditEntry *Audit
 	return nil
 }
 
-func (m *MockAuditEntryRepository) List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[AuditEntry], error) {
+func (m *MockAuditEntryRepository) List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[AuditEntry], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, authIdentityScope, req)
 	}
 	return &PageResponse[AuditEntry]{
 		Items:       []AuditEntry{},
@@ -975,7 +975,7 @@ type MockMetricTypeRepository struct {
 	deleteFunc     func(ctx context.Context, id UUID) error
 	findByIDFunc   func(ctx context.Context, id UUID) (*MetricType, error)
 	findByNameFunc func(ctx context.Context, name string) (*MetricType, error)
-	listFunc       func(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[MetricType], error)
+	listFunc       func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[MetricType], error)
 	existsFunc     func(ctx context.Context, id UUID) (bool, error)
 	countFunc      func(ctx context.Context) (int64, error)
 	authScopeFunc  func(ctx context.Context, id UUID) (*AuthScope, error)
@@ -1016,9 +1016,9 @@ func (m *MockMetricTypeRepository) FindByName(ctx context.Context, name string) 
 	return nil, NewNotFoundErrorf("metric type not found")
 }
 
-func (m *MockMetricTypeRepository) List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[MetricType], error) {
+func (m *MockMetricTypeRepository) List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[MetricType], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, authIdentityScope, req)
 	}
 	return &PageResponse[MetricType]{
 		Items:       []MetricType{},
@@ -1061,7 +1061,7 @@ func (m *MockMetricTypeRepository) Save(ctx context.Context, metricType *MetricT
 // MockMetricEntryRepository implements the MetricEntryRepository interface for testing
 type MockMetricEntryRepository struct {
 	createFunc            func(ctx context.Context, metricEntry *MetricEntry) error
-	listFunc              func(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[MetricEntry], error)
+	listFunc              func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[MetricEntry], error)
 	existsFunc            func(ctx context.Context, id UUID) (bool, error)
 	countByMetricTypeFunc func(ctx context.Context, typeID UUID) (int64, error)
 	authScopeFunc         func(ctx context.Context, id UUID) (*AuthScope, error)
@@ -1074,9 +1074,9 @@ func (m *MockMetricEntryRepository) Create(ctx context.Context, metricEntry *Met
 	return nil
 }
 
-func (m *MockMetricEntryRepository) List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[MetricEntry], error) {
+func (m *MockMetricEntryRepository) List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[MetricEntry], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, authIdentityScope, req)
 	}
 	return &PageResponse[MetricEntry]{
 		Items:       []MetricEntry{},

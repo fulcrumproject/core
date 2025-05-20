@@ -191,7 +191,7 @@ func TestServiceRepository(t *testing.T) {
 				PageSize: 10,
 			}
 
-			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 			// Verify relationships are loaded
@@ -207,7 +207,7 @@ func TestServiceRepository(t *testing.T) {
 				Filters:  map[string][]string{"name": {"Service A"}},
 			}
 
-			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 1)
 			assert.Equal(t, "Service A", result.Items[0].Name)
@@ -220,7 +220,7 @@ func TestServiceRepository(t *testing.T) {
 				Filters:  map[string][]string{"currentState": {string(domain.ServiceStarted)}},
 			}
 
-			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 1)
 			for _, item := range result.Items {
@@ -237,7 +237,7 @@ func TestServiceRepository(t *testing.T) {
 				SortAsc:  false, // Descending order
 			}
 
-			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 			// Verify descending order
@@ -268,7 +268,7 @@ func TestServiceRepository(t *testing.T) {
 			}
 
 			// First page
-			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)
@@ -277,7 +277,7 @@ func TestServiceRepository(t *testing.T) {
 
 			// Second page
 			page.Page = 2
-			result, err = repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err = repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)

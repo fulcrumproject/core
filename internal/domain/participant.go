@@ -246,7 +246,7 @@ type ParticipantQuerier interface {
 	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Participant], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Participant], error)
 
 	// AuthScope retrieves the auth scope for the entity
 	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)

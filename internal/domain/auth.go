@@ -8,7 +8,10 @@ import (
 
 type authContextKey string
 
-var EmptyAuthScope = AuthScope{}
+var (
+	EmptyAuthScope         = AuthScope{}
+	EmptyAuthIdentityScope = AuthIdentityScope{}
+)
 
 const (
 	identityContextKey = authContextKey("identity")

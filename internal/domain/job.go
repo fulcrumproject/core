@@ -327,7 +327,7 @@ type JobQuerier interface {
 	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of jobs based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Job], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Job], error)
 
 	// GetPendingJobsForAgent retrieves pending jobs targeted for a specific agent
 	GetPendingJobsForAgent(ctx context.Context, agentID UUID, limit int) ([]*Job, error)

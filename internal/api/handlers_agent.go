@@ -47,17 +47,17 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 
 func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	var p struct {
-		Name        string             `json:"name"`
-		CountryCode domain.CountryCode `json:"countryCode,omitempty"`
-		Attributes  domain.Attributes  `json:"attributes,omitempty"`
-		ProviderID  domain.UUID        `json:"providerId"`
-		AgentTypeID domain.UUID        `json:"agentTypeId"`
+		Name          string             `json:"name"`
+		CountryCode   domain.CountryCode `json:"countryCode,omitempty"`
+		Attributes    domain.Attributes  `json:"attributes,omitempty"`
+		ParticipantID domain.UUID        `json:"providerId"`
+		AgentTypeID   domain.UUID        `json:"agentTypeId"`
 	}
 	if err := render.Decode(r, &p); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-	scope := domain.AuthScope{ParticipantID: &p.ProviderID}
+	scope := domain.AuthScope{ParticipantID: &p.ParticipantID}
 	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectAgent, domain.ActionCreate, &scope); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -67,7 +67,7 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		p.Name,
 		p.CountryCode,
 		p.Attributes,
-		p.ProviderID,
+		p.ParticipantID,
 		p.AgentTypeID,
 	)
 	if err != nil {
@@ -204,34 +204,34 @@ func (h *AgentHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 
 // AgentResponse represents the response body for agent operations
 type AgentResponse struct {
-	ID          domain.UUID        `json:"id"`
-	Name        string             `json:"name"`
-	State       domain.AgentState  `json:"state"`
-	CountryCode domain.CountryCode `json:"countryCode,omitempty"`
-	Attributes  domain.Attributes  `json:"attributes,omitempty"`
-	ProviderID  domain.UUID        `json:"providerId"`
-	AgentTypeID domain.UUID        `json:"agentTypeId"`
-	Provider    *ProviderResponse  `json:"provider,omitempty"`
-	AgentType   *AgentTypeResponse `json:"agentType,omitempty"`
-	CreatedAt   JSONUTCTime        `json:"createdAt"`
-	UpdatedAt   JSONUTCTime        `json:"updatedAt"`
+	ID            domain.UUID          `json:"id"`
+	Name          string               `json:"name"`
+	State         domain.AgentState    `json:"state"`
+	CountryCode   domain.CountryCode   `json:"countryCode,omitempty"`
+	Attributes    domain.Attributes    `json:"attributes,omitempty"`
+	ParticipantID domain.UUID          `json:"participantId"`
+	AgentTypeID   domain.UUID          `json:"agentTypeId"`
+	Participant   *ParticipantResponse `json:"participant,omitempty"`
+	AgentType     *AgentTypeResponse   `json:"agentType,omitempty"`
+	CreatedAt     JSONUTCTime          `json:"createdAt"`
+	UpdatedAt     JSONUTCTime          `json:"updatedAt"`
 }
 
 // agentToResponse converts a domain.Agent to an AgentResponse
 func agentToResponse(a *domain.Agent) *AgentResponse {
 	response := &AgentResponse{
-		ID:          a.ID,
-		Name:        a.Name,
-		State:       a.State,
-		CountryCode: a.CountryCode,
-		Attributes:  map[string][]string(a.Attributes),
-		ProviderID:  a.ProviderID,
-		AgentTypeID: a.AgentTypeID,
-		CreatedAt:   JSONUTCTime(a.CreatedAt),
-		UpdatedAt:   JSONUTCTime(a.UpdatedAt),
+		ID:            a.ID,
+		Name:          a.Name,
+		State:         a.State,
+		CountryCode:   a.CountryCode,
+		Attributes:    map[string][]string(a.Attributes),
+		ParticipantID: a.ParticipantID,
+		AgentTypeID:   a.AgentTypeID,
+		CreatedAt:     JSONUTCTime(a.CreatedAt),
+		UpdatedAt:     JSONUTCTime(a.UpdatedAt),
 	}
-	if a.Provider != nil {
-		response.Provider = provderToResponse(a.Provider)
+	if a.Participant != nil {
+		response.Participant = participantToResponse(a.Participant)
 	}
 	if a.AgentType != nil {
 		response.AgentType = agentTypeToResponse(a.AgentType)

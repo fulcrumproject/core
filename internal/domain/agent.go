@@ -341,7 +341,7 @@ type AgentQuerier interface {
 	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Agent], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Agent], error)
 
 	// CountByProvider returns the number of agents for a specific provider
 	CountByParticipant(ctx context.Context, participantID UUID) (int64, error)

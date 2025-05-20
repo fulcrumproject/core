@@ -568,7 +568,7 @@ type ServiceQuerier interface {
 	FindByExternalID(ctx context.Context, agentID UUID, externalID string) (*Service, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Service], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Service], error)
 
 	// CountByGroup returns the number of services in a specific group
 	CountByGroup(ctx context.Context, groupID UUID) (int64, error)

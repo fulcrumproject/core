@@ -294,7 +294,7 @@ type AuditEntryRepository interface {
 
 type AuditEntryQuerier interface {
 	// List retrieves a list of audit entries based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[AuditEntry], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[AuditEntry], error)
 
 	// Retrieve the auth scope for the entity
 	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
