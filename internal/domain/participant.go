@@ -42,7 +42,7 @@ type Participant struct {
 	State       ParticipantState `json:"state" gorm:"not null"`
 
 	// Relationships
-	Agents []Agent `json:"agents,omitempty" gorm:"foreignKey:ParticipantID"` // Agent struct will be updated later
+	Agents []Agent `json:"agents,omitempty" gorm:"foreignKey:ProviderID"` // Agent struct will be updated later
 }
 
 // NewParticipant creates a new Participant without validation
@@ -198,7 +198,7 @@ func (c *participantCommander) Delete(ctx context.Context, id UUID) error {
 	return c.store.Atomic(ctx, func(store Store) error {
 		// Check for dependent Agents
 		// AgentRepo().CountByParticipant() will need to be added to AgentQuerier/AgentRepository
-		agentCount, err := store.AgentRepo().CountByParticipant(ctx, id)
+		agentCount, err := store.AgentRepo().CountByProvider(ctx, id)
 		if err != nil {
 			return fmt.Errorf("failed to count agents for participant %s: %w", id, err)
 		}

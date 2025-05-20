@@ -34,10 +34,10 @@ func TestJobRepository(t *testing.T) {
 
 	agentRepo := NewAgentRepository(testDB.DB)
 	agent := &domain.Agent{
-		Name:          "Test Agent",
-		State:         domain.AgentConnected,
-		ParticipantID: provider.ID,
-		AgentTypeID:   agentType.ID,
+		Name:        "Test Agent",
+		State:       domain.AgentConnected,
+		ProviderID:  provider.ID,
+		AgentTypeID: agentType.ID,
 	}
 	require.NoError(t, agentRepo.Create(context.Background(), agent))
 

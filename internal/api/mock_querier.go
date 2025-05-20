@@ -48,7 +48,7 @@ func (m *mockAgentQuerier) AuthScope(ctx context.Context, id domain.UUID) (*doma
 }
 
 // CountByProvider is required by the AgentQuerier interface
-func (m *mockAgentQuerier) CountByParticipant(ctx context.Context, participantID domain.UUID) (int64, error) {
+func (m *mockAgentQuerier) CountByProvider(ctx context.Context, participantID domain.UUID) (int64, error) {
 	if m.countByParticipantFunc != nil {
 		return m.countByParticipantFunc(ctx, participantID)
 	}

@@ -366,7 +366,7 @@ func (m *MockAgentRepository) Exists(ctx context.Context, id UUID) (bool, error)
 	return true, nil
 }
 
-func (m *MockAgentRepository) CountByParticipant(ctx context.Context, providerID UUID) (int64, error) {
+func (m *MockAgentRepository) CountByProvider(ctx context.Context, providerID UUID) (int64, error) {
 	if m.countByProviderFunc != nil {
 		return m.countByProviderFunc(ctx, providerID)
 	}

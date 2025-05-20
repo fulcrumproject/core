@@ -204,34 +204,34 @@ func (h *AgentHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 
 // AgentResponse represents the response body for agent operations
 type AgentResponse struct {
-	ID            domain.UUID          `json:"id"`
-	Name          string               `json:"name"`
-	State         domain.AgentState    `json:"state"`
-	CountryCode   domain.CountryCode   `json:"countryCode,omitempty"`
-	Attributes    domain.Attributes    `json:"attributes,omitempty"`
-	ParticipantID domain.UUID          `json:"participantId"`
-	AgentTypeID   domain.UUID          `json:"agentTypeId"`
-	Participant   *ParticipantResponse `json:"participant,omitempty"`
-	AgentType     *AgentTypeResponse   `json:"agentType,omitempty"`
-	CreatedAt     JSONUTCTime          `json:"createdAt"`
-	UpdatedAt     JSONUTCTime          `json:"updatedAt"`
+	ID          domain.UUID          `json:"id"`
+	Name        string               `json:"name"`
+	State       domain.AgentState    `json:"state"`
+	CountryCode domain.CountryCode   `json:"countryCode,omitempty"`
+	Attributes  domain.Attributes    `json:"attributes,omitempty"`
+	ProviderID  domain.UUID          `json:"providerId"`
+	AgentTypeID domain.UUID          `json:"agentTypeId"`
+	Participant *ParticipantResponse `json:"participant,omitempty"`
+	AgentType   *AgentTypeResponse   `json:"agentType,omitempty"`
+	CreatedAt   JSONUTCTime          `json:"createdAt"`
+	UpdatedAt   JSONUTCTime          `json:"updatedAt"`
 }
 
 // agentToResponse converts a domain.Agent to an AgentResponse
 func agentToResponse(a *domain.Agent) *AgentResponse {
 	response := &AgentResponse{
-		ID:            a.ID,
-		Name:          a.Name,
-		State:         a.State,
-		CountryCode:   a.CountryCode,
-		Attributes:    map[string][]string(a.Attributes),
-		ParticipantID: a.ParticipantID,
-		AgentTypeID:   a.AgentTypeID,
-		CreatedAt:     JSONUTCTime(a.CreatedAt),
-		UpdatedAt:     JSONUTCTime(a.UpdatedAt),
+		ID:          a.ID,
+		Name:        a.Name,
+		State:       a.State,
+		CountryCode: a.CountryCode,
+		Attributes:  map[string][]string(a.Attributes),
+		ProviderID:  a.ProviderID,
+		AgentTypeID: a.AgentTypeID,
+		CreatedAt:   JSONUTCTime(a.CreatedAt),
+		UpdatedAt:   JSONUTCTime(a.UpdatedAt),
 	}
-	if a.Participant != nil {
-		response.Participant = participantToResponse(a.Participant)
+	if a.Provider != nil {
+		response.Participant = participantToResponse(a.Provider)
 	}
 	if a.AgentType != nil {
 		response.AgentType = agentTypeToResponse(a.AgentType)

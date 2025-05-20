@@ -163,7 +163,7 @@ func TestTokenCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: validID,
 					},
-					ParticipantID: providerID, // Changed from ProviderID
+					ProviderID: providerID, // Changed from ProviderID
 				}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
 					assert.Equal(t, validID, id)

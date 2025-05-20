@@ -48,9 +48,9 @@ func TestAgentRepository(t *testing.T) {
 			assert.Equal(t, agent.State, found.State)
 			assert.Equal(t, agent.CountryCode, found.CountryCode)
 			assert.Equal(t, agent.Attributes, found.Attributes)
-			assert.Equal(t, agent.ParticipantID, found.ParticipantID)
+			assert.Equal(t, agent.ProviderID, found.ProviderID)
 			assert.Equal(t, agent.AgentTypeID, found.AgentTypeID)
-			assert.NotNil(t, found.Participant)
+			assert.NotNil(t, found.Provider)
 			assert.NotNil(t, found.AgentType)
 		})
 	})
@@ -83,7 +83,7 @@ func TestAgentRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.Greater(t, len(result.Items), 0)
 			// Verify Participant is preloaded but not AgentType (as per repository config)
-			assert.NotNil(t, result.Items[0].Participant)
+			assert.NotNil(t, result.Items[0].Provider)
 			assert.Nil(t, result.Items[0].AgentType)
 		})
 
@@ -332,14 +332,14 @@ func TestAgentRepository(t *testing.T) {
 			}
 
 			// Execute count for the participant with agents
-			count, err := agentRepo.CountByParticipant(ctx, participant.ID)
+			count, err := agentRepo.CountByProvider(ctx, participant.ID)
 
 			// Assert
 			require.NoError(t, err)
 			assert.Equal(t, expectedCount, count, "Should return the correct count of agents")
 
 			// Execute count for the participant with no agents
-			emptyCount, err := agentRepo.CountByParticipant(ctx, emptyParticipant.ID)
+			emptyCount, err := agentRepo.CountByProvider(ctx, emptyParticipant.ID)
 
 			// Assert
 			require.NoError(t, err)
@@ -369,8 +369,8 @@ func TestAgentRepository(t *testing.T) {
 			// Assert
 			require.NoError(t, err)
 			assert.NotNil(t, scope, "AuthScope should not return nil")
-			assert.NotNil(t, scope.ParticipantID, "ParticipantID should not be nil")
-			assert.Equal(t, participant.ID, *scope.ParticipantID, "Should return the participant ID in the scope")
+			assert.NotNil(t, scope.ProviderID, "ProviderID should not be nil")
+			assert.Equal(t, participant.ID, *scope.ProviderID, "Should return the participant ID in the scope")
 			assert.NotNil(t, scope.AgentID, "AgentID should not be nil")
 			assert.Equal(t, agent.ID, *scope.AgentID, "Should return the agent ID in the scope")
 

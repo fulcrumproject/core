@@ -156,11 +156,11 @@ func TestAuditEntryHandleList(t *testing.T) {
 				assert.Equal(t, "770e8400-e29b-41d4-a716-446655440000", firstItem["id"])
 				assert.Equal(t, "admin", firstItem["authorityType"])
 				assert.Equal(t, "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d", firstItem["authorityId"])
-				assert.Equal(t, "provider_created", firstItem["type"])
+				assert.Equal(t, "participant_created", firstItem["type"])
 
 				secondItem := items[1].(map[string]interface{})
 				assert.Equal(t, "880e8400-e29b-41d4-a716-446655440000", secondItem["id"])
-				assert.Equal(t, "provider_updated", secondItem["type"])
+				assert.Equal(t, "participant_updated", secondItem["type"])
 			}
 		})
 	}

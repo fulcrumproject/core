@@ -140,7 +140,7 @@ func TestAgent_Validate(t *testing.T) {
 				State:           AgentConnected,
 				LastStateUpdate: validTime,
 				AgentTypeID:     validID,
-				ParticipantID:   validID,
+				ProviderID:      validID,
 				CountryCode:     "US",
 			},
 			wantErr: false,
@@ -152,7 +152,7 @@ func TestAgent_Validate(t *testing.T) {
 				State:           AgentConnected,
 				LastStateUpdate: validTime,
 				AgentTypeID:     validID,
-				ParticipantID:   validID,
+				ProviderID:      validID,
 				CountryCode:     "US",
 			},
 			wantErr: true,
@@ -164,7 +164,7 @@ func TestAgent_Validate(t *testing.T) {
 				State:           "InvalidState",
 				LastStateUpdate: validTime,
 				AgentTypeID:     validID,
-				ParticipantID:   validID,
+				ProviderID:      validID,
 				CountryCode:     "US",
 			},
 			wantErr: true,
@@ -176,7 +176,7 @@ func TestAgent_Validate(t *testing.T) {
 				State:           AgentConnected,
 				LastStateUpdate: time.Time{},
 				AgentTypeID:     validID,
-				ParticipantID:   validID,
+				ProviderID:      validID,
 				CountryCode:     "US",
 			},
 			wantErr: true,
@@ -188,7 +188,7 @@ func TestAgent_Validate(t *testing.T) {
 				State:           AgentConnected,
 				LastStateUpdate: validTime,
 				AgentTypeID:     uuid.Nil,
-				ParticipantID:   validID,
+				ProviderID:      validID,
 				CountryCode:     "US",
 			},
 			wantErr: true,
@@ -200,7 +200,7 @@ func TestAgent_Validate(t *testing.T) {
 				State:           AgentConnected,
 				LastStateUpdate: validTime,
 				AgentTypeID:     validID,
-				ParticipantID:   uuid.Nil,
+				ProviderID:      uuid.Nil,
 				CountryCode:     "US",
 			},
 			wantErr: true,
@@ -212,7 +212,7 @@ func TestAgent_Validate(t *testing.T) {
 				State:           AgentConnected,
 				LastStateUpdate: validTime,
 				AgentTypeID:     validID,
-				ParticipantID:   validID,
+				ProviderID:      validID,
 				CountryCode:     "INVALID",
 			},
 			wantErr: true,
@@ -224,7 +224,7 @@ func TestAgent_Validate(t *testing.T) {
 				State:           AgentConnected,
 				LastStateUpdate: validTime,
 				AgentTypeID:     validID,
-				ParticipantID:   validID,
+				ProviderID:      validID,
 				CountryCode:     "US",
 				Attributes:      Attributes{"key": []string{"value"}},
 			},
@@ -278,7 +278,7 @@ func TestAgentCommander_Create(t *testing.T) {
 					assert.Equal(t, validName, agent.Name)
 					assert.Equal(t, validCountryCode, agent.CountryCode)
 					assert.Equal(t, validAttributes, agent.Attributes)
-					assert.Equal(t, validID, agent.ParticipantID)
+					assert.Equal(t, validID, agent.ProviderID)
 					assert.Equal(t, validID, agent.AgentTypeID)
 					assert.Equal(t, AgentDisconnected, agent.State)
 					return nil
@@ -304,7 +304,7 @@ func TestAgentCommander_Create(t *testing.T) {
 			errorCheck: func(t *testing.T, err error) {
 				var invalidInputErr InvalidInputError
 				require.True(t, errors.As(err, &invalidInputErr))
-				assert.Contains(t, err.Error(), "participant with ID")
+				assert.Contains(t, err.Error(), "provider with ID")
 			},
 		},
 		{
@@ -405,7 +405,7 @@ func TestAgentCommander_Update(t *testing.T) {
 		CountryCode:     existingCountryCode,
 		State:           existingState,
 		LastStateUpdate: time.Now(),
-		ParticipantID:   providerID,
+		ProviderID:      providerID,
 		AgentTypeID:     agentTypeID,
 	}
 
@@ -586,7 +586,7 @@ func TestAgentCommander_Delete(t *testing.T) {
 			ID: agentID,
 		},
 		Name:            "test-agent",
-		ParticipantID:   providerID,
+		ProviderID:      providerID,
 		State:           AgentDisconnected,
 		LastStateUpdate: time.Now(),
 	}
@@ -701,10 +701,10 @@ func TestAgentCommander_UpdateState(t *testing.T) {
 			CreatedAt: currentTime,
 			UpdatedAt: currentTime,
 		},
-		Name:          agentName,
-		CountryCode:   countryCode,
-		ParticipantID: providerID,
-		AgentTypeID:   agentTypeID,
+		Name:        agentName,
+		CountryCode: countryCode,
+		ProviderID:  providerID,
+		AgentTypeID: agentTypeID,
 	}
 
 	tests := []struct {

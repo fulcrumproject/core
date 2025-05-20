@@ -51,21 +51,21 @@ type Agent struct {
 	LastStateUpdate time.Time  `json:"lastStateUpdate" gorm:"index"`
 
 	// Relationships
-	AgentTypeID   UUID         `json:"agentTypeId" gorm:"not null"`
-	AgentType     *AgentType   `json:"agentType,omitempty" gorm:"foreignKey:AgentTypeID"`
-	ParticipantID UUID         `json:"participantId" gorm:"not null"`
-	Participant   *Participant `json:"-" gorm:"foreignKey:ParticipantID"`
+	AgentTypeID UUID         `json:"agentTypeId" gorm:"not null"`
+	AgentType   *AgentType   `json:"agentType,omitempty" gorm:"foreignKey:AgentTypeID"`
+	ProviderID  UUID         `json:"providerId" gorm:"not null"`
+	Provider    *Participant `json:"-" gorm:"foreignKey:ProviderID"`
 }
 
 // NewAgent creates a new agent with proper validation
-func NewAgent(name string, countryCode CountryCode, attributes Attributes, participantID UUID, agentTypeID UUID) *Agent {
+func NewAgent(name string, countryCode CountryCode, attributes Attributes, providerID UUID, agentTypeID UUID) *Agent {
 	return &Agent{
 		Name:            name,
 		State:           AgentDisconnected,
 		LastStateUpdate: time.Now(),
 		CountryCode:     countryCode,
 		Attributes:      attributes,
-		ParticipantID:   participantID,
+		ProviderID:      providerID,
 		AgentTypeID:     agentTypeID,
 	}
 }
@@ -89,8 +89,8 @@ func (a *Agent) Validate() error {
 	if a.AgentTypeID == uuid.Nil {
 		return fmt.Errorf("agent type ID cannot be empty")
 	}
-	if a.ParticipantID == uuid.Nil {
-		return fmt.Errorf("participant ID cannot be empty")
+	if a.ProviderID == uuid.Nil {
+		return fmt.Errorf("provider ID cannot be empty")
 	}
 	if err := a.CountryCode.Validate(); err != nil {
 		// Allow empty country code
@@ -140,7 +140,7 @@ func (a *Agent) RegisterMetadata(name *string, countryCode *CountryCode, attribu
 // AgentCommander defines the interface for agent command operations
 type AgentCommander interface {
 	// Create creates a new agent
-	Create(ctx context.Context, name string, countryCode CountryCode, attributes Attributes, participantID UUID, agentTypeID UUID) (*Agent, error)
+	Create(ctx context.Context, name string, countryCode CountryCode, attributes Attributes, providerID UUID, agentTypeID UUID) (*Agent, error)
 
 	// Update updates an agent
 	Update(ctx context.Context, id UUID, name *string, countryCode *CountryCode, attributes *Attributes, state *AgentState) (*Agent, error)
@@ -174,17 +174,17 @@ func (s *agentCommander) Create(
 	name string,
 	countryCode CountryCode,
 	attributes Attributes,
-	participantID UUID,
+	providerID UUID,
 	agentTypeID UUID,
 ) (*Agent, error) {
 	// Validate references
 	// Assuming store.ParticipantRepo().Exists will be available
-	participantExists, err := s.store.ParticipantRepo().Exists(ctx, participantID)
+	providerExists, err := s.store.ParticipantRepo().Exists(ctx, providerID)
 	if err != nil {
 		return nil, err
 	}
-	if !participantExists {
-		return nil, NewInvalidInputErrorf("participant with ID %s does not exist", participantID)
+	if !providerExists {
+		return nil, NewInvalidInputErrorf("provider with ID %s does not exist", providerID)
 	}
 	agentTypeExists, err := s.store.AgentTypeRepo().Exists(ctx, agentTypeID)
 	if err != nil {
@@ -197,7 +197,7 @@ func (s *agentCommander) Create(
 	// Create and save
 	var agent *Agent
 	err = s.store.Atomic(ctx, func(store Store) error {
-		agent = NewAgent(name, countryCode, attributes, participantID, agentTypeID)
+		agent = NewAgent(name, countryCode, attributes, providerID, agentTypeID)
 		if err := agent.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -206,7 +206,7 @@ func (s *agentCommander) Create(
 		}
 		_, err = s.auditCommander.CreateCtx(
 			ctx, EventTypeAgentCreated, JSON{"state": agent},
-			&agent.ID, &participantID, nil, nil)
+			&agent.ID, &providerID, nil, nil)
 		return err
 	})
 	if err != nil {
@@ -247,7 +247,7 @@ func (s *agentCommander) Update(ctx context.Context,
 			return err
 		}
 		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
-			&id, &agent.ParticipantID, nil, nil, &beforeAgent, agent)
+			&id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
 		return err
 	})
 	if err != nil {
@@ -262,7 +262,7 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 	if err != nil {
 		return err
 	}
-	participantID := agent.ParticipantID
+	providerID := agent.ProviderID
 
 	// Delete and audit
 	return s.store.Atomic(ctx, func(store Store) error {
@@ -282,7 +282,7 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 			return err
 		}
 		_, err = s.auditCommander.CreateCtx(ctx, EventTypeAgentDeleted,
-			JSON{"state": agent}, &id, &participantID, nil, nil)
+			JSON{"state": agent}, &id, &providerID, nil, nil)
 		return err
 	})
 }
@@ -308,7 +308,7 @@ func (s *agentCommander) UpdateState(ctx context.Context, id UUID, state AgentSt
 			return err
 		}
 		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
-			&id, &agent.ParticipantID, nil, nil, &beforeAgent, agent)
+			&id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
 		return err
 	})
 	if err != nil {
@@ -344,7 +344,7 @@ type AgentQuerier interface {
 	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Agent], error)
 
 	// CountByProvider returns the number of agents for a specific provider
-	CountByParticipant(ctx context.Context, participantID UUID) (int64, error)
+	CountByProvider(ctx context.Context, providerID UUID) (int64, error)
 
 	// Retrieve the auth scope for the entity
 	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)

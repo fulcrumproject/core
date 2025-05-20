@@ -14,11 +14,11 @@ type GormAgentRepository struct {
 }
 
 var applyAgentFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"name":          stringInFilterFieldApplier("name"),
-	"state":         parserInFilterFieldApplier("state", domain.ParseAgentState),
-	"countryCode":   parserInFilterFieldApplier("country_code", domain.ParseCountryCode),
-	"participantId": parserInFilterFieldApplier("participant_id", domain.ParseUUID),
-	"agentTypeId":   parserInFilterFieldApplier("agent_type_id", domain.ParseUUID),
+	"name":        stringInFilterFieldApplier("name"),
+	"state":       parserInFilterFieldApplier("state", domain.ParseAgentState),
+	"countryCode": parserInFilterFieldApplier("country_code", domain.ParseCountryCode),
+	"providerId":  parserInFilterFieldApplier("provider_id", domain.ParseUUID),
+	"agentTypeId": parserInFilterFieldApplier("agent_type_id", domain.ParseUUID),
 })
 
 var applyAgentSort = mapSortApplier(map[string]string{
@@ -33,16 +33,16 @@ func NewAgentRepository(db *gorm.DB) *GormAgentRepository {
 			applyAgentFilter,
 			applyAgentSort,
 			agentAuthzFilterApplier,
-			[]string{"Participant", "AgentType"}, // Find preload paths
-			[]string{"Participant"},              // List preload paths (only Participant for list operations)
+			[]string{"Provider", "AgentType"}, // Find preload paths
+			[]string{"Provider"},              // List preload paths (only Provider for list operations)
 		),
 	}
 	return repo
 }
 
-func (r *GormAgentRepository) CountByParticipant(ctx context.Context, participantID domain.UUID) (int64, error) {
+func (r *GormAgentRepository) CountByProvider(ctx context.Context, providerID domain.UUID) (int64, error) {
 	var count int64
-	result := r.db.WithContext(ctx).Model(&domain.Agent{}).Where("participant_id = ?", participantID).Count(&count)
+	result := r.db.WithContext(ctx).Model(&domain.Agent{}).Where("provider_id = ?", providerID).Count(&count)
 	if result.Error != nil {
 		return 0, result.Error
 	}
@@ -66,7 +66,7 @@ func (r *GormAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Conte
 // agentAuthzFilterApplier applies authorization scoping to agent queries
 func agentAuthzFilterApplier(s *domain.AuthIdentityScope, q *gorm.DB) *gorm.DB {
 	if s.ParticipantID != nil {
-		return q.Where("participant_id = ?", s.ParticipantID)
+		return q.Where("provider_id = ?", s.ParticipantID)
 	}
 	if s.AgentID != nil {
 		return q.Where("id = ?", s.AgentID)
@@ -76,5 +76,5 @@ func agentAuthzFilterApplier(s *domain.AuthIdentityScope, q *gorm.DB) *gorm.DB {
 
 // AuthScope returns the auth scope for the agent
 func (r *GormAgentRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	return r.getAuthScope(ctx, id, "participant_id", "id as agent_id")
+	return r.getAuthScope(ctx, id, "provider_id", "id as agent_id")
 }

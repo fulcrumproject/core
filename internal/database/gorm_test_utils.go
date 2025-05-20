@@ -50,7 +50,7 @@ func createTestAgentWithStatusUpdate(t *testing.T, participantID, agentTypeID do
 		State:           state,
 		CountryCode:     "US",
 		Attributes:      domain.Attributes{"key": []string{"value"}},
-		ParticipantID:   participantID,
+		ProviderID:      participantID,
 		AgentTypeID:     agentTypeID,
 		LastStateUpdate: lastUpdate,
 	}
