@@ -29,7 +29,7 @@ func NewAuditEntryRepository(db *gorm.DB) *GormAuditEntryRepository {
 			db,
 			applyAuditEntryFilter,
 			applyAuditEntrySort,
-			allAuthzFilterApplier,
+			providerConsumerAgentAuthzFilterApplier,
 			[]string{}, // No preload paths needed
 			[]string{}, // No preload paths needed
 		),
@@ -38,5 +38,5 @@ func NewAuditEntryRepository(db *gorm.DB) *GormAuditEntryRepository {
 }
 
 func (r *GormAuditEntryRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	return r.getAuthScope(ctx, id, "audit_entries", "provider_id", "agent_id", "broker_id")
+	return r.getAuthScope(ctx, id, "provider_id", "consumer_id", "agent_id")
 }

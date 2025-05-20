@@ -22,9 +22,9 @@ type MetricEntry struct {
 	ServiceID  UUID         `gorm:"not null"`
 	Service    *Service     `gorm:"foreignKey:ServiceID"`
 	ProviderID UUID         `gorm:"not null"`
-	Provider   *Participant `gorm:"foreignKey:ParticipantID"`
+	Provider   *Participant `gorm:"foreignKey:ProviderID"`
 	ConsumerID UUID         `gorm:"not null"`
-	Consumer   *Participant `gorm:"foreignKey:ParticipantID"`
+	Consumer   *Participant `gorm:"foreignKey:ConsumerID"`
 }
 
 // NewMetricEntry creates a new metric entry

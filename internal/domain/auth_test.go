@@ -276,6 +276,8 @@ func TestValidateAuthScope(t *testing.T) {
 			targetScope: &AuthScope{
 				ParticipantID: &participantID,
 				AgentID:       &agentID,
+				ProviderID:    &participantID,
+				ConsumerID:    &participantID,
 			},
 			wantErr: false,
 		},
@@ -326,29 +328,6 @@ func TestValidateAuthScope(t *testing.T) {
 			errContains: "invalid agent authorization scope",
 		},
 		{
-			name: "Participant with matching participant",
-			setupIdentity: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
-					WithParticipantID(&participantID)
-			},
-			targetScope: &AuthScope{
-				ParticipantID: &participantID,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Participant with non-matching participant",
-			setupIdentity: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
-					WithParticipantID(&participantID)
-			},
-			targetScope: &AuthScope{
-				ParticipantID: &differentParticipantID,
-			},
-			wantErr:     true,
-			errContains: "invalid participant authorization scope",
-		},
-		{
 			name: "Participant with no scope participant ID is valid",
 			setupIdentity: func() AuthIdentity {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
@@ -366,14 +345,79 @@ func TestValidateAuthScope(t *testing.T) {
 			targetScope: &AuthScope{},
 			wantErr:     false,
 		},
+		// New test cases for Provider and Consumer validation
 		{
-			name: "Participant with no scope participant ID is valid",
+			name: "Participant with matching provider ID",
 			setupIdentity: func() AuthIdentity {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
 					WithParticipantID(&participantID)
 			},
-			targetScope: &AuthScope{},
-			wantErr:     false,
+			targetScope: &AuthScope{
+				ProviderID: &participantID,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Participant with non-matching provider ID",
+			setupIdentity: func() AuthIdentity {
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
+			},
+			targetScope: &AuthScope{
+				ProviderID: &differentParticipantID,
+			},
+			wantErr:     true,
+			errContains: "invalid provider authorization scope",
+		},
+		{
+			name: "Participant with matching consumer ID",
+			setupIdentity: func() AuthIdentity {
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
+			},
+			targetScope: &AuthScope{
+				ConsumerID: &participantID,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Participant with non-matching consumer ID",
+			setupIdentity: func() AuthIdentity {
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
+			},
+			targetScope: &AuthScope{
+				ConsumerID: &differentParticipantID,
+			},
+			wantErr:     true,
+			errContains: "invalid consumer authorization scope",
+		},
+		{
+			name: "Participant with multiple matching scope fields",
+			setupIdentity: func() AuthIdentity {
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
+			},
+			targetScope: &AuthScope{
+				ParticipantID: &participantID,
+				ProviderID:    &participantID,
+				ConsumerID:    &participantID,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Participant with multiple scope fields and one non-matching",
+			setupIdentity: func() AuthIdentity {
+				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
+					WithParticipantID(&participantID)
+			},
+			targetScope: &AuthScope{
+				ParticipantID: &participantID,
+				ProviderID:    &participantID,
+				ConsumerID:    &differentParticipantID,
+			},
+			wantErr:     true,
+			errContains: "invalid consumer authorization scope",
 		},
 	}
 

@@ -30,7 +30,7 @@ func NewMetricEntryRepository(db *gorm.DB) *GormMetricEntryRepository {
 			db,
 			applyMetricEntryFilter,
 			applyMetricEntrySort,
-			allAuthzFilterApplier,
+			providerConsumerAgentAuthzFilterApplier,
 			[]string{"Agent", "Service", "Type"}, // Find preload paths
 			[]string{"Agent", "Service", "Type"}, // List preload paths
 		),
@@ -49,5 +49,5 @@ func (r *GormMetricEntryRepository) CountByMetricType(ctx context.Context, typeI
 }
 
 func (r *GormMetricEntryRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	return r.getAuthScope(ctx, id, "participant_id", "agent_id")
+	return r.getAuthScope(ctx, id, "provider_id", "consumer_id", "agent_id")
 }

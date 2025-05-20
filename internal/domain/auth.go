@@ -100,12 +100,20 @@ type AuthIdentity interface {
 	Name() string
 	Role() AuthRole
 	IsRole(role AuthRole) bool
-	Scope() *AuthScope
+	Scope() *AuthIdentityScope
+}
+
+// AuthScope contains additional information for authorization decisions
+type AuthIdentityScope struct {
+	ParticipantID *UUID
+	AgentID       *UUID
 }
 
 // AuthScope contains additional information for authorization decisions
 type AuthScope struct {
 	ParticipantID *UUID
+	ProviderID    *UUID
+	ConsumerID    *UUID
 	AgentID       *UUID
 }
 
@@ -155,9 +163,17 @@ func ValidateAuthScope(id AuthIdentity, target *AuthScope) error {
 		return nil
 	}
 
-	// Participant check: If source requires a participant, caller must have same participant
-	if source.ParticipantID != nil && target.ParticipantID != nil && *target.ParticipantID != *source.ParticipantID {
-		return errors.New("invalid participant authorization scope")
+	// Participant check: If source requires a participant, caller must have same participant, provider, consumer
+	if source.ParticipantID != nil {
+		if target.ParticipantID != nil && *target.ParticipantID != *source.ParticipantID {
+			return errors.New("invalid participant authorization scope")
+		}
+		if target.ProviderID != nil && *target.ProviderID != *source.ParticipantID {
+			return errors.New("invalid provider authorization scope")
+		}
+		if target.ConsumerID != nil && *target.ConsumerID != *source.ParticipantID {
+			return errors.New("invalid consumer authorization scope")
+		}
 	}
 
 	// Agent check: If source requires an agent, caller must have same agent

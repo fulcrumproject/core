@@ -37,15 +37,6 @@ func NewParticipantRepository(db *gorm.DB) *GormParticipantRepository {
 	return repo
 }
 
-// participantAuthzFilterApplier applies authorization scoping to participant queries
-func participantAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
-	if s.ParticipantID != nil {
-		return q.Where("id = ?", s.ParticipantID)
-	}
-	// Allow full access for fulcrum admins
-	return q
-}
-
 // AuthScope returns the auth scope for the participant
 func (r *GormParticipantRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 	return r.getAuthScope(ctx, id, "participant_id")

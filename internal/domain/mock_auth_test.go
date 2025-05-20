@@ -11,7 +11,7 @@ type MockAuthIdentity struct {
 	role        AuthRole
 	participant *UUID
 	agent       *UUID
-	scope       *AuthScope
+	scope       *AuthIdentityScope
 }
 
 // NewMockAuthIdentity creates a new mock identity with the specified ID and role
@@ -20,7 +20,7 @@ func NewMockAuthIdentity(id UUID, role AuthRole) *MockAuthIdentity {
 		id:    id,
 		name:  id.String(), // Use ID as name by default
 		role:  role,
-		scope: &AuthScope{}, // Initialize with empty scope
+		scope: &AuthIdentityScope{}, // Initialize with empty scope
 	}
 }
 
@@ -45,11 +45,11 @@ func (m *MockAuthIdentity) IsRole(role AuthRole) bool {
 	return m.role == role
 }
 
-func (m *MockAuthIdentity) Scope() *AuthScope {
+func (m *MockAuthIdentity) Scope() *AuthIdentityScope {
 	return m.scope
 }
 
-func (m *MockAuthIdentity) WithScope(scope *AuthScope) *MockAuthIdentity {
+func (m *MockAuthIdentity) WithScope(scope *AuthIdentityScope) *MockAuthIdentity {
 	m.scope = scope
 	return m
 }
@@ -61,7 +61,7 @@ func (m *MockAuthIdentity) ParticipantID() *UUID {
 func (m *MockAuthIdentity) WithParticipantID(id *UUID) *MockAuthIdentity {
 	m.participant = id
 	if m.scope == nil {
-		m.scope = &AuthScope{}
+		m.scope = &AuthIdentityScope{}
 	}
 	m.scope.ParticipantID = id
 	return m
@@ -74,7 +74,7 @@ func (m *MockAuthIdentity) AgentID() *UUID {
 func (m *MockAuthIdentity) WithAgentID(id *UUID) *MockAuthIdentity {
 	m.agent = id
 	if m.scope == nil {
-		m.scope = &AuthScope{}
+		m.scope = &AuthIdentityScope{}
 	}
 	m.scope.AgentID = id
 	return m

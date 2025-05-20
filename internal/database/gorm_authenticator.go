@@ -31,8 +31,8 @@ func (i *GormTokenIdentity) Role() domain.AuthRole {
 }
 
 // Scope returns the identity's authorization scope
-func (i *GormTokenIdentity) Scope() *domain.AuthScope {
-	return &domain.AuthScope{
+func (i *GormTokenIdentity) Scope() *domain.AuthIdentityScope {
+	return &domain.AuthIdentityScope{
 		ParticipantID: i.participantID,
 		AgentID:       i.agentID,
 	}

@@ -381,7 +381,8 @@ func TestServiceRepository(t *testing.T) {
 
 		scope, err := repo.AuthScope(context.Background(), service.ID)
 		require.NoError(t, err)
-		assert.Equal(t, provider.ID, *scope.ParticipantID, "Provider ID should match")
+		assert.Equal(t, provider.ID, *scope.ProviderID, "Provider ID should match")
+		assert.Equal(t, consumer.ID, *scope.ConsumerID, "Consumer ID should match")
 		assert.Equal(t, agent.ID, *scope.AgentID, "Agent ID should match")
 	})
 }

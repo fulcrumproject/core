@@ -153,12 +153,16 @@ func (r *GormRepository[T]) Exists(ctx context.Context, id domain.UUID) (bool, e
 	return exists, nil
 }
 
-func allAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
+func participantAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
 	if s.ParticipantID != nil {
-		return q.Where("provider_id = ?", s.ParticipantID)
+		return q.Where("participant_id = ?", s.ParticipantID)
 	}
-	if s.BrokerID != nil {
-		return q.Where("broker_id = ?", s.BrokerID)
+	return q
+}
+
+func providerConsumerAgentAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
+	if s.ParticipantID != nil {
+		return q.Where("consumer_id = ? OR provider_id = ?", s.ParticipantID, s.ParticipantID)
 	}
 	if s.AgentID != nil {
 		return q.Where("agent_id = ?", s.AgentID)

@@ -368,8 +368,10 @@ func TestJobRepository(t *testing.T) {
 			assert.NotNil(t, scope, "AuthScope should not return nil")
 
 			// Verify auth scope contains the correct IDs
-			assert.NotNil(t, scope.ParticipantID, "ParticipantID should not be nil")
-			assert.Equal(t, service.ProviderID, *scope.ParticipantID, "Should return the correct participant ID")
+			assert.NotNil(t, scope.ProviderID, "ProviderID should not be nil")
+			assert.Equal(t, service.ProviderID, *scope.ProviderID, "Should return the correct provider ID")
+			assert.NotNil(t, scope.ConsumerID, "ConsumerID should not be nil")
+			assert.Equal(t, service.ConsumerID, *scope.ConsumerID, "Should return the correct consumer ID")
 			assert.NotNil(t, scope.AgentID, "AgentID should not be nil")
 			assert.Equal(t, service.AgentID, *scope.AgentID, "Should return the correct agent ID")
 		})

@@ -78,9 +78,9 @@ type Service struct {
 
 	// Relationships
 	ProviderID    UUID          `json:"providerId" gorm:"not null"`
-	Provider      *Participant  `json:"-" gorm:"foreignKey:ParticipantID"`
+	Provider      *Participant  `json:"-" gorm:"foreignKey:ProviderID"`
 	ConsumerID    UUID          `json:"consumerId" gorm:"not null"`
-	Consumer      *Participant  `json:"-" gorm:"foreignKey:ParticipantID"`
+	Consumer      *Participant  `json:"-" gorm:"foreignKey:ConsumerID"`
 	GroupID       UUID          `gorm:"not null" json:"groupId"`
 	Group         *ServiceGroup `json:"-" gorm:"foreignKey:GroupID"`
 	AgentID       UUID          `json:"agentId" gorm:"not null"`
