@@ -2,11 +2,11 @@
 
 ## Introduction
 
-Fulcrum Core is a comprehensive cloud infrastructure management system designed to orchestrate and monitor distributed cloud resources across multiple providers. It serves as a centralized control plane for managing cloud service providers, their deployed agents, and the various services these agents provision and maintain.
+Fulcrum Core is a comprehensive cloud infrastructure management system designed to orchestrate and monitor distributed cloud resources across multiple providers. It serves as a centralized control plane for managing cloud service participants, their deployed agents, and the various services these agents provision and maintain.
 
 The system is built as a RESTful API and enables organizations to:
 
-- Manage multiple cloud service providers through a unified interface
+- Manage multiple cloud service participants through a unified interface
 - Track and control agents deployed across different cloud environments
 - Provision and monitor various service types (VMs, containers, Kubernetes clusters, etc.)
 - Organize services into logical groups for easier management
@@ -31,20 +31,19 @@ graph TB
     FC((Fulcrum Core API))
     UI[Fulcrum Core UI]
     FA[Fulcrum Administrators]
-    CSPA[Cloud Service Provider Administrators]
-    MP[Service Broker]
+    PA[Participant Administrators]
     
-    %% Cloud Service Providers containing Agents and Services
-    subgraph CSP[Cloud Service Providers]
+    %% Participants containing Agents and Services
+    subgraph PART[Cloud Service Participants]
         AG[Agents]
         SVC[Cloud Services]
     end
     
     %% Relationships
     FA -->|Manage & Monitor| UI
-    CSPA -->|Register & Configure| UI
+    PA -->|Register & Configure| UI
     UI <-->|Interact| FC
-    MP -->|Provision Services| FC
+    PA -->|Provision Services| FC
     FC -->|Deploy & Control| AG
     AG -->|Report Status & Metrics| FC
     AG -->|Provision & Manage| SVC
@@ -62,13 +61,13 @@ Fulcrum Core UI is the web interface that facilitates interaction between admini
 
 #### Agents
 
-Agents are software components installed on Cloud Service Providers that act as Fulcrum's local representatives. They:
+Agents are software components installed on Cloud Service Participants that act as Fulcrum's local representatives. They:
 
 - Execute service provisioning and management commands from Fulcrum Core
 - Report status, health metrics, and operational data back to Fulcrum
 - Manage the lifecycle of deployed services (creation, updates, deletion)
 - Handle local resource allocation and optimization
-- Implement provider-specific operations and API interactions
+- Implement participant-specific operations and API interactions
 - Maintain secure communications with the Fulcrum Core through token-based authentication
 - Poll for jobs from the job queue and process them
 - Update job status upon completion or failure
@@ -81,32 +80,22 @@ Fulcrum Administrators are responsible for the overall management of the Fulcrum
 - Monitor the health and performance of the entire system
 - Manage user access and permissions
 - Review audit logs and system metrics
-- Orchestrate service groups across multiple providers
+- Orchestrate service groups across multiple participants
 - Define service types and their resource requirements
 - Oversee agent deployments and their operational status
 - Monitor job queue health and processing
 
-#### Cloud Service Provider Administrators
+#### Participant Administrators
 
-Cloud Service Provider Administrators manage specific provider instances within the Fulcrum system. They:
+Participant Administrators manage specific participant instances within the Fulcrum system. They:
 
-- Register and configure provider details in Fulcrum
+- Register and configure participant details in Fulcrum
 - Deploy and initialize agents on their cloud infrastructure
-- Manage provider-specific attributes and capabilities
-- Monitor services running on their provider infrastructure
-- Handle provider-specific authentication and access controls
-- Coordinate with Fulcrum Administrators on cross-provider operations
-
-#### Service Broker
-
-Service Broker (eg. Marketplaces) are external platforms that can integrate with Fulcrum to automate service provisioning. They:
-
-- Initiate service creation requests through the Fulcrum API
-- Track provisioning status of requested services
-- Provide service catalogs that map to Fulcrum service types
-- Handle billing and usage reporting for provisioned services
-- Enable user self-service for cloud resource management
-- Integrate with Fulcrum's audit and metrics subsystems for comprehensive reporting
+- Manage participant-specific attributes and capabilities
+- Monitor services running on their infrastructure
+- Handle participant-specific authentication and access controls
+- Coordinate with Fulcrum Administrators on cross-participant operations
+- May act as both service providers and consumers depending on context
 
 ## Model
 
@@ -116,7 +105,7 @@ This section outlines the service entities and their relationships.
 
 ```mermaid
 classDiagram
-    Provider "1" --> "0..N" Agent : has many
+    Participant "1" --> "0..N" Agent : has many
     AgentType "0..N" <--> "1..N" ServiceType : can provide
     Agent "0..N" --> "1" AgentType : is of type
     Agent "1" --> "0..N" Service : handles
@@ -125,21 +114,19 @@ classDiagram
     Service "1" --> "0..N" Job : related to
     ServiceGroup "1" --> "0..N" Service : groups
     MetricType "1" --> "0..N" MetricEntry : categorizes
-    Broker "1" --> "0..N" Token : has many
-    Provider "1" --> "0..N" Token : has many
+    Participant "1" --> "0..N" Token : has many
     Agent "1" --> "0..N" Token : has many
     Agent "1" --> "0..N" MetricEntry : generates
     Service "1" --> "0..N" MetricEntry : monitored via
-    Broker "1" --> "0..N" Service : provisions
-    Broker "1" --> "0..N" ServiceGroup : owns
-    Provider "1" --> "0..N" Service : hosts
+    Participant "1" --> "0..N" Service : consumes (via ConsumerParticipantID)
+    Participant "1" --> "0..N" ServiceGroup : owns
+    Participant "1" --> "0..N" Service : hosts (via Agent)
     AuditEntry "0..N" <-- "1" Agent : audited via
     AuditEntry "0..N" <-- "1" Service : audited via
-    AuditEntry "0..N" <-- "1" Broker : audited via
-    AuditEntry "0..N" <-- "1" Provider : audited via
+    AuditEntry "0..N" <-- "1" Participant : audited via
 
-    namespace Providers {
-        class Provider {
+    namespace Participants {
+        class Participant {
             id : UUID
             name : string
             state : enum[Enabled|Disabled]
@@ -167,10 +154,9 @@ classDiagram
             id : UUID
             name : string
             state : enum[New|Connected|Disconnected|Error|Disabled]
-            tokenHash : string 
             countryCode : string
             attributes : map[string]string[]
-            lastStatusUpdate : datetime
+            lastStateUpdate : datetime
             createdAt : datetime
             updatedAt : datetime
         }
@@ -190,6 +176,7 @@ classDiagram
             currentProperties : json
             targetProperties : json
             resources : json
+            consumerParticipantID : UUID
             createdAt : datetime
             updatedAt : datetime
         }
@@ -197,13 +184,7 @@ classDiagram
         class ServiceGroup {
             id : UUID
             name : string
-            createdAt : datetime
-            updatedAt : datetime
-        }
-        
-        class Broker {
-            id : UUID
-            name : string
+            participantID : UUID
             createdAt : datetime
             updatedAt : datetime
         }
@@ -227,11 +208,10 @@ classDiagram
         class Token {
             id : UUID
             name : string
-            role : enum[fulcrum_admin|provider_admin|broker|agent]
+            role : enum[fulcrum_admin|participant|agent]
             hashedValue : string
             expireAt : datetime
-            providerID : UUID
-            brokerID : UUID
+            participantID : UUID
             agentID : UUID
             createdAt : datetime
             updatedAt : datetime
@@ -295,18 +275,22 @@ classDiagram
 
 ##### Core
 
-1. **Provider (Cloud Service Provider)**
-   - Represents a cloud service provider with name and operational state
+1. **Participant**
+   - Unified entity replacing the separate Provider and Broker entities
+   - Represents an entity that can act as both a service provider and consumer
+   - Has name and operational state (Enabled/Disabled)
    - Contains geographical information via country code
    - Stores flexible metadata through custom attributes
-   - Has many agents deployed within its infrastructure
+   - Has many agents deployed within its infrastructure (when acting as a provider)
+   - Can consume services (via Service.ConsumerParticipantID)
+   - The functional role (provider/consumer) is determined by context and relationships
 
 2. **Agent**
    - Deployed software component that manages services
-   - Belongs to a specific Provider and AgentType
+   - Belongs to a specific Participant (acting as provider) and AgentType
    - Tracks connectivity state (New, Connected, Disconnected, Error, Disabled)
-   - Uses secure token-based authentication
-   - Tracks last status update timestamp
+   - Uses secure token-based authentication (via Token entity)
+   - Tracks last state update timestamp
    - Processes jobs from the job queue to perform service operations
 
 3. **Service**
@@ -316,12 +300,13 @@ classDiagram
    - Supports both hot updates (while running) and cold updates (while stopped)
    - Tracks failed operations with error messages and retry counts
    - Contains attributes for metadata about the service
-    - Manages configuration changes through current and target properties
+   - Manages configuration changes through current and target properties
    - Stores service-specific resource configuration
+   - Can be linked to a consumer participant via ConsumerParticipantID (optional)
 
    Properties vs Attributes:
    - Properties: JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger state transitions (hot or cold update depending on current state).
-   - Attributes: Metadata about the service that is set during creation and remains static throughout the service lifecycle. Used for provider and agent selection during service creation and more generally for identification, categorization, and filtering.
+   - Attributes: Metadata about the service that is set during creation and remains static throughout the service lifecycle. Used for participant and agent selection during service creation and more generally for identification, categorization, and filtering.
 
 4. **AgentType**
    - Defines the type classification for agents
@@ -334,6 +319,7 @@ classDiagram
 
 6. **ServiceGroup**
    - Organizes related services into logical groups
+   - Belongs to a specific Participant
    - Enables collective management of related services
 
 7. **Job**
@@ -344,18 +330,13 @@ classDiagram
    - Tracks execution timing through claimedAt and completedAt
    - Records error details for failed operations
 
-8. **Broker (Service Broker)**
-  - Represents an external platform that integrates with Fulcrum to provision services
-  - Has a name and unique identifier for API integration
-  - May have multiple tokens with broker role for authentication
-
-9. **Token**
-  - Provides secure authentication mechanism for system access
-  - Supports different roles: FulcrumAdmin, ProviderAdmin, Broker, Agent
-  - Contains hashed value stored in database to verify authentication
-  - Has expiration date for enhanced security
-  - Scoped to specific Provider, Broker, or Agent based on role
-  - Note: The current token implementation is a facility to handle authentication locally and will be replaced with an external authentication standard mechanism in the future, such as OAuth 2.0, OpenID Connect, or SAML
+8. **Token**
+   - Provides secure authentication mechanism for system access
+   - Supports different roles: fulcrum_admin, participant, agent
+   - Contains hashed value stored in database to verify authentication
+   - Has expiration date for enhanced security
+   - Scoped to specific Participant or Agent based on role
+   - Note: The current token implementation is a facility to handle authentication locally and will be replaced with an external authentication standard mechanism in the future, such as OAuth 2.0, OpenID Connect, or SAML
 
 ##### Metrics
 
@@ -384,7 +365,7 @@ classDiagram
 
 Fulcrum Core implements a comprehensive authorization system with role-based access control (RBAC):
 
-- Four predefined roles: FulcrumAdmin, ProviderAdmin, Broker, and Agent
+- Three predefined roles: fulcrum_admin, participant, and agent
 - Fine-grained permission control for different resource types and actions
 - Context-aware permissions based on resource ownership and relationships
 
@@ -437,7 +418,8 @@ sequenceDiagram
     Client->>API: POST /api/v1/agents
     API->>API: Generate secure random token
     API->>API: Hash token
-    API->>DB: Store agent with token hash
+    API->>DB: Create token entity for agent
+    API->>DB: Store agent
     API->>Client: Return agent data with token (once only)
     Client->>Client: Securely store token
     
@@ -526,7 +508,7 @@ The job management process follows these steps:
    - A timestamp is recorded in the `claimedAt` field
 
 3. **Job Processing**:
-   - The agent performs the requested operation on the cloud provider
+   - The agent performs the requested operation on the cloud participant
    - The agent maintains a secure connection with the job queue using token-based authentication
    - During processing, the service state reflects the operation (Creating, Starting, Stopping, HotUpdating, ColdUpdating, Deleting)
 

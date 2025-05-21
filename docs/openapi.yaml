@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Fulcrum Core API
   description: A comprehensive cloud infrastructure management system designed to orchestrate and monitor distributed cloud resources across multiple providers.
@@ -11,8 +11,8 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0
 
 tags:
-  - name: Providers
-    description: Cloud provider management
+  - name: Participants
+    description: Cloud service participant management
   - name: Agents
     description: Agent and agent type management
   - name: Services
@@ -23,24 +23,37 @@ tags:
     description: Metrics collection and management
   - name: Audit
     description: Audit logging
-  - name: Brokers
-    description: Service broker management
   - name: Tokens
     description: Authentication token management
 
 servers:
-  - url: http://localhost:3000/api/v1
-    description: Local development server
   - url: https://api.fulcrum.testudosrl.dev/api/v1
     description: Production server
 
+# Default security for all operations
+security:
+  - BearerAuth: []
+
 components:
   securitySchemes:
-    AgentAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: token
-      description: Agent authentication using bearer token.
+    BearerAuth:
+      type: oauth2
+      description: Role-based authentication using bearer tokens
+      flows:
+        implicit:
+          authorizationUrl: https://api.fulcrum.testudosrl.dev/oauth/authorize
+          scopes:
+            fulcrum_admin: System administrator with unrestricted access
+            participant: Participant administrator that can act as both provider and consumer
+            agent: Agent role with access to specific operations
+
+  x-auth-roles:
+    fulcrum_admin:
+      description: System administrator with unrestricted access
+    participant:
+      description: Participant administrator that can act as both provider and consumer
+    agent:
+      description: Agent role with access to specific operations
 
   schemas:
     PaginationParams:
@@ -91,24 +104,39 @@ components:
       additionalProperties: true
       description: A generic JSON object
 
-    # Broker schemas
-    BrokerRequest:
+    # Participant schemas
+    ParticipantRequest:
       type: object
       required:
         - name
+        - state
       properties:
         name:
           type: string
-          example: "Test Broker"
+          example: "Test Participant"
+        state:
+          $ref: "#/components/schemas/ParticipantState"
+        countryCode:
+          type: string
+          example: "US"
+        attributes:
+          $ref: "#/components/schemas/Attributes"
 
-    BrokerResponse:
+    ParticipantResponse:
       type: object
       properties:
         id:
           $ref: "#/components/schemas/UUID"
         name:
           type: string
-          example: "Test Broker"
+          example: "Test Participant"
+        state:
+          $ref: "#/components/schemas/ParticipantState"
+        countryCode:
+          type: string
+          example: "US"
+        attributes:
+          $ref: "#/components/schemas/Attributes"
         createdAt:
           type: string
           format: date-time
@@ -116,10 +144,14 @@ components:
           type: string
           format: date-time
 
+    ParticipantState:
+      type: string
+      enum: [Enabled, Disabled]
+
     # Token schemas
     AuthRole:
       type: string
-      enum: [fulcrum_admin, provider_admin, broker, agent]
+      enum: [fulcrum_admin, participant, agent]
       description: Access role for the token
 
     TokenRequest:
@@ -140,7 +172,7 @@ components:
           example: "2025-12-31T23:59:59Z"
         scopeId:
           $ref: "#/components/schemas/UUID"
-          description: "Required for provider_admin, broker, and agent roles. The ID of the related entity"
+          description: "Required for participant and agent roles. For participant role - the participant ID; for agent role - the agent ID"
 
     TokenResponse:
       type: object
@@ -157,11 +189,11 @@ components:
           format: date-time
         scopeId:
           $ref: "#/components/schemas/UUID"
-          description: "For provider_admin role - the provider ID; for broker role - the broker ID; for agent role - the agent ID"
+          description: "For participant role - the participant ID; for agent role - the agent ID"
         agentId:
           $ref: "#/components/schemas/UUID"
           description: "For agent role tokens only - the agent ID"
-        providerId:
+        participantId:
           $ref: "#/components/schemas/UUID"
         createdAt:
           type: string
@@ -184,7 +216,7 @@ components:
       required:
         - name
         - state
-        - providerId
+        - participantId
         - agentTypeId
       properties:
         name:
@@ -199,7 +231,7 @@ components:
           $ref: "#/components/schemas/Attributes"
         properties:
           $ref: "#/components/schemas/JSONObject"
-        providerId:
+        participantId:
           $ref: "#/components/schemas/UUID"
         agentTypeId:
           $ref: "#/components/schemas/UUID"
@@ -221,12 +253,12 @@ components:
           $ref: "#/components/schemas/Attributes"
         properties:
           $ref: "#/components/schemas/JSONObject"
-        providerId:
+        participantId:
           $ref: "#/components/schemas/UUID"
         agentTypeId:
           $ref: "#/components/schemas/UUID"
-        provider:
-          $ref: "#/components/schemas/ProviderResponse"
+        participant:
+          $ref: "#/components/schemas/ParticipantResponse"
         agentType:
           $ref: "#/components/schemas/AgentTypeResponse"
         createdAt:
@@ -239,50 +271,11 @@ components:
     AgentCreateResponse:
       allOf:
         - $ref: "#/components/schemas/AgentResponse"
-
-    # Provider schemas
-    ProviderState:
-      type: string
-      enum: [Enabled, Disabled]
-
-    ProviderRequest:
-      type: object
-      required:
-        - name
-        - state
-      properties:
-        name:
-          type: string
-          example: "Provider"
-        state:
-          $ref: "#/components/schemas/ProviderState"
-        countryCode:
-          type: string
-          example: "US"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
-
-    ProviderResponse:
-      type: object
-      properties:
-        id:
-          $ref: "#/components/schemas/UUID"
-        name:
-          type: string
-          example: "Provider"
-        state:
-          $ref: "#/components/schemas/ProviderState"
-        countryCode:
-          type: string
-          example: "US"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
+        - type: object
+          properties:
+            token:
+              $ref: "#/components/schemas/TokenResponse"
+              description: "The agent authentication token"
 
     # Agent Type schemas
     AgentTypeRequest:
@@ -292,7 +285,7 @@ components:
       properties:
         name:
           type: string
-          example: "Provider VM Agent"
+          example: "Participant VM Agent"
 
     AgentTypeResponse:
       type: object
@@ -301,7 +294,7 @@ components:
           $ref: "#/components/schemas/UUID"
         name:
           type: string
-          example: "Provider VM Agent"
+          example: "Participant VM Agent"
         createdAt:
           type: string
           format: date-time
@@ -388,12 +381,16 @@ components:
           $ref: "#/components/schemas/UUID"
         groupId:
           $ref: "#/components/schemas/UUID"
+        consumerParticipantId:
+          $ref: "#/components/schemas/UUID"
         agent:
           $ref: "#/components/schemas/AgentResponse"
         serviceType:
           $ref: "#/components/schemas/ServiceTypeResponse"
         group:
           $ref: "#/components/schemas/ServiceGroupResponse"
+        consumerParticipant:
+          $ref: "#/components/schemas/ParticipantResponse"
         createdAt:
           type: string
           format: date-time
@@ -469,17 +466,7 @@ components:
         ]
 
     # Job schemas
-    JobAction:
-      type: string
-      enum:
-        [
-          ServiceCreate,
-          ServiceStart,
-          ServiceStop,
-          ServiceHotUpdate,
-          ServiceColdUpdate,
-          ServiceDelete,
-        ]
+    # Using the same ServiceAction enum for job actions
 
     JobState:
       type: string
@@ -491,7 +478,7 @@ components:
         id:
           $ref: "#/components/schemas/UUID"
         action:
-          $ref: "#/components/schemas/ServiceAction"
+          $ref: "#/components/schemas/ServiceAction" # Use the common ServiceAction enum
         state:
           $ref: "#/components/schemas/JobState"
         agentId:
@@ -582,13 +569,16 @@ components:
         - resourceId
         - typeName
         - value
+      oneOf:
+        - required: ["serviceId"]
+        - required: ["externalId"]
       properties:
         serviceId:
           $ref: "#/components/schemas/UUID"
-          description: "ID of the service associated with this metric (either serviceId or externalId must be provided)"
+          description: "ID of the service associated with this metric"
         externalId:
           type: string
-          description: "External ID of the service associated with this metric (either serviceId or externalId must be provided)"
+          description: "External ID of the service associated with this metric"
           example: "vm-i-12345"
         resourceId:
           type: string
@@ -661,14 +651,21 @@ components:
 
 paths:
   #
-  # Provider endpoints
+  # Participant endpoints
   #
-  /providers:
+  /participants:
     get:
-      summary: List providers
+      summary: List participants
       tags:
-        - Providers
-      description: Retrieves a paginated list of providers
+        - Participants
+      description: Retrieves a paginated list of participants
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all participants
+        - role: participant
+          permission: only its own participant
+        - role: agent
+          permission: only its associated participant
       parameters:
         - name: page
           in: query
@@ -682,7 +679,7 @@ paths:
             default: 20
       responses:
         "200":
-          description: A paginated list of providers
+          description: A paginated list of participants
           content:
             application/json:
               schema:
@@ -693,25 +690,32 @@ paths:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/ProviderResponse"
+                          $ref: "#/components/schemas/ParticipantResponse"
     post:
-      summary: Create a provider
+      summary: Create a participant
       tags:
-        - Providers
-      description: Creates a new provider
+        - Participants
+      description: Creates a new participant
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: not authorized
+        - role: agent
+          permission: not authorized
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProviderRequest"
+              $ref: "#/components/schemas/ParticipantRequest"
       responses:
         "201":
-          description: Provider created successfully
+          description: Participant created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProviderResponse"
+                $ref: "#/components/schemas/ParticipantResponse"
         "400":
           description: Invalid request
           content:
@@ -719,66 +723,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  #
-  # Broker endpoints
-  #
-  /brokers:
-    get:
-      summary: List brokers
-      tags:
-        - Brokers
-      description: Retrieves a paginated list of brokers
-      parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 1
-        - name: pageSize
-          in: query
-          schema:
-            type: integer
-            default: 20
-      responses:
-        "200":
-          description: A paginated list of brokers
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/PageResponse"
-                  - type: object
-                    properties:
-                      items:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/BrokerResponse"
-    post:
-      summary: Create a broker
-      tags:
-        - Brokers
-      description: Creates a new broker
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/BrokerRequest"
-      responses:
-        "201":
-          description: Broker created successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BrokerResponse"
-        "400":
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /brokers/{id}:
+  /participants/{id}:
     parameters:
       - name: id
         in: path
@@ -786,61 +731,78 @@ paths:
         schema:
           $ref: "#/components/schemas/UUID"
     get:
-      summary: Get a broker
+      summary: Get a participant
       tags:
-        - Brokers
-      description: Retrieves a specific broker by ID
+        - Participants
+      description: Retrieves a specific participant by ID
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all participants
+        - role: participant
+          permission: its own participant
+        - role: agent
+          permission: its associated participant
       responses:
         "200":
-          description: The broker details
+          description: The participant details
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BrokerResponse"
+                $ref: "#/components/schemas/ParticipantResponse"
         "404":
-          description: Broker not found
+          description: Participant not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
     patch:
-      summary: Update a broker
+      summary: Update a participant
       tags:
-        - Brokers
-      description: Updates an existing broker
+        - Participants
+      description: Updates an existing participant
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: its own participant
+        - role: agent
+          permission: not authorized
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: "Updated Broker Name"
+              $ref: "#/components/schemas/ParticipantRequest"
       responses:
         "200":
-          description: Broker updated successfully
+          description: Participant updated successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BrokerResponse"
+                $ref: "#/components/schemas/ParticipantResponse"
         "404":
-          description: Broker not found
+          description: Participant not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
     delete:
-      summary: Delete a broker
+      summary: Delete a participant
       tags:
-        - Brokers
-      description: Deletes a broker by ID
+        - Participants
+      description: Deletes a participant by ID
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: not authorized
+        - role: agent
+          permission: not authorized
       responses:
         "204":
-          description: Broker deleted successfully
+          description: Participant deleted successfully
         "404":
-          description: Broker not found
+          description: Participant not found
           content:
             application/json:
               schema:
@@ -855,6 +817,13 @@ paths:
       tags:
         - Tokens
       description: Retrieves a paginated list of tokens
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all tokens
+        - role: participant
+          permission: tokens for its participant and associated agents
+        - role: agent
+          permission: not authorized
       parameters:
         - name: page
           in: query
@@ -885,6 +854,13 @@ paths:
       tags:
         - Tokens
       description: Creates a new authentication token. The plain token value is only returned in this response and cannot be retrieved later.
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: for itself and for its agents
+        - role: agent
+          permission: not authorized
       requestBody:
         required: true
         content:
@@ -917,6 +893,13 @@ paths:
       tags:
         - Tokens
       description: Retrieves a specific token by ID. Note that the plain token value is not returned in this endpoint.
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all tokens
+        - role: participant
+          permission: its own tokens and those of its agents
+        - role: agent
+          permission: not authorized
       responses:
         "200":
           description: The token details
@@ -935,6 +918,13 @@ paths:
       tags:
         - Tokens
       description: Updates an existing token
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: its own tokens and those of its agents
+        - role: agent
+          permission: not authorized
       requestBody:
         required: true
         content:
@@ -970,6 +960,13 @@ paths:
       tags:
         - Tokens
       description: Deletes a token by ID
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: its own tokens and those of its agents
+        - role: agent
+          permission: not authorized
       responses:
         "204":
           description: Token deleted successfully
@@ -992,6 +989,13 @@ paths:
       tags:
         - Tokens
       description: Regenerates the value for an existing token. The new plain token value is returned in the response and cannot be retrieved later.
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: its own tokens and those of its agents
+        - role: agent
+          permission: not authorized
       responses:
         "200":
           description: Token value regenerated successfully
@@ -1001,69 +1005,6 @@ paths:
                 $ref: "#/components/schemas/TokenResponse"
         "404":
           description: Token not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  /providers/{id}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          $ref: "#/components/schemas/UUID"
-    get:
-      summary: Get a provider
-      tags:
-        - Providers
-      description: Retrieves a specific provider by ID
-      responses:
-        "200":
-          description: The provider details
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProviderResponse"
-        "404":
-          description: Provider not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-    patch:
-      summary: Update a provider
-      tags:
-        - Providers
-      description: Updates an existing provider
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ProviderRequest"
-      responses:
-        "200":
-          description: Provider updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProviderResponse"
-        "404":
-          description: Provider not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-    delete:
-      summary: Delete a provider
-      tags:
-        - Providers
-      description: Deletes a provider by ID
-      responses:
-        "204":
-          description: Provider deleted successfully
-        "404":
-          description: Provider not found
           content:
             application/json:
               schema:
@@ -1078,6 +1019,13 @@ paths:
       tags:
         - Agents
       description: Retrieves a paginated list of agents
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all agents
+        - role: participant
+          permission: agents belonging to its participant
+        - role: agent
+          permission: itself only
       parameters:
         - name: page
           in: query
@@ -1108,6 +1056,13 @@ paths:
       tags:
         - Agents
       description: Creates a new agent and returns the agent data with an authentication token
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: for its participant (when acting as provider)
+        - role: agent
+          permission: not authorized
       requestBody:
         required: true
         content:
@@ -1140,6 +1095,13 @@ paths:
       tags:
         - Agents
       description: Retrieves a specific agent by ID
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all agents
+        - role: participant
+          permission: agents belonging to its participant
+        - role: agent
+          permission: itself only
       responses:
         "200":
           description: The agent details
@@ -1158,6 +1120,13 @@ paths:
       tags:
         - Agents
       description: Updates an existing agent
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: agents belonging to its participant
+        - role: agent
+          permission: update its own status only
       requestBody:
         required: true
         content:
@@ -1182,6 +1151,13 @@ paths:
       tags:
         - Agents
       description: Deletes an agent by ID
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: agents belonging to its participant
+        - role: agent
+          permission: not authorized
       responses:
         "204":
           description: Agent deleted successfully
@@ -1199,7 +1175,7 @@ paths:
         - Agents
       description: Updates the status of the authenticated agent
       security:
-        - AgentAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -1238,7 +1214,7 @@ paths:
         - Agents
       description: Retrieves information about the currently authenticated agent
       security:
-        - AgentAuth: []
+        - BearerAuth: []
       responses:
         "200":
           description: The agent details
@@ -1262,6 +1238,13 @@ paths:
       tags:
         - Agents
       description: Retrieves a paginated list of agent types
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all agent types
+        - role: participant
+          permission: all agent types
+        - role: agent
+          permission: all agent types
       parameters:
         - name: page
           in: query
@@ -1300,6 +1283,13 @@ paths:
       tags:
         - Agents
       description: Retrieves a specific agent type by ID
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all agent types
+        - role: participant
+          permission: all agent types
+        - role: agent
+          permission: all agent types
       responses:
         "200":
           description: The agent type details
@@ -1322,6 +1312,13 @@ paths:
       tags:
         - Services
       description: Retrieves a paginated list of services
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all services
+        - role: participant
+          permission: services associated with its participant (as provider or consumer)
+        - role: agent
+          permission: services assigned to the agent
       parameters:
         - name: page
           in: query
@@ -1352,6 +1349,13 @@ paths:
       tags:
         - Services
       description: Creates a new service
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: when acting as consumer
+        - role: agent
+          permission: not authorized
       requestBody:
         required: true
         content:
@@ -1384,6 +1388,13 @@ paths:
       tags:
         - Services
       description: Retrieves a specific service by ID
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all services
+        - role: participant
+          permission: services associated with its participant (as provider or consumer)
+        - role: agent
+          permission: services assigned to the agent
       responses:
         "200":
           description: The service details
@@ -1402,12 +1413,37 @@ paths:
       tags:
         - Services
       description: Updates an existing service
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: services where it is the consumer participant
+        - role: agent
+          permission: not authorized
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ServiceRequest"
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "web-server-01"
+                state:
+                  $ref: "#/components/schemas/ServiceState"
+                attributes:
+                  $ref: "#/components/schemas/Attributes"
+                properties:
+                  $ref: "#/components/schemas/JSONObject"
+                resources:
+                  $ref: "#/components/schemas/JSONObject"
+                agentId:
+                  $ref: "#/components/schemas/UUID"
+                serviceTypeId:
+                  $ref: "#/components/schemas/UUID"
+                groupId:
+                  $ref: "#/components/schemas/UUID"
       responses:
         "200":
           description: Service updated successfully
@@ -1426,6 +1462,13 @@ paths:
       tags:
         - Services
       description: Deletes a service by ID
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: services where it is the consumer participant
+        - role: agent
+          permission: not authorized
       responses:
         "204":
           description: Service deleted successfully
@@ -1448,6 +1491,13 @@ paths:
       tags:
         - Services
       description: Starts a service by ID
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: services where it is the consumer participant
+        - role: agent
+          permission: not authorized
       responses:
         "204":
           description: Service start operation initiated successfully
@@ -1470,6 +1520,13 @@ paths:
       tags:
         - Services
       description: Stops a service by ID
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: services where it is the consumer participant
+        - role: agent
+          permission: not authorized
       responses:
         "204":
           description: Service stop operation initiated successfully
@@ -1492,6 +1549,13 @@ paths:
       tags:
         - Services
       description: Retries the last failed operation on a service
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: always
+        - role: participant
+          permission: services where it is the consumer participant
+        - role: agent
+          permission: not authorized
       responses:
         "204":
           description: Service retry operation initiated successfully
@@ -1511,6 +1575,13 @@ paths:
       tags:
         - Services
       description: Retrieves a paginated list of service types
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all service types
+        - role: participant
+          permission: all service types
+        - role: agent
+          permission: all service types
       parameters:
         - name: page
           in: query
@@ -1549,6 +1620,13 @@ paths:
       tags:
         - Services
       description: Retrieves a specific service type by ID
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all service types
+        - role: participant
+          permission: all service types
+        - role: agent
+          permission: all service types
       responses:
         "200":
           description: The service type details
@@ -1695,6 +1773,13 @@ paths:
       tags:
         - Jobs
       description: Retrieves a paginated list of jobs (admin route)
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all jobs
+        - role: participant
+          permission: jobs related to its participant (as provider via agents or as consumer via services)
+        - role: agent
+          permission: jobs assigned to the agent
       parameters:
         - name: page
           in: query
@@ -1728,7 +1813,14 @@ paths:
         - Jobs
       description: Retrieves a list of pending jobs for the authenticated agent
       security:
-        - AgentAuth: []
+        - BearerAuth: []
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: not authorized
+        - role: participant
+          permission: not authorized
+        - role: agent
+          permission: pending jobs assigned to the agent
       parameters:
         - name: limit
           in: query
@@ -1790,7 +1882,7 @@ paths:
         - Jobs
       description: Claims a job for processing by the authenticated agent
       security:
-        - AgentAuth: []
+        - BearerAuth: []
       responses:
         "204":
           description: Job claimed successfully
@@ -1820,7 +1912,7 @@ paths:
         - Jobs
       description: Marks a job as completed with results
       security:
-        - AgentAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -1856,7 +1948,7 @@ paths:
         - Jobs
       description: Marks a job as failed with an error message
       security:
-        - AgentAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -1888,6 +1980,13 @@ paths:
       tags:
         - Metrics
       description: Retrieves a paginated list of metric types
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all metric types
+        - role: participant
+          permission: all metric types
+        - role: agent
+          permission: all metric types
       parameters:
         - name: page
           in: query
@@ -2041,7 +2140,7 @@ paths:
       tags:
         - Metrics
       security:
-        - AgentAuth: []
+        - BearerAuth: []
       description: Creates a new metric entry
       requestBody:
         required: true
@@ -2078,6 +2177,13 @@ paths:
       tags:
         - Audit
       description: Retrieves a paginated list of audit entries
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all audit entries
+        - role: participant
+          permission: audit entries related to its participant
+        - role: agent
+          permission: not authorized
       parameters:
         - name: page
           in: query
