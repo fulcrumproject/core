@@ -4,16 +4,16 @@
 @baseUrl = http://localhost:3000/api/v1
 @adminToken = admin-test-token
 
-### Create a new broker
-# @name createBroker
-POST {{baseUrl}}/brokers
+### Create a new consumer
+# @name createConsumer
+POST {{baseUrl}}/consumers
 Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Test Broker For Service Group"
+  "name": "Test Consumer For Service Group"
 }
 
-@brokerId = {{createBroker.response.body.$.id}}
+@consumerId = {{createConsumer.response.body.$.id}}
 
 ### Create a new service group
 # @name createServiceGroup
@@ -22,7 +22,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Database",
-    "brokerId": "{{brokerId}}"
+    "consumerId": "{{consumerId}}"
 }
 
 @serviceGroupId = {{createServiceGroup.response.body.$.id}}

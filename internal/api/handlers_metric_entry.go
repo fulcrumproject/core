@@ -127,7 +127,7 @@ func (h *MetricEntryHandler) handleList(w http.ResponseWriter, r *http.Request) 
 type MetricEntryResponse struct {
 	ID         domain.UUID         `json:"id"`
 	ProviderID domain.UUID         `json:"providerId"`
-	BrokerID   domain.UUID         `json:"brokerId"`
+	ConsumerID domain.UUID         `json:"consumerId"`
 	AgentID    domain.UUID         `json:"agentId"`
 	ServiceID  domain.UUID         `json:"serviceId"`
 	ResourceID string              `json:"resourceId"`
@@ -146,7 +146,7 @@ func metricEntryToResponse(me *domain.MetricEntry) *MetricEntryResponse {
 		ID:         me.ID,
 		AgentID:    me.AgentID,
 		ProviderID: me.ProviderID,
-		BrokerID:   me.ConsumerID,
+		ConsumerID: me.ConsumerID,
 		ServiceID:  me.ServiceID,
 		ResourceID: me.ResourceID,
 		Value:      me.Value,

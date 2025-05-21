@@ -1,72 +1,72 @@
-# Broker API Tests
+# Consumer API Tests
 
 @baseUrl = http://localhost:3000/api/v1
 @adminToken = admin-test-token
 
-### List all brokers
-GET {{baseUrl}}/brokers
+### List all consumers
+GET {{baseUrl}}/consumers
 Authorization: Bearer {{adminToken}}
 
-### Create a new broker
-# @name createBroker
-POST {{baseUrl}}/brokers
-Authorization: Bearer {{adminToken}}
-
-{
-  "name": "Test Broker"
-}
-
-@brokerId = {{createBroker.response.body.$.id}}
-
-### Create a new broker 2
-# @name createBroker2
-POST {{baseUrl}}/brokers
+### Create a new consumer
+# @name createConsumer
+POST {{baseUrl}}/consumers
 Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Test Broker 2"
+  "name": "Test Consumer"
 }
 
-@brokerId2 = {{createBroker2.response.body.$.id}}
+@consumerId = {{createConsumer.response.body.$.id}}
 
-### Get broker by ID
-GET {{baseUrl}}/brokers/{{brokerId}}
-Authorization: Bearer {{adminToken}}
-
-### Update broker
-PATCH {{baseUrl}}/brokers/{{brokerId}}
+### Create a new consumer 2
+# @name createConsumer2
+POST {{baseUrl}}/consumers
 Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Updated Broker Name"
+  "name": "Test Consumer 2"
 }
 
-### Create a new broker token
-# @name createBrokerToken
+@consumerId2 = {{createConsumer2.response.body.$.id}}
+
+### Get consumer by ID
+GET {{baseUrl}}/consumers/{{consumerId}}
+Authorization: Bearer {{adminToken}}
+
+### Update consumer
+PATCH {{baseUrl}}/consumers/{{consumerId}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Updated Consumer Name"
+}
+
+### Create a new consumer token
+# @name createConsumerToken
 POST {{baseUrl}}/tokens
 Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Test Broker Token",
-  "role": "broker",
+  "name": "Test Consumer Token",
+  "role": "consumer",
   "expireAt": "{{$datetime iso8601 1 y}}",
-  "scopeId": "{{brokerId}}"
+  "scopeId": "{{consumerId}}"
 }
 
-@brokerToken = {{createBrokerToken.response.body.$.value}}
+@consumerToken = {{createConsumerToken.response.body.$.value}}
 
-### Get broker by ID
-GET {{baseUrl}}/brokers/{{brokerId}}
-Authorization: Bearer {{brokerToken}}
+### Get consumer by ID
+GET {{baseUrl}}/consumers/{{consumerId}}
+Authorization: Bearer {{consumerToken}}
 
-### Get brokers
-GET {{baseUrl}}/brokers
-Authorization: Bearer {{brokerToken}}
+### Get consumers
+GET {{baseUrl}}/consumers
+Authorization: Bearer {{consumerToken}}
 
-### Get brokers SHOULD FAIL 403
-GET {{baseUrl}}/brokers/{{brokerId2}}
-Authorization: Bearer {{brokerToken}}
+### Get consumers SHOULD FAIL 403
+GET {{baseUrl}}/consumers/{{consumerId2}}
+Authorization: Bearer {{consumerToken}}
 
-### Delete broker
-DELETE {{baseUrl}}/brokers/{{brokerId}}
+### Delete consumer
+DELETE {{baseUrl}}/consumers/{{consumerId}}
 Authorization: Bearer {{adminToken}}

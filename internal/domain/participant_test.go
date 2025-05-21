@@ -202,13 +202,13 @@ func TestParticipantCommander_Create(t *testing.T) {
 					return nil
 				}
 				store.WithParticipantRepo(participantRepo)
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID *UUID, providerID *UUID, agentID *UUID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID *UUID, providerID *UUID, agentID *UUID, consumerID *UUID) (*AuditEntry, error) {
 					// In this context, for participant creation, entityID and providerID are the participant's ID.
 					assert.NotNil(t, entityID)
 					assert.NotNil(t, providerID)
 					assert.Equal(t, *entityID, *providerID) // Participant ID is used for both EntityID and ProviderID contextually
 					assert.Nil(t, agentID)
-					assert.Nil(t, brokerID)
+					assert.Nil(t, consumerID)
 					return &AuditEntry{}, nil
 				}
 			},
@@ -242,7 +242,7 @@ func TestParticipantCommander_Create(t *testing.T) {
 					return nil
 				}
 				store.WithParticipantRepo(participantRepo)
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID *UUID, providerID *UUID, agentID *UUID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID *UUID, providerID *UUID, agentID *UUID, consumerID *UUID) (*AuditEntry, error) {
 					return nil, errors.New("audit create error")
 				}
 			},
@@ -339,13 +339,13 @@ func TestParticipantCommander_Update(t *testing.T) {
 					return nil
 				}
 				store.WithParticipantRepo(participantRepo)
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID *UUID, providerID *UUID, agentID *UUID, brokerID *UUID, before interface{}, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID *UUID, providerID *UUID, agentID *UUID, consumerID *UUID, before interface{}, after interface{}) (*AuditEntry, error) {
 					// In this context, for participant update, entityID and providerID are the participant's ID.
 					assert.NotNil(t, entityID)
 					assert.NotNil(t, providerID)
 					assert.Equal(t, *entityID, *providerID) // Participant ID is used for both EntityID and ProviderID
 					assert.Nil(t, agentID)
-					assert.Nil(t, brokerID)
+					assert.Nil(t, consumerID)
 					return &AuditEntry{}, nil
 				}
 			},
@@ -372,7 +372,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 					return nil
 				}
 				store.WithParticipantRepo(participantRepo)
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID *UUID, providerID *UUID, agentID *UUID, brokerID *UUID, before interface{}, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID *UUID, providerID *UUID, agentID *UUID, consumerID *UUID, before interface{}, after interface{}) (*AuditEntry, error) {
 					return &AuditEntry{}, nil
 				}
 			},
@@ -437,7 +437,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 					return nil
 				}
 				store.WithParticipantRepo(participantRepo)
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID *UUID, providerID *UUID, agentID *UUID, brokerID *UUID, before interface{}, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID *UUID, providerID *UUID, agentID *UUID, consumerID *UUID, before interface{}, after interface{}) (*AuditEntry, error) {
 					return nil, errors.New("audit update error")
 				}
 			},
@@ -512,13 +512,13 @@ func TestParticipantCommander_Delete(t *testing.T) {
 				store.WithAgentRepo(agentRepo) // Ensure agentRepo is set on the mock store
 				store.WithTokenRepo(tokenRepo) // Ensure tokenRepo is set on the mock store
 
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID *UUID, providerID *UUID, agentID *UUID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID *UUID, providerID *UUID, agentID *UUID, consumerID *UUID) (*AuditEntry, error) {
 					// For participant deletion, entityID and providerID are the participant's ID.
 					assert.NotNil(t, entityID)
 					assert.NotNil(t, providerID)
 					assert.Equal(t, *entityID, *providerID)
 					assert.Nil(t, agentID)
-					assert.Nil(t, brokerID)
+					assert.Nil(t, consumerID)
 					return &AuditEntry{}, nil
 				}
 			},
@@ -630,7 +630,7 @@ func TestParticipantCommander_Delete(t *testing.T) {
 				store.WithParticipantRepo(participantRepo)
 				store.WithAgentRepo(agentRepo)
 				store.WithTokenRepo(tokenRepo)
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID *UUID, providerID *UUID, agentID *UUID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID *UUID, providerID *UUID, agentID *UUID, consumerID *UUID) (*AuditEntry, error) {
 					return nil, errors.New("audit delete error")
 				}
 			},

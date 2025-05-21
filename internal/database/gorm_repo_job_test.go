@@ -352,7 +352,7 @@ func TestJobRepository(t *testing.T) {
 			// Create a new job with known IDs
 			job := domain.NewJob(service, domain.ServiceActionCreate, 1)
 
-			// The job should have provider, agent, and broker IDs from the service
+			// The job should have provider, agent, and consumer IDs from the service
 			require.NotNil(t, service.ProviderID)
 			require.NotNil(t, service.AgentID)
 			require.NotNil(t, service.ConsumerID)

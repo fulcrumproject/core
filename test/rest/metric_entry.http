@@ -50,16 +50,16 @@ Authorization: Bearer {{adminToken}}
 
 @agentToken = {{createAgentToken.response.body.$.value}}
 
-### Create a new broker
-# @name createBroker
-POST {{baseUrl}}/brokers
+### Create a new consumer
+# @name createConsumer
+POST {{baseUrl}}/consumers
 Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Test Broker"
+  "name": "Test Consumer"
 }
 
-@brokerId = {{createBroker.response.body.$.id}}
+@consumerId = {{createConsumer.response.body.$.id}}
 
 ### Create a service group
 # @name createServiceGroup
@@ -68,7 +68,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Job Service Group",
-    "brokerId": "{{brokerId}}"
+    "consumerId": "{{consumerId}}"
 }
 
 @serviceGroupId = {{createServiceGroup.response.body.$.id}}

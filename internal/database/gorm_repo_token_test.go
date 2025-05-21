@@ -392,7 +392,7 @@ func TestTokenRepository(t *testing.T) {
 		})
 	})
 
-	t.Run("DeleteByParticipantID for broker", func(t *testing.T) {
+	t.Run("DeleteByParticipantID for consumer", func(t *testing.T) {
 		t.Run("success - deletes tokens with matching participant ID", func(t *testing.T) {
 			ctx := context.Background()
 

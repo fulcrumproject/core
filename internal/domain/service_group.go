@@ -15,7 +15,7 @@ type ServiceGroup struct {
 
 	// Relationships
 	Services      []Service    `json:"-" gorm:"foreignKey:GroupID"`
-	ParticipantID UUID         `json:"brokerId" gorm:"not null"`
+	ParticipantID UUID         `json:"consumerId" gorm:"not null"`
 	Participant   *Participant `json:"-" gorm:"foreignKey:ParticipantID"`
 }
 
@@ -25,16 +25,16 @@ func (sg *ServiceGroup) Validate() error {
 		return errors.New("service group name cannot be empty")
 	}
 	if sg.ParticipantID == uuid.Nil {
-		return errors.New("service group broker cannot be nil")
+		return errors.New("service group consumer cannot be nil")
 	}
 	return nil
 }
 
 // NewServiceGroup creates a new service group with validation
-func NewServiceGroup(name string, brokerID UUID) *ServiceGroup {
+func NewServiceGroup(name string, consumerID UUID) *ServiceGroup {
 	return &ServiceGroup{
 		Name:          name,
-		ParticipantID: brokerID,
+		ParticipantID: consumerID,
 	}
 }
 
@@ -54,7 +54,7 @@ func (ServiceGroup) TableName() string {
 // ServiceGroupCommander defines the interface for service group command operations
 type ServiceGroupCommander interface {
 	// Create creates a new service group
-	Create(ctx context.Context, name string, brokerID UUID) (*ServiceGroup, error)
+	Create(ctx context.Context, name string, consumerID UUID) (*ServiceGroup, error)
 
 	// Update updates an existing service group
 	Update(ctx context.Context, id UUID, name *string) (*ServiceGroup, error)
@@ -80,20 +80,20 @@ func NewServiceGroupCommander(
 	}
 }
 
-func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerID UUID) (*ServiceGroup, error) {
+func (s *serviceGroupCommander) Create(ctx context.Context, name string, consumerID UUID) (*ServiceGroup, error) {
 	// Validate references
-	brokerExists, err := s.store.ParticipantRepo().Exists(ctx, brokerID)
+	consumerExists, err := s.store.ParticipantRepo().Exists(ctx, consumerID)
 	if err != nil {
 		return nil, err
 	}
-	if !brokerExists {
-		return nil, NewInvalidInputErrorf("broker with ID %s does not exist", brokerID)
+	if !consumerExists {
+		return nil, NewInvalidInputErrorf("consumer with ID %s does not exist", consumerID)
 	}
 
 	// Create and save
 	var sg *ServiceGroup
 	err = s.store.Atomic(ctx, func(store Store) error {
-		sg = NewServiceGroup(name, brokerID)
+		sg = NewServiceGroup(name, consumerID)
 		if err := sg.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -106,7 +106,7 @@ func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerI
 			ctx,
 			EventTypeServiceGroupCreated,
 			JSON{"state": sg},
-			&sg.ID, nil, nil, &brokerID)
+			&sg.ID, nil, nil, &consumerID)
 
 		return err
 	})

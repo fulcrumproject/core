@@ -168,14 +168,11 @@ func ValidateAuthScope(id AuthIdentity, target *AuthScope) error {
 
 	// Participant check: If source requires a participant, caller must have same participant, provider, consumer
 	if source.ParticipantID != nil {
-		if target.ParticipantID != nil && *target.ParticipantID != *source.ParticipantID {
+		notMatchingParticipant := target.ParticipantID != nil && *target.ParticipantID != *source.ParticipantID
+		notMatchingProvider := target.ProviderID != nil && *target.ProviderID != *source.ParticipantID
+		notMatchingConsumer := target.ConsumerID != nil && *target.ConsumerID != *source.ParticipantID
+		if notMatchingParticipant || notMatchingProvider || notMatchingConsumer {
 			return errors.New("invalid participant authorization scope")
-		}
-		if target.ProviderID != nil && *target.ProviderID != *source.ParticipantID {
-			return errors.New("invalid provider authorization scope")
-		}
-		if target.ConsumerID != nil && *target.ConsumerID != *source.ParticipantID {
-			return errors.New("invalid consumer authorization scope")
 		}
 	}
 

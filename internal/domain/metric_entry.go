@@ -29,7 +29,7 @@ type MetricEntry struct {
 
 // NewMetricEntry creates a new metric entry
 func NewMetricEntry(
-	brokerID UUID,
+	consumerID UUID,
 	providerID UUID,
 	agentID UUID,
 	serviceID UUID,
@@ -38,7 +38,7 @@ func NewMetricEntry(
 	value float64,
 ) *MetricEntry {
 	return &MetricEntry{
-		ConsumerID: brokerID,
+		ConsumerID: consumerID,
 		ProviderID: providerID,
 		AgentID:    agentID,
 		ServiceID:  serviceID,

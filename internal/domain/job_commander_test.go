@@ -121,7 +121,7 @@ func TestJobCommander_Complete(t *testing.T) {
 	agentID := uuid.New()
 	serviceID := uuid.New()
 	providerID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 
 	resources := JSON{"resource": "value"}
 	externalID := "external-123"
@@ -133,7 +133,7 @@ func TestJobCommander_Complete(t *testing.T) {
 		job.ServiceID = serviceID
 		job.AgentID = agentID
 		job.ProviderID = providerID
-		job.ConsumerID = brokerID
+		job.ConsumerID = consumerID
 		job.ClaimedAt = &now
 		return job
 	}
@@ -153,7 +153,7 @@ func TestJobCommander_Complete(t *testing.T) {
 			TargetState:   &targetState,
 			AgentID:       agentID,
 			ProviderID:    providerID,
-			ConsumerID:    brokerID,
+			ConsumerID:    consumerID,
 		}
 	}
 
@@ -205,7 +205,7 @@ func TestJobCommander_Complete(t *testing.T) {
 				}
 
 				// Set up audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, before, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, before, after interface{}) (*AuditEntry, error) {
 					return &AuditEntry{}, nil
 				}
 
@@ -414,7 +414,7 @@ func TestJobCommander_Complete(t *testing.T) {
 				store.WithServiceRepo(serviceRepo)
 
 				// Set up audit error
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, before, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, before, after interface{}) (*AuditEntry, error) {
 					return nil, errors.New("audit error")
 				}
 
@@ -457,7 +457,7 @@ func TestJobCommander_Fail(t *testing.T) {
 	agentID := uuid.New()
 	serviceID := uuid.New()
 	providerID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 
 	errorMessage := "test error message"
 
@@ -468,7 +468,7 @@ func TestJobCommander_Fail(t *testing.T) {
 		job.ServiceID = serviceID
 		job.AgentID = agentID
 		job.ProviderID = providerID
-		job.ConsumerID = brokerID
+		job.ConsumerID = consumerID
 		job.ClaimedAt = &now
 		return job
 	}
@@ -488,7 +488,7 @@ func TestJobCommander_Fail(t *testing.T) {
 			TargetState:   &targetState,
 			AgentID:       agentID,
 			ProviderID:    providerID,
-			ConsumerID:    brokerID,
+			ConsumerID:    consumerID,
 		}
 	}
 
@@ -703,7 +703,7 @@ func TestJobCommander_Fail(t *testing.T) {
 				store.WithServiceRepo(serviceRepo)
 
 				// Set up audit error
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, before, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, before, after interface{}) (*AuditEntry, error) {
 					return nil, errors.New("audit error")
 				}
 

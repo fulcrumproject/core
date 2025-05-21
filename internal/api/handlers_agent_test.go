@@ -1042,7 +1042,7 @@ func TestMustGetAgentID(t *testing.T) {
 	t.Run("Error case", func(t *testing.T) {
 		// Create a request with a non-agent auth identity
 		r := httptest.NewRequest("GET", "/test", nil)
-		adminIdentity := NewMockAuthProviderAdmin()
+		adminIdentity := NewMockAuthParticipant()
 		r = r.WithContext(domain.WithAuthIdentity(r.Context(), adminIdentity))
 
 		// This should return an error

@@ -114,7 +114,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 	agentID := uuid.New()
 	serviceID := uuid.New()
 	providerID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	metricTypeID := uuid.New()
 	resourceID := "cpu-usage"
 	typeName := "cpu"
@@ -153,7 +153,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 						ID: serviceID,
 					},
 					ProviderID: providerID,
-					ConsumerID: brokerID,
+					ConsumerID: consumerID,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					assert.Equal(t, serviceID, id)
@@ -187,7 +187,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 					assert.Equal(t, agentID, entry.AgentID)
 					assert.Equal(t, serviceID, entry.ServiceID)
 					assert.Equal(t, providerID, entry.ProviderID)
-					assert.Equal(t, brokerID, entry.ConsumerID)
+					assert.Equal(t, consumerID, entry.ConsumerID)
 					return nil
 				}
 			},
@@ -260,7 +260,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 						ID: serviceID,
 					},
 					ProviderID: providerID,
-					ConsumerID: brokerID,
+					ConsumerID: consumerID,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					return service, nil
@@ -294,7 +294,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 						ID: serviceID,
 					},
 					ProviderID: providerID,
-					ConsumerID: brokerID,
+					ConsumerID: consumerID,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					return service, nil
@@ -342,7 +342,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 						ID: serviceID,
 					},
 					ProviderID: providerID,
-					ConsumerID: brokerID,
+					ConsumerID: consumerID,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					return service, nil
@@ -395,7 +395,7 @@ func TestMetricEntryCommander_Create(t *testing.T) {
 				assert.Equal(t, agentID, entry.AgentID)
 				assert.Equal(t, serviceID, entry.ServiceID)
 				assert.Equal(t, providerID, entry.ProviderID)
-				assert.Equal(t, brokerID, entry.ConsumerID)
+				assert.Equal(t, consumerID, entry.ConsumerID)
 			}
 		})
 	}

@@ -230,7 +230,7 @@ func (h *ServiceHandler) handleRetry(w http.ResponseWriter, r *http.Request) {
 type ServiceResponse struct {
 	ID                domain.UUID           `json:"id"`
 	ProviderID        domain.UUID           `json:"providerId"`
-	BrokerID          domain.UUID           `json:"brokerId"`
+	ConsumerID        domain.UUID           `json:"consumerId"`
 	AgentID           domain.UUID           `json:"agentId"`
 	ServiceTypeID     domain.UUID           `json:"serviceTypeId"`
 	GroupID           domain.UUID           `json:"groupId"`
@@ -254,7 +254,7 @@ func serviceToResponse(s *domain.Service) *ServiceResponse {
 	resp := &ServiceResponse{
 		ID:                s.ID,
 		ProviderID:        s.ProviderID,
-		BrokerID:          s.ConsumerID,
+		ConsumerID:        s.ConsumerID,
 		AgentID:           s.AgentID,
 		ServiceTypeID:     s.ServiceTypeID,
 		GroupID:           s.GroupID,

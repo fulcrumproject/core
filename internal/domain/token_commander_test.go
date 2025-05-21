@@ -45,7 +45,7 @@ func TestTokenCommander_Create(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeTokenCreated, eventType)
 					assert.NotNil(t, properties)
 					assert.Equal(t, &validID, entityID)
@@ -88,7 +88,7 @@ func TestTokenCommander_Create(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeTokenCreated, eventType)
 					// providerID in audit might become participantID, or be nil if entityID covers it.
 					// For now, let's assume entityID is sufficient for participant tokens.
@@ -104,7 +104,7 @@ func TestTokenCommander_Create(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Create participant token (formerly broker)",
+			name:    "Create participant token (formerly consumer)",
 			ctx:     ContextWithMockAuth(context.Background(), NewMockAuthIdentity(uuid.New(), RoleFulcrumAdmin)),
 			role:    RoleParticipant, // Updated role
 			scopeID: &validID,
@@ -132,7 +132,7 @@ func TestTokenCommander_Create(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeTokenCreated, eventType)
 					// Similar to provider token, audit details might change.
 					return &AuditEntry{}, nil
@@ -182,7 +182,7 @@ func TestTokenCommander_Create(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeTokenCreated, eventType)
 					return &AuditEntry{}, nil
 				}
@@ -196,7 +196,7 @@ func TestTokenCommander_Create(t *testing.T) {
 		},
 		{
 			name:    "Non-admin creating different role token",
-			ctx:     ContextWithMockAuth(context.Background(), NewMockAuthIdentity(uuid.New(), RoleParticipant)), // Changed from RoleProviderAdmin
+			ctx:     ContextWithMockAuth(context.Background(), NewMockAuthIdentity(uuid.New(), RoleParticipant)),
 			role:    RoleAgent,
 			scopeID: &validID,
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
@@ -228,7 +228,7 @@ func TestTokenCommander_Create(t *testing.T) {
 			errMessage: "invalid participant ID",
 		},
 		{
-			name:    "Participant ID not found (formerly Broker ID not found)",
+			name:    "Participant ID not found (formerly Consumer ID not found)",
 			ctx:     ContextWithMockAuth(context.Background(), NewMockAuthIdentity(uuid.New(), RoleFulcrumAdmin)),
 			role:    RoleParticipant, // Updated role
 			scopeID: &validID,
@@ -309,7 +309,7 @@ func TestTokenCommander_Create(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 
@@ -402,7 +402,7 @@ func TestTokenCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, before, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, before, after interface{}) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeTokenUpdated, eventType)
 
 					// Verify before object
@@ -459,7 +459,7 @@ func TestTokenCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, before, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, before, after interface{}) (*AuditEntry, error) {
 					return &AuditEntry{}, nil
 				}
 
@@ -502,7 +502,7 @@ func TestTokenCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, before, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, before, after interface{}) (*AuditEntry, error) {
 					return &AuditEntry{}, nil
 				}
 
@@ -619,7 +619,7 @@ func TestTokenCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, before, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, before, after interface{}) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 
@@ -702,7 +702,7 @@ func TestTokenCommander_Delete(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeTokenDeleted, eventType)
 					assert.NotNil(t, properties)
 					assert.Equal(t, &tokenID, entityID)
@@ -789,7 +789,7 @@ func TestTokenCommander_Delete(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 
@@ -864,7 +864,7 @@ func TestTokenCommander_Regenerate(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeTokenRegenerated, eventType)
 					assert.NotNil(t, properties)
 					assert.Equal(t, &tokenID, entityID)
@@ -951,7 +951,7 @@ func TestTokenCommander_Regenerate(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 

@@ -57,39 +57,39 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/agents/me
 Authorization: Bearer {{agentToken}}
 
-### Create a new broker
-# @name createBroker
-POST {{baseUrl}}/brokers
+### Create a new consumer
+# @name createConsumer
+POST {{baseUrl}}/consumers
 Authorization: Bearer {{adminToken}}
 
 {
   "name": "System Integrator"
 }
 
-@brokerId = {{createBroker.response.body.$.id}}
+@consumerId = {{createConsumer.response.body.$.id}}
 
-### Create a new broker token
-# @name createBrokerToken
+### Create a new consumer token
+# @name createConsumerToken
 POST {{baseUrl}}/tokens
 Authorization: Bearer {{adminToken}}
 
 {
   "name": "System Integrator Token",
-  "role": "broker",
+  "role": "consumer",
   "expireAt": "{{$datetime iso8601 1 y}}",
-  "scopeId": "{{brokerId}}"
+  "scopeId": "{{consumerId}}"
 }
 
-@brokerToken = {{createBrokerToken.response.body.$.value}}
+@consumerToken = {{createConsumerToken.response.body.$.value}}
 
 ### Create a service group
 # @name createServiceGroup
 POST {{baseUrl}}/service-groups
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "name": "Project CloudConf2025",
-    "brokerId": "{{brokerId}}"
+    "consumerId": "{{consumerId}}"
 }
 
 @serviceGroupId = {{createServiceGroup.response.body.$.id}}
@@ -97,7 +97,7 @@ Authorization: Bearer {{brokerToken}}
 ### Create a new service
 # @name createService
 POST {{baseUrl}}/services
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "name": "Proxmox VM",
@@ -119,11 +119,11 @@ Authorization: Bearer {{brokerToken}}
 
 ### Get a service by ID
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Update name - Should not trigger a job
 PATCH {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "name": "Proxmox VM - CloudConf2025"
@@ -131,15 +131,15 @@ Authorization: Bearer {{brokerToken}}
 
 ### Start Service
 POST {{baseUrl}}/services/{{serviceId}}/start
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Get a service by ID
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Hot update vm state
 PATCH {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "properties": {
@@ -150,19 +150,19 @@ Authorization: Bearer {{brokerToken}}
 
 ### Get a service by ID
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Stop Service
 POST {{baseUrl}}/services/{{serviceId}}/stop
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Get a service by ID
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Cold update vm state
 PATCH {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "properties": {
@@ -173,18 +173,18 @@ Authorization: Bearer {{brokerToken}}
 
 ### Retry Service Operation
 POST {{baseUrl}}/services/{{serviceId}}/retry
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Delete a service
 DELETE {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Get a service by ID
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### List all services
 GET {{baseUrl}}/services
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 

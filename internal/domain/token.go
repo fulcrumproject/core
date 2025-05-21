@@ -244,7 +244,7 @@ func (s *tokenCommander) Create(
 			&token.ID,
 			token.ParticipantID, // Updated
 			token.AgentID,
-			nil) // BrokerID removed
+			nil) // ConsumerID removed
 		return err
 	})
 	if err != nil {
@@ -282,7 +282,7 @@ func (s *tokenCommander) Update(ctx context.Context,
 			&id,
 			token.ParticipantID, // Updated
 			token.AgentID,
-			nil, // BrokerID removed
+			nil, // ConsumerID removed
 			&beforeTokenCopy,
 			token)
 		return err
@@ -314,7 +314,7 @@ func (s *tokenCommander) Delete(ctx context.Context, id UUID) error {
 			&id,
 			token.ParticipantID, // Updated
 			token.AgentID,
-			nil) // BrokerID removed
+			nil) // ConsumerID removed
 		return err
 	})
 }
@@ -341,7 +341,7 @@ func (s *tokenCommander) Regenerate(ctx context.Context, id UUID) (*Token, error
 			&id,
 			token.ParticipantID, // Updated
 			token.AgentID,
-			nil) // BrokerID removed
+			nil) // ConsumerID removed
 		return err
 	})
 	if err != nil {

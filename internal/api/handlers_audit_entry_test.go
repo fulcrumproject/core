@@ -218,7 +218,7 @@ func TestAuditEntryToResponse(t *testing.T) {
 	updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	providerID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 	agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
-	brokerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
+	consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 	entityID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 
 	auditEntry := &domain.AuditEntry{
@@ -234,7 +234,7 @@ func TestAuditEntryToResponse(t *testing.T) {
 		EntityID:      &entityID,
 		ProviderID:    &providerID,
 		AgentID:       &agentID,
-		ConsumerID:    &brokerID,
+		ConsumerID:    &consumerID,
 	}
 
 	response := auditEntryToResponse(auditEntry)
@@ -246,7 +246,7 @@ func TestAuditEntryToResponse(t *testing.T) {
 	assert.Equal(t, auditEntry.Properties, response.Properties)
 	assert.Equal(t, auditEntry.ProviderID, response.ProviderID)
 	assert.Equal(t, auditEntry.AgentID, response.AgentID)
-	assert.Equal(t, auditEntry.ConsumerID, response.BrokerID)
+	assert.Equal(t, auditEntry.ConsumerID, response.ConsumerID)
 	assert.Equal(t, JSONUTCTime(auditEntry.CreatedAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(auditEntry.UpdatedAt), response.UpdatedAt)
 }

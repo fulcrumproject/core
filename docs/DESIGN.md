@@ -276,7 +276,7 @@ classDiagram
 ##### Core
 
 1. **Participant**
-   - Unified entity replacing the separate Provider and Broker entities
+   - Unified entity replacing the separate Provider and Consumer entities
    - Represents an entity that can act as both a service provider and consumer
    - Has name and operational state (Enabled/Disabled)
    - Contains geographical information via country code

@@ -26,7 +26,7 @@ func TestNewEventAudit(t *testing.T) {
 	entityID := uuid.New()
 	providerID := uuid.New()
 	agentID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	properties := JSON{"key": "value"}
 
 	entry := NewEventAudit(
@@ -37,7 +37,7 @@ func TestNewEventAudit(t *testing.T) {
 		&entityID,
 		&providerID,
 		&agentID,
-		&brokerID,
+		&consumerID,
 	)
 
 	assert.Equal(t, AuthorityTypeAdmin, entry.AuthorityType)
@@ -47,7 +47,7 @@ func TestNewEventAudit(t *testing.T) {
 	assert.Equal(t, entityID, *entry.EntityID)
 	assert.Equal(t, providerID, *entry.ProviderID)
 	assert.Equal(t, agentID, *entry.AgentID)
-	assert.Equal(t, brokerID, *entry.ConsumerID)
+	assert.Equal(t, consumerID, *entry.ConsumerID)
 }
 
 func TestAuditEntry_GenerateDiff(t *testing.T) {
@@ -137,7 +137,7 @@ func TestAuditEntryCommander_Create(t *testing.T) {
 	entityID := uuid.New()
 	providerID := uuid.New()
 	agentID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	properties := JSON{"key": "value"}
 
 	tests := []struct {
@@ -162,7 +162,7 @@ func TestAuditEntryCommander_Create(t *testing.T) {
 					assert.Equal(t, entityID, *entry.EntityID)
 					assert.Equal(t, providerID, *entry.ProviderID)
 					assert.Equal(t, agentID, *entry.AgentID)
-					assert.Equal(t, brokerID, *entry.ConsumerID)
+					assert.Equal(t, consumerID, *entry.ConsumerID)
 					return nil
 				}
 				store.WithAuditEntryRepo(auditRepo)
@@ -206,7 +206,7 @@ func TestAuditEntryCommander_Create(t *testing.T) {
 				&entityID,
 				&providerID,
 				&agentID,
-				&brokerID,
+				&consumerID,
 			)
 
 			if tt.wantErr {
@@ -225,7 +225,7 @@ func TestAuditEntryCommander_Create(t *testing.T) {
 				assert.Equal(t, entityID, *entry.EntityID)
 				assert.Equal(t, providerID, *entry.ProviderID)
 				assert.Equal(t, agentID, *entry.AgentID)
-				assert.Equal(t, brokerID, *entry.ConsumerID)
+				assert.Equal(t, consumerID, *entry.ConsumerID)
 			}
 		})
 	}
@@ -435,7 +435,7 @@ func TestAuditEntryCommander_CreateCtx(t *testing.T) {
 			wantAuthority: AuthorityTypeAgent,
 		},
 		{
-			name: "Broker role",
+			name: "Consumer role",
 			setupContext: func() context.Context {
 				identity := NewMockAuthIdentity(identityID, RoleParticipant)
 				return ContextWithMockAuth(baseCtx, identity)
@@ -704,7 +704,7 @@ func TestExtractAuditAuthority(t *testing.T) {
 			wantAuthorityID: identityID.String(),
 		},
 		{
-			name: "Broker role",
+			name: "Consumer role",
 			setupContext: func() context.Context {
 				identity := NewMockAuthIdentity(identityID, RoleParticipant)
 				return ContextWithMockAuth(baseCtx, identity)

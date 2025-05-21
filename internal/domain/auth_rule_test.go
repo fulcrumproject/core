@@ -75,7 +75,7 @@ func TestRuleAuthorizer_hasPermission(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "ProviderAdmin can create agent",
+			name:     "Participant can create agent",
 			subject:  SubjectAgent,
 			action:   ActionCreate,
 			role:     RoleParticipant,
@@ -142,7 +142,7 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 
 	participantID := uuid.New()
 	agentID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 
 	tests := []struct {
 		name        string
@@ -164,18 +164,18 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "ProviderAdmin can create agent in own participant",
+			name: "Participant can create agent in own scope",
 			setupMockID: func() AuthIdentity {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
 					WithParticipantID(&participantID)
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{ParticipantID: &participantID},
+			targetScope: &AuthScope{ProviderID: &participantID},
 			wantErr:     false,
 		},
 		{
-			name: "ProviderAdmin cannot create agent in different participant",
+			name: "Participant cannot create agent in different scope",
 			setupMockID: func() AuthIdentity {
 				myProviderID := uuid.New() // Different participant ID
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
@@ -183,7 +183,7 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{ParticipantID: &participantID},
+			targetScope: &AuthScope{ProviderID: &participantID},
 			wantErr:     true,
 			errContains: "invalid participant authorization scope",
 		},
@@ -203,11 +203,11 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			name: "Participant can read service in own scope",
 			setupMockID: func() AuthIdentity {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
-					WithParticipantID(&brokerID)
+					WithParticipantID(&consumerID)
 			},
 			subject:     SubjectService,
 			action:      ActionRead,
-			targetScope: &AuthScope{ParticipantID: &brokerID},
+			targetScope: &AuthScope{ConsumerID: &consumerID},
 			wantErr:     false,
 		},
 		{

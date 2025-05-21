@@ -22,17 +22,6 @@ func NewMockAuthFulcrumAdmin() *MockAuthIdentity {
 	}
 }
 
-// Legacy function kept for compatibility with existing tests
-// but updated to use RoleParticipant instead of RoleProviderAdmin
-func NewMockAuthProviderAdmin() *MockAuthIdentity {
-	participantID := uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")
-	return &MockAuthIdentity{
-		id:            uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
-		role:          domain.RoleParticipant,
-		participantID: &participantID,
-	}
-}
-
 func NewMockAuthAgent() *MockAuthIdentity {
 	agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 	participantID := uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")
@@ -46,8 +35,8 @@ func NewMockAuthAgent() *MockAuthIdentity {
 }
 
 // Legacy function kept for compatibility with existing tests
-// but updated to use RoleParticipant instead of RoleBroker
-func NewMockAuthBroker() *MockAuthIdentity {
+// but updated to use RoleParticipant instead of RoleConsumer
+func NewMockAuthConsumer() *MockAuthIdentity {
 	participantID := uuid.MustParse("091c2e30-0706-11f0-a319-460683de5083")
 	return &MockAuthIdentity{
 		id:            uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
@@ -61,7 +50,7 @@ type MockAuthIdentity struct {
 	id            domain.UUID
 	role          domain.AuthRole
 	agentID       *domain.UUID
-	participantID *domain.UUID // Replaces providerID and brokerID
+	participantID *domain.UUID // Replaces providerID and consumerID
 }
 
 func (m MockAuthIdentity) ID() domain.UUID                  { return m.id }

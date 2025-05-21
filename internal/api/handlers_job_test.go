@@ -712,7 +712,7 @@ func TestJobToResponse(t *testing.T) {
 	// Assert
 	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", response.ID.String())
 	assert.Equal(t, "650e8400-e29b-41d4-a716-446655440000", response.ProviderID.String())
-	assert.Equal(t, "750e8400-e29b-41d4-a716-446655440000", response.BrokerID.String())
+	assert.Equal(t, "750e8400-e29b-41d4-a716-446655440000", response.ConsumerID.String())
 	assert.Equal(t, "850e8400-e29b-41d4-a716-446655440000", response.AgentID.String())
 	assert.Equal(t, "950e8400-e29b-41d4-a716-446655440000", response.ServiceID.String())
 	assert.Equal(t, domain.ServiceActionCreate, response.Action)

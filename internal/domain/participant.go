@@ -32,7 +32,7 @@ func ParseParticipantState(value string) (ParticipantState, error) {
 	return state, nil
 }
 
-// Participant represents a unified entity for providers and brokers
+// Participant represents a unified entity for providers and consumers
 type Participant struct {
 	BaseEntity
 
