@@ -287,8 +287,8 @@ func TestServiceGroupRepository(t *testing.T) {
 			// Assert
 			require.NoError(t, err)
 			assert.NotNil(t, scope, "AuthScope should not return nil")
-			assert.NotNil(t, scope.ParticipantID, "ParticipantID should not be nil")
-			assert.Equal(t, participant.ID, *scope.ParticipantID, "ParticipantID should match the participant's ID")
+			assert.NotNil(t, scope.ConsumerID, "ConsumerID should not be nil")
+			assert.Equal(t, participant.ID, *scope.ConsumerID, "ConsumerID should match the participant's ID")
 			assert.Nil(t, scope.AgentID, "AgentID should be nil for service groups")
 		})
 	})
