@@ -6,7 +6,7 @@
 
 ### Create a provider for testing
 # @name createProvider
-POST {{baseUrl}}/providers
+POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
 
 {
@@ -55,11 +55,12 @@ Authorization: Bearer {{agentToken}}
 
 ### Create a new consumer
 # @name createConsumer
-POST {{baseUrl}}/consumers
+POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Test Consumer"
+  "name": "Test Consumer",
+  "state": "Enabled"
 }
 
 @consumerId = {{createConsumer.response.body.$.id}}
@@ -71,7 +72,7 @@ Authorization: Bearer {{adminToken}}
 
 {
   "name": "Test Consumer Token",
-  "role": "consumer",
+  "role": "participant",
   "expireAt": "{{$datetime iso8601 1 y}}",
   "scopeId": "{{consumerId}}"
 }

@@ -295,7 +295,7 @@ func (s *serviceCommander) Create(
 
 	// Create and validate
 	svc := NewService(
-		group.ParticipantID,
+		group.ConsumerID,
 		groupID,
 		agent.ProviderID,
 		agentID,

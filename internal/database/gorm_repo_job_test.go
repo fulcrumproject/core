@@ -49,8 +49,8 @@ func TestJobRepository(t *testing.T) {
 
 	serviceGroupRepo := NewServiceGroupRepository(testDB.DB)
 	serviceGroup := &domain.ServiceGroup{
-		Name:          "Test Service Group",
-		ParticipantID: consumer.ID,
+		Name:       "Test Service Group",
+		ConsumerID: consumer.ID,
 	}
 	require.NoError(t, serviceGroupRepo.Create(context.Background(), serviceGroup))
 

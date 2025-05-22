@@ -166,20 +166,28 @@ func ValidateAuthScope(id AuthIdentity, target *AuthScope) error {
 		return nil
 	}
 
-	// Participant check: If source requires a participant, caller must have same participant, provider, consumer
+	// If all fields are nil in the target scope, it has unrestricted access (admin)
+	if target.ParticipantID == nil && target.ProviderID == nil && target.ConsumerID == nil && target.AgentID == nil {
+		return nil
+	}
+
+	// Participant check: If source requires a participant, caller must have same participant or provider or consumer
 	if source.ParticipantID != nil {
-		notMatchingParticipant := target.ParticipantID != nil && *target.ParticipantID != *source.ParticipantID
-		notMatchingProvider := target.ProviderID != nil && *target.ProviderID != *source.ParticipantID
-		notMatchingConsumer := target.ConsumerID != nil && *target.ConsumerID != *source.ParticipantID
-		if notMatchingParticipant || notMatchingProvider || notMatchingConsumer {
-			return errors.New("invalid participant authorization scope")
+		if target.ParticipantID != nil && *target.ParticipantID == *source.ParticipantID {
+			return nil
+		}
+		if target.ProviderID != nil && *target.ProviderID == *source.ParticipantID {
+			return nil
+		}
+		if target.ConsumerID != nil && *target.ConsumerID == *source.ParticipantID {
+			return nil
 		}
 	}
 
 	// Agent check: If source requires an agent, caller must have same agent
-	if source.AgentID != nil && target.AgentID != nil && *target.AgentID != *source.AgentID {
-		return errors.New("invalid agent authorization scope")
+	if source.AgentID != nil && target.AgentID != nil && *target.AgentID == *source.AgentID {
+		return nil
 	}
 
-	return nil
+	return errors.New("invalid authorization scope")
 }

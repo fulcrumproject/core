@@ -14,9 +14,9 @@ type ServiceGroup struct {
 	Name string `json:"name" gorm:"not null"`
 
 	// Relationships
-	Services      []Service    `json:"-" gorm:"foreignKey:GroupID"`
-	ParticipantID UUID         `json:"consumerId" gorm:"not null"`
-	Participant   *Participant `json:"-" gorm:"foreignKey:ParticipantID"`
+	Services    []Service    `json:"-" gorm:"foreignKey:GroupID"`
+	ConsumerID  UUID         `json:"consumerId" gorm:"not null"`
+	Participant *Participant `json:"-" gorm:"foreignKey:ConsumerID"`
 }
 
 // Validate checks if the service group is valid
@@ -24,7 +24,7 @@ func (sg *ServiceGroup) Validate() error {
 	if sg.Name == "" {
 		return errors.New("service group name cannot be empty")
 	}
-	if sg.ParticipantID == uuid.Nil {
+	if sg.ConsumerID == uuid.Nil {
 		return errors.New("service group consumer cannot be nil")
 	}
 	return nil
@@ -33,8 +33,8 @@ func (sg *ServiceGroup) Validate() error {
 // NewServiceGroup creates a new service group with validation
 func NewServiceGroup(name string, consumerID UUID) *ServiceGroup {
 	return &ServiceGroup{
-		Name:          name,
-		ParticipantID: consumerID,
+		Name:       name,
+		ConsumerID: consumerID,
 	}
 }
 
@@ -144,7 +144,7 @@ func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 		_, err := s.auditCommander.CreateCtxWithDiff(
 			ctx,
 			EventTypeServiceGroupUpdated,
-			&id, nil, nil, &sg.ParticipantID,
+			&id, nil, nil, &sg.ConsumerID,
 			&beforeSgCopy, sg)
 		return err
 	})
@@ -180,7 +180,7 @@ func (s *serviceGroupCommander) Delete(ctx context.Context, id UUID) error {
 		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeServiceGroupDeleted,
-			JSON{"state": sg}, &id, nil, nil, &sg.ParticipantID)
+			JSON{"state": sg}, &id, nil, nil, &sg.ConsumerID)
 		return err
 	})
 }

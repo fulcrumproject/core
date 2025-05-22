@@ -302,7 +302,7 @@ func TestValidateAuthScope(t *testing.T) {
 				ParticipantID: &differentParticipantID,
 			},
 			wantErr:     true,
-			errContains: "invalid participant authorization scope",
+			errContains: "invalid authorization scope",
 		},
 		{
 			name: "Agent with matching agent",
@@ -325,7 +325,7 @@ func TestValidateAuthScope(t *testing.T) {
 				AgentID: &differentAgentID,
 			},
 			wantErr:     true,
-			errContains: "invalid agent authorization scope",
+			errContains: "invalid authorization scope",
 		},
 		{
 			name: "Participant with no scope participant ID is valid",
@@ -367,7 +367,7 @@ func TestValidateAuthScope(t *testing.T) {
 				ProviderID: &differentParticipantID,
 			},
 			wantErr:     true,
-			errContains: "invalid participant authorization scope",
+			errContains: "invalid authorization scope",
 		},
 		{
 			name: "Participant with matching consumer ID",
@@ -390,7 +390,7 @@ func TestValidateAuthScope(t *testing.T) {
 				ConsumerID: &differentParticipantID,
 			},
 			wantErr:     true,
-			errContains: "invalid participant authorization scope",
+			errContains: "invalid authorization scope",
 		},
 		{
 			name: "Participant with multiple matching scope fields",
@@ -416,8 +416,7 @@ func TestValidateAuthScope(t *testing.T) {
 				ProviderID:    &participantID,
 				ConsumerID:    &differentParticipantID,
 			},
-			wantErr:     true,
-			errContains: "invalid participant authorization scope",
+			wantErr: false,
 		},
 	}
 

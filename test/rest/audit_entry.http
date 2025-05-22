@@ -17,7 +17,7 @@ GET {{baseUrl}}/audit-entries?authorityType=agent
 Authorization: Bearer {{adminToken}}
 
 ### List audit entries filtered by type
-GET {{baseUrl}}/audit-entries?eventType=config_update
+GET {{baseUrl}}/audit-entries?eventType=agent_updated
 Authorization: Bearer {{adminToken}}
 
 ### List audit entries with sorting

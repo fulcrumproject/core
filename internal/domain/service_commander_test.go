@@ -61,7 +61,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					ParticipantID: consumerID,
+					ConsumerID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					assert.Equal(t, groupID, id)
@@ -168,7 +168,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					ParticipantID: consumerID,
+					ConsumerID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil
@@ -210,7 +210,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					ParticipantID: consumerID,
+					ConsumerID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil
@@ -260,7 +260,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					ParticipantID: consumerID,
+					ConsumerID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil
@@ -316,7 +316,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					ParticipantID: consumerID,
+					ConsumerID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil

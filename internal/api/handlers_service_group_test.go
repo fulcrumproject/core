@@ -99,8 +99,8 @@ func TestServiceGroupHandleCreate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:          name,
-						ParticipantID: bID,
+						Name:       name,
+						ConsumerID: bID,
 					}, nil
 				}
 			},
@@ -215,8 +215,8 @@ func TestServiceGroupHandleGet(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:          "Test Group",
-						ParticipantID: consumerID,
+						Name:       "Test Group",
+						ConsumerID: consumerID,
 					}, nil
 				}
 			},
@@ -340,8 +340,8 @@ func TestServiceGroupHandleList(t *testing.T) {
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
-								Name:          "Group 1",
-								ParticipantID: consumerID,
+								Name:       "Group 1",
+								ConsumerID: consumerID,
 							},
 							{
 								BaseEntity: domain.BaseEntity{
@@ -349,8 +349,8 @@ func TestServiceGroupHandleList(t *testing.T) {
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
-								Name:          "Group 2",
-								ParticipantID: consumerID,
+								Name:       "Group 2",
+								ConsumerID: consumerID,
 							},
 						},
 						TotalItems:  2,
@@ -477,8 +477,8 @@ func TestServiceGroupHandleUpdate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:          newName,
-						ParticipantID: consumerID,
+						Name:       newName,
+						ConsumerID: consumerID,
 					}, nil
 				}
 			},
@@ -709,8 +709,8 @@ func TestServiceGroupToResponse(t *testing.T) {
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},
-		Name:          "Test Group",
-		ParticipantID: consumerID,
+		Name:       "Test Group",
+		ConsumerID: consumerID,
 	}
 
 	response := serviceGroupToResponse(serviceGroup)

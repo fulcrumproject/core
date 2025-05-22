@@ -21,16 +21,16 @@ func TestServiceGroup_Validate(t *testing.T) {
 		{
 			name: "Valid service group",
 			sg: &ServiceGroup{
-				Name:          "Test Group",
-				ParticipantID: validID,
+				Name:       "Test Group",
+				ConsumerID: validID,
 			},
 			wantErr: false,
 		},
 		{
 			name: "Empty name",
 			sg: &ServiceGroup{
-				Name:          "",
-				ParticipantID: validID,
+				Name:       "",
+				ConsumerID: validID,
 			},
 			wantErr:    true,
 			errMessage: "service group name cannot be empty",
@@ -38,8 +38,8 @@ func TestServiceGroup_Validate(t *testing.T) {
 		{
 			name: "Nil consumer ID",
 			sg: &ServiceGroup{
-				Name:          "Test Group",
-				ParticipantID: uuid.Nil,
+				Name:       "Test Group",
+				ConsumerID: uuid.Nil,
 			},
 			wantErr:    true,
 			errMessage: "service group consumer cannot be nil",
@@ -105,7 +105,7 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 				sgRepo.createFunc = func(ctx context.Context, sg *ServiceGroup) error {
 					sg.ID = groupID
 					assert.Equal(t, validName, sg.Name)
-					assert.Equal(t, consumerID, sg.ParticipantID)
+					assert.Equal(t, consumerID, sg.ConsumerID)
 					return nil
 				}
 
@@ -274,7 +274,7 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 					assert.NotNil(t, sg)
 					assert.Equal(t, groupID, sg.ID)
 					assert.Equal(t, validName, sg.Name)
-					assert.Equal(t, consumerID, sg.ParticipantID)
+					assert.Equal(t, consumerID, sg.ConsumerID)
 				}
 			}
 		})
@@ -305,8 +305,8 @@ func TestServiceGroupCommander_Update(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:          existingName,
-					ParticipantID: consumerID,
+					Name:       existingName,
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					assert.Equal(t, groupID, id)
@@ -370,8 +370,8 @@ func TestServiceGroupCommander_Update(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:          existingName,
-					ParticipantID: consumerID,
+					Name:       existingName,
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -391,8 +391,8 @@ func TestServiceGroupCommander_Update(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:          existingName,
-					ParticipantID: consumerID,
+					Name:       existingName,
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -422,8 +422,8 @@ func TestServiceGroupCommander_Update(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:          existingName,
-					ParticipantID: consumerID,
+					Name:       existingName,
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -511,8 +511,8 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:          "Test Group",
-					ParticipantID: consumerID,
+					Name:       "Test Group",
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					assert.Equal(t, groupID, id)
@@ -574,8 +574,8 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:          "Test Group",
-					ParticipantID: consumerID,
+					Name:       "Test Group",
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -608,8 +608,8 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:          "Test Group",
-					ParticipantID: consumerID,
+					Name:       "Test Group",
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -642,8 +642,8 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:          "Test Group",
-					ParticipantID: consumerID,
+					Name:       "Test Group",
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -681,8 +681,8 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:          "Test Group",
-					ParticipantID: consumerID,
+					Name:       "Test Group",
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil

@@ -185,7 +185,7 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			action:      ActionCreate,
 			targetScope: &AuthScope{ProviderID: &participantID},
 			wantErr:     true,
-			errContains: "invalid participant authorization scope",
+			errContains: "invalid authorization scope",
 		},
 		{
 			name: "Agent can't create agent (not in role list)",

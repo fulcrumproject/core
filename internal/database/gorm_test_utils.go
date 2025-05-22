@@ -60,8 +60,8 @@ func createTestServiceGroup(t *testing.T, participantID domain.UUID) *domain.Ser
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.ServiceGroup{
-		Name:          fmt.Sprintf("Test ServiceGroup %s", randomSuffix),
-		ParticipantID: participantID,
+		Name:       fmt.Sprintf("Test ServiceGroup %s", randomSuffix),
+		ConsumerID: participantID,
 	}
 }
 
