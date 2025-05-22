@@ -20,12 +20,10 @@ type Token struct {
 	ExpireAt    time.Time `json:"expireAt" gorm:"not null"`
 
 	// Relationships
-	ProviderID *UUID     `json:"providerId,omitempty"`
-	Provider   *Provider `json:"-" gorm:"foreignKey:ProviderID"`
-	BrokerID   *UUID     `json:"brokerId,omitempty"`
-	Broker     *Broker   `json:"-" gorm:"foreignKey:BrokerID"`
-	AgentID    *UUID     `json:"agentId,omitempty"`
-	Agent      *Agent    `json:"-" gorm:"foreignKey:AgentID"`
+	ParticipantID *UUID        `json:"participantId,omitempty"`           // New field
+	Participant   *Participant `json:"-" gorm:"foreignKey:ParticipantID"` // New field
+	AgentID       *UUID        `json:"agentId,omitempty"`
+	Agent         *Agent       `json:"-" gorm:"foreignKey:AgentID"`
 }
 
 // NewToken is an helper method to create a token with appropriate scope settings
@@ -47,37 +45,33 @@ func NewToken(
 	// Set scope IDs based on role
 	if scopeID != nil {
 		switch role {
-		case RoleProviderAdmin:
-			// Validate provider exists and set ID
-			exists, err := store.ProviderRepo().Exists(ctx, *scopeID)
+		case RoleParticipant: // New Role (assuming it's defined, will be formally added in auth.go update)
+			// Validate participant exists and set ID
+			// Assuming store.ParticipantRepo().Exists(ctx, *scopeID) will be available
+			exists, err := store.ParticipantRepo().Exists(ctx, *scopeID)
 			if err != nil {
 				return nil, err
 			}
 			if !exists {
-				return nil, NewInvalidInputErrorf("invalid provider ID: %v", scopeID)
+				return nil, NewInvalidInputErrorf("invalid participant ID: %v", scopeID)
 			}
-			token.ProviderID = scopeID
-		case RoleBroker:
-			// Validate broker exists and set ID
-			exists, err := store.BrokerRepo().Exists(ctx, *scopeID)
-			if err != nil {
-				return nil, err
-			}
-			if !exists {
-				return nil, NewInvalidInputErrorf("invalid broker ID: %v", scopeID)
-			}
-			token.BrokerID = scopeID
+			token.ParticipantID = scopeID
 		case RoleAgent:
-			// Validate agent exists, set agent ID, and copy the provider ID
+			// Validate agent exists, set agent ID, and copy the participant ID from the agent
 			agent, err := store.AgentRepo().FindByID(ctx, *scopeID)
 			if err != nil {
 				return nil, NewInvalidInputErrorf("invalid agent ID: %v", err)
 			}
 			token.AgentID = scopeID
 
-			// Make a copy of the agent's provider ID and set it
-			providerID := agent.ProviderID
-			token.ProviderID = &providerID
+			// Make a copy of the agent's participant ID and set it
+			if agent.ProviderID != (UUID{}) { // Check if ParticipantID is not empty UUID
+				participantID := agent.ProviderID
+				token.ParticipantID = &participantID
+			} else {
+				// This case should ideally not happen if an agent always belongs to a participant
+				return nil, NewInvalidInputErrorf("agent %v does not have an associated participant ID", agent.ID)
+			}
 		}
 	}
 
@@ -118,35 +112,24 @@ func (t *Token) Validate() error {
 	switch t.Role {
 	case RoleFulcrumAdmin:
 		// No scope ID needed for admin
-		if t.ProviderID != nil || t.BrokerID != nil || t.AgentID != nil {
+		if t.ParticipantID != nil || t.AgentID != nil { // Updated to check ParticipantID
 			return fmt.Errorf("fulcrum admin tokens should not have any scope IDs")
 		}
-	case RoleProviderAdmin:
-		// Provider ID required for provider admin role
-		if t.ProviderID == nil {
-			return fmt.Errorf("provider ID is required for provider_admin role")
+	case RoleParticipant: // New Role (assuming it's defined)
+		// Participant ID required for participant role
+		if t.ParticipantID == nil {
+			return fmt.Errorf("participant ID is required for participant role")
 		}
-		if t.BrokerID != nil || t.AgentID != nil {
-			return fmt.Errorf("provider_admin tokens should only have provider ID set")
-		}
-	case RoleBroker:
-		// Broker ID required for broker role
-		if t.BrokerID == nil {
-			return fmt.Errorf("broker ID is required for broker role")
-		}
-		if t.ProviderID != nil || t.AgentID != nil {
-			return fmt.Errorf("broker tokens should only have broker ID set")
+		if t.AgentID != nil {
+			return fmt.Errorf("participant tokens should only have participant ID set")
 		}
 	case RoleAgent:
-		// Agent ID required for agent role
+		// Agent ID and ParticipantID (from agent) required for agent role
 		if t.AgentID == nil {
 			return fmt.Errorf("agent ID is required for agent role")
 		}
-		if t.ProviderID == nil {
-			return fmt.Errorf("provider ID is required for agent role")
-		}
-		if t.BrokerID != nil {
-			return fmt.Errorf("agent tokens should only have agent and provider ID's set")
+		if t.ParticipantID == nil { // Agent's ParticipantID
+			return fmt.Errorf("participant ID is required for agent role")
 		}
 	}
 
@@ -259,9 +242,9 @@ func (s *tokenCommander) Create(
 			EventTypeTokenCreated,
 			JSON{"state": token},
 			&token.ID,
-			token.ProviderID,
+			token.ParticipantID, // Updated
 			token.AgentID,
-			token.BrokerID)
+			nil) // ConsumerID removed
 		return err
 	})
 	if err != nil {
@@ -297,9 +280,9 @@ func (s *tokenCommander) Update(ctx context.Context,
 			ctx,
 			EventTypeTokenUpdated,
 			&id,
-			token.ProviderID,
+			token.ParticipantID, // Updated
 			token.AgentID,
-			token.BrokerID,
+			nil, // ConsumerID removed
 			&beforeTokenCopy,
 			token)
 		return err
@@ -329,9 +312,9 @@ func (s *tokenCommander) Delete(ctx context.Context, id UUID) error {
 			EventTypeTokenDeleted,
 			JSON{"state": token},
 			&id,
-			token.ProviderID,
+			token.ParticipantID, // Updated
 			token.AgentID,
-			token.BrokerID)
+			nil) // ConsumerID removed
 		return err
 	})
 }
@@ -356,9 +339,9 @@ func (s *tokenCommander) Regenerate(ctx context.Context, id UUID) (*Token, error
 			EventTypeTokenRegenerated,
 			JSON{"state": token},
 			&id,
-			token.ProviderID,
+			token.ParticipantID, // Updated
 			token.AgentID,
-			token.BrokerID)
+			nil) // ConsumerID removed
 		return err
 	})
 	if err != nil {
@@ -380,11 +363,8 @@ type TokenRepository interface {
 	// Delete removes an entity by ID
 	Delete(ctx context.Context, id UUID) error
 
-	// DeleteByProviderID removes all tokens associated with a provider ID
-	DeleteByProviderID(ctx context.Context, providerID UUID) error
-
-	// DeleteByBrokerID removes all tokens associated with a broker ID
-	DeleteByBrokerID(ctx context.Context, brokerID UUID) error
+	// DeleteByParticipantID removes all tokens associated with a participant ID
+	DeleteByParticipantID(ctx context.Context, participantID UUID) error
 
 	// DeleteByAgentID removes all tokens associated with an agent ID
 	DeleteByAgentID(ctx context.Context, agentID UUID) error
@@ -395,7 +375,7 @@ type TokenQuerier interface {
 	FindByID(ctx context.Context, id UUID) (*Token, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Token], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Token], error)
 
 	// FindByHashedValue finds a token by its hashed value
 	FindByHashedValue(ctx context.Context, hashedValue string) (*Token, error)

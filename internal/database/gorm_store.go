@@ -11,11 +11,10 @@ import (
 // GormStore implements the domain.Store interface using GORM
 type GormStore struct {
 	db               *gorm.DB
-	brokerRepo       domain.BrokerRepository
+	participantRepo  domain.ParticipantRepository
 	tokenRepo        domain.TokenRepository
 	agentTypeRepo    domain.AgentTypeRepository
 	agentRepo        domain.AgentRepository
-	providerRepo     domain.ProviderRepository
 	serviceTypeRepo  domain.ServiceTypeRepository
 	serviceGroupRepo domain.ServiceGroupRepository
 	serviceRepo      domain.ServiceRepository
@@ -42,11 +41,11 @@ func (s *GormStore) Atomic(ctx context.Context, fn func(domain.Store) error) err
 	})
 }
 
-func (s *GormStore) BrokerRepo() domain.BrokerRepository {
-	if s.brokerRepo == nil {
-		s.brokerRepo = NewBrokerRepository(s.db)
+func (s *GormStore) ParticipantRepo() domain.ParticipantRepository {
+	if s.participantRepo == nil {
+		s.participantRepo = NewParticipantRepository(s.db)
 	}
-	return s.brokerRepo
+	return s.participantRepo
 }
 
 func (s *GormStore) TokenRepo() domain.TokenRepository {
@@ -68,13 +67,6 @@ func (s *GormStore) AgentRepo() domain.AgentRepository {
 		s.agentRepo = NewAgentRepository(s.db)
 	}
 	return s.agentRepo
-}
-
-func (s *GormStore) ProviderRepo() domain.ProviderRepository {
-	if s.providerRepo == nil {
-		s.providerRepo = NewProviderRepository(s.db)
-	}
-	return s.providerRepo
 }
 
 func (s *GormStore) ServiceTypeRepo() domain.ServiceTypeRepository {

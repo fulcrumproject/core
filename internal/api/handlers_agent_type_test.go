@@ -183,7 +183,7 @@ func TestHandleList(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
 					return &domain.PageResponse[domain.AgentType]{
 						Items: []domain.AgentType{
 							{
@@ -252,7 +252,7 @@ func TestHandleList(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Mock the list function with empty results
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
 					return &domain.PageResponse[domain.AgentType]{
 						Items:       []domain.AgentType{},
 						TotalItems:  0,
@@ -279,7 +279,7 @@ func TestHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},

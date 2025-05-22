@@ -35,7 +35,7 @@ func TestJobHandleList(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
 					return &domain.PageResponse[domain.Job]{
 						Items: []domain.Job{
 							{
@@ -45,7 +45,7 @@ func TestJobHandleList(t *testing.T) {
 									UpdatedAt: updatedAt,
 								},
 								ProviderID: uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
-								BrokerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
+								ConsumerID: uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
 								AgentID:    uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
 								ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 								Action:     domain.ServiceActionCreate,
@@ -59,7 +59,7 @@ func TestJobHandleList(t *testing.T) {
 									UpdatedAt: updatedAt,
 								},
 								ProviderID: uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
-								BrokerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
+								ConsumerID: uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
 								AgentID:    uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
 								ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 								Action:     domain.ServiceActionDelete,
@@ -90,7 +90,7 @@ func TestJobHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -169,7 +169,7 @@ func TestJobHandleGet(t *testing.T) {
 							UpdatedAt: updatedAt,
 						},
 						ProviderID: uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
-						BrokerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
+						ConsumerID: uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
 						AgentID:    uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
 						ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 						Action:     domain.ServiceActionCreate,
@@ -279,7 +279,7 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 								UpdatedAt: updatedAt,
 							},
 							ProviderID: uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
-							BrokerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
+							ConsumerID: uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
 							AgentID:    agentID,
 							ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 							Action:     domain.ServiceActionCreate,
@@ -293,7 +293,7 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 								UpdatedAt: updatedAt,
 							},
 							ProviderID: uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
-							BrokerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
+							ConsumerID: uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
 							AgentID:    agentID,
 							ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 							Action:     domain.ServiceActionDelete,
@@ -696,7 +696,7 @@ func TestJobToResponse(t *testing.T) {
 			UpdatedAt: updatedAt,
 		},
 		ProviderID:   uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
-		BrokerID:     uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
+		ConsumerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
 		AgentID:      uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
 		ServiceID:    uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 		Action:       domain.ServiceActionCreate,
@@ -712,7 +712,7 @@ func TestJobToResponse(t *testing.T) {
 	// Assert
 	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", response.ID.String())
 	assert.Equal(t, "650e8400-e29b-41d4-a716-446655440000", response.ProviderID.String())
-	assert.Equal(t, "750e8400-e29b-41d4-a716-446655440000", response.BrokerID.String())
+	assert.Equal(t, "750e8400-e29b-41d4-a716-446655440000", response.ConsumerID.String())
 	assert.Equal(t, "850e8400-e29b-41d4-a716-446655440000", response.AgentID.String())
 	assert.Equal(t, "950e8400-e29b-41d4-a716-446655440000", response.ServiceID.String())
 	assert.Equal(t, domain.ServiceActionCreate, response.Action)

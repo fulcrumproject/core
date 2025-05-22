@@ -6,7 +6,7 @@
 
 ### Create a provider for testing
 # @name createProvider
-POST {{baseUrl}}/providers
+POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
 
 {

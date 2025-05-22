@@ -17,25 +17,25 @@ func TestMetricEntryRepository(t *testing.T) {
 	repo := NewMetricEntryRepository(testDB.DB)
 
 	// Create repository instances
-	providerRepo := NewProviderRepository(testDB.DB)
+	participantRepo := NewParticipantRepository(testDB.DB)
 	serviceTypeRepo := NewServiceTypeRepository(testDB.DB)
 	agentTypeRepo := NewAgentTypeRepository(testDB.DB)
 	agentRepo := NewAgentRepository(testDB.DB)
 	serviceGroupRepo := NewServiceGroupRepository(testDB.DB)
 	serviceRepo := NewServiceRepository(testDB.DB)
 	metricTypeRepo := NewMetricTypeRepository(testDB.DB)
-	brokerRepo := NewBrokerRepository(testDB.DB)
 
 	ctx := context.Background()
 
-	// Create broker first (needed for service group)
-	broker := createTestBroker(t)
-	err := brokerRepo.Create(ctx, broker)
+	// Create participants (for consumer and provider roles)
+	consumer := createTestParticipant(t, domain.ParticipantEnabled)
+	err := participantRepo.Create(ctx, consumer)
 	require.NoError(t, err)
 
-	// Create test dependencies
-	provider := createTestProvider(t, domain.ProviderEnabled)
-	err = providerRepo.Create(ctx, provider)
+	// Create provider participant
+	provider := createTestParticipant(t, domain.ParticipantEnabled)
+	provider.Name = "Test Provider"
+	err = participantRepo.Create(ctx, provider)
 	require.NoError(t, err)
 
 	serviceType := createTestServiceType(t)
@@ -51,11 +51,11 @@ func TestMetricEntryRepository(t *testing.T) {
 	err = agentRepo.Create(ctx, agent)
 	require.NoError(t, err)
 
-	serviceGroup := createTestServiceGroup(t, broker.ID)
+	serviceGroup := createTestServiceGroup(t, consumer.ID)
 	err = serviceGroupRepo.Create(ctx, serviceGroup)
 	require.NoError(t, err)
 
-	service := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, broker.ID)
+	service := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, consumer.ID)
 	err = serviceRepo.Create(ctx, service)
 	require.NoError(t, err)
 
@@ -75,7 +75,7 @@ func TestMetricEntryRepository(t *testing.T) {
 			ServiceID:  service.ID,
 			ResourceID: "test-resource",
 			ProviderID: provider.ID,
-			BrokerID:   broker.ID,
+			ConsumerID: consumer.ID,
 			Value:      42.5,
 			TypeID:     metricTypeService.ID,
 		}
@@ -87,7 +87,7 @@ func TestMetricEntryRepository(t *testing.T) {
 		assert.NotZero(t, metricEntry.UpdatedAt)
 
 		// Use the utility function to create a metric entry
-		metricEntryFromUtil := createTestMetricEntry(t, agent.ID, service.ID, metricTypeAgent.ID, provider.ID, broker.ID)
+		metricEntryFromUtil := createTestMetricEntry(t, agent.ID, service.ID, metricTypeAgent.ID, provider.ID, consumer.ID)
 
 		err = repo.Create(context.Background(), metricEntryFromUtil)
 		require.NoError(t, err)
@@ -115,7 +115,7 @@ func TestMetricEntryRepository(t *testing.T) {
 					ServiceID:  service.ID,
 					ResourceID: e.resourceID,
 					ProviderID: provider.ID,
-					BrokerID:   broker.ID,
+					ConsumerID: consumer.ID,
 					Value:      e.value,
 					TypeID:     metricTypeService.ID,
 				}
@@ -128,7 +128,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				PageSize: 10,
 			}
 
-			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 
@@ -145,7 +145,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				Filters:  map[string][]string{"agentId": {agent.ID.String()}},
 			}
 
-			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 			for _, item := range result.Items {
@@ -155,11 +155,11 @@ func TestMetricEntryRepository(t *testing.T) {
 
 		t.Run("success - list with type filter", func(t *testing.T) {
 			// Create entries with different types
-			entryService := createTestMetricEntry(t, agent.ID, service.ID, metricTypeService.ID, provider.ID, broker.ID)
+			entryService := createTestMetricEntry(t, agent.ID, service.ID, metricTypeService.ID, provider.ID, consumer.ID)
 			err := repo.Create(context.Background(), entryService)
 			require.NoError(t, err)
 
-			entryAgent := createTestMetricEntry(t, agent.ID, service.ID, metricTypeAgent.ID, provider.ID, broker.ID)
+			entryAgent := createTestMetricEntry(t, agent.ID, service.ID, metricTypeAgent.ID, provider.ID, consumer.ID)
 			err = repo.Create(context.Background(), entryAgent)
 			require.NoError(t, err)
 
@@ -170,7 +170,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				Filters:  map[string][]string{"typeId": {metricTypeService.ID.String()}},
 			}
 
-			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 1)
 			for _, item := range result.Items {
@@ -193,7 +193,7 @@ func TestMetricEntryRepository(t *testing.T) {
 					ServiceID:  service.ID,
 					ResourceID: "sort-test",
 					ProviderID: provider.ID,
-					BrokerID:   broker.ID,
+					ConsumerID: consumer.ID,
 					Value:      value,
 					TypeID:     metricTypeService.ID,
 				}
@@ -209,7 +209,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				SortAsc:  false, // Descending order
 			}
 
-			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 			// Verify descending order
@@ -226,7 +226,7 @@ func TestMetricEntryRepository(t *testing.T) {
 					ServiceID:  service.ID,
 					ResourceID: "pagination-test",
 					ProviderID: provider.ID,
-					BrokerID:   broker.ID,
+					ConsumerID: consumer.ID,
 					Value:      float64(i * 10),
 					TypeID:     metricTypeService.ID,
 				}
@@ -240,7 +240,7 @@ func TestMetricEntryRepository(t *testing.T) {
 			}
 
 			// First page
-			result, err := repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)
@@ -249,7 +249,7 @@ func TestMetricEntryRepository(t *testing.T) {
 
 			// Second page
 			page.Page = 2
-			result, err = repo.List(context.Background(), &domain.EmptyAuthScope, page)
+			result, err = repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.Len(t, result.Items, 2)
 			assert.True(t, result.HasNext)
@@ -270,7 +270,7 @@ func TestMetricEntryRepository(t *testing.T) {
 					ServiceID:  service.ID,
 					ResourceID: fmt.Sprintf("count-service-%d", i),
 					ProviderID: provider.ID,
-					BrokerID:   broker.ID,
+					ConsumerID: consumer.ID,
 					Value:      float64(i * 10),
 					TypeID:     metricTypeService.ID,
 				}
@@ -286,7 +286,7 @@ func TestMetricEntryRepository(t *testing.T) {
 					ServiceID:  service.ID,
 					ResourceID: fmt.Sprintf("count-agent-%d", i),
 					ProviderID: provider.ID,
-					BrokerID:   broker.ID,
+					ConsumerID: consumer.ID,
 					Value:      float64(i * 10),
 					TypeID:     metricTypeAgent.ID,
 				}
@@ -320,7 +320,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				ServiceID:  service.ID,
 				ResourceID: "auth-scope-test",
 				ProviderID: provider.ID,
-				BrokerID:   broker.ID,
+				ConsumerID: consumer.ID,
 				Value:      42.0,
 				TypeID:     metricTypeService.ID,
 			}
@@ -332,8 +332,8 @@ func TestMetricEntryRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, scope, "AuthScope should not return nil")
 			assert.Equal(t, provider.ID, *scope.ProviderID, "Should return the correct provider ID")
+			assert.Equal(t, consumer.ID, *scope.ConsumerID, "Should return the correct consumer ID")
 			assert.Equal(t, agent.ID, *scope.AgentID, "Should return the correct agent ID")
-			assert.Equal(t, broker.ID, *scope.BrokerID, "Should return the correct broker ID")
 		})
 	})
 }

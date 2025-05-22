@@ -146,18 +146,18 @@ func TestServiceHandleCreate(t *testing.T) {
 				agentID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 				groupID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 				providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
-				brokerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 
 				// Setup the agent querier to return auth scope
 				agentQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 					assert.Equal(t, agentID, id)
-					return &domain.AuthScope{ProviderID: &providerID, AgentID: &agentID}, nil
+					return &domain.AuthScope{ParticipantID: &providerID, AgentID: &agentID}, nil
 				}
 
 				// Setup the service group querier to return auth scope
 				serviceGroupQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
 					assert.Equal(t, groupID, id)
-					return &domain.AuthScope{BrokerID: &brokerID}, nil
+					return &domain.AuthScope{ConsumerID: &consumerID}, nil
 				}
 
 				// Setup the commander
@@ -179,7 +179,7 @@ func TestServiceHandleCreate(t *testing.T) {
 						AgentID:           agentID,
 						ServiceTypeID:     serviceTypeID,
 						GroupID:           groupID,
-						BrokerID:          brokerID,
+						ConsumerID:        consumerID,
 						ProviderID:        providerID,
 						Attributes:        domain.Attributes{"key": []string{"value"}},
 						CurrentState:      domain.ServiceCreated,
@@ -227,9 +227,9 @@ func TestServiceHandleCreate(t *testing.T) {
 			}`,
 			mockSetup: func(serviceQuerier *mockServiceQuerier, agentQuerier *mockAgentQuerier, serviceGroupQuerier *mockServiceGroupQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
 				// Setup the service group querier to return auth scope
-				brokerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 				serviceGroupQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{BrokerID: &brokerID}, nil
+					return &domain.AuthScope{ConsumerID: &consumerID}, nil
 				}
 
 				// Setup the agent querier to return an error
@@ -251,16 +251,16 @@ func TestServiceHandleCreate(t *testing.T) {
 			}`,
 			mockSetup: func(serviceQuerier *mockServiceQuerier, agentQuerier *mockAgentQuerier, serviceGroupQuerier *mockServiceGroupQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
 				// Setup the service group querier to return auth scope
-				brokerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 				serviceGroupQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{BrokerID: &brokerID}, nil
+					return &domain.AuthScope{ConsumerID: &consumerID}, nil
 				}
 
 				// Setup the agent querier to return auth scope
 				agentID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 				providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 				agentQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{ProviderID: &providerID, AgentID: &agentID}, nil
+					return &domain.AuthScope{ParticipantID: &providerID, AgentID: &agentID}, nil
 				}
 
 				// Return an unsuccessful auth
@@ -283,17 +283,17 @@ func TestServiceHandleCreate(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				agentID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-				brokerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 				providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 
 				// Setup the agent querier to return auth scope
 				agentQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{ProviderID: &providerID, AgentID: &agentID}, nil
+					return &domain.AuthScope{ParticipantID: &providerID, AgentID: &agentID}, nil
 				}
 
 				// Setup the service group querier to return auth scope
 				serviceGroupQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{BrokerID: &brokerID}, nil
+					return &domain.AuthScope{ConsumerID: &consumerID}, nil
 				}
 
 				// Setup the commander to return an error
@@ -378,7 +378,7 @@ func TestServiceHandleGet(t *testing.T) {
 					agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 					serviceTypeID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 					groupID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-					brokerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
+					consumerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 					providerID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
 
 					return &domain.Service{
@@ -391,7 +391,7 @@ func TestServiceHandleGet(t *testing.T) {
 						AgentID:       agentID,
 						ServiceTypeID: serviceTypeID,
 						GroupID:       groupID,
-						BrokerID:      brokerID,
+						ConsumerID:    consumerID,
 						ProviderID:    providerID,
 						Attributes:    domain.Attributes{"key": []string{"value"}},
 						CurrentState:  domain.ServiceStarted,
@@ -512,10 +512,10 @@ func TestServiceHandleList(t *testing.T) {
 				agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 				serviceTypeID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 				groupID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-				brokerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 				providerID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
 
-				serviceQuerier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
+				serviceQuerier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
 					return &domain.PageResponse[domain.Service]{
 						Items: []domain.Service{
 							{
@@ -528,7 +528,7 @@ func TestServiceHandleList(t *testing.T) {
 								AgentID:       agentID,
 								ServiceTypeID: serviceTypeID,
 								GroupID:       groupID,
-								BrokerID:      brokerID,
+								ConsumerID:    consumerID,
 								ProviderID:    providerID,
 								Attributes:    domain.Attributes{"key": []string{"value"}},
 								CurrentState:  domain.ServiceStarted,
@@ -543,7 +543,7 @@ func TestServiceHandleList(t *testing.T) {
 								AgentID:       agentID,
 								ServiceTypeID: serviceTypeID,
 								GroupID:       groupID,
-								BrokerID:      brokerID,
+								ConsumerID:    consumerID,
 								ProviderID:    providerID,
 								Attributes:    domain.Attributes{"key": []string{"value2"}},
 								CurrentState:  domain.ServiceStopped,
@@ -572,7 +572,7 @@ func TestServiceHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				serviceQuerier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
+				serviceQuerier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -679,7 +679,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 					agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 					serviceTypeID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 					groupID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-					brokerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
+					consumerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 					providerID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
 
 					return &domain.Service{
@@ -692,7 +692,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 						AgentID:           agentID,
 						ServiceTypeID:     serviceTypeID,
 						GroupID:           groupID,
-						BrokerID:          brokerID,
+						ConsumerID:        consumerID,
 						ProviderID:        providerID,
 						Attributes:        domain.Attributes{"key": []string{"value"}},
 						CurrentState:      domain.ServiceStarted,
@@ -857,7 +857,7 @@ func TestServiceHandleTransition(t *testing.T) {
 						agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 						serviceTypeID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 						groupID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-						brokerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
+						consumerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 						providerID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
 
 						return &domain.Service{
@@ -870,7 +870,7 @@ func TestServiceHandleTransition(t *testing.T) {
 							AgentID:       agentID,
 							ServiceTypeID: serviceTypeID,
 							GroupID:       groupID,
-							BrokerID:      brokerID,
+							ConsumerID:    consumerID,
 							ProviderID:    providerID,
 							Attributes:    domain.Attributes{"key": []string{"value"}},
 							CurrentState:  state,
@@ -990,7 +990,7 @@ func TestServiceHandleRetry(t *testing.T) {
 					agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 					serviceTypeID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 					groupID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-					brokerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
+					consumerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 					providerID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
 
 					return &domain.Service{
@@ -1003,7 +1003,7 @@ func TestServiceHandleRetry(t *testing.T) {
 						AgentID:       agentID,
 						ServiceTypeID: serviceTypeID,
 						GroupID:       groupID,
-						BrokerID:      brokerID,
+						ConsumerID:    consumerID,
 						ProviderID:    providerID,
 						Attributes:    domain.Attributes{"key": []string{"value"}},
 						CurrentState:  domain.ServiceStarted,
@@ -1089,7 +1089,7 @@ func TestServiceToResponse(t *testing.T) {
 	agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 	serviceTypeID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 	groupID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-	brokerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
+	consumerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 	providerID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
 	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
@@ -1112,7 +1112,7 @@ func TestServiceToResponse(t *testing.T) {
 		AgentID:           agentID,
 		ServiceTypeID:     serviceTypeID,
 		GroupID:           groupID,
-		BrokerID:          brokerID,
+		ConsumerID:        consumerID,
 		ProviderID:        providerID,
 		ExternalID:        &externalID,
 		Attributes:        domain.Attributes{"key": []string{"value"}},
@@ -1132,7 +1132,7 @@ func TestServiceToResponse(t *testing.T) {
 	// Verify all fields are correctly mapped
 	assert.Equal(t, id, response.ID)
 	assert.Equal(t, providerID, response.ProviderID)
-	assert.Equal(t, brokerID, response.BrokerID)
+	assert.Equal(t, consumerID, response.ConsumerID)
 	assert.Equal(t, agentID, response.AgentID)
 	assert.Equal(t, serviceTypeID, response.ServiceTypeID)
 	assert.Equal(t, groupID, response.GroupID)

@@ -199,7 +199,7 @@ func (h *JobHandler) handleFailJob(w http.ResponseWriter, r *http.Request) {
 type JobResponse struct {
 	ID           domain.UUID          `json:"id"`
 	ProviderID   domain.UUID          `json:"providerId"`
-	BrokerID     domain.UUID          `json:"brokerId"`
+	ConsumerID   domain.UUID          `json:"consumerId"`
 	AgentID      domain.UUID          `json:"agentId"`
 	ServiceID    domain.UUID          `json:"serviceId"`
 	Action       domain.ServiceAction `json:"action"`
@@ -219,7 +219,7 @@ func jobToResponse(job *domain.Job) *JobResponse {
 		ID:           job.ID,
 		AgentID:      job.AgentID,
 		ProviderID:   job.ProviderID,
-		BrokerID:     job.BrokerID,
+		ConsumerID:   job.ConsumerID,
 		ServiceID:    job.ServiceID,
 		Action:       job.Action,
 		State:        job.State,

@@ -422,7 +422,7 @@ func TestAgentHandleList(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
 					return &domain.PageResponse[domain.Agent]{
 						Items: []domain.Agent{
 							{
@@ -477,7 +477,7 @@ func TestAgentHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -1042,7 +1042,7 @@ func TestMustGetAgentID(t *testing.T) {
 	t.Run("Error case", func(t *testing.T) {
 		// Create a request with a non-agent auth identity
 		r := httptest.NewRequest("GET", "/test", nil)
-		adminIdentity := NewMockAuthProviderAdmin()
+		adminIdentity := NewMockAuthParticipant()
 		r = r.WithContext(domain.WithAuthIdentity(r.Context(), adminIdentity))
 
 		// This should return an error

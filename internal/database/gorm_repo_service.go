@@ -29,7 +29,7 @@ func NewServiceRepository(db *gorm.DB) *GormServiceRepository {
 			db,
 			applyServiceFilter,
 			applyServiceSort,
-			allAuthzFilterApplier,
+			providerConsumerAgentAuthzFilterApplier,
 			[]string{"Agent", "ServiceType", "Group"}, // Find preload paths
 			[]string{"Agent", "ServiceType", "Group"}, // List preload paths
 		),
@@ -76,5 +76,5 @@ func (r *GormServiceRepository) FindByExternalID(ctx context.Context, agentID do
 }
 
 func (r *GormServiceRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	return r.getAuthScope(ctx, id, "provider_id", "agent_id", "broker_id")
+	return r.getAuthScope(ctx, id, "provider_id", "consumer_id", "agent_id")
 }

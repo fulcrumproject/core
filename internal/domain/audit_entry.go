@@ -16,11 +16,10 @@ type EventType string
 
 // Predefined authority types
 const (
-	AuthorityTypeInternal AuthorityType = "internal"
-	AuthorityTypeAdmin    AuthorityType = "admin"
-	AuthorityTypeProvider AuthorityType = "provider"
-	AuthorityTypeAgent    AuthorityType = "agent"
-	AuthorityTypeBroker   AuthorityType = "broker"
+	AuthorityTypeInternal    AuthorityType = "internal"
+	AuthorityTypeAdmin       AuthorityType = "admin"
+	AuthorityTypeParticipant AuthorityType = "participant"
+	AuthorityTypeAgent       AuthorityType = "agent"
 )
 
 // Predefined event types
@@ -30,21 +29,16 @@ const (
 	EventTypeAgentUpdated EventType = "agent_updated"
 	EventTypeAgentDeleted EventType = "agent_deleted"
 
-	// Broker commands
-	EventTypeBrokerCreated EventType = "broker_created"
-	EventTypeBrokerUpdated EventType = "broker_updated"
-	EventTypeBrokerDeleted EventType = "broker_deleted"
+	// Particpiant commands
+	EventTypeParticipantCreated EventType = "participant_created"
+	EventTypeParticipantUpdated EventType = "participant_updated"
+	EventTypeParticipantDeleted EventType = "participant_deleted"
 
 	// Service commands
 	EventTypeServiceCreated      EventType = "service_created"
 	EventTypeServiceUpdated      EventType = "service_updated"
 	EventTypeServiceTransitioned EventType = "service_transitioned"
 	EventTypeServiceRetried      EventType = "service_retried"
-
-	// Provider commands
-	EventTypeProviderCreated EventType = "provider_created"
-	EventTypeProviderUpdated EventType = "provider_updated"
-	EventTypeProviderDeleted EventType = "provider_deleted"
 
 	// ServiceGroup commands
 	EventTypeServiceGroupCreated EventType = "service_group_created"
@@ -75,7 +69,7 @@ type AuditEntry struct {
 
 	ProviderID *UUID `gorm:"type:uuid"`
 	AgentID    *UUID `gorm:"type:uuid"`
-	BrokerID   *UUID `gorm:"type:uuid"`
+	ConsumerID *UUID `gorm:"type:uuid"`
 }
 
 // NewEventAudit creates a new audit entry for simple event audits
@@ -84,7 +78,7 @@ func NewEventAudit(
 	authorityID string,
 	eventType EventType,
 	properties JSON,
-	entityID, providerID, agentID, brokerID *UUID,
+	entityID, providerID, agentID, consumerID *UUID,
 ) *AuditEntry {
 	return &AuditEntry{
 		AuthorityType: authorityType,
@@ -94,7 +88,7 @@ func NewEventAudit(
 		EntityID:      entityID,
 		ProviderID:    providerID,
 		AgentID:       agentID,
-		BrokerID:      brokerID,
+		ConsumerID:    consumerID,
 	}
 }
 
@@ -141,17 +135,17 @@ func (p *AuditEntry) Validate() error {
 // AuditEntryCommander defines the interface for audit entry command operations
 type AuditEntryCommander interface {
 	// Create creates a new audit entry
-	Create(ctx context.Context, authorityType AuthorityType, authorityID string, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error)
+	Create(ctx context.Context, authorityType AuthorityType, authorityID string, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error)
 
 	// CreateWithDiff creates an audit entry with a diff between two entity states
 	CreateWithDiff(ctx context.Context, authorityType AuthorityType, authorityID string, eventType EventType,
-		entityID, providerID, agentID, brokerID *UUID, beforeEntity, afterEntity interface{}) (*AuditEntry, error)
+		entityID, providerID, agentID, consumerID *UUID, beforeEntity, afterEntity interface{}) (*AuditEntry, error)
 
 	// CreateCtx extracts authority info from context and creates an audit entry
-	CreateCtx(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error)
+	CreateCtx(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error)
 
 	// CreateCtxWithDiff extracts authority info from context and creates an audit entry with diff
-	CreateCtxWithDiff(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, beforeEntity, afterEntity interface{}) (*AuditEntry, error)
+	CreateCtxWithDiff(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, beforeEntity, afterEntity interface{}) (*AuditEntry, error)
 }
 
 // auditEntryCommander is the concrete implementation of AuditEntryCommander
@@ -175,7 +169,7 @@ func (s *auditEntryCommander) Create(
 	eventType EventType,
 	properties JSON,
 	entityID,
-	providerID, agentID, brokerID *UUID,
+	providerID, agentID, consumerID *UUID,
 ) (*AuditEntry, error) {
 	// Collect data - all data is already provided via parameters
 
@@ -188,7 +182,7 @@ func (s *auditEntryCommander) Create(
 		entityID,
 		providerID,
 		agentID,
-		brokerID,
+		consumerID,
 	)
 	if err := auditEntry.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
@@ -208,7 +202,7 @@ func (s *auditEntryCommander) CreateWithDiff(
 	authorityType AuthorityType,
 	authorityID string,
 	eventType EventType,
-	entityID, providerID, agentID, brokerID *UUID,
+	entityID, providerID, agentID, consumerID *UUID,
 	beforeEntity, afterEntity interface{},
 ) (*AuditEntry, error) {
 	// Collect data - all data is already provided via parameters
@@ -222,7 +216,7 @@ func (s *auditEntryCommander) CreateWithDiff(
 		entityID,
 		providerID,
 		agentID,
-		brokerID,
+		consumerID,
 	)
 
 	// Generate diff
@@ -247,27 +241,27 @@ func (s *auditEntryCommander) CreateCtx(
 	ctx context.Context,
 	eventType EventType,
 	properties JSON,
-	entityID, providerID, agentID, brokerID *UUID,
+	entityID, providerID, agentID, consumerID *UUID,
 ) (*AuditEntry, error) {
 	// Collect data - extract authority information from context
 	authorityType, authorityID := ExtractAuditAuthority(ctx)
 
 	// Create and validate, save (delegated to Create method)
-	return s.Create(ctx, authorityType, authorityID, eventType, properties, entityID, providerID, agentID, brokerID)
+	return s.Create(ctx, authorityType, authorityID, eventType, properties, entityID, providerID, agentID, consumerID)
 }
 
 // CreateCtxWithDiff extracts authority info from context and creates an audit entry with diff
 func (s *auditEntryCommander) CreateCtxWithDiff(
 	ctx context.Context,
 	eventType EventType,
-	entityID, providerID, agentID, brokerID *UUID,
+	entityID, providerID, agentID, consumerID *UUID,
 	beforeEntity, afterEntity interface{},
 ) (*AuditEntry, error) {
 	// Collect data - extract authority information from context
 	authorityType, authorityID := ExtractAuditAuthority(ctx)
 
 	// Create and validate, save (delegated to CreateWithDiff method)
-	return s.CreateWithDiff(ctx, authorityType, authorityID, eventType, entityID, providerID, agentID, brokerID, beforeEntity, afterEntity)
+	return s.CreateWithDiff(ctx, authorityType, authorityID, eventType, entityID, providerID, agentID, consumerID, beforeEntity, afterEntity)
 }
 
 // ExtractAuditAuthority extracts authority information from context
@@ -280,12 +274,10 @@ func ExtractAuditAuthority(ctx context.Context) (AuthorityType, string) {
 	switch identity.Role() {
 	case RoleFulcrumAdmin:
 		authorityType = AuthorityTypeAdmin
-	case RoleProviderAdmin:
-		authorityType = AuthorityTypeProvider
+	case RoleParticipant:
+		authorityType = AuthorityTypeParticipant
 	case RoleAgent:
 		authorityType = AuthorityTypeAgent
-	case RoleBroker:
-		authorityType = AuthorityTypeBroker
 	default:
 		authorityType = AuthorityTypeInternal
 	}
@@ -302,7 +294,7 @@ type AuditEntryRepository interface {
 
 type AuditEntryQuerier interface {
 	// List retrieves a list of audit entries based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[AuditEntry], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[AuditEntry], error)
 
 	// Retrieve the auth scope for the entity
 	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)

@@ -28,8 +28,8 @@ func NewServiceGroupRepository(db *gorm.DB) *GormServiceGroupRepository {
 			applyServiceGroupFilter,
 			applyServiceGroupSort,
 			serviceGroupAuthzFilterApplier,
-			[]string{"Broker"}, // Preload broker for FindByID
-			[]string{"Broker"}, // Preload broker for List
+			[]string{"Participant"}, // Preload participant for FindByID
+			[]string{"Participant"}, // Preload participant for List
 		),
 	}
 	return repo
@@ -48,13 +48,13 @@ func (r *GormServiceGroupRepository) CountByService(ctx context.Context, service
 	return count, nil
 }
 
-func serviceGroupAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
-	if s.BrokerID != nil {
-		return q.Where("broker_id = ?", s.BrokerID)
+func serviceGroupAuthzFilterApplier(s *domain.AuthIdentityScope, q *gorm.DB) *gorm.DB {
+	if s.ParticipantID != nil {
+		return q.Where("participant_id = ?", s.ParticipantID)
 	}
 	return q
 }
 
 func (r *GormServiceGroupRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	return r.getAuthScope(ctx, id, "broker_id")
+	return r.getAuthScope(ctx, id, "consumer_id")
 }

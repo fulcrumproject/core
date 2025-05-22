@@ -17,7 +17,7 @@ func TestServiceCommander_Create(t *testing.T) {
 	serviceTypeID := uuid.New()
 	groupID := uuid.New()
 	providerID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	validName := "Web Server"
 	validAttributes := Attributes{"tier": {"premium"}}
 	validProperties := JSON{"port": 8080}
@@ -61,7 +61,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					BrokerID: brokerID,
+					ConsumerID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					assert.Equal(t, groupID, id)
@@ -87,7 +87,7 @@ func TestServiceCommander_Create(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeServiceCreated, eventType)
 					assert.NotNil(t, properties)
 					assert.NotNil(t, entityID)
@@ -168,7 +168,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					BrokerID: brokerID,
+					ConsumerID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil
@@ -210,7 +210,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					BrokerID: brokerID,
+					ConsumerID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil
@@ -260,7 +260,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					BrokerID: brokerID,
+					ConsumerID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil
@@ -316,7 +316,7 @@ func TestServiceCommander_Create(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					BrokerID: brokerID,
+					ConsumerID: consumerID,
 				}
 				serviceGroupRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return group, nil
@@ -334,7 +334,7 @@ func TestServiceCommander_Create(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 
@@ -399,7 +399,7 @@ func TestServiceCommander_Update(t *testing.T) {
 	typeID := uuid.New()
 	groupID := uuid.New()
 	providerID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	validName := "Web Server"
 	newName := "API Server"
 	validProperties := JSON{"port": 8080}
@@ -444,7 +444,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        consumerID,
 					Name:              validName,
 					CurrentState:      ServiceStopped,
 					CurrentProperties: &validProperties,
@@ -462,7 +462,7 @@ func TestServiceCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, original, current interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, original, current interface{}) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeServiceUpdated, eventType)
 					assert.Equal(t, &serviceID, entityID)
 					return &AuditEntry{}, nil
@@ -499,7 +499,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        consumerID,
 					Name:              validName,
 					CurrentState:      ServiceStopped,
 					CurrentProperties: &validProperties,
@@ -526,7 +526,7 @@ func TestServiceCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, original, current interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, original, current interface{}) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeServiceUpdated, eventType)
 					assert.Equal(t, &serviceID, entityID)
 					return &AuditEntry{}, nil
@@ -565,7 +565,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        consumerID,
 					Name:              validName,
 					CurrentState:      ServiceStarted,
 					CurrentProperties: &validProperties,
@@ -592,7 +592,7 @@ func TestServiceCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, original, current interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, original, current interface{}) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeServiceUpdated, eventType)
 					assert.Equal(t, &serviceID, entityID)
 					return &AuditEntry{}, nil
@@ -629,7 +629,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        consumerID,
 					Name:              validName,
 					CurrentState:      ServiceCreating,
 					CurrentProperties: &validProperties,
@@ -659,7 +659,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        consumerID,
 					Name:              validName,
 					CurrentState:      ServiceStopped,
 					CurrentProperties: &validProperties,
@@ -700,7 +700,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
 					ProviderID:        providerID,
-					BrokerID:          brokerID,
+					ConsumerID:        consumerID,
 					Name:              validName,
 					CurrentState:      ServiceStopped,
 					CurrentProperties: &validProperties,
@@ -747,7 +747,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ServiceTypeID:     typeID,
 					GroupID:           groupID,
-					BrokerID:          brokerID,
+					ConsumerID:        consumerID,
 					Name:              validName,
 					CurrentState:      ServiceStopped,
 					CurrentProperties: &validProperties,
@@ -768,7 +768,7 @@ func TestServiceCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, original, current interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, original, current interface{}) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 
@@ -814,7 +814,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 	serviceID := uuid.New()
 	agentID := uuid.New()
 	providerID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	typeID := uuid.New()
 	groupID := uuid.New()
 
@@ -857,7 +857,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -885,7 +885,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, original, current interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, original, current interface{}) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeServiceTransitioned, eventType)
 					assert.Equal(t, &serviceID, entityID)
 					return &AuditEntry{}, nil
@@ -920,7 +920,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -948,7 +948,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, original, current interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, original, current interface{}) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeServiceTransitioned, eventType)
 					assert.Equal(t, &serviceID, entityID)
 					return &AuditEntry{}, nil
@@ -983,7 +983,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1011,7 +1011,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, original, current interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, original, current interface{}) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeServiceTransitioned, eventType)
 					assert.Equal(t, &serviceID, entityID)
 					return &AuditEntry{}, nil
@@ -1044,7 +1044,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1073,7 +1073,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1114,7 +1114,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1160,7 +1160,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1182,7 +1182,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, original, current interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, original, current interface{}) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 
@@ -1228,7 +1228,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 	serviceID := uuid.New()
 	agentID := uuid.New()
 	providerID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	typeID := uuid.New()
 	groupID := uuid.New()
 	failedAction := ServiceActionStart
@@ -1266,7 +1266,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1301,7 +1301,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1329,7 +1329,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, original, current interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, original, current interface{}) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeServiceRetried, eventType)
 					assert.Equal(t, &serviceID, entityID)
 					return &AuditEntry{}, nil
@@ -1361,7 +1361,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1402,7 +1402,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1448,7 +1448,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					},
 					AgentID:       agentID,
 					ProviderID:    providerID,
-					BrokerID:      brokerID,
+					ConsumerID:    consumerID,
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
@@ -1472,7 +1472,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, original, current interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, original, current interface{}) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 

@@ -30,7 +30,7 @@ type WriteRepository[T any] interface {
 	Delete(ctx context.Context, id domain.UUID) error
 }
 
-type AuthzFilterApplier func(scope *domain.AuthScope, db *gorm.DB) *gorm.DB
+type AuthzFilterApplier func(scope *domain.AuthIdentityScope, db *gorm.DB) *gorm.DB
 
 type Tabler interface {
 	TableName() string
@@ -109,7 +109,7 @@ func (r *GormRepository[T]) FindByID(ctx context.Context, id domain.UUID) (*T, e
 	return entity, nil
 }
 
-func (r *GormRepository[T]) List(ctx context.Context, authScope *domain.AuthScope, page *domain.PageRequest) (*domain.PageResponse[T], error) {
+func (r *GormRepository[T]) List(ctx context.Context, authIdentityScope *domain.AuthIdentityScope, page *domain.PageRequest) (*domain.PageResponse[T], error) {
 	return list[T](
 		ctx,
 		r.db,
@@ -118,7 +118,7 @@ func (r *GormRepository[T]) List(ctx context.Context, authScope *domain.AuthScop
 		r.sortApplier,
 		r.authzFilterApplier,
 		r.listPreloadPaths,
-		authScope,
+		authIdentityScope,
 	)
 }
 
@@ -153,12 +153,16 @@ func (r *GormRepository[T]) Exists(ctx context.Context, id domain.UUID) (bool, e
 	return exists, nil
 }
 
-func allAuthzFilterApplier(s *domain.AuthScope, q *gorm.DB) *gorm.DB {
-	if s.ProviderID != nil {
-		return q.Where("provider_id = ?", s.ProviderID)
+func participantAuthzFilterApplier(s *domain.AuthIdentityScope, q *gorm.DB) *gorm.DB {
+	if s.ParticipantID != nil {
+		return q.Where("participant_id = ?", s.ParticipantID)
 	}
-	if s.BrokerID != nil {
-		return q.Where("broker_id = ?", s.BrokerID)
+	return q
+}
+
+func providerConsumerAgentAuthzFilterApplier(s *domain.AuthIdentityScope, q *gorm.DB) *gorm.DB {
+	if s.ParticipantID != nil {
+		return q.Where("consumer_id = ? OR provider_id = ?", s.ParticipantID, s.ParticipantID)
 	}
 	if s.AgentID != nil {
 		return q.Where("agent_id = ?", s.AgentID)

@@ -34,7 +34,7 @@ func NewJobRepository(db *gorm.DB) *GormJobRepository {
 			db,
 			applyJobFilter,
 			applyJobSort,
-			allAuthzFilterApplier,
+			providerConsumerAgentAuthzFilterApplier,
 			[]string{"Agent", "Service"}, // Find preload paths
 			[]string{"Agent", "Service"}, // List preload paths - empty for performance reasons
 		),
@@ -87,5 +87,5 @@ func (r *GormJobRepository) DeleteOldCompletedJobs(ctx context.Context, olderTha
 }
 
 func (r *GormJobRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	return r.getAuthScope(ctx, id, "provider_id", "agent_id", "broker_id")
+	return r.getAuthScope(ctx, id, "provider_id", "consumer_id", "agent_id")
 }

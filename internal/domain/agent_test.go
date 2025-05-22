@@ -194,7 +194,7 @@ func TestAgent_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Empty provider ID",
+			name: "Empty participant ID",
 			agent: &Agent{
 				Name:            "test-agent",
 				State:           AgentConnected,
@@ -263,8 +263,8 @@ func TestAgentCommander_Create(t *testing.T) {
 		{
 			name: "Create success",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				providerRepo := &MockProviderRepository{}
-				providerRepo.existsFunc = func(ctx context.Context, id UUID) (bool, error) {
+				participantRepo := &MockParticipantRepository{}
+				participantRepo.existsFunc = func(ctx context.Context, id UUID) (bool, error) {
 					return true, nil
 				}
 
@@ -284,21 +284,21 @@ func TestAgentCommander_Create(t *testing.T) {
 					return nil
 				}
 
-				store.WithProviderRepo(providerRepo)
+				store.WithParticipantRepo(participantRepo)
 				store.WithAgentTypeRepo(agentTypeRepo)
 				store.WithAgentRepo(agentRepo)
 			},
 			wantErr: false,
 		},
 		{
-			name: "Provider not found",
+			name: "Participant not found",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				providerRepo := &MockProviderRepository{}
-				providerRepo.existsFunc = func(ctx context.Context, id UUID) (bool, error) {
+				participantRepo := &MockParticipantRepository{}
+				participantRepo.existsFunc = func(ctx context.Context, id UUID) (bool, error) {
 					return false, nil
 				}
 
-				store.WithProviderRepo(providerRepo)
+				store.WithParticipantRepo(participantRepo)
 			},
 			wantErr: true,
 			errorCheck: func(t *testing.T, err error) {
@@ -310,8 +310,8 @@ func TestAgentCommander_Create(t *testing.T) {
 		{
 			name: "Agent type not found",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				providerRepo := &MockProviderRepository{}
-				providerRepo.existsFunc = func(ctx context.Context, id UUID) (bool, error) {
+				participantRepo := &MockParticipantRepository{}
+				participantRepo.existsFunc = func(ctx context.Context, id UUID) (bool, error) {
 					return true, nil
 				}
 
@@ -320,7 +320,7 @@ func TestAgentCommander_Create(t *testing.T) {
 					return false, nil
 				}
 
-				store.WithProviderRepo(providerRepo)
+				store.WithParticipantRepo(participantRepo)
 				store.WithAgentTypeRepo(agentTypeRepo)
 			},
 			wantErr: true,
@@ -333,8 +333,8 @@ func TestAgentCommander_Create(t *testing.T) {
 		{
 			name: "Validation error",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				providerRepo := &MockProviderRepository{}
-				providerRepo.existsFunc = func(ctx context.Context, id UUID) (bool, error) {
+				participantRepo := &MockParticipantRepository{}
+				participantRepo.existsFunc = func(ctx context.Context, id UUID) (bool, error) {
 					return true, nil
 				}
 
@@ -348,7 +348,7 @@ func TestAgentCommander_Create(t *testing.T) {
 					return InvalidInputError{Err: errors.New("invalid country code")}
 				}
 
-				store.WithProviderRepo(providerRepo)
+				store.WithParticipantRepo(participantRepo)
 				store.WithAgentTypeRepo(agentTypeRepo)
 			},
 			wantErr: true,

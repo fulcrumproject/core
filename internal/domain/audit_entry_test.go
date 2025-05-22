@@ -26,7 +26,7 @@ func TestNewEventAudit(t *testing.T) {
 	entityID := uuid.New()
 	providerID := uuid.New()
 	agentID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	properties := JSON{"key": "value"}
 
 	entry := NewEventAudit(
@@ -37,7 +37,7 @@ func TestNewEventAudit(t *testing.T) {
 		&entityID,
 		&providerID,
 		&agentID,
-		&brokerID,
+		&consumerID,
 	)
 
 	assert.Equal(t, AuthorityTypeAdmin, entry.AuthorityType)
@@ -47,7 +47,7 @@ func TestNewEventAudit(t *testing.T) {
 	assert.Equal(t, entityID, *entry.EntityID)
 	assert.Equal(t, providerID, *entry.ProviderID)
 	assert.Equal(t, agentID, *entry.AgentID)
-	assert.Equal(t, brokerID, *entry.BrokerID)
+	assert.Equal(t, consumerID, *entry.ConsumerID)
 }
 
 func TestAuditEntry_GenerateDiff(t *testing.T) {
@@ -137,7 +137,7 @@ func TestAuditEntryCommander_Create(t *testing.T) {
 	entityID := uuid.New()
 	providerID := uuid.New()
 	agentID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	properties := JSON{"key": "value"}
 
 	tests := []struct {
@@ -162,7 +162,7 @@ func TestAuditEntryCommander_Create(t *testing.T) {
 					assert.Equal(t, entityID, *entry.EntityID)
 					assert.Equal(t, providerID, *entry.ProviderID)
 					assert.Equal(t, agentID, *entry.AgentID)
-					assert.Equal(t, brokerID, *entry.BrokerID)
+					assert.Equal(t, consumerID, *entry.ConsumerID)
 					return nil
 				}
 				store.WithAuditEntryRepo(auditRepo)
@@ -206,7 +206,7 @@ func TestAuditEntryCommander_Create(t *testing.T) {
 				&entityID,
 				&providerID,
 				&agentID,
-				&brokerID,
+				&consumerID,
 			)
 
 			if tt.wantErr {
@@ -225,7 +225,7 @@ func TestAuditEntryCommander_Create(t *testing.T) {
 				assert.Equal(t, entityID, *entry.EntityID)
 				assert.Equal(t, providerID, *entry.ProviderID)
 				assert.Equal(t, agentID, *entry.AgentID)
-				assert.Equal(t, brokerID, *entry.BrokerID)
+				assert.Equal(t, consumerID, *entry.ConsumerID)
 			}
 		})
 	}
@@ -392,20 +392,20 @@ func TestAuditEntryCommander_CreateCtx(t *testing.T) {
 				}
 				store.WithAuditEntryRepo(auditRepo)
 			},
-			eventType:     EventTypeProviderCreated,
+			eventType:     EventTypeParticipantCreated,
 			wantErr:       false,
 			wantAuthority: AuthorityTypeAdmin,
 		},
 		{
 			name: "Provider role",
 			setupContext: func() context.Context {
-				identity := NewMockAuthIdentity(identityID, RoleProviderAdmin)
+				identity := NewMockAuthIdentity(identityID, RoleParticipant)
 				return ContextWithMockAuth(baseCtx, identity)
 			},
 			setupMocks: func(store *MockStore) {
 				auditRepo := &MockAuditEntryRepository{}
 				auditRepo.createFunc = func(ctx context.Context, entry *AuditEntry) error {
-					assert.Equal(t, AuthorityTypeProvider, entry.AuthorityType)
+					assert.Equal(t, AuthorityTypeParticipant, entry.AuthorityType)
 					assert.Equal(t, identityID.String(), entry.AuthorityID)
 					return nil
 				}
@@ -413,7 +413,7 @@ func TestAuditEntryCommander_CreateCtx(t *testing.T) {
 			},
 			eventType:     EventTypeAgentCreated,
 			wantErr:       false,
-			wantAuthority: AuthorityTypeProvider,
+			wantAuthority: AuthorityTypeParticipant,
 		},
 		{
 			name: "Agent role",
@@ -435,15 +435,15 @@ func TestAuditEntryCommander_CreateCtx(t *testing.T) {
 			wantAuthority: AuthorityTypeAgent,
 		},
 		{
-			name: "Broker role",
+			name: "Consumer role",
 			setupContext: func() context.Context {
-				identity := NewMockAuthIdentity(identityID, RoleBroker)
+				identity := NewMockAuthIdentity(identityID, RoleParticipant)
 				return ContextWithMockAuth(baseCtx, identity)
 			},
 			setupMocks: func(store *MockStore) {
 				auditRepo := &MockAuditEntryRepository{}
 				auditRepo.createFunc = func(ctx context.Context, entry *AuditEntry) error {
-					assert.Equal(t, AuthorityTypeBroker, entry.AuthorityType)
+					assert.Equal(t, AuthorityTypeParticipant, entry.AuthorityType)
 					assert.Equal(t, identityID.String(), entry.AuthorityID)
 					return nil
 				}
@@ -451,7 +451,7 @@ func TestAuditEntryCommander_CreateCtx(t *testing.T) {
 			},
 			eventType:     EventTypeServiceUpdated,
 			wantErr:       false,
-			wantAuthority: AuthorityTypeBroker,
+			wantAuthority: AuthorityTypeParticipant,
 		},
 		{
 			name: "Unknown role defaults to internal",
@@ -593,7 +593,7 @@ func TestAuditEntryCommander_CreateCtxWithDiff(t *testing.T) {
 				}
 				store.WithAuditEntryRepo(auditRepo)
 			},
-			eventType:     EventTypeProviderUpdated,
+			eventType:     EventTypeParticipantUpdated,
 			wantErr:       false,
 			wantAuthority: AuthorityTypeAdmin,
 		},
@@ -606,7 +606,7 @@ func TestAuditEntryCommander_CreateCtxWithDiff(t *testing.T) {
 			setupMocks: func(store *MockStore) {
 				// No need to set up audit repo as it shouldn't be called
 			},
-			eventType: EventTypeProviderUpdated,
+			eventType: EventTypeParticipantUpdated,
 			wantErr:   true,
 		},
 	}
@@ -688,10 +688,10 @@ func TestExtractAuditAuthority(t *testing.T) {
 		{
 			name: "Provider role",
 			setupContext: func() context.Context {
-				identity := NewMockAuthIdentity(identityID, RoleProviderAdmin)
+				identity := NewMockAuthIdentity(identityID, RoleParticipant)
 				return ContextWithMockAuth(baseCtx, identity)
 			},
-			wantAuthority:   AuthorityTypeProvider,
+			wantAuthority:   AuthorityTypeParticipant,
 			wantAuthorityID: identityID.String(),
 		},
 		{
@@ -704,12 +704,12 @@ func TestExtractAuditAuthority(t *testing.T) {
 			wantAuthorityID: identityID.String(),
 		},
 		{
-			name: "Broker role",
+			name: "Consumer role",
 			setupContext: func() context.Context {
-				identity := NewMockAuthIdentity(identityID, RoleBroker)
+				identity := NewMockAuthIdentity(identityID, RoleParticipant)
 				return ContextWithMockAuth(baseCtx, identity)
 			},
-			wantAuthority:   AuthorityTypeBroker,
+			wantAuthority:   AuthorityTypeParticipant,
 			wantAuthorityID: identityID.String(),
 		},
 		{

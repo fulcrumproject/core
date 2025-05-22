@@ -27,7 +27,7 @@ Authorization: Bearer {{adminTokenNew}}
 
 ### Create a new provider
 # @name createProvider
-POST {{baseUrl}}/providers
+POST {{baseUrl}}/participants
 Authorization: Bearer {{adminTokenNew}}
 
 {
@@ -49,7 +49,7 @@ Authorization: Bearer {{adminTokenNew}}
 
 {
   "name": "Test Provider Token",
-  "role": "provider_admin",
+  "role": "participant",
   "expireAt": "{{$datetime iso8601 1 y}}",
   "scopeId": "{{providerId}}"
 }
@@ -58,12 +58,12 @@ Authorization: Bearer {{adminTokenNew}}
 @providerToken = {{createProviderToken.response.body.$.value}}
 
 ### Get Provider
-GET {{baseUrl}}/providers/{{providerId}}
+GET {{baseUrl}}/participants/{{providerId}}
 Authorization: Bearer {{providerToken}}
 
 ### Create a new provider
 # @name createProvider2
-POST {{baseUrl}}/providers
+POST {{baseUrl}}/participants
 Authorization: Bearer {{adminTokenNew}}
 
 {
@@ -84,7 +84,7 @@ Authorization: Bearer {{providerToken}}
 
 {
   "name": "Test Provider Token",
-  "role": "provider_admin",
+  "role": "participant",
   "expireAt": "{{$datetime iso8601 1 y}}",
   "scopeId": "{{providerId2}}"
 }
@@ -95,7 +95,7 @@ Authorization: Bearer {{providerToken}}
 
 {
   "name": "Test Provider Token",
-  "role": "provider_admin",
+  "role": "participant",
   "expireAt": "{{$datetime iso8601 1 y}}",
   "scopeId": "{{providerId}}"
 }

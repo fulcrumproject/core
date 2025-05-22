@@ -137,7 +137,7 @@ func TestMetricTypeCommander_Create(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeMetricTypeCreated, eventType)
 					assert.NotNil(t, properties)
 					assert.Equal(t, &typeID, entityID)
@@ -194,7 +194,7 @@ func TestMetricTypeCommander_Create(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 
@@ -285,7 +285,7 @@ func TestMetricTypeCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, before, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, before, after interface{}) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeMetricTypeUpdated, eventType)
 					assert.Equal(t, &typeID, entityID)
 
@@ -400,7 +400,7 @@ func TestMetricTypeCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, before, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, before, after interface{}) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 
@@ -484,7 +484,7 @@ func TestMetricTypeCommander_Delete(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeMetricTypeDeleted, eventType)
 					assert.NotNil(t, properties)
 					assert.Equal(t, &typeID, entityID)
@@ -651,7 +651,7 @@ func TestMetricTypeCommander_Delete(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 

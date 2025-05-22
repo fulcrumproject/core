@@ -15,21 +15,21 @@ type MetricEntry struct {
 	Value      float64 `gorm:"not null"`
 
 	// Relationships
-	TypeID     UUID        `gorm:"not null"`
-	Type       *MetricType `gorm:"foreignKey:TypeID"`
-	AgentID    UUID        `gorm:"not null"`
-	Agent      *Agent      `gorm:"foreignKey:AgentID"`
-	ServiceID  UUID        `gorm:"not null"`
-	Service    *Service    `gorm:"foreignKey:ServiceID"`
-	ProviderID UUID        `gorm:"not null"`
-	Provider   *Provider   `gorm:"foreignKey:ProviderID"`
-	BrokerID   UUID        `gorm:"not null"`
-	Broker     *Broker     `gorm:"foreignKey:BrokerID"`
+	TypeID     UUID         `gorm:"not null"`
+	Type       *MetricType  `gorm:"foreignKey:TypeID"`
+	AgentID    UUID         `gorm:"not null"`
+	Agent      *Agent       `gorm:"foreignKey:AgentID"`
+	ServiceID  UUID         `gorm:"not null"`
+	Service    *Service     `gorm:"foreignKey:ServiceID"`
+	ProviderID UUID         `gorm:"not null"`
+	Provider   *Participant `gorm:"foreignKey:ProviderID"`
+	ConsumerID UUID         `gorm:"not null"`
+	Consumer   *Participant `gorm:"foreignKey:ConsumerID"`
 }
 
 // NewMetricEntry creates a new metric entry
 func NewMetricEntry(
-	brokerID UUID,
+	consumerID UUID,
 	providerID UUID,
 	agentID UUID,
 	serviceID UUID,
@@ -38,7 +38,7 @@ func NewMetricEntry(
 	value float64,
 ) *MetricEntry {
 	return &MetricEntry{
-		BrokerID:   brokerID,
+		ConsumerID: consumerID,
 		ProviderID: providerID,
 		AgentID:    agentID,
 		ServiceID:  serviceID,
@@ -133,7 +133,7 @@ func (s *metricEntryCommander) CreateWithExternalID(
 
 	// 5. Create and validate
 	metricEntry := NewMetricEntry(
-		svc.BrokerID,
+		svc.ConsumerID,
 		svc.ProviderID,
 		agentID,
 		svc.ID,
@@ -194,7 +194,7 @@ func (s *metricEntryCommander) Create(
 
 	// 5. Create and validate
 	metricEntry := NewMetricEntry(
-		svc.BrokerID,
+		svc.ConsumerID,
 		svc.ProviderID,
 		agentID,
 		svc.ID,
@@ -224,7 +224,7 @@ type MetricEntryRepository interface {
 
 type MetricEntryQuerier interface {
 	// List retrieves a list of metric entries based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[MetricEntry], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[MetricEntry], error)
 
 	// Exists checks if an entity with the given ID exists
 	Exists(ctx context.Context, id UUID) (bool, error)

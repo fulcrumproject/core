@@ -78,17 +78,17 @@ func TestServiceGroupHandleCreate(t *testing.T) {
 	}{
 		{
 			name:        "Success",
-			requestBody: `{"name": "Test Group", "brokerId": "550e8400-e29b-41d4-a716-446655440000"}`,
+			requestBody: `{"name": "Test Group", "consumerId": "550e8400-e29b-41d4-a716-446655440000"}`,
 			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				brokerID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 
 				// Setup the commander
 				commander.createFunc = func(ctx context.Context, name string, bID domain.UUID) (*domain.ServiceGroup, error) {
 					assert.Equal(t, "Test Group", name)
-					assert.Equal(t, brokerID, bID)
+					assert.Equal(t, consumerID, bID)
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -99,8 +99,8 @@ func TestServiceGroupHandleCreate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:     name,
-						BrokerID: bID,
+						Name:       name,
+						ConsumerID: bID,
 					}, nil
 				}
 			},
@@ -116,7 +116,7 @@ func TestServiceGroupHandleCreate(t *testing.T) {
 		},
 		{
 			name:        "AuthorizationError",
-			requestBody: `{"name": "Test Group", "brokerId": "550e8400-e29b-41d4-a716-446655440000"}`,
+			requestBody: `{"name": "Test Group", "consumerId": "550e8400-e29b-41d4-a716-446655440000"}`,
 			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
 				// Return an unsuccessful auth
 				authz.ShouldSucceed = false
@@ -125,13 +125,13 @@ func TestServiceGroupHandleCreate(t *testing.T) {
 		},
 		{
 			name:        "CommanderError",
-			requestBody: `{"name": "Test Group", "brokerId": "550e8400-e29b-41d4-a716-446655440000"}`,
+			requestBody: `{"name": "Test Group", "consumerId": "550e8400-e29b-41d4-a716-446655440000"}`,
 			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
 				// Setup the commander to return an error
-				commander.createFunc = func(ctx context.Context, name string, brokerID domain.UUID) (*domain.ServiceGroup, error) {
+				commander.createFunc = func(ctx context.Context, name string, consumerID domain.UUID) (*domain.ServiceGroup, error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -207,7 +207,7 @@ func TestServiceGroupHandleGet(t *testing.T) {
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-					brokerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
+					consumerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 
 					return &domain.ServiceGroup{
 						BaseEntity: domain.BaseEntity{
@@ -215,8 +215,8 @@ func TestServiceGroupHandleGet(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:     "Test Group",
-						BrokerID: brokerID,
+						Name:       "Test Group",
+						ConsumerID: consumerID,
 					}, nil
 				}
 			},
@@ -329,9 +329,9 @@ func TestServiceGroupHandleList(t *testing.T) {
 				// Setup the mock to return service groups
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-				brokerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
 					return &domain.PageResponse[domain.ServiceGroup]{
 						Items: []domain.ServiceGroup{
 							{
@@ -340,8 +340,8 @@ func TestServiceGroupHandleList(t *testing.T) {
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
-								Name:     "Group 1",
-								BrokerID: brokerID,
+								Name:       "Group 1",
+								ConsumerID: consumerID,
 							},
 							{
 								BaseEntity: domain.BaseEntity{
@@ -349,8 +349,8 @@ func TestServiceGroupHandleList(t *testing.T) {
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
-								Name:     "Group 2",
-								BrokerID: brokerID,
+								Name:       "Group 2",
+								ConsumerID: consumerID,
 							},
 						},
 						TotalItems:  2,
@@ -376,7 +376,7 @@ func TestServiceGroupHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -469,7 +469,7 @@ func TestServiceGroupHandleUpdate(t *testing.T) {
 					newName := "Updated Group"
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
-					brokerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
+					consumerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 
 					return &domain.ServiceGroup{
 						BaseEntity: domain.BaseEntity{
@@ -477,8 +477,8 @@ func TestServiceGroupHandleUpdate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:     newName,
-						BrokerID: brokerID,
+						Name:       newName,
+						ConsumerID: consumerID,
 					}, nil
 				}
 			},
@@ -700,7 +700,7 @@ func TestServiceGroupToResponse(t *testing.T) {
 	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	id := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-	brokerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
+	consumerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 
 	// Create a service group
 	serviceGroup := &domain.ServiceGroup{
@@ -709,8 +709,8 @@ func TestServiceGroupToResponse(t *testing.T) {
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},
-		Name:     "Test Group",
-		BrokerID: brokerID,
+		Name:       "Test Group",
+		ConsumerID: consumerID,
 	}
 
 	response := serviceGroupToResponse(serviceGroup)

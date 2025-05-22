@@ -215,7 +215,7 @@ type MetricTypeQuerier interface {
 	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[MetricType], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[MetricType], error)
 
 	// FindByName retrieves a metric type by name
 	FindByName(ctx context.Context, name string) (*MetricType, error)

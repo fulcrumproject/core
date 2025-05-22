@@ -8,12 +8,11 @@ import (
 
 // GormTokenIdentity implements the domain.Identity interface
 type GormTokenIdentity struct {
-	id         domain.UUID
-	name       string
-	role       domain.AuthRole
-	providerID *domain.UUID
-	brokerID   *domain.UUID
-	agentID    *domain.UUID
+	id            domain.UUID
+	name          string
+	role          domain.AuthRole
+	participantID *domain.UUID
+	agentID       *domain.UUID
 }
 
 // ID returns the identity's ID
@@ -32,11 +31,10 @@ func (i *GormTokenIdentity) Role() domain.AuthRole {
 }
 
 // Scope returns the identity's authorization scope
-func (i *GormTokenIdentity) Scope() *domain.AuthScope {
-	return &domain.AuthScope{
-		ProviderID: i.providerID,
-		BrokerID:   i.brokerID,
-		AgentID:    i.agentID,
+func (i *GormTokenIdentity) Scope() *domain.AuthIdentityScope {
+	return &domain.AuthIdentityScope{
+		ParticipantID: i.participantID,
+		AgentID:       i.agentID,
 	}
 }
 
@@ -76,11 +74,10 @@ func (a *GormTokenAuthenticator) Authenticate(ctx context.Context, tokenValue st
 
 	// Create a new identity
 	return &GormTokenIdentity{
-		id:         token.ID,
-		name:       token.Name,
-		role:       token.Role,
-		providerID: token.ProviderID,
-		brokerID:   token.BrokerID,
-		agentID:    token.AgentID,
+		id:            token.ID,
+		name:          token.Name,
+		role:          token.Role,
+		participantID: token.ParticipantID,
+		agentID:       token.AgentID,
 	}
 }

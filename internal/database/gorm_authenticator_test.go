@@ -23,7 +23,7 @@ func (m *MockTokenRepo) FindByHashedValue(ctx context.Context, hashedValue strin
 func (m *MockTokenRepo) FindByID(ctx context.Context, id domain.UUID) (*domain.Token, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-func (m *MockTokenRepo) List(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
+func (m *MockTokenRepo) List(ctx context.Context, authIdentityScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
 	return nil, fmt.Errorf("not implemented")
 }
 func (m *MockTokenRepo) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
@@ -38,10 +38,7 @@ func (m *MockTokenRepo) Save(ctx context.Context, entity *domain.Token) error {
 func (m *MockTokenRepo) Delete(ctx context.Context, id domain.UUID) error {
 	return fmt.Errorf("not implemented")
 }
-func (m *MockTokenRepo) DeleteByProviderID(ctx context.Context, providerID domain.UUID) error {
-	return fmt.Errorf("not implemented")
-}
-func (m *MockTokenRepo) DeleteByBrokerID(ctx context.Context, brokerID domain.UUID) error {
+func (m *MockTokenRepo) DeleteByParticipantID(ctx context.Context, participantID domain.UUID) error {
 	return fmt.Errorf("not implemented")
 }
 func (m *MockTokenRepo) DeleteByAgentID(ctx context.Context, agentID domain.UUID) error {
@@ -67,10 +64,7 @@ func (m *MockStore) AgentTypeRepo() domain.AgentTypeRepository {
 func (m *MockStore) AgentRepo() domain.AgentRepository {
 	return nil
 }
-func (m *MockStore) BrokerRepo() domain.BrokerRepository {
-	return nil
-}
-func (m *MockStore) ProviderRepo() domain.ProviderRepository {
+func (m *MockStore) ParticipantRepo() domain.ParticipantRepository {
 	return nil
 }
 func (m *MockStore) ServiceTypeRepo() domain.ServiceTypeRepository {
@@ -100,12 +94,11 @@ func TestGormTokenIdentity_ID(t *testing.T) {
 	// Arrange
 	id := domain.NewUUID()
 	identity := GormTokenIdentity{
-		id:         id,
-		name:       "test-token",
-		role:       domain.RoleFulcrumAdmin,
-		providerID: nil,
-		brokerID:   nil,
-		agentID:    nil,
+		id:            id,
+		name:          "test-token",
+		role:          domain.RoleFulcrumAdmin,
+		participantID: nil,
+		agentID:       nil,
 	}
 
 	// Act
@@ -120,12 +113,11 @@ func TestGormTokenIdentity_Name(t *testing.T) {
 	// Arrange
 	name := "test-token"
 	identity := GormTokenIdentity{
-		id:         domain.NewUUID(),
-		name:       name,
-		role:       domain.RoleFulcrumAdmin,
-		providerID: nil,
-		brokerID:   nil,
-		agentID:    nil,
+		id:            domain.NewUUID(),
+		name:          name,
+		role:          domain.RoleFulcrumAdmin,
+		participantID: nil,
+		agentID:       nil,
 	}
 
 	// Act
@@ -138,14 +130,13 @@ func TestGormTokenIdentity_Name(t *testing.T) {
 // TestGormTokenIdentity_Role tests the Role method
 func TestGormTokenIdentity_Role(t *testing.T) {
 	// Arrange
-	role := domain.RoleProviderAdmin
+	role := domain.RoleParticipant
 	identity := GormTokenIdentity{
-		id:         domain.NewUUID(),
-		name:       "test-token",
-		role:       role,
-		providerID: nil,
-		brokerID:   nil,
-		agentID:    nil,
+		id:            domain.NewUUID(),
+		name:          "test-token",
+		role:          role,
+		participantID: nil,
+		agentID:       nil,
 	}
 
 	// Act
@@ -158,17 +149,15 @@ func TestGormTokenIdentity_Role(t *testing.T) {
 // TestGormTokenIdentity_Scope tests the Scope method
 func TestGormTokenIdentity_Scope(t *testing.T) {
 	// Arrange
-	providerID := domain.NewUUID()
-	brokerID := domain.NewUUID()
+	participantID := domain.NewUUID()
 	agentID := domain.NewUUID()
 
 	identity := GormTokenIdentity{
-		id:         domain.NewUUID(),
-		name:       "test-token",
-		role:       domain.RoleAgent,
-		providerID: &providerID,
-		brokerID:   &brokerID,
-		agentID:    &agentID,
+		id:            domain.NewUUID(),
+		name:          "test-token",
+		role:          domain.RoleAgent,
+		participantID: &participantID,
+		agentID:       &agentID,
 	}
 
 	// Act
@@ -176,28 +165,25 @@ func TestGormTokenIdentity_Scope(t *testing.T) {
 
 	// Assert
 	assert.NotNil(t, scope)
-	assert.Equal(t, providerID, *scope.ProviderID)
-	assert.Equal(t, brokerID, *scope.BrokerID)
+	assert.Equal(t, participantID, *scope.ParticipantID)
 	assert.Equal(t, agentID, *scope.AgentID)
 }
 
 // TestGormTokenIdentity_IsRole tests the IsRole method
 func TestGormTokenIdentity_IsRole(t *testing.T) {
 	// Arrange
-	role := domain.RoleBroker
+	role := domain.RoleParticipant
 	identity := GormTokenIdentity{
-		id:         domain.NewUUID(),
-		name:       "test-token",
-		role:       role,
-		providerID: nil,
-		brokerID:   nil,
-		agentID:    nil,
+		id:            domain.NewUUID(),
+		name:          "test-token",
+		role:          role,
+		participantID: nil,
+		agentID:       nil,
 	}
 
 	// Act & Assert
-	assert.True(t, identity.IsRole(domain.RoleBroker))
+	assert.True(t, identity.IsRole(domain.RoleParticipant))
 	assert.False(t, identity.IsRole(domain.RoleAgent))
-	assert.False(t, identity.IsRole(domain.RoleProviderAdmin))
 	assert.False(t, identity.IsRole(domain.RoleFulcrumAdmin))
 }
 
@@ -235,19 +221,19 @@ func TestGormTokenAuthenticator_Authenticate(t *testing.T) {
 				}
 
 				tokenID := domain.NewUUID()
-				providerID := domain.NewUUID()
+				participantID := domain.NewUUID()
 
 				// Configure mock behavior
 				tokenRepo.FindByHashedValueFunc = func(ctx context.Context, hashedValue string) (*domain.Token, error) {
 					expectedHash := domain.HashTokenValue("valid-token")
 					if hashedValue == expectedHash {
 						return &domain.Token{
-							BaseEntity:  domain.BaseEntity{ID: tokenID},
-							Name:        "test-token",
-							Role:        domain.RoleProviderAdmin,
-							HashedValue: expectedHash,
-							ProviderID:  &providerID,
-							ExpireAt:    time.Now().Add(time.Hour), // Not expired
+							BaseEntity:    domain.BaseEntity{ID: tokenID},
+							Name:          "test-token",
+							Role:          domain.RoleParticipant,
+							HashedValue:   expectedHash,
+							ParticipantID: &participantID,
+							ExpireAt:      time.Now().Add(time.Hour), // Not expired
 						}, nil
 					}
 					return nil, fmt.Errorf("unexpected hash value")

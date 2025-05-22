@@ -87,11 +87,11 @@ func TestMetricEntryHandleList(t *testing.T) {
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 				agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
-				brokerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 				providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 				typeID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
 					return &domain.PageResponse[domain.MetricEntry]{
 						Items: []domain.MetricEntry{
 							{
@@ -102,7 +102,7 @@ func TestMetricEntryHandleList(t *testing.T) {
 								},
 								ServiceID:  serviceID,
 								AgentID:    agentID,
-								BrokerID:   brokerID,
+								ConsumerID: consumerID,
 								ProviderID: providerID,
 								TypeID:     typeID,
 								ResourceID: "resource-1",
@@ -116,7 +116,7 @@ func TestMetricEntryHandleList(t *testing.T) {
 								},
 								ServiceID:  serviceID,
 								AgentID:    agentID,
-								BrokerID:   brokerID,
+								ConsumerID: consumerID,
 								ProviderID: providerID,
 								TypeID:     typeID,
 								ResourceID: "resource-2",
@@ -146,7 +146,7 @@ func TestMetricEntryHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -228,7 +228,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				// Use the same agent ID that's in NewMockAuthAgent
 				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-				brokerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 				providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 				typeID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 
@@ -240,7 +240,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 							ID: serviceID,
 						},
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: consumerID,
 						ProviderID: providerID,
 					}, nil
 				}
@@ -266,7 +266,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 						},
 						ServiceID:  serviceID,
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: consumerID,
 						ProviderID: providerID,
 						TypeID:     typeID,
 						ResourceID: resourceID,
@@ -286,7 +286,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				// Use the same agent ID that's in NewMockAuthAgent
 				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-				brokerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 				providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 				typeID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 
@@ -299,7 +299,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 							ID: serviceID,
 						},
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: consumerID,
 						ProviderID: providerID,
 					}, nil
 				}
@@ -325,7 +325,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 						},
 						ServiceID:  serviceID,
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: consumerID,
 						ProviderID: providerID,
 						TypeID:     typeID,
 						ResourceID: resourceID,
@@ -368,7 +368,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 				agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
-				brokerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 				providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 
 				// Setup the service querier
@@ -378,7 +378,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 							ID: serviceID,
 						},
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: consumerID,
 						ProviderID: providerID,
 					}, nil
 				}
@@ -397,7 +397,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				// Use the same agent ID that's in NewMockAuthAgent
 				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-				brokerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 				providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 
 				// Setup the service querier
@@ -407,7 +407,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 							ID: serviceID,
 						},
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: consumerID,
 						ProviderID: providerID,
 					}, nil
 				}
@@ -434,7 +434,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				// Use the same agent ID that's in NewMockAuthAgent
 				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-				brokerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
+				consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 				providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 
 				// Setup the service querier
@@ -444,7 +444,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 							ID: serviceID,
 						},
 						AgentID:    agentID,
-						BrokerID:   brokerID,
+						ConsumerID: consumerID,
 						ProviderID: providerID,
 					}, nil
 				}
@@ -513,7 +513,7 @@ func TestMetricEntryToResponse(t *testing.T) {
 	updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 	serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-	brokerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
+	consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 	providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 	typeID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 
@@ -526,7 +526,7 @@ func TestMetricEntryToResponse(t *testing.T) {
 		},
 		ServiceID:  serviceID,
 		AgentID:    agentID,
-		BrokerID:   brokerID,
+		ConsumerID: consumerID,
 		ProviderID: providerID,
 		TypeID:     typeID,
 		ResourceID: "resource-1",
@@ -560,7 +560,7 @@ func TestMetricEntryToResponse(t *testing.T) {
 	assert.Equal(t, metricEntry.Value, response.Value)
 	assert.Equal(t, metricEntry.AgentID, response.AgentID)
 	assert.Equal(t, metricEntry.ServiceID, response.ServiceID)
-	assert.Equal(t, metricEntry.BrokerID, response.BrokerID)
+	assert.Equal(t, metricEntry.ConsumerID, response.ConsumerID)
 	assert.Equal(t, metricEntry.ProviderID, response.ProviderID)
 	assert.Equal(t, metricEntry.TypeID.String(), response.TypeID)
 	assert.Equal(t, JSONUTCTime(metricEntry.CreatedAt), response.CreatedAt)

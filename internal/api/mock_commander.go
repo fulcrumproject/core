@@ -45,66 +45,65 @@ func (m *mockAgentCommander) UpdateState(ctx context.Context, id domain.UUID, st
 
 // mockAuditEntryCommander is a custom mock for AuditEntryCommander
 type mockAuditEntryCommander struct {
-	createFunc            func(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error)
-	createWithDiffFunc    func(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error)
-	createCtxFunc         func(ctx context.Context, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error)
-	createCtxWithDiffFunc func(ctx context.Context, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error)
+	createFunc            func(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, consumerID *domain.UUID) (*domain.AuditEntry, error)
+	createWithDiffFunc    func(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, entityID, providerID, agentID, consumerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error)
+	createCtxFunc         func(ctx context.Context, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, consumerID *domain.UUID) (*domain.AuditEntry, error)
+	createCtxWithDiffFunc func(ctx context.Context, eventType domain.EventType, entityID, providerID, agentID, consumerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error)
 }
 
-func (m *mockAuditEntryCommander) Create(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error) {
+func (m *mockAuditEntryCommander) Create(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, consumerID *domain.UUID) (*domain.AuditEntry, error) {
 	if m.createFunc != nil {
-		return m.createFunc(ctx, authorityType, authorityID, eventType, properties, entityID, providerID, agentID, brokerID)
+		return m.createFunc(ctx, authorityType, authorityID, eventType, properties, entityID, providerID, agentID, consumerID)
 	}
 	return nil, fmt.Errorf("create not mocked")
 }
 
-func (m *mockAuditEntryCommander) CreateWithDiff(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error) {
+func (m *mockAuditEntryCommander) CreateWithDiff(ctx context.Context, authorityType domain.AuthorityType, authorityID string, eventType domain.EventType, entityID, providerID, agentID, consumerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error) {
 	if m.createWithDiffFunc != nil {
-		return m.createWithDiffFunc(ctx, authorityType, authorityID, eventType, entityID, providerID, agentID, brokerID, beforeEntity, afterEntity)
+		return m.createWithDiffFunc(ctx, authorityType, authorityID, eventType, entityID, providerID, agentID, consumerID, beforeEntity, afterEntity)
 	}
 	return nil, fmt.Errorf("createWithDiff not mocked")
 }
 
-func (m *mockAuditEntryCommander) CreateCtx(ctx context.Context, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, brokerID *domain.UUID) (*domain.AuditEntry, error) {
+func (m *mockAuditEntryCommander) CreateCtx(ctx context.Context, eventType domain.EventType, properties domain.JSON, entityID, providerID, agentID, consumerID *domain.UUID) (*domain.AuditEntry, error) {
 	if m.createCtxFunc != nil {
-		return m.createCtxFunc(ctx, eventType, properties, entityID, providerID, agentID, brokerID)
+		return m.createCtxFunc(ctx, eventType, properties, entityID, providerID, agentID, consumerID)
 	}
 	return nil, fmt.Errorf("createCtx not mocked")
 }
 
-func (m *mockAuditEntryCommander) CreateCtxWithDiff(ctx context.Context, eventType domain.EventType, entityID, providerID, agentID, brokerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error) {
+func (m *mockAuditEntryCommander) CreateCtxWithDiff(ctx context.Context, eventType domain.EventType, entityID, providerID, agentID, consumerID *domain.UUID, beforeEntity, afterEntity interface{}) (*domain.AuditEntry, error) {
 	if m.createCtxWithDiffFunc != nil {
-		return m.createCtxWithDiffFunc(ctx, eventType, entityID, providerID, agentID, brokerID, beforeEntity, afterEntity)
+		return m.createCtxWithDiffFunc(ctx, eventType, entityID, providerID, agentID, consumerID, beforeEntity, afterEntity)
 	}
 	return nil, fmt.Errorf("createCtxWithDiff not mocked")
 }
 
-// mockBrokerCommander is a custom mock for BrokerCommander
-type mockBrokerCommander struct {
-	createFunc func(ctx context.Context, name string) (*domain.Broker, error)
-	updateFunc func(ctx context.Context, id domain.UUID, name *string) (*domain.Broker, error)
+type mockParticipantCommander struct {
+	createFunc func(ctx context.Context, name string, state domain.ParticipantState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error)
+	updateFunc func(ctx context.Context, id domain.UUID, name *string, state *domain.ParticipantState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Participant, error)
 	deleteFunc func(ctx context.Context, id domain.UUID) error
 }
 
-func (m *mockBrokerCommander) Create(ctx context.Context, name string) (*domain.Broker, error) {
+func (m *mockParticipantCommander) Create(ctx context.Context, name string, state domain.ParticipantState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error) {
 	if m.createFunc != nil {
-		return m.createFunc(ctx, name)
+		return m.createFunc(ctx, name, state, countryCode, attributes)
 	}
-	return nil, fmt.Errorf("create not mocked")
+	return nil, nil
 }
 
-func (m *mockBrokerCommander) Update(ctx context.Context, id domain.UUID, name *string) (*domain.Broker, error) {
+func (m *mockParticipantCommander) Update(ctx context.Context, id domain.UUID, name *string, state *domain.ParticipantState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Participant, error) {
 	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name)
+		return m.updateFunc(ctx, id, name, state, countryCode, attributes)
 	}
-	return nil, fmt.Errorf("update not mocked")
+	return nil, nil
 }
 
-func (m *mockBrokerCommander) Delete(ctx context.Context, id domain.UUID) error {
+func (m *mockParticipantCommander) Delete(ctx context.Context, id domain.UUID) error {
 	if m.deleteFunc != nil {
 		return m.deleteFunc(ctx, id)
 	}
-	return fmt.Errorf("delete not mocked")
+	return nil
 }
 
 // mockJobCommander is a custom mock for JobCommander
@@ -183,44 +182,16 @@ func (m *mockMetricTypeCommander) Delete(ctx context.Context, id domain.UUID) er
 	return fmt.Errorf("delete not mocked")
 }
 
-// mockProviderCommander is a custom mock for ProviderCommander
-type mockProviderCommander struct {
-	createFunc func(ctx context.Context, name string, state domain.ProviderState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Provider, error)
-	updateFunc func(ctx context.Context, id domain.UUID, name *string, state *domain.ProviderState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Provider, error)
-	deleteFunc func(ctx context.Context, id domain.UUID) error
-}
-
-func (m *mockProviderCommander) Create(ctx context.Context, name string, state domain.ProviderState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Provider, error) {
-	if m.createFunc != nil {
-		return m.createFunc(ctx, name, state, countryCode, attributes)
-	}
-	return nil, fmt.Errorf("create not mocked")
-}
-
-func (m *mockProviderCommander) Update(ctx context.Context, id domain.UUID, name *string, state *domain.ProviderState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Provider, error) {
-	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name, state, countryCode, attributes)
-	}
-	return nil, fmt.Errorf("update not mocked")
-}
-
-func (m *mockProviderCommander) Delete(ctx context.Context, id domain.UUID) error {
-	if m.deleteFunc != nil {
-		return m.deleteFunc(ctx, id)
-	}
-	return fmt.Errorf("delete not mocked")
-}
-
 // mockServiceGroupCommander is a custom mock for ServiceGroupCommander
 type mockServiceGroupCommander struct {
-	createFunc func(ctx context.Context, name string, brokerID domain.UUID) (*domain.ServiceGroup, error)
+	createFunc func(ctx context.Context, name string, consumerID domain.UUID) (*domain.ServiceGroup, error)
 	updateFunc func(ctx context.Context, id domain.UUID, name *string) (*domain.ServiceGroup, error)
 	deleteFunc func(ctx context.Context, id domain.UUID) error
 }
 
-func (m *mockServiceGroupCommander) Create(ctx context.Context, name string, brokerID domain.UUID) (*domain.ServiceGroup, error) {
+func (m *mockServiceGroupCommander) Create(ctx context.Context, name string, consumerID domain.UUID) (*domain.ServiceGroup, error) {
 	if m.createFunc != nil {
-		return m.createFunc(ctx, name, brokerID)
+		return m.createFunc(ctx, name, consumerID)
 	}
 	return nil, fmt.Errorf("create not mocked")
 }

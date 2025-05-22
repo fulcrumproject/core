@@ -7,11 +7,11 @@
 
 ### Create a provider for testing
 # @name createProvider
-POST {{baseUrl}}/providers
+POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
 
 {
-    "name": "Test K8s Provider",
+    "name": "Test K8s Participant Provider",
     "state": "Enabled",
     "countryCode": "IT",
     "attributes": {
@@ -49,39 +49,40 @@ Authorization: Bearer {{adminToken}}
 
 @agentToken = {{createAgentToken.response.body.$.value}}
 
-### Create a new broker
-# @name createBroker
-POST {{baseUrl}}/brokers
+### Create a new consumer
+# @name createConsumer
+POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Test K8s Broker"
+  "name": "Test K8s Participant Consumer",
+  "state": "Enabled"
 }
 
-@brokerId = {{createBroker.response.body.$.id}}
+@consumerId = {{createConsumer.response.body.$.id}}
 
-### Create a broker token
-# @name createBrokerToken
+### Create a consumer token
+# @name createConsumerToken
 POST {{baseUrl}}/tokens
 Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Test Broker Token",
-  "role": "broker",
+  "name": "Test Participant Consumer Token",
+  "role": "participant",
   "expireAt": "{{$datetime iso8601 1 y}}",
-  "scopeId": "{{brokerId}}"
+  "scopeId": "{{consumerId}}"
 }
 
-@brokerToken = {{createBrokerToken.response.body.$.value}}
+@consumerToken = {{createConsumerToken.response.body.$.value}}
 
 ### Create a service group
 # @name createServiceGroup
 POST {{baseUrl}}/service-groups
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "name": "Test K8s Cluster Group",
-    "brokerId": "{{brokerId}}"
+    "consumerId": "{{consumerId}}"
 }
 
 @serviceGroupId = {{createServiceGroup.response.body.$.id}}
@@ -89,7 +90,7 @@ Authorization: Bearer {{brokerToken}}
 ### Step 1: Create a K8s cluster service with 1 node (id: node1, size: s1, state: on)
 # @name createService
 POST {{baseUrl}}/services
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "name": "test-cluster-{{$guid}}",
@@ -125,22 +126,22 @@ Authorization: Bearer {{agentToken}}
 ### Verify service is in Created state
 # @name getService1
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Step 2: Start the cluster service
 # @name startService
 POST {{baseUrl}}/services/{{serviceId}}/start
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Verify service is in Started state
 # @name getService2
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Step 3: Update the cluster by adding a second node (node2)
 # @name updateService3
 PATCH {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "properties": {
@@ -162,12 +163,12 @@ Authorization: Bearer {{brokerToken}}
 ### Verify service has two nodes
 # @name getService3
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Step 4: Update the cluster turning node2 off while keeping node1 running
 # @name updateService4
 PATCH {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "properties": {
@@ -189,12 +190,12 @@ Authorization: Bearer {{brokerToken}}
 ### Verify service has node2 off
 # @name getService4
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Step 5: Turn node2 back on
 # @name updateService5
 PATCH {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "properties": {
@@ -216,12 +217,12 @@ Authorization: Bearer {{brokerToken}}
 ### Verify service has node2 on again
 # @name getService5
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Step 6: Turn node2 off again
 # @name updateService6
 PATCH {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "properties": {
@@ -243,22 +244,22 @@ Authorization: Bearer {{brokerToken}}
 ### Verify service has node2 off again
 # @name getService6
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Step 7: Stop the entire cluster service
 # @name stopService
 POST {{baseUrl}}/services/{{serviceId}}/stop
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Verify service is stopped
 # @name getService7
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Step 8: Update service to remove node2 from the cluster
 # @name updateService8
 PATCH {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 {
     "properties": {
@@ -275,38 +276,38 @@ Authorization: Bearer {{brokerToken}}
 ### Verify service only has node1
 # @name getService8
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Step 9: Start the cluster service again
 # @name startServiceAgain
 POST {{baseUrl}}/services/{{serviceId}}/start
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Verify service is started again
 # @name getService9
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Step 10: Stop the cluster service again
 # @name stopServiceAgain
 POST {{baseUrl}}/services/{{serviceId}}/stop
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Verify service is stopped again
 # @name getService10
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Step 11: Delete the cluster service
 # @name deleteService
 DELETE {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Verify service is deleted
 # @name getService11
 GET {{baseUrl}}/services/{{serviceId}}
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}
 
 ### Retry Service Operation
 POST {{baseUrl}}/services/{{serviceId}}/retry
-Authorization: Bearer {{brokerToken}}
+Authorization: Bearer {{consumerToken}}

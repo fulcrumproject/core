@@ -14,9 +14,9 @@ type ServiceGroup struct {
 	Name string `json:"name" gorm:"not null"`
 
 	// Relationships
-	Services []Service `json:"-" gorm:"foreignKey:GroupID"`
-	BrokerID UUID      `json:"brokerId" gorm:"not null"`
-	Broker   *Broker   `json:"-" gorm:"foreignKey:BrokerID"`
+	Services    []Service    `json:"-" gorm:"foreignKey:GroupID"`
+	ConsumerID  UUID         `json:"consumerId" gorm:"not null"`
+	Participant *Participant `json:"-" gorm:"foreignKey:ConsumerID"`
 }
 
 // Validate checks if the service group is valid
@@ -24,17 +24,17 @@ func (sg *ServiceGroup) Validate() error {
 	if sg.Name == "" {
 		return errors.New("service group name cannot be empty")
 	}
-	if sg.BrokerID == uuid.Nil {
-		return errors.New("service group broker cannot be nil")
+	if sg.ConsumerID == uuid.Nil {
+		return errors.New("service group consumer cannot be nil")
 	}
 	return nil
 }
 
 // NewServiceGroup creates a new service group with validation
-func NewServiceGroup(name string, brokerID UUID) *ServiceGroup {
+func NewServiceGroup(name string, consumerID UUID) *ServiceGroup {
 	return &ServiceGroup{
-		Name:     name,
-		BrokerID: brokerID,
+		Name:       name,
+		ConsumerID: consumerID,
 	}
 }
 
@@ -54,7 +54,7 @@ func (ServiceGroup) TableName() string {
 // ServiceGroupCommander defines the interface for service group command operations
 type ServiceGroupCommander interface {
 	// Create creates a new service group
-	Create(ctx context.Context, name string, brokerID UUID) (*ServiceGroup, error)
+	Create(ctx context.Context, name string, consumerID UUID) (*ServiceGroup, error)
 
 	// Update updates an existing service group
 	Update(ctx context.Context, id UUID, name *string) (*ServiceGroup, error)
@@ -80,20 +80,20 @@ func NewServiceGroupCommander(
 	}
 }
 
-func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerID UUID) (*ServiceGroup, error) {
+func (s *serviceGroupCommander) Create(ctx context.Context, name string, consumerID UUID) (*ServiceGroup, error) {
 	// Validate references
-	brokerExists, err := s.store.BrokerRepo().Exists(ctx, brokerID)
+	consumerExists, err := s.store.ParticipantRepo().Exists(ctx, consumerID)
 	if err != nil {
 		return nil, err
 	}
-	if !brokerExists {
-		return nil, NewInvalidInputErrorf("broker with ID %s does not exist", brokerID)
+	if !consumerExists {
+		return nil, NewInvalidInputErrorf("consumer with ID %s does not exist", consumerID)
 	}
 
 	// Create and save
 	var sg *ServiceGroup
 	err = s.store.Atomic(ctx, func(store Store) error {
-		sg = NewServiceGroup(name, brokerID)
+		sg = NewServiceGroup(name, consumerID)
 		if err := sg.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -106,7 +106,7 @@ func (s *serviceGroupCommander) Create(ctx context.Context, name string, brokerI
 			ctx,
 			EventTypeServiceGroupCreated,
 			JSON{"state": sg},
-			&sg.ID, nil, nil, &brokerID)
+			&sg.ID, nil, nil, &consumerID)
 
 		return err
 	})
@@ -144,7 +144,7 @@ func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 		_, err := s.auditCommander.CreateCtxWithDiff(
 			ctx,
 			EventTypeServiceGroupUpdated,
-			&id, nil, nil, &sg.BrokerID,
+			&id, nil, nil, &sg.ConsumerID,
 			&beforeSgCopy, sg)
 		return err
 	})
@@ -180,7 +180,7 @@ func (s *serviceGroupCommander) Delete(ctx context.Context, id UUID) error {
 		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeServiceGroupDeleted,
-			JSON{"state": sg}, &id, nil, nil, &sg.BrokerID)
+			JSON{"state": sg}, &id, nil, nil, &sg.ConsumerID)
 		return err
 	})
 }
@@ -205,7 +205,7 @@ type ServiceGroupQuerier interface {
 	FindByID(ctx context.Context, id UUID) (*ServiceGroup, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[ServiceGroup], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[ServiceGroup], error)
 
 	// Retrieve the auth scope for the entity
 	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)

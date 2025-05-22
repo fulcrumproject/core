@@ -60,10 +60,8 @@ func (h *TokenHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	var scope domain.AuthScope
 	if req.ScopeID != nil {
 		switch req.Role {
-		case domain.RoleProviderAdmin:
-			scope.ProviderID = req.ScopeID
-		case domain.RoleBroker:
-			scope.BrokerID = req.ScopeID
+		case domain.RoleParticipant:
+			scope.ParticipantID = req.ScopeID
 		case domain.RoleAgent:
 			scope.AgentID = req.ScopeID
 		}
@@ -172,31 +170,29 @@ func (h *TokenHandler) handleRegenerateValue(w http.ResponseWriter, r *http.Requ
 
 // TokenResponse represents the response body for token operations
 type TokenResponse struct {
-	ID         domain.UUID     `json:"id"`
-	Name       string          `json:"name"`
-	Role       domain.AuthRole `json:"role"`
-	ExpireAt   JSONUTCTime     `json:"expireAt"`
-	ProviderID *domain.UUID    `json:"scopeId,omitempty"`
-	AgentID    *domain.UUID    `json:"agentId,omitempty"`
-	BrokerID   *domain.UUID    `json:"providerId,omitempty"`
-	CreatedAt  JSONUTCTime     `json:"createdAt"`
-	UpdatedAt  JSONUTCTime     `json:"updatedAt"`
-	Value      string          `json:"value,omitempty"`
+	ID            domain.UUID     `json:"id"`
+	Name          string          `json:"name"`
+	Role          domain.AuthRole `json:"role"`
+	ExpireAt      JSONUTCTime     `json:"expireAt"`
+	ParticipantID *domain.UUID    `json:"scopeId,omitempty"`
+	AgentID       *domain.UUID    `json:"agentId,omitempty"`
+	CreatedAt     JSONUTCTime     `json:"createdAt"`
+	UpdatedAt     JSONUTCTime     `json:"updatedAt"`
+	Value         string          `json:"value,omitempty"`
 }
 
 // tokenToResponse converts a domain.Token to a TokenResponse
 func tokenToResponse(t *domain.Token) *TokenResponse {
 	return &TokenResponse{
-		ID:         t.ID,
-		Name:       t.Name,
-		Role:       t.Role,
-		ExpireAt:   JSONUTCTime(t.ExpireAt),
-		ProviderID: t.ProviderID,
-		AgentID:    t.AgentID,
-		BrokerID:   t.BrokerID,
-		CreatedAt:  JSONUTCTime(t.CreatedAt),
-		UpdatedAt:  JSONUTCTime(t.UpdatedAt),
-		Value:      t.PlainValue,
+		ID:            t.ID,
+		Name:          t.Name,
+		Role:          t.Role,
+		ExpireAt:      JSONUTCTime(t.ExpireAt),
+		ParticipantID: t.ParticipantID,
+		AgentID:       t.AgentID,
+		CreatedAt:     JSONUTCTime(t.CreatedAt),
+		UpdatedAt:     JSONUTCTime(t.UpdatedAt),
+		Value:         t.PlainValue,
 	}
 }
 

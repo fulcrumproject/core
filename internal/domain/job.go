@@ -92,14 +92,14 @@ type Job struct {
 	CompletedAt  *time.Time `gorm:""`
 
 	// Relationships
-	AgentID    UUID      `gorm:"not null"`
-	Agent      *Agent    `gorm:"foreignKey:AgentID"`
-	ServiceID  UUID      `gorm:"not null"`
-	Service    *Service  `gorm:"foreignKey:ServiceID"`
-	ProviderID UUID      `gorm:"not null"`
-	Provider   *Provider `gorm:"foreignKey:ProviderID"`
-	BrokerID   UUID      `gorm:"not null"`
-	Broker     *Broker   `gorm:"foreignKey:BrokerID"`
+	AgentID    UUID         `gorm:"not null"`
+	Agent      *Agent       `gorm:"foreignKey:AgentID"`
+	ServiceID  UUID         `gorm:"not null"`
+	Service    *Service     `gorm:"foreignKey:ServiceID"`
+	ProviderID UUID         `gorm:"not null"`
+	Provider   *Participant `gorm:"foreignKey:ProviderID"`
+	ConsumerID UUID         `gorm:"not null"`
+	Consumer   *Participant `gorm:"foreignKey:ConsumerID"`
 }
 
 // TableName returns the table name for the job
@@ -130,7 +130,7 @@ func (j *Job) Validate() error {
 // NewJob creates a new job instance with the provided parameters
 func NewJob(svc *Service, action ServiceAction, priority int) *Job {
 	return &Job{
-		BrokerID:   svc.BrokerID,
+		ConsumerID: svc.ConsumerID,
 		ProviderID: svc.ProviderID,
 		AgentID:    svc.AgentID,
 		ServiceID:  svc.ID,
@@ -262,7 +262,7 @@ func (s *jobCommander) Complete(ctx context.Context, jobID UUID, resources *JSON
 		_, err := s.auditCommander.CreateCtxWithDiff(
 			ctx,
 			EventTypeServiceTransitioned,
-			&svc.ID, &svc.ProviderID, &svc.AgentID, &svc.BrokerID, &originalSvc, svc)
+			&svc.ID, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
 		return err
 	})
 }
@@ -298,7 +298,7 @@ func (s *jobCommander) Fail(ctx context.Context, jobID UUID, errorMessage string
 			return err
 		}
 		_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceTransitioned,
-			&svc.ID, &svc.ProviderID, &svc.AgentID, &svc.BrokerID, &originalSvc, svc)
+			&svc.ID, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
 		return err
 	})
 }
@@ -327,7 +327,7 @@ type JobQuerier interface {
 	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of jobs based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Job], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Job], error)
 
 	// GetPendingJobsForAgent retrieves pending jobs targeted for a specific agent
 	GetPendingJobsForAgent(ctx context.Context, agentID UUID, limit int) ([]*Job, error)

@@ -18,11 +18,10 @@ func TestGormStore(t *testing.T) {
 	assert.NotNil(t, store, "Store should not be nil")
 
 	// Test all repo methods return non-nil repositories
-	assert.NotNil(t, store.BrokerRepo(), "BrokerRepo should not be nil")
+	assert.NotNil(t, store.ParticipantRepo(), "ParticipantRepo should not be nil")
 	assert.NotNil(t, store.TokenRepo(), "TokenRepo should not be nil")
 	assert.NotNil(t, store.AgentTypeRepo(), "AgentTypeRepo should not be nil")
 	assert.NotNil(t, store.AgentRepo(), "AgentRepo should not be nil")
-	assert.NotNil(t, store.ProviderRepo(), "ProviderRepo should not be nil")
 	assert.NotNil(t, store.ServiceTypeRepo(), "ServiceTypeRepo should not be nil")
 	assert.NotNil(t, store.ServiceGroupRepo(), "ServiceGroupRepo should not be nil")
 	assert.NotNil(t, store.ServiceRepo(), "ServiceRepo should not be nil")
@@ -44,11 +43,10 @@ func TestGormStore_Atomic(t *testing.T) {
 		assert.NotNil(t, txStore, "Transaction store should not be nil")
 
 		// Verify all repositories in the transaction store are not nil
-		assert.NotNil(t, txStore.BrokerRepo(), "Transaction BrokerRepo should not be nil")
+		assert.NotNil(t, txStore.ParticipantRepo(), "Transaction ParticipantRepo should not be nil")
 		assert.NotNil(t, txStore.TokenRepo(), "Transaction TokenRepo should not be nil")
 		assert.NotNil(t, txStore.AgentTypeRepo(), "Transaction AgentTypeRepo should not be nil")
 		assert.NotNil(t, txStore.AgentRepo(), "Transaction AgentRepo should not be nil")
-		assert.NotNil(t, txStore.ProviderRepo(), "Transaction ProviderRepo should not be nil")
 		assert.NotNil(t, txStore.ServiceTypeRepo(), "Transaction ServiceTypeRepo should not be nil")
 		assert.NotNil(t, txStore.ServiceGroupRepo(), "Transaction ServiceGroupRepo should not be nil")
 		assert.NotNil(t, txStore.ServiceRepo(), "Transaction ServiceRepo should not be nil")

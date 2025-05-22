@@ -62,7 +62,7 @@ type AuditEntryResponse struct {
 	Properties    domain.JSON          `json:"properties"`
 	ProviderID    *domain.UUID         `json:"providerId,omitempty"`
 	AgentID       *domain.UUID         `json:"agentId,omitempty"`
-	BrokerID      *domain.UUID         `json:"brokerId,omitempty"`
+	ConsumerID    *domain.UUID         `json:"consumerId,omitempty"`
 	CreatedAt     JSONUTCTime          `json:"createdAt"`
 	UpdatedAt     JSONUTCTime          `json:"updatedAt"`
 }
@@ -77,7 +77,7 @@ func auditEntryToResponse(ae *domain.AuditEntry) *AuditEntryResponse {
 		Properties:    ae.Properties,
 		ProviderID:    ae.ProviderID,
 		AgentID:       ae.AgentID,
-		BrokerID:      ae.BrokerID,
+		ConsumerID:    ae.ConsumerID,
 		CreatedAt:     JSONUTCTime(ae.CreatedAt),
 		UpdatedAt:     JSONUTCTime(ae.UpdatedAt),
 	}

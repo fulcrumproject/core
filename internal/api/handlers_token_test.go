@@ -56,7 +56,7 @@ func (m *mockTokenCommander) Regenerate(ctx context.Context, id domain.UUID) (*d
 // mockTokenQuerier is a custom mock for TokenQuerier
 type mockTokenQuerier struct {
 	findByIDFunc          func(ctx context.Context, id domain.UUID) (*domain.Token, error)
-	listFunc              func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error)
+	listFunc              func(ctx context.Context, scope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error)
 	findByHashedValueFunc func(ctx context.Context, hashedValue string) (*domain.Token, error)
 	authScopeFunc         func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
 }
@@ -68,9 +68,9 @@ func (m *mockTokenQuerier) FindByID(ctx context.Context, id domain.UUID) (*domai
 	return nil, domain.NewNotFoundErrorf("token not found")
 }
 
-func (m *mockTokenQuerier) List(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
+func (m *mockTokenQuerier) List(ctx context.Context, scope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
 	if m.listFunc != nil {
-		return m.listFunc(ctx, authScope, req)
+		return m.listFunc(ctx, scope, req)
 	}
 	return &domain.PageResponse[domain.Token]{
 		Items:       []domain.Token{},
@@ -202,7 +202,7 @@ func TestTokenHandleCreate(t *testing.T) {
 			name: "Success - Create Provider Admin Token",
 			requestBody: fmt.Sprintf(`{
 				"name": "Test Provider Token",
-				"role": "provider_admin",
+				"role": "participant",
 				"expireAt": "%s",
 				"scopeId": "550e8400-e29b-41d4-a716-446655440000"
 			}`, expireAt.Format(time.RFC3339)),
@@ -213,12 +213,12 @@ func TestTokenHandleCreate(t *testing.T) {
 				// Setup the commander
 				commander.createFunc = func(ctx context.Context, name string, role domain.AuthRole, expireAt time.Time, scopeID *domain.UUID) (*domain.Token, error) {
 					assert.Equal(t, "Test Provider Token", name)
-					assert.Equal(t, domain.RoleProviderAdmin, role)
+					assert.Equal(t, domain.RoleParticipant, role)
 					assert.WithinDuration(t, expireAt, expireAt, time.Second)
 					require.NotNil(t, scopeID)
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), *scopeID)
 
-					providerID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+					participantID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -228,12 +228,12 @@ func TestTokenHandleCreate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:        name,
-						Role:        role,
-						ProviderID:  &providerID,
-						ExpireAt:    expireAt,
-						HashedValue: "hashed_value",
-						PlainValue:  "plain_value",
+						Name:          name,
+						Role:          role,
+						ParticipantID: &participantID,
+						ExpireAt:      expireAt,
+						HashedValue:   "hashed_value",
+						PlainValue:    "plain_value",
 					}, nil
 				}
 			},
@@ -466,9 +466,9 @@ func TestTokenHandleList(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				expireAt := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-				providerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
+				participantID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 
-				tokenQuerier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
+				tokenQuerier.listFunc = func(ctx context.Context, scope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
 					return &domain.PageResponse[domain.Token]{
 						Items: []domain.Token{
 							{
@@ -488,11 +488,11 @@ func TestTokenHandleList(t *testing.T) {
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
-								Name:        "Token 2",
-								Role:        domain.RoleProviderAdmin,
-								ProviderID:  &providerID,
-								ExpireAt:    expireAt,
-								HashedValue: "hashed_value_2",
+								Name:          "Token 2",
+								Role:          domain.RoleParticipant,
+								ParticipantID: &participantID,
+								ExpireAt:      expireAt,
+								HashedValue:   "hashed_value_2",
 							},
 						},
 						TotalItems:  2,
@@ -518,7 +518,7 @@ func TestTokenHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				tokenQuerier.listFunc = func(ctx context.Context, authScope *domain.AuthScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
+				tokenQuerier.listFunc = func(ctx context.Context, scope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -999,7 +999,7 @@ func TestTokenHandleRegenerateValue(t *testing.T) {
 func TestTokenToResponse(t *testing.T) {
 	// Create a token
 	id := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-	providerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
+	participantID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
 	expireAt := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -1010,12 +1010,12 @@ func TestTokenToResponse(t *testing.T) {
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},
-		Name:        "Test Token",
-		Role:        domain.RoleProviderAdmin,
-		ProviderID:  &providerID,
-		ExpireAt:    expireAt,
-		HashedValue: "hashed_value",
-		PlainValue:  "plain_value",
+		Name:          "Test Token",
+		Role:          domain.RoleParticipant,
+		ParticipantID: &participantID,
+		ExpireAt:      expireAt,
+		HashedValue:   "hashed_value",
+		PlainValue:    "plain_value",
 	}
 
 	// Convert to response
@@ -1024,8 +1024,8 @@ func TestTokenToResponse(t *testing.T) {
 	// Verify all fields are correctly mapped
 	assert.Equal(t, id, response.ID)
 	assert.Equal(t, "Test Token", response.Name)
-	assert.Equal(t, domain.RoleProviderAdmin, response.Role)
-	assert.Equal(t, providerID, *response.ProviderID)
+	assert.Equal(t, domain.RoleParticipant, response.Role)
+	assert.Equal(t, participantID, *response.ParticipantID)
 	assert.Equal(t, "plain_value", response.Value)
 	assert.Equal(t, JSONUTCTime(expireAt), response.ExpireAt)
 	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)

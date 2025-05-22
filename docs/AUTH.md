@@ -5,15 +5,14 @@ This document defines the authorization rules for the Fulcrum Core API. It speci
 ## Authorization Model
 
 Fulcrum Core uses a role-based authorization system where permissions are defined by:
-- The user's role (fulcrum_admin, provider_admin, broker, agent)
+- The user's role (fulcrum_admin, participant, agent)
 - The resource being accessed
 - The action being performed
 - The context (ownership and relationships between resources)
 
 ## Roles
 - **fulcrum_admin**: System administrator with unrestricted access
-- **provider_admin**: Provider administrator
-- **broker**: Broker role
+- **participant**: Participant administrator that can act as both provider and consumer
 - **agent**: Agent role
 
 ## Authorization Rules by Resource Type
@@ -21,285 +20,211 @@ Fulcrum Core uses a role-based authorization system where permissions are define
 ### Token
 - **create**:
   - fulcrum_admin: always
-  - provider_admin: for itself and for its agents
-  - broker: for itself
+  - participant: for itself and for its agents
   - agent: none (not authorized)
 - **get**:
   - fulcrum_admin: all tokens
-  - provider_admin: its own tokens and those of its agents
-  - broker: its own tokens
+  - participant: its own tokens and those of its agents
   - agent: none (not authorized)
 - **list**:
   - fulcrum_admin: all tokens
-  - provider_admin: tokens for its provider and associated agents
-  - broker: tokens for its broker
+  - participant: tokens for its participant and associated agents
   - agent: none (not authorized)
 - **update**:
   - fulcrum_admin: always
-  - provider_admin: its own tokens and those of its agents
-  - broker: its own tokens
+  - participant: its own tokens and those of its agents
   - agent: none (not authorized)
 - **delete**:
   - fulcrum_admin: always
-  - provider_admin: its own tokens and those of its agents
-  - broker: its own tokens
+  - participant: its own tokens and those of its agents
   - agent: none (not authorized)
 - **regenerate**:
   - fulcrum_admin: always
-  - provider_admin: its own tokens and those of its agents
-  - broker: its own tokens
+  - participant: its own tokens and those of its agents
   - agent: none (not authorized)
 
-### Provider
+### Participant
 - **create**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
+  - participant: none (not authorized)
   - agent: none (not authorized)
 - **get**:
-  - fulcrum_admin: all providers
-  - provider_admin: its own provider
-  - broker: its associated provider
-  - agent: its associated provider
+  - fulcrum_admin: all participants
+  - participant: its own participant
+  - agent: its associated participant
 - **list**:
-  - fulcrum_admin: all providers
-  - provider_admin: only its own provider
-  - broker: only its associated provider
-  - agent: only its associated provider
+  - fulcrum_admin: all participants
+  - participant: only its own participant
+  - agent: only its associated participant
 - **update**:
   - fulcrum_admin: always
-  - provider_admin: its own provider
-  - broker: none (not authorized)
+  - participant: its own participant
   - agent: none (not authorized)
 - **delete**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
-  - agent: none (not authorized)
-
-### Broker
-- **create**:
-  - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
-  - agent: none (not authorized)
-- **get**:
-  - fulcrum_admin: all brokers
-  - provider_admin: brokers associated with its provider
-  - broker: its own broker
-  - agent: none (not authorized)
-- **list**:
-  - fulcrum_admin: all brokers
-  - provider_admin: brokers associated with its provider
-  - broker: only its own broker
-  - agent: none (not authorized)
-- **update**:
-  - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: its own broker
-  - agent: none (not authorized)
-- **delete**:
-  - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
+  - participant: none (not authorized)
   - agent: none (not authorized)
 
 ### Agent
 - **create**:
   - fulcrum_admin: always
-  - provider_admin: for its provider
-  - broker: none (not authorized)
+  - participant: for its participant (when acting as provider)
   - agent: none (not authorized)
 - **get**:
   - fulcrum_admin: all agents
-  - provider_admin: agents belonging to its provider
-  - broker: agents associated with its services
+  - participant: agents belonging to its participant
   - agent: itself only
 - **list**:
   - fulcrum_admin: all agents
-  - provider_admin: agents belonging to its provider
-  - broker: agents associated with its services
+  - participant: agents belonging to its participant
   - agent: itself only
 - **update**:
   - fulcrum_admin: always
-  - provider_admin: agents belonging to its provider
-  - broker: none (not authorized)
+  - participant: agents belonging to its participant
   - agent: update its own status only
 - **delete**:
   - fulcrum_admin: always
-  - provider_admin: agents belonging to its provider
-  - broker: none (not authorized)
+  - participant: agents belonging to its participant
   - agent: none (not authorized)
 
 ### AgentType
 - **get**:
   - fulcrum_admin: all agent types
-  - provider_admin: all agent types
-  - broker: all agent types
+  - participant: all agent types
   - agent: all agent types
 - **list**:
   - fulcrum_admin: all agent types
-  - provider_admin: all agent types
-  - broker: all agent types
+  - participant: all agent types
   - agent: all agent types
 
 ### Service
 - **create**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: for its broker
+  - participant: when acting as consumer
   - agent: none (not authorized)
 - **get**:
   - fulcrum_admin: all services
-  - provider_admin: services associated with its provider
-  - broker: services belonging to its broker
+  - participant: services associated with its participant (as provider or consumer)
   - agent: services assigned to the agent
 - **list**:
   - fulcrum_admin: all services
-  - provider_admin: services associated with its provider
-  - broker: services belonging to its broker
+  - participant: services associated with its participant (as provider or consumer)
   - agent: services assigned to the agent
 - **update**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: services belonging to its broker
+  - participant: services where it is the consumer participant
   - agent: none (not authorized)
 - **delete**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: services belonging to its broker
+  - participant: services where it is the consumer participant
   - agent: none (not authorized)
 - **start**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: services belonging to its broker
+  - participant: services where it is the consumer participant
   - agent: none (not authorized)
 - **stop**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: services belonging to its broker
+  - participant: services where it is the consumer participant
   - agent: none (not authorized)
 - **retry**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: services belonging to its broker
+  - participant: services where it is the consumer participant
   - agent: none (not authorized)
 
 ### ServiceType
 - **get**:
   - fulcrum_admin: all service types
-  - provider_admin: all service types
-  - broker: all service types
+  - participant: all service types
   - agent: all service types
 - **list**:
   - fulcrum_admin: all service types
-  - provider_admin: all service types
-  - broker: all service types
+  - participant: all service types
   - agent: all service types
 
 ### ServiceGroup
 - **create**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: for its broker
+  - participant: for its participant
   - agent: none (not authorized)
 - **get**:
   - fulcrum_admin: all service groups
-  - provider_admin: service groups associated with its provider
-  - broker: service groups belonging to its broker
+  - participant: service groups associated with its participant
   - agent: service groups associated with its assigned services
 - **list**:
   - fulcrum_admin: all service groups
-  - provider_admin: service groups associated with its provider
-  - broker: service groups belonging to its broker
+  - participant: service groups associated with its participant
   - agent: service groups associated with its assigned services
 - **update**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: service groups belonging to its broker
+  - participant: service groups owned by its participant
   - agent: none (not authorized)
 - **delete**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: service groups belonging to its broker
+  - participant: service groups owned by its participant
   - agent: none (not authorized)
 
 ### Job
 - **get**:
   - fulcrum_admin: all jobs
-  - provider_admin: jobs related to its provider
-  - broker: jobs for its services
+  - participant: jobs related to its participant (as provider via agents or as consumer via services)
   - agent: jobs assigned to the agent
 - **list**:
   - fulcrum_admin: all jobs
-  - provider_admin: jobs related to its provider
-  - broker: jobs for its services
+  - participant: jobs related to its participant (as provider via agents or as consumer via services)
   - agent: jobs assigned to the agent
 - **get_pending**:
   - fulcrum_admin: none (not authorized)
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
+  - participant: none (not authorized)
   - agent: pending jobs assigned to the agent
 - **claim**:
   - fulcrum_admin: none (not authorized)
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
+  - participant: none (not authorized)
   - agent: jobs assigned to the agent
 - **complete**:
   - fulcrum_admin: none (not authorized)
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
+  - participant: none (not authorized)
   - agent: jobs claimed by the agent
 - **fail**:
   - fulcrum_admin: none (not authorized)
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
+  - participant: none (not authorized)
   - agent: jobs claimed by the agent
 
 ### MetricType
 - **create**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
+  - participant: none (not authorized)
   - agent: none (not authorized)
 - **get**:
   - fulcrum_admin: all metric types
-  - provider_admin: all metric types
-  - broker: all metric types
+  - participant: all metric types
   - agent: all metric types
 - **list**:
   - fulcrum_admin: all metric types
-  - provider_admin: all metric types
-  - broker: all metric types
+  - participant: all metric types
   - agent: all metric types
 - **update**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
+  - participant: none (not authorized)
   - agent: none (not authorized)
 - **delete**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
+  - participant: none (not authorized)
   - agent: none (not authorized)
 
 ### MetricEntry
 - **create**:
   - fulcrum_admin: always
-  - provider_admin: none (not authorized)
-  - broker: none (not authorized)
+  - participant: none (not authorized)
   - agent: metric entries for services assigned to the agent
 - **list**:
   - fulcrum_admin: all metric entries
-  - provider_admin: metric entries for its provider
-  - broker: metric entries for its services
+  - participant: metric entries for its participant (as provider or consumer)
   - agent: metric entries it created
 
 ### AuditEntry
 - **list**:
   - fulcrum_admin: all audit entries
-  - provider_admin: audit entries related to its provider
-  - broker: audit entries related to its broker
+  - participant: audit entries related to its participant
   - agent: none (not authorized)
 
 ## Notes

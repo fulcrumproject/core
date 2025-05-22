@@ -75,7 +75,7 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
-	scope := &domain.AuthScope{BrokerID: serviceGroupScope.BrokerID, ProviderID: agentScope.ProviderID, AgentID: &p.AgentID}
+	scope := &domain.AuthScope{ConsumerID: serviceGroupScope.ConsumerID, ParticipantID: agentScope.ParticipantID, AgentID: &p.AgentID}
 	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectService, domain.ActionCreate, scope); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -230,7 +230,7 @@ func (h *ServiceHandler) handleRetry(w http.ResponseWriter, r *http.Request) {
 type ServiceResponse struct {
 	ID                domain.UUID           `json:"id"`
 	ProviderID        domain.UUID           `json:"providerId"`
-	BrokerID          domain.UUID           `json:"brokerId"`
+	ConsumerID        domain.UUID           `json:"consumerId"`
 	AgentID           domain.UUID           `json:"agentId"`
 	ServiceTypeID     domain.UUID           `json:"serviceTypeId"`
 	GroupID           domain.UUID           `json:"groupId"`
@@ -254,7 +254,7 @@ func serviceToResponse(s *domain.Service) *ServiceResponse {
 	resp := &ServiceResponse{
 		ID:                s.ID,
 		ProviderID:        s.ProviderID,
-		BrokerID:          s.BrokerID,
+		ConsumerID:        s.ConsumerID,
 		AgentID:           s.AgentID,
 		ServiceTypeID:     s.ServiceTypeID,
 		GroupID:           s.GroupID,

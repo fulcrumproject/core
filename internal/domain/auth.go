@@ -8,7 +8,10 @@ import (
 
 type authContextKey string
 
-var EmptyAuthScope = AuthScope{}
+var (
+	EmptyAuthScope         = AuthScope{}
+	EmptyAuthIdentityScope = AuthIdentityScope{}
+)
 
 const (
 	identityContextKey = authContextKey("identity")
@@ -17,16 +20,15 @@ const (
 type AuthRole string
 
 const (
-	RoleFulcrumAdmin  AuthRole = "fulcrum_admin"
-	RoleProviderAdmin AuthRole = "provider_admin"
-	RoleBroker        AuthRole = "broker"
-	RoleAgent         AuthRole = "agent"
+	RoleFulcrumAdmin AuthRole = "fulcrum_admin"
+	RoleParticipant  AuthRole = "participant"
+	RoleAgent        AuthRole = "agent"
 )
 
 // Validate ensures the AuthRole is one of the predefined values
 func (r AuthRole) Validate() error {
 	switch r {
-	case RoleFulcrumAdmin, RoleProviderAdmin, RoleBroker, RoleAgent:
+	case RoleFulcrumAdmin, RoleParticipant, RoleAgent:
 		return nil
 	default:
 		return fmt.Errorf("invalid auth role: %s", r)
@@ -37,8 +39,7 @@ func (r AuthRole) Validate() error {
 type AuthSubject string
 
 const (
-	SubjectProvider     AuthSubject = "provider"
-	SubjectBroker       AuthSubject = "broker"
+	SubjectParticipant  AuthSubject = "participant"
 	SubjectAgent        AuthSubject = "agent"
 	SubjectAgentType    AuthSubject = "agent_type"
 	SubjectService      AuthSubject = "service"
@@ -54,7 +55,7 @@ const (
 // Validate ensures the AuthSubject is one of the predefined values
 func (s AuthSubject) Validate() error {
 	switch s {
-	case SubjectProvider, SubjectBroker, SubjectAgent, SubjectAgentType,
+	case SubjectParticipant, SubjectAgent, SubjectAgentType,
 		SubjectService, SubjectServiceType, SubjectServiceGroup,
 		SubjectJob, SubjectMetricType, SubjectMetricEntry,
 		SubjectAuditEntry, SubjectToken:
@@ -102,14 +103,21 @@ type AuthIdentity interface {
 	Name() string
 	Role() AuthRole
 	IsRole(role AuthRole) bool
-	Scope() *AuthScope
+	Scope() *AuthIdentityScope
+}
+
+// AuthScope contains additional information for authorization decisions
+type AuthIdentityScope struct {
+	ParticipantID *UUID
+	AgentID       *UUID
 }
 
 // AuthScope contains additional information for authorization decisions
 type AuthScope struct {
-	ProviderID *UUID
-	AgentID    *UUID
-	BrokerID   *UUID
+	ParticipantID *UUID
+	ProviderID    *UUID
+	ConsumerID    *UUID
+	AgentID       *UUID
 }
 
 type Authenticator interface {
@@ -154,24 +162,32 @@ func ValidateAuthScope(id AuthIdentity, target *AuthScope) error {
 	}
 
 	// If all fields are nil in the caller scope, it has unrestricted access (admin)
-	if source.ProviderID == nil && source.AgentID == nil && source.BrokerID == nil {
+	if source.ParticipantID == nil && source.AgentID == nil {
 		return nil
 	}
 
-	// Provider check: If source requires a provider, caller must have same provider
-	if source.ProviderID != nil && target.ProviderID != nil && *target.ProviderID != *source.ProviderID {
-		return errors.New("invalid provider authorization scope")
+	// If all fields are nil in the target scope, it has unrestricted access (admin)
+	if target.ParticipantID == nil && target.ProviderID == nil && target.ConsumerID == nil && target.AgentID == nil {
+		return nil
+	}
+
+	// Participant check: If source requires a participant, caller must have same participant or provider or consumer
+	if source.ParticipantID != nil {
+		if target.ParticipantID != nil && *target.ParticipantID == *source.ParticipantID {
+			return nil
+		}
+		if target.ProviderID != nil && *target.ProviderID == *source.ParticipantID {
+			return nil
+		}
+		if target.ConsumerID != nil && *target.ConsumerID == *source.ParticipantID {
+			return nil
+		}
 	}
 
 	// Agent check: If source requires an agent, caller must have same agent
-	if source.AgentID != nil && target.AgentID != nil && *target.AgentID != *source.AgentID {
-		return errors.New("invalid agent authorization scope")
+	if source.AgentID != nil && target.AgentID != nil && *target.AgentID == *source.AgentID {
+		return nil
 	}
 
-	// Broker check: If source requires a broker, caller must have same broker
-	if source.BrokerID != nil && target.BrokerID != nil && *target.BrokerID != *source.BrokerID {
-		return errors.New("invalid broker authorization scope")
-	}
-
-	return nil
+	return errors.New("invalid authorization scope")
 }

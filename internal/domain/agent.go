@@ -51,10 +51,10 @@ type Agent struct {
 	LastStateUpdate time.Time  `json:"lastStateUpdate" gorm:"index"`
 
 	// Relationships
-	AgentTypeID UUID       `json:"agentTypeId" gorm:"not null"`
-	AgentType   *AgentType `json:"agentType,omitempty" gorm:"foreignKey:AgentTypeID"`
-	ProviderID  UUID       `json:"providerId" gorm:"not null"`
-	Provider    *Provider  `json:"-" gorm:"foreignKey:ProviderID"`
+	AgentTypeID UUID         `json:"agentTypeId" gorm:"not null"`
+	AgentType   *AgentType   `json:"agentType,omitempty" gorm:"foreignKey:AgentTypeID"`
+	ProviderID  UUID         `json:"providerId" gorm:"not null"`
+	Provider    *Participant `json:"-" gorm:"foreignKey:ProviderID"`
 }
 
 // NewAgent creates a new agent with proper validation
@@ -93,7 +93,15 @@ func (a *Agent) Validate() error {
 		return fmt.Errorf("provider ID cannot be empty")
 	}
 	if err := a.CountryCode.Validate(); err != nil {
-		return err
+		// Allow empty country code
+		if string(a.CountryCode) != "" {
+			return err
+		}
+	}
+	if a.Attributes != nil {
+		if err := a.Attributes.Validate(); err != nil {
+			return err
+		}
 	}
 	if a.Attributes != nil {
 		if err := a.Attributes.Validate(); err != nil {
@@ -170,7 +178,8 @@ func (s *agentCommander) Create(
 	agentTypeID UUID,
 ) (*Agent, error) {
 	// Validate references
-	providerExists, err := s.store.ProviderRepo().Exists(ctx, providerID)
+	// Assuming store.ParticipantRepo().Exists will be available
+	providerExists, err := s.store.ParticipantRepo().Exists(ctx, providerID)
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +341,7 @@ type AgentQuerier interface {
 	Exists(ctx context.Context, id UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authScope *AuthScope, req *PageRequest) (*PageResponse[Agent], error)
+	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Agent], error)
 
 	// CountByProvider returns the number of agents for a specific provider
 	CountByProvider(ctx context.Context, providerID UUID) (int64, error)

@@ -74,7 +74,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthIdentityScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -89,7 +89,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthIdentityScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -107,7 +107,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthIdentityScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -140,7 +140,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			}
 
 			// Execute
-			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthIdentityScope, page)
 
 			// Assert
 			require.NoError(t, err)
@@ -170,7 +170,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			}
 
 			// Execute first page
-			result, err := repo.List(ctx, &domain.EmptyAuthScope, page)
+			result, err := repo.List(ctx, &domain.EmptyAuthIdentityScope, page)
 
 			// Assert first page
 			require.NoError(t, err)
@@ -181,7 +181,7 @@ func TestAuditEntryRepository(t *testing.T) {
 
 			// Execute second page
 			page.Page = 2
-			result, err = repo.List(ctx, &domain.EmptyAuthScope, page)
+			result, err = repo.List(ctx, &domain.EmptyAuthIdentityScope, page)
 
 			// Assert second page
 			require.NoError(t, err)
@@ -196,7 +196,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			// Setup - create an audit entry with all scope IDs set
 			providerID := domain.NewUUID()
 			agentID := domain.NewUUID()
-			brokerID := domain.NewUUID()
+			consumerID := domain.NewUUID()
 
 			auditEntry := &domain.AuditEntry{
 				AuthorityType: domain.AuthorityTypeAdmin,
@@ -205,7 +205,7 @@ func TestAuditEntryRepository(t *testing.T) {
 				Properties:    domain.JSON{"test": "scoped audit entry"},
 				ProviderID:    &providerID,
 				AgentID:       &agentID,
-				BrokerID:      &brokerID,
+				ConsumerID:    &consumerID,
 			}
 
 			err := repo.Create(ctx, auditEntry)
@@ -216,10 +216,13 @@ func TestAuditEntryRepository(t *testing.T) {
 
 			// Assert
 			require.NoError(t, err)
-			assert.NotNil(t, scope, "AuthScope should not return nil")
+			require.NotNil(t, scope, "AuthScope should not return nil")
+			require.NotNil(t, *scope.ProviderID, "ProviderID should be present")
+			require.NotNil(t, *scope.ConsumerID, "ConsumerID should be present")
+			require.NotNil(t, *scope.AgentID, "AgentID should be present")
 			assert.Equal(t, providerID, *scope.ProviderID, "Should return the correct provider ID")
+			assert.Equal(t, consumerID, *scope.ConsumerID, "Should return the correct consumer ID")
 			assert.Equal(t, agentID, *scope.AgentID, "Should return the correct agent ID")
-			assert.Equal(t, brokerID, *scope.BrokerID, "Should return the correct broker ID")
 
 			// Test with non-existent entry
 			nonExistentID := domain.NewUUID()

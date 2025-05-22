@@ -21,28 +21,28 @@ func TestServiceGroup_Validate(t *testing.T) {
 		{
 			name: "Valid service group",
 			sg: &ServiceGroup{
-				Name:     "Test Group",
-				BrokerID: validID,
+				Name:       "Test Group",
+				ConsumerID: validID,
 			},
 			wantErr: false,
 		},
 		{
 			name: "Empty name",
 			sg: &ServiceGroup{
-				Name:     "",
-				BrokerID: validID,
+				Name:       "",
+				ConsumerID: validID,
 			},
 			wantErr:    true,
 			errMessage: "service group name cannot be empty",
 		},
 		{
-			name: "Nil broker ID",
+			name: "Nil consumer ID",
 			sg: &ServiceGroup{
-				Name:     "Test Group",
-				BrokerID: uuid.Nil,
+				Name:       "Test Group",
+				ConsumerID: uuid.Nil,
 			},
 			wantErr:    true,
-			errMessage: "service group broker cannot be nil",
+			errMessage: "service group consumer cannot be nil",
 		},
 	}
 
@@ -69,7 +69,7 @@ func TestServiceGroup_TableName(t *testing.T) {
 func TestServiceGroupCommander_Create(t *testing.T) {
 	ctx := context.Background()
 	groupID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	validName := "Test Group"
 
 	tests := []struct {
@@ -81,20 +81,20 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 		{
 			name: "Create success",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				// Set up broker repo
-				brokerRepo := &MockBrokerRepository{}
-				store.WithBrokerRepo(brokerRepo)
+				// Set up consumer repo
+				participantRepo := &MockParticipantRepository{}
+				store.WithParticipantRepo(participantRepo)
 
-				// Mock broker FindByID
-				broker := &Broker{
+				// Mock consumer FindByID
+				consumer := &Participant{
 					BaseEntity: BaseEntity{
-						ID: brokerID,
+						ID: consumerID,
 					},
-					Name: "Test Broker",
+					Name: "Test Consumer",
 				}
-				brokerRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Broker, error) {
-					assert.Equal(t, brokerID, id)
-					return broker, nil
+				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
+					assert.Equal(t, consumerID, id)
+					return consumer, nil
 				}
 
 				// Set up service group repo
@@ -105,12 +105,12 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 				sgRepo.createFunc = func(ctx context.Context, sg *ServiceGroup) error {
 					sg.ID = groupID
 					assert.Equal(t, validName, sg.Name)
-					assert.Equal(t, brokerID, sg.BrokerID)
+					assert.Equal(t, consumerID, sg.ConsumerID)
 					return nil
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeServiceGroupCreated, eventType)
 					assert.NotNil(t, properties)
 					assert.NotNil(t, entityID)
@@ -125,13 +125,13 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Broker not found",
+			name: "Consumer not found",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				brokerRepo := &MockBrokerRepository{}
-				store.WithBrokerRepo(brokerRepo)
+				participantRepo := &MockParticipantRepository{}
+				store.WithParticipantRepo(participantRepo)
 
-				// Mock broker Exists with error
-				brokerRepo.existsFunc = func(ctx context.Context, id UUID) (bool, error) {
+				// Mock consumer Exists with error
+				participantRepo.existsFunc = func(ctx context.Context, id UUID) (bool, error) {
 					return false, nil
 				}
 
@@ -141,23 +141,23 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 				}
 			},
 			wantErr:    true,
-			errMessage: "broker with ID",
+			errMessage: "consumer with ID",
 		},
 		{
 			name: "Validation error",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				brokerRepo := &MockBrokerRepository{}
-				store.WithBrokerRepo(brokerRepo)
+				participantRepo := &MockParticipantRepository{}
+				store.WithParticipantRepo(participantRepo)
 
-				// Mock broker FindByID
-				broker := &Broker{
+				// Mock consumer FindByID
+				consumer := &Participant{
 					BaseEntity: BaseEntity{
-						ID: brokerID,
+						ID: consumerID,
 					},
-					Name: "Test Broker",
+					Name: "Test Consumer",
 				}
-				brokerRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Broker, error) {
-					return broker, nil
+				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
+					return consumer, nil
 				}
 
 				// Make atomic work correctly
@@ -171,18 +171,18 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 		{
 			name: "Create error",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				brokerRepo := &MockBrokerRepository{}
-				store.WithBrokerRepo(brokerRepo)
+				participantRepo := &MockParticipantRepository{}
+				store.WithParticipantRepo(participantRepo)
 
-				// Mock broker FindByID
-				broker := &Broker{
+				// Mock consumer FindByID
+				consumer := &Participant{
 					BaseEntity: BaseEntity{
-						ID: brokerID,
+						ID: consumerID,
 					},
-					Name: "Test Broker",
+					Name: "Test Consumer",
 				}
-				brokerRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Broker, error) {
-					return broker, nil
+				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
+					return consumer, nil
 				}
 
 				// Set up service group repo
@@ -205,18 +205,18 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 		{
 			name: "Audit entry error",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				brokerRepo := &MockBrokerRepository{}
-				store.WithBrokerRepo(brokerRepo)
+				participantRepo := &MockParticipantRepository{}
+				store.WithParticipantRepo(participantRepo)
 
-				// Mock broker FindByID
-				broker := &Broker{
+				// Mock consumer FindByID
+				consumer := &Participant{
 					BaseEntity: BaseEntity{
-						ID: brokerID,
+						ID: consumerID,
 					},
-					Name: "Test Broker",
+					Name: "Test Consumer",
 				}
-				brokerRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Broker, error) {
-					return broker, nil
+				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
+					return consumer, nil
 				}
 
 				// Set up service group repo
@@ -230,7 +230,7 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 
@@ -253,7 +253,7 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 			if tt.name == "Validation error" {
 				tt.setupMocks(store, audit)
 				commander := NewServiceGroupCommander(store, audit)
-				sg, err := commander.Create(ctx, "", brokerID) // Empty name should cause validation error
+				sg, err := commander.Create(ctx, "", consumerID) // Empty name should cause validation error
 
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errMessage)
@@ -261,7 +261,7 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 			} else {
 				tt.setupMocks(store, audit)
 				commander := NewServiceGroupCommander(store, audit)
-				sg, err := commander.Create(ctx, validName, brokerID)
+				sg, err := commander.Create(ctx, validName, consumerID)
 
 				if tt.wantErr {
 					assert.Error(t, err)
@@ -274,7 +274,7 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 					assert.NotNil(t, sg)
 					assert.Equal(t, groupID, sg.ID)
 					assert.Equal(t, validName, sg.Name)
-					assert.Equal(t, brokerID, sg.BrokerID)
+					assert.Equal(t, consumerID, sg.ConsumerID)
 				}
 			}
 		})
@@ -284,7 +284,7 @@ func TestServiceGroupCommander_Create(t *testing.T) {
 func TestServiceGroupCommander_Update(t *testing.T) {
 	ctx := context.Background()
 	groupID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 	existingName := "Existing Group"
 	newName := "Updated Group"
 
@@ -305,8 +305,8 @@ func TestServiceGroupCommander_Update(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:     existingName,
-					BrokerID: brokerID,
+					Name:       existingName,
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					assert.Equal(t, groupID, id)
@@ -321,7 +321,7 @@ func TestServiceGroupCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, before, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, before, after interface{}) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeServiceGroupUpdated, eventType)
 					assert.NotNil(t, entityID)
 
@@ -370,8 +370,8 @@ func TestServiceGroupCommander_Update(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:     existingName,
-					BrokerID: brokerID,
+					Name:       existingName,
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -391,8 +391,8 @@ func TestServiceGroupCommander_Update(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:     existingName,
-					BrokerID: brokerID,
+					Name:       existingName,
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -422,8 +422,8 @@ func TestServiceGroupCommander_Update(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:     existingName,
-					BrokerID: brokerID,
+					Name:       existingName,
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -435,7 +435,7 @@ func TestServiceGroupCommander_Update(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, brokerID *UUID, before, after interface{}) (*AuditEntry, error) {
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID, providerID, agentID, consumerID *UUID, before, after interface{}) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 
@@ -489,7 +489,7 @@ func TestServiceGroupCommander_Update(t *testing.T) {
 func TestServiceGroupCommander_Delete(t *testing.T) {
 	ctx := context.Background()
 	groupID := uuid.New()
-	brokerID := uuid.New()
+	consumerID := uuid.New()
 
 	tests := []struct {
 		name       string
@@ -511,8 +511,8 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:     "Test Group",
-					BrokerID: brokerID,
+					Name:       "Test Group",
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					assert.Equal(t, groupID, id)
@@ -532,7 +532,7 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 				}
 
 				// Mock audit entry creation
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					assert.Equal(t, EventTypeServiceGroupDeleted, eventType)
 					assert.NotNil(t, properties)
 					assert.NotNil(t, entityID)
@@ -574,8 +574,8 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:     "Test Group",
-					BrokerID: brokerID,
+					Name:       "Test Group",
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -608,8 +608,8 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:     "Test Group",
-					BrokerID: brokerID,
+					Name:       "Test Group",
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -642,8 +642,8 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:     "Test Group",
-					BrokerID: brokerID,
+					Name:       "Test Group",
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -681,8 +681,8 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 					BaseEntity: BaseEntity{
 						ID: groupID,
 					},
-					Name:     "Test Group",
-					BrokerID: brokerID,
+					Name:       "Test Group",
+					ConsumerID: consumerID,
 				}
 				sgRepo.findByIDFunc = func(ctx context.Context, id UUID) (*ServiceGroup, error) {
 					return existingSg, nil
@@ -699,7 +699,7 @@ func TestServiceGroupCommander_Delete(t *testing.T) {
 				}
 
 				// Mock audit entry creation with error
-				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, brokerID *UUID) (*AuditEntry, error) {
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error) {
 					return nil, errors.New("audit entry error")
 				}
 
