@@ -379,7 +379,7 @@ func TestAgentRepository(t *testing.T) {
 			nonExistentScope, err := agentRepo.AuthScope(ctx, nonExistentID)
 			require.NoError(t, err, "AuthScope should not return an error for non-existent agent")
 			assert.NotNil(t, nonExistentScope, "Should return an empty auth scope")
-			assert.Equal(t, &domain.AuthScope{}, nonExistentScope, "Should return empty auth scope for non-existent agent")
+			assert.Equal(t, &domain.AuthTargetScope{}, nonExistentScope, "Should return empty auth scope for non-existent agent")
 		})
 	})
 }

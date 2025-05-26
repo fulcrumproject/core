@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"fulcrumproject.org/core/internal/domain"
 )
@@ -208,4 +209,84 @@ func (m *mockServiceGroupCommander) Delete(ctx context.Context, id domain.UUID) 
 		return m.deleteFunc(ctx, id)
 	}
 	return fmt.Errorf("delete not mocked")
+}
+
+// mockServiceCommander is a custom mock for ServiceCommander
+type mockServiceCommander struct {
+	createFunc                     func(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, attributes domain.Attributes, properties domain.JSON) (*domain.Service, error)
+	updateFunc                     func(ctx context.Context, id domain.UUID, name *string, properties *domain.JSON) (*domain.Service, error)
+	transitionFunc                 func(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error)
+	retryFunc                      func(ctx context.Context, id domain.UUID) (*domain.Service, error)
+	failTimeoutServicesAndJobsFunc func(ctx context.Context, timeout time.Duration) (int, error)
+}
+
+func (m *mockServiceCommander) Create(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, attributes domain.Attributes, properties domain.JSON) (*domain.Service, error) {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, agentID, serviceTypeID, groupID, name, attributes, properties)
+	}
+	return nil, fmt.Errorf("create not mocked")
+}
+
+func (m *mockServiceCommander) Update(ctx context.Context, id domain.UUID, name *string, properties *domain.JSON) (*domain.Service, error) {
+	if m.updateFunc != nil {
+		return m.updateFunc(ctx, id, name, properties)
+	}
+	return nil, fmt.Errorf("update not mocked")
+}
+
+func (m *mockServiceCommander) Transition(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error) {
+	if m.transitionFunc != nil {
+		return m.transitionFunc(ctx, id, state)
+	}
+	return nil, fmt.Errorf("transition not mocked")
+}
+
+func (m *mockServiceCommander) Retry(ctx context.Context, id domain.UUID) (*domain.Service, error) {
+	if m.retryFunc != nil {
+		return m.retryFunc(ctx, id)
+	}
+	return nil, fmt.Errorf("retry not mocked")
+}
+
+func (m *mockServiceCommander) FailTimeoutServicesAndJobs(ctx context.Context, timeout time.Duration) (int, error) {
+	if m.failTimeoutServicesAndJobsFunc != nil {
+		return m.failTimeoutServicesAndJobsFunc(ctx, timeout)
+	}
+	return 0, fmt.Errorf("failTimeoutServicesAndJobs not mocked")
+}
+
+// mockTokenCommander is a custom mock for TokenCommander
+type mockTokenCommander struct {
+	createFunc     func(ctx context.Context, name string, role domain.AuthRole, expireAt *time.Time, scopeID *domain.UUID) (*domain.Token, error)
+	updateFunc     func(ctx context.Context, id domain.UUID, name *string, expireAt *time.Time) (*domain.Token, error)
+	deleteFunc     func(ctx context.Context, id domain.UUID) error
+	regenerateFunc func(ctx context.Context, id domain.UUID) (*domain.Token, error)
+}
+
+func (m *mockTokenCommander) Create(ctx context.Context, name string, role domain.AuthRole, expireAt *time.Time, scopeID *domain.UUID) (*domain.Token, error) {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, name, role, expireAt, scopeID)
+	}
+	return nil, fmt.Errorf("create not mocked")
+}
+
+func (m *mockTokenCommander) Update(ctx context.Context, id domain.UUID, name *string, expireAt *time.Time) (*domain.Token, error) {
+	if m.updateFunc != nil {
+		return m.updateFunc(ctx, id, name, expireAt)
+	}
+	return nil, fmt.Errorf("update not mocked")
+}
+
+func (m *mockTokenCommander) Delete(ctx context.Context, id domain.UUID) error {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx, id)
+	}
+	return fmt.Errorf("delete not mocked")
+}
+
+func (m *mockTokenCommander) Regenerate(ctx context.Context, id domain.UUID) (*domain.Token, error) {
+	if m.regenerateFunc != nil {
+		return m.regenerateFunc(ctx, id)
+	}
+	return nil, fmt.Errorf("regenerate not mocked")
 }

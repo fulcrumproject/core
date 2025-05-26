@@ -28,28 +28,28 @@ func NewAuditEntryHandler(
 
 // Routes returns the router with all audit entry routes registered
 func (h *AuditEntryHandler) Routes() func(r chi.Router) {
-
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
+		// List endpoint - simple authorization
+		r.With(
+			AuthzSimple(domain.SubjectAuditEntry, domain.ActionRead, h.authz),
+		).Get("/", h.handleList)
 	}
 }
 
 func (h *AuditEntryHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := domain.MustGetAuthIdentity(r.Context())
-	if err := h.authz.Authorize(id, domain.SubjectAuditEntry, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
 	pag, err := parsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+
 	result, err := h.querier.List(r.Context(), id.Scope(), pag)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	render.JSON(w, r, NewPageResponse(result, auditEntryToResponse))
 }
 

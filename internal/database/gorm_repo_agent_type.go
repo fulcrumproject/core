@@ -41,7 +41,7 @@ func (r *GormAgentTypeRepository) Count(ctx context.Context) (int64, error) {
 }
 
 // AuthScope returns the auth scope for the agent type
-func (r *GormAgentTypeRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (r *GormAgentTypeRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	// Agent types don't have scoping IDs as they are global resources
-	return &domain.AuthScope{}, nil
+	return &domain.AuthTargetScope{}, nil
 }

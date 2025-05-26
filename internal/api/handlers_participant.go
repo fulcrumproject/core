@@ -1,13 +1,26 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
+
+type CreateParticipantRequest struct {
+	Name        string                  `json:"name"`
+	State       domain.ParticipantState `json:"state"`
+	CountryCode domain.CountryCode      `json:"countryCode,omitempty"`
+	Attributes  domain.Attributes       `json:"attributes,omitempty"`
+}
+
+type UpdateParticipantRequest struct {
+	Name        *string                  `json:"name"`
+	State       *domain.ParticipantState `json:"state"`
+	CountryCode *domain.CountryCode      `json:"countryCode,omitempty"`
+	Attributes  *domain.Attributes       `json:"attributes,omitempty"`
+}
 
 type ParticipantHandler struct {
 	querier   domain.ParticipantQuerier
@@ -29,34 +42,44 @@ func NewParticipantHandler(
 
 // Routes returns the router with all participant routes registered
 func (h *ParticipantHandler) Routes() func(r chi.Router) {
-
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
-		r.Post("/", h.handleCreate)
+		// List endpoint - simple authorization
+		r.With(
+			AuthzSimple(domain.SubjectParticipant, domain.ActionRead, h.authz),
+		).Get("/", h.handleList)
+
+		// Create endpoint - decode body, then simple authorization
+		r.With(
+			DecodeBody[CreateParticipantRequest](),
+			AuthzSimple(domain.SubjectParticipant, domain.ActionCreate, h.authz),
+		).Post("/", h.handleCreate)
+
+		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
-			r.Use(IDMiddleware)
-			r.Get("/{id}", h.handleGet)
-			r.Patch("/{id}", h.handleUpdate)
-			r.Delete("/{id}", h.handleDelete)
+			r.Use(ID)
+
+			// Get endpoint - authorize using participant's scope
+			r.With(
+				AuthzFromID(domain.SubjectParticipant, domain.ActionRead, h.authz, h.querier),
+			).Get("/{id}", h.handleGet)
+
+			// Update endpoint - decode body, authorize using participant's scope
+			r.With(
+				DecodeBody[UpdateParticipantRequest](),
+				AuthzFromID(domain.SubjectParticipant, domain.ActionUpdate, h.authz, h.querier),
+			).Patch("/{id}", h.handleUpdate)
+
+			// Delete endpoint - authorize using participant's scope
+			r.With(
+				AuthzFromID(domain.SubjectParticipant, domain.ActionDelete, h.authz, h.querier),
+			).Delete("/{id}", h.handleDelete)
 		})
 	}
 }
 
 func (h *ParticipantHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectParticipant, domain.ActionCreate, &domain.EmptyAuthScope); err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-	var req struct {
-		Name        string                  `json:"name"`
-		State       domain.ParticipantState `json:"state"`
-		CountryCode domain.CountryCode      `json:"countryCode,omitempty"`
-		Attributes  domain.Attributes       `json:"attributes,omitempty"`
-	}
-	if err := render.Decode(r, &req); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
+	req := MustGetBody[CreateParticipantRequest](r.Context())
+
 	participant, err := h.commander.Create(r.Context(), req.Name, req.State, req.CountryCode, req.Attributes)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -68,26 +91,19 @@ func (h *ParticipantHandler) handleCreate(w http.ResponseWriter, r *http.Request
 }
 
 func (h *ParticipantHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionRead)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
+
 	participant, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
 		return
 	}
+
 	render.JSON(w, r, participantToResponse(participant))
 }
 
 func (h *ParticipantHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := domain.MustGetAuthIdentity(r.Context())
-	if err := h.authz.Authorize(id, domain.SubjectParticipant, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
 	pag, err := parsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
@@ -99,45 +115,31 @@ func (h *ParticipantHandler) handleList(w http.ResponseWriter, r *http.Request) 
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	render.JSON(w, r, NewPageResponse(result, participantToResponse))
 }
 
 func (h *ParticipantHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionUpdate)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
-	var req struct {
-		Name        *string                  `json:"name"`
-		State       *domain.ParticipantState `json:"state"`
-		CountryCode *domain.CountryCode      `json:"countryCode,omitempty"`
-		Attributes  *domain.Attributes       `json:"attributes,omitempty"`
-	}
-	if err := render.Decode(r, &req); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
+	id := MustGetID(r.Context())
+	req := MustGetBody[UpdateParticipantRequest](r.Context())
+
 	participant, err := h.commander.Update(r.Context(), id, req.Name, req.State, req.CountryCode, req.Attributes)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	render.JSON(w, r, participantToResponse(participant))
 }
 
 func (h *ParticipantHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionDelete)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
+
 	if err := h.commander.Delete(r.Context(), id); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -163,16 +165,4 @@ func participantToResponse(p *domain.Participant) *ParticipantResponse {
 		CreatedAt:   JSONUTCTime(p.CreatedAt),
 		UpdatedAt:   JSONUTCTime(p.UpdatedAt),
 	}
-}
-
-func (h *ParticipantHandler) authorize(ctx context.Context, id domain.UUID, action domain.AuthAction) (*domain.AuthScope, error) {
-	scope, err := h.querier.AuthScope(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	err = h.authz.AuthorizeCtx(ctx, domain.SubjectParticipant, action, scope)
-	if err != nil {
-		return nil, err
-	}
-	return scope, nil
 }

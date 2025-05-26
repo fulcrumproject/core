@@ -104,7 +104,7 @@ func main() {
 		render.SetContentType(render.ContentTypeJSON),
 	)
 
-	authMiddleware := api.AuthMiddleware(auth)
+	authMiddleware := api.Auth(auth)
 
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {

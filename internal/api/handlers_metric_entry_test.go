@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -72,16 +71,12 @@ func TestMetricEntryHandleList(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer)
+		mockSetup      func(querier *mockMetricEntryQuerier)
 		expectedStatus int
-		expectedBody   map[string]interface{}
 	}{
 		{
 			name: "Success",
-			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(querier *mockMetricEntryQuerier) {
 				// Setup the mock to return test metric entries
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -133,19 +128,8 @@ func TestMetricEntryHandleList(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "Unauthorized",
-			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "ListError",
-			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(querier *mockMetricEntryQuerier) {
 				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
 					return nil, fmt.Errorf("database error")
 				}
@@ -161,7 +145,7 @@ func TestMetricEntryHandleList(t *testing.T) {
 			serviceQuerier := &mockServiceQuerier{}
 			commander := &mockMetricEntryCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, serviceQuerier, commander, authz)
+			tc.mockSetup(querier)
 
 			// Create the handler
 			handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authz)
@@ -169,7 +153,7 @@ func TestMetricEntryHandleList(t *testing.T) {
 			// Create request
 			req := httptest.NewRequest("GET", "/metric-entries?page=1&pageSize=10", nil)
 
-			// Add auth identity to context for authorization
+			// Add auth identity to context (required by handler)
 			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
@@ -214,17 +198,19 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		requestBody    string
-		mockSetup      func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer)
+		requestBody    CreateMetricEntryRequest
+		mockSetup      func(serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander)
 		expectedStatus int
 	}{
 		{
-			name:        "SuccessWithServiceID",
-			requestBody: `{"serviceId":"550e8400-e29b-41d4-a716-446655440000","resourceId":"resource-1","value":123.45,"typeName":"cpu"}`,
-			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			name: "SuccessWithServiceID",
+			requestBody: CreateMetricEntryRequest{
+				ServiceID:  &[]domain.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
+				ResourceID: "resource-1",
+				Value:      123.45,
+				TypeName:   "cpu",
+			},
+			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander) {
 				// Use the same agent ID that's in NewMockAuthAgent
 				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
@@ -246,8 +232,8 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{
+				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.AuthTargetScope{
 						AgentID: &agentID,
 					}, nil
 				}
@@ -277,12 +263,14 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:        "SuccessWithExternalID",
-			requestBody: `{"externalId":"service-ext-1","resourceId":"resource-1","value":123.45,"typeName":"cpu"}`,
-			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			name: "SuccessWithExternalID",
+			requestBody: CreateMetricEntryRequest{
+				ExternalID: &[]string{"service-ext-1"}[0],
+				ResourceID: "resource-1",
+				Value:      123.45,
+				TypeName:   "cpu",
+			},
+			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander) {
 				// Use the same agent ID that's in NewMockAuthAgent
 				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
@@ -305,8 +293,8 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{
+				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.AuthTargetScope{
 						AgentID: &agentID,
 					}, nil
 				}
@@ -336,25 +324,14 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:        "InvalidRequestFormat",
-			requestBody: `{"invalid"json}`,
-			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
-				// No setup needed for this case
+			name: "ServiceQueryError",
+			requestBody: CreateMetricEntryRequest{
+				ServiceID:  &[]domain.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
+				ResourceID: "resource-1",
+				Value:      123.45,
+				TypeName:   "cpu",
 			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:        "MissingRequiredFields",
-			requestBody: `{}`,
-			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
-				// No setup needed for this case
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:        "ServiceQueryError",
-			requestBody: `{"serviceId":"550e8400-e29b-41d4-a716-446655440000","resourceId":"resource-1","value":123.45,"typeName":"cpu"}`,
-			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
+			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander) {
 				// Setup the service querier to return an error
 				serviceQuerier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Service, error) {
 					return nil, fmt.Errorf("service not found")
@@ -363,9 +340,14 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
-			name:        "AuthScopeError",
-			requestBody: `{"serviceId":"550e8400-e29b-41d4-a716-446655440000","resourceId":"resource-1","value":123.45,"typeName":"cpu"}`,
-			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
+			name: "AuthScopeError",
+			requestBody: CreateMetricEntryRequest{
+				ServiceID:  &[]domain.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
+				ResourceID: "resource-1",
+				Value:      123.45,
+				TypeName:   "cpu",
+			},
+			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander) {
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 				agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 				consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
@@ -384,53 +366,21 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the auth scope to return an error
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 					return nil, fmt.Errorf("auth scope error")
 				}
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
-			name:        "AuthorizationError",
-			requestBody: `{"serviceId":"550e8400-e29b-41d4-a716-446655440000","resourceId":"resource-1","value":123.45,"typeName":"cpu"}`,
-			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
-				// Use the same agent ID that's in NewMockAuthAgent
-				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
-				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-				consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
-				providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-
-				// Setup the service querier
-				serviceQuerier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Service, error) {
-					return &domain.Service{
-						BaseEntity: domain.BaseEntity{
-							ID: serviceID,
-						},
-						AgentID:    agentID,
-						ConsumerID: consumerID,
-						ProviderID: providerID,
-					}, nil
-				}
-
-				// Setup the auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{
-						AgentID: &agentID,
-					}, nil
-				}
-
-				// Make authorization fail
-				authz.ShouldSucceed = false
+			name: "CommanderError",
+			requestBody: CreateMetricEntryRequest{
+				ServiceID:  &[]domain.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
+				ResourceID: "resource-1",
+				Value:      123.45,
+				TypeName:   "cpu",
 			},
-			expectedStatus: http.StatusForbidden, // Authorization failures return 403 Forbidden
-		},
-		{
-			name:        "CommanderError",
-			requestBody: `{"serviceId":"550e8400-e29b-41d4-a716-446655440000","resourceId":"resource-1","value":123.45,"typeName":"cpu"}`,
-			mockSetup: func(querier *mockMetricEntryQuerier, serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander) {
 				// Use the same agent ID that's in NewMockAuthAgent
 				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
@@ -450,8 +400,8 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{
+				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.AuthTargetScope{
 						AgentID: &agentID,
 					}, nil
 				}
@@ -472,19 +422,15 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 			serviceQuerier := &mockServiceQuerier{}
 			commander := &mockMetricEntryCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, serviceQuerier, commander, authz)
+			tc.mockSetup(serviceQuerier, commander)
 
 			// Create the handler
 			handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authz)
 
-			// Create request with JSON body
-			req := httptest.NewRequest("POST", "/metric-entries", strings.NewReader(tc.requestBody))
-			req.Header.Set("Content-Type", "application/json")
-
-			// Add auth identity to context for authorization
-			// The NewMockAuthAgent() function already provides an initialized agent identity
-			authIdentity := NewMockAuthAgent()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			// Create request with simulated middleware context
+			req := httptest.NewRequest("POST", "/metric-entries", nil)
+			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthAgent()))
 
 			// Execute request
 			w := httptest.NewRecorder()

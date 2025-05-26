@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -72,17 +71,19 @@ func TestParticipantHandleCreate(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		requestBody    string
-		mockSetup      func(querier *mockParticipantQuerier, commander *mockParticipantCommander, authz *MockAuthorizer)
+		requestBody    CreateParticipantRequest
+		mockSetup      func(commander *mockParticipantCommander)
 		expectedStatus int
 	}{
 		{
-			name:        "Success",
-			requestBody: `{"name": "Example Org", "state": "Enabled", "countryCode": "US", "attributes": {"region": ["us-east-1", "us-west-2"]}}`,
-			mockSetup: func(querier *mockParticipantQuerier, commander *mockParticipantCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			name: "Success",
+			requestBody: CreateParticipantRequest{
+				Name:        "Example Org",
+				State:       domain.ParticipantState("Enabled"),
+				CountryCode: domain.CountryCode("US"),
+				Attributes:  domain.Attributes{"region": {"us-east-1", "us-west-2"}},
+			},
+			mockSetup: func(commander *mockParticipantCommander) {
 				// Setup the commander
 				commander.createFunc = func(ctx context.Context, name string, state domain.ParticipantState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error) {
 					assert.Equal(t, "Example Org", name)
@@ -109,13 +110,20 @@ func TestParticipantHandleCreate(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:        "AuthorizationError",
-			requestBody: `{"name": "Example Org", "state": "Enabled", "countryCode": "US", "attributes": {"region": ["us-east-1", "us-west-2"]}}`,
-			mockSetup: func(querier *mockParticipantQuerier, commander *mockParticipantCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
+			name: "CommanderError",
+			requestBody: CreateParticipantRequest{
+				Name:        "Example Org",
+				State:       domain.ParticipantState("Enabled"),
+				CountryCode: domain.CountryCode("US"),
+				Attributes:  domain.Attributes{"region": {"us-east-1", "us-west-2"}},
 			},
-			expectedStatus: http.StatusForbidden,
+			mockSetup: func(commander *mockParticipantCommander) {
+				// Setup the commander to return an error
+				commander.createFunc = func(ctx context.Context, name string, state domain.ParticipantState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error) {
+					return nil, fmt.Errorf("database error")
+				}
+			},
+			expectedStatus: http.StatusInternalServerError,
 		},
 	}
 
@@ -125,18 +133,15 @@ func TestParticipantHandleCreate(t *testing.T) {
 			querier := &mockParticipantQuerier{}
 			commander := &mockParticipantCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(commander)
 
 			// Create the handler
 			handler := NewParticipantHandler(querier, commander, authz)
 
-			// Create request with JSON body
-			req := httptest.NewRequest("POST", "/participants", strings.NewReader(tc.requestBody))
-			req.Header.Set("Content-Type", "application/json")
-
-			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			// Create request with simulated middleware context
+			req := httptest.NewRequest("POST", "/participants", nil)
+			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()

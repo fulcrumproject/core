@@ -9,7 +9,7 @@ import (
 type authContextKey string
 
 var (
-	EmptyAuthScope         = AuthScope{}
+	EmptyAuthTargetScope   = AuthTargetScope{}
 	EmptyAuthIdentityScope = AuthIdentityScope{}
 )
 
@@ -112,8 +112,8 @@ type AuthIdentityScope struct {
 	AgentID       *UUID
 }
 
-// AuthScope contains additional information for authorization decisions
-type AuthScope struct {
+// AuthTargetScope contains additional information for authorization decisions
+type AuthTargetScope struct {
 	ParticipantID *UUID
 	ProviderID    *UUID
 	ConsumerID    *UUID
@@ -139,15 +139,15 @@ func MustGetAuthIdentity(ctx context.Context) AuthIdentity {
 }
 
 type Authorizer interface {
-	Authorize(identity AuthIdentity, subject AuthSubject, action AuthAction, scope *AuthScope) error
-	AuthorizeCtx(ctx context.Context, subject AuthSubject, action AuthAction, scope *AuthScope) error
+	Authorize(identity AuthIdentity, subject AuthSubject, action AuthAction, scope *AuthTargetScope) error
+	AuthorizeCtx(ctx context.Context, subject AuthSubject, action AuthAction, scope *AuthTargetScope) error
 }
 
 type AuthScopeRetriever interface {
-	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
+	AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }
 
-func ValidateAuthScope(id AuthIdentity, target *AuthScope) error {
+func ValidateAuthScope(id AuthIdentity, target *AuthTargetScope) error {
 	if id == nil {
 		return errors.New("nil identity")
 	}

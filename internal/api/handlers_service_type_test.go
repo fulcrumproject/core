@@ -66,22 +66,13 @@ func TestServiceTypeHandleGet(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockServiceTypeQuerier, authz *MockAuthorizer)
+		mockSetup      func(querier *mockServiceTypeQuerier)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceTypeQuerier, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(querier *mockServiceTypeQuerier) {
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.ServiceType, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 
@@ -101,48 +92,15 @@ func TestServiceTypeHandleGet(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "AuthorizationError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceTypeQuerier, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceTypeQuerier, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(querier *mockServiceTypeQuerier) {
 				// Setup the querier to return not found
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.ServiceType, error) {
 					return nil, domain.NotFoundError{Err: fmt.Errorf("service type not found")}
 				}
 			},
 			expectedStatus: http.StatusNotFound, // ErrDomain checks for NotFoundError and returns 404
-		},
-		{
-			name: "AuthScopeError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceTypeQuerier, authz *MockAuthorizer) {
-				// Setup the querier to return auth scope error
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return nil, fmt.Errorf("auth scope error")
-				}
-			},
-			expectedStatus: http.StatusForbidden,
 		},
 	}
 
@@ -151,7 +109,7 @@ func TestServiceTypeHandleGet(t *testing.T) {
 			// Setup mocks
 			querier := &mockServiceTypeQuerier{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, authz)
+			tc.mockSetup(querier)
 
 			// Create the handler
 			handler := NewServiceTypeHandler(querier, authz)
@@ -194,15 +152,12 @@ func TestServiceTypeHandleList(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockServiceTypeQuerier, authz *MockAuthorizer)
+		mockSetup      func(querier *mockServiceTypeQuerier)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
-			mockSetup: func(querier *mockServiceTypeQuerier, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(querier *mockServiceTypeQuerier) {
 				// Setup the mock to return service types
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -237,19 +192,8 @@ func TestServiceTypeHandleList(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "Unauthorized",
-			mockSetup: func(querier *mockServiceTypeQuerier, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "ListError",
-			mockSetup: func(querier *mockServiceTypeQuerier, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(querier *mockServiceTypeQuerier) {
 				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceType], error) {
 					return nil, fmt.Errorf("database error")
 				}
@@ -263,7 +207,7 @@ func TestServiceTypeHandleList(t *testing.T) {
 			// Setup mocks
 			querier := &mockServiceTypeQuerier{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, authz)
+			tc.mockSetup(querier)
 
 			// Create the handler
 			handler := NewServiceTypeHandler(querier, authz)

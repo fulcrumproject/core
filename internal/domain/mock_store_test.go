@@ -233,7 +233,7 @@ type MockAgentTypeRepository struct {
 	listFunc      func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[AgentType], error)
 	existsFunc    func(ctx context.Context, id UUID) (bool, error)
 	countFunc     func(ctx context.Context) (int64, error)
-	authScopeFunc func(ctx context.Context, id UUID) (*AuthScope, error)
+	authScopeFunc func(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }
 
 func (m *MockAgentTypeRepository) Create(ctx context.Context, agentType *AgentType) error {
@@ -291,11 +291,11 @@ func (m *MockAgentTypeRepository) Count(ctx context.Context) (int64, error) {
 	return 0, nil
 }
 
-func (m *MockAgentTypeRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope, error) {
+func (m *MockAgentTypeRepository) AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &EmptyAuthScope, nil
+	return &EmptyAuthTargetScope, nil
 }
 
 func (m *MockAgentTypeRepository) Save(ctx context.Context, agentType *AgentType) error {
@@ -314,7 +314,7 @@ type MockAgentRepository struct {
 	listFunc                             func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Agent], error)
 	existsFunc                           func(ctx context.Context, id UUID) (bool, error)
 	countByProviderFunc                  func(ctx context.Context, providerID UUID) (int64, error)
-	authScopeFunc                        func(ctx context.Context, id UUID) (*AuthScope, error)
+	authScopeFunc                        func(ctx context.Context, id UUID) (*AuthTargetScope, error)
 	markInactiveAgentsAsDisconnectedFunc func(ctx context.Context, inactiveThreshold time.Duration) (int64, error)
 }
 
@@ -373,11 +373,11 @@ func (m *MockAgentRepository) CountByProvider(ctx context.Context, providerID UU
 	return 0, nil
 }
 
-func (m *MockAgentRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope, error) {
+func (m *MockAgentRepository) AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &EmptyAuthScope, nil
+	return &EmptyAuthTargetScope, nil
 }
 
 // MarkInactiveAgentsAsDisconnected marks inactive agents as disconnected
@@ -404,7 +404,7 @@ type MockParticipantRepository struct {
 	findByIDFunc  func(ctx context.Context, id UUID) (*Participant, error)
 	listFunc      func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Participant], error)
 	existsFunc    func(ctx context.Context, id UUID) (bool, error)
-	authScopeFunc func(ctx context.Context, id UUID) (*AuthScope, error)
+	authScopeFunc func(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }
 
 func (m *MockParticipantRepository) Create(ctx context.Context, participant *Participant) error {
@@ -455,11 +455,11 @@ func (m *MockParticipantRepository) Exists(ctx context.Context, id UUID) (bool, 
 	return true, nil // Default to true for mock existence checks
 }
 
-func (m *MockParticipantRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope, error) {
+func (m *MockParticipantRepository) AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &EmptyAuthScope, nil // Default to empty scope
+	return &EmptyAuthTargetScope, nil // Default to empty scope
 }
 
 // MockTokenRepository implements the TokenRepository interface for testing
@@ -470,7 +470,7 @@ type MockTokenRepository struct {
 	findByIDFunc              func(ctx context.Context, id UUID) (*Token, error)
 	listFunc                  func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[Token], error)
 	existsFunc                func(ctx context.Context, id UUID) (bool, error)
-	authScopeFunc             func(ctx context.Context, id UUID) (*AuthScope, error)
+	authScopeFunc             func(ctx context.Context, id UUID) (*AuthTargetScope, error)
 	findByHashedValueFunc     func(ctx context.Context, hashedValue string) (*Token, error)
 	findByValueFunc           func(ctx context.Context, value string) (*Token, error)
 	deleteByAgentIDFunc       func(ctx context.Context, agentID UUID) error
@@ -525,11 +525,11 @@ func (m *MockTokenRepository) Exists(ctx context.Context, id UUID) (bool, error)
 	return true, nil
 }
 
-func (m *MockTokenRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope, error) {
+func (m *MockTokenRepository) AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &EmptyAuthScope, nil
+	return &EmptyAuthTargetScope, nil
 }
 
 func (m *MockTokenRepository) FindByValue(ctx context.Context, value string) (*Token, error) {
@@ -580,7 +580,7 @@ type MockServiceTypeRepository struct {
 	listFunc      func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[ServiceType], error)
 	existsFunc    func(ctx context.Context, id UUID) (bool, error)
 	countFunc     func(ctx context.Context) (int64, error)
-	authScopeFunc func(ctx context.Context, id UUID) (*AuthScope, error)
+	authScopeFunc func(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }
 
 func (m *MockServiceTypeRepository) Create(ctx context.Context, serviceType *ServiceType) error {
@@ -638,11 +638,11 @@ func (m *MockServiceTypeRepository) Count(ctx context.Context) (int64, error) {
 	return 0, nil
 }
 
-func (m *MockServiceTypeRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope, error) {
+func (m *MockServiceTypeRepository) AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &EmptyAuthScope, nil
+	return &EmptyAuthTargetScope, nil
 }
 
 // Save updates an existing service type
@@ -662,7 +662,7 @@ type MockServiceGroupRepository struct {
 	listFunc      func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[ServiceGroup], error)
 	existsFunc    func(ctx context.Context, id UUID) (bool, error)
 	countFunc     func(ctx context.Context) (int64, error)
-	authScopeFunc func(ctx context.Context, id UUID) (*AuthScope, error)
+	authScopeFunc func(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }
 
 func (m *MockServiceGroupRepository) Create(ctx context.Context, serviceGroup *ServiceGroup) error {
@@ -720,11 +720,11 @@ func (m *MockServiceGroupRepository) Count(ctx context.Context) (int64, error) {
 	return 0, nil
 }
 
-func (m *MockServiceGroupRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope, error) {
+func (m *MockServiceGroupRepository) AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &EmptyAuthScope, nil
+	return &EmptyAuthTargetScope, nil
 }
 
 // Save updates an existing service group
@@ -747,7 +747,7 @@ type MockServiceRepository struct {
 	existsFunc           func(ctx context.Context, id UUID) (bool, error)
 	countByGroupFunc     func(ctx context.Context, groupID UUID) (int64, error)
 	countByAgentFunc     func(ctx context.Context, agentID UUID) (int64, error)
-	authScopeFunc        func(ctx context.Context, id UUID) (*AuthScope, error)
+	authScopeFunc        func(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }
 
 func (m *MockServiceRepository) Create(ctx context.Context, service *Service) error {
@@ -820,11 +820,11 @@ func (m *MockServiceRepository) CountByAgent(ctx context.Context, agentID UUID) 
 	return 0, nil
 }
 
-func (m *MockServiceRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope, error) {
+func (m *MockServiceRepository) AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &EmptyAuthScope, nil
+	return &EmptyAuthTargetScope, nil
 }
 
 // Save updates an existing service
@@ -847,7 +847,7 @@ type MockJobRepository struct {
 	getPendingJobsForAgentFunc func(ctx context.Context, agentID UUID, limit int) ([]*Job, error)
 	getTimeOutJobsFunc         func(ctx context.Context, timeout time.Duration) ([]*Job, error)
 	deleteOldCompletedJobsFunc func(ctx context.Context, olderThan time.Duration) (int, error)
-	authScopeFunc              func(ctx context.Context, id UUID) (*AuthScope, error)
+	authScopeFunc              func(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }
 
 func (m *MockJobRepository) Create(ctx context.Context, job *Job) error {
@@ -927,18 +927,18 @@ func (m *MockJobRepository) Save(ctx context.Context, job *Job) error {
 	return nil
 }
 
-func (m *MockJobRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope, error) {
+func (m *MockJobRepository) AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &EmptyAuthScope, nil
+	return &EmptyAuthTargetScope, nil
 }
 
 // MockAuditEntryRepository implements the AuditEntryRepository interface for testing
 type MockAuditEntryRepository struct {
 	createFunc    func(ctx context.Context, auditEntry *AuditEntry) error
 	listFunc      func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[AuditEntry], error)
-	authScopeFunc func(ctx context.Context, id UUID) (*AuthScope, error)
+	authScopeFunc func(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }
 
 func (m *MockAuditEntryRepository) Create(ctx context.Context, auditEntry *AuditEntry) error {
@@ -961,11 +961,11 @@ func (m *MockAuditEntryRepository) List(ctx context.Context, authIdentityScope *
 	}, nil
 }
 
-func (m *MockAuditEntryRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope, error) {
+func (m *MockAuditEntryRepository) AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &EmptyAuthScope, nil
+	return &EmptyAuthTargetScope, nil
 }
 
 // MockMetricTypeRepository implements the MetricTypeRepository interface for testing
@@ -978,7 +978,7 @@ type MockMetricTypeRepository struct {
 	listFunc       func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[MetricType], error)
 	existsFunc     func(ctx context.Context, id UUID) (bool, error)
 	countFunc      func(ctx context.Context) (int64, error)
-	authScopeFunc  func(ctx context.Context, id UUID) (*AuthScope, error)
+	authScopeFunc  func(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }
 
 func (m *MockMetricTypeRepository) Create(ctx context.Context, metricType *MetricType) error {
@@ -1043,11 +1043,11 @@ func (m *MockMetricTypeRepository) Count(ctx context.Context) (int64, error) {
 	return 0, nil
 }
 
-func (m *MockMetricTypeRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope, error) {
+func (m *MockMetricTypeRepository) AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &EmptyAuthScope, nil
+	return &EmptyAuthTargetScope, nil
 }
 
 // Save updates an existing metric type
@@ -1064,7 +1064,7 @@ type MockMetricEntryRepository struct {
 	listFunc              func(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[MetricEntry], error)
 	existsFunc            func(ctx context.Context, id UUID) (bool, error)
 	countByMetricTypeFunc func(ctx context.Context, typeID UUID) (int64, error)
-	authScopeFunc         func(ctx context.Context, id UUID) (*AuthScope, error)
+	authScopeFunc         func(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }
 
 func (m *MockMetricEntryRepository) Create(ctx context.Context, metricEntry *MetricEntry) error {
@@ -1101,9 +1101,9 @@ func (m *MockMetricEntryRepository) CountByMetricType(ctx context.Context, typeI
 	return 0, nil
 }
 
-func (m *MockMetricEntryRepository) AuthScope(ctx context.Context, id UUID) (*AuthScope, error) {
+func (m *MockMetricEntryRepository) AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &EmptyAuthScope, nil
+	return &EmptyAuthTargetScope, nil
 }

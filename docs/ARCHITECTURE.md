@@ -39,11 +39,40 @@ The API layer is responsible for handling HTTP requests and providing a RESTful 
 
 - Defines routes and endpoints for all operations
 - Converts between JSON/HTTP and domain objects
-- Handles authentication and authorization
+- Implements authentication and authorization through middleware
 - Manages pagination and filtering of results
 - Implements error handling and response formatting
 
-The API layer uses a lightweight router for defining RESTful endpoints. Each entity has its own handler, which follows a consistent pattern:
+#### 3.1.1 Middleware Architecture
+
+The API layer uses a comprehensive middleware pattern that separates cross-cutting concerns from business logic:
+
+**Authentication Middleware** ([`Auth`](internal/api/middlewares.go:23))
+- Extracts and validates Bearer tokens from requests
+- Adds authenticated identity to request context
+- Rejects unauthenticated requests
+
+**Authorization Middleware Pattern**
+The system uses a flexible authorization middleware pattern based on [`AuthzFromExtractor`](internal/api/middlewares.go:120):
+
+```go
+// Base authorization middleware using scope extractors
+AuthzFromExtractor(subject, action, authorizer, scopeExtractor)
+
+// Specialized authorization middlewares:
+AuthzSimple(subject, action, authorizer)              // No resource scope
+AuthzFromID(subject, action, authorizer, querier)     // Resource ID-based
+AuthzFromBody[T](subject, action, authorizer)         // Request body-based
+```
+
+**Request Processing Middleware**
+- [`DecodeBody[T]()`](internal/api/middlewares.go:73): Type-safe request body decoding
+- [`ID`](internal/api/middlewares.go:44): UUID extraction and validation from URL paths
+- [`RequireAgentIdentity()`](internal/api/middlewares.go:238): Agent-specific authentication
+
+#### 3.1.2 Handler Pattern
+
+Each entity has its own handler following a consistent pattern:
 
 ```go
 // Handler structure
@@ -53,13 +82,71 @@ type EntityHandler struct {
     authz     domain.Authorizer
 }
 
-// Routes method
-func (h *EntityHandler) Routes() func(r Router) {
-    return func(r Router) {
-        r.Get("/", h.handleList)
-        r.Post("/", h.handleCreate)
-        // Additional routes...
+// Routes with middleware chain
+func (h *EntityHandler) Routes() func(r chi.Router) {
+    return func(r chi.Router) {
+        // List with simple authorization
+        r.With(
+            AuthzSimple(domain.SubjectEntity, domain.ActionRead, h.authz),
+        ).Get("/", h.handleList)
+        
+        // Create with body decoding and authorization
+        r.With(
+            DecodeBody[CreateEntityRequest](),
+            AuthzFromBody[CreateEntityRequest](domain.SubjectEntity, domain.ActionCreate, h.authz),
+        ).Post("/", h.handleCreate)
+        
+        // Resource-specific routes
+        r.Group(func(r chi.Router) {
+            r.Use(ID) // Extract UUID for all sub-routes
+            
+            r.With(
+                AuthzFromID(domain.SubjectEntity, domain.ActionRead, h.authz, h.querier),
+            ).Get("/{id}", h.handleGet)
+            
+            r.With(
+                DecodeBody[UpdateEntityRequest](),
+                AuthzFromID(domain.SubjectEntity, domain.ActionUpdate, h.authz, h.querier),
+            ).Patch("/{id}", h.handleUpdate)
+        })
     }
+}
+```
+
+#### 3.1.3 Request Types
+
+Request types implement the [`AuthTargetScopeProvider`](internal/api/middlewares.go:203) interface for authorization:
+
+```go
+type CreateEntityRequest struct {
+    Name       string      `json:"name"`
+    ProviderID domain.UUID `json:"providerId"`
+}
+
+func (r CreateEntityRequest) AuthTargetScope() (*domain.AuthTargetScope, error) {
+    return &domain.AuthTargetScope{ProviderID: &r.ProviderID}, nil
+}
+```
+
+#### 3.1.4 Pure Handler Methods
+
+Handler methods focus solely on business logic, with authentication/authorization handled by middleware:
+
+```go
+func (h *EntityHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
+    // Get pre-validated request body
+    req := MustGetBody[CreateEntityRequest](r.Context())
+    
+    // Execute business logic
+    entity, err := h.commander.Create(r.Context(), req.Name, req.ProviderID)
+    if err != nil {
+        render.Render(w, r, ErrFromDomain(err))
+        return
+    }
+    
+    // Return response
+    render.Status(r, http.StatusCreated)
+    render.JSON(w, r, entity)
 }
 ```
 

@@ -17,7 +17,7 @@ type mockAgentQuerier struct {
 	listFunc               func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error)
 	countByParticipantFunc func(ctx context.Context, participantID domain.UUID) (int64, error)
 	existsFunc             func(ctx context.Context, id domain.UUID) (bool, error)
-	authScopeFunc          func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
+	authScopeFunc          func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
 }
 
 func (m *mockAgentQuerier) FindByID(ctx context.Context, id domain.UUID) (*domain.Agent, error) {
@@ -40,11 +40,11 @@ func (m *mockAgentQuerier) List(ctx context.Context, authScope *domain.AuthIdent
 	}, nil
 }
 
-func (m *mockAgentQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (m *mockAgentQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &domain.EmptyAuthScope, nil
+	return &domain.EmptyAuthTargetScope, nil
 }
 
 // CountByProvider is required by the AgentQuerier interface
@@ -72,7 +72,7 @@ type mockServiceTypeQuerier struct {
 	findByIDFunc  func(ctx context.Context, id domain.UUID) (*domain.ServiceType, error)
 	existsFunc    func(ctx context.Context, id domain.UUID) (bool, error)
 	listFunc      func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceType], error)
-	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
+	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
 	countFunc     func(ctx context.Context) (int64, error)
 }
 
@@ -103,11 +103,11 @@ func (m *mockServiceTypeQuerier) List(ctx context.Context, authScope *domain.Aut
 	}, nil
 }
 
-func (m *mockServiceTypeQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (m *mockServiceTypeQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &domain.EmptyAuthScope, nil
+	return &domain.EmptyAuthTargetScope, nil
 }
 
 func (m *mockServiceTypeQuerier) Count(ctx context.Context) (int64, error) {
@@ -126,7 +126,7 @@ type mockAgentTypeQuerier struct {
 	existsFunc    func(ctx context.Context, id domain.UUID) (bool, error)
 	listFunc      func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error)
 	countFunc     func(ctx context.Context) (int64, error)
-	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
+	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
 }
 
 func (m *mockAgentTypeQuerier) FindByID(ctx context.Context, id domain.UUID) (*domain.AgentType, error) {
@@ -157,11 +157,11 @@ func (m *mockAgentTypeQuerier) List(ctx context.Context, authScope *domain.AuthI
 	}, nil
 }
 
-func (m *mockAgentTypeQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (m *mockAgentTypeQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &domain.EmptyAuthScope, nil
+	return &domain.EmptyAuthTargetScope, nil
 }
 
 // Count returns the total count of agent types
@@ -178,7 +178,7 @@ var _ domain.AuditEntryQuerier = (*mockAuditEntryQuerier)(nil)
 // mockAuditEntryQuerier is a custom mock for AuditEntryQuerier
 type mockAuditEntryQuerier struct {
 	listFunc      func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error)
-	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
+	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
 }
 
 func (m *mockAuditEntryQuerier) List(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error) {
@@ -194,11 +194,11 @@ func (m *mockAuditEntryQuerier) List(ctx context.Context, authScope *domain.Auth
 	}, nil
 }
 
-func (m *mockAuditEntryQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (m *mockAuditEntryQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &domain.EmptyAuthScope, nil
+	return &domain.EmptyAuthTargetScope, nil
 }
 
 // Ensure interface compatibility
@@ -211,7 +211,7 @@ type mockJobQuerier struct {
 	listFunc                   func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error)
 	getPendingJobsForAgentFunc func(ctx context.Context, agentID domain.UUID, limit int) ([]*domain.Job, error)
 	getTimeOutJobsFunc         func(ctx context.Context, timeout time.Duration) ([]*domain.Job, error)
-	authScopeFunc              func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
+	authScopeFunc              func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
 }
 
 func (m *mockJobQuerier) FindByID(ctx context.Context, id domain.UUID) (*domain.Job, error) {
@@ -257,11 +257,11 @@ func (m *mockJobQuerier) GetTimeOutJobs(ctx context.Context, timeout time.Durati
 	return []*domain.Job{}, nil
 }
 
-func (m *mockJobQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (m *mockJobQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &domain.EmptyAuthScope, nil
+	return &domain.EmptyAuthTargetScope, nil
 }
 
 // Ensure interface compatibility
@@ -271,7 +271,7 @@ type mockMetricEntryQuerier struct {
 	listFunc      func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error)
 	existsFunc    func(ctx context.Context, id domain.UUID) (bool, error)
 	countFunc     func(ctx context.Context, typeID domain.UUID) (int64, error)
-	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
+	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
 }
 
 func (m *mockMetricEntryQuerier) List(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
@@ -301,11 +301,11 @@ func (m *mockMetricEntryQuerier) CountByMetricType(ctx context.Context, typeID d
 	return 0, nil
 }
 
-func (m *mockMetricEntryQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (m *mockMetricEntryQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &domain.EmptyAuthScope, nil
+	return &domain.EmptyAuthTargetScope, nil
 }
 
 // Ensure interface compatibility
@@ -317,7 +317,7 @@ type mockMetricTypeQuerier struct {
 	existsFunc     func(ctx context.Context, id domain.UUID) (bool, error)
 	findByNameFunc func(ctx context.Context, name string) (*domain.MetricType, error)
 	listFunc       func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricType], error)
-	authScopeFunc  func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
+	authScopeFunc  func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
 	countFunc      func(ctx context.Context) (int64, error)
 }
 
@@ -355,11 +355,11 @@ func (m *mockMetricTypeQuerier) List(ctx context.Context, authScope *domain.Auth
 	}, nil
 }
 
-func (m *mockMetricTypeQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (m *mockMetricTypeQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &domain.EmptyAuthScope, nil
+	return &domain.EmptyAuthTargetScope, nil
 }
 
 func (m *mockMetricTypeQuerier) Count(ctx context.Context) (int64, error) {
@@ -377,7 +377,7 @@ type mockServiceGroupQuerier struct {
 	findByIDFunc  func(ctx context.Context, id domain.UUID) (*domain.ServiceGroup, error)
 	existsFunc    func(ctx context.Context, id domain.UUID) (bool, error)
 	listFunc      func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error)
-	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
+	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
 	countFunc     func(ctx context.Context) (int64, error)
 }
 
@@ -408,11 +408,11 @@ func (m *mockServiceGroupQuerier) List(ctx context.Context, authScope *domain.Au
 	}, nil
 }
 
-func (m *mockServiceGroupQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (m *mockServiceGroupQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &domain.EmptyAuthScope, nil
+	return &domain.EmptyAuthTargetScope, nil
 }
 
 func (m *mockServiceGroupQuerier) Count(ctx context.Context) (int64, error) {
@@ -433,7 +433,7 @@ type mockServiceQuerier struct {
 	listFunc             func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error)
 	countByGroupFunc     func(ctx context.Context, groupID domain.UUID) (int64, error)
 	countByAgentFunc     func(ctx context.Context, agentID domain.UUID) (int64, error)
-	authScopeFunc        func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
+	authScopeFunc        func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
 }
 
 func (m *mockServiceQuerier) FindByID(ctx context.Context, id domain.UUID) (*domain.Service, error) {
@@ -484,18 +484,18 @@ func (m *mockServiceQuerier) CountByAgent(ctx context.Context, agentID domain.UU
 	return 0, nil
 }
 
-func (m *mockServiceQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (m *mockServiceQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
-	return &domain.EmptyAuthScope, nil
+	return &domain.EmptyAuthTargetScope, nil
 }
 
 // Mock interfaces for testing
 type mockParticipantQuerier struct {
 	findByIDFunc  func(ctx context.Context, id domain.UUID) (*domain.Participant, error)
 	listFunc      func(ctx context.Context, scope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Participant], error)
-	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
+	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
 	existsFunc    func(ctx context.Context, id domain.UUID) (bool, error)
 }
 
@@ -520,9 +520,51 @@ func (m *mockParticipantQuerier) List(ctx context.Context, scope *domain.AuthIde
 	return nil, nil
 }
 
-func (m *mockParticipantQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (m *mockParticipantQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}
 	return nil, nil
+}
+
+// mockTokenQuerier is a custom mock for TokenQuerier
+type mockTokenQuerier struct {
+	findByIDFunc          func(ctx context.Context, id domain.UUID) (*domain.Token, error)
+	listFunc              func(ctx context.Context, scope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error)
+	findByHashedValueFunc func(ctx context.Context, hashedValue string) (*domain.Token, error)
+	authScopeFunc         func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
+}
+
+func (m *mockTokenQuerier) FindByID(ctx context.Context, id domain.UUID) (*domain.Token, error) {
+	if m.findByIDFunc != nil {
+		return m.findByIDFunc(ctx, id)
+	}
+	return nil, domain.NewNotFoundErrorf("token not found")
+}
+
+func (m *mockTokenQuerier) List(ctx context.Context, scope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
+	if m.listFunc != nil {
+		return m.listFunc(ctx, scope, req)
+	}
+	return &domain.PageResponse[domain.Token]{
+		Items:       []domain.Token{},
+		TotalItems:  0,
+		CurrentPage: 1,
+		TotalPages:  0,
+		HasNext:     false,
+	}, nil
+}
+
+func (m *mockTokenQuerier) FindByHashedValue(ctx context.Context, hashedValue string) (*domain.Token, error) {
+	if m.findByHashedValueFunc != nil {
+		return m.findByHashedValueFunc(ctx, hashedValue)
+	}
+	return nil, domain.NewNotFoundErrorf("token not found")
+}
+
+func (m *mockTokenQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+	if m.authScopeFunc != nil {
+		return m.authScopeFunc(ctx, id)
+	}
+	return &domain.EmptyAuthTargetScope, nil
 }

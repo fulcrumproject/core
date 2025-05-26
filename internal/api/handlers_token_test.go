@@ -17,84 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockTokenCommander is a custom mock for TokenCommander
-type mockTokenCommander struct {
-	createFunc     func(ctx context.Context, name string, role domain.AuthRole, expireAt time.Time, scopeID *domain.UUID) (*domain.Token, error)
-	updateFunc     func(ctx context.Context, id domain.UUID, name *string, expireAt *time.Time) (*domain.Token, error)
-	deleteFunc     func(ctx context.Context, id domain.UUID) error
-	regenerateFunc func(ctx context.Context, id domain.UUID) (*domain.Token, error)
-}
-
-func (m *mockTokenCommander) Create(ctx context.Context, name string, role domain.AuthRole, expireAt time.Time, scopeID *domain.UUID) (*domain.Token, error) {
-	if m.createFunc != nil {
-		return m.createFunc(ctx, name, role, expireAt, scopeID)
-	}
-	return nil, fmt.Errorf("create not mocked")
-}
-
-func (m *mockTokenCommander) Update(ctx context.Context, id domain.UUID, name *string, expireAt *time.Time) (*domain.Token, error) {
-	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name, expireAt)
-	}
-	return nil, fmt.Errorf("update not mocked")
-}
-
-func (m *mockTokenCommander) Delete(ctx context.Context, id domain.UUID) error {
-	if m.deleteFunc != nil {
-		return m.deleteFunc(ctx, id)
-	}
-	return fmt.Errorf("delete not mocked")
-}
-
-func (m *mockTokenCommander) Regenerate(ctx context.Context, id domain.UUID) (*domain.Token, error) {
-	if m.regenerateFunc != nil {
-		return m.regenerateFunc(ctx, id)
-	}
-	return nil, fmt.Errorf("regenerate not mocked")
-}
-
-// mockTokenQuerier is a custom mock for TokenQuerier
-type mockTokenQuerier struct {
-	findByIDFunc          func(ctx context.Context, id domain.UUID) (*domain.Token, error)
-	listFunc              func(ctx context.Context, scope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error)
-	findByHashedValueFunc func(ctx context.Context, hashedValue string) (*domain.Token, error)
-	authScopeFunc         func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error)
-}
-
-func (m *mockTokenQuerier) FindByID(ctx context.Context, id domain.UUID) (*domain.Token, error) {
-	if m.findByIDFunc != nil {
-		return m.findByIDFunc(ctx, id)
-	}
-	return nil, domain.NewNotFoundErrorf("token not found")
-}
-
-func (m *mockTokenQuerier) List(ctx context.Context, scope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
-	if m.listFunc != nil {
-		return m.listFunc(ctx, scope, req)
-	}
-	return &domain.PageResponse[domain.Token]{
-		Items:       []domain.Token{},
-		TotalItems:  0,
-		CurrentPage: 1,
-		TotalPages:  0,
-		HasNext:     false,
-	}, nil
-}
-
-func (m *mockTokenQuerier) FindByHashedValue(ctx context.Context, hashedValue string) (*domain.Token, error) {
-	if m.findByHashedValueFunc != nil {
-		return m.findByHashedValueFunc(ctx, hashedValue)
-	}
-	return nil, domain.NewNotFoundErrorf("token not found")
-}
-
-func (m *mockTokenQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-	if m.authScopeFunc != nil {
-		return m.authScopeFunc(ctx, id)
-	}
-	return &domain.EmptyAuthScope, nil
-}
-
 // TestNewTokenHandler tests the constructor
 func TestNewTokenHandler(t *testing.T) {
 	tokenQuerier := &mockTokenQuerier{}
@@ -152,7 +74,7 @@ func TestTokenHandlerRoutes(t *testing.T) {
 // TestTokenHandleCreate tests the handleCreate method
 func TestTokenHandleCreate(t *testing.T) {
 	now := time.Now().UTC()
-	expireAt := now.Add(24 * time.Hour)
+	wantedExpireAt := now.Add(24 * time.Hour)
 
 	// Setup test cases
 	testCases := []struct {
@@ -167,16 +89,16 @@ func TestTokenHandleCreate(t *testing.T) {
 				"name": "Test Admin Token",
 				"role": "fulcrum_admin",
 				"expireAt": "%s"
-			}`, expireAt.Format(time.RFC3339)),
+			}`, wantedExpireAt.Format(time.RFC3339)),
 			mockSetup: func(tokenQuerier *mockTokenQuerier, agentQuerier *mockAgentQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
 				// Setup the commander
-				commander.createFunc = func(ctx context.Context, name string, role domain.AuthRole, expireAt time.Time, scopeID *domain.UUID) (*domain.Token, error) {
+				commander.createFunc = func(ctx context.Context, name string, role domain.AuthRole, expireAt *time.Time, scopeID *domain.UUID) (*domain.Token, error) {
 					assert.Equal(t, "Test Admin Token", name)
 					assert.Equal(t, domain.RoleFulcrumAdmin, role)
-					assert.WithinDuration(t, expireAt, expireAt, time.Second) // Compare with some tolerance
+					assert.WithinDuration(t, wantedExpireAt, *expireAt, time.Second) // Compare with some tolerance
 					assert.Nil(t, scopeID)
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -190,7 +112,7 @@ func TestTokenHandleCreate(t *testing.T) {
 						},
 						Name:        name,
 						Role:        role,
-						ExpireAt:    expireAt,
+						ExpireAt:    *expireAt,
 						HashedValue: "hashed_value",
 						PlainValue:  "plain_value",
 					}, nil
@@ -205,16 +127,16 @@ func TestTokenHandleCreate(t *testing.T) {
 				"role": "participant",
 				"expireAt": "%s",
 				"scopeId": "550e8400-e29b-41d4-a716-446655440000"
-			}`, expireAt.Format(time.RFC3339)),
+			}`, wantedExpireAt.Format(time.RFC3339)),
 			mockSetup: func(tokenQuerier *mockTokenQuerier, agentQuerier *mockAgentQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
 				// Setup the commander
-				commander.createFunc = func(ctx context.Context, name string, role domain.AuthRole, expireAt time.Time, scopeID *domain.UUID) (*domain.Token, error) {
+				commander.createFunc = func(ctx context.Context, name string, role domain.AuthRole, expireAt *time.Time, scopeID *domain.UUID) (*domain.Token, error) {
 					assert.Equal(t, "Test Provider Token", name)
 					assert.Equal(t, domain.RoleParticipant, role)
-					assert.WithinDuration(t, expireAt, expireAt, time.Second)
+					assert.WithinDuration(t, wantedExpireAt, *expireAt, time.Second)
 					require.NotNil(t, scopeID)
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), *scopeID)
 
@@ -231,7 +153,7 @@ func TestTokenHandleCreate(t *testing.T) {
 						Name:          name,
 						Role:          role,
 						ParticipantID: &participantID,
-						ExpireAt:      expireAt,
+						ExpireAt:      *expireAt,
 						HashedValue:   "hashed_value",
 						PlainValue:    "plain_value",
 					}, nil
@@ -240,25 +162,33 @@ func TestTokenHandleCreate(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:        "InvalidRequestFormat",
-			requestBody: `{"invalid_json":`,
-			mockSetup: func(tokenQuerier *mockTokenQuerier, agentQuerier *mockAgentQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
-				// No setup needed for this case
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name: "AuthorizationError",
+			name: "Success - Create Admin Token",
 			requestBody: fmt.Sprintf(`{
 				"name": "Test Admin Token",
 				"role": "fulcrum_admin",
 				"expireAt": "%s"
-			}`, expireAt.Format(time.RFC3339)),
+			}`, wantedExpireAt.Format(time.RFC3339)),
 			mockSetup: func(tokenQuerier *mockTokenQuerier, agentQuerier *mockAgentQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
+				// Setup the commander for successful creation
+				commander.createFunc = func(ctx context.Context, name string, role domain.AuthRole, expireAt *time.Time, scopeID *domain.UUID) (*domain.Token, error) {
+					assert.Equal(t, "Test Admin Token", name)
+					assert.Equal(t, domain.RoleFulcrumAdmin, role)
+					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+					return &domain.Token{
+						BaseEntity: domain.BaseEntity{
+							ID:        uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
+							CreatedAt: createdAt,
+							UpdatedAt: updatedAt,
+						},
+						Name:       name,
+						Role:       role,
+						ExpireAt:   *expireAt,
+						PlainValue: "token-value-123",
+					}, nil
+				}
 			},
-			expectedStatus: http.StatusForbidden,
+			expectedStatus: http.StatusCreated,
 		},
 		{
 			name: "CommanderError",
@@ -266,13 +196,10 @@ func TestTokenHandleCreate(t *testing.T) {
 				"name": "Test Admin Token",
 				"role": "fulcrum_admin",
 				"expireAt": "%s"
-			}`, expireAt.Format(time.RFC3339)),
+			}`, wantedExpireAt.Format(time.RFC3339)),
 			mockSetup: func(tokenQuerier *mockTokenQuerier, agentQuerier *mockAgentQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
 				// Setup the commander to return an error
-				commander.createFunc = func(ctx context.Context, name string, role domain.AuthRole, expireAt time.Time, scopeID *domain.UUID) (*domain.Token, error) {
+				commander.createFunc = func(ctx context.Context, name string, role domain.AuthRole, expireAt *time.Time, scopeID *domain.UUID) (*domain.Token, error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -286,7 +213,7 @@ func TestTokenHandleCreate(t *testing.T) {
 			tokenQuerier := &mockTokenQuerier{}
 			agentQuerier := &mockAgentQuerier{}
 			commander := &mockTokenCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
+			authz := &MockAuthorizer{ShouldSucceed: true} // Not used in handler tests
 			tc.mockSetup(tokenQuerier, agentQuerier, commander, authz)
 
 			// Create the handler
@@ -296,9 +223,31 @@ func TestTokenHandleCreate(t *testing.T) {
 			req := httptest.NewRequest("POST", "/tokens", strings.NewReader(tc.requestBody))
 			req.Header.Set("Content-Type", "application/json")
 
-			// Add auth identity to context for authorization
+			// Parse the request body directly
+			var createReq CreateTokenRequest
+			if err := json.NewDecoder(strings.NewReader(tc.requestBody)).Decode(&createReq); err != nil {
+				t.Fatalf("Failed to decode request body: %v", err)
+			}
+
+			// Convert expireAt string to time if present
+			if strings.Contains(tc.requestBody, "expireAt") && createReq.ExpireAt == nil {
+				// Try to extract the expireAt value
+				var rawMap map[string]interface{}
+				_ = json.Unmarshal([]byte(tc.requestBody), &rawMap)
+				if expStr, ok := rawMap["expireAt"].(string); ok {
+					parsedTime, _ := time.Parse(time.RFC3339, expStr)
+					createReq.ExpireAt = &parsedTime
+				}
+			}
+
+			// Add the decoded body to the context
+			ctx := context.WithValue(req.Context(), decodedBodyContextKey, &createReq)
+
+			// Add auth identity to context (always required)
 			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			ctx = domain.WithAuthIdentity(ctx, authIdentity)
+
+			req = req.WithContext(ctx)
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -339,9 +288,9 @@ func TestTokenHandleGet(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				tokenQuerier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Token, error) {
@@ -367,20 +316,6 @@ func TestTokenHandleGet(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "AuthorizationError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(tokenQuerier *mockTokenQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(tokenQuerier *mockTokenQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
@@ -388,8 +323,8 @@ func TestTokenHandleGet(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				// Setup the querier to return not found
@@ -416,13 +351,15 @@ func TestTokenHandleGet(t *testing.T) {
 			// Create request
 			req := httptest.NewRequest("GET", "/tokens/"+tc.id, nil)
 
-			// Add ID to chi context and simulate IDMiddleware
-			req = addIDToChiContext(req, tc.id)
-			req = simulateIDMiddleware(req, tc.id)
+			// Simulate ID middleware
+			parsedUUID, _ := domain.ParseUUID(tc.id)
+			ctx := context.WithValue(req.Context(), uuidContextKey, parsedUUID)
 
-			// Add auth identity to context for authorization
+			// Add auth identity to context (always required)
 			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			ctx = domain.WithAuthIdentity(ctx, authIdentity)
+
+			req = req.WithContext(ctx)
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -505,14 +442,6 @@ func TestTokenHandleList(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "Unauthorized",
-			mockSetup: func(tokenQuerier *mockTokenQuerier, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "ListError",
 			mockSetup: func(tokenQuerier *mockTokenQuerier, authz *MockAuthorizer) {
 				// Return a successful auth
@@ -549,7 +478,8 @@ func TestTokenHandleList(t *testing.T) {
 
 			// Add auth identity to context for authorization
 			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			ctx := domain.WithAuthIdentity(req.Context(), authIdentity)
+			req = req.WithContext(ctx)
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -607,9 +537,9 @@ func TestTokenHandleUpdate(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				// Setup the commander to update
@@ -648,9 +578,9 @@ func TestTokenHandleUpdate(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				// Setup the commander to update
@@ -679,30 +609,6 @@ func TestTokenHandleUpdate(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:        "InvalidRequestFormat",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"invalid_json":`,
-			mockSetup: func(tokenQuerier *mockTokenQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
-				// No setup needed for this case
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:        "AuthorizationError",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated Token"}`,
-			mockSetup: func(tokenQuerier *mockTokenQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name:        "CommanderError",
 			id:          "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: `{"name": "Updated Token"}`,
@@ -711,8 +617,8 @@ func TestTokenHandleUpdate(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				// Setup the commander to return an error
@@ -740,13 +646,22 @@ func TestTokenHandleUpdate(t *testing.T) {
 			req := httptest.NewRequest("PATCH", "/tokens/"+tc.id, strings.NewReader(tc.requestBody))
 			req.Header.Set("Content-Type", "application/json")
 
-			// Add ID to chi context and simulate IDMiddleware
-			req = addIDToChiContext(req, tc.id)
-			req = simulateIDMiddleware(req, tc.id)
+			// Simulate ID middleware
+			parsedUUID, _ := domain.ParseUUID(tc.id)
+			ctx := context.WithValue(req.Context(), uuidContextKey, parsedUUID)
 
-			// Add auth identity to context for authorization
+			// Simulate DecodeBody middleware
+			var reqBody UpdateTokenRequest
+			if err := json.NewDecoder(strings.NewReader(tc.requestBody)).Decode(&reqBody); err != nil {
+				t.Fatalf("Failed to decode request body: %v", err)
+			}
+			ctx = context.WithValue(ctx, decodedBodyContextKey, reqBody)
+
+			// Add auth identity to context (always required)
 			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			ctx = domain.WithAuthIdentity(ctx, authIdentity)
+
+			req = req.WithContext(ctx)
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -786,9 +701,9 @@ func TestTokenHandleDelete(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				// Setup the commander to delete
@@ -799,20 +714,7 @@ func TestTokenHandleDelete(t *testing.T) {
 			},
 			expectedStatus: http.StatusNoContent,
 		},
-		{
-			name: "AuthorizationError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(tokenQuerier *mockTokenQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
+		// Remove authorization test case since auth is now handled by middleware
 		{
 			name: "CommanderError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
@@ -821,8 +723,8 @@ func TestTokenHandleDelete(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				// Setup the commander to return an error
@@ -884,9 +786,9 @@ func TestTokenHandleRegenerateValue(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				// Setup the commander to regenerate
@@ -913,20 +815,7 @@ func TestTokenHandleRegenerateValue(t *testing.T) {
 			},
 			expectedStatus: http.StatusOK,
 		},
-		{
-			name: "AuthorizationError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(tokenQuerier *mockTokenQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
+		// Remove authorization test case since auth is now handled by middleware
 		{
 			name: "CommanderError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
@@ -935,8 +824,8 @@ func TestTokenHandleRegenerateValue(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				tokenQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				// Setup the commander to return an error

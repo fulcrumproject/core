@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -72,17 +71,17 @@ func TestServiceGroupHandleCreate(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		requestBody    string
-		mockSetup      func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer)
+		requestBody    CreateServiceGroupRequest
+		mockSetup      func(commander *mockServiceGroupCommander)
 		expectedStatus int
 	}{
 		{
-			name:        "Success",
-			requestBody: `{"name": "Test Group", "consumerId": "550e8400-e29b-41d4-a716-446655440000"}`,
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			name: "Success",
+			requestBody: CreateServiceGroupRequest{
+				Name:       "Test Group",
+				ConsumerID: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+			},
+			mockSetup: func(commander *mockServiceGroupCommander) {
 				consumerID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 
 				// Setup the commander
@@ -107,29 +106,12 @@ func TestServiceGroupHandleCreate(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:        "InvalidRequestFormat",
-			requestBody: `{"invalid_json":`,
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// No setup needed for this case
+			name: "CommanderError",
+			requestBody: CreateServiceGroupRequest{
+				Name:       "Test Group",
+				ConsumerID: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:        "AuthorizationError",
-			requestBody: `{"name": "Test Group", "consumerId": "550e8400-e29b-41d4-a716-446655440000"}`,
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-			},
-			expectedStatus: http.StatusForbidden, // This handler uses ErrDomain for auth errors which returns 403
-		},
-		{
-			name:        "CommanderError",
-			requestBody: `{"name": "Test Group", "consumerId": "550e8400-e29b-41d4-a716-446655440000"}`,
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(commander *mockServiceGroupCommander) {
 				// Setup the commander to return an error
 				commander.createFunc = func(ctx context.Context, name string, consumerID domain.UUID) (*domain.ServiceGroup, error) {
 					return nil, fmt.Errorf("database error")
@@ -145,18 +127,15 @@ func TestServiceGroupHandleCreate(t *testing.T) {
 			querier := &mockServiceGroupQuerier{}
 			commander := &mockServiceGroupCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(commander)
 
 			// Create the handler
 			handler := NewServiceGroupHandler(querier, commander, authz)
 
-			// Create request with JSON body
-			req := httptest.NewRequest("POST", "/service-groups", strings.NewReader(tc.requestBody))
-			req.Header.Set("Content-Type", "application/json")
-
-			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			// Create request with simulated middleware context
+			req := httptest.NewRequest("POST", "/service-groups", nil)
+			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -186,22 +165,13 @@ func TestServiceGroupHandleGet(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer)
+		mockSetup      func(querier *mockServiceGroupQuerier)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(querier *mockServiceGroupQuerier) {
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.ServiceGroup, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 
@@ -223,48 +193,15 @@ func TestServiceGroupHandleGet(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "AuthorizationError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(querier *mockServiceGroupQuerier) {
 				// Setup the querier to return not found
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.ServiceGroup, error) {
 					return nil, domain.NotFoundError{Err: fmt.Errorf("service group not found")}
 				}
 			},
 			expectedStatus: http.StatusNotFound,
-		},
-		{
-			name: "AuthScopeError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the querier to return auth scope error
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return nil, fmt.Errorf("auth scope error")
-				}
-			},
-			expectedStatus: http.StatusForbidden,
 		},
 	}
 
@@ -274,7 +211,7 @@ func TestServiceGroupHandleGet(t *testing.T) {
 			querier := &mockServiceGroupQuerier{}
 			commander := &mockServiceGroupCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(querier)
 
 			// Create the handler
 			handler := NewServiceGroupHandler(querier, commander, authz)
@@ -317,15 +254,12 @@ func TestServiceGroupHandleList(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer)
+		mockSetup      func(querier *mockServiceGroupQuerier)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(querier *mockServiceGroupQuerier) {
 				// Setup the mock to return service groups
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -363,19 +297,8 @@ func TestServiceGroupHandleList(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "Unauthorized",
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "ListError",
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(querier *mockServiceGroupQuerier) {
 				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
 					return nil, fmt.Errorf("database error")
 				}
@@ -390,7 +313,7 @@ func TestServiceGroupHandleList(t *testing.T) {
 			querier := &mockServiceGroupQuerier{}
 			commander := &mockServiceGroupCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(querier)
 
 			// Create the handler
 			handler := NewServiceGroupHandler(querier, commander, authz)
@@ -442,24 +365,17 @@ func TestServiceGroupHandleUpdate(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		requestBody    string
-		mockSetup      func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer)
+		requestBody    UpdateServiceGroupRequest
+		mockSetup      func(commander *mockServiceGroupCommander)
 		expectedStatus int
 	}{
 		{
-			name:        "Success",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated Group"}`,
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
-				}
-
+			name: "Success",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: UpdateServiceGroupRequest{
+				Name: stringPtr("Updated Group"),
+			},
+			mockSetup: func(commander *mockServiceGroupCommander) {
 				// Setup the commander to update
 				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string) (*domain.ServiceGroup, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
@@ -485,54 +401,12 @@ func TestServiceGroupHandleUpdate(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:        "InvalidRequestFormat",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"invalid_json":`,
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// No setup needed for this case
+			name: "CommanderError",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: UpdateServiceGroupRequest{
+				Name: stringPtr("Updated Group"),
 			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:        "AuthorizationError",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated Group"}`,
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name:        "AuthScopeError",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated Group"}`,
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the querier to return auth scope error
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return nil, fmt.Errorf("auth scope error")
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name:        "CommanderError",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated Group"}`,
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(commander *mockServiceGroupCommander) {
 				// Setup the commander to return an error
 				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string) (*domain.ServiceGroup, error) {
 					return nil, fmt.Errorf("update error")
@@ -548,22 +422,17 @@ func TestServiceGroupHandleUpdate(t *testing.T) {
 			querier := &mockServiceGroupQuerier{}
 			commander := &mockServiceGroupCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(commander)
 
 			// Create the handler
 			handler := NewServiceGroupHandler(querier, commander, authz)
 
-			// Create request with JSON body
-			req := httptest.NewRequest("PATCH", "/service-groups/"+tc.id, strings.NewReader(tc.requestBody))
-			req.Header.Set("Content-Type", "application/json")
-
-			// Add ID to chi context and simulate IDMiddleware
+			// Create request with simulated middleware context
+			req := httptest.NewRequest("PATCH", "/service-groups/"+tc.id, nil)
 			req = addIDToChiContext(req, tc.id)
 			req = simulateIDMiddleware(req, tc.id)
-
-			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -593,22 +462,13 @@ func TestServiceGroupHandleDelete(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer)
+		mockSetup      func(commander *mockServiceGroupCommander)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(commander *mockServiceGroupCommander) {
 				// Setup the commander to delete
 				commander.deleteFunc = func(ctx context.Context, id domain.UUID) error {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
@@ -618,42 +478,9 @@ func TestServiceGroupHandleDelete(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 		},
 		{
-			name: "AuthorizationError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name: "AuthScopeError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the querier to return auth scope error
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return nil, fmt.Errorf("auth scope error")
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "DeleteError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockServiceGroupQuerier, commander *mockServiceGroupCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(commander *mockServiceGroupCommander) {
 				// Setup the commander to return an error
 				commander.deleteFunc = func(ctx context.Context, id domain.UUID) error {
 					return fmt.Errorf("delete error")
@@ -669,7 +496,7 @@ func TestServiceGroupHandleDelete(t *testing.T) {
 			querier := &mockServiceGroupQuerier{}
 			commander := &mockServiceGroupCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(commander)
 
 			// Create the handler
 			handler := NewServiceGroupHandler(querier, commander, authz)

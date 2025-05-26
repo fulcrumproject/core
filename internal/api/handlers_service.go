@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -33,62 +32,131 @@ func NewServiceHandler(
 	}
 }
 
+// Request types
+
+// CreateServiceRequest represents the request to create a service
+type CreateServiceRequest struct {
+	GroupID       domain.UUID       `json:"groupId"`
+	AgentID       domain.UUID       `json:"agentId"`
+	ServiceTypeID domain.UUID       `json:"serviceTypeId"`
+	Name          string            `json:"name"`
+	Attributes    domain.Attributes `json:"attributes"`
+	Properties    domain.JSON       `json:"properties"`
+}
+
+// UpdateServiceRequest represents the request to update a service
+type UpdateServiceRequest struct {
+	Name       *string      `json:"name,omitempty"`
+	Properties *domain.JSON `json:"properties,omitempty"`
+}
+
+// ServiceActionRequest represents a state transition request
+type ServiceActionRequest struct {
+	Action string `json:"action"`
+}
+
+// CreateServiceScopeExtractor creates an extractor that gets a combined scope from the request body
+// by retrieving scopes from both ServiceGroup and Agent
+func CreateServiceScopeExtractor(
+	serviceGroupQuerier domain.ServiceGroupQuerier,
+	agentQuerier domain.AgentQuerier,
+) AuthTargetScopeExtractor {
+	return func(r *http.Request) (*domain.AuthTargetScope, error) {
+		// Get decoded body from context
+		body := MustGetBody[CreateServiceRequest](r.Context())
+
+		// Get service group scope
+		serviceGroupScope, err := serviceGroupQuerier.AuthScope(r.Context(), body.GroupID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Get agent scope
+		agentScope, err := agentQuerier.AuthScope(r.Context(), body.AgentID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Combine the scopes
+		scope := &domain.AuthTargetScope{
+			ConsumerID:    serviceGroupScope.ConsumerID,
+			ParticipantID: agentScope.ParticipantID,
+			AgentID:       &body.AgentID,
+		}
+
+		return scope, nil
+	}
+}
+
 // Routes returns the router with all service routes registered
 func (h *ServiceHandler) Routes() func(r chi.Router) {
-
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
-		r.Post("/", h.handleCreate)
+		// List - simple authorization
+		r.With(
+			AuthzSimple(domain.SubjectService, domain.ActionRead, h.authz),
+		).Get("/", h.handleList)
+
+		// Create - decode body + specialized scope extractor for authorization
+		r.With(
+			DecodeBody[CreateServiceRequest](),
+			AuthzFromExtractor(
+				domain.SubjectService,
+				domain.ActionCreate,
+				h.authz,
+				CreateServiceScopeExtractor(h.serviceGroupQuerier, h.agentQuerier),
+			),
+		).Post("/", h.handleCreate)
+
+		// Resource-specific routes
 		r.Group(func(r chi.Router) {
-			r.Use(IDMiddleware)
-			r.Get("/{id}", h.handleGet)
-			r.Patch("/{id}", h.handleUpdate)
-			r.Post("/{id}/start", h.handleStart)
-			r.Post("/{id}/stop", h.handleStop)
-			r.Delete("/{id}", h.handleDelete)
-			r.Post("/{id}/retry", h.handleRetry)
+			r.Use(ID)
+
+			// Get - authorize from resource ID
+			r.With(
+				AuthzFromID(domain.SubjectService, domain.ActionRead, h.authz, h.querier),
+			).Get("/{id}", h.handleGet)
+
+			// Update - decode body + authorize from resource ID
+			r.With(
+				DecodeBody[UpdateServiceRequest](),
+				AuthzFromID(domain.SubjectService, domain.ActionUpdate, h.authz, h.querier),
+			).Patch("/{id}", h.handleUpdate)
+
+			// Start - authorize from resource ID
+			r.With(
+				AuthzFromID(domain.SubjectService, domain.ActionStart, h.authz, h.querier),
+			).Post("/{id}/start", h.handleStart)
+
+			// Stop - authorize from resource ID
+			r.With(
+				AuthzFromID(domain.SubjectService, domain.ActionStop, h.authz, h.querier),
+			).Post("/{id}/stop", h.handleStop)
+
+			// Delete - authorize from resource ID
+			r.With(
+				AuthzFromID(domain.SubjectService, domain.ActionDelete, h.authz, h.querier),
+			).Delete("/{id}", h.handleDelete)
+
+			// Retry - authorize from resource ID
+			r.With(
+				AuthzFromID(domain.SubjectService, domain.ActionUpdate, h.authz, h.querier),
+			).Post("/{id}/retry", h.handleRetry)
 		})
 	}
 }
 
 func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	var p struct {
-		GroupID       domain.UUID       `json:"groupId"`
-		AgentID       domain.UUID       `json:"agentId"`
-		ServiceTypeID domain.UUID       `json:"serviceTypeId"`
-		Name          string            `json:"name"`
-		Attributes    domain.Attributes `json:"attributes"`
-		Properties    domain.JSON       `json:"properties"`
-	}
-	if err := render.Decode(r, &p); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
-	serviceGroupScope, err := h.serviceGroupQuerier.AuthScope(r.Context(), p.GroupID)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-	agentScope, err := h.agentQuerier.AuthScope(r.Context(), p.AgentID)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-	scope := &domain.AuthScope{ConsumerID: serviceGroupScope.ConsumerID, ParticipantID: agentScope.ParticipantID, AgentID: &p.AgentID}
-	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectService, domain.ActionCreate, scope); err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
+	// Get decoded body from context
+	body := MustGetBody[CreateServiceRequest](r.Context())
 
 	service, err := h.commander.Create(
 		r.Context(),
-		p.AgentID,
-		p.ServiceTypeID,
-		p.GroupID,
-		p.Name,
-		p.Attributes,
-		p.Properties,
+		body.AgentID,
+		body.ServiceTypeID,
+		body.GroupID,
+		body.Name,
+		body.Attributes,
+		body.Properties,
 	)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -100,13 +168,7 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServiceHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-
-	_, err := h.authorize(r.Context(), id, domain.ActionRead)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
 
 	service, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
@@ -119,11 +181,6 @@ func (h *ServiceHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 func (h *ServiceHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := domain.MustGetAuthIdentity(r.Context())
-
-	if err := h.authz.Authorize(id, domain.SubjectService, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
 
 	pag, err := parsePageRequest(r)
 	if err != nil {
@@ -141,29 +198,14 @@ func (h *ServiceHandler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServiceHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-
-	_, err := h.authorize(r.Context(), id, domain.ActionUpdate)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
-
-	var p struct {
-		Name       *string              `json:"name"`
-		State      *domain.ServiceState `json:"state"`
-		Properties *domain.JSON         `json:"properties"`
-	}
-	if err := render.Decode(r, &p); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
+	id := MustGetID(r.Context())
+	body := MustGetBody[UpdateServiceRequest](r.Context())
 
 	service, err := h.commander.Update(
 		r.Context(),
 		id,
-		p.Name,
-		p.Properties,
+		body.Name,
+		body.Properties,
 	)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -186,24 +228,7 @@ func (h *ServiceHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServiceHandler) handleTransition(w http.ResponseWriter, r *http.Request, t domain.ServiceState) {
-	id := MustGetID(r)
-
-	var action domain.AuthAction
-	switch t {
-	case domain.ServiceStarted:
-		action = domain.ActionStart
-	case domain.ServiceStopped:
-		action = domain.ActionStop
-	case domain.ServiceDeleted:
-		action = domain.ActionDelete
-	default:
-		action = domain.ActionUpdate
-	}
-
-	if _, err := h.authorize(r.Context(), id, action); err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
 
 	if _, err := h.commander.Transition(r.Context(), id, t); err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -213,12 +238,8 @@ func (h *ServiceHandler) handleTransition(w http.ResponseWriter, r *http.Request
 }
 
 func (h *ServiceHandler) handleRetry(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionUpdate)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
+
 	if _, err := h.commander.Retry(r.Context(), id); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -273,16 +294,4 @@ func serviceToResponse(s *domain.Service) *ServiceResponse {
 		UpdatedAt:         JSONUTCTime(s.UpdatedAt),
 	}
 	return resp
-}
-
-func (h *ServiceHandler) authorize(ctx context.Context, id domain.UUID, action domain.AuthAction) (*domain.AuthScope, error) {
-	scope, err := h.querier.AuthScope(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	err = h.authz.AuthorizeCtx(ctx, domain.SubjectService, action, scope)
-	if err != nil {
-		return nil, err
-	}
-	return scope, nil
 }

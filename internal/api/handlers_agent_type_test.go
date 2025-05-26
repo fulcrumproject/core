@@ -16,24 +16,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestHandleGet tests the handleGet method
-func TestHandleGet(t *testing.T) {
-	// Setup test cases
+// TestAgentTypeHandleGet tests the handleGet method (pure business logic)
+func TestAgentTypeHandleGet(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockAgentTypeQuerier, authz *MockAuthorizer)
+		mockSetup      func(querier *mockAgentTypeQuerier)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
-				// Setup the mock to return a test agent type
+			mockSetup: func(querier *mockAgentTypeQuerier) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -57,10 +52,6 @@ func TestHandleGet(t *testing.T) {
 						},
 					}, nil
 				}
-
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
 			},
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
@@ -81,42 +72,12 @@ func TestHandleGet(t *testing.T) {
 		{
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(querier *mockAgentTypeQuerier) {
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.AgentType, error) {
 					return nil, domain.NewNotFoundErrorf("agent type not found")
 				}
-
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
 			},
 			expectedStatus: http.StatusNotFound,
-		},
-		{
-			name: "Unauthorized",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden, // The implementation returns Forbidden (403) for authorization failures
-		},
-		{
-			name: "AuthScopeError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return nil, domain.NewNotFoundErrorf("scope not found")
-				}
-			},
-			expectedStatus: http.StatusForbidden, // The implementation returns Forbidden (403) for authorization failures
 		},
 	}
 
@@ -125,26 +86,20 @@ func TestHandleGet(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentTypeQuerier{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, authz)
+			tc.mockSetup(querier)
 
 			// Create the handler
 			handler := NewAgentTypeHandler(querier, authz)
 
-			// Create request
+			// Create request with simulated middleware context
 			req := httptest.NewRequest("GET", "/agent-types/"+tc.id, nil)
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.id)
 
-			// We need to add the UUID to the context directly since we're not using the middleware
+			// Simulate ID middleware
 			parsedUUID, _ := domain.ParseUUID(tc.id)
 			req = req.WithContext(context.WithValue(req.Context(), uuidContextKey, parsedUUID))
-			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-			// Add auth identity to context for authorization
-			authIdentity := MockAuthIdentity{
-				id:   uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"),
-				role: domain.RoleFulcrumAdmin,
-			}
+			// Add auth identity to context (required by all handlers)
+			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -164,22 +119,19 @@ func TestHandleGet(t *testing.T) {
 	}
 }
 
-// TestHandleList tests the handleList method
-func TestHandleList(t *testing.T) {
-	// Setup test cases
+// TestAgentTypeHandleList tests the handleList method (pure business logic)
+func TestAgentTypeHandleList(t *testing.T) {
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockAgentTypeQuerier, authz *MockAuthorizer)
+		queryParams    string
+		mockSetup      func(querier *mockAgentTypeQuerier)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
 		{
-			name: "Success",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
-				// Setup the mock to return test agent types
+			name:        "Success",
+			queryParams: "?page=1&pageSize=10",
+			mockSetup: func(querier *mockAgentTypeQuerier) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -214,10 +166,9 @@ func TestHandleList(t *testing.T) {
 			expectedBody: map[string]interface{}{
 				"items": []interface{}{
 					map[string]interface{}{
-						"id":        "550e8400-e29b-41d4-a716-446655440000",
-						"name":      "TestAgentType1",
-						"createdAt": "2023-01-01T00:00:00Z",
-						// Matching the actual response structure from handler
+						"id":           "550e8400-e29b-41d4-a716-446655440000",
+						"name":         "TestAgentType1",
+						"createdAt":    "2023-01-01T00:00:00Z",
 						"updatedAt":    "2023-01-01T00:00:00Z",
 						"serviceTypes": []interface{}{},
 					},
@@ -229,7 +180,6 @@ func TestHandleList(t *testing.T) {
 						"serviceTypes": []interface{}{},
 					},
 				},
-				// The actual response structure uses these field names instead
 				"currentPage": float64(1),
 				"totalItems":  float64(2),
 				"totalPages":  float64(1),
@@ -238,20 +188,9 @@ func TestHandleList(t *testing.T) {
 			},
 		},
 		{
-			name: "Unauthorized",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-			},
-			expectedStatus: http.StatusForbidden, // The implementation returns Forbidden (403) for authorization failures
-		},
-		{
-			name: "InvalidPageRequest",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
-				// Mock the list function with empty results
+			name:        "EmptyResult",
+			queryParams: "?page=1&pageSize=10",
+			mockSetup: func(querier *mockAgentTypeQuerier) {
 				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
 					return &domain.PageResponse[domain.AgentType]{
 						Items:       []domain.AgentType{},
@@ -274,17 +213,40 @@ func TestHandleList(t *testing.T) {
 			},
 		},
 		{
-			name: "ListError",
-			mockSetup: func(querier *mockAgentTypeQuerier, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			name:        "InvalidPageRequest",
+			queryParams: "?page=invalid",
+			mockSetup: func(querier *mockAgentTypeQuerier) {
+				// parsePageRequest uses defaults for invalid values, so this will still call the querier
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
+					return &domain.PageResponse[domain.AgentType]{
+						Items:       []domain.AgentType{},
+						TotalItems:  0,
+						CurrentPage: 1,
+						TotalPages:  0,
+						HasNext:     false,
+						HasPrev:     false,
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: map[string]interface{}{
+				"items":       []interface{}{},
+				"totalItems":  float64(0),
+				"totalPages":  float64(0),
+				"currentPage": float64(1),
+				"hasNext":     false,
+				"hasPrev":     false,
+			},
+		},
+		{
+			name:        "ListError",
+			queryParams: "?page=1&pageSize=10",
+			mockSetup: func(querier *mockAgentTypeQuerier) {
 				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
 			expectedStatus: http.StatusInternalServerError,
-			// This test is passing correctly
 		},
 	}
 
@@ -293,23 +255,16 @@ func TestHandleList(t *testing.T) {
 			// Setup mocks
 			querier := &mockAgentTypeQuerier{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, authz)
+			tc.mockSetup(querier)
 
 			// Create the handler
 			handler := NewAgentTypeHandler(querier, authz)
 
-			// Create request
-			var req *http.Request
-			if tc.name == "InvalidPageRequest" {
-				// Create an invalid page request
-				req = httptest.NewRequest("GET", "/agent-types?page=invalid", nil)
-			} else {
-				req = httptest.NewRequest("GET", "/agent-types?page=1&pageSize=10", nil)
-			}
+			// Create request with simulated middleware context
+			req := httptest.NewRequest("GET", "/agent-types"+tc.queryParams, nil)
 
-			// Add auth identity to context for authorization
-			authIdentity := MockAuthIdentity{
-				id: uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")}
+			// Add auth identity to context (required by all handlers)
+			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request

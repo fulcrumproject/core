@@ -18,7 +18,7 @@ type Entity interface {
 // ReadRepository defines the generic repository interface
 type ReadRepository[T any] interface {
 	FindByID(ctx context.Context, id domain.UUID) (*T, error)
-	List(ctx context.Context, authScope *domain.AuthScope, page *domain.PageRequest) (*domain.PageResponse[T], error)
+	List(ctx context.Context, authScope *domain.AuthTargetScope, page *domain.PageRequest) (*domain.PageResponse[T], error)
 	Count(ctx context.Context) (int64, error)
 	Exists(ctx context.Context, id domain.UUID) (bool, error)
 }
@@ -171,8 +171,8 @@ func providerConsumerAgentAuthzFilterApplier(s *domain.AuthIdentityScope, q *gor
 }
 
 // getAuthScope retrieves auth scope for an entity with specified scope fields
-func (r *GormRepository[T]) getAuthScope(ctx context.Context, id domain.UUID, scopeFields ...string) (*domain.AuthScope, error) {
-	var scope domain.AuthScope
+func (r *GormRepository[T]) getAuthScope(ctx context.Context, id domain.UUID, scopeFields ...string) (*domain.AuthTargetScope, error) {
+	var scope domain.AuthTargetScope
 	entity := new(T)
 	entityValue := *entity
 

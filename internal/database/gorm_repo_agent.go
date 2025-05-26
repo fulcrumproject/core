@@ -75,6 +75,6 @@ func agentAuthzFilterApplier(s *domain.AuthIdentityScope, q *gorm.DB) *gorm.DB {
 }
 
 // AuthScope returns the auth scope for the agent
-func (r *GormAgentRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (r *GormAgentRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	return r.getAuthScope(ctx, id, "provider_id", "id as agent_id")
 }
