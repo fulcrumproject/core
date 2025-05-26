@@ -56,7 +56,7 @@ func NewDefaultRuleAuthorizer() *RuleAuthorizer {
 }
 
 // Authorize checks if the given identity has permission to perform the action on the subject within the provided context
-func (a *RuleAuthorizer) Authorize(identity AuthIdentity, subject AuthSubject, action AuthAction, targetScope *AuthScope) error {
+func (a *RuleAuthorizer) Authorize(identity AuthIdentity, subject AuthSubject, action AuthAction, targetScope *AuthTargetScope) error {
 	if identity == nil {
 		return errors.New("missing identity for authorization")
 	}
@@ -75,7 +75,7 @@ func (a *RuleAuthorizer) Authorize(identity AuthIdentity, subject AuthSubject, a
 	return nil
 }
 
-func (a *RuleAuthorizer) AuthorizeCtx(ctx context.Context, subject AuthSubject, action AuthAction, targetScope *AuthScope) error {
+func (a *RuleAuthorizer) AuthorizeCtx(ctx context.Context, subject AuthSubject, action AuthAction, targetScope *AuthTargetScope) error {
 	id := MustGetAuthIdentity(ctx)
 	return a.Authorize(id, subject, action, targetScope)
 }

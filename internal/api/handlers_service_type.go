@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -26,47 +25,50 @@ func NewServiceTypeHandler(
 
 // Routes returns the router with all service type routes registered
 func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
-
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
+		// List endpoint - simple authorization
+		r.With(
+			AuthzSimple(domain.SubjectServiceType, domain.ActionRead, h.authz),
+		).Get("/", h.handleList)
+
+		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
-			r.Use(IDMiddleware)
-			r.Get("/{id}", h.handleGet)
+			r.Use(ID)
+
+			// Get endpoint - authorize using service type's scope
+			r.With(
+				AuthzFromID(domain.SubjectServiceType, domain.ActionRead, h.authz, h.querier),
+			).Get("/{id}", h.handleGet)
 		})
 	}
 }
 
 func (h *ServiceTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionRead)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
+
 	serviceType, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	render.JSON(w, r, serviceTypeToResponse(serviceType))
 }
 
 func (h *ServiceTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := domain.MustGetAuthIdentity(r.Context())
-	if err := h.authz.Authorize(id, domain.SubjectServiceType, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
 	pag, err := parsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+
 	result, err := h.querier.List(r.Context(), id.Scope(), pag)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	render.JSON(w, r, NewPageResponse(result, serviceTypeToResponse))
 }
 
@@ -86,16 +88,4 @@ func serviceTypeToResponse(st *domain.ServiceType) *ServiceTypeResponse {
 		CreatedAt: JSONUTCTime(st.CreatedAt),
 		UpdatedAt: JSONUTCTime(st.UpdatedAt),
 	}
-}
-
-func (h *ServiceTypeHandler) authorize(ctx context.Context, id domain.UUID, action domain.AuthAction) (*domain.AuthScope, error) {
-	scope, err := h.querier.AuthScope(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	err = h.authz.AuthorizeCtx(ctx, domain.SubjectServiceType, action, scope)
-	if err != nil {
-		return nil, err
-	}
-	return scope, nil
 }

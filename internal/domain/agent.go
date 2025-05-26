@@ -347,5 +347,5 @@ type AgentQuerier interface {
 	CountByProvider(ctx context.Context, providerID UUID) (int64, error)
 
 	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
+	AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }

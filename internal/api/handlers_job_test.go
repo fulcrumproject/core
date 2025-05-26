@@ -17,21 +17,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestJobHandleList tests the handleList method
+// TestJobHandleList tests the handleList method (pure business logic)
 func TestJobHandleList(t *testing.T) {
-	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer)
+		queryParams    string
+		mockSetup      func(querier *mockJobQuerier)
 		expectedStatus int
+		expectedBody   map[string]interface{}
 	}{
 		{
-			name: "Success",
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
-				// Setup the mock to return test jobs
+			name:        "Success",
+			queryParams: "?page=1&pageSize=10",
+			mockSetup: func(querier *mockJobQuerier) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -52,22 +50,8 @@ func TestJobHandleList(t *testing.T) {
 								State:      domain.JobPending,
 								Priority:   1,
 							},
-							{
-								BaseEntity: domain.BaseEntity{
-									ID:        uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
-									CreatedAt: createdAt,
-									UpdatedAt: updatedAt,
-								},
-								ProviderID: uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
-								ConsumerID: uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
-								AgentID:    uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
-								ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
-								Action:     domain.ServiceActionDelete,
-								State:      domain.JobCompleted,
-								Priority:   2,
-							},
 						},
-						TotalItems:  2,
+						TotalItems:  1,
 						CurrentPage: 1,
 						TotalPages:  1,
 						HasNext:     false,
@@ -75,21 +59,43 @@ func TestJobHandleList(t *testing.T) {
 				}
 			},
 			expectedStatus: http.StatusOK,
-		},
-		{
-			name: "Unauthorized",
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
+			expectedBody: map[string]interface{}{
+				"currentPage": float64(1),
+				"totalItems":  float64(1),
+				"totalPages":  float64(1),
+				"hasNext":     false,
+				"hasPrev":     false,
 			},
-			expectedStatus: http.StatusForbidden,
 		},
 		{
-			name: "ListError",
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			name:        "EmptyResult",
+			queryParams: "?page=1&pageSize=10",
+			mockSetup: func(querier *mockJobQuerier) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
+					return &domain.PageResponse[domain.Job]{
+						Items:       []domain.Job{},
+						TotalItems:  0,
+						CurrentPage: 1,
+						TotalPages:  0,
+						HasNext:     false,
+						HasPrev:     false,
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: map[string]interface{}{
+				"items":       []interface{}{},
+				"totalItems":  float64(0),
+				"totalPages":  float64(0),
+				"currentPage": float64(1),
+				"hasNext":     false,
+				"hasPrev":     false,
+			},
+		},
+		{
+			name:        "ListError",
+			queryParams: "?page=1&pageSize=10",
+			mockSetup: func(querier *mockJobQuerier) {
 				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
 					return nil, fmt.Errorf("database error")
 				}
@@ -104,15 +110,15 @@ func TestJobHandleList(t *testing.T) {
 			querier := &mockJobQuerier{}
 			commander := &mockJobCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(querier)
 
 			// Create the handler
 			handler := NewJobHandler(querier, commander, authz)
 
-			// Create request
-			req := httptest.NewRequest("GET", "/jobs?page=1&pageSize=10", nil)
+			// Create request with simulated middleware context
+			req := httptest.NewRequest("GET", "/jobs"+tc.queryParams, nil)
 
-			// Add auth identity to context for authorization
+			// Add auth identity to context (required by all handlers)
 			authIdentity := NewMockAuthFulcrumAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
@@ -128,14 +134,19 @@ func TestJobHandleList(t *testing.T) {
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				require.NoError(t, err)
 
-				// Verify response structure
-				assert.Equal(t, float64(1), response["currentPage"])
-				assert.Equal(t, float64(2), response["totalItems"])
-				assert.Equal(t, float64(1), response["totalPages"])
-				assert.Equal(t, false, response["hasNext"])
+				for key, expectedValue := range tc.expectedBody {
+					assert.Equal(t, expectedValue, response[key])
+				}
 
-				items := response["items"].([]interface{})
-				assert.Equal(t, 2, len(items))
+				if tc.name == "Success" {
+					items := response["items"].([]interface{})
+					assert.Equal(t, 1, len(items))
+
+					firstItem := items[0].(map[string]interface{})
+					assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", firstItem["id"])
+					assert.Equal(t, "ServiceCreate", firstItem["action"])
+					assert.Equal(t, "Pending", firstItem["state"])
+				}
 			}
 		})
 	}
@@ -178,8 +189,8 @@ func TestJobHandleGet(t *testing.T) {
 					}, nil
 				}
 
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 			},
 			expectedStatus: http.StatusOK,
@@ -195,24 +206,11 @@ func TestJobHandleGet(t *testing.T) {
 					return nil, domain.NewNotFoundErrorf("job not found")
 				}
 
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 			},
 			expectedStatus: http.StatusNotFound,
-		},
-		{
-			name: "Unauthorized",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
 		},
 	}
 
@@ -305,14 +303,6 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 			},
 			expectedStatus: http.StatusOK,
 		},
-		{
-			name: "Unauthorized",
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-			},
-			expectedStatus: http.StatusForbidden, // Returns ErrDomain which is mapped to BadRequest
-		},
 	}
 
 	for _, tc := range testCases {
@@ -366,8 +356,8 @@ func TestJobHandleClaimJob(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				commander.claimFunc = func(ctx context.Context, jobID domain.UUID) error {
@@ -377,27 +367,14 @@ func TestJobHandleClaimJob(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 		},
 		{
-			name: "Unauthorized",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "ClaimError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				commander.claimFunc = func(ctx context.Context, jobID domain.UUID) error {
@@ -464,8 +441,8 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				commander.completeFunc = func(ctx context.Context, jobID domain.UUID, resources *domain.JSON, externalID *string) error {
@@ -473,37 +450,6 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				}
 			},
 			expectedStatus: http.StatusNoContent,
-		},
-		{
-			name: "Unauthorized",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{
-				"resources": {"cpu": 2, "memory": 4},
-				"externalID": "ext-123"
-			}`,
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name:        "InvalidRequest",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{invalid json`,
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Auth should succeed but invalid JSON
-				authz.ShouldSucceed = true
-
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "CompleteError",
@@ -516,8 +462,8 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				commander.completeFunc = func(ctx context.Context, jobID domain.UUID, resources *domain.JSON, externalID *string) error {
@@ -554,6 +500,11 @@ func TestJobHandleCompleteJob(t *testing.T) {
 			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
+			// Simulate body middleware for tests that need it
+			var body CompleteJobRequest
+			json.Unmarshal([]byte(tc.requestBody), &body)
+			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, body))
+
 			// Execute request
 			w := httptest.NewRecorder()
 			handler.handleCompleteJob(w, req)
@@ -584,8 +535,8 @@ func TestJobHandleFailJob(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				commander.failFunc = func(ctx context.Context, jobID domain.UUID, errorMessage string) error {
@@ -593,36 +544,6 @@ func TestJobHandleFailJob(t *testing.T) {
 				}
 			},
 			expectedStatus: http.StatusNoContent,
-		},
-		{
-			name: "Unauthorized",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{
-				"errorMessage": "Resource allocation failed"
-			}`,
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name:        "InvalidRequest",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{invalid json`,
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Auth should succeed but invalid JSON
-				authz.ShouldSucceed = true
-
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "FailError",
@@ -634,8 +555,8 @@ func TestJobHandleFailJob(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+					return &domain.EmptyAuthTargetScope, nil
 				}
 
 				commander.failFunc = func(ctx context.Context, jobID domain.UUID, errorMessage string) error {
@@ -671,6 +592,11 @@ func TestJobHandleFailJob(t *testing.T) {
 			// Add auth identity to context for authorization
 			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+
+			// Simulate body middleware for tests that need it
+			var body FailJobRequest
+			json.Unmarshal([]byte(tc.requestBody), &body)
+			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, body))
 
 			// Execute request
 			w := httptest.NewRecorder()

@@ -246,7 +246,7 @@ func TestValidateAuthScope(t *testing.T) {
 	tests := []struct {
 		name          string
 		setupIdentity func() AuthIdentity
-		targetScope   *AuthScope
+		targetScope   *AuthTargetScope
 		wantErr       bool
 		errContains   string
 	}{
@@ -255,7 +255,7 @@ func TestValidateAuthScope(t *testing.T) {
 			setupIdentity: func() AuthIdentity {
 				return nil
 			},
-			targetScope: &AuthScope{},
+			targetScope: &AuthTargetScope{},
 			wantErr:     true,
 			errContains: "nil identity",
 		},
@@ -273,7 +273,7 @@ func TestValidateAuthScope(t *testing.T) {
 			setupIdentity: func() AuthIdentity {
 				return NewMockAuthIdentity(uuid.New(), RoleFulcrumAdmin)
 			},
-			targetScope: &AuthScope{
+			targetScope: &AuthTargetScope{
 				ParticipantID: &participantID,
 				AgentID:       &agentID,
 				ProviderID:    &participantID,
@@ -287,7 +287,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
 					WithParticipantID(&participantID)
 			},
-			targetScope: &AuthScope{
+			targetScope: &AuthTargetScope{
 				ParticipantID: &participantID,
 			},
 			wantErr: false,
@@ -298,7 +298,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
 					WithParticipantID(&participantID)
 			},
-			targetScope: &AuthScope{
+			targetScope: &AuthTargetScope{
 				ParticipantID: &differentParticipantID,
 			},
 			wantErr:     true,
@@ -310,7 +310,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleAgent).
 					WithAgentID(&agentID)
 			},
-			targetScope: &AuthScope{
+			targetScope: &AuthTargetScope{
 				AgentID: &agentID,
 			},
 			wantErr: false,
@@ -321,7 +321,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleAgent).
 					WithAgentID(&agentID)
 			},
-			targetScope: &AuthScope{
+			targetScope: &AuthTargetScope{
 				AgentID: &differentAgentID,
 			},
 			wantErr:     true,
@@ -333,7 +333,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
 					WithParticipantID(&participantID)
 			},
-			targetScope: &AuthScope{},
+			targetScope: &AuthTargetScope{},
 			wantErr:     false,
 		},
 		{
@@ -342,7 +342,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleAgent).
 					WithAgentID(&agentID)
 			},
-			targetScope: &AuthScope{},
+			targetScope: &AuthTargetScope{},
 			wantErr:     false,
 		},
 		// New test cases for Provider and Consumer validation
@@ -352,7 +352,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
 					WithParticipantID(&participantID)
 			},
-			targetScope: &AuthScope{
+			targetScope: &AuthTargetScope{
 				ProviderID: &participantID,
 			},
 			wantErr: false,
@@ -363,7 +363,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
 					WithParticipantID(&participantID)
 			},
-			targetScope: &AuthScope{
+			targetScope: &AuthTargetScope{
 				ProviderID: &differentParticipantID,
 			},
 			wantErr:     true,
@@ -375,7 +375,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
 					WithParticipantID(&participantID)
 			},
-			targetScope: &AuthScope{
+			targetScope: &AuthTargetScope{
 				ConsumerID: &participantID,
 			},
 			wantErr: false,
@@ -386,7 +386,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
 					WithParticipantID(&participantID)
 			},
-			targetScope: &AuthScope{
+			targetScope: &AuthTargetScope{
 				ConsumerID: &differentParticipantID,
 			},
 			wantErr:     true,
@@ -398,7 +398,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
 					WithParticipantID(&participantID)
 			},
-			targetScope: &AuthScope{
+			targetScope: &AuthTargetScope{
 				ParticipantID: &participantID,
 				ProviderID:    &participantID,
 				ConsumerID:    &participantID,
@@ -411,7 +411,7 @@ func TestValidateAuthScope(t *testing.T) {
 				return NewMockAuthIdentity(uuid.New(), RoleParticipant).
 					WithParticipantID(&participantID)
 			},
-			targetScope: &AuthScope{
+			targetScope: &AuthTargetScope{
 				ParticipantID: &participantID,
 				ProviderID:    &participantID,
 				ConsumerID:    &differentParticipantID,

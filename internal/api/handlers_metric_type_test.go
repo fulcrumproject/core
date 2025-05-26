@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -72,17 +71,17 @@ func TestMetricTypeHandleCreate(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		requestBody    string
-		mockSetup      func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer)
+		requestBody    CreateMetricTypeRequest
+		mockSetup      func(commander *mockMetricTypeCommander)
 		expectedStatus int
 	}{
 		{
-			name:        "Success",
-			requestBody: `{"name": "CPU Usage", "entityType": "service"}`,
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			name: "Success",
+			requestBody: CreateMetricTypeRequest{
+				Name:       "CPU Usage",
+				EntityType: domain.MetricEntityType("service"),
+			},
+			mockSetup: func(commander *mockMetricTypeCommander) {
 				// Setup the commander
 				commander.createFunc = func(ctx context.Context, name string, entityType domain.MetricEntityType) (*domain.MetricType, error) {
 					assert.Equal(t, "CPU Usage", name)
@@ -105,29 +104,12 @@ func TestMetricTypeHandleCreate(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:        "InvalidRequestFormat",
-			requestBody: `{"invalid_json":`,
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// No setup needed for this case
+			name: "CommanderError",
+			requestBody: CreateMetricTypeRequest{
+				Name:       "CPU Usage",
+				EntityType: domain.MetricEntityType("service"),
 			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:        "AuthorizationError",
-			requestBody: `{"name": "CPU Usage", "entityType": "service"}`,
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-			},
-			expectedStatus: http.StatusForbidden, // AuthorizeCtx returns 403 Forbidden
-		},
-		{
-			name:        "CommanderError",
-			requestBody: `{"name": "CPU Usage", "entityType": "service"}`,
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(commander *mockMetricTypeCommander) {
 				// Setup the commander to return an error
 				commander.createFunc = func(ctx context.Context, name string, entityType domain.MetricEntityType) (*domain.MetricType, error) {
 					return nil, fmt.Errorf("database error")
@@ -143,18 +125,15 @@ func TestMetricTypeHandleCreate(t *testing.T) {
 			querier := &mockMetricTypeQuerier{}
 			commander := &mockMetricTypeCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(commander)
 
 			// Create the handler
 			handler := NewMetricTypeHandler(querier, commander, authz)
 
-			// Create request with JSON body
-			req := httptest.NewRequest("POST", "/metric-types", strings.NewReader(tc.requestBody))
-			req.Header.Set("Content-Type", "application/json")
-
-			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			// Create request with simulated middleware context
+			req := httptest.NewRequest("POST", "/metric-types", nil)
+			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -183,21 +162,13 @@ func TestMetricTypeHandleGet(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer)
+		mockSetup      func(querier *mockMetricTypeQuerier)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return a metric type
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(querier *mockMetricTypeQuerier) {
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.MetricType, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 
@@ -218,48 +189,15 @@ func TestMetricTypeHandleGet(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "AuthorizationError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(querier *mockMetricTypeQuerier) {
 				// Setup the querier to return not found
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.MetricType, error) {
 					return nil, domain.NotFoundError{Err: fmt.Errorf("metric type not found")}
 				}
 			},
 			expectedStatus: http.StatusNotFound,
-		},
-		{
-			name: "AuthScopeError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the querier to return auth scope error
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return nil, fmt.Errorf("auth scope error")
-				}
-			},
-			expectedStatus: http.StatusForbidden,
 		},
 	}
 
@@ -269,23 +207,18 @@ func TestMetricTypeHandleGet(t *testing.T) {
 			querier := &mockMetricTypeQuerier{}
 			commander := &mockMetricTypeCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(querier)
 
 			// Create the handler
 			handler := NewMetricTypeHandler(querier, commander, authz)
 
-			// Create request
+			// Create request with simulated middleware context
 			req := httptest.NewRequest("GET", "/metric-types/"+tc.id, nil)
 
-			// Add ID to chi context
-			req = addIDToChiContext(req, tc.id)
-
-			// Simulate the IDMiddleware
-			req = simulateIDMiddleware(req, tc.id)
-
-			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			// Simulate ID middleware
+			parsedUUID, _ := domain.ParseUUID(tc.id)
+			req = req.WithContext(context.WithValue(req.Context(), uuidContextKey, parsedUUID))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -313,15 +246,12 @@ func TestMetricTypeHandleList(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer)
+		mockSetup      func(querier *mockMetricTypeQuerier)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(querier *mockMetricTypeQuerier) {
 				// Setup the mock to return metric types
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -358,19 +288,8 @@ func TestMetricTypeHandleList(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "Unauthorized",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "ListError",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(querier *mockMetricTypeQuerier) {
 				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricType], error) {
 					return nil, fmt.Errorf("database error")
 				}
@@ -385,7 +304,7 @@ func TestMetricTypeHandleList(t *testing.T) {
 			querier := &mockMetricTypeQuerier{}
 			commander := &mockMetricTypeCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(querier)
 
 			// Create the handler
 			handler := NewMetricTypeHandler(querier, commander, authz)
@@ -393,7 +312,7 @@ func TestMetricTypeHandleList(t *testing.T) {
 			// Create request
 			req := httptest.NewRequest("GET", "/metric-types?page=1&pageSize=10", nil)
 
-			// Add auth identity to context for authorization
+			// Add auth identity to context (required by handler)
 			authIdentity := NewMockAuthFulcrumAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
@@ -438,33 +357,24 @@ func TestMetricTypeHandleUpdate(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		requestBody    string
-		mockSetup      func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer)
+		requestBody    UpdateMetricTypeRequest
+		mockSetup      func(commander *mockMetricTypeCommander)
 		expectedStatus int
 	}{
 		{
-			name:        "Success",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated CPU Usage"}`,
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
-				}
-
-				// Setup the commander to update
+			name: "Success",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: UpdateMetricTypeRequest{
+				Name: &[]string{"Updated CPU Usage"}[0],
+			},
+			mockSetup: func(commander *mockMetricTypeCommander) {
+				// Setup the commander
 				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string) (*domain.MetricType, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					assert.NotNil(t, name)
 					assert.Equal(t, "Updated CPU Usage", *name)
 
-					newName := "Updated CPU Usage"
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
 					return &domain.MetricType{
 						BaseEntity: domain.BaseEntity{
@@ -472,7 +382,7 @@ func TestMetricTypeHandleUpdate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:       newName,
+						Name:       *name,
 						EntityType: domain.MetricEntityType("service"),
 					}, nil
 				}
@@ -480,54 +390,12 @@ func TestMetricTypeHandleUpdate(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:        "InvalidRequestFormat",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"invalid_json":`,
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// No setup needed for this case
+			name: "CommanderError",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: UpdateMetricTypeRequest{
+				Name: &[]string{"Updated CPU Usage"}[0],
 			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:        "AuthorizationError",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated CPU Usage"}`,
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name:        "AuthScopeError",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated CPU Usage"}`,
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the querier to return auth scope error
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return nil, fmt.Errorf("auth scope error")
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name:        "CommanderError",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated CPU Usage"}`,
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(commander *mockMetricTypeCommander) {
 				// Setup the commander to return an error
 				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string) (*domain.MetricType, error) {
 					return nil, fmt.Errorf("update error")
@@ -543,24 +411,19 @@ func TestMetricTypeHandleUpdate(t *testing.T) {
 			querier := &mockMetricTypeQuerier{}
 			commander := &mockMetricTypeCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(commander)
 
 			// Create the handler
 			handler := NewMetricTypeHandler(querier, commander, authz)
 
-			// Create request with JSON body
-			req := httptest.NewRequest("PATCH", "/metric-types/"+tc.id, strings.NewReader(tc.requestBody))
-			req.Header.Set("Content-Type", "application/json")
+			// Create request with simulated middleware context
+			req := httptest.NewRequest("PATCH", "/metric-types/"+tc.id, nil)
 
-			// Add ID to chi context
-			req = addIDToChiContext(req, tc.id)
-
-			// Simulate the IDMiddleware
-			req = simulateIDMiddleware(req, tc.id)
-
-			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			// Simulate ID and DecodeBody middleware
+			parsedUUID, _ := domain.ParseUUID(tc.id)
+			req = req.WithContext(context.WithValue(req.Context(), uuidContextKey, parsedUUID))
+			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -589,22 +452,13 @@ func TestMetricTypeHandleDelete(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer)
+		mockSetup      func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander) {
 				// Setup the querier to find the metric type
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.MetricType, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
@@ -632,42 +486,9 @@ func TestMetricTypeHandleDelete(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 		},
 		{
-			name: "AuthorizationError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name: "AuthScopeError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the querier to return auth scope error
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return nil, fmt.Errorf("auth scope error")
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander) {
 				// Setup the querier to find no metric type
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.MetricType, error) {
 					return nil, domain.NotFoundError{Err: fmt.Errorf("metric type not found")}
@@ -678,15 +499,7 @@ func TestMetricTypeHandleDelete(t *testing.T) {
 		{
 			name: "DeleteError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				querier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(querier *mockMetricTypeQuerier, commander *mockMetricTypeCommander) {
 				// Setup the querier to find the metric type
 				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.MetricType, error) {
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -718,23 +531,18 @@ func TestMetricTypeHandleDelete(t *testing.T) {
 			querier := &mockMetricTypeQuerier{}
 			commander := &mockMetricTypeCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(querier, commander)
 
 			// Create the handler
 			handler := NewMetricTypeHandler(querier, commander, authz)
 
-			// Create request
+			// Create request with simulated middleware context
 			req := httptest.NewRequest("DELETE", "/metric-types/"+tc.id, nil)
 
-			// Add ID to chi context
-			req = addIDToChiContext(req, tc.id)
-
-			// Simulate the IDMiddleware
-			req = simulateIDMiddleware(req, tc.id)
-
-			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			// Simulate ID middleware
+			parsedUUID, _ := domain.ParseUUID(tc.id)
+			req = req.WithContext(context.WithValue(req.Context(), uuidContextKey, parsedUUID))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()

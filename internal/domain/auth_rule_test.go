@@ -149,7 +149,7 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 		setupMockID func() AuthIdentity
 		subject     AuthSubject
 		action      AuthAction
-		targetScope *AuthScope
+		targetScope *AuthTargetScope
 		wantErr     bool
 		errContains string
 	}{
@@ -160,7 +160,7 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{},
+			targetScope: &AuthTargetScope{},
 			wantErr:     false,
 		},
 		{
@@ -171,7 +171,7 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{ProviderID: &participantID},
+			targetScope: &AuthTargetScope{ProviderID: &participantID},
 			wantErr:     false,
 		},
 		{
@@ -183,7 +183,7 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{ProviderID: &participantID},
+			targetScope: &AuthTargetScope{ProviderID: &participantID},
 			wantErr:     true,
 			errContains: "invalid authorization scope",
 		},
@@ -195,7 +195,7 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{},
+			targetScope: &AuthTargetScope{},
 			wantErr:     true,
 			errContains: "does not have permission",
 		},
@@ -207,7 +207,7 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			},
 			subject:     SubjectService,
 			action:      ActionRead,
-			targetScope: &AuthScope{ConsumerID: &consumerID},
+			targetScope: &AuthTargetScope{ConsumerID: &consumerID},
 			wantErr:     false,
 		},
 		{
@@ -217,7 +217,7 @@ func TestRuleAuthorizer_Authorize(t *testing.T) {
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{},
+			targetScope: &AuthTargetScope{},
 			wantErr:     true,
 			errContains: "missing identity",
 		},
@@ -265,7 +265,7 @@ func TestRuleAuthorizer_AuthorizeCtx(t *testing.T) {
 		setupCtx    func() context.Context
 		subject     AuthSubject
 		action      AuthAction
-		targetScope *AuthScope
+		targetScope *AuthTargetScope
 		wantErr     bool
 	}{
 		{
@@ -276,7 +276,7 @@ func TestRuleAuthorizer_AuthorizeCtx(t *testing.T) {
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{},
+			targetScope: &AuthTargetScope{},
 			wantErr:     false,
 		},
 		{
@@ -287,7 +287,7 @@ func TestRuleAuthorizer_AuthorizeCtx(t *testing.T) {
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{},
+			targetScope: &AuthTargetScope{},
 			wantErr:     true,
 		},
 		{
@@ -298,7 +298,7 @@ func TestRuleAuthorizer_AuthorizeCtx(t *testing.T) {
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{ParticipantID: &participantID},
+			targetScope: &AuthTargetScope{ParticipantID: &participantID},
 			wantErr:     false,
 		},
 		{
@@ -308,7 +308,7 @@ func TestRuleAuthorizer_AuthorizeCtx(t *testing.T) {
 			},
 			subject:     SubjectAgent,
 			action:      ActionCreate,
-			targetScope: &AuthScope{},
+			targetScope: &AuthTargetScope{},
 			wantErr:     true,
 		},
 	}

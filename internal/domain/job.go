@@ -336,5 +336,5 @@ type JobQuerier interface {
 	GetTimeOutJobs(ctx context.Context, olderThan time.Duration) ([]*Job, error)
 
 	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
+	AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }

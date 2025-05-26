@@ -1,14 +1,36 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
 )
+
+type CreateAgentRequest struct {
+	Name        string             `json:"name"`
+	CountryCode domain.CountryCode `json:"countryCode,omitempty"`
+	Attributes  domain.Attributes  `json:"attributes,omitempty"`
+	ProviderID  domain.UUID        `json:"providerId"`
+	AgentTypeID domain.UUID        `json:"agentTypeId"`
+}
+
+// AuthTargetScope implements AuthTargetScopeProvider interface
+func (r CreateAgentRequest) AuthTargetScope() (*domain.AuthTargetScope, error) {
+	return &domain.AuthTargetScope{ParticipantID: &r.ProviderID}, nil
+}
+
+type UpdateAgentRequest struct {
+	Name        *string             `json:"name"`
+	State       *domain.AgentState  `json:"state"`
+	CountryCode *domain.CountryCode `json:"countryCode,omitempty"`
+	Attributes  *domain.Attributes  `json:"attributes,omitempty"`
+}
+
+type UpdateAgentStatusRequest struct {
+	State domain.AgentState `json:"state"`
+}
 
 type AgentHandler struct {
 	querier   domain.AgentQuerier
@@ -28,123 +50,120 @@ func NewAgentHandler(
 	}
 }
 
-// Routes returns the router with all agent routes registered
 func (h *AgentHandler) Routes() func(r chi.Router) {
-
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
-		r.Post("/", h.handleCreate)
+		// List endpoint - simple authorization
+		r.With(
+			AuthzSimple(domain.SubjectAgent, domain.ActionRead, h.authz),
+		).Get("/", h.handleList)
+
+		// Create endpoint - decode body, then authorize with provider ID
+		r.With(
+			DecodeBody[CreateAgentRequest](),
+			AuthzFromBody[CreateAgentRequest](domain.SubjectAgent, domain.ActionCreate, h.authz),
+		).Post("/", h.handleCreate)
+
+		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
-			r.Use(IDMiddleware)
-			r.Get("/{id}", h.handleGet)
-			r.Patch("/{id}", h.handleUpdate)
-			r.Delete("/{id}", h.handleDelete)
+			r.Use(ID)
+
+			// Get endpoint - authorize using agent's provider
+			r.With(
+				AuthzFromID(domain.SubjectAgent, domain.ActionRead, h.authz, h.querier),
+			).Get("/{id}", h.handleGet)
+
+			// Update endpoint - decode body, authorize using agent's provider
+			r.With(
+				DecodeBody[UpdateAgentRequest](),
+				AuthzFromID(domain.SubjectAgent, domain.ActionUpdate, h.authz, h.querier),
+			).Patch("/{id}", h.handleUpdate)
+
+			// Delete endpoint - authorize using agent's provider
+			r.With(
+				AuthzFromID(domain.SubjectAgent, domain.ActionDelete, h.authz, h.querier),
+			).Delete("/{id}", h.handleDelete)
 		})
-		r.Put("/me/status", h.handleUpdateStatusMe)
-		r.Get("/me", h.handleGetMe)
+
+		// Agent-specific routes (me endpoints)
+		// Note: These endpoints have special auth requirements
+		r.With(
+			RequireAgentIdentity(),
+			DecodeBody[UpdateAgentStatusRequest](),
+		).Put("/me/status", h.handleUpdateStatusMe)
+
+		r.With(
+			RequireAgentIdentity(),
+		).Get("/me", h.handleGetMe)
 	}
 }
 
 func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	var p struct {
-		Name          string             `json:"name"`
-		CountryCode   domain.CountryCode `json:"countryCode,omitempty"`
-		Attributes    domain.Attributes  `json:"attributes,omitempty"`
-		ParticipantID domain.UUID        `json:"providerId"`
-		AgentTypeID   domain.UUID        `json:"agentTypeId"`
-	}
-	if err := render.Decode(r, &p); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-	scope := domain.AuthScope{ParticipantID: &p.ParticipantID}
-	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectAgent, domain.ActionCreate, &scope); err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
+	p := MustGetBody[CreateAgentRequest](r.Context())
+
 	agent, err := h.commander.Create(
 		r.Context(),
 		p.Name,
 		p.CountryCode,
 		p.Attributes,
-		p.ParticipantID,
+		p.ProviderID,
 		p.AgentTypeID,
 	)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, agentToResponse(agent))
 }
 
 func (h *AgentHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionRead)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
+
 	agent, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
 		return
 	}
+
 	render.JSON(w, r, agentToResponse(agent))
 }
 
 // handleGetMe handles GET /agents/me
 // This endpoint allows agents to retrieve their own information
 func (h *AgentHandler) handleGetMe(w http.ResponseWriter, r *http.Request) {
-	agentID, err := MustGetAgentID(r.Context())
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
+	agentID := MustGetAgentID(r.Context())
+
 	agent, err := h.querier.FindByID(r.Context(), agentID)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
 		return
 	}
+
 	render.JSON(w, r, agentToResponse(agent))
 }
 
 func (h *AgentHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := domain.MustGetAuthIdentity(r.Context())
-	if err := h.authz.Authorize(id, domain.SubjectAgent, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
 	pag, err := parsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+
 	result, err := h.querier.List(r.Context(), id.Scope(), pag)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	render.JSON(w, r, NewPageResponse(result, agentToResponse))
 }
 
 func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionUpdate)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
-	var p struct {
-		Name        *string             `json:"name"`
-		State       *domain.AgentState  `json:"state"`
-		CountryCode *domain.CountryCode `json:"countryCode,omitempty"`
-		Attributes  *domain.Attributes  `json:"attributes,omitempty"`
-	}
-	if err := render.Decode(r, &p); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
+	id := MustGetID(r.Context())
+	p := MustGetBody[UpdateAgentRequest](r.Context())
+
 	agent, err := h.commander.Update(
 		r.Context(),
 		id,
@@ -157,48 +176,33 @@ func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	render.JSON(w, r, agentToResponse(agent))
 }
 
 // handleUpdateStatusMe handles PUT /agents/me/status
 // This endpoint allows agents to update their own status
 func (h *AgentHandler) handleUpdateStatusMe(w http.ResponseWriter, r *http.Request) {
-	var p struct {
-		State domain.AgentState `json:"state"`
-	}
-	if err := render.Decode(r, &p); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-	agentID, err := MustGetAgentID(r.Context())
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
+	p := MustGetBody[UpdateAgentStatusRequest](r.Context())
+	agentID := MustGetAgentID(r.Context())
+
 	agent, err := h.commander.UpdateState(r.Context(), agentID, p.State)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	render.JSON(w, r, agentToResponse(agent))
 }
 
 func (h *AgentHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionDelete)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
-	_, err = h.querier.FindByID(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrNotFound())
-		return
-	}
+	id := MustGetID(r.Context())
+
 	if err := h.commander.Delete(r.Context(), id); err != nil {
-		render.Render(w, r, ErrInternal(err))
+		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -237,28 +241,4 @@ func agentToResponse(a *domain.Agent) *AgentResponse {
 		response.AgentType = agentTypeToResponse(a.AgentType)
 	}
 	return response
-}
-
-// TODO review with agents/me
-func MustGetAgentID(ctx context.Context) (domain.UUID, error) {
-	id := domain.MustGetAuthIdentity(ctx)
-	if !id.IsRole(domain.RoleAgent) {
-		return uuid.Nil, domain.NewUnauthorizedErrorf("must be authenticated as agent")
-	}
-	if id.Scope().AgentID == nil {
-		return uuid.Nil, domain.NewUnauthorizedErrorf("agent with nil scope")
-	}
-	return *id.Scope().AgentID, nil
-}
-
-func (h *AgentHandler) authorize(ctx context.Context, id domain.UUID, action domain.AuthAction) (*domain.AuthScope, error) {
-	scope, err := h.querier.AuthScope(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	err = h.authz.AuthorizeCtx(ctx, domain.SubjectAgent, action, scope)
-	if err != nil {
-		return nil, err
-	}
-	return scope, nil
 }

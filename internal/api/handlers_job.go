@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 
@@ -10,6 +9,23 @@ import (
 
 	"fulcrumproject.org/core/internal/domain"
 )
+
+type ClaimJobRequest struct {
+	AgentID domain.UUID `json:"agentId"`
+}
+
+func (r ClaimJobRequest) AuthTargetScope() (*domain.AuthTargetScope, error) {
+	return &domain.AuthTargetScope{AgentID: &r.AgentID}, nil
+}
+
+type CompleteJobRequest struct {
+	Resources  *domain.JSON `json:"resources"`
+	ExternalID *string      `json:"externalID"`
+}
+
+type FailJobRequest struct {
+	ErrorMessage string `json:"errorMessage"`
+}
 
 // JobHandler handles HTTP requests for jobs
 type JobHandler struct {
@@ -33,24 +49,45 @@ func NewJobHandler(
 
 // Routes returns the router for job endpoints
 func (h *JobHandler) Routes() func(r chi.Router) {
-
 	return func(r chi.Router) {
-		// Admin routes
-		r.Get("/", h.handleList)
-		r.Group(func(r chi.Router) {
-			r.Use(IDMiddleware)
-			r.Get("/{id}", h.handleGet)
-		})
+		// List jobs - simple authorization
+		r.With(
+			AuthzSimple(domain.SubjectJob, domain.ActionRead, h.authz),
+		).Get("/", h.handleList)
 
-		// Agent job polling route
-		r.Get("/pending", h.handleGetPendingJobs)
+		// Agent job polling - requires agent identity
+		r.With(
+			RequireAgentIdentity(),
+			AuthzSimple(domain.SubjectJob, domain.ActionListPending, h.authz),
+		).Get("/pending", h.handleGetPendingJobs)
 
-		// Agent job action routes - all require agent authentication and UUID validation
+		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
-			r.Use(IDMiddleware)
-			r.Post("/{id}/claim", h.handleClaimJob)
-			r.Post("/{id}/complete", h.handleCompleteJob)
-			r.Post("/{id}/fail", h.handleFailJob) // For agents to mark a job as failed
+			r.Use(ID)
+
+			// Get job - authorize using job's scope
+			r.With(
+				AuthzFromID(domain.SubjectJob, domain.ActionRead, h.authz, h.querier),
+			).Get("/{id}", h.handleGet)
+
+			// Agent actions - require agent identity and authorize from job ID
+			r.With(
+				RequireAgentIdentity(),
+				DecodeBody[ClaimJobRequest](),
+				AuthzFromBody[ClaimJobRequest](domain.SubjectJob, domain.ActionClaim, h.authz),
+			).Post("/{id}/claim", h.handleClaimJob)
+
+			r.With(
+				RequireAgentIdentity(),
+				DecodeBody[CompleteJobRequest](),
+				AuthzFromID(domain.SubjectJob, domain.ActionComplete, h.authz, h.querier),
+			).Post("/{id}/complete", h.handleCompleteJob)
+
+			r.With(
+				RequireAgentIdentity(),
+				DecodeBody[FailJobRequest](),
+				AuthzFromID(domain.SubjectJob, domain.ActionFail, h.authz, h.querier),
+			).Post("/{id}/fail", h.handleFailJob)
 		})
 	}
 }
@@ -58,45 +95,36 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 // handleList handles GET /jobs
 func (h *JobHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := domain.MustGetAuthIdentity(r.Context())
-	if err := h.authz.Authorize(id, domain.SubjectJob, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
 	page, err := parsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+
 	result, err := h.querier.List(r.Context(), id.Scope(), page)
 	if err != nil {
 		render.Render(w, r, ErrInternal(err))
 		return
 	}
+
 	render.JSON(w, r, NewPageResponse(result, jobToResponse))
 }
 
 // handleGet handles GET /jobs/{id}
 func (h *JobHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionRead)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
+
 	job, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
 		return
 	}
+
 	render.JSON(w, r, jobToResponse(job))
 }
 
 // handleGetPendingJobs handles GET /jobs/pending
 func (h *JobHandler) handleGetPendingJobs(w http.ResponseWriter, r *http.Request) {
-	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectJob, domain.ActionListPending, &domain.EmptyAuthScope); err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
 	// Parse limit parameter
 	limitStr := r.URL.Query().Get("limit")
 	limit := 10 // Default
@@ -106,92 +134,64 @@ func (h *JobHandler) handleGetPendingJobs(w http.ResponseWriter, r *http.Request
 			limit = parsedLimit
 		}
 	}
+
 	// Get agent ID from context
-	agentID, err := MustGetAgentID(r.Context())
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
+	agentID := MustGetAgentID(r.Context())
+
 	// Get pending jobs for this agent
 	jobs, err := h.querier.GetPendingJobsForAgent(r.Context(), agentID, limit)
 	if err != nil {
 		render.Render(w, r, ErrInternal(err))
 		return
 	}
+
 	// Convert to response
 	jobResponses := make([]*JobResponse, len(jobs))
 	for i, job := range jobs {
 		jobResponses[i] = jobToResponse(job)
 	}
+
 	render.JSON(w, r, jobResponses)
 }
 
 // handleClaimJob handles POST /jobs/{id}/claim
 func (h *JobHandler) handleClaimJob(w http.ResponseWriter, r *http.Request) {
-	// Get job ID from URL
-	jobID := MustGetID(r)
-	_, err := h.authorize(r.Context(), jobID, domain.ActionClaim)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	jobID := MustGetID(r.Context())
+
 	// Claim job for this agent
 	if err := h.commander.Claim(r.Context(), jobID); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
 // handleCompleteJob handles POST /jobs/{id}/complete
 func (h *JobHandler) handleCompleteJob(w http.ResponseWriter, r *http.Request) {
-	// Get job ID from URL
-	jobID := MustGetID(r)
-	// Authorize
-	_, err := h.authorize(r.Context(), jobID, domain.ActionComplete)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
-	// Parse request body
-	var req struct {
-		Resources  *domain.JSON `json:"resources"`
-		ExternalID *string      `json:"externalID"`
-	}
-	if err := render.Decode(r, &req); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
+	jobID := MustGetID(r.Context())
+	req := MustGetBody[CompleteJobRequest](r.Context())
+
 	// Complete the job
 	if err := h.commander.Complete(r.Context(), jobID, req.Resources, req.ExternalID); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
 // handleFailJob handles POST /jobs/{id}/fail
 func (h *JobHandler) handleFailJob(w http.ResponseWriter, r *http.Request) {
-	// Get job ID from URL
-	jobID := MustGetID(r)
-	_, err := h.authorize(r.Context(), jobID, domain.ActionFail)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
-	// Parse request body
-	var p struct {
-		ErrorMessage string `json:"errorMessage"`
-	}
-	if err := render.Decode(r, &p); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
+	jobID := MustGetID(r.Context())
+	req := MustGetBody[FailJobRequest](r.Context())
+
 	// Fail the job
-	if err := h.commander.Fail(r.Context(), jobID, p.ErrorMessage); err != nil {
+	if err := h.commander.Fail(r.Context(), jobID, req.ErrorMessage); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -238,16 +238,4 @@ func jobToResponse(job *domain.Job) *JobResponse {
 		resp.Service = serviceToResponse(job.Service)
 	}
 	return resp
-}
-
-func (h *JobHandler) authorize(ctx context.Context, id domain.UUID, action domain.AuthAction) (*domain.AuthScope, error) {
-	scope, err := h.querier.AuthScope(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	err = h.authz.AuthorizeCtx(ctx, domain.SubjectJob, action, scope)
-	if err != nil {
-		return nil, err
-	}
-	return scope, nil
 }

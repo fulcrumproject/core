@@ -16,22 +16,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestAuditEntryHandleList tests the handleList method
+// TestAuditEntryHandleList tests the handleList method (pure business logic)
 func TestAuditEntryHandleList(t *testing.T) {
-	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *MockAuthorizer)
+		queryParams    string
+		mockSetup      func(querier *mockAuditEntryQuerier)
 		expectedStatus int
 		expectedBody   map[string]interface{}
 	}{
 		{
-			name: "Success",
-			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
-				// Setup the mock to return test audit entries
+			name:        "Success",
+			queryParams: "?page=1&pageSize=10",
+			mockSetup: func(querier *mockAuditEntryQuerier) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				providerID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
@@ -75,29 +72,69 @@ func TestAuditEntryHandleList(t *testing.T) {
 				}
 			},
 			expectedStatus: http.StatusOK,
-		},
-		{
-			name: "Unauthorized",
-			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
+			expectedBody: map[string]interface{}{
+				"currentPage": float64(1),
+				"totalItems":  float64(2),
+				"totalPages":  float64(1),
+				"hasNext":     false,
+				"hasPrev":     false,
 			},
-			expectedStatus: http.StatusForbidden,
 		},
 		{
-			name: "InvalidPageRequest",
-			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
+			name:        "EmptyResult",
+			queryParams: "?page=1&pageSize=10",
+			mockSetup: func(querier *mockAuditEntryQuerier) {
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error) {
+					return &domain.PageResponse[domain.AuditEntry]{
+						Items:       []domain.AuditEntry{},
+						TotalItems:  0,
+						CurrentPage: 1,
+						TotalPages:  0,
+						HasNext:     false,
+						HasPrev:     false,
+					}, nil
+				}
 			},
-			expectedStatus: http.StatusOK, // parsePageRequest doesn't return errors for invalid page params, it uses defaults
+			expectedStatus: http.StatusOK,
+			expectedBody: map[string]interface{}{
+				"items":       []interface{}{},
+				"totalItems":  float64(0),
+				"totalPages":  float64(0),
+				"currentPage": float64(1),
+				"hasNext":     false,
+				"hasPrev":     false,
+			},
 		},
 		{
-			name: "ListError",
-			mockSetup: func(querier *mockAuditEntryQuerier, commander *mockAuditEntryCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			name:        "InvalidPageRequest",
+			queryParams: "?page=invalid",
+			mockSetup: func(querier *mockAuditEntryQuerier) {
+				// parsePageRequest uses defaults for invalid values, so this will still call the querier
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error) {
+					return &domain.PageResponse[domain.AuditEntry]{
+						Items:       []domain.AuditEntry{},
+						TotalItems:  0,
+						CurrentPage: 1,
+						TotalPages:  0,
+						HasNext:     false,
+						HasPrev:     false,
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: map[string]interface{}{
+				"items":       []interface{}{},
+				"totalItems":  float64(0),
+				"totalPages":  float64(0),
+				"currentPage": float64(1),
+				"hasNext":     false,
+				"hasPrev":     false,
+			},
+		},
+		{
+			name:        "ListError",
+			queryParams: "?page=1&pageSize=10",
+			mockSetup: func(querier *mockAuditEntryQuerier) {
 				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error) {
 					return nil, fmt.Errorf("database error")
 				}
@@ -112,21 +149,15 @@ func TestAuditEntryHandleList(t *testing.T) {
 			querier := &mockAuditEntryQuerier{}
 			commander := &mockAuditEntryCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier, commander, authz)
+			tc.mockSetup(querier)
 
 			// Create the handler
 			handler := NewAuditEntryHandler(querier, commander, authz)
 
-			// Create request
-			var req *http.Request
-			if tc.name == "InvalidPageRequest" {
-				// Create an invalid page request
-				req = httptest.NewRequest("GET", "/audit-entries?page=-1&pageSize=invalid", nil)
-			} else {
-				req = httptest.NewRequest("GET", "/audit-entries?page=1&pageSize=10", nil)
-			}
+			// Create request with simulated middleware context
+			req := httptest.NewRequest("GET", "/audit-entries"+tc.queryParams, nil)
 
-			// Add auth identity to context for authorization
+			// Add auth identity to context (required by all handlers)
 			authIdentity := NewMockAuthAgent()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
@@ -137,30 +168,37 @@ func TestAuditEntryHandleList(t *testing.T) {
 			// Assert response
 			assert.Equal(t, tc.expectedStatus, w.Code)
 
-			if tc.expectedStatus == http.StatusOK && tc.name == "Success" {
+			if tc.expectedStatus == http.StatusOK {
 				var response map[string]interface{}
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				require.NoError(t, err)
 
-				// Verify response structure
-				assert.Equal(t, float64(1), response["currentPage"])
-				assert.Equal(t, float64(2), response["totalItems"])
-				assert.Equal(t, float64(1), response["totalPages"])
-				assert.Equal(t, false, response["hasNext"])
-				assert.Equal(t, false, response["hasPrev"])
+				if tc.name == "Success" {
+					// Verify response structure
+					assert.Equal(t, tc.expectedBody["currentPage"], response["currentPage"])
+					assert.Equal(t, tc.expectedBody["totalItems"], response["totalItems"])
+					assert.Equal(t, tc.expectedBody["totalPages"], response["totalPages"])
+					assert.Equal(t, tc.expectedBody["hasNext"], response["hasNext"])
+					assert.Equal(t, tc.expectedBody["hasPrev"], response["hasPrev"])
 
-				items := response["items"].([]interface{})
-				assert.Equal(t, 2, len(items))
+					items := response["items"].([]interface{})
+					assert.Equal(t, 2, len(items))
 
-				firstItem := items[0].(map[string]interface{})
-				assert.Equal(t, "770e8400-e29b-41d4-a716-446655440000", firstItem["id"])
-				assert.Equal(t, "admin", firstItem["authorityType"])
-				assert.Equal(t, "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d", firstItem["authorityId"])
-				assert.Equal(t, "participant_created", firstItem["type"])
+					firstItem := items[0].(map[string]interface{})
+					assert.Equal(t, "770e8400-e29b-41d4-a716-446655440000", firstItem["id"])
+					assert.Equal(t, "admin", firstItem["authorityType"])
+					assert.Equal(t, "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d", firstItem["authorityId"])
+					assert.Equal(t, "participant_created", firstItem["type"])
 
-				secondItem := items[1].(map[string]interface{})
-				assert.Equal(t, "880e8400-e29b-41d4-a716-446655440000", secondItem["id"])
-				assert.Equal(t, "participant_updated", secondItem["type"])
+					secondItem := items[1].(map[string]interface{})
+					assert.Equal(t, "880e8400-e29b-41d4-a716-446655440000", secondItem["id"])
+					assert.Equal(t, "participant_updated", secondItem["type"])
+				} else {
+					// For other success cases, check the expected body
+					for key, expectedValue := range tc.expectedBody {
+						assert.Equal(t, expectedValue, response[key])
+					}
+				}
 			}
 		})
 	}

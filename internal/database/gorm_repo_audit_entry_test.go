@@ -231,7 +231,7 @@ func TestAuditEntryRepository(t *testing.T) {
 			// The implementation appears to return an empty scope rather than an error for non-existent IDs
 			require.NoError(t, err)
 			assert.NotNil(t, nonExistentScope)
-			assert.Equal(t, &domain.AuthScope{}, nonExistentScope, "Should return an empty scope for non-existent entry")
+			assert.Equal(t, &domain.AuthTargetScope{}, nonExistentScope, "Should return an empty scope for non-existent entry")
 		})
 	})
 }

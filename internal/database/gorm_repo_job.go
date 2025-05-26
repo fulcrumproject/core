@@ -86,6 +86,6 @@ func (r *GormJobRepository) DeleteOldCompletedJobs(ctx context.Context, olderTha
 	return int(result.RowsAffected), nil
 }
 
-func (r *GormJobRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (r *GormJobRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	return r.getAuthScope(ctx, id, "provider_id", "consumer_id", "agent_id")
 }

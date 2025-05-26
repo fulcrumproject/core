@@ -217,7 +217,7 @@ func TestServiceTypeRepository(t *testing.T) {
 			// Execute with existing service type ID
 			scope, err := repo.AuthScope(ctx, serviceType.ID)
 			require.NoError(t, err)
-			assert.Equal(t, &domain.AuthScope{}, scope, "Should return empty auth scope for service types")
+			assert.Equal(t, &domain.AuthTargetScope{}, scope, "Should return empty auth scope for service types")
 		})
 	})
 }

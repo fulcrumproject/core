@@ -32,14 +32,20 @@ func NewToken(
 	store Store,
 	name string,
 	role AuthRole,
-	expireAt time.Time,
+	expireAt *time.Time,
 	scopeID *UUID,
 ) (*Token, error) {
+	// If expireAt is nil, set it to 24 hours from now
+	if expireAt == nil {
+		defaultExpireAt := time.Now().Add(24 * time.Hour)
+		expireAt = &defaultExpireAt
+	}
+
 	// Create token with basic fields
 	token := &Token{
 		Name:     name,
 		Role:     role,
-		ExpireAt: expireAt,
+		ExpireAt: *expireAt,
 	}
 
 	// Set scope IDs based on role
@@ -63,15 +69,7 @@ func NewToken(
 				return nil, NewInvalidInputErrorf("invalid agent ID: %v", err)
 			}
 			token.AgentID = scopeID
-
-			// Make a copy of the agent's participant ID and set it
-			if agent.ProviderID != (UUID{}) { // Check if ParticipantID is not empty UUID
-				participantID := agent.ProviderID
-				token.ParticipantID = &participantID
-			} else {
-				// This case should ideally not happen if an agent always belongs to a participant
-				return nil, NewInvalidInputErrorf("agent %v does not have an associated participant ID", agent.ID)
-			}
+			token.ParticipantID = &agent.ProviderID
 		}
 	}
 
@@ -184,7 +182,7 @@ func (t *Token) Update(name *string, expireAt *time.Time) error {
 // TokenCommander defines the interface for token command operations
 type TokenCommander interface {
 	// Create creates a new token
-	Create(ctx context.Context, name string, role AuthRole, expireAt time.Time, scopeID *UUID) (*Token, error)
+	Create(ctx context.Context, name string, role AuthRole, expireAt *time.Time, scopeID *UUID) (*Token, error)
 
 	// Update updates a token
 	Update(ctx context.Context, id UUID, name *string, expireAt *time.Time) (*Token, error)
@@ -217,7 +215,7 @@ func (s *tokenCommander) Create(
 	ctx context.Context,
 	name string,
 	role AuthRole,
-	expireAt time.Time,
+	expireAt *time.Time,
 	scopeID *UUID,
 ) (*Token, error) {
 	// Validate permissions
@@ -381,5 +379,5 @@ type TokenQuerier interface {
 	FindByHashedValue(ctx context.Context, hashedValue string) (*Token, error)
 
 	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
+	AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }

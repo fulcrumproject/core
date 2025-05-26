@@ -240,7 +240,7 @@ func TestAgentTypeRepository(t *testing.T) {
 			// Assert - should return empty scope for any ID since agent types are global resources
 			require.NoError(t, err)
 			assert.NotNil(t, scope)
-			assert.Equal(t, &domain.AuthScope{}, scope, "Should return empty auth scope for agent types")
+			assert.Equal(t, &domain.AuthTargetScope{}, scope, "Should return empty auth scope for agent types")
 		})
 	})
 

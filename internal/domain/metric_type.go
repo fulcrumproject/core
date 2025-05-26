@@ -224,5 +224,5 @@ type MetricTypeQuerier interface {
 	Count(ctx context.Context) (int64, error)
 
 	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
+	AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }

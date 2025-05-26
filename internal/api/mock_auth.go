@@ -34,6 +34,18 @@ func NewMockAuthAgent() *MockAuthIdentity {
 	}
 }
 
+// NewMockAuthAgentWithID creates a mock agent identity with a specific agent ID
+func NewMockAuthAgentWithID(agentID domain.UUID) *MockAuthIdentity {
+	participantID := uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")
+
+	return &MockAuthIdentity{
+		id:            agentID,
+		role:          domain.RoleAgent,
+		participantID: &participantID,
+		agentID:       &agentID,
+	}
+}
+
 // Legacy function kept for compatibility with existing tests
 // but updated to use RoleParticipant instead of RoleConsumer
 func NewMockAuthConsumer() *MockAuthIdentity {

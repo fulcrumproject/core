@@ -331,7 +331,7 @@ func TestTokenCommander_Create(t *testing.T) {
 
 			tt.setupMocks(store, audit)
 			commander := NewTokenCommander(store, audit)
-			token, err := commander.Create(tt.ctx, validName, tt.role, now, tt.scopeID)
+			token, err := commander.Create(tt.ctx, validName, tt.role, &now, tt.scopeID)
 
 			if tt.wantErr {
 				assert.Error(t, err)

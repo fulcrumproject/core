@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -16,50 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// mockServiceCommander is a custom mock for ServiceCommander
-type mockServiceCommander struct {
-	createFunc                     func(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, attributes domain.Attributes, properties domain.JSON) (*domain.Service, error)
-	updateFunc                     func(ctx context.Context, id domain.UUID, name *string, properties *domain.JSON) (*domain.Service, error)
-	transitionFunc                 func(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error)
-	retryFunc                      func(ctx context.Context, id domain.UUID) (*domain.Service, error)
-	failTimeoutServicesAndJobsFunc func(ctx context.Context, timeout time.Duration) (int, error)
-}
-
-func (m *mockServiceCommander) Create(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, attributes domain.Attributes, properties domain.JSON) (*domain.Service, error) {
-	if m.createFunc != nil {
-		return m.createFunc(ctx, agentID, serviceTypeID, groupID, name, attributes, properties)
-	}
-	return nil, fmt.Errorf("create not mocked")
-}
-
-func (m *mockServiceCommander) Update(ctx context.Context, id domain.UUID, name *string, properties *domain.JSON) (*domain.Service, error) {
-	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name, properties)
-	}
-	return nil, fmt.Errorf("update not mocked")
-}
-
-func (m *mockServiceCommander) Transition(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error) {
-	if m.transitionFunc != nil {
-		return m.transitionFunc(ctx, id, state)
-	}
-	return nil, fmt.Errorf("transition not mocked")
-}
-
-func (m *mockServiceCommander) Retry(ctx context.Context, id domain.UUID) (*domain.Service, error) {
-	if m.retryFunc != nil {
-		return m.retryFunc(ctx, id)
-	}
-	return nil, fmt.Errorf("retry not mocked")
-}
-
-func (m *mockServiceCommander) FailTimeoutServicesAndJobs(ctx context.Context, timeout time.Duration) (int, error) {
-	if m.failTimeoutServicesAndJobsFunc != nil {
-		return m.failTimeoutServicesAndJobsFunc(ctx, timeout)
-	}
-	return 0, fmt.Errorf("failTimeoutServicesAndJobs not mocked")
-}
 
 // TestNewServiceHandler tests the constructor
 func TestNewServiceHandler(t *testing.T) {
@@ -78,7 +33,7 @@ func TestNewServiceHandler(t *testing.T) {
 	assert.Equal(t, authz, handler.authz)
 }
 
-// TestServiceHandlerRoutes tests that routes are properly registered
+// TestServiceHandlerRoutes tests that routes are properly registered with middlewares
 func TestServiceHandlerRoutes(t *testing.T) {
 	// Create mocks
 	serviceQuerier := &mockServiceQuerier{}
@@ -103,13 +58,29 @@ func TestServiceHandlerRoutes(t *testing.T) {
 		// Check expected routes exist
 		switch {
 		case method == "GET" && route == "/":
+			// Check for authorization middleware
+			assert.GreaterOrEqual(t, len(middlewares), 1, "List route should have at least authorization middleware")
 		case method == "POST" && route == "/":
+			// Check for decode body and authorization middlewares
+			assert.GreaterOrEqual(t, len(middlewares), 1, "Create route should have body decoder and specialized extractor middlewares")
 		case method == "GET" && route == "/{id}":
+			// Check for authorization middleware
+			assert.GreaterOrEqual(t, len(middlewares), 1, "Get route should have authorization middleware")
 		case method == "PATCH" && route == "/{id}":
+			// Check for decode body and authorization middlewares
+			assert.GreaterOrEqual(t, len(middlewares), 2, "Update route should have body decoder and authorization middlewares")
 		case method == "POST" && route == "/{id}/start":
+			// Check for authorization middleware
+			assert.GreaterOrEqual(t, len(middlewares), 1, "Start route should have authorization middleware")
 		case method == "POST" && route == "/{id}/stop":
+			// Check for authorization middleware
+			assert.GreaterOrEqual(t, len(middlewares), 1, "Stop route should have authorization middleware")
 		case method == "DELETE" && route == "/{id}":
+			// Check for authorization middleware
+			assert.GreaterOrEqual(t, len(middlewares), 1, "Delete route should have authorization middleware")
 		case method == "POST" && route == "/{id}/retry":
+			// Check for authorization middleware
+			assert.GreaterOrEqual(t, len(middlewares), 1, "Retry route should have authorization middleware")
 		default:
 			return fmt.Errorf("unexpected route: %s %s", method, route)
 		}
@@ -125,42 +96,22 @@ func TestServiceHandleCreate(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		requestBody    string
-		mockSetup      func(serviceQuerier *mockServiceQuerier, agentQuerier *mockAgentQuerier, serviceGroupQuerier *mockServiceGroupQuerier, commander *mockServiceCommander, authz *MockAuthorizer)
+		request        CreateServiceRequest
+		mockSetup      func(commander *mockServiceCommander)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
-			requestBody: `{
-				"name": "Test Service",
-				"agentId": "550e8400-e29b-41d4-a716-446655440000",
-				"groupId": "660e8400-e29b-41d4-a716-446655440000",
-				"serviceTypeId": "770e8400-e29b-41d4-a716-446655440000",
-				"attributes": {"key": ["value"]},
-				"properties": {"prop": "value"}
-			}`,
-			mockSetup: func(serviceQuerier *mockServiceQuerier, agentQuerier *mockAgentQuerier, serviceGroupQuerier *mockServiceGroupQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
-				agentID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-				groupID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
-				providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
-				consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-
-				// Setup the agent querier to return auth scope
-				agentQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					assert.Equal(t, agentID, id)
-					return &domain.AuthScope{ParticipantID: &providerID, AgentID: &agentID}, nil
-				}
-
-				// Setup the service group querier to return auth scope
-				serviceGroupQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					assert.Equal(t, groupID, id)
-					return &domain.AuthScope{ConsumerID: &consumerID}, nil
-				}
-
-				// Setup the commander
+			request: CreateServiceRequest{
+				Name:          "Test Service",
+				AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+				Attributes:    domain.Attributes{"key": []string{"value"}},
+				Properties:    domain.JSON{"prop": "value"},
+			},
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander for successful creation
 				commander.createFunc = func(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, attributes domain.Attributes, properties domain.JSON) (*domain.Service, error) {
 					assert.Equal(t, "Test Service", name)
 					assert.Equal(t, domain.Attributes{"key": []string{"value"}}, attributes)
@@ -168,6 +119,8 @@ func TestServiceHandleCreate(t *testing.T) {
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+					consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
+					providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
@@ -190,118 +143,22 @@ func TestServiceHandleCreate(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:        "InvalidRequestFormat",
-			requestBody: `{"invalid_json":`,
-			mockSetup: func(serviceQuerier *mockServiceQuerier, agentQuerier *mockAgentQuerier, serviceGroupQuerier *mockServiceGroupQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// No setup needed for this case
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name: "ServiceGroupAuthScopeError",
-			requestBody: `{
-				"name": "Test Service",
-				"agentId": "550e8400-e29b-41d4-a716-446655440000",
-				"groupId": "660e8400-e29b-41d4-a716-446655440000",
-				"serviceTypeId": "770e8400-e29b-41d4-a716-446655440000",
-				"attributes": {"key": ["value"]},
-				"properties": {"prop": "value"}
-			}`,
-			mockSetup: func(serviceQuerier *mockServiceQuerier, agentQuerier *mockAgentQuerier, serviceGroupQuerier *mockServiceGroupQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the service group querier to return an error
-				serviceGroupQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return nil, fmt.Errorf("service group not found")
-				}
-			},
-			expectedStatus: http.StatusInternalServerError,
-		},
-		{
-			name: "AgentAuthScopeError",
-			requestBody: `{
-				"name": "Test Service",
-				"agentId": "550e8400-e29b-41d4-a716-446655440000",
-				"groupId": "660e8400-e29b-41d4-a716-446655440000",
-				"serviceTypeId": "770e8400-e29b-41d4-a716-446655440000",
-				"attributes": {"key": ["value"]},
-				"properties": {"prop": "value"}
-			}`,
-			mockSetup: func(serviceQuerier *mockServiceQuerier, agentQuerier *mockAgentQuerier, serviceGroupQuerier *mockServiceGroupQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the service group querier to return auth scope
-				consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-				serviceGroupQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{ConsumerID: &consumerID}, nil
-				}
-
-				// Setup the agent querier to return an error
-				agentQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return nil, fmt.Errorf("agent not found")
-				}
-			},
-			expectedStatus: http.StatusInternalServerError,
-		},
-		{
-			name: "AuthorizationError",
-			requestBody: `{
-				"name": "Test Service",
-				"agentId": "550e8400-e29b-41d4-a716-446655440000",
-				"groupId": "660e8400-e29b-41d4-a716-446655440000",
-				"serviceTypeId": "770e8400-e29b-41d4-a716-446655440000",
-				"attributes": {"key": ["value"]},
-				"properties": {"prop": "value"}
-			}`,
-			mockSetup: func(serviceQuerier *mockServiceQuerier, agentQuerier *mockAgentQuerier, serviceGroupQuerier *mockServiceGroupQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the service group querier to return auth scope
-				consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-				serviceGroupQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{ConsumerID: &consumerID}, nil
-				}
-
-				// Setup the agent querier to return auth scope
-				agentID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-				providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
-				agentQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{ParticipantID: &providerID, AgentID: &agentID}, nil
-				}
-
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
-			},
-			expectedStatus: http.StatusForbidden, // Uses ErrDomain for auth errors
-		},
-		{
 			name: "CommanderError",
-			requestBody: `{
-				"name": "Test Service",
-				"agentId": "550e8400-e29b-41d4-a716-446655440000",
-				"groupId": "660e8400-e29b-41d4-a716-446655440000",
-				"serviceTypeId": "770e8400-e29b-41d4-a716-446655440000",
-				"attributes": {"key": ["value"]},
-				"properties": {"prop": "value"}
-			}`,
-			mockSetup: func(serviceQuerier *mockServiceQuerier, agentQuerier *mockAgentQuerier, serviceGroupQuerier *mockServiceGroupQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
-				agentID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-				consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-				providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
-
-				// Setup the agent querier to return auth scope
-				agentQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{ParticipantID: &providerID, AgentID: &agentID}, nil
-				}
-
-				// Setup the service group querier to return auth scope
-				serviceGroupQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.AuthScope{ConsumerID: &consumerID}, nil
-				}
-
+			request: CreateServiceRequest{
+				Name:          "Test Service",
+				AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+				Attributes:    domain.Attributes{"key": []string{"value"}},
+				Properties:    domain.JSON{"prop": "value"},
+			},
+			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander to return an error
 				commander.createFunc = func(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, attributes domain.Attributes, properties domain.JSON) (*domain.Service, error) {
-					return nil, fmt.Errorf("database error")
+					return nil, domain.NewInvalidInputErrorf("invalid input")
 				}
 			},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusBadRequest,
 		},
 	}
 
@@ -312,19 +169,23 @@ func TestServiceHandleCreate(t *testing.T) {
 			agentQuerier := &mockAgentQuerier{}
 			serviceGroupQuerier := &mockServiceGroupQuerier{}
 			commander := &mockServiceCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
+			authz := &MockAuthorizer{ShouldSucceed: true} // Not used in handler tests
+			tc.mockSetup(commander)
 
 			// Create the handler
 			handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
 
-			// Create request with JSON body
-			req := httptest.NewRequest("POST", "/services", strings.NewReader(tc.requestBody))
-			req.Header.Set("Content-Type", "application/json")
+			// Create request
+			req := httptest.NewRequest("POST", "/services", nil)
 
-			// Add auth identity to context for authorization
+			// Simulate middleware by adding decoded body to context
+			ctx := context.WithValue(req.Context(), decodedBodyContextKey, tc.request)
+
+			// Add auth identity to context (always required)
 			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			ctx = domain.WithAuthIdentity(ctx, authIdentity)
+
+			req = req.WithContext(ctx)
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -354,23 +215,14 @@ func TestServiceHandleGet(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer)
+		mockSetup      func(querier *mockServiceQuerier)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
-				}
-
-				serviceQuerier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Service, error) {
+			mockSetup: func(querier *mockServiceQuerier) {
+				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Service, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -401,45 +253,12 @@ func TestServiceHandleGet(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "AuthorizationError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name: "AuthScopeError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the querier to return auth scope error
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return nil, fmt.Errorf("auth scope error")
-				}
-			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
+			mockSetup: func(querier *mockServiceQuerier) {
 				// Setup the querier to return not found
-				serviceQuerier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Service, error) {
-					return nil, domain.NotFoundError{Err: fmt.Errorf("service not found")}
+				querier.findByIDFunc = func(ctx context.Context, id domain.UUID) (*domain.Service, error) {
+					return nil, domain.NewNotFoundErrorf("service not found")
 				}
 			},
 			expectedStatus: http.StatusNotFound,
@@ -453,8 +272,8 @@ func TestServiceHandleGet(t *testing.T) {
 			agentQuerier := &mockAgentQuerier{}
 			serviceGroupQuerier := &mockServiceGroupQuerier{}
 			commander := &mockServiceCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(serviceQuerier, commander, authz)
+			authz := &MockAuthorizer{ShouldSucceed: true} // Not used in handler tests
+			tc.mockSetup(serviceQuerier)
 
 			// Create the handler
 			handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
@@ -462,13 +281,15 @@ func TestServiceHandleGet(t *testing.T) {
 			// Create request
 			req := httptest.NewRequest("GET", "/services/"+tc.id, nil)
 
-			// Add ID to chi context and simulate IDMiddleware
-			req = addIDToChiContext(req, tc.id)
-			req = simulateIDMiddleware(req, tc.id)
+			// Simulate ID middleware
+			parsedUUID, _ := domain.ParseUUID(tc.id)
+			ctx := context.WithValue(req.Context(), uuidContextKey, parsedUUID)
 
-			// Add auth identity to context for authorization
+			// Add auth identity to context (always required)
 			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			ctx = domain.WithAuthIdentity(ctx, authIdentity)
+
+			req = req.WithContext(ctx)
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -497,82 +318,100 @@ func TestServiceHandleList(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(serviceQuerier *mockServiceQuerier, authz *MockAuthorizer)
+		mockSetup      func(querier *mockServiceQuerier)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
-			mockSetup: func(serviceQuerier *mockServiceQuerier, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
+			mockSetup: func(querier *mockServiceQuerier) {
+				// Setup the querier for successful list operation
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
+					// Verify pagination
+					assert.Equal(t, 1, req.Page) // Default page is 1, not 0
+					assert.Equal(t, 10, req.PageSize)
 
-				// Setup the mock to return services
-				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-				agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
-				serviceTypeID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
-				groupID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-				consumerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
-				providerID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
-
-				serviceQuerier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
-					return &domain.PageResponse[domain.Service]{
-						Items: []domain.Service{
-							{
-								BaseEntity: domain.BaseEntity{
-									ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
-									CreatedAt: createdAt,
-									UpdatedAt: updatedAt,
-								},
-								Name:          "Service 1",
-								AgentID:       agentID,
-								ServiceTypeID: serviceTypeID,
-								GroupID:       groupID,
-								ConsumerID:    consumerID,
-								ProviderID:    providerID,
-								Attributes:    domain.Attributes{"key": []string{"value"}},
-								CurrentState:  domain.ServiceStarted,
+					// Create sample services
+					services := []domain.Service{
+						{
+							BaseEntity: domain.BaseEntity{
+								ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+								CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+								UpdatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 							},
-							{
-								BaseEntity: domain.BaseEntity{
-									ID:        uuid.MustParse("bb0e8400-e29b-41d4-a716-446655440000"),
-									CreatedAt: createdAt,
-									UpdatedAt: updatedAt,
-								},
-								Name:          "Service 2",
-								AgentID:       agentID,
-								ServiceTypeID: serviceTypeID,
-								GroupID:       groupID,
-								ConsumerID:    consumerID,
-								ProviderID:    providerID,
-								Attributes:    domain.Attributes{"key": []string{"value2"}},
-								CurrentState:  domain.ServiceStopped,
-							},
+							Name:         "Service 1",
+							AgentID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+							CurrentState: domain.ServiceStarted,
 						},
-						TotalItems:  2,
-						CurrentPage: 1,
-						TotalPages:  1,
-						HasNext:     false,
+						{
+							BaseEntity: domain.BaseEntity{
+								ID:        uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+								CreatedAt: time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC),
+								UpdatedAt: time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC),
+							},
+							Name:         "Service 2",
+							AgentID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+							CurrentState: domain.ServiceStopped,
+						},
+					}
+
+					return &domain.PageResponse[domain.Service]{
+						Items:      services,
+						TotalItems: 2,
+						TotalPages: 1,
 					}, nil
 				}
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "Unauthorized",
-			mockSetup: func(serviceQuerier *mockServiceQuerier, authz *MockAuthorizer) {
-				// Return an unsuccessful auth
-				authz.ShouldSucceed = false
+			name: "InvalidParametersUseDefaults",
+			mockSetup: func(querier *mockServiceQuerier) {
+				// Setup the querier to handle default values when invalid params are provided
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
+					// Verify that default values are used
+					assert.Equal(t, 1, req.Page)
+					assert.Equal(t, 10, req.PageSize)
+
+					// Create sample services - same as success case
+					services := []domain.Service{
+						{
+							BaseEntity: domain.BaseEntity{
+								ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+								CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+								UpdatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+							},
+							Name:         "Service 1",
+							AgentID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+							CurrentState: domain.ServiceStarted,
+						},
+						{
+							BaseEntity: domain.BaseEntity{
+								ID:        uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+								CreatedAt: time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC),
+								UpdatedAt: time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC),
+							},
+							Name:         "Service 2",
+							AgentID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+							CurrentState: domain.ServiceStopped,
+						},
+					}
+
+					return &domain.PageResponse[domain.Service]{
+						Items:      services,
+						TotalItems: 2,
+						TotalPages: 1,
+					}, nil
+				}
 			},
-			expectedStatus: http.StatusForbidden,
+			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "ListError",
-			mockSetup: func(serviceQuerier *mockServiceQuerier, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
-				serviceQuerier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
+			name: "DatabaseError",
+			mockSetup: func(querier *mockServiceQuerier) {
+				// Setup the querier to return an error
+				querier.listFunc = func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
+					// Even with an error, we need to verify we got the pagination params first
+					assert.Equal(t, 1, req.Page)
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -587,22 +426,23 @@ func TestServiceHandleList(t *testing.T) {
 			agentQuerier := &mockAgentQuerier{}
 			serviceGroupQuerier := &mockServiceGroupQuerier{}
 			commander := &mockServiceCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(serviceQuerier, authz)
+			authz := &MockAuthorizer{ShouldSucceed: true} // Not used in handler tests
+			tc.mockSetup(serviceQuerier)
 
 			// Create the handler
 			handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
 
 			// Create request
 			var req *http.Request
-			if tc.name == "InvalidPageRequest" {
-				// Create invalid page request
-				req = httptest.NewRequest("GET", "/services?page=invalid", nil)
+			if tc.name == "InvalidParametersUseDefaults" {
+				// Create a request with invalid page query params
+				req = httptest.NewRequest("GET", "/services?page=invalid&pageSize=invalid", nil)
 			} else {
+				// Create a valid request - note: page is 1-based in this system
 				req = httptest.NewRequest("GET", "/services?page=1&pageSize=10", nil)
 			}
 
-			// Add auth identity to context for authorization
+			// Add auth identity to context (always required)
 			authIdentity := NewMockAuthFulcrumAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
@@ -619,25 +459,19 @@ func TestServiceHandleList(t *testing.T) {
 				require.NoError(t, err)
 
 				// Verify response structure
-				assert.Equal(t, float64(1), response["currentPage"])
+				items, ok := response["items"].([]interface{})
+				require.True(t, ok)
+				assert.Equal(t, 2, len(items))
 				assert.Equal(t, float64(2), response["totalItems"])
 				assert.Equal(t, float64(1), response["totalPages"])
-				assert.Equal(t, false, response["hasNext"])
-				assert.Equal(t, false, response["hasPrev"])
-
-				items := response["items"].([]interface{})
-				assert.Equal(t, 2, len(items))
-
-				firstItem := items[0].(map[string]interface{})
-				assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", firstItem["id"])
-				assert.Equal(t, "Service 1", firstItem["name"])
-
-				secondItem := items[1].(map[string]interface{})
-				assert.Equal(t, "bb0e8400-e29b-41d4-a716-446655440000", secondItem["id"])
-				assert.Equal(t, "Service 2", secondItem["name"])
 			}
 		})
 	}
+}
+
+// Helper functions for update tests
+func jsonPtr(j domain.JSON) *domain.JSON {
+	return &j
 }
 
 // TestServiceHandleUpdate tests the handleUpdate method
@@ -646,41 +480,26 @@ func TestServiceHandleUpdate(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		requestBody    string
-		mockSetup      func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer)
+		request        UpdateServiceRequest
+		mockSetup      func(commander *mockServiceCommander)
 		expectedStatus int
 	}{
 		{
-			name:        "Success",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated Service", "properties": {"prop": "updated"}}`,
-			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
-				}
-
-				// Setup the commander to update
+			name: "Success",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			request: UpdateServiceRequest{
+				Name:       stringPtr("Updated Service"),
+				Properties: jsonPtr(domain.JSON{"updated": "value"}),
+			},
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander for successful update
 				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, properties *domain.JSON) (*domain.Service, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					require.NotNil(t, name)
 					assert.Equal(t, "Updated Service", *name)
-					require.NotNil(t, properties)
-					assert.Equal(t, domain.JSON{"prop": "updated"}, *properties)
+					assert.Equal(t, domain.JSON{"updated": "value"}, *properties)
 
-					newName := "Updated Service"
-					newProperties := domain.JSON{"prop": "updated"}
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
-					agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
-					serviceTypeID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
-					groupID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-					consumerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
-					providerID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
 
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
@@ -688,63 +507,43 @@ func TestServiceHandleUpdate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:              newName,
-						AgentID:           agentID,
-						ServiceTypeID:     serviceTypeID,
-						GroupID:           groupID,
-						ConsumerID:        consumerID,
-						ProviderID:        providerID,
-						Attributes:        domain.Attributes{"key": []string{"value"}},
+						Name:              "Updated Service",
 						CurrentState:      domain.ServiceStarted,
-						CurrentProperties: &newProperties,
+						CurrentProperties: properties,
 					}, nil
 				}
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:        "InvalidRequestFormat",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"invalid_json":`,
-			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// No setup needed for this case
+			name: "ValidationError",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			request: UpdateServiceRequest{
+				Name:       stringPtr("Invalid"),
+				Properties: jsonPtr(domain.JSON{"invalid": "data"}),
+			},
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander to return a validation error
+				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, properties *domain.JSON) (*domain.Service, error) {
+					return nil, domain.NewInvalidInputErrorf("validation error")
+				}
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:        "AuthorizationError",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated Service", "properties": {"prop": "updated"}}`,
-			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
+			name: "NotFound",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			request: UpdateServiceRequest{
+				Name:       stringPtr("Updated Service"),
+				Properties: jsonPtr(domain.JSON{"updated": "value"}),
 			},
-			expectedStatus: http.StatusForbidden,
-		},
-		{
-			name:        "CommanderError",
-			id:          "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: `{"name": "Updated Service", "properties": {"prop": "updated"}}`,
-			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
-				// Setup the commander to return an error
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander to return not found
 				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, properties *domain.JSON) (*domain.Service, error) {
-					return nil, fmt.Errorf("database error")
+					return nil, domain.NewNotFoundErrorf("service not found")
 				}
 			},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusNotFound,
 		},
 	}
 
@@ -755,24 +554,27 @@ func TestServiceHandleUpdate(t *testing.T) {
 			agentQuerier := &mockAgentQuerier{}
 			serviceGroupQuerier := &mockServiceGroupQuerier{}
 			commander := &mockServiceCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(serviceQuerier, commander, authz)
+			authz := &MockAuthorizer{ShouldSucceed: true} // Not used in handler tests
+			tc.mockSetup(commander)
 
 			// Create the handler
 			handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
 
-			// Create request with JSON body
-			req := httptest.NewRequest("PATCH", "/services/"+tc.id, strings.NewReader(tc.requestBody))
-			req.Header.Set("Content-Type", "application/json")
+			// Create request
+			req := httptest.NewRequest("PATCH", "/services/"+tc.id, nil)
 
-			// Add ID to chi context
-			// Add ID to chi context and simulate IDMiddleware
-			req = addIDToChiContext(req, tc.id)
-			req = simulateIDMiddleware(req, tc.id)
+			// Simulate ID middleware
+			parsedUUID, _ := domain.ParseUUID(tc.id)
+			ctx := context.WithValue(req.Context(), uuidContextKey, parsedUUID)
 
-			// Add auth identity to context for authorization
+			// Simulate body decode middleware
+			ctx = context.WithValue(ctx, decodedBodyContextKey, tc.request)
+
+			// Add auth identity to context (always required)
 			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			ctx = domain.WithAuthIdentity(ctx, authIdentity)
+
+			req = req.WithContext(ctx)
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -789,262 +591,107 @@ func TestServiceHandleUpdate(t *testing.T) {
 				// Verify response structure
 				assert.Equal(t, tc.id, response["id"])
 				assert.Equal(t, "Updated Service", response["name"])
-				assert.NotEmpty(t, response["createdAt"])
-				assert.NotEmpty(t, response["updatedAt"])
-				assert.Equal(t, "updated", response["currentProperties"].(map[string]interface{})["prop"])
+				props, ok := response["currentProperties"].(map[string]interface{})
+				require.True(t, ok)
+				assert.Equal(t, "value", props["updated"])
 			}
 		})
 	}
 }
 
-// TestServiceHandleTransition tests the handleTransition method (via handleStart, handleStop, handleDelete)
+// TestServiceHandleTransition tests handleStart, handleStop, and handleDelete via handleTransition
 func TestServiceHandleTransition(t *testing.T) {
-	// Test handleStart, handleStop, and handleDelete which all call handleTransition
-	transitionTests := []struct {
-		name           string
-		endpoint       string
-		expectedAction domain.AuthAction
-		expectedState  domain.ServiceState
-	}{
-		{
-			name:           "Start",
-			endpoint:       "/services/550e8400-e29b-41d4-a716-446655440000/start",
-			expectedAction: domain.ActionStart,
-			expectedState:  domain.ServiceStarted,
-		},
-		{
-			name:           "Stop",
-			endpoint:       "/services/550e8400-e29b-41d4-a716-446655440000/stop",
-			expectedAction: domain.ActionStop,
-			expectedState:  domain.ServiceStopped,
-		},
-		{
-			name:           "Delete",
-			endpoint:       "/services/550e8400-e29b-41d4-a716-446655440000/delete",
-			expectedAction: domain.ActionDelete,
-			expectedState:  domain.ServiceDeleted,
-		},
-	}
-
-	for _, tt := range transitionTests {
-		// Setup test cases for each transition type
-		testCases := []struct {
-			name           string
-			id             string
-			mockSetup      func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer, expectedAction domain.AuthAction, expectedState domain.ServiceState)
-			expectedStatus int
-		}{
-			{
-				name: "Success",
-				id:   "550e8400-e29b-41d4-a716-446655440000",
-				mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer, expectedAction domain.AuthAction, expectedState domain.ServiceState) {
-					// Setup the mock to authorize successfully
-					authz.ShouldSucceed = true
-
-					// Setup the querier to return auth scope
-					serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-						assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-						return &domain.EmptyAuthScope, nil
-					}
-
-					// Setup the commander to transition
-					commander.transitionFunc = func(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error) {
-						assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-						assert.Equal(t, expectedState, state)
-
-						createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-						updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
-						agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
-						serviceTypeID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
-						groupID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-						consumerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
-						providerID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
-
-						return &domain.Service{
-							BaseEntity: domain.BaseEntity{
-								ID:        id,
-								CreatedAt: createdAt,
-								UpdatedAt: updatedAt,
-							},
-							Name:          "Test Service",
-							AgentID:       agentID,
-							ServiceTypeID: serviceTypeID,
-							GroupID:       groupID,
-							ConsumerID:    consumerID,
-							ProviderID:    providerID,
-							Attributes:    domain.Attributes{"key": []string{"value"}},
-							CurrentState:  state,
-						}, nil
-					}
-				},
-				expectedStatus: http.StatusNoContent,
-			},
-			{
-				name: "AuthorizationError",
-				id:   "550e8400-e29b-41d4-a716-446655440000",
-				mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer, expectedAction domain.AuthAction, expectedState domain.ServiceState) {
-					// Setup the mock to fail authorization
-					authz.ShouldSucceed = false
-
-					// Setup the querier to return auth scope
-					serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-						return &domain.EmptyAuthScope, nil
-					}
-				},
-				expectedStatus: http.StatusForbidden,
-			},
-			{
-				name: "TransitionError",
-				id:   "550e8400-e29b-41d4-a716-446655440000",
-				mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer, expectedAction domain.AuthAction, expectedState domain.ServiceState) {
-					// Setup the mock to authorize successfully
-					authz.ShouldSucceed = true
-
-					// Setup the querier to return auth scope
-					serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-						return &domain.EmptyAuthScope, nil
-					}
-
-					// Setup the commander to return an error
-					commander.transitionFunc = func(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error) {
-						return nil, fmt.Errorf("transition error")
-					}
-				},
-				expectedStatus: http.StatusInternalServerError,
-			},
-		}
-
-		for _, tc := range testCases {
-			testName := fmt.Sprintf("%s_%s", tt.name, tc.name)
-			t.Run(testName, func(t *testing.T) {
-				// Setup mocks
-				serviceQuerier := &mockServiceQuerier{}
-				agentQuerier := &mockAgentQuerier{}
-				serviceGroupQuerier := &mockServiceGroupQuerier{}
-				commander := &mockServiceCommander{}
-				authz := &MockAuthorizer{ShouldSucceed: true}
-				tc.mockSetup(serviceQuerier, commander, authz, tt.expectedAction, tt.expectedState)
-
-				// Create the handler
-				handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
-
-				// Create request
-				req := httptest.NewRequest("POST", tt.endpoint, nil)
-
-				// Add ID to chi context
-				// Add ID to chi context and simulate IDMiddleware
-				req = addIDToChiContext(req, tc.id)
-				req = simulateIDMiddleware(req, tc.id)
-				// Add auth identity to context for authorization
-				authIdentity := NewMockAuthFulcrumAdmin()
-				req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
-
-				// Execute request
-				w := httptest.NewRecorder()
-
-				// Call the appropriate handler method
-				switch tt.expectedState {
-				case domain.ServiceStarted:
-					handler.handleStart(w, req)
-				case domain.ServiceStopped:
-					handler.handleStop(w, req)
-				case domain.ServiceDeleted:
-					handler.handleDelete(w, req)
-				}
-
-				// Assert response
-				assert.Equal(t, tc.expectedStatus, w.Code)
-			})
-		}
-	}
-}
-
-// TestServiceHandleRetry tests the handleRetry method
-func TestServiceHandleRetry(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer)
+		transitionTo   domain.ServiceState
+		mockSetup      func(commander *mockServiceCommander)
 		expectedStatus int
 	}{
 		{
-			name: "Success",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+			name:         "SuccessfulStart",
+			id:           "550e8400-e29b-41d4-a716-446655440000",
+			transitionTo: domain.ServiceStarted,
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander for successful transition
+				commander.transitionFunc = func(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.EmptyAuthScope, nil
-				}
-
-				// Setup the commander to retry
-				commander.retryFunc = func(ctx context.Context, id domain.UUID) (*domain.Service, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-
-					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
-					agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
-					serviceTypeID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
-					groupID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-					consumerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
-					providerID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
-
+					assert.Equal(t, domain.ServiceStarted, state)
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
-							ID:        id,
-							CreatedAt: createdAt,
-							UpdatedAt: updatedAt,
+							ID: id,
 						},
-						Name:          "Test Service",
-						AgentID:       agentID,
-						ServiceTypeID: serviceTypeID,
-						GroupID:       groupID,
-						ConsumerID:    consumerID,
-						ProviderID:    providerID,
-						Attributes:    domain.Attributes{"key": []string{"value"}},
-						CurrentState:  domain.ServiceStarted,
-						RetryCount:    1,
+						CurrentState: domain.ServiceStarting,
+						TargetState:  &state,
 					}, nil
 				}
 			},
 			expectedStatus: http.StatusNoContent,
 		},
 		{
-			name: "AuthorizationError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the mock to fail authorization
-				authz.ShouldSucceed = false
-
-				// Setup the querier to return auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
+			name:         "SuccessfulStop",
+			id:           "550e8400-e29b-41d4-a716-446655440000",
+			transitionTo: domain.ServiceStopped,
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander for successful transition
+				commander.transitionFunc = func(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error) {
+					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
+					assert.Equal(t, domain.ServiceStopped, state)
+					return &domain.Service{
+						BaseEntity: domain.BaseEntity{
+							ID: id,
+						},
+						CurrentState: domain.ServiceStopping,
+						TargetState:  &state,
+					}, nil
 				}
 			},
-			expectedStatus: http.StatusForbidden,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
-			name: "RetryError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockServiceCommander, authz *MockAuthorizer) {
-				// Setup the mock to authorize successfully
-				authz.ShouldSucceed = true
-
-				// Setup the querier to return auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
-					return &domain.EmptyAuthScope, nil
-				}
-
-				// Setup the commander to return an error
-				commander.retryFunc = func(ctx context.Context, id domain.UUID) (*domain.Service, error) {
-					return nil, fmt.Errorf("retry error")
+			name:         "SuccessfulDelete",
+			id:           "550e8400-e29b-41d4-a716-446655440000",
+			transitionTo: domain.ServiceDeleted,
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander for successful transition
+				commander.transitionFunc = func(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error) {
+					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
+					assert.Equal(t, domain.ServiceDeleted, state)
+					return &domain.Service{
+						BaseEntity: domain.BaseEntity{
+							ID: id,
+						},
+						CurrentState: domain.ServiceDeleting,
+						TargetState:  &state,
+					}, nil
 				}
 			},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name:         "InvalidStateTransition",
+			id:           "550e8400-e29b-41d4-a716-446655440000",
+			transitionTo: domain.ServiceStarted,
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander to return an error for invalid transition
+				commander.transitionFunc = func(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error) {
+					return nil, domain.NewInvalidInputErrorf("invalid state transition")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:         "ServiceNotFound",
+			id:           "550e8400-e29b-41d4-a716-446655440000",
+			transitionTo: domain.ServiceStarted,
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander to return not found
+				commander.transitionFunc = func(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error) {
+					return nil, domain.NewNotFoundErrorf("service not found")
+				}
+			},
+			expectedStatus: http.StatusNotFound,
 		},
 	}
 
@@ -1055,8 +702,95 @@ func TestServiceHandleRetry(t *testing.T) {
 			agentQuerier := &mockAgentQuerier{}
 			serviceGroupQuerier := &mockServiceGroupQuerier{}
 			commander := &mockServiceCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(serviceQuerier, commander, authz)
+			authz := &MockAuthorizer{ShouldSucceed: true} // Not used in handler tests
+			tc.mockSetup(commander)
+
+			// Create the handler
+			handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
+
+			// Create request
+			req := httptest.NewRequest("POST", "/services/"+tc.id+"/action", nil)
+
+			// Simulate ID middleware
+			parsedUUID, _ := domain.ParseUUID(tc.id)
+			ctx := context.WithValue(req.Context(), uuidContextKey, parsedUUID)
+
+			// Add auth identity to context (always required)
+			authIdentity := NewMockAuthFulcrumAdmin()
+			ctx = domain.WithAuthIdentity(ctx, authIdentity)
+
+			req = req.WithContext(ctx)
+
+			// Execute request
+			w := httptest.NewRecorder()
+			handler.handleTransition(w, req, tc.transitionTo)
+
+			// Assert response
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}
+
+// TestServiceHandleRetry tests the handleRetry method
+func TestServiceHandleRetry(t *testing.T) {
+	// Setup test cases
+	testCases := []struct {
+		name           string
+		id             string
+		mockSetup      func(commander *mockServiceCommander)
+		expectedStatus int
+	}{
+		{
+			name: "Success",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander for successful retry
+				commander.retryFunc = func(ctx context.Context, id domain.UUID) (*domain.Service, error) {
+					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
+					return &domain.Service{
+						BaseEntity: domain.BaseEntity{
+							ID: id,
+						},
+						CurrentState: domain.ServiceCreated,
+						RetryCount:   1,
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "ServiceNotFound",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander to return not found
+				commander.retryFunc = func(ctx context.Context, id domain.UUID) (*domain.Service, error) {
+					return nil, domain.NewNotFoundErrorf("service not found")
+				}
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name: "InvalidRetry",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			mockSetup: func(commander *mockServiceCommander) {
+				// Setup the commander to return an error for invalid retry
+				commander.retryFunc = func(ctx context.Context, id domain.UUID) (*domain.Service, error) {
+					return nil, domain.NewInvalidInputErrorf("service is not in a failed state")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup mocks
+			serviceQuerier := &mockServiceQuerier{}
+			agentQuerier := &mockAgentQuerier{}
+			serviceGroupQuerier := &mockServiceGroupQuerier{}
+			commander := &mockServiceCommander{}
+			authz := &MockAuthorizer{ShouldSucceed: true} // Not used in handler tests
+			tc.mockSetup(commander)
 
 			// Create the handler
 			handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
@@ -1064,13 +798,15 @@ func TestServiceHandleRetry(t *testing.T) {
 			// Create request
 			req := httptest.NewRequest("POST", "/services/"+tc.id+"/retry", nil)
 
-			// Add ID to chi context
-			// Add ID to chi context and simulate IDMiddleware
-			req = addIDToChiContext(req, tc.id)
-			req = simulateIDMiddleware(req, tc.id)
-			// Add auth identity to context for authorization
+			// Simulate ID middleware
+			parsedUUID, _ := domain.ParseUUID(tc.id)
+			ctx := context.WithValue(req.Context(), uuidContextKey, parsedUUID)
+
+			// Add auth identity to context (always required)
 			authIdentity := NewMockAuthFulcrumAdmin()
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
+			ctx = domain.WithAuthIdentity(ctx, authIdentity)
+
+			req = req.WithContext(ctx)
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -1084,27 +820,26 @@ func TestServiceHandleRetry(t *testing.T) {
 
 // TestServiceToResponse tests the serviceToResponse function
 func TestServiceToResponse(t *testing.T) {
-	// Create a service
-	id := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-	agentID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
-	serviceTypeID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
-	groupID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-	consumerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
-	providerID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
+	// Create a domain.Service
 	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+	agentID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+	serviceTypeID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
+	groupID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
+	consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
+	providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
+	serviceID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
 
-	externalID := "ext-123"
-	properties := domain.JSON{"prop": "value"}
-	targetProperties := domain.JSON{"prop": "target"}
-	resources := domain.JSON{"res": "value"}
 	targetState := domain.ServiceStarted
-	errorMessage := "error occurred"
-	failedAction := domain.ServiceActionCreate
+	failedAction := domain.ServiceActionStart
+	errorMessage := "Failed to start service"
+	externalID := "ext-123"
+	properties := domain.JSON{"key": "value"}
+	resources := domain.JSON{"cpu": "1", "memory": "2GB"}
 
 	service := &domain.Service{
 		BaseEntity: domain.BaseEntity{
-			ID:        id,
+			ID:        serviceID,
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},
@@ -1115,37 +850,37 @@ func TestServiceToResponse(t *testing.T) {
 		ConsumerID:        consumerID,
 		ProviderID:        providerID,
 		ExternalID:        &externalID,
-		Attributes:        domain.Attributes{"key": []string{"value"}},
+		Attributes:        domain.Attributes{"env": []string{"prod"}},
 		CurrentState:      domain.ServiceCreated,
 		TargetState:       &targetState,
 		FailedAction:      &failedAction,
 		ErrorMessage:      &errorMessage,
-		RetryCount:        3,
+		RetryCount:        2,
 		CurrentProperties: &properties,
-		TargetProperties:  &targetProperties,
+		TargetProperties:  &properties,
 		Resources:         &resources,
 	}
 
 	// Convert to response
 	response := serviceToResponse(service)
 
-	// Verify all fields are correctly mapped
-	assert.Equal(t, id, response.ID)
-	assert.Equal(t, providerID, response.ProviderID)
-	assert.Equal(t, consumerID, response.ConsumerID)
+	// Verify response
+	assert.Equal(t, serviceID, response.ID)
+	assert.Equal(t, "Test Service", response.Name)
 	assert.Equal(t, agentID, response.AgentID)
 	assert.Equal(t, serviceTypeID, response.ServiceTypeID)
 	assert.Equal(t, groupID, response.GroupID)
+	assert.Equal(t, consumerID, response.ConsumerID)
+	assert.Equal(t, providerID, response.ProviderID)
 	assert.Equal(t, externalID, *response.ExternalID)
-	assert.Equal(t, "Test Service", response.Name)
-	assert.Equal(t, domain.Attributes{"key": []string{"value"}}, response.Attributes)
+	assert.Equal(t, domain.Attributes{"env": []string{"prod"}}, response.Attributes)
 	assert.Equal(t, domain.ServiceCreated, response.CurrentState)
 	assert.Equal(t, targetState, *response.TargetState)
 	assert.Equal(t, failedAction, *response.FailedAction)
 	assert.Equal(t, errorMessage, *response.ErrorMessage)
-	assert.Equal(t, 3, response.RetryCount)
+	assert.Equal(t, 2, response.RetryCount)
 	assert.Equal(t, properties, *response.CurrentProperties)
-	assert.Equal(t, targetProperties, *response.TargetProperties)
+	assert.Equal(t, properties, *response.TargetProperties)
 	assert.Equal(t, resources, *response.Resources)
 	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(updatedAt), response.UpdatedAt)

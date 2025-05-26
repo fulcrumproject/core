@@ -41,7 +41,7 @@ func (r *GormServiceTypeRepository) Count(ctx context.Context) (int64, error) {
 }
 
 // AuthScope returns the auth scope for the service type
-func (r *GormServiceTypeRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (r *GormServiceTypeRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	// Service types don't have scoping IDs as they are global resources
-	return &domain.AuthScope{}, nil
+	return &domain.AuthTargetScope{}, nil
 }

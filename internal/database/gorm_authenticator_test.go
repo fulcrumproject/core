@@ -26,7 +26,7 @@ func (m *MockTokenRepo) FindByID(ctx context.Context, id domain.UUID) (*domain.T
 func (m *MockTokenRepo) List(ctx context.Context, authIdentityScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
 	return nil, fmt.Errorf("not implemented")
 }
-func (m *MockTokenRepo) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (m *MockTokenRepo) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 func (m *MockTokenRepo) Create(ctx context.Context, entity *domain.Token) error {

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -9,6 +8,43 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
+
+// Request types
+
+// CreateTokenRequest represents a request to create a new token
+type CreateTokenRequest struct {
+	Name     string          `json:"name"`
+	Role     domain.AuthRole `json:"role"`
+	ScopeID  *domain.UUID    `json:"scopeId,omitempty"`
+	AgentID  *domain.UUID    `json:"agentId,omitempty"`
+	ExpireAt *time.Time      `json:"expireAt,omitempty"` // Match the original field name in tests
+}
+
+// UpdateTokenRequest represents a request to update a token
+type UpdateTokenRequest struct {
+	Name     *string    `json:"name,omitempty"`
+	ExpireAt *time.Time `json:"expireAt,omitempty"`
+}
+
+// CreateTokenScopeExtractor creates an extractor that sets the target scope based on token role
+func CreateTokenScopeExtractor() AuthTargetScopeExtractor {
+	return func(r *http.Request) (*domain.AuthTargetScope, error) {
+		// Get decoded body from context
+		body := MustGetBody[CreateTokenRequest](r.Context())
+
+		// Determine scope based on role
+		scope := &domain.AuthTargetScope{}
+
+		switch body.Role {
+		case domain.RoleParticipant:
+			scope.ParticipantID = body.ScopeID
+		case domain.RoleAgent:
+			scope.AgentID = body.AgentID
+		}
+
+		return scope, nil
+	}
+}
 
 type TokenHandler struct {
 	querier      domain.TokenQuerier
@@ -34,42 +70,54 @@ func NewTokenHandler(
 // Routes returns the router with all token routes registered
 func (h *TokenHandler) Routes() func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
-		r.Post("/", h.handleCreate)
+		// List - simple authorization
+		r.With(
+			AuthzSimple(domain.SubjectToken, domain.ActionRead, h.authz),
+		).Get("/", h.handleList)
+
+		// Create - decode body + specialized scope extractor for authorization
+		r.With(
+			DecodeBody[CreateTokenRequest](),
+			AuthzFromExtractor(
+				domain.SubjectToken,
+				domain.ActionCreate,
+				h.authz,
+				CreateTokenScopeExtractor(),
+			),
+		).Post("/", h.handleCreate)
+
+		// Resource-specific routes
 		r.Group(func(r chi.Router) {
-			r.Use(IDMiddleware)
-			r.Get("/{id}", h.handleGet)
-			r.Patch("/{id}", h.handleUpdate)
-			r.Delete("/{id}", h.handleDelete)
-			r.Post("/{id}/regenerate", h.handleRegenerateValue)
+			r.Use(ID)
+
+			// Get - authorize from resource ID
+			r.With(
+				AuthzFromID(domain.SubjectToken, domain.ActionRead, h.authz, h.querier),
+			).Get("/{id}", h.handleGet)
+
+			// Update - decode body + authorize from resource ID
+			r.With(
+				DecodeBody[UpdateTokenRequest](),
+				AuthzFromID(domain.SubjectToken, domain.ActionUpdate, h.authz, h.querier),
+			).Patch("/{id}", h.handleUpdate)
+
+			// Delete - authorize from resource ID
+			r.With(
+				AuthzFromID(domain.SubjectToken, domain.ActionDelete, h.authz, h.querier),
+			).Delete("/{id}", h.handleDelete)
+
+			// Regenerate - authorize from resource ID
+			r.With(
+				AuthzFromID(domain.SubjectToken, domain.ActionGenerateToken, h.authz, h.querier),
+			).Post("/{id}/regenerate", h.handleRegenerateValue)
 		})
 	}
 }
 
 func (h *TokenHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Name     string          `json:"name"`
-		Role     domain.AuthRole `json:"role"`
-		ExpireAt time.Time       `json:"expireAt"`
-		ScopeID  *domain.UUID    `json:"scopeId,omitempty"`
-	}
-	if err := render.Decode(r, &req); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-	var scope domain.AuthScope
-	if req.ScopeID != nil {
-		switch req.Role {
-		case domain.RoleParticipant:
-			scope.ParticipantID = req.ScopeID
-		case domain.RoleAgent:
-			scope.AgentID = req.ScopeID
-		}
-	}
-	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectToken, domain.ActionCreate, &scope); err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	// Get decoded body from context
+	req := MustGetBody[CreateTokenRequest](r.Context())
+
 	token, err := h.commander.Create(r.Context(), req.Name, req.Role, req.ExpireAt, req.ScopeID)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -81,12 +129,8 @@ func (h *TokenHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TokenHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionRead)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
+
 	token, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
@@ -97,10 +141,7 @@ func (h *TokenHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 func (h *TokenHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := domain.MustGetAuthIdentity(r.Context())
-	if err := h.authz.Authorize(id, domain.SubjectToken, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+
 	pag, err := parsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
@@ -115,20 +156,8 @@ func (h *TokenHandler) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TokenHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionUpdate)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
-	var req struct {
-		Name     *string    `json:"name"`
-		ExpireAt *time.Time `json:"expireAt"`
-	}
-	if err := render.Decode(r, &req); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
+	id := MustGetID(r.Context())
+	req := MustGetBody[UpdateTokenRequest](r.Context())
 
 	token, err := h.commander.Update(r.Context(), id, req.Name, req.ExpireAt)
 	if err != nil {
@@ -139,12 +168,8 @@ func (h *TokenHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TokenHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionDelete)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
+
 	if err := h.commander.Delete(r.Context(), id); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -153,12 +178,8 @@ func (h *TokenHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TokenHandler) handleRegenerateValue(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionGenerateToken)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
+
 	token, err := h.commander.Regenerate(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -174,7 +195,7 @@ type TokenResponse struct {
 	Name          string          `json:"name"`
 	Role          domain.AuthRole `json:"role"`
 	ExpireAt      JSONUTCTime     `json:"expireAt"`
-	ParticipantID *domain.UUID    `json:"scopeId,omitempty"`
+	ParticipantID *domain.UUID    `json:"participantId,omitempty"`
 	AgentID       *domain.UUID    `json:"agentId,omitempty"`
 	CreatedAt     JSONUTCTime     `json:"createdAt"`
 	UpdatedAt     JSONUTCTime     `json:"updatedAt"`
@@ -194,16 +215,4 @@ func tokenToResponse(t *domain.Token) *TokenResponse {
 		UpdatedAt:     JSONUTCTime(t.UpdatedAt),
 		Value:         t.PlainValue,
 	}
-}
-
-func (h *TokenHandler) authorize(ctx context.Context, id domain.UUID, action domain.AuthAction) (*domain.AuthScope, error) {
-	scope, err := h.querier.AuthScope(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	err = h.authz.AuthorizeCtx(ctx, domain.SubjectToken, action, scope)
-	if err != nil {
-		return nil, err
-	}
-	return scope, nil
 }

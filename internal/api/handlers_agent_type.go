@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -27,46 +26,49 @@ func NewAgentTypeHandler(
 // Routes returns the router with all agent type routes registered
 func (h *AgentTypeHandler) Routes() func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
-		r.Group(func(r chi.Router) {
-			r.Use(IDMiddleware)
-			r.Get("/{id}", h.handleGet)
-		})
+		// List endpoint - simple authorization
+		r.With(
+			AuthzSimple(domain.SubjectAgentType, domain.ActionRead, h.authz),
+		).Get("/", h.handleList)
 
+		// Resource-specific routes with ID
+		r.Group(func(r chi.Router) {
+			r.Use(ID)
+
+			// Get endpoint - authorize using agent type's scope
+			r.With(
+				AuthzFromID(domain.SubjectAgentType, domain.ActionRead, h.authz, h.querier),
+			).Get("/{id}", h.handleGet)
+		})
 	}
 }
 
 func (h *AgentTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := MustGetID(r)
-	_, err := h.authorize(r.Context(), id, domain.ActionRead)
-	if err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
+	id := MustGetID(r.Context())
+
 	agentType, err := h.querier.FindByID(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, ErrNotFound())
 		return
 	}
+
 	render.JSON(w, r, agentTypeToResponse(agentType))
 }
 
 func (h *AgentTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := domain.MustGetAuthIdentity(r.Context())
-	if err := h.authz.Authorize(id, domain.SubjectServiceType, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
 	pag, err := parsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+
 	result, err := h.querier.List(r.Context(), id.Scope(), pag)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
+
 	render.JSON(w, r, NewPageResponse(result, agentTypeToResponse))
 }
 
@@ -92,16 +94,4 @@ func agentTypeToResponse(at *domain.AgentType) *AgentTypeResponse {
 		response.ServiceTypes = append(response.ServiceTypes, serviceTypeToResponse(&st))
 	}
 	return response
-}
-
-func (h *AgentTypeHandler) authorize(ctx context.Context, id domain.UUID, action domain.AuthAction) (*domain.AuthScope, error) {
-	scope, err := h.querier.AuthScope(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	err = h.authz.AuthorizeCtx(ctx, domain.SubjectAgentType, action, scope)
-	if err != nil {
-		return nil, err
-	}
-	return scope, nil
 }

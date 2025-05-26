@@ -38,6 +38,6 @@ func NewParticipantRepository(db *gorm.DB) *GormParticipantRepository {
 }
 
 // AuthScope returns the auth scope for the participant
-func (r *GormParticipantRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthScope, error) {
+func (r *GormParticipantRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	return r.getAuthScope(ctx, id, "id as participant_id")
 }

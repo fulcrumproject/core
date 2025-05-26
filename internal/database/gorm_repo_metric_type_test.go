@@ -236,7 +236,7 @@ func TestMetricTypeRepository(t *testing.T) {
 			// Execute with existing metric type ID
 			scope, err := repo.AuthScope(ctx, metricType.ID)
 			require.NoError(t, err)
-			assert.Equal(t, &domain.AuthScope{}, scope, "Should return empty auth scope for metric types")
+			assert.Equal(t, &domain.AuthTargetScope{}, scope, "Should return empty auth scope for metric types")
 		})
 	})
 }

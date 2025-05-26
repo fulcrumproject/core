@@ -208,5 +208,5 @@ type ServiceGroupQuerier interface {
 	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[ServiceGroup], error)
 
 	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id UUID) (*AuthScope, error)
+	AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }

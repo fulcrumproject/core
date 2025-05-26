@@ -3,11 +3,24 @@ package api
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"fulcrumproject.org/core/internal/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
+
+type CreateMetricEntryRequest struct {
+	ServiceID    *domain.UUID `json:"serviceId,omitempty"`
+	ExternalID   *string      `json:"externalId,omitempty"`
+	ResourceID   string       `json:"resourceId"`
+	Value        float64      `json:"value"`
+	TypeName     string       `json:"typeName"`
+	MetricTypeID domain.UUID  `json:"metricTypeId"`
+	EntityType   string       `json:"entityType"`
+	EntityID     domain.UUID  `json:"entityId"`
+	Timestamp    time.Time    `json:"timestamp"`
+}
 
 type MetricEntryHandler struct {
 	querier        domain.MetricEntryQuerier
@@ -32,33 +45,36 @@ func NewMetricEntryHandler(
 
 // Routes returns the router with all metric entry routes registered
 func (h *MetricEntryHandler) Routes() func(r chi.Router) {
-
 	return func(r chi.Router) {
-		r.Get("/", h.handleList)
-		r.Post("/", h.handleCreate)
+		// List metrics
+		r.With(
+			AuthzSimple(domain.SubjectMetricEntry, domain.ActionRead, h.authz),
+		).Get("/", h.handleList)
+
+		// Create metric entry
+		r.With(
+			DecodeBody[CreateMetricEntryRequest](),
+			AuthzSimple(domain.SubjectMetricEntry, domain.ActionCreate, h.authz),
+		).Post("/", h.handleCreate)
 	}
 }
 
 func (h *MetricEntryHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	var p struct {
-		ServiceID  *domain.UUID `json:"serviceId"`
-		ExternalID *string      `json:"externalId"`
-		ResourceID string       `json:"resourceId"`
-		Value      float64      `json:"value"`
-		TypeName   string       `json:"typeName"`
-	}
-	if err := render.Decode(r, &p); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
+	p := MustGetBody[CreateMetricEntryRequest](r.Context())
 	id := domain.MustGetAuthIdentity(r.Context())
+
 	var (
-		service *domain.Service
-		err     error
+		service     *domain.Service
+		err         error
+		metricEntry *domain.MetricEntry
 	)
 	if p.ServiceID != nil {
 		service, err = h.serviceQuerier.FindByID(r.Context(), *p.ServiceID)
+		if err != nil {
+			render.Render(w, r, ErrDomain(err))
+			return
+		}
+		metricEntry, err = h.commander.Create(r.Context(), p.TypeName, service.AgentID, *p.ServiceID, p.ResourceID, p.Value)
 		if err != nil {
 			render.Render(w, r, ErrDomain(err))
 			return
@@ -69,34 +85,13 @@ func (h *MetricEntryHandler) handleCreate(w http.ResponseWriter, r *http.Request
 			render.Render(w, r, ErrDomain(err))
 			return
 		}
+		metricEntry, err = h.commander.CreateWithExternalID(r.Context(), p.TypeName, service.AgentID, *p.ExternalID, p.ResourceID, p.Value)
+		if err != nil {
+			render.Render(w, r, ErrDomain(err))
+			return
+		}
 	} else {
 		render.Render(w, r, ErrInvalidRequest(errors.New("serviceId or agent role and externalId are required")))
-		return
-	}
-
-	scope, err := h.serviceQuerier.AuthScope(r.Context(), service.ID)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-	if err := h.authz.AuthorizeCtx(r.Context(), domain.SubjectMetricEntry, domain.ActionCreate, scope); err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	var (
-		metricEntry *domain.MetricEntry
-	)
-	if p.ServiceID != nil {
-		metricEntry, err = h.commander.Create(r.Context(), p.TypeName, *scope.AgentID, *p.ServiceID, p.ResourceID, p.Value)
-	} else if p.ExternalID != nil {
-		metricEntry, err = h.commander.CreateWithExternalID(r.Context(), p.TypeName, *scope.AgentID, *p.ExternalID, p.ResourceID, p.Value)
-	} else {
-		render.Render(w, r, ErrInvalidRequest(errors.New("at least one of serviceId or externalId must be specified")))
-		return
-	}
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
 		return
 	}
 
@@ -106,10 +101,6 @@ func (h *MetricEntryHandler) handleCreate(w http.ResponseWriter, r *http.Request
 
 func (h *MetricEntryHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := domain.MustGetAuthIdentity(r.Context())
-	if err := h.authz.Authorize(id, domain.SubjectMetricEntry, domain.ActionRead, &domain.EmptyAuthScope); err != nil {
-		render.Render(w, r, ErrUnauthorized(err))
-		return
-	}
 	pag, err := parsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))

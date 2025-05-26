@@ -26,53 +26,6 @@ func (m *MockAuthenticator) Authenticate(ctx context.Context, token string) doma
 	return m.IdentityToReturn
 }
 
-func TestExtractTokenFromRequest(t *testing.T) {
-	tests := []struct {
-		name          string
-		headers       map[string]string
-		expectedToken string
-	}{
-		{
-			name: "Valid Bearer Token",
-			headers: map[string]string{
-				"Authorization": "Bearer token123",
-			},
-			expectedToken: "token123",
-		},
-		{
-			name:          "Missing Authorization Header",
-			headers:       map[string]string{},
-			expectedToken: "",
-		},
-		{
-			name: "Authorization Header Without Bearer Prefix",
-			headers: map[string]string{
-				"Authorization": "token123",
-			},
-			expectedToken: "",
-		},
-		{
-			name: "Empty Token After Bearer Prefix",
-			headers: map[string]string{
-				"Authorization": "Bearer ",
-			},
-			expectedToken: "",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/", nil)
-			for key, value := range tc.headers {
-				req.Header.Set(key, value)
-			}
-
-			token := extractTokenFromRequest(req)
-			assert.Equal(t, tc.expectedToken, token)
-		})
-	}
-}
-
 // Simple test for AuthMiddleware that verifies the middleware behavior
 func TestAuthMiddleware(t *testing.T) {
 	// Define test cases
@@ -129,7 +82,7 @@ func TestAuthMiddleware(t *testing.T) {
 			})
 
 			// Create middleware chain
-			middleware := AuthMiddleware(tc.authenticator)
+			middleware := Auth(tc.authenticator)
 			handler := middleware(testHandler)
 
 			// Create request with appropriate token
@@ -177,7 +130,7 @@ func TestAuthMiddlewareContext(t *testing.T) {
 	})
 
 	// Create middleware
-	middleware := AuthMiddleware(auth)
+	middleware := Auth(auth)
 	handler := middleware(testHandler)
 
 	// Test with valid token
@@ -256,7 +209,7 @@ func TestIDMiddleware(t *testing.T) {
 			r := chi.NewRouter()
 			// Only add ID middleware in the route with ID
 			r.Route("/{id}", func(r chi.Router) {
-				r.Use(IDMiddleware)
+				r.Use(ID)
 				r.Get("/", testHandler)
 			})
 
@@ -296,7 +249,7 @@ func TestMustGetID(t *testing.T) {
 	r = r.WithContext(context.WithValue(r.Context(), uuidContextKey, testID))
 
 	// Call MustGetID
-	id := MustGetID(r)
+	id := MustGetID(r.Context())
 	assert.Equal(t, testUUID.String(), id.String())
 
 	// Test the panic case by creating a sub-test to capture the panic
@@ -310,6 +263,330 @@ func TestMustGetID(t *testing.T) {
 		// Create a request without an ID in the context
 		r := httptest.NewRequest("GET", "/test", nil)
 		// This should panic
-		_ = MustGetID(r)
+		_ = MustGetID(r.Context())
 	})
+}
+
+// AuthTargetScopeProviderMock implements the AuthTargetScopeProvider interface for testing
+type AuthTargetScopeProviderMock struct {
+	ScopeToReturn *domain.AuthTargetScope
+	ShouldError   bool
+}
+
+func (m AuthTargetScopeProviderMock) AuthTargetScope() (*domain.AuthTargetScope, error) {
+	if m.ShouldError {
+		return nil, domain.NewInvalidInputErrorf("could not extract scope")
+	}
+	return m.ScopeToReturn, nil
+}
+
+// TestAuthzFromExtractor tests the base authorization middleware
+func TestAuthzFromExtractor(t *testing.T) {
+	// Define test cases
+	tests := []struct {
+		name           string
+		identity       domain.AuthIdentity
+		extractor      AuthTargetScopeExtractor
+		authorizer     *MockAuthorizer
+		expectedStatus int
+	}{
+		{
+			name:     "Successful authorization",
+			identity: NewMockAuthFulcrumAdmin(),
+			extractor: func(r *http.Request) (*domain.AuthTargetScope, error) {
+				return &domain.EmptyAuthTargetScope, nil
+			},
+			authorizer: &MockAuthorizer{
+				ShouldSucceed: true,
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:     "Extractor error",
+			identity: NewMockAuthFulcrumAdmin(),
+			extractor: func(r *http.Request) (*domain.AuthTargetScope, error) {
+				return nil, domain.NewNotFoundErrorf("scope not found")
+			},
+			authorizer: &MockAuthorizer{
+				ShouldSucceed: true,
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:     "Authorization failure",
+			identity: NewMockAuthFulcrumAdmin(),
+			extractor: func(r *http.Request) (*domain.AuthTargetScope, error) {
+				return &domain.EmptyAuthTargetScope, nil
+			},
+			authorizer: &MockAuthorizer{
+				ShouldSucceed: false,
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a simple test handler that always returns OK
+			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+
+			// Create middleware with the test extractor
+			middleware := AuthzFromExtractor(
+				domain.SubjectAgent,
+				domain.ActionRead,
+				tc.authorizer,
+				tc.extractor,
+			)
+			handler := middleware(testHandler)
+
+			// Create request with auth identity in context
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			ctx := domain.WithAuthIdentity(req.Context(), tc.identity)
+			req = req.WithContext(ctx)
+
+			// Execute the request
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, req)
+
+			// Verify status code
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}
+
+// MockAuthScopeRetriever implements domain.AuthScopeRetriever for testing
+type MockAuthScopeRetriever struct {
+	ScopeToReturn *domain.AuthTargetScope
+	ShouldError   bool
+}
+
+func (m *MockAuthScopeRetriever) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+	if m.ShouldError {
+		return nil, domain.NewNotFoundErrorf("resource not found")
+	}
+	return m.ScopeToReturn, nil
+}
+
+// TestAuthzFromID tests the resource ID-based authorization middleware
+func TestAuthzFromID(t *testing.T) {
+	testUUID, _ := domain.ParseUUID("550e8400-e29b-41d4-a716-446655440000")
+
+	// Define test cases
+	tests := []struct {
+		name           string
+		identity       domain.AuthIdentity
+		scopeRetriever *MockAuthScopeRetriever
+		authorizer     *MockAuthorizer
+		expectedStatus int
+	}{
+		{
+			name:     "Successful authorization",
+			identity: NewMockAuthFulcrumAdmin(),
+			scopeRetriever: &MockAuthScopeRetriever{
+				ScopeToReturn: &domain.AuthTargetScope{
+					ProviderID: &testUUID,
+				},
+			},
+			authorizer: &MockAuthorizer{
+				ShouldSucceed: true,
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:     "Resource not found",
+			identity: NewMockAuthFulcrumAdmin(),
+			scopeRetriever: &MockAuthScopeRetriever{
+				ShouldError: true,
+			},
+			authorizer: &MockAuthorizer{
+				ShouldSucceed: true,
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:     "Authorization failure",
+			identity: NewMockAuthFulcrumAdmin(),
+			scopeRetriever: &MockAuthScopeRetriever{
+				ScopeToReturn: &domain.AuthTargetScope{
+					ProviderID: &testUUID,
+				},
+			},
+			authorizer: &MockAuthorizer{
+				ShouldSucceed: false,
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a simple test handler that always returns OK
+			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+
+			// Create middleware
+			middleware := AuthzFromID(
+				domain.SubjectAgent,
+				domain.ActionRead,
+				tc.authorizer,
+				tc.scopeRetriever,
+			)
+			handler := middleware(testHandler)
+
+			// Create request with auth identity in context and ID
+			req := httptest.NewRequest(http.MethodGet, "/"+testUUID.String(), nil)
+			ctx := domain.WithAuthIdentity(req.Context(), tc.identity)
+			ctx = context.WithValue(ctx, uuidContextKey, testUUID)
+			req = req.WithContext(ctx)
+
+			// Execute the request
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, req)
+
+			// Verify status code
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}
+
+// TestAuthzSimple tests the simple authorization middleware
+func TestAuthzSimple(t *testing.T) {
+	// Define test cases
+	tests := []struct {
+		name           string
+		identity       domain.AuthIdentity
+		authorizer     *MockAuthorizer
+		expectedStatus int
+	}{
+		{
+			name:     "Successful authorization",
+			identity: NewMockAuthFulcrumAdmin(),
+			authorizer: &MockAuthorizer{
+				ShouldSucceed: true,
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:     "Authorization failure",
+			identity: NewMockAuthFulcrumAdmin(),
+			authorizer: &MockAuthorizer{
+				ShouldSucceed: false,
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a simple test handler that always returns OK
+			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+
+			// Create middleware
+			middleware := AuthzSimple(
+				domain.SubjectAgent,
+				domain.ActionRead,
+				tc.authorizer,
+			)
+			handler := middleware(testHandler)
+
+			// Create request with auth identity in context
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			ctx := domain.WithAuthIdentity(req.Context(), tc.identity)
+			req = req.WithContext(ctx)
+
+			// Execute the request
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, req)
+
+			// Verify status code
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}
+
+// TestAuthzFromBody tests the body-based authorization middleware
+func TestAuthzFromBody(t *testing.T) {
+	testUUID, _ := domain.ParseUUID("550e8400-e29b-41d4-a716-446655440000")
+
+	// Define test cases
+	tests := []struct {
+		name           string
+		identity       domain.AuthIdentity
+		body           AuthTargetScopeProviderMock
+		authorizer     *MockAuthorizer
+		expectedStatus int
+	}{
+		{
+			name:     "Successful authorization",
+			identity: NewMockAuthFulcrumAdmin(),
+			body: AuthTargetScopeProviderMock{
+				ScopeToReturn: &domain.AuthTargetScope{
+					ProviderID: &testUUID,
+				},
+			},
+			authorizer: &MockAuthorizer{
+				ShouldSucceed: true,
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:     "Body scope extraction error",
+			identity: NewMockAuthFulcrumAdmin(),
+			body: AuthTargetScopeProviderMock{
+				ShouldError: true,
+			},
+			authorizer: &MockAuthorizer{
+				ShouldSucceed: true,
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:     "Authorization failure",
+			identity: NewMockAuthFulcrumAdmin(),
+			body: AuthTargetScopeProviderMock{
+				ScopeToReturn: &domain.AuthTargetScope{
+					ProviderID: &testUUID,
+				},
+			},
+			authorizer: &MockAuthorizer{
+				ShouldSucceed: false,
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a simple test handler that always returns OK
+			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+
+			// Create middleware using the generic type parameter
+			middleware := AuthzFromBody[AuthTargetScopeProviderMock](
+				domain.SubjectAgent,
+				domain.ActionRead,
+				tc.authorizer,
+			)
+			handler := middleware(testHandler)
+
+			// Create request with auth identity and body in context
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			ctx := domain.WithAuthIdentity(req.Context(), tc.identity)
+			ctx = context.WithValue(ctx, decodedBodyContextKey, tc.body)
+			req = req.WithContext(ctx)
+
+			// Execute the request
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, req)
+
+			// Verify status code
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
 }
