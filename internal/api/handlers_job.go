@@ -10,14 +10,6 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
-type ClaimJobRequest struct {
-	AgentID domain.UUID `json:"agentId"`
-}
-
-func (r ClaimJobRequest) AuthTargetScope() (*domain.AuthTargetScope, error) {
-	return &domain.AuthTargetScope{AgentID: &r.AgentID}, nil
-}
-
 type CompleteJobRequest struct {
 	Resources  *domain.JSON `json:"resources"`
 	ExternalID *string      `json:"externalID"`
@@ -73,8 +65,7 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 			// Agent actions - require agent identity and authorize from job ID
 			r.With(
 				RequireAgentIdentity(),
-				DecodeBody[ClaimJobRequest](),
-				AuthzFromBody[ClaimJobRequest](domain.SubjectJob, domain.ActionClaim, h.authz),
+				AuthzFromID(domain.SubjectJob, domain.ActionComplete, h.authz, h.querier),
 			).Post("/{id}/claim", h.handleClaimJob)
 
 			r.With(

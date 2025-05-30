@@ -6,3 +6,4 @@ __debug**
 .DS_Store
 coverage.*
 .roorules
+features/
