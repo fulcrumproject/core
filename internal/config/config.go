@@ -6,8 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"time"
-
-	"github.com/joho/godotenv"
 )
 
 const (
@@ -96,59 +94,19 @@ func (c *DBConfig) GetLogLevel() slog.Level {
 	return logLevel(c.LogLevel)
 }
 
-// DefaultConfig returns the default configuration
-func DefaultConfig() *Config {
-	return &Config{
-		Port: 3000,
-		LogConfig: LogConfig{
-			Format: "text",
-			Level:  "info",
-		},
-		JobConfig: JobConfig{
-			Maintenance: 3 * time.Minute,
-			Retention:   3 * 24 * time.Hour,
-			Timeout:     5 * time.Minute,
-		},
-		AgentConfig: AgentConfig{
-			HealthTimeout: 5 * time.Minute,
-		},
-		DBConfig: DBConfig{
-			Host:     "localhost",
-			User:     "fulcrum",
-			Password: "fulcrum_password",
-			Name:     "fulcrum_db",
-			Port:     5432,
-			SSLMode:  "disable",
-			LogLevel: "warn",
-		},
+func logLevel(value string) slog.Level {
+	switch value {
+	case "silent":
+		return slog.Level(99) // Higher than any standard level
+	case "error":
+		return slog.LevelError
+	case "warn":
+		return slog.LevelWarn
+	case "info", "": // Default to info if empty
+		return slog.LevelInfo
+	default:
+		return slog.LevelInfo // Default to info for unknown levels
 	}
-}
-
-// LoadFromFile loads configuration from a JSON file
-func LoadFromFile(filepath string) (*Config, error) {
-	cfg := DefaultConfig()
-
-	data, err := os.ReadFile(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
-	}
-
-	if err := json.Unmarshal(data, cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse config file: %w", err)
-	}
-
-	return cfg, nil
-}
-
-// LoadFromEnv overrides configuration with environment variables
-func (c *Config) LoadFromEnv() error {
-	_ = godotenv.Load(".env.local")
-	_ = godotenv.Load(".env")
-	// Process all config fields including nested structs
-	if err := LoadEnvToStruct(c, envPrefix, tag); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Validate checks if the configuration is valid
@@ -210,17 +168,95 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func logLevel(value string) slog.Level {
-	switch value {
-	case "silent":
-		return slog.Level(99) // Higher than any standard level
-	case "error":
-		return slog.LevelError
-	case "warn":
-		return slog.LevelWarn
-	case "info", "": // Default to info if empty
-		return slog.LevelInfo
-	default:
-		return slog.LevelInfo // Default to info for unknown levels
+// ConfigBuilder implements a builder pattern for creating Config instances
+type ConfigBuilder struct {
+	config *Config
+	err    error
+}
+
+// Default returns a ConfigBuilder with default configuration
+func Builder() *ConfigBuilder {
+	return &ConfigBuilder{
+		config: &Config{
+			Port: 3000,
+			LogConfig: LogConfig{
+				Format: "text",
+				Level:  "info",
+			},
+			JobConfig: JobConfig{
+				Maintenance: 3 * time.Minute,
+				Retention:   3 * 24 * time.Hour,
+				Timeout:     5 * time.Minute,
+			},
+			AgentConfig: AgentConfig{
+				HealthTimeout: 5 * time.Minute,
+			},
+			DBConfig: DBConfig{
+				Host:     "localhost",
+				User:     "fulcrum",
+				Password: "fulcrum_password",
+				Name:     "fulcrum_db",
+				Port:     5432,
+				SSLMode:  "disable",
+				LogLevel: "warn",
+			},
+		},
 	}
+}
+
+// LoadFile loads configuration from a JSON file
+func (b *ConfigBuilder) LoadFile(filepath *string) *ConfigBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	if filepath == nil || *filepath == "" {
+		return b
+	}
+
+	data, err := os.ReadFile(*filepath)
+	if err != nil {
+		b.err = fmt.Errorf("failed to read config file: %w", err)
+		return b
+	}
+
+	if err := json.Unmarshal(data, b.config); err != nil {
+		b.err = fmt.Errorf("failed to parse config file: %w", err)
+		return b
+	}
+
+	return b
+}
+
+// WithEnv overrides configuration from environment variables
+func (b *ConfigBuilder) WithEnv() *ConfigBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	err := loadEnvFromAncestors()
+	if err != nil {
+		b.err = fmt.Errorf("failed to load environment variables: %w", err)
+		return b
+	}
+
+	if err := loadEnvToStruct(b.config, envPrefix, tag); err != nil {
+		b.err = fmt.Errorf("failed to override configuration from environment: %w", err)
+		return b
+	}
+
+	return b
+}
+
+// Build validates and returns the final Config
+func (b *ConfigBuilder) Build() (*Config, error) {
+	if b.err != nil {
+		return nil, b.err
+	}
+
+	if err := b.config.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	return b.config, nil
 }

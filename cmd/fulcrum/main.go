@@ -26,20 +26,9 @@ func main() {
 	flag.Parse()
 
 	// Load configuration
-	cfg := config.DefaultConfig()
-	var err error
-	if configPath != nil && *configPath != "" {
-		// Load from file if specified
-		cfg, err = config.LoadFromFile(*configPath)
-		if err != nil {
-			fmt.Printf("Failed to load configuration from file: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Printf("Loaded configuration from %s\n", *configPath)
-	}
-	// Override with environment variables
-	if err := cfg.LoadFromEnv(); err != nil {
-		fmt.Printf("Failed to load configuration from environment: %v\n", err)
+	cfg, err := config.Builder().LoadFile(configPath).WithEnv().Build()
+	if err != nil {
+		slog.Error("Invalid configuration", "error", err)
 		os.Exit(1)
 	}
 

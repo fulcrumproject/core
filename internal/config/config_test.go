@@ -10,7 +10,7 @@ import (
 )
 
 func TestDefaultConfig(t *testing.T) {
-	cfg := DefaultConfig()
+	cfg, _ := Builder().Build()
 
 	// Test default values
 	if cfg.Port != 3000 {
@@ -104,7 +104,7 @@ func TestLoadFromFile(t *testing.T) {
 	}
 
 	// Test loading valid config
-	cfg, err := LoadFromFile(validConfigPath)
+	cfg, err := Builder().LoadFile(&validConfigPath).Build()
 	if err != nil {
 		t.Fatalf("Failed to load config from file: %v", err)
 	}
@@ -149,13 +149,14 @@ func TestLoadFromFile(t *testing.T) {
 	}
 
 	// Test loading invalid JSON
-	_, err = LoadFromFile(invalidConfigPath)
+	_, err = Builder().LoadFile(&invalidConfigPath).Build()
 	if err == nil {
 		t.Error("Expected error when loading invalid JSON, got nil")
 	}
 
 	// Test loading non-existent file
-	_, err = LoadFromFile("/path/to/nonexistent/config.json")
+	nonExistentFilePath := "/path/to/nonexistent/config.json"
+	_, err = Builder().LoadFile(&nonExistentFilePath).Build()
 	if err == nil {
 		t.Error("Expected error when loading non-existent file, got nil")
 	}
@@ -267,7 +268,7 @@ func TestConfigValidate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := DefaultConfig()
+			cfg, _ := Builder().Build()
 			tt.mutateConfig(cfg)
 
 			err := cfg.Validate()
@@ -339,10 +340,7 @@ func TestLoadFromEnvOverridesDefaults(t *testing.T) {
 	os.Setenv("FULCRUM_DB_LOG_FORMAT", "json")
 
 	// Create a config instance
-	cfg := DefaultConfig()
-
-	// Load from environment
-	err := cfg.LoadFromEnv()
+	cfg, err := Builder().WithEnv().Build()
 	if err != nil {
 		t.Fatalf("Failed to load config from env: %v", err)
 	}

@@ -19,8 +19,10 @@ func NewTestDB(t *testing.T) *TestDB {
 	// Generate a unique database name using UUID without hyphens
 	// uuidStr := strings.Replace(uuid.New().String(), "-", "", -1)
 	dbName := fmt.Sprintf("fulcrum_test_%s", "db") // uuidStr)
-	appConfig := config.DefaultConfig()
-	appConfig.LoadFromEnv()
+	appConfig, err := config.Builder().WithEnv().Build()
+	if err != nil {
+		t.Fatalf("Failed to get config: %v", err)
+	}
 
 	// Connect to default fulcrum database to create the test database
 	adminDB, err := NewConnection(&appConfig.DBConfig)
@@ -67,8 +69,11 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 	}
 
 	// Connect to postgres database to delete the test database
-	appConfig := config.DefaultConfig()
-	appConfig.LoadFromEnv()
+	appConfig, err := config.Builder().WithEnv().Build()
+	if err != nil {
+		t.Fatalf("Failed to get config: %v", err)
+	}
+
 	adminDB, err := NewConnection(&appConfig.DBConfig)
 	if err != nil {
 		t.Errorf("Failed to connect to postgres database: %v", err)

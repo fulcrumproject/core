@@ -16,10 +16,7 @@ func TestNestedStructEnvLoading(t *testing.T) {
 	os.Setenv("FULCRUM_DB_PORT", "5433")
 
 	// Create a config instance
-	cfg := DefaultConfig()
-
-	// Load from environment
-	err := cfg.LoadFromEnv()
+	cfg, err := Builder().WithEnv().Build()
 	if err != nil {
 		t.Fatalf("Failed to load config from env: %v", err)
 	}
