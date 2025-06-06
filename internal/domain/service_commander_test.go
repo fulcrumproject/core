@@ -19,7 +19,6 @@ func TestServiceCommander_Create(t *testing.T) {
 	providerID := uuid.New()
 	consumerID := uuid.New()
 	validName := "Web Server"
-	validAttributes := Attributes{"tier": {"premium"}}
 	validProperties := JSON{"port": 8080}
 
 	tests := []struct {
@@ -73,7 +72,6 @@ func TestServiceCommander_Create(t *testing.T) {
 					service.ID = serviceID
 					assert.Equal(t, validName, service.Name)
 					assert.Equal(t, ServiceCreating, service.CurrentStatus)
-					assert.Equal(t, validAttributes, service.Attributes)
 					assert.Equal(t, &validProperties, service.TargetProperties)
 					return nil
 				}
@@ -357,7 +355,7 @@ func TestServiceCommander_Create(t *testing.T) {
 			if tt.name == "Validation error" {
 				tt.setupMocks(store, audit)
 				commander := NewServiceCommander(store, audit)
-				svc, err := commander.Create(ctx, agentID, serviceTypeID, groupID, "", validAttributes, validProperties)
+				svc, err := commander.Create(ctx, agentID, serviceTypeID, groupID, "", validProperties)
 
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errMessage)
@@ -365,7 +363,7 @@ func TestServiceCommander_Create(t *testing.T) {
 			} else {
 				tt.setupMocks(store, audit)
 				commander := NewServiceCommander(store, audit)
-				svc, err := commander.Create(ctx, agentID, serviceTypeID, groupID, validName, validAttributes, validProperties)
+				svc, err := commander.Create(ctx, agentID, serviceTypeID, groupID, validName, validProperties)
 
 				if tt.wantErr {
 					assert.Error(t, err)
@@ -378,7 +376,6 @@ func TestServiceCommander_Create(t *testing.T) {
 					assert.NotNil(t, svc)
 					assert.Equal(t, serviceID, svc.ID)
 					assert.Equal(t, validName, svc.Name)
-					assert.Equal(t, validAttributes, svc.Attributes)
 					assert.Equal(t, ServiceCreating, svc.CurrentStatus)
 					var targetCreated ServiceStatus = ServiceCreated
 					assert.Equal(t, &targetCreated, svc.TargetStatus)
@@ -642,7 +639,7 @@ func TestServiceCommander_Update(t *testing.T) {
 			inputName:  nil,
 			inputProps: newPropertiesPtr,
 			wantErr:    true,
-			errMessage: "cannot update attributes on a service with status",
+			errMessage: "cannot update properties on a service with status",
 		},
 		{
 			name: "Service save error",

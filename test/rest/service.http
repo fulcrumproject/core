@@ -11,10 +11,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Service Provider",
-    "status": "Enabled",
-    "attributes": {
-        "type": ["test"]
-    }
+    "status": "Enabled"
 }
 
 @providerId = {{createProvider.response.body.$.id}}
@@ -96,9 +93,6 @@ Authorization: Bearer {{consumerToken}}
 
 {
     "name": "Test Service",
-    "attributes": {
-        "tier": ["4"]
-    },
     "properties": {
         "cpu": 4,
         "memory": 8

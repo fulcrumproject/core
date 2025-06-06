@@ -104,9 +104,8 @@ func TestParticipant_Validate(t *testing.T) {
 		{
 			name: "Valid participant",
 			participant: &Participant{
-				Name:       "test-participant",
-				Status:     ParticipantEnabled,
-				Attributes: Attributes{"key": []string{"value"}},
+				Name:   "test-participant",
+				Status: ParticipantEnabled,
 			},
 			wantErr: false,
 		},
@@ -136,16 +135,6 @@ func TestParticipant_Validate(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "Invalid attributes",
-			participant: &Participant{
-				Name:       "test-participant",
-				Status:     ParticipantEnabled,
-				Attributes: Attributes{"": []string{"value"}}, // Invalid key
-			},
-			wantErr:     true,
-			errContains: "attribute keys cannot be empty",
-		},
 	}
 
 	for _, tt := range tests {
@@ -167,7 +156,6 @@ func TestParticipantCommander_Create(t *testing.T) {
 	ctx := context.Background()
 	validName := "test-participant"
 	validStatus := ParticipantEnabled
-	validAttributes := Attributes{"key": []string{"value"}}
 
 	tests := []struct {
 		name          string
@@ -182,7 +170,6 @@ func TestParticipantCommander_Create(t *testing.T) {
 				participantRepo.createFunc = func(ctx context.Context, p *Participant) error {
 					assert.Equal(t, validName, p.Name)
 					assert.Equal(t, validStatus, p.Status)
-					assert.Equal(t, validAttributes, p.Attributes)
 					return nil
 				}
 				store.WithParticipantRepo(participantRepo)
@@ -248,9 +235,9 @@ func TestParticipantCommander_Create(t *testing.T) {
 			var err error
 
 			if tt.name == "Create validation error" { // Special case for validation
-				participant, err = commander.Create(ctx, "", validStatus, validAttributes)
+				participant, err = commander.Create(ctx, "", validStatus)
 			} else {
-				participant, err = commander.Create(ctx, validName, validStatus, validAttributes)
+				participant, err = commander.Create(ctx, validName, validStatus)
 			}
 
 			if tt.wantErr {
@@ -278,21 +265,17 @@ func TestParticipantCommander_Update(t *testing.T) {
 	participantID := uuid.New()
 	existingName := "existing-participant"
 	existingStatus := ParticipantEnabled
-	existingAttributes := Attributes{"old_key": []string{"old_value"}}
 
 	newName := "updated-participant"
 	newStatus := ParticipantDisabled
-	newAttributes := Attributes{"new_key": []string{"new_value"}}
 
 	tests := []struct {
 		name           string
 		setupMocks     func(store *MockStore, audit *MockAuditEntryCommander)
 		updateName     *string
 		updateStatus   *ParticipantStatus
-		updateAttrs    *Attributes
 		expectedName   string
 		expectedStatus ParticipantStatus
-		expectedAttrs  Attributes
 		wantErr        bool
 		expectedError  string
 	}{
@@ -306,14 +289,12 @@ func TestParticipantCommander_Update(t *testing.T) {
 						BaseEntity: BaseEntity{ID: participantID, CreatedAt: time.Now(), UpdatedAt: time.Now()},
 						Name:       existingName,
 						Status:     existingStatus,
-						Attributes: existingAttributes,
 					}, nil
 				}
 				participantRepo.saveFunc = func(ctx context.Context, p *Participant) error {
 					assert.Equal(t, participantID, p.ID)
 					assert.Equal(t, newName, p.Name)
 					assert.Equal(t, newStatus, p.Status)
-					assert.Equal(t, newAttributes, p.Attributes)
 					return nil
 				}
 				store.WithParticipantRepo(participantRepo)
@@ -329,10 +310,8 @@ func TestParticipantCommander_Update(t *testing.T) {
 			},
 			updateName:     &newName,
 			updateStatus:   &newStatus,
-			updateAttrs:    &newAttributes,
 			expectedName:   newName,
 			expectedStatus: newStatus,
-			expectedAttrs:  newAttributes,
 			wantErr:        false,
 		},
 		{
@@ -344,7 +323,6 @@ func TestParticipantCommander_Update(t *testing.T) {
 						BaseEntity: BaseEntity{ID: participantID},
 						Name:       existingName,
 						Status:     existingStatus,
-						Attributes: existingAttributes,
 					}, nil
 				}
 				participantRepo.saveFunc = func(ctx context.Context, p *Participant) error {
@@ -360,7 +338,6 @@ func TestParticipantCommander_Update(t *testing.T) {
 			updateName:     &newName,
 			expectedName:   newName,
 			expectedStatus: existingStatus,
-			expectedAttrs:  existingAttributes,
 			wantErr:        false,
 		},
 		{
@@ -434,7 +411,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 			tt.setupMocks(store, audit)
 
 			commander := NewParticipantCommander(store, audit)
-			participant, err := commander.Update(ctx, participantID, tt.updateName, tt.updateStatus, tt.updateAttrs)
+			participant, err := commander.Update(ctx, participantID, tt.updateName, tt.updateStatus)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -451,7 +428,6 @@ func TestParticipantCommander_Update(t *testing.T) {
 				assert.NotNil(t, participant)
 				assert.Equal(t, tt.expectedName, participant.Name)
 				assert.Equal(t, tt.expectedStatus, participant.Status)
-				assert.Equal(t, tt.expectedAttrs, participant.Attributes)
 			}
 		})
 	}

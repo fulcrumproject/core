@@ -42,8 +42,7 @@ func ParseAgentStatus(value string) (AgentStatus, error) {
 type Agent struct {
 	BaseEntity
 
-	Name       string     `json:"name" gorm:"not null"`
-	Attributes Attributes `json:"attributes,omitempty" gorm:"type:jsonb"`
+	Name string `json:"name" gorm:"not null"`
 
 	// Status management
 	Status           AgentStatus `json:"status" gorm:"not null"`
@@ -57,12 +56,11 @@ type Agent struct {
 }
 
 // NewAgent creates a new agent with proper validation
-func NewAgent(name string, attributes Attributes, providerID UUID, agentTypeID UUID) *Agent {
+func NewAgent(name string, providerID UUID, agentTypeID UUID) *Agent {
 	return &Agent{
 		Name:             name,
 		Status:           AgentDisconnected,
 		LastStatusUpdate: time.Now(),
-		Attributes:       attributes,
 		ProviderID:       providerID,
 		AgentTypeID:      agentTypeID,
 	}
@@ -90,16 +88,6 @@ func (a *Agent) Validate() error {
 	if a.ProviderID == uuid.Nil {
 		return fmt.Errorf("provider ID cannot be empty")
 	}
-	if a.Attributes != nil {
-		if err := a.Attributes.Validate(); err != nil {
-			return err
-		}
-	}
-	if a.Attributes != nil {
-		if err := a.Attributes.Validate(); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -114,24 +102,20 @@ func (a *Agent) UpdateHeartbeat() {
 	a.LastStatusUpdate = time.Now()
 }
 
-// RegisterMetadata updates the agent's metadata properties (name, attributes)
-func (a *Agent) RegisterMetadata(name *string, attributes *Attributes) {
+// RegisterMetadata updates the agent's metadata properties (name)
+func (a *Agent) RegisterMetadata(name *string) {
 	if name != nil {
 		a.Name = *name
-	}
-
-	if attributes != nil {
-		a.Attributes = *attributes
 	}
 }
 
 // AgentCommander defines the interface for agent command operations
 type AgentCommander interface {
 	// Create creates a new agent
-	Create(ctx context.Context, name string, attributes Attributes, providerID UUID, agentTypeID UUID) (*Agent, error)
+	Create(ctx context.Context, name string, providerID UUID, agentTypeID UUID) (*Agent, error)
 
 	// Update updates an agent
-	Update(ctx context.Context, id UUID, name *string, attributes *Attributes, status *AgentStatus) (*Agent, error)
+	Update(ctx context.Context, id UUID, name *string, status *AgentStatus) (*Agent, error)
 
 	// Delete removes an agent by ID after checking for dependencies
 	Delete(ctx context.Context, id UUID) error
@@ -160,7 +144,6 @@ func NewAgentCommander(
 func (s *agentCommander) Create(
 	ctx context.Context,
 	name string,
-	attributes Attributes,
 	providerID UUID,
 	agentTypeID UUID,
 ) (*Agent, error) {
@@ -184,7 +167,7 @@ func (s *agentCommander) Create(
 	// Create and save
 	var agent *Agent
 	err = s.store.Atomic(ctx, func(store Store) error {
-		agent = NewAgent(name, attributes, providerID, agentTypeID)
+		agent = NewAgent(name, providerID, agentTypeID)
 		if err := agent.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -205,7 +188,6 @@ func (s *agentCommander) Create(
 func (s *agentCommander) Update(ctx context.Context,
 	id UUID,
 	name *string,
-	attributes *Attributes,
 	status *AgentStatus,
 ) (*Agent, error) {
 	// Find it
@@ -219,8 +201,8 @@ func (s *agentCommander) Update(ctx context.Context,
 	if status != nil {
 		agent.UpdateStatus(*status)
 	}
-	if name != nil || attributes != nil {
-		agent.RegisterMetadata(name, attributes)
+	if name != nil {
+		agent.RegisterMetadata(name)
 	}
 	if err := agent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}

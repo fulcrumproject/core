@@ -9,10 +9,9 @@ import (
 )
 
 type CreateAgentRequest struct {
-	Name        string            `json:"name"`
-	Attributes  domain.Attributes `json:"attributes,omitempty"`
-	ProviderID  domain.UUID       `json:"providerId"`
-	AgentTypeID domain.UUID       `json:"agentTypeId"`
+	Name        string      `json:"name"`
+	ProviderID  domain.UUID `json:"providerId"`
+	AgentTypeID domain.UUID `json:"agentTypeId"`
 }
 
 // AuthTargetScope implements AuthTargetScopeProvider interface
@@ -21,9 +20,8 @@ func (r CreateAgentRequest) AuthTargetScope() (*domain.AuthTargetScope, error) {
 }
 
 type UpdateAgentRequest struct {
-	Name       *string             `json:"name"`
-	Status     *domain.AgentStatus `json:"status"`
-	Attributes *domain.Attributes  `json:"attributes,omitempty"`
+	Name   *string             `json:"name"`
+	Status *domain.AgentStatus `json:"status"`
 }
 
 type UpdateAgentStatusRequest struct {
@@ -101,7 +99,6 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	agent, err := h.commander.Create(
 		r.Context(),
 		p.Name,
-		p.Attributes,
 		p.ProviderID,
 		p.AgentTypeID,
 	)
@@ -165,7 +162,6 @@ func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		r.Context(),
 		id,
 		p.Name,
-		p.Attributes,
 		p.Status,
 	)
 	if err != nil {
@@ -207,7 +203,6 @@ type AgentResponse struct {
 	ID          domain.UUID          `json:"id"`
 	Name        string               `json:"name"`
 	Status      domain.AgentStatus   `json:"status"`
-	Attributes  domain.Attributes    `json:"attributes,omitempty"`
 	ProviderID  domain.UUID          `json:"providerId"`
 	AgentTypeID domain.UUID          `json:"agentTypeId"`
 	Participant *ParticipantResponse `json:"participant,omitempty"`
@@ -222,7 +217,6 @@ func agentToResponse(a *domain.Agent) *AgentResponse {
 		ID:          a.ID,
 		Name:        a.Name,
 		Status:      a.Status,
-		Attributes:  map[string][]string(a.Attributes),
 		ProviderID:  a.ProviderID,
 		AgentTypeID: a.AgentTypeID,
 		CreatedAt:   JSONUTCTime(a.CreatedAt),

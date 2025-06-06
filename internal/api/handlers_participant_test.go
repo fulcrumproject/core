@@ -78,16 +78,14 @@ func TestParticipantHandleCreate(t *testing.T) {
 		{
 			name: "Success",
 			requestBody: CreateParticipantRequest{
-				Name:       "Example Org",
-				Status:     domain.ParticipantStatus("Enabled"),
-				Attributes: domain.Attributes{"region": {"us-east-1", "us-west-2"}},
+				Name:   "Example Org",
+				Status: domain.ParticipantStatus("Enabled"),
 			},
 			mockSetup: func(commander *mockParticipantCommander) {
 				// Setup the commander
-				commander.createFunc = func(ctx context.Context, name string, status domain.ParticipantStatus, attributes domain.Attributes) (*domain.Participant, error) {
+				commander.createFunc = func(ctx context.Context, name string, status domain.ParticipantStatus) (*domain.Participant, error) {
 					assert.Equal(t, "Example Org", name)
 					assert.Equal(t, domain.ParticipantStatus("Enabled"), status)
-					assert.Equal(t, domain.Attributes{"region": {"us-east-1", "us-west-2"}}, attributes)
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -98,9 +96,8 @@ func TestParticipantHandleCreate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:       name,
-						Status:     status,
-						Attributes: attributes,
+						Name:   name,
+						Status: status,
 					}, nil
 				}
 			},
@@ -109,13 +106,12 @@ func TestParticipantHandleCreate(t *testing.T) {
 		{
 			name: "CommanderError",
 			requestBody: CreateParticipantRequest{
-				Name:       "Example Org",
-				Status:     domain.ParticipantStatus("Enabled"),
-				Attributes: domain.Attributes{"region": {"us-east-1", "us-west-2"}},
+				Name:   "Example Org",
+				Status: domain.ParticipantStatus("Enabled"),
 			},
 			mockSetup: func(commander *mockParticipantCommander) {
 				// Setup the commander to return an error
-				commander.createFunc = func(ctx context.Context, name string, status domain.ParticipantStatus, attributes domain.Attributes) (*domain.Participant, error) {
+				commander.createFunc = func(ctx context.Context, name string, status domain.ParticipantStatus) (*domain.Participant, error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},

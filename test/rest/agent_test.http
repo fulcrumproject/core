@@ -11,10 +11,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "CloudConf Service Provider",
-    "status": "Enabled",
-    "attributes": {
-        "certifications": ["ISO-9001","ISO-27001"]
-    }
+    "status": "Enabled"
 }
 
 @providerId = {{createProvider.response.body.$.id}}
@@ -27,11 +24,7 @@ Authorization: Bearer {{adminToken}}
 {
     "name": "VM Agent",
     "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
-    "providerId": "{{providerId}}",
-    "attributes": {
-        "certifications": ["ISO-27001"],
-        "region": ["IT"]
-    }
+    "providerId": "{{providerId}}"
 }
 
 @agentId = {{createAgent.response.body.$.id}}
@@ -100,11 +93,6 @@ Authorization: Bearer {{consumerToken}}
 
 {
     "name": "Proxmox VM",
-    "attributes": {
-        "region": ["IT"],
-        "tier": ["3"],
-        "certifications": ["ISO-27001"]
-    },
     "properties": {
         "cpu": 4,
         "memory": 8

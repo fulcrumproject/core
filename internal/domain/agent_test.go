@@ -200,14 +200,13 @@ func TestAgent_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Valid with attributes",
+			name: "Valid agent",
 			agent: &Agent{
 				Name:             "test-agent",
 				Status:           AgentConnected,
 				LastStatusUpdate: validTime,
 				AgentTypeID:      validID,
 				ProviderID:       validID,
-				Attributes:       Attributes{"key": []string{"value"}},
 			},
 			wantErr: false,
 		},
@@ -232,7 +231,6 @@ func TestAgentCommander_Create(t *testing.T) {
 	ctx := context.Background()
 	validID := uuid.New()
 	validName := "test-agent"
-	validAttributes := Attributes{"key": []string{"value"}}
 
 	tests := []struct {
 		name       string
@@ -256,7 +254,6 @@ func TestAgentCommander_Create(t *testing.T) {
 				agentRepo := &MockAgentRepository{}
 				agentRepo.createFunc = func(ctx context.Context, agent *Agent) error {
 					assert.Equal(t, validName, agent.Name)
-					assert.Equal(t, validAttributes, agent.Attributes)
 					assert.Equal(t, validID, agent.ProviderID)
 					assert.Equal(t, validID, agent.AgentTypeID)
 					assert.Equal(t, AgentDisconnected, agent.Status)
@@ -345,7 +342,7 @@ func TestAgentCommander_Create(t *testing.T) {
 			tt.setupMocks(store, audit)
 
 			commander := NewAgentCommander(store, audit)
-			agent, err := commander.Create(ctx, validName, validAttributes, validID, validID)
+			agent, err := commander.Create(ctx, validName, validID, validID)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -357,7 +354,6 @@ func TestAgentCommander_Create(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, agent)
 				assert.Equal(t, validName, agent.Name)
-				assert.Equal(t, validAttributes, agent.Attributes)
 			}
 		})
 	}
@@ -390,7 +386,6 @@ func TestAgentCommander_Update(t *testing.T) {
 		setupAgentCopy func() *Agent
 		setupMocks     func(store *MockStore, audit *MockAuditEntryCommander)
 		nameParam      *string
-		attributes     *Attributes
 		statusParam    *AgentStatus
 		wantErr        bool
 	}{
@@ -418,7 +413,6 @@ func TestAgentCommander_Update(t *testing.T) {
 				store.WithAgentRepo(agentRepo)
 			},
 			nameParam:   &newName,
-			attributes:  nil,
 			statusParam: nil,
 			wantErr:     false,
 		},
@@ -442,7 +436,6 @@ func TestAgentCommander_Update(t *testing.T) {
 				store.WithAgentRepo(agentRepo)
 			},
 			nameParam:   nil,
-			attributes:  nil,
 			statusParam: &newStatus,
 			wantErr:     false,
 		},
@@ -457,7 +450,6 @@ func TestAgentCommander_Update(t *testing.T) {
 				store.WithAgentRepo(agentRepo)
 			},
 			nameParam:   &newName,
-			attributes:  nil,
 			statusParam: nil,
 			wantErr:     true,
 		},
@@ -478,7 +470,6 @@ func TestAgentCommander_Update(t *testing.T) {
 				store.WithAgentRepo(agentRepo)
 			},
 			nameParam:   func() *string { s := ""; return &s }(), // Empty name to cause validation error
-			attributes:  nil,
 			statusParam: nil,
 			wantErr:     true,
 		},
@@ -491,7 +482,7 @@ func TestAgentCommander_Update(t *testing.T) {
 			tt.setupMocks(store, audit)
 
 			commander := NewAgentCommander(store, audit)
-			agent, err := commander.Update(ctx, agentID, tt.nameParam, tt.attributes, tt.statusParam)
+			agent, err := commander.Update(ctx, agentID, tt.nameParam, tt.statusParam)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -544,32 +535,20 @@ func TestAgent_UpdateHeartbeat(t *testing.T) {
 
 func TestAgent_RegisterMetadata(t *testing.T) {
 	agent := &Agent{
-		Name:       "original-name",
-		Attributes: Attributes{"key1": []string{"value1"}},
+		Name: "original-name",
 	}
 
-	// Test updating all fields
+	// Test updating the name
 	newName := "new-name"
-	newAttributes := Attributes{"key2": []string{"value2"}}
-
-	agent.RegisterMetadata(&newName, &newAttributes)
+	agent.RegisterMetadata(&newName)
 
 	assert.Equal(t, newName, agent.Name)
-	assert.Equal(t, newAttributes, agent.Attributes)
 
-	// Test partial update (only name)
+	// Test updating to another name
 	newerName := "newer-name"
-	agent.RegisterMetadata(&newerName, nil)
+	agent.RegisterMetadata(&newerName)
 
 	assert.Equal(t, newerName, agent.Name)
-	assert.Equal(t, newAttributes, agent.Attributes) // Should be unchanged
-
-	// Test partial update (only attributes)
-	newerAttributes := Attributes{"key3": []string{"value3"}}
-	agent.RegisterMetadata(nil, &newerAttributes)
-
-	assert.Equal(t, newerName, agent.Name) // Should be unchanged
-	assert.Equal(t, newerAttributes, agent.Attributes)
 }
 
 func TestAgentCommander_UpdateStatus(t *testing.T) {

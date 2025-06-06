@@ -36,20 +36,18 @@ func ParseParticipantStatus(value string) (ParticipantStatus, error) {
 type Participant struct {
 	BaseEntity
 
-	Name       string            `json:"name" gorm:"not null"`
-	Attributes Attributes        `json:"attributes,omitempty" gorm:"type:jsonb"`
-	Status     ParticipantStatus `json:"status" gorm:"not null"`
+	Name   string            `json:"name" gorm:"not null"`
+	Status ParticipantStatus `json:"status" gorm:"not null"`
 
 	// Relationships
 	Agents []Agent `json:"agents,omitempty" gorm:"foreignKey:ProviderID"` // Agent struct will be updated later
 }
 
 // NewParticipant creates a new Participant without validation
-func NewParticipant(name string, status ParticipantStatus, attributes Attributes) *Participant {
+func NewParticipant(name string, status ParticipantStatus) *Participant {
 	return &Participant{
-		Name:       name,
-		Status:     status,
-		Attributes: attributes,
+		Name:   name,
+		Status: status,
 	}
 }
 
@@ -63,11 +61,6 @@ func (p *Participant) Validate() error {
 	if p.Name == "" {
 		return fmt.Errorf("participant name cannot be empty")
 	}
-	if p.Attributes != nil {
-		if err := p.Attributes.Validate(); err != nil {
-			return err
-		}
-	}
 	if err := p.Status.Validate(); err != nil {
 		return err
 	}
@@ -75,25 +68,22 @@ func (p *Participant) Validate() error {
 }
 
 // Update updates the participant fields if the pointers are non-nil
-func (p *Participant) Update(name *string, status *ParticipantStatus, attributes *Attributes) {
+func (p *Participant) Update(name *string, status *ParticipantStatus) {
 	if name != nil {
 		p.Name = *name
 	}
 	if status != nil {
 		p.Status = *status
 	}
-	if attributes != nil {
-		p.Attributes = *attributes
-	}
 }
 
 // ParticipantCommander defines the interface for participant command operations
 type ParticipantCommander interface {
 	// Create creates a new participant
-	Create(ctx context.Context, name string, status ParticipantStatus, attributes Attributes) (*Participant, error)
+	Create(ctx context.Context, name string, status ParticipantStatus) (*Participant, error)
 
 	// Update updates a participant
-	Update(ctx context.Context, id UUID, name *string, status *ParticipantStatus, attributes *Attributes) (*Participant, error)
+	Update(ctx context.Context, id UUID, name *string, status *ParticipantStatus) (*Participant, error)
 
 	// Delete removes a participant by ID after checking for dependencies
 	Delete(ctx context.Context, id UUID) error
@@ -120,11 +110,10 @@ func (c *participantCommander) Create(
 	ctx context.Context,
 	name string,
 	status ParticipantStatus,
-	attributes Attributes,
 ) (*Participant, error) {
 	var participant *Participant
 	err := c.store.Atomic(ctx, func(store Store) error {
-		participant = NewParticipant(name, status, attributes)
+		participant = NewParticipant(name, status)
 		if err := participant.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -148,7 +137,6 @@ func (c *participantCommander) Update(
 	id UUID,
 	name *string,
 	status *ParticipantStatus,
-	attributes *Attributes,
 ) (*Participant, error) {
 	participant, err := c.store.ParticipantRepo().FindByID(ctx, id)
 	if err != nil {
@@ -156,7 +144,7 @@ func (c *participantCommander) Update(
 	}
 	beforeParticipant := *participant
 
-	participant.Update(name, status, attributes)
+	participant.Update(name, status)
 	if err := participant.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}

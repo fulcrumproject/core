@@ -22,9 +22,8 @@ func createTestParticipant(t *testing.T, status domain.ParticipantStatus) *domai
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Participant{
-		Name:       fmt.Sprintf("Test Participant %s", randomSuffix),
-		Status:     status,
-		Attributes: domain.Attributes{"key": []string{"value"}},
+		Name:   fmt.Sprintf("Test Participant %s", randomSuffix),
+		Status: status,
 	}
 }
 func createTestAgentType(t *testing.T) *domain.AgentType {
@@ -47,7 +46,6 @@ func createTestAgentWithStatusUpdate(t *testing.T, participantID, agentTypeID do
 	return &domain.Agent{
 		Name:             fmt.Sprintf("Test Agent %s", randomSuffix),
 		Status:           status,
-		Attributes:       domain.Attributes{"key": []string{"value"}},
 		ProviderID:       participantID,
 		AgentTypeID:      agentTypeID,
 		LastStatusUpdate: lastUpdate,

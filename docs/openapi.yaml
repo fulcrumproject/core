@@ -89,16 +89,6 @@ components:
       format: uuid
       example: "123e4567-e89b-12d3-a456-426614174000"
 
-    Attributes:
-      type: object
-      additionalProperties:
-        type: array
-        items:
-          type: string
-      example:
-        region: ["us-east-1"]
-        capabilities: ["compute", "storage"]
-
     JSONObject:
       type: object
       additionalProperties: true
@@ -116,8 +106,6 @@ components:
           example: "Test Participant"
         status:
           $ref: "#/components/schemas/ParticipantStatus"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
 
     ParticipantResponse:
       type: object
@@ -129,8 +117,6 @@ components:
           example: "Test Participant"
         status:
           $ref: "#/components/schemas/ParticipantStatus"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         createdAt:
           type: string
           format: date-time
@@ -218,8 +204,6 @@ components:
           example: "aws-agent-01"
         status:
           $ref: "#/components/schemas/AgentStatus"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         properties:
           $ref: "#/components/schemas/JSONObject"
         participantId:
@@ -237,8 +221,6 @@ components:
           example: "aws-agent-01"
         status:
           $ref: "#/components/schemas/AgentStatus"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         properties:
           $ref: "#/components/schemas/JSONObject"
         participantId:
@@ -320,8 +302,6 @@ components:
           example: "web-server-01"
         status:
           $ref: "#/components/schemas/ServiceStatus"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         properties:
           $ref: "#/components/schemas/JSONObject"
         resources:
@@ -343,8 +323,6 @@ components:
           example: "web-server-01"
         currentStatus:
           $ref: "#/components/schemas/ServiceStatus"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         targetStatus:
           $ref: "#/components/schemas/ServiceStatus"
         currentProperties:

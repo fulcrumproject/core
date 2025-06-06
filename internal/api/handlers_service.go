@@ -36,12 +36,11 @@ func NewServiceHandler(
 
 // CreateServiceRequest represents the request to create a service
 type CreateServiceRequest struct {
-	GroupID       domain.UUID       `json:"groupId"`
-	AgentID       domain.UUID       `json:"agentId"`
-	ServiceTypeID domain.UUID       `json:"serviceTypeId"`
-	Name          string            `json:"name"`
-	Attributes    domain.Attributes `json:"attributes"`
-	Properties    domain.JSON       `json:"properties"`
+	GroupID       domain.UUID `json:"groupId"`
+	AgentID       domain.UUID `json:"agentId"`
+	ServiceTypeID domain.UUID `json:"serviceTypeId"`
+	Name          string      `json:"name"`
+	Properties    domain.JSON `json:"properties"`
 }
 
 // UpdateServiceRequest represents the request to update a service
@@ -155,7 +154,6 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		body.ServiceTypeID,
 		body.GroupID,
 		body.Name,
-		body.Attributes,
 		body.Properties,
 	)
 	if err != nil {
@@ -257,7 +255,6 @@ type ServiceResponse struct {
 	GroupID           domain.UUID           `json:"groupId"`
 	ExternalID        *string               `json:"externalId,omitempty"`
 	Name              string                `json:"name"`
-	Attributes        domain.Attributes     `json:"attributes"`
 	CurrentStatus     domain.ServiceStatus  `json:"currentStatus"`
 	TargetStatus      *domain.ServiceStatus `json:"targetStatus,omitempty"`
 	FailedAction      *domain.ServiceAction `json:"failedAction,omitempty"`
@@ -281,7 +278,6 @@ func serviceToResponse(s *domain.Service) *ServiceResponse {
 		GroupID:           s.GroupID,
 		ExternalID:        s.ExternalID,
 		Name:              s.Name,
-		Attributes:        s.Attributes,
 		CurrentStatus:     s.CurrentStatus,
 		TargetStatus:      s.TargetStatus,
 		FailedAction:      s.FailedAction,

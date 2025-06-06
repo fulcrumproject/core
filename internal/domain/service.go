@@ -59,8 +59,7 @@ func (s ServiceStatus) Validate() error {
 type Service struct {
 	BaseEntity
 
-	Name       string     `json:"name" gorm:"not null"`
-	Attributes Attributes `json:"attributes,omitempty" gorm:"type:jsonb"`
+	Name string `json:"name" gorm:"not null"`
 
 	// Status management
 	CurrentStatus     ServiceStatus  `json:"currentStatus" gorm:"not null"`
@@ -97,7 +96,6 @@ func NewService(
 	agentID UUID,
 	serviceTypeID UUID,
 	name string,
-	attributes Attributes,
 	properties *JSON,
 ) *Service {
 	target := ServiceCreated
@@ -110,7 +108,6 @@ func NewService(
 		Name:             name,
 		CurrentStatus:    ServiceCreating,
 		TargetStatus:     &target,
-		Attributes:       attributes,
 		TargetProperties: properties,
 	}
 }
@@ -154,7 +151,7 @@ func serviceUpdateNextStatusAndAction(status ServiceStatus) (ServiceStatus, Serv
 	case ServiceStarted:
 		return ServiceHotUpdating, ServiceActionHotUpdate, nil
 	default:
-		return "", "", NewInvalidInputErrorf("cannot update attributes on a service with status %v", status)
+		return "", "", NewInvalidInputErrorf("cannot update properties on a service with status %v", status)
 	}
 }
 
@@ -226,11 +223,6 @@ func (s Service) Validate() error {
 	if s.ServiceTypeID == uuid.Nil {
 		return errors.New("service type ID cannot be nil")
 	}
-	if s.Attributes != nil {
-		if err := s.Attributes.Validate(); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -242,7 +234,7 @@ func (Service) TableName() string {
 // ServiceCommander defines the interface for service command operations
 type ServiceCommander interface {
 	// Create handles service creation and creates a job for the agent
-	Create(ctx context.Context, agentID UUID, serviceTypeID UUID, groupID UUID, name string, attributes Attributes, properties JSON) (*Service, error)
+	Create(ctx context.Context, agentID UUID, serviceTypeID UUID, groupID UUID, name string, properties JSON) (*Service, error)
 
 	// Update handles service updates and creates a job for the agent
 	Update(ctx context.Context, id UUID, name *string, props *JSON) (*Service, error)
@@ -280,7 +272,6 @@ func (s *serviceCommander) Create(
 	serviceTypeID UUID,
 	groupID UUID,
 	name string,
-	attributes Attributes,
 	properties JSON,
 ) (*Service, error) {
 	// Find and check dependencies
@@ -301,7 +292,6 @@ func (s *serviceCommander) Create(
 		agentID,
 		serviceTypeID,
 		name,
-		attributes,
 		&properties,
 	)
 	if err := svc.Validate(); err != nil {
