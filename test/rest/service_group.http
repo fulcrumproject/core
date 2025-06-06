@@ -11,7 +11,7 @@ Authorization: Bearer {{adminToken}}
 
 {
   "name": "Test Consumer For Service Group",
-  "state": "Disabled"
+  "status": "Disabled"
 }
 
 @consumerId = {{createConsumer.response.body.$.id}}

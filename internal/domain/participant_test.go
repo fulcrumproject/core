@@ -12,32 +12,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParticipantState_Validate(t *testing.T) {
+func TestParticipantStatus_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		state   ParticipantState
+		status  ParticipantStatus
 		wantErr bool
 	}{
 		{
-			name:    "Enabled state",
-			state:   ParticipantEnabled,
+			name:    "Enabled status",
+			status:  ParticipantEnabled,
 			wantErr: false,
 		},
 		{
-			name:    "Disabled state",
-			state:   ParticipantDisabled,
+			name:    "Disabled status",
+			status:  ParticipantDisabled,
 			wantErr: false,
 		},
 		{
-			name:    "Invalid state",
-			state:   "InvalidState",
+			name:    "Invalid status",
+			status:  "InvalidStatus",
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.state.Validate()
+			err := tt.status.Validate()
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -47,28 +47,28 @@ func TestParticipantState_Validate(t *testing.T) {
 	}
 }
 
-func TestParseParticipantState(t *testing.T) {
+func TestParseParticipantStatus(t *testing.T) {
 	tests := []struct {
 		name    string
 		value   string
-		want    ParticipantState
+		want    ParticipantStatus
 		wantErr bool
 	}{
 		{
-			name:    "Parse Enabled state",
+			name:    "Parse Enabled status",
 			value:   "Enabled",
 			want:    ParticipantEnabled,
 			wantErr: false,
 		},
 		{
-			name:    "Parse Disabled state",
+			name:    "Parse Disabled status",
 			value:   "Disabled",
 			want:    ParticipantDisabled,
 			wantErr: false,
 		},
 		{
-			name:    "Parse invalid state",
-			value:   "InvalidState",
+			name:    "Parse invalid status",
+			value:   "InvalidStatus",
 			want:    "",
 			wantErr: true,
 		},
@@ -76,7 +76,7 @@ func TestParseParticipantState(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseParticipantState(tt.value)
+			got, err := ParseParticipantStatus(tt.value)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -106,7 +106,7 @@ func TestParticipant_Validate(t *testing.T) {
 			name: "Valid participant",
 			participant: &Participant{
 				Name:        "test-participant",
-				State:       ParticipantEnabled,
+				Status:      ParticipantEnabled,
 				CountryCode: "US",
 				Attributes:  Attributes{"key": []string{"value"}},
 			},
@@ -116,27 +116,27 @@ func TestParticipant_Validate(t *testing.T) {
 			name: "Empty name",
 			participant: &Participant{
 				Name:        "",
-				State:       ParticipantEnabled,
+				Status:      ParticipantEnabled,
 				CountryCode: "US",
 			},
 			wantErr:     true,
 			errContains: "participant name cannot be empty",
 		},
 		{
-			name: "Invalid state",
+			name: "Invalid status",
 			participant: &Participant{
 				Name:        "test-participant",
-				State:       "InvalidState",
+				Status:      "InvalidStatus",
 				CountryCode: "US",
 			},
 			wantErr:     true,
-			errContains: "invalid participant state",
+			errContains: "invalid participant status",
 		},
 		{
 			name: "Invalid country code",
 			participant: &Participant{
 				Name:        "test-participant",
-				State:       ParticipantEnabled,
+				Status:      ParticipantEnabled,
 				CountryCode: "INVALID",
 			},
 			wantErr:     true,
@@ -145,8 +145,8 @@ func TestParticipant_Validate(t *testing.T) {
 		{
 			name: "Valid with empty country code",
 			participant: &Participant{
-				Name:  "test-participant",
-				State: ParticipantEnabled,
+				Name:   "test-participant",
+				Status: ParticipantEnabled,
 			},
 			wantErr: false,
 		},
@@ -154,7 +154,7 @@ func TestParticipant_Validate(t *testing.T) {
 			name: "Invalid attributes",
 			participant: &Participant{
 				Name:       "test-participant",
-				State:      ParticipantEnabled,
+				Status:     ParticipantEnabled,
 				Attributes: Attributes{"": []string{"value"}}, // Invalid key
 			},
 			wantErr:     true,
@@ -180,7 +180,7 @@ func TestParticipant_Validate(t *testing.T) {
 func TestParticipantCommander_Create(t *testing.T) {
 	ctx := context.Background()
 	validName := "test-participant"
-	validState := ParticipantEnabled
+	validStatus := ParticipantEnabled
 	validCountryCode := CountryCode("US")
 	validAttributes := Attributes{"key": []string{"value"}}
 
@@ -196,7 +196,7 @@ func TestParticipantCommander_Create(t *testing.T) {
 				participantRepo := &MockParticipantRepository{}
 				participantRepo.createFunc = func(ctx context.Context, p *Participant) error {
 					assert.Equal(t, validName, p.Name)
-					assert.Equal(t, validState, p.State)
+					assert.Equal(t, validStatus, p.Status)
 					assert.Equal(t, validCountryCode, p.CountryCode)
 					assert.Equal(t, validAttributes, p.Attributes)
 					return nil
@@ -264,9 +264,9 @@ func TestParticipantCommander_Create(t *testing.T) {
 			var err error
 
 			if tt.name == "Create validation error" { // Special case for validation
-				participant, err = commander.Create(ctx, "", validState, validCountryCode, validAttributes)
+				participant, err = commander.Create(ctx, "", validStatus, validCountryCode, validAttributes)
 			} else {
-				participant, err = commander.Create(ctx, validName, validState, validCountryCode, validAttributes)
+				participant, err = commander.Create(ctx, validName, validStatus, validCountryCode, validAttributes)
 			}
 
 			if tt.wantErr {
@@ -283,7 +283,7 @@ func TestParticipantCommander_Create(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, participant)
 				assert.Equal(t, validName, participant.Name)
-				assert.Equal(t, validState, participant.State)
+				assert.Equal(t, validStatus, participant.Status)
 			}
 		})
 	}
@@ -293,12 +293,12 @@ func TestParticipantCommander_Update(t *testing.T) {
 	ctx := context.Background()
 	participantID := uuid.New()
 	existingName := "existing-participant"
-	existingState := ParticipantEnabled
+	existingStatus := ParticipantEnabled
 	existingCountryCode := CountryCode("US")
 	existingAttributes := Attributes{"old_key": []string{"old_value"}}
 
 	newName := "updated-participant"
-	newState := ParticipantDisabled
+	newStatus := ParticipantDisabled
 	newCountryCode := CountryCode("CA")
 	newAttributes := Attributes{"new_key": []string{"new_value"}}
 
@@ -306,11 +306,11 @@ func TestParticipantCommander_Update(t *testing.T) {
 		name            string
 		setupMocks      func(store *MockStore, audit *MockAuditEntryCommander)
 		updateName      *string
-		updateState     *ParticipantState
+		updateStatus    *ParticipantStatus
 		updateCountry   *CountryCode
 		updateAttrs     *Attributes
 		expectedName    string
-		expectedState   ParticipantState
+		expectedStatus  ParticipantStatus
 		expectedCountry CountryCode
 		expectedAttrs   Attributes
 		wantErr         bool
@@ -325,7 +325,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 					return &Participant{
 						BaseEntity:  BaseEntity{ID: participantID, CreatedAt: time.Now(), UpdatedAt: time.Now()},
 						Name:        existingName,
-						State:       existingState,
+						Status:      existingStatus,
 						CountryCode: existingCountryCode,
 						Attributes:  existingAttributes,
 					}, nil
@@ -333,7 +333,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 				participantRepo.saveFunc = func(ctx context.Context, p *Participant) error {
 					assert.Equal(t, participantID, p.ID)
 					assert.Equal(t, newName, p.Name)
-					assert.Equal(t, newState, p.State)
+					assert.Equal(t, newStatus, p.Status)
 					assert.Equal(t, newCountryCode, p.CountryCode)
 					assert.Equal(t, newAttributes, p.Attributes)
 					return nil
@@ -350,11 +350,11 @@ func TestParticipantCommander_Update(t *testing.T) {
 				}
 			},
 			updateName:      &newName,
-			updateState:     &newState,
+			updateStatus:    &newStatus,
 			updateCountry:   &newCountryCode,
 			updateAttrs:     &newAttributes,
 			expectedName:    newName,
-			expectedState:   newState,
+			expectedStatus:  newStatus,
 			expectedCountry: newCountryCode,
 			expectedAttrs:   newAttributes,
 			wantErr:         false,
@@ -364,11 +364,11 @@ func TestParticipantCommander_Update(t *testing.T) {
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				participantRepo := &MockParticipantRepository{}
 				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
-					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: existingName, State: existingState, CountryCode: existingCountryCode, Attributes: existingAttributes}, nil
+					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: existingName, Status: existingStatus, CountryCode: existingCountryCode, Attributes: existingAttributes}, nil
 				}
 				participantRepo.saveFunc = func(ctx context.Context, p *Participant) error {
 					assert.Equal(t, newName, p.Name)
-					assert.Equal(t, existingState, p.State) // Unchanged
+					assert.Equal(t, existingStatus, p.Status) // Unchanged
 					return nil
 				}
 				store.WithParticipantRepo(participantRepo)
@@ -378,7 +378,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 			},
 			updateName:      &newName,
 			expectedName:    newName,
-			expectedState:   existingState,
+			expectedStatus:  existingStatus,
 			expectedCountry: existingCountryCode,
 			expectedAttrs:   existingAttributes,
 			wantErr:         false,
@@ -401,7 +401,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				participantRepo := &MockParticipantRepository{}
 				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
-					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: existingName, State: existingState}, nil
+					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: existingName, Status: existingStatus}, nil
 				}
 				store.WithParticipantRepo(participantRepo)
 				// No need to mock save, validation happens before
@@ -415,7 +415,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				participantRepo := &MockParticipantRepository{}
 				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
-					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: existingName, State: existingState}, nil
+					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: existingName, Status: existingStatus}, nil
 				}
 				participantRepo.saveFunc = func(ctx context.Context, p *Participant) error {
 					return errors.New("repo save error")
@@ -431,7 +431,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				participantRepo := &MockParticipantRepository{}
 				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
-					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: existingName, State: existingState}, nil
+					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: existingName, Status: existingStatus}, nil
 				}
 				participantRepo.saveFunc = func(ctx context.Context, p *Participant) error {
 					return nil
@@ -454,7 +454,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 			tt.setupMocks(store, audit)
 
 			commander := NewParticipantCommander(store, audit)
-			participant, err := commander.Update(ctx, participantID, tt.updateName, tt.updateState, tt.updateCountry, tt.updateAttrs)
+			participant, err := commander.Update(ctx, participantID, tt.updateName, tt.updateStatus, tt.updateCountry, tt.updateAttrs)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -470,7 +470,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, participant)
 				assert.Equal(t, tt.expectedName, participant.Name)
-				assert.Equal(t, tt.expectedState, participant.State)
+				assert.Equal(t, tt.expectedStatus, participant.Status)
 				assert.Equal(t, tt.expectedCountry, participant.CountryCode)
 				assert.Equal(t, tt.expectedAttrs, participant.Attributes)
 			}

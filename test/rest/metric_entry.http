@@ -11,7 +11,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Provider",
-    "state": "Enabled",
+    "status": "Enabled",
     "countryCode": "US",
     "attributes": {
         "type": ["test"]
@@ -27,7 +27,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Agent",
-    "state": "Connected",
+    "status": "Connected",
     "countryCode": "US",
     "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
     "providerId": "{{providerId}}"
@@ -57,7 +57,7 @@ Authorization: Bearer {{adminToken}}
 
 {
   "name": "Test Consumer",
-  "state": "Enabled"
+  "status": "Enabled"
 }
 
 @consumerId = {{createConsumer.response.body.$.id}}
@@ -81,7 +81,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Service",
-    "state": "Created",
+    "status": "Created",
     "attributes": {
         "environment": ["production"],
         "region": ["us-west"]

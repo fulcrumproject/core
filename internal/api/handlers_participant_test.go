@@ -79,15 +79,15 @@ func TestParticipantHandleCreate(t *testing.T) {
 			name: "Success",
 			requestBody: CreateParticipantRequest{
 				Name:        "Example Org",
-				State:       domain.ParticipantState("Enabled"),
+				Status:      domain.ParticipantStatus("Enabled"),
 				CountryCode: domain.CountryCode("US"),
 				Attributes:  domain.Attributes{"region": {"us-east-1", "us-west-2"}},
 			},
 			mockSetup: func(commander *mockParticipantCommander) {
 				// Setup the commander
-				commander.createFunc = func(ctx context.Context, name string, state domain.ParticipantState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error) {
+				commander.createFunc = func(ctx context.Context, name string, status domain.ParticipantStatus, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error) {
 					assert.Equal(t, "Example Org", name)
-					assert.Equal(t, domain.ParticipantState("Enabled"), state)
+					assert.Equal(t, domain.ParticipantStatus("Enabled"), status)
 					assert.Equal(t, domain.CountryCode("US"), countryCode)
 					assert.Equal(t, domain.Attributes{"region": {"us-east-1", "us-west-2"}}, attributes)
 
@@ -101,7 +101,7 @@ func TestParticipantHandleCreate(t *testing.T) {
 							UpdatedAt: updatedAt,
 						},
 						Name:        name,
-						State:       state,
+						Status:      status,
 						CountryCode: countryCode,
 						Attributes:  attributes,
 					}, nil
@@ -113,13 +113,13 @@ func TestParticipantHandleCreate(t *testing.T) {
 			name: "CommanderError",
 			requestBody: CreateParticipantRequest{
 				Name:        "Example Org",
-				State:       domain.ParticipantState("Enabled"),
+				Status:      domain.ParticipantStatus("Enabled"),
 				CountryCode: domain.CountryCode("US"),
 				Attributes:  domain.Attributes{"region": {"us-east-1", "us-west-2"}},
 			},
 			mockSetup: func(commander *mockParticipantCommander) {
 				// Setup the commander to return an error
-				commander.createFunc = func(ctx context.Context, name string, state domain.ParticipantState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error) {
+				commander.createFunc = func(ctx context.Context, name string, status domain.ParticipantStatus, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -158,7 +158,7 @@ func TestParticipantHandleCreate(t *testing.T) {
 				// Verify response structure
 				assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", response["id"])
 				assert.Equal(t, "Example Org", response["name"])
-				assert.Equal(t, "Enabled", response["state"])
+				assert.Equal(t, "Enabled", response["status"])
 				assert.Equal(t, "US", response["countryCode"])
 			}
 		})

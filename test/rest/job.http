@@ -11,7 +11,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Provider",
-    "state": "Enabled",
+    "status": "Enabled",
     "countryCode": "US",
     "attributes": {
         "type": ["test"]
@@ -56,7 +56,7 @@ Authorization: Bearer {{adminToken}}
 
 {
   "name": "Test Consumer",
-  "state": "Enabled"
+  "status": "Enabled"
 }
 
 @consumerId = {{createConsumer.response.body.$.id}}
@@ -99,7 +99,7 @@ GET {{baseUrl}}/jobs
 Authorization: Bearer {{adminToken}}
 
 ### List jobs with filters
-GET {{baseUrl}}/jobs?state=Pending
+GET {{baseUrl}}/jobs?status=Pending
 Authorization: Bearer {{adminToken}}
 
 ### List jobs with pagination

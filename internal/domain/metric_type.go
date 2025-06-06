@@ -115,7 +115,7 @@ func (s *metricTypeCommander) Create(
 		_, err := s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeMetricTypeCreated,
-			JSON{"state": metricType},
+			JSON{"status": metricType},
 			&metricType.ID, nil, nil, nil)
 		return err
 	})
@@ -189,7 +189,7 @@ func (s *metricTypeCommander) Delete(ctx context.Context, id UUID) error {
 
 		_, err = s.auditCommander.CreateCtx(
 			ctx, EventTypeMetricTypeDeleted,
-			JSON{"state": metricType}, &id, nil, nil, nil)
+			JSON{"status": metricType}, &id, nil, nil, nil)
 		return err
 	})
 }

@@ -72,7 +72,7 @@ func TestServiceCommander_Create(t *testing.T) {
 				serviceRepo.createFunc = func(ctx context.Context, service *Service) error {
 					service.ID = serviceID
 					assert.Equal(t, validName, service.Name)
-					assert.Equal(t, ServiceCreating, service.CurrentState)
+					assert.Equal(t, ServiceCreating, service.CurrentStatus)
 					assert.Equal(t, validAttributes, service.Attributes)
 					assert.Equal(t, &validProperties, service.TargetProperties)
 					return nil
@@ -82,7 +82,7 @@ func TestServiceCommander_Create(t *testing.T) {
 				jobRepo.createFunc = func(ctx context.Context, job *Job) error {
 					assert.Equal(t, serviceID, job.ServiceID)
 					assert.Equal(t, ServiceActionCreate, job.Action)
-					assert.Equal(t, JobPending, job.State)
+					assert.Equal(t, JobPending, job.Status)
 					return nil
 				}
 
@@ -379,9 +379,9 @@ func TestServiceCommander_Create(t *testing.T) {
 					assert.Equal(t, serviceID, svc.ID)
 					assert.Equal(t, validName, svc.Name)
 					assert.Equal(t, validAttributes, svc.Attributes)
-					assert.Equal(t, ServiceCreating, svc.CurrentState)
-					var targetCreated ServiceState = ServiceCreated
-					assert.Equal(t, &targetCreated, svc.TargetState)
+					assert.Equal(t, ServiceCreating, svc.CurrentStatus)
+					var targetCreated ServiceStatus = ServiceCreated
+					assert.Equal(t, &targetCreated, svc.TargetStatus)
 				}
 			}
 		})
@@ -407,13 +407,13 @@ func TestServiceCommander_Update(t *testing.T) {
 	newPropertiesPtr := &newProperties
 
 	tests := []struct {
-		name       string
-		setupMocks func(store *MockStore, audit *MockAuditEntryCommander)
-		inputName  *string
-		inputProps *JSON
-		wantErr    bool
-		errMessage string
-		checkState func(t *testing.T, svc *Service)
+		name        string
+		setupMocks  func(store *MockStore, audit *MockAuditEntryCommander)
+		inputName   *string
+		inputProps  *JSON
+		wantErr     bool
+		errMessage  string
+		checkStatus func(t *testing.T, svc *Service)
 	}{
 		{
 			name: "Service not found",
@@ -446,7 +446,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					GroupID:           groupID,
 					ConsumerID:        consumerID,
 					Name:              validName,
-					CurrentState:      ServiceStopped,
+					CurrentStatus:     ServiceStopped,
 					CurrentProperties: &validProperties,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
@@ -457,7 +457,7 @@ func TestServiceCommander_Update(t *testing.T) {
 				// Mock service Save
 				serviceRepo.saveFunc = func(ctx context.Context, service *Service) error {
 					assert.Equal(t, newName, service.Name)
-					assert.Equal(t, ServiceStopped, service.CurrentState)
+					assert.Equal(t, ServiceStopped, service.CurrentStatus)
 					return nil
 				}
 
@@ -476,9 +476,9 @@ func TestServiceCommander_Update(t *testing.T) {
 			inputName:  &newName,
 			inputProps: nil,
 			wantErr:    false,
-			checkState: func(t *testing.T, svc *Service) {
+			checkStatus: func(t *testing.T, svc *Service) {
 				assert.Equal(t, newName, svc.Name)
-				assert.Equal(t, ServiceStopped, svc.CurrentState)
+				assert.Equal(t, ServiceStopped, svc.CurrentStatus)
 				assert.Equal(t, validProperties, *svc.CurrentProperties)
 			},
 		},
@@ -501,7 +501,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					GroupID:           groupID,
 					ConsumerID:        consumerID,
 					Name:              validName,
-					CurrentState:      ServiceStopped,
+					CurrentStatus:     ServiceStopped,
 					CurrentProperties: &validProperties,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
@@ -512,7 +512,7 @@ func TestServiceCommander_Update(t *testing.T) {
 				// Mock service Save
 				serviceRepo.saveFunc = func(ctx context.Context, service *Service) error {
 					assert.Equal(t, validName, service.Name)
-					assert.Equal(t, ServiceColdUpdating, service.CurrentState)
+					assert.Equal(t, ServiceColdUpdating, service.CurrentStatus)
 					assert.Equal(t, newPropertiesPtr, service.TargetProperties)
 					return nil
 				}
@@ -521,7 +521,7 @@ func TestServiceCommander_Update(t *testing.T) {
 				jobRepo.createFunc = func(ctx context.Context, job *Job) error {
 					assert.Equal(t, serviceID, job.ServiceID)
 					assert.Equal(t, ServiceActionColdUpdate, job.Action)
-					assert.Equal(t, JobPending, job.State)
+					assert.Equal(t, JobPending, job.Status)
 					return nil
 				}
 
@@ -540,11 +540,11 @@ func TestServiceCommander_Update(t *testing.T) {
 			inputName:  nil,
 			inputProps: newPropertiesPtr,
 			wantErr:    false,
-			checkState: func(t *testing.T, svc *Service) {
+			checkStatus: func(t *testing.T, svc *Service) {
 				assert.Equal(t, validName, svc.Name)
-				assert.Equal(t, ServiceColdUpdating, svc.CurrentState)
-				var expectedState ServiceState = ServiceStopped
-				assert.Equal(t, &expectedState, svc.TargetState)
+				assert.Equal(t, ServiceColdUpdating, svc.CurrentStatus)
+				var expectedStatus ServiceStatus = ServiceStopped
+				assert.Equal(t, &expectedStatus, svc.TargetStatus)
 				assert.Equal(t, newPropertiesPtr, svc.TargetProperties)
 			},
 		},
@@ -567,7 +567,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					GroupID:           groupID,
 					ConsumerID:        consumerID,
 					Name:              validName,
-					CurrentState:      ServiceStarted,
+					CurrentStatus:     ServiceStarted,
 					CurrentProperties: &validProperties,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
@@ -578,7 +578,7 @@ func TestServiceCommander_Update(t *testing.T) {
 				// Mock service Save
 				serviceRepo.saveFunc = func(ctx context.Context, service *Service) error {
 					assert.Equal(t, validName, service.Name)
-					assert.Equal(t, ServiceHotUpdating, service.CurrentState)
+					assert.Equal(t, ServiceHotUpdating, service.CurrentStatus)
 					assert.Equal(t, newPropertiesPtr, service.TargetProperties)
 					return nil
 				}
@@ -587,7 +587,7 @@ func TestServiceCommander_Update(t *testing.T) {
 				jobRepo.createFunc = func(ctx context.Context, job *Job) error {
 					assert.Equal(t, serviceID, job.ServiceID)
 					assert.Equal(t, ServiceActionHotUpdate, job.Action)
-					assert.Equal(t, JobPending, job.State)
+					assert.Equal(t, JobPending, job.Status)
 					return nil
 				}
 
@@ -606,16 +606,16 @@ func TestServiceCommander_Update(t *testing.T) {
 			inputName:  nil,
 			inputProps: newPropertiesPtr,
 			wantErr:    false,
-			checkState: func(t *testing.T, svc *Service) {
+			checkStatus: func(t *testing.T, svc *Service) {
 				assert.Equal(t, validName, svc.Name)
-				assert.Equal(t, ServiceHotUpdating, svc.CurrentState)
-				var expectedState ServiceState = ServiceStarted
-				assert.Equal(t, &expectedState, svc.TargetState)
+				assert.Equal(t, ServiceHotUpdating, svc.CurrentStatus)
+				var expectedStatus ServiceStatus = ServiceStarted
+				assert.Equal(t, &expectedStatus, svc.TargetStatus)
 				assert.Equal(t, newPropertiesPtr, svc.TargetProperties)
 			},
 		},
 		{
-			name: "Invalid state for update",
+			name: "Invalid status for update",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				serviceRepo := &MockServiceRepository{}
 				store.WithServiceRepo(serviceRepo)
@@ -631,7 +631,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					GroupID:           groupID,
 					ConsumerID:        consumerID,
 					Name:              validName,
-					CurrentState:      ServiceCreating,
+					CurrentStatus:     ServiceCreating,
 					CurrentProperties: &validProperties,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
@@ -642,7 +642,7 @@ func TestServiceCommander_Update(t *testing.T) {
 			inputName:  nil,
 			inputProps: newPropertiesPtr,
 			wantErr:    true,
-			errMessage: "cannot update attributes on a service with state",
+			errMessage: "cannot update attributes on a service with status",
 		},
 		{
 			name: "Service save error",
@@ -661,7 +661,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					GroupID:           groupID,
 					ConsumerID:        consumerID,
 					Name:              validName,
-					CurrentState:      ServiceStopped,
+					CurrentStatus:     ServiceStopped,
 					CurrentProperties: &validProperties,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
@@ -702,7 +702,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					ProviderID:        providerID,
 					ConsumerID:        consumerID,
 					Name:              validName,
-					CurrentState:      ServiceStopped,
+					CurrentStatus:     ServiceStopped,
 					CurrentProperties: &validProperties,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
@@ -749,7 +749,7 @@ func TestServiceCommander_Update(t *testing.T) {
 					GroupID:           groupID,
 					ConsumerID:        consumerID,
 					Name:              validName,
-					CurrentState:      ServiceStopped,
+					CurrentStatus:     ServiceStopped,
 					CurrentProperties: &validProperties,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
@@ -803,7 +803,7 @@ func TestServiceCommander_Update(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, svc)
-				tt.checkState(t, svc)
+				tt.checkStatus(t, svc)
 			}
 		})
 	}
@@ -819,13 +819,13 @@ func TestServiceCommander_Transition(t *testing.T) {
 	groupID := uuid.New()
 
 	tests := []struct {
-		name       string
-		setupMocks func(store *MockStore, audit *MockAuditEntryCommander)
-		current    ServiceState
-		target     ServiceState
-		wantErr    bool
-		errMessage string
-		checkState func(t *testing.T, svc *Service)
+		name        string
+		setupMocks  func(store *MockStore, audit *MockAuditEntryCommander)
+		current     ServiceStatus
+		target      ServiceStatus
+		wantErr     bool
+		errMessage  string
+		checkStatus func(t *testing.T, svc *Service)
 	}{
 		{
 			name: "Service not found",
@@ -861,7 +861,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceCreated,
+					CurrentStatus: ServiceCreated,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					assert.Equal(t, serviceID, id)
@@ -870,9 +870,9 @@ func TestServiceCommander_Transition(t *testing.T) {
 
 				// Mock service Save
 				serviceRepo.saveFunc = func(ctx context.Context, service *Service) error {
-					assert.Equal(t, ServiceStarting, service.CurrentState)
-					var target ServiceState = ServiceStarted
-					assert.Equal(t, &target, service.TargetState)
+					assert.Equal(t, ServiceStarting, service.CurrentStatus)
+					var target ServiceStatus = ServiceStarted
+					assert.Equal(t, &target, service.TargetStatus)
 					return nil
 				}
 
@@ -880,7 +880,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 				jobRepo.createFunc = func(ctx context.Context, job *Job) error {
 					assert.Equal(t, serviceID, job.ServiceID)
 					assert.Equal(t, ServiceActionStart, job.Action)
-					assert.Equal(t, JobPending, job.State)
+					assert.Equal(t, JobPending, job.Status)
 					return nil
 				}
 
@@ -899,10 +899,10 @@ func TestServiceCommander_Transition(t *testing.T) {
 			current: ServiceCreated,
 			target:  ServiceStarted,
 			wantErr: false,
-			checkState: func(t *testing.T, svc *Service) {
-				assert.Equal(t, ServiceStarting, svc.CurrentState)
-				var target ServiceState = ServiceStarted
-				assert.Equal(t, &target, svc.TargetState)
+			checkStatus: func(t *testing.T, svc *Service) {
+				assert.Equal(t, ServiceStarting, svc.CurrentStatus)
+				var target ServiceStatus = ServiceStarted
+				assert.Equal(t, &target, svc.TargetStatus)
 			},
 		},
 		{
@@ -924,7 +924,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceStarted,
+					CurrentStatus: ServiceStarted,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					assert.Equal(t, serviceID, id)
@@ -933,9 +933,9 @@ func TestServiceCommander_Transition(t *testing.T) {
 
 				// Mock service Save
 				serviceRepo.saveFunc = func(ctx context.Context, service *Service) error {
-					assert.Equal(t, ServiceStopping, service.CurrentState)
-					var target ServiceState = ServiceStopped
-					assert.Equal(t, &target, service.TargetState)
+					assert.Equal(t, ServiceStopping, service.CurrentStatus)
+					var target ServiceStatus = ServiceStopped
+					assert.Equal(t, &target, service.TargetStatus)
 					return nil
 				}
 
@@ -943,7 +943,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 				jobRepo.createFunc = func(ctx context.Context, job *Job) error {
 					assert.Equal(t, serviceID, job.ServiceID)
 					assert.Equal(t, ServiceActionStop, job.Action)
-					assert.Equal(t, JobPending, job.State)
+					assert.Equal(t, JobPending, job.Status)
 					return nil
 				}
 
@@ -962,10 +962,10 @@ func TestServiceCommander_Transition(t *testing.T) {
 			current: ServiceStarted,
 			target:  ServiceStopped,
 			wantErr: false,
-			checkState: func(t *testing.T, svc *Service) {
-				assert.Equal(t, ServiceStopping, svc.CurrentState)
-				var target ServiceState = ServiceStopped
-				assert.Equal(t, &target, svc.TargetState)
+			checkStatus: func(t *testing.T, svc *Service) {
+				assert.Equal(t, ServiceStopping, svc.CurrentStatus)
+				var target ServiceStatus = ServiceStopped
+				assert.Equal(t, &target, svc.TargetStatus)
 			},
 		},
 		{
@@ -987,7 +987,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceStopped,
+					CurrentStatus: ServiceStopped,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					assert.Equal(t, serviceID, id)
@@ -996,9 +996,9 @@ func TestServiceCommander_Transition(t *testing.T) {
 
 				// Mock service Save
 				serviceRepo.saveFunc = func(ctx context.Context, service *Service) error {
-					assert.Equal(t, ServiceDeleting, service.CurrentState)
-					var target ServiceState = ServiceDeleted
-					assert.Equal(t, &target, service.TargetState)
+					assert.Equal(t, ServiceDeleting, service.CurrentStatus)
+					var target ServiceStatus = ServiceDeleted
+					assert.Equal(t, &target, service.TargetStatus)
 					return nil
 				}
 
@@ -1006,7 +1006,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 				jobRepo.createFunc = func(ctx context.Context, job *Job) error {
 					assert.Equal(t, serviceID, job.ServiceID)
 					assert.Equal(t, ServiceActionDelete, job.Action)
-					assert.Equal(t, JobPending, job.State)
+					assert.Equal(t, JobPending, job.Status)
 					return nil
 				}
 
@@ -1025,10 +1025,10 @@ func TestServiceCommander_Transition(t *testing.T) {
 			current: ServiceStopped,
 			target:  ServiceDeleted,
 			wantErr: false,
-			checkState: func(t *testing.T, svc *Service) {
-				assert.Equal(t, ServiceDeleting, svc.CurrentState)
-				var target ServiceState = ServiceDeleted
-				assert.Equal(t, &target, svc.TargetState)
+			checkStatus: func(t *testing.T, svc *Service) {
+				assert.Equal(t, ServiceDeleting, svc.CurrentStatus)
+				var target ServiceStatus = ServiceDeleted
+				assert.Equal(t, &target, svc.TargetStatus)
 			},
 		},
 		{
@@ -1048,7 +1048,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceStarted,
+					CurrentStatus: ServiceStarted,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					assert.Equal(t, serviceID, id)
@@ -1077,7 +1077,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceCreated,
+					CurrentStatus: ServiceCreated,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					assert.Equal(t, serviceID, id)
@@ -1118,7 +1118,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceCreated,
+					CurrentStatus: ServiceCreated,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					assert.Equal(t, serviceID, id)
@@ -1164,7 +1164,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceCreated,
+					CurrentStatus: ServiceCreated,
 				}
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					assert.Equal(t, serviceID, id)
@@ -1217,7 +1217,7 @@ func TestServiceCommander_Transition(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, svc)
-				tt.checkState(t, svc)
+				tt.checkStatus(t, svc)
 			}
 		})
 	}
@@ -1234,11 +1234,11 @@ func TestServiceCommander_Retry(t *testing.T) {
 	failedAction := ServiceActionStart
 
 	tests := []struct {
-		name       string
-		setupMocks func(store *MockStore, audit *MockAuditEntryCommander)
-		wantErr    bool
-		errMessage string
-		checkState func(t *testing.T, svc *Service)
+		name        string
+		setupMocks  func(store *MockStore, audit *MockAuditEntryCommander)
+		wantErr     bool
+		errMessage  string
+		checkStatus func(t *testing.T, svc *Service)
 	}{
 		{
 			name: "Service not found",
@@ -1270,7 +1270,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceStarted,
+					CurrentStatus: ServiceStarted,
 					FailedAction:  nil, // No failed action
 					RetryCount:    0,
 				}
@@ -1280,8 +1280,8 @@ func TestServiceCommander_Retry(t *testing.T) {
 				}
 			},
 			wantErr: false,
-			checkState: func(t *testing.T, svc *Service) {
-				assert.Equal(t, ServiceStarted, svc.CurrentState)
+			checkStatus: func(t *testing.T, svc *Service) {
+				assert.Equal(t, ServiceStarted, svc.CurrentStatus)
 				assert.Nil(t, svc.FailedAction)
 				assert.Equal(t, 0, svc.RetryCount)
 			},
@@ -1305,7 +1305,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceStarted,
+					CurrentStatus: ServiceStarted,
 					FailedAction:  &failedAction,
 					RetryCount:    1,
 				}
@@ -1324,7 +1324,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 				jobRepo.createFunc = func(ctx context.Context, job *Job) error {
 					assert.Equal(t, serviceID, job.ServiceID)
 					assert.Equal(t, failedAction, job.Action)
-					assert.Equal(t, JobPending, job.State)
+					assert.Equal(t, JobPending, job.Status)
 					return nil
 				}
 
@@ -1341,8 +1341,8 @@ func TestServiceCommander_Retry(t *testing.T) {
 				}
 			},
 			wantErr: false,
-			checkState: func(t *testing.T, svc *Service) {
-				assert.Equal(t, ServiceStarted, svc.CurrentState)
+			checkStatus: func(t *testing.T, svc *Service) {
+				assert.Equal(t, ServiceStarted, svc.CurrentStatus)
 				assert.NotNil(t, svc.FailedAction)
 				assert.Equal(t, failedAction, *svc.FailedAction)
 				assert.Equal(t, 2, svc.RetryCount)
@@ -1365,7 +1365,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceStarted,
+					CurrentStatus: ServiceStarted,
 					FailedAction:  &failedAction,
 					RetryCount:    1,
 				}
@@ -1406,7 +1406,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceStarted,
+					CurrentStatus: ServiceStarted,
 					FailedAction:  &failedAction,
 					RetryCount:    1,
 				}
@@ -1452,7 +1452,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 					ServiceTypeID: typeID,
 					GroupID:       groupID,
 					Name:          "Test Service",
-					CurrentState:  ServiceStarted,
+					CurrentStatus: ServiceStarted,
 					FailedAction:  &failedAction,
 					RetryCount:    1,
 				}
@@ -1505,7 +1505,7 @@ func TestServiceCommander_Retry(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, svc)
-				tt.checkState(t, svc)
+				tt.checkStatus(t, svc)
 			}
 		})
 	}
@@ -1570,7 +1570,7 @@ func TestServiceCommander_FailTimeoutServicesAndJobs(t *testing.T) {
 							},
 							ServiceID: serviceID1,
 							Action:    ServiceActionStart,
-							State:     JobProcessing,
+							Status:    JobProcessing,
 						},
 					}, nil
 				}
@@ -1606,7 +1606,7 @@ func TestServiceCommander_FailTimeoutServicesAndJobs(t *testing.T) {
 							},
 							ServiceID: serviceID1,
 							Action:    ServiceActionStart,
-							State:     JobProcessing,
+							Status:    JobProcessing,
 						},
 					}, nil
 				}
@@ -1617,7 +1617,7 @@ func TestServiceCommander_FailTimeoutServicesAndJobs(t *testing.T) {
 						BaseEntity: BaseEntity{
 							ID: id,
 						},
-						CurrentState: ServiceStarting,
+						CurrentStatus: ServiceStarting,
 					}, nil
 				}
 
@@ -1652,7 +1652,7 @@ func TestServiceCommander_FailTimeoutServicesAndJobs(t *testing.T) {
 							},
 							ServiceID: serviceID1,
 							Action:    ServiceActionStart,
-							State:     JobProcessing,
+							Status:    JobProcessing,
 						},
 					}, nil
 				}
@@ -1663,7 +1663,7 @@ func TestServiceCommander_FailTimeoutServicesAndJobs(t *testing.T) {
 						BaseEntity: BaseEntity{
 							ID: id,
 						},
-						CurrentState: ServiceStarting,
+						CurrentStatus: ServiceStarting,
 					}, nil
 				}
 
@@ -1703,7 +1703,7 @@ func TestServiceCommander_FailTimeoutServicesAndJobs(t *testing.T) {
 							},
 							ServiceID: serviceID1,
 							Action:    ServiceActionStart,
-							State:     JobProcessing,
+							Status:    JobProcessing,
 						},
 						{
 							BaseEntity: BaseEntity{
@@ -1711,30 +1711,30 @@ func TestServiceCommander_FailTimeoutServicesAndJobs(t *testing.T) {
 							},
 							ServiceID: serviceID2,
 							Action:    ServiceActionStop,
-							State:     JobProcessing,
+							Status:    JobProcessing,
 						},
 					}, nil
 				}
 
 				// Mock finding service
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
-					var state ServiceState
+					var status ServiceStatus
 					if id == serviceID1 {
-						state = ServiceStarting
+						status = ServiceStarting
 					} else {
-						state = ServiceStopping
+						status = ServiceStopping
 					}
 					return &Service{
 						BaseEntity: BaseEntity{
 							ID: id,
 						},
-						CurrentState: state,
+						CurrentStatus: status,
 					}, nil
 				}
 
 				// Mock saving job
 				jobRepo.saveFunc = func(ctx context.Context, job *Job) error {
-					assert.Equal(t, JobFailed, job.State)
+					assert.Equal(t, JobFailed, job.Status)
 					assert.NotNil(t, job.CompletedAt)
 					assert.Contains(t, job.ErrorMessage, "exceeding maximum processing time")
 					return nil

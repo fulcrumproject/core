@@ -45,18 +45,18 @@ func (t ServiceAction) Validate() error {
 	return fmt.Errorf("invalid job type: %s", t)
 }
 
-// JobState represents the current state of a job
-type JobState string
+// JobStatus represents the current status of a job
+type JobStatus string
 
 const (
-	JobPending    JobState = "Pending"
-	JobProcessing JobState = "Processing"
-	JobCompleted  JobState = "Completed"
-	JobFailed     JobState = "Failed"
+	JobPending    JobStatus = "Pending"
+	JobProcessing JobStatus = "Processing"
+	JobCompleted  JobStatus = "Completed"
+	JobFailed     JobStatus = "Failed"
 )
 
-// Validate checks if the service state is valid
-func (s JobState) Validate() error {
+// Validate checks if the service status is valid
+func (s JobStatus) Validate() error {
 	switch s {
 	case
 		JobPending,
@@ -65,17 +65,17 @@ func (s JobState) Validate() error {
 		JobFailed:
 		return nil
 	default:
-		return fmt.Errorf("invalid job state: %s", s)
+		return fmt.Errorf("invalid job status: %s", s)
 	}
 }
 
-// ParseJobState parses a string into a JobState
-func ParseJobState(s string) (JobState, error) {
-	state := JobState(s)
-	if err := state.Validate(); err != nil {
+// ParseJobStatus parses a string into a JobStatus
+func ParseJobStatus(s string) (JobStatus, error) {
+	status := JobStatus(s)
+	if err := status.Validate(); err != nil {
 		return "", err
 	}
-	return state, nil
+	return status, nil
 }
 
 // Job represents a task to be executed by an agent
@@ -85,8 +85,8 @@ type Job struct {
 	Action   ServiceAction `gorm:"type:varchar(50);not null"`
 	Priority int           `gorm:"not null;default:1"`
 
-	// State management
-	State        JobState   `gorm:"type:varchar(20);not null"`
+	// Status management
+	Status       JobStatus  `gorm:"type:varchar(20);not null"`
 	ErrorMessage string     `gorm:"type:text"`
 	ClaimedAt    *time.Time `gorm:""`
 	CompletedAt  *time.Time `gorm:""`
@@ -112,8 +112,8 @@ func (j *Job) Validate() error {
 	if err := j.Action.Validate(); err != nil {
 		return fmt.Errorf("invalid action: %w", err)
 	}
-	if err := j.State.Validate(); err != nil {
-		return fmt.Errorf("invalid state: %w", err)
+	if err := j.Status.Validate(); err != nil {
+		return fmt.Errorf("invalid status: %w", err)
 	}
 	if j.Priority < 1 {
 		return errors.New("priority must be greater than 0")
@@ -134,7 +134,7 @@ func NewJob(svc *Service, action ServiceAction, priority int) *Job {
 		ProviderID: svc.ProviderID,
 		AgentID:    svc.AgentID,
 		ServiceID:  svc.ID,
-		State:      JobPending,
+		Status:     JobPending,
 		Action:     action,
 		Priority:   priority,
 	}
@@ -142,10 +142,10 @@ func NewJob(svc *Service, action ServiceAction, priority int) *Job {
 
 // Claim marks a job as claimed by an agent
 func (j *Job) Claim() error {
-	if j.State != JobPending {
-		return fmt.Errorf("cannot claim a job not in pending state")
+	if j.Status != JobPending {
+		return fmt.Errorf("cannot claim a job not in pending status")
 	}
-	j.State = JobProcessing
+	j.Status = JobProcessing
 	now := time.Now()
 	j.ClaimedAt = &now
 	return nil
@@ -153,10 +153,10 @@ func (j *Job) Claim() error {
 
 // Complete marks a job as successfully completed
 func (j *Job) Complete() error {
-	if j.State != JobProcessing {
-		return fmt.Errorf("cannot complete a job not in processing state")
+	if j.Status != JobProcessing {
+		return fmt.Errorf("cannot complete a job not in processing status")
 	}
-	j.State = JobCompleted
+	j.Status = JobCompleted
 	now := time.Now()
 	j.CompletedAt = &now
 	return nil
@@ -164,20 +164,20 @@ func (j *Job) Complete() error {
 
 // Fail records job failure with error details
 func (j *Job) Fail(errorMessage string) error {
-	if j.State != JobProcessing {
-		return fmt.Errorf("cannot fail a job not in processing state")
+	if j.Status != JobProcessing {
+		return fmt.Errorf("cannot fail a job not in processing status")
 	}
-	j.State = JobFailed
+	j.Status = JobFailed
 	j.ErrorMessage = errorMessage
 	return nil
 }
 
-// Retry increments retry count and updates state
+// Retry increments retry count and updates status
 func (j *Job) Retry() error {
-	if j.State != JobFailed {
-		return fmt.Errorf("cannot retry a job not in failed state")
+	if j.Status != JobFailed {
+		return fmt.Errorf("cannot retry a job not in failed status")
 	}
-	j.State = JobPending
+	j.Status = JobPending
 	j.ErrorMessage = ""
 	return nil
 }
@@ -235,7 +235,7 @@ func (s *jobCommander) Complete(ctx context.Context, jobID UUID, resources *JSON
 		return err
 	}
 
-	if svc.TargetState == nil {
+	if svc.TargetStatus == nil {
 		return InvalidInputError{Err: errors.New("cannot complete a job on service that is not in transition")}
 	}
 

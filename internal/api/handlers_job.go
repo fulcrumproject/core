@@ -194,7 +194,7 @@ type JobResponse struct {
 	AgentID      domain.UUID          `json:"agentId"`
 	ServiceID    domain.UUID          `json:"serviceId"`
 	Action       domain.ServiceAction `json:"action"`
-	State        domain.JobState      `json:"state"`
+	Status       domain.JobStatus     `json:"status"`
 	Priority     int                  `json:"priority"`
 	ErrorMessage string               `json:"errorMessage,omitempty"`
 	ClaimedAt    *JSONUTCTime         `json:"claimedAt,omitempty"`
@@ -213,7 +213,7 @@ func jobToResponse(job *domain.Job) *JobResponse {
 		ConsumerID:   job.ConsumerID,
 		ServiceID:    job.ServiceID,
 		Action:       job.Action,
-		State:        job.State,
+		Status:       job.Status,
 		Priority:     job.Priority,
 		ErrorMessage: job.ErrorMessage,
 		CreatedAt:    JSONUTCTime(job.CreatedAt),

@@ -76,7 +76,7 @@ const (
 	ActionDelete AuthAction = "delete"
 
 	// Special actions
-	ActionUpdateState   AuthAction = "update_state"
+	ActionUpdateStatus  AuthAction = "update_status"
 	ActionGenerateToken AuthAction = "generate_token"
 	ActionStart         AuthAction = "start"
 	ActionStop          AuthAction = "stop"
@@ -90,7 +90,7 @@ const (
 func (a AuthAction) Validate() error {
 	switch a {
 	case ActionCreate, ActionRead, ActionUpdate, ActionDelete,
-		ActionUpdateState, ActionGenerateToken, ActionStart, ActionStop,
+		ActionUpdateStatus, ActionGenerateToken, ActionStart, ActionStop,
 		ActionClaim, ActionComplete, ActionFail, ActionListPending:
 		return nil
 	default:

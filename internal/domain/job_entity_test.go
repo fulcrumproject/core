@@ -135,44 +135,44 @@ func TestParseServiceAction(t *testing.T) {
 	}
 }
 
-func TestJobState_Validate(t *testing.T) {
+func TestJobStatus_Validate(t *testing.T) {
 	tests := []struct {
 		name       string
-		state      JobState
+		status     JobStatus
 		wantErr    bool
 		errMessage string
 	}{
 		{
 			name:    "Valid JobPending",
-			state:   JobPending,
+			status:  JobPending,
 			wantErr: false,
 		},
 		{
 			name:    "Valid JobProcessing",
-			state:   JobProcessing,
+			status:  JobProcessing,
 			wantErr: false,
 		},
 		{
 			name:    "Valid JobCompleted",
-			state:   JobCompleted,
+			status:  JobCompleted,
 			wantErr: false,
 		},
 		{
 			name:    "Valid JobFailed",
-			state:   JobFailed,
+			status:  JobFailed,
 			wantErr: false,
 		},
 		{
-			name:       "Invalid state",
-			state:      "InvalidState",
+			name:       "Invalid status",
+			status:     "InvalidStatus",
 			wantErr:    true,
-			errMessage: "invalid job state",
+			errMessage: "invalid job status",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.state.Validate()
+			err := tt.status.Validate()
 			if tt.wantErr {
 				assert.Error(t, err)
 				if tt.errMessage != "" {
@@ -185,11 +185,11 @@ func TestJobState_Validate(t *testing.T) {
 	}
 }
 
-func TestParseJobState(t *testing.T) {
+func TestParseJobStatus(t *testing.T) {
 	tests := []struct {
 		name       string
 		input      string
-		want       JobState
+		want       JobStatus
 		wantErr    bool
 		errMessage string
 	}{
@@ -218,16 +218,16 @@ func TestParseJobState(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "Parse invalid state",
-			input:      "InvalidState",
+			name:       "Parse invalid status",
+			input:      "InvalidStatus",
 			wantErr:    true,
-			errMessage: "invalid job state",
+			errMessage: "invalid job status",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseJobState(tt.input)
+			got, err := ParseJobStatus(tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 				if tt.errMessage != "" {
@@ -259,7 +259,7 @@ func TestJob_Validate(t *testing.T) {
 			name: "Valid job",
 			job: &Job{
 				Action:    ServiceActionCreate,
-				State:     JobPending,
+				Status:    JobPending,
 				Priority:  1,
 				AgentID:   validID,
 				ServiceID: validID,
@@ -270,7 +270,7 @@ func TestJob_Validate(t *testing.T) {
 			name: "Invalid action",
 			job: &Job{
 				Action:    "InvalidAction",
-				State:     JobPending,
+				Status:    JobPending,
 				Priority:  1,
 				AgentID:   validID,
 				ServiceID: validID,
@@ -279,22 +279,22 @@ func TestJob_Validate(t *testing.T) {
 			errMessage: "invalid action",
 		},
 		{
-			name: "Invalid state",
+			name: "Invalid status",
 			job: &Job{
 				Action:    ServiceActionCreate,
-				State:     "InvalidState",
+				Status:    "InvalidStatus",
 				Priority:  1,
 				AgentID:   validID,
 				ServiceID: validID,
 			},
 			wantErr:    true,
-			errMessage: "invalid state",
+			errMessage: "invalid status",
 		},
 		{
 			name: "Invalid priority",
 			job: &Job{
 				Action:    ServiceActionCreate,
-				State:     JobPending,
+				Status:    JobPending,
 				Priority:  0,
 				AgentID:   validID,
 				ServiceID: validID,
@@ -306,7 +306,7 @@ func TestJob_Validate(t *testing.T) {
 			name: "Empty agent ID",
 			job: &Job{
 				Action:    ServiceActionCreate,
-				State:     JobPending,
+				Status:    JobPending,
 				Priority:  1,
 				AgentID:   uuid.Nil,
 				ServiceID: validID,
@@ -318,7 +318,7 @@ func TestJob_Validate(t *testing.T) {
 			name: "Empty service ID",
 			job: &Job{
 				Action:    ServiceActionCreate,
-				State:     JobPending,
+				Status:    JobPending,
 				Priority:  1,
 				AgentID:   validID,
 				ServiceID: uuid.Nil,
@@ -367,19 +367,19 @@ func TestNewJob(t *testing.T) {
 	assert.Equal(t, providerID, job.ProviderID)
 	assert.Equal(t, agentID, job.AgentID)
 	assert.Equal(t, serviceID, job.ServiceID)
-	assert.Equal(t, JobPending, job.State)
+	assert.Equal(t, JobPending, job.Status)
 	assert.Equal(t, action, job.Action)
 	assert.Equal(t, priority, job.Priority)
 }
 
-// Helper function to create a job with specific state
-func createJobWithState(id uuid.UUID, state JobState) *Job {
+// Helper function to create a job with specific status
+func createJobWithStatus(id uuid.UUID, status JobStatus) *Job {
 	return &Job{
 		BaseEntity: BaseEntity{
 			ID: id,
 		},
 		Action:     ServiceActionCreate,
-		State:      state,
+		Status:     status,
 		Priority:   1,
 		AgentID:    uuid.New(),
 		ServiceID:  uuid.New(),

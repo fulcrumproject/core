@@ -9,33 +9,33 @@ import (
 	"github.com/google/uuid"
 )
 
-// AgentState represents the possible states of an Agent
-type AgentState string
+// AgentStatus represents the possible statuss of an Agent
+type AgentStatus string
 
 const (
-	AgentNew          AgentState = "New"
-	AgentConnected    AgentState = "Connected"
-	AgentDisconnected AgentState = "Disconnected"
-	AgentError        AgentState = "Error"
-	AgentDisabled     AgentState = "Disabled"
+	AgentNew          AgentStatus = "New"
+	AgentConnected    AgentStatus = "Connected"
+	AgentDisconnected AgentStatus = "Disconnected"
+	AgentError        AgentStatus = "Error"
+	AgentDisabled     AgentStatus = "Disabled"
 )
 
-// Validate checks if the agent state is valid
-func (s AgentState) Validate() error {
+// Validate checks if the agent status is valid
+func (s AgentStatus) Validate() error {
 	switch s {
 	case AgentNew, AgentConnected, AgentDisconnected, AgentError, AgentDisabled:
 		return nil
 	default:
-		return fmt.Errorf("invalid agent state: %s", s)
+		return fmt.Errorf("invalid agent status: %s", s)
 	}
 }
 
-func ParseAgentState(value string) (AgentState, error) {
-	state := AgentState(value)
-	if err := state.Validate(); err != nil {
+func ParseAgentStatus(value string) (AgentStatus, error) {
+	status := AgentStatus(value)
+	if err := status.Validate(); err != nil {
 		return "", err
 	}
-	return state, nil
+	return status, nil
 }
 
 // Agent represents a service manager agent
@@ -46,9 +46,9 @@ type Agent struct {
 	Attributes  Attributes  `json:"attributes,omitempty" gorm:"type:jsonb"`
 	CountryCode CountryCode `json:"countryCode,omitempty" gorm:"size:2"`
 
-	// State management
-	State           AgentState `json:"state" gorm:"not null"`
-	LastStateUpdate time.Time  `json:"lastStateUpdate" gorm:"index"`
+	// Status management
+	Status           AgentStatus `json:"status" gorm:"not null"`
+	LastStatusUpdate time.Time   `json:"lastStatusUpdate" gorm:"index"`
 
 	// Relationships
 	AgentTypeID UUID         `json:"agentTypeId" gorm:"not null"`
@@ -60,13 +60,13 @@ type Agent struct {
 // NewAgent creates a new agent with proper validation
 func NewAgent(name string, countryCode CountryCode, attributes Attributes, providerID UUID, agentTypeID UUID) *Agent {
 	return &Agent{
-		Name:            name,
-		State:           AgentDisconnected,
-		LastStateUpdate: time.Now(),
-		CountryCode:     countryCode,
-		Attributes:      attributes,
-		ProviderID:      providerID,
-		AgentTypeID:     agentTypeID,
+		Name:             name,
+		Status:           AgentDisconnected,
+		LastStatusUpdate: time.Now(),
+		CountryCode:      countryCode,
+		Attributes:       attributes,
+		ProviderID:       providerID,
+		AgentTypeID:      agentTypeID,
 	}
 }
 
@@ -80,11 +80,11 @@ func (a *Agent) Validate() error {
 	if a.Name == "" {
 		return fmt.Errorf("agent name cannot be empty")
 	}
-	if err := a.State.Validate(); err != nil {
+	if err := a.Status.Validate(); err != nil {
 		return err
 	}
-	if a.LastStateUpdate.IsZero() {
-		return fmt.Errorf("state last update cannot be empty")
+	if a.LastStatusUpdate.IsZero() {
+		return fmt.Errorf("status last update cannot be empty")
 	}
 	if a.AgentTypeID == uuid.Nil {
 		return fmt.Errorf("agent type ID cannot be empty")
@@ -111,15 +111,15 @@ func (a *Agent) Validate() error {
 	return nil
 }
 
-// UpdateStatus updates the agent's state and last update timestamp
-func (a *Agent) UpdateStatus(newState AgentState) {
-	a.State = newState
-	a.LastStateUpdate = time.Now()
+// UpdateStatus updates the agent's status and last update timestamp
+func (a *Agent) UpdateStatus(newStatus AgentStatus) {
+	a.Status = newStatus
+	a.LastStatusUpdate = time.Now()
 }
 
-// UpdateHeartbeat updates the last state update timestamp without changing the state
+// UpdateHeartbeat updates the last status update timestamp without changing the status
 func (a *Agent) UpdateHeartbeat() {
-	a.LastStateUpdate = time.Now()
+	a.LastStatusUpdate = time.Now()
 }
 
 // RegisterMetadata updates the agent's metadata properties (name, country code, attributes)
@@ -143,13 +143,13 @@ type AgentCommander interface {
 	Create(ctx context.Context, name string, countryCode CountryCode, attributes Attributes, providerID UUID, agentTypeID UUID) (*Agent, error)
 
 	// Update updates an agent
-	Update(ctx context.Context, id UUID, name *string, countryCode *CountryCode, attributes *Attributes, state *AgentState) (*Agent, error)
+	Update(ctx context.Context, id UUID, name *string, countryCode *CountryCode, attributes *Attributes, status *AgentStatus) (*Agent, error)
 
 	// Delete removes an agent by ID after checking for dependencies
 	Delete(ctx context.Context, id UUID) error
 
-	// UpdateState updates the agent state and the related timestamp
-	UpdateState(ctx context.Context, id UUID, state AgentState) (*Agent, error)
+	// UpdateStatus updates the agent status and the related timestamp
+	UpdateStatus(ctx context.Context, id UUID, status AgentStatus) (*Agent, error)
 }
 
 // agentCommander is the concrete implementation of AgentCommander
@@ -205,7 +205,7 @@ func (s *agentCommander) Create(
 			return err
 		}
 		_, err = s.auditCommander.CreateCtx(
-			ctx, EventTypeAgentCreated, JSON{"state": agent},
+			ctx, EventTypeAgentCreated, JSON{"status": agent},
 			&agent.ID, &providerID, nil, nil)
 		return err
 	})
@@ -220,7 +220,7 @@ func (s *agentCommander) Update(ctx context.Context,
 	name *string,
 	countryCode *CountryCode,
 	attributes *Attributes,
-	state *AgentState,
+	status *AgentStatus,
 ) (*Agent, error) {
 	// Find it
 	agent, err := s.store.AgentRepo().FindByID(ctx, id)
@@ -230,8 +230,8 @@ func (s *agentCommander) Update(ctx context.Context,
 	beforeAgent := *agent
 
 	// Update and validate
-	if state != nil {
-		agent.UpdateStatus(*state)
+	if status != nil {
+		agent.UpdateStatus(*status)
 	}
 	if name != nil || countryCode != nil || attributes != nil {
 		agent.RegisterMetadata(name, countryCode, attributes)
@@ -282,12 +282,12 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 			return err
 		}
 		_, err = s.auditCommander.CreateCtx(ctx, EventTypeAgentDeleted,
-			JSON{"state": agent}, &id, &providerID, nil, nil)
+			JSON{"status": agent}, &id, &providerID, nil, nil)
 		return err
 	})
 }
 
-func (s *agentCommander) UpdateState(ctx context.Context, id UUID, state AgentState) (*Agent, error) {
+func (s *agentCommander) UpdateStatus(ctx context.Context, id UUID, status AgentStatus) (*Agent, error) {
 	// Find it
 	agent, err := s.store.AgentRepo().FindByID(ctx, id)
 	if err != nil {
@@ -296,7 +296,7 @@ func (s *agentCommander) UpdateState(ctx context.Context, id UUID, state AgentSt
 	beforeAgent := *agent
 
 	// Update and validate
-	agent.UpdateStatus(state)
+	agent.UpdateStatus(status)
 	if err := agent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}

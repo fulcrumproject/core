@@ -11,7 +11,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Service Provider",
-    "state": "Enabled",
+    "status": "Enabled",
     "countryCode": "US",
     "attributes": {
         "type": ["test"]
@@ -60,7 +60,7 @@ Authorization: Bearer {{adminToken}}
 
 {
   "name": "Test Consumer",
-  "state": "Enabled"
+  "status": "Enabled"
 }
 
 @consumerId = {{createConsumer.response.body.$.id}}
@@ -129,7 +129,7 @@ POST {{baseUrl}}/services/{{serviceId}}/start
 Authorization: Bearer {{consumerToken}}
 
 
-### Hot update vm state
+### Hot update vm status
 PATCH {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{consumerToken}}
 
@@ -144,7 +144,7 @@ Authorization: Bearer {{consumerToken}}
 POST {{baseUrl}}/services/{{serviceId}}/stop
 Authorization: Bearer {{consumerToken}}
 
-### Cold update vm state
+### Cold update vm status
 PATCH {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{consumerToken}}
 

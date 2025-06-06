@@ -167,12 +167,12 @@ Domain entities use a rich domain model approach with behaviors encapsulated in 
 type Service struct {
     ID           UUID
     Name         string
-    CurrentState ServiceState
-    TargetState  *ServiceState
+    CurrentStatus ServiceStatus
+    TargetStatus  *ServiceStatus
     // Other properties...
     
     // Domain behavior
-    Transition(targetState ServiceState) (*Action, error)
+    Transition(targetStatus ServiceStatus) (*Action, error)
     Update(name *string, props *Properties) (bool, *Action, error)
 }
 ```
@@ -184,7 +184,7 @@ The domain layer also defines `Commander` interfaces that encapsulate complex op
 type ServiceCommander interface {
     Create(ctx context.Context, params...) (*Service, error)
     Update(ctx context.Context, id UUID, params...) (*Service, error)
-    Transition(ctx context.Context, id UUID, target ServiceState) (*Service, error)
+    Transition(ctx context.Context, id UUID, target ServiceStatus) (*Service, error)
     // Other operations...
 }
 
@@ -385,7 +385,7 @@ The system employs multiple testing approaches:
 
 ### 5.1 Unit Testing
 
-- Domain entity tests verify business rules and state transitions
+- Domain entity tests verify business rules and status transitions
 - Mock interfaces enable isolated component testing
 - Table-driven tests cover edge cases and validation
 

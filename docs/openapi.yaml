@@ -109,13 +109,13 @@ components:
       type: object
       required:
         - name
-        - state
+        - status
       properties:
         name:
           type: string
           example: "Test Participant"
-        state:
-          $ref: "#/components/schemas/ParticipantState"
+        status:
+          $ref: "#/components/schemas/ParticipantStatus"
         countryCode:
           type: string
           example: "US"
@@ -130,8 +130,8 @@ components:
         name:
           type: string
           example: "Test Participant"
-        state:
-          $ref: "#/components/schemas/ParticipantState"
+        status:
+          $ref: "#/components/schemas/ParticipantStatus"
         countryCode:
           type: string
           example: "US"
@@ -144,7 +144,7 @@ components:
           type: string
           format: date-time
 
-    ParticipantState:
+    ParticipantStatus:
       type: string
       enum: [Enabled, Disabled]
 
@@ -207,7 +207,7 @@ components:
           example: "eyJhbGciOiJIUzI1NiIsInR5c..."
 
     # Agent schemas
-    AgentState:
+    AgentStatus:
       type: string
       enum: [New, Connected, Disconnected, Error, Disabled]
 
@@ -215,15 +215,15 @@ components:
       type: object
       required:
         - name
-        - state
+        - status
         - participantId
         - agentTypeId
       properties:
         name:
           type: string
           example: "aws-agent-01"
-        state:
-          $ref: "#/components/schemas/AgentState"
+        status:
+          $ref: "#/components/schemas/AgentStatus"
         countryCode:
           type: string
           example: "US"
@@ -244,8 +244,8 @@ components:
         name:
           type: string
           example: "aws-agent-01"
-        state:
-          $ref: "#/components/schemas/AgentState"
+        status:
+          $ref: "#/components/schemas/AgentStatus"
         countryCode:
           type: string
           example: "US"
@@ -303,7 +303,7 @@ components:
           format: date-time
 
     # Service schemas
-    ServiceState:
+    ServiceStatus:
       type: string
       enum:
         [
@@ -323,15 +323,15 @@ components:
       type: object
       required:
         - name
-        - state
+        - status
         - agentId
         - serviceTypeId
       properties:
         name:
           type: string
           example: "web-server-01"
-        state:
-          $ref: "#/components/schemas/ServiceState"
+        status:
+          $ref: "#/components/schemas/ServiceStatus"
         attributes:
           $ref: "#/components/schemas/Attributes"
         properties:
@@ -353,12 +353,12 @@ components:
         name:
           type: string
           example: "web-server-01"
-        currentState:
-          $ref: "#/components/schemas/ServiceState"
+        currentStatus:
+          $ref: "#/components/schemas/ServiceStatus"
         attributes:
           $ref: "#/components/schemas/Attributes"
-        targetState:
-          $ref: "#/components/schemas/ServiceState"
+        targetStatus:
+          $ref: "#/components/schemas/ServiceStatus"
         currentProperties:
           $ref: "#/components/schemas/JSONObject"
         targetProperties:
@@ -468,7 +468,7 @@ components:
     # Job schemas
     # Using the same ServiceAction enum for job actions
 
-    JobState:
+    JobStatus:
       type: string
       enum: [Pending, Processing, Completed, Failed]
 
@@ -479,8 +479,8 @@ components:
           $ref: "#/components/schemas/UUID"
         action:
           $ref: "#/components/schemas/ServiceAction" # Use the common ServiceAction enum
-        state:
-          $ref: "#/components/schemas/JobState"
+        status:
+          $ref: "#/components/schemas/JobStatus"
         agentId:
           $ref: "#/components/schemas/UUID"
         serviceId:
@@ -1183,10 +1183,10 @@ paths:
             schema:
               type: object
               required:
-                - state
+                - status
               properties:
-                state:
-                  $ref: "#/components/schemas/AgentState"
+                status:
+                  $ref: "#/components/schemas/AgentStatus"
       responses:
         "200":
           description: Agent status updated successfully
@@ -1430,8 +1430,8 @@ paths:
                 name:
                   type: string
                   example: "web-server-01"
-                state:
-                  $ref: "#/components/schemas/ServiceState"
+                status:
+                  $ref: "#/components/schemas/ServiceStatus"
                 attributes:
                   $ref: "#/components/schemas/Attributes"
                 properties:

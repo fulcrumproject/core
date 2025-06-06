@@ -25,7 +25,7 @@ func TestJobCommander_Claim(t *testing.T) {
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				jobRepo := &MockJobRepository{}
 
-				pendingJob := createJobWithState(jobID, JobPending)
+				pendingJob := createJobWithStatus(jobID, JobPending)
 
 				jobRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Job, error) {
 					assert.Equal(t, jobID, id)
@@ -33,7 +33,7 @@ func TestJobCommander_Claim(t *testing.T) {
 				}
 
 				jobRepo.saveFunc = func(ctx context.Context, job *Job) error {
-					assert.Equal(t, JobProcessing, job.State)
+					assert.Equal(t, JobProcessing, job.Status)
 					assert.NotNil(t, job.ClaimedAt)
 					return nil
 				}
@@ -57,11 +57,11 @@ func TestJobCommander_Claim(t *testing.T) {
 			errMessage: "not found",
 		},
 		{
-			name: "Job not in pending state",
+			name: "Job not in pending status",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				jobRepo := &MockJobRepository{}
 
-				processingJob := createJobWithState(jobID, JobProcessing)
+				processingJob := createJobWithStatus(jobID, JobProcessing)
 
 				jobRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Job, error) {
 					return processingJob, nil
@@ -70,14 +70,14 @@ func TestJobCommander_Claim(t *testing.T) {
 				store.WithJobRepo(jobRepo)
 			},
 			wantErr:    true,
-			errMessage: "cannot claim a job not in pending state",
+			errMessage: "cannot claim a job not in pending status",
 		},
 		{
 			name: "Save error",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				jobRepo := &MockJobRepository{}
 
-				pendingJob := createJobWithState(jobID, JobPending)
+				pendingJob := createJobWithStatus(jobID, JobPending)
 
 				jobRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Job, error) {
 					return pendingJob, nil
@@ -129,7 +129,7 @@ func TestJobCommander_Complete(t *testing.T) {
 	// Helper to create a processing job
 	createProcessingJob := func() *Job {
 		now := time.Now().Add(-1 * time.Hour)
-		job := createJobWithState(jobID, JobProcessing)
+		job := createJobWithStatus(jobID, JobProcessing)
 		job.ServiceID = serviceID
 		job.AgentID = agentID
 		job.ProviderID = providerID
@@ -138,10 +138,10 @@ func TestJobCommander_Complete(t *testing.T) {
 		return job
 	}
 
-	// Helper to create a service with target state
+	// Helper to create a service with target status
 	createService := func() *Service {
-		currentState := ServiceStopped
-		targetState := ServiceStarted
+		currentStatus := ServiceStopped
+		targetStatus := ServiceStarted
 		return &Service{
 			BaseEntity: BaseEntity{
 				ID: serviceID,
@@ -149,8 +149,8 @@ func TestJobCommander_Complete(t *testing.T) {
 			Name:          "test-service",
 			GroupID:       uuid.New(),
 			ServiceTypeID: uuid.New(),
-			CurrentState:  currentState,
-			TargetState:   &targetState,
+			CurrentStatus: currentStatus,
+			TargetStatus:  &targetStatus,
 			AgentID:       agentID,
 			ProviderID:    providerID,
 			ConsumerID:    consumerID,
@@ -182,8 +182,8 @@ func TestJobCommander_Complete(t *testing.T) {
 				}
 
 				service := createService()
-				originalTargetState := ServiceStarted
-				service.TargetState = &originalTargetState
+				originalTargetStatus := ServiceStarted
+				service.TargetStatus = &originalTargetStatus
 
 				serviceRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Service, error) {
 					assert.Equal(t, serviceID, id)
@@ -191,14 +191,14 @@ func TestJobCommander_Complete(t *testing.T) {
 				}
 
 				jobRepo.saveFunc = func(ctx context.Context, updatedJob *Job) error {
-					assert.Equal(t, JobCompleted, updatedJob.State)
+					assert.Equal(t, JobCompleted, updatedJob.Status)
 					assert.NotNil(t, updatedJob.CompletedAt)
 					return nil
 				}
 
 				serviceRepo.saveFunc = func(ctx context.Context, updatedService *Service) error {
-					assert.Equal(t, updatedService.CurrentState, originalTargetState)
-					assert.Nil(t, updatedService.TargetState)
+					assert.Equal(t, updatedService.CurrentStatus, originalTargetStatus)
+					assert.Nil(t, updatedService.TargetStatus)
 					assert.Equal(t, &resources, updatedService.Resources)
 					assert.Equal(t, &externalID, updatedService.ExternalID)
 					return nil
@@ -237,12 +237,12 @@ func TestJobCommander_Complete(t *testing.T) {
 			errMessage: "not found",
 		},
 		{
-			name: "Job not in processing state",
+			name: "Job not in processing status",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				jobRepo := &MockJobRepository{}
 				serviceRepo := &MockServiceRepository{}
 
-				pendingJob := createJobWithState(jobID, JobPending)
+				pendingJob := createJobWithStatus(jobID, JobPending)
 				pendingJob.ServiceID = serviceID
 
 				jobRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Job, error) {
@@ -260,7 +260,7 @@ func TestJobCommander_Complete(t *testing.T) {
 			resources:  &resources,
 			externalID: &externalID,
 			wantErr:    true,
-			errMessage: "cannot complete a job not in processing state",
+			errMessage: "cannot complete a job not in processing status",
 		},
 		{
 			name: "Service not found",
@@ -295,7 +295,7 @@ func TestJobCommander_Complete(t *testing.T) {
 				job := createProcessingJob()
 
 				service := createService()
-				service.TargetState = nil
+				service.TargetStatus = nil
 
 				jobRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Job, error) {
 					return job, nil
@@ -464,7 +464,7 @@ func TestJobCommander_Fail(t *testing.T) {
 	// Helper to create a processing job
 	createProcessingJob := func() *Job {
 		now := time.Now().Add(-1 * time.Hour)
-		job := createJobWithState(jobID, JobProcessing)
+		job := createJobWithStatus(jobID, JobProcessing)
 		job.ServiceID = serviceID
 		job.AgentID = agentID
 		job.ProviderID = providerID
@@ -475,8 +475,8 @@ func TestJobCommander_Fail(t *testing.T) {
 
 	// Helper to create a service
 	createService := func() *Service {
-		currentState := ServiceStopped
-		targetState := ServiceStarted
+		currentStatus := ServiceStopped
+		targetStatus := ServiceStarted
 		return &Service{
 			BaseEntity: BaseEntity{
 				ID: serviceID,
@@ -484,8 +484,8 @@ func TestJobCommander_Fail(t *testing.T) {
 			Name:          "test-service",
 			GroupID:       uuid.New(),
 			ServiceTypeID: uuid.New(),
-			CurrentState:  currentState,
-			TargetState:   &targetState,
+			CurrentStatus: currentStatus,
+			TargetStatus:  &targetStatus,
 			AgentID:       agentID,
 			ProviderID:    providerID,
 			ConsumerID:    consumerID,
@@ -522,7 +522,7 @@ func TestJobCommander_Fail(t *testing.T) {
 				}
 
 				jobRepo.saveFunc = func(ctx context.Context, updatedJob *Job) error {
-					assert.Equal(t, JobFailed, updatedJob.State)
+					assert.Equal(t, JobFailed, updatedJob.Status)
 					assert.Equal(t, errorMessage, updatedJob.ErrorMessage)
 					return nil
 				}
@@ -557,12 +557,12 @@ func TestJobCommander_Fail(t *testing.T) {
 			errMessageStr: "not found",
 		},
 		{
-			name: "Job not in processing state",
+			name: "Job not in processing status",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				jobRepo := &MockJobRepository{}
 				serviceRepo := &MockServiceRepository{}
 
-				pendingJob := createJobWithState(jobID, JobPending)
+				pendingJob := createJobWithStatus(jobID, JobPending)
 				pendingJob.ServiceID = serviceID
 
 				jobRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Job, error) {
@@ -579,7 +579,7 @@ func TestJobCommander_Fail(t *testing.T) {
 			},
 			errorMessage:  errorMessage,
 			wantErr:       true,
-			errMessageStr: "cannot fail a job not in processing state",
+			errMessageStr: "cannot fail a job not in processing status",
 		},
 		{
 			name: "Service not found",

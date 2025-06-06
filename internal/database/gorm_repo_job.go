@@ -15,7 +15,7 @@ type GormJobRepository struct {
 
 var applyJobFilter = mapFilterApplier(map[string]FilterFieldApplier{
 	"action":    parserInFilterFieldApplier("jobs.action", domain.ParseServiceAction),
-	"state":     parserInFilterFieldApplier("jobs.state", domain.ParseJobState),
+	"status":    parserInFilterFieldApplier("jobs.status", domain.ParseJobStatus),
 	"agentId":   parserInFilterFieldApplier("jobs.agent_id", domain.ParseUUID),
 	"serviceId": parserInFilterFieldApplier("jobs.service_id", domain.ParseUUID),
 })
@@ -47,7 +47,7 @@ func (r *GormJobRepository) GetPendingJobsForAgent(ctx context.Context, agentID 
 	var jobs []*domain.Job
 	err := r.db.WithContext(ctx).
 		Preload("Service").
-		Where("agent_id = ? AND state = ?", agentID, domain.JobPending).
+		Where("agent_id = ? AND status = ?", agentID, domain.JobPending).
 		Order("priority DESC, created_at ASC").
 		Limit(limit).
 		Find(&jobs).Error
@@ -63,7 +63,7 @@ func (r *GormJobRepository) GetTimeOutJobs(ctx context.Context, olderThan time.D
 
 	var timedOutJobs []*domain.Job
 	err := r.db.WithContext(ctx).
-		Where("state IN ? AND created_at < ?", []domain.JobState{domain.JobProcessing, domain.JobPending}, cutoffTime).
+		Where("status IN ? AND created_at < ?", []domain.JobStatus{domain.JobProcessing, domain.JobPending}, cutoffTime).
 		Find(&timedOutJobs).Error
 
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *GormJobRepository) GetTimeOutJobs(ctx context.Context, olderThan time.D
 func (r *GormJobRepository) DeleteOldCompletedJobs(ctx context.Context, olderThan time.Duration) (int, error) {
 	cutoffTime := time.Now().Add(-olderThan)
 	result := r.db.WithContext(ctx).Exec(
-		"DELETE FROM jobs WHERE (state = ? OR state = ?) AND completed_at < ?",
+		"DELETE FROM jobs WHERE (status = ? OR status = ?) AND completed_at < ?",
 		domain.JobCompleted, domain.JobFailed, cutoffTime,
 	)
 	if result.Error != nil {

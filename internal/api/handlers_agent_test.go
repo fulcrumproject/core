@@ -44,13 +44,13 @@ func TestHandleCreate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:            name,
-						CountryCode:     countryCode,
-						Attributes:      attributes,
-						State:           domain.AgentDisconnected,
-						LastStateUpdate: createdAt,
-						ProviderID:      providerID,
-						AgentTypeID:     agentTypeID,
+						Name:             name,
+						CountryCode:      countryCode,
+						Attributes:       attributes,
+						Status:           domain.AgentDisconnected,
+						LastStatusUpdate: createdAt,
+						ProviderID:       providerID,
+						AgentTypeID:      agentTypeID,
 					}, nil
 				}
 			},
@@ -62,7 +62,7 @@ func TestHandleCreate(t *testing.T) {
 				"attributes": map[string]interface{}{
 					"test": []interface{}{"value1", "value2"},
 				},
-				"state":       "Disconnected",
+				"status":      "Disconnected",
 				"providerId":  "550e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "660e8400-e29b-41d4-a716-446655440000",
 				"createdAt":   "2023-01-01T00:00:00Z",
@@ -144,13 +144,13 @@ func TestAgentHandleGet(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:            "TestAgent",
-						CountryCode:     "US",
-						Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
-						State:           domain.AgentConnected,
-						LastStateUpdate: createdAt,
-						ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
-						AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+						Name:             "TestAgent",
+						CountryCode:      "US",
+						Attributes:       domain.Attributes{"test": []string{"value1", "value2"}},
+						Status:           domain.AgentConnected,
+						LastStatusUpdate: createdAt,
+						ProviderID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+						AgentTypeID:      uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 					}, nil
 				}
 			},
@@ -162,7 +162,7 @@ func TestAgentHandleGet(t *testing.T) {
 				"attributes": map[string]interface{}{
 					"test": []interface{}{"value1", "value2"},
 				},
-				"state":       "Connected",
+				"status":      "Connected",
 				"providerId":  "660e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "770e8400-e29b-41d4-a716-446655440000",
 				"createdAt":   "2023-01-01T00:00:00Z",
@@ -241,13 +241,13 @@ func TestHandleGetMe(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:            "TestAgent",
-						CountryCode:     "US",
-						Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
-						State:           domain.AgentConnected,
-						LastStateUpdate: createdAt,
-						ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
-						AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+						Name:             "TestAgent",
+						CountryCode:      "US",
+						Attributes:       domain.Attributes{"test": []string{"value1", "value2"}},
+						Status:           domain.AgentConnected,
+						LastStatusUpdate: createdAt,
+						ProviderID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+						AgentTypeID:      uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 					}, nil
 				}
 			},
@@ -259,7 +259,7 @@ func TestHandleGetMe(t *testing.T) {
 				"attributes": map[string]interface{}{
 					"test": []interface{}{"value1", "value2"},
 				},
-				"state":       "Connected",
+				"status":      "Connected",
 				"providerId":  "660e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "770e8400-e29b-41d4-a716-446655440000",
 				"createdAt":   "2023-01-01T00:00:00Z",
@@ -336,13 +336,13 @@ func TestAgentHandleList(t *testing.T) {
 									CreatedAt: createdAt,
 									UpdatedAt: updatedAt,
 								},
-								Name:            "TestAgent1",
-								CountryCode:     "US",
-								Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
-								State:           domain.AgentConnected,
-								LastStateUpdate: createdAt,
-								ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
-								AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+								Name:             "TestAgent1",
+								CountryCode:      "US",
+								Attributes:       domain.Attributes{"test": []string{"value1", "value2"}},
+								Status:           domain.AgentConnected,
+								LastStatusUpdate: createdAt,
+								ProviderID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+								AgentTypeID:      uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 							},
 						},
 						TotalItems:  1,
@@ -412,16 +412,16 @@ func TestHandleUpdate(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, state *domain.AgentState) (*domain.Agent, error) {
+				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, status *domain.AgentStatus) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
 							ID:        id,
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:            *name,
-						State:           domain.AgentConnected,
-						LastStateUpdate: createdAt,
+						Name:             *name,
+						Status:           domain.AgentConnected,
+						LastStatusUpdate: createdAt,
 					}, nil
 				}
 			},
@@ -434,7 +434,7 @@ func TestHandleUpdate(t *testing.T) {
 				Name: stringPtr("UpdatedAgent"),
 			},
 			mockSetup: func(commander *mockAgentCommander) {
-				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, state *domain.AgentState) (*domain.Agent, error) {
+				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, status *domain.AgentStatus) (*domain.Agent, error) {
 					return nil, domain.NewNotFoundErrorf("agent not found")
 				}
 			},
@@ -487,22 +487,22 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 			name:    "Success",
 			agentID: "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: UpdateAgentStatusRequest{
-				State: domain.AgentConnected,
+				Status: domain.AgentConnected,
 			},
 			mockSetup: func(commander *mockAgentCommander) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				commander.updateStateFunc = func(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error) {
+				commander.updateStatusFunc = func(ctx context.Context, id domain.UUID, status domain.AgentStatus) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
 							ID:        id,
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:            "TestAgent",
-						State:           state,
-						LastStateUpdate: updatedAt,
+						Name:             "TestAgent",
+						Status:           status,
+						LastStatusUpdate: updatedAt,
 					}, nil
 				}
 			},
@@ -512,10 +512,10 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 			name:    "UpdateError",
 			agentID: "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: UpdateAgentStatusRequest{
-				State: domain.AgentConnected,
+				Status: domain.AgentConnected,
 			},
 			mockSetup: func(commander *mockAgentCommander) {
-				commander.updateStateFunc = func(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error) {
+				commander.updateStatusFunc = func(ctx context.Context, id domain.UUID, status domain.AgentStatus) (*domain.Agent, error) {
 					return nil, domain.NewNotFoundErrorf("agent not found")
 				}
 			},
@@ -638,20 +638,20 @@ func TestAgentToResponse(t *testing.T) {
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},
-		Name:            "TestAgent",
-		CountryCode:     "US",
-		Attributes:      domain.Attributes{"test": []string{"value1", "value2"}},
-		State:           domain.AgentConnected,
-		LastStateUpdate: createdAt,
-		ProviderID:      uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
-		AgentTypeID:     uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+		Name:             "TestAgent",
+		CountryCode:      "US",
+		Attributes:       domain.Attributes{"test": []string{"value1", "value2"}},
+		Status:           domain.AgentConnected,
+		LastStatusUpdate: createdAt,
+		ProviderID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+		AgentTypeID:      uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 	}
 
 	response := agentToResponse(agent)
 
 	assert.Equal(t, agent.ID, response.ID)
 	assert.Equal(t, agent.Name, response.Name)
-	assert.Equal(t, agent.State, response.State)
+	assert.Equal(t, agent.Status, response.Status)
 	assert.Equal(t, agent.CountryCode, response.CountryCode)
 	assert.Equal(t, map[string][]string(agent.Attributes), map[string][]string(response.Attributes))
 	assert.Equal(t, agent.ProviderID, response.ProviderID)

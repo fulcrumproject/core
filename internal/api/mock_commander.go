@@ -10,10 +10,10 @@ import (
 
 // mockAgentCommander is a custom mock for AgentCommander
 type mockAgentCommander struct {
-	createFunc      func(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error)
-	updateFunc      func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, state *domain.AgentState) (*domain.Agent, error)
-	deleteFunc      func(ctx context.Context, id domain.UUID) error
-	updateStateFunc func(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error)
+	createFunc       func(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error)
+	updateFunc       func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, status *domain.AgentStatus) (*domain.Agent, error)
+	deleteFunc       func(ctx context.Context, id domain.UUID) error
+	updateStatusFunc func(ctx context.Context, id domain.UUID, status domain.AgentStatus) (*domain.Agent, error)
 }
 
 func (m *mockAgentCommander) Create(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
@@ -23,9 +23,9 @@ func (m *mockAgentCommander) Create(ctx context.Context, name string, countryCod
 	return nil, fmt.Errorf("create not mocked")
 }
 
-func (m *mockAgentCommander) Update(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, state *domain.AgentState) (*domain.Agent, error) {
+func (m *mockAgentCommander) Update(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, status *domain.AgentStatus) (*domain.Agent, error) {
 	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name, countryCode, attributes, state)
+		return m.updateFunc(ctx, id, name, countryCode, attributes, status)
 	}
 	return nil, fmt.Errorf("update not mocked")
 }
@@ -37,11 +37,11 @@ func (m *mockAgentCommander) Delete(ctx context.Context, id domain.UUID) error {
 	return fmt.Errorf("delete not mocked")
 }
 
-func (m *mockAgentCommander) UpdateState(ctx context.Context, id domain.UUID, state domain.AgentState) (*domain.Agent, error) {
-	if m.updateStateFunc != nil {
-		return m.updateStateFunc(ctx, id, state)
+func (m *mockAgentCommander) UpdateStatus(ctx context.Context, id domain.UUID, status domain.AgentStatus) (*domain.Agent, error) {
+	if m.updateStatusFunc != nil {
+		return m.updateStatusFunc(ctx, id, status)
 	}
-	return nil, fmt.Errorf("update state not mocked")
+	return nil, fmt.Errorf("update status not mocked")
 }
 
 // mockAuditEntryCommander is a custom mock for AuditEntryCommander
@@ -81,21 +81,21 @@ func (m *mockAuditEntryCommander) CreateCtxWithDiff(ctx context.Context, eventTy
 }
 
 type mockParticipantCommander struct {
-	createFunc func(ctx context.Context, name string, state domain.ParticipantState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error)
-	updateFunc func(ctx context.Context, id domain.UUID, name *string, state *domain.ParticipantState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Participant, error)
+	createFunc func(ctx context.Context, name string, status domain.ParticipantStatus, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error)
+	updateFunc func(ctx context.Context, id domain.UUID, name *string, status *domain.ParticipantStatus, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Participant, error)
 	deleteFunc func(ctx context.Context, id domain.UUID) error
 }
 
-func (m *mockParticipantCommander) Create(ctx context.Context, name string, state domain.ParticipantState, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error) {
+func (m *mockParticipantCommander) Create(ctx context.Context, name string, status domain.ParticipantStatus, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error) {
 	if m.createFunc != nil {
-		return m.createFunc(ctx, name, state, countryCode, attributes)
+		return m.createFunc(ctx, name, status, countryCode, attributes)
 	}
 	return nil, nil
 }
 
-func (m *mockParticipantCommander) Update(ctx context.Context, id domain.UUID, name *string, state *domain.ParticipantState, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Participant, error) {
+func (m *mockParticipantCommander) Update(ctx context.Context, id domain.UUID, name *string, status *domain.ParticipantStatus, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Participant, error) {
 	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name, state, countryCode, attributes)
+		return m.updateFunc(ctx, id, name, status, countryCode, attributes)
 	}
 	return nil, nil
 }
@@ -215,7 +215,7 @@ func (m *mockServiceGroupCommander) Delete(ctx context.Context, id domain.UUID) 
 type mockServiceCommander struct {
 	createFunc                     func(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, attributes domain.Attributes, properties domain.JSON) (*domain.Service, error)
 	updateFunc                     func(ctx context.Context, id domain.UUID, name *string, properties *domain.JSON) (*domain.Service, error)
-	transitionFunc                 func(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error)
+	transitionFunc                 func(ctx context.Context, id domain.UUID, status domain.ServiceStatus) (*domain.Service, error)
 	retryFunc                      func(ctx context.Context, id domain.UUID) (*domain.Service, error)
 	failTimeoutServicesAndJobsFunc func(ctx context.Context, timeout time.Duration) (int, error)
 }
@@ -234,9 +234,9 @@ func (m *mockServiceCommander) Update(ctx context.Context, id domain.UUID, name 
 	return nil, fmt.Errorf("update not mocked")
 }
 
-func (m *mockServiceCommander) Transition(ctx context.Context, id domain.UUID, state domain.ServiceState) (*domain.Service, error) {
+func (m *mockServiceCommander) Transition(ctx context.Context, id domain.UUID, status domain.ServiceStatus) (*domain.Service, error) {
 	if m.transitionFunc != nil {
-		return m.transitionFunc(ctx, id, state)
+		return m.transitionFunc(ctx, id, status)
 	}
 	return nil, fmt.Errorf("transition not mocked")
 }

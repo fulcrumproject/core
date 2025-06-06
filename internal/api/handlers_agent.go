@@ -23,13 +23,13 @@ func (r CreateAgentRequest) AuthTargetScope() (*domain.AuthTargetScope, error) {
 
 type UpdateAgentRequest struct {
 	Name        *string             `json:"name"`
-	State       *domain.AgentState  `json:"state"`
+	Status      *domain.AgentStatus `json:"status"`
 	CountryCode *domain.CountryCode `json:"countryCode,omitempty"`
 	Attributes  *domain.Attributes  `json:"attributes,omitempty"`
 }
 
 type UpdateAgentStatusRequest struct {
-	State domain.AgentState `json:"state"`
+	Status domain.AgentStatus `json:"status"`
 }
 
 type AgentHandler struct {
@@ -170,7 +170,7 @@ func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		p.Name,
 		p.CountryCode,
 		p.Attributes,
-		p.State,
+		p.Status,
 	)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -186,7 +186,7 @@ func (h *AgentHandler) handleUpdateStatusMe(w http.ResponseWriter, r *http.Reque
 	p := MustGetBody[UpdateAgentStatusRequest](r.Context())
 	agentID := MustGetAgentID(r.Context())
 
-	agent, err := h.commander.UpdateState(r.Context(), agentID, p.State)
+	agent, err := h.commander.UpdateStatus(r.Context(), agentID, p.Status)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -210,7 +210,7 @@ func (h *AgentHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 type AgentResponse struct {
 	ID          domain.UUID          `json:"id"`
 	Name        string               `json:"name"`
-	State       domain.AgentState    `json:"state"`
+	Status      domain.AgentStatus   `json:"status"`
 	CountryCode domain.CountryCode   `json:"countryCode,omitempty"`
 	Attributes  domain.Attributes    `json:"attributes,omitempty"`
 	ProviderID  domain.UUID          `json:"providerId"`
@@ -226,7 +226,7 @@ func agentToResponse(a *domain.Agent) *AgentResponse {
 	response := &AgentResponse{
 		ID:          a.ID,
 		Name:        a.Name,
-		State:       a.State,
+		Status:      a.Status,
 		CountryCode: a.CountryCode,
 		Attributes:  map[string][]string(a.Attributes),
 		ProviderID:  a.ProviderID,

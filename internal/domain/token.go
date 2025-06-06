@@ -238,7 +238,7 @@ func (s *tokenCommander) Create(
 		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeTokenCreated,
-			JSON{"state": token},
+			JSON{"status": token},
 			&token.ID,
 			token.ParticipantID, // Updated
 			token.AgentID,
@@ -308,7 +308,7 @@ func (s *tokenCommander) Delete(ctx context.Context, id UUID) error {
 		_, err := s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeTokenDeleted,
-			JSON{"state": token},
+			JSON{"status": token},
 			&id,
 			token.ParticipantID, // Updated
 			token.AgentID,
@@ -335,7 +335,7 @@ func (s *tokenCommander) Regenerate(ctx context.Context, id UUID) (*Token, error
 		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeTokenRegenerated,
-			JSON{"state": token},
+			JSON{"status": token},
 			&id,
 			token.ParticipantID, // Updated
 			token.AgentID,

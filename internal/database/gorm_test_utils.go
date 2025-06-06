@@ -18,12 +18,12 @@ func createTestServiceType(t *testing.T) *domain.ServiceType {
 	}
 }
 
-func createTestParticipant(t *testing.T, state domain.ParticipantState) *domain.Participant {
+func createTestParticipant(t *testing.T, status domain.ParticipantStatus) *domain.Participant {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Participant{
 		Name:        fmt.Sprintf("Test Participant %s", randomSuffix),
-		State:       state,
+		Status:      status,
 		CountryCode: "US",
 		Attributes:  domain.Attributes{"key": []string{"value"}},
 	}
@@ -36,23 +36,23 @@ func createTestAgentType(t *testing.T) *domain.AgentType {
 	}
 }
 
-func createTestAgent(t *testing.T, participantID, agentTypeID domain.UUID, state domain.AgentState) *domain.Agent {
+func createTestAgent(t *testing.T, participantID, agentTypeID domain.UUID, status domain.AgentStatus) *domain.Agent {
 	t.Helper()
-	return createTestAgentWithStatusUpdate(t, participantID, agentTypeID, state, time.Now())
+	return createTestAgentWithStatusUpdate(t, participantID, agentTypeID, status, time.Now())
 }
 
 // Helper function to create a test agent with a specific LastStatusUpdate time
-func createTestAgentWithStatusUpdate(t *testing.T, participantID, agentTypeID domain.UUID, state domain.AgentState, lastUpdate time.Time) *domain.Agent {
+func createTestAgentWithStatusUpdate(t *testing.T, participantID, agentTypeID domain.UUID, status domain.AgentStatus, lastUpdate time.Time) *domain.Agent {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Agent{
-		Name:            fmt.Sprintf("Test Agent %s", randomSuffix),
-		State:           state,
-		CountryCode:     "US",
-		Attributes:      domain.Attributes{"key": []string{"value"}},
-		ProviderID:      participantID,
-		AgentTypeID:     agentTypeID,
-		LastStateUpdate: lastUpdate,
+		Name:             fmt.Sprintf("Test Agent %s", randomSuffix),
+		Status:           status,
+		CountryCode:      "US",
+		Attributes:       domain.Attributes{"key": []string{"value"}},
+		ProviderID:       participantID,
+		AgentTypeID:      agentTypeID,
+		LastStatusUpdate: lastUpdate,
 	}
 }
 
@@ -72,7 +72,7 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, pro
 		Name:              fmt.Sprintf("Test Service %s", randomSuffix),
 		ServiceTypeID:     serviceTypeID,
 		GroupID:           serviceGroupID,
-		CurrentState:      domain.ServiceStarted,
+		CurrentStatus:     domain.ServiceStarted,
 		ProviderID:        providerParticipantID,
 		ConsumerID:        consumerParticipantID,
 		AgentID:           agentID,

@@ -15,7 +15,7 @@ type GormAgentRepository struct {
 
 var applyAgentFilter = mapFilterApplier(map[string]FilterFieldApplier{
 	"name":        stringInFilterFieldApplier("name"),
-	"state":       parserInFilterFieldApplier("state", domain.ParseAgentState),
+	"status":      parserInFilterFieldApplier("status", domain.ParseAgentStatus),
 	"countryCode": parserInFilterFieldApplier("country_code", domain.ParseCountryCode),
 	"providerId":  parserInFilterFieldApplier("provider_id", domain.ParseUUID),
 	"agentTypeId": parserInFilterFieldApplier("agent_type_id", domain.ParseUUID),
@@ -54,10 +54,10 @@ func (r *GormAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Conte
 
 	result := r.db.WithContext(ctx).
 		Model(&domain.Agent{}).
-		Where("state = ?", domain.AgentConnected).
-		Where("last_state_update < ? OR last_state_update IS NULL", cutoffTime).
+		Where("status = ?", domain.AgentConnected).
+		Where("last_status_update < ? OR last_status_update IS NULL", cutoffTime).
 		Updates(map[string]interface{}{
-			"state": domain.AgentDisconnected,
+			"status": domain.AgentDisconnected,
 		})
 
 	return result.RowsAffected, result.Error

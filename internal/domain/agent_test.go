@@ -11,47 +11,47 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAgentState_Validate(t *testing.T) {
+func TestAgentStatus_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		state   AgentState
+		status  AgentStatus
 		wantErr bool
 	}{
 		{
-			name:    "New state",
-			state:   AgentNew,
+			name:    "New status",
+			status:  AgentNew,
 			wantErr: false,
 		},
 		{
-			name:    "Connected state",
-			state:   AgentConnected,
+			name:    "Connected status",
+			status:  AgentConnected,
 			wantErr: false,
 		},
 		{
-			name:    "Disconnected state",
-			state:   AgentDisconnected,
+			name:    "Disconnected status",
+			status:  AgentDisconnected,
 			wantErr: false,
 		},
 		{
-			name:    "Error state",
-			state:   AgentError,
+			name:    "Error status",
+			status:  AgentError,
 			wantErr: false,
 		},
 		{
-			name:    "Disabled state",
-			state:   AgentDisabled,
+			name:    "Disabled status",
+			status:  AgentDisabled,
 			wantErr: false,
 		},
 		{
-			name:    "Invalid state",
-			state:   "InvalidState",
+			name:    "Invalid status",
+			status:  "InvalidStatus",
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.state.Validate()
+			err := tt.status.Validate()
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -66,46 +66,46 @@ func TestAgent_TableName(t *testing.T) {
 	assert.Equal(t, "agents", agent.TableName())
 }
 
-func TestParseAgentState(t *testing.T) {
+func TestParseAgentStatus(t *testing.T) {
 	tests := []struct {
 		name    string
 		value   string
-		want    AgentState
+		want    AgentStatus
 		wantErr bool
 	}{
 		{
-			name:    "Parse New state",
+			name:    "Parse New status",
 			value:   "New",
 			want:    AgentNew,
 			wantErr: false,
 		},
 		{
-			name:    "Parse Connected state",
+			name:    "Parse Connected status",
 			value:   "Connected",
 			want:    AgentConnected,
 			wantErr: false,
 		},
 		{
-			name:    "Parse Disconnected state",
+			name:    "Parse Disconnected status",
 			value:   "Disconnected",
 			want:    AgentDisconnected,
 			wantErr: false,
 		},
 		{
-			name:    "Parse Error state",
+			name:    "Parse Error status",
 			value:   "Error",
 			want:    AgentError,
 			wantErr: false,
 		},
 		{
-			name:    "Parse Disabled state",
+			name:    "Parse Disabled status",
 			value:   "Disabled",
 			want:    AgentDisabled,
 			wantErr: false,
 		},
 		{
-			name:    "Parse invalid state",
-			value:   "InvalidState",
+			name:    "Parse invalid status",
+			value:   "InvalidStatus",
 			want:    "",
 			wantErr: true,
 		},
@@ -113,7 +113,7 @@ func TestParseAgentState(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseAgentState(tt.value)
+			got, err := ParseAgentStatus(tt.value)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -136,97 +136,97 @@ func TestAgent_Validate(t *testing.T) {
 		{
 			name: "Valid agent",
 			agent: &Agent{
-				Name:            "test-agent",
-				State:           AgentConnected,
-				LastStateUpdate: validTime,
-				AgentTypeID:     validID,
-				ProviderID:      validID,
-				CountryCode:     "US",
+				Name:             "test-agent",
+				Status:           AgentConnected,
+				LastStatusUpdate: validTime,
+				AgentTypeID:      validID,
+				ProviderID:       validID,
+				CountryCode:      "US",
 			},
 			wantErr: false,
 		},
 		{
 			name: "Empty name",
 			agent: &Agent{
-				Name:            "",
-				State:           AgentConnected,
-				LastStateUpdate: validTime,
-				AgentTypeID:     validID,
-				ProviderID:      validID,
-				CountryCode:     "US",
+				Name:             "",
+				Status:           AgentConnected,
+				LastStatusUpdate: validTime,
+				AgentTypeID:      validID,
+				ProviderID:       validID,
+				CountryCode:      "US",
 			},
 			wantErr: true,
 		},
 		{
-			name: "Invalid state",
+			name: "Invalid status",
 			agent: &Agent{
-				Name:            "test-agent",
-				State:           "InvalidState",
-				LastStateUpdate: validTime,
-				AgentTypeID:     validID,
-				ProviderID:      validID,
-				CountryCode:     "US",
+				Name:             "test-agent",
+				Status:           "InvalidStatus",
+				LastStatusUpdate: validTime,
+				AgentTypeID:      validID,
+				ProviderID:       validID,
+				CountryCode:      "US",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Zero time",
 			agent: &Agent{
-				Name:            "test-agent",
-				State:           AgentConnected,
-				LastStateUpdate: time.Time{},
-				AgentTypeID:     validID,
-				ProviderID:      validID,
-				CountryCode:     "US",
+				Name:             "test-agent",
+				Status:           AgentConnected,
+				LastStatusUpdate: time.Time{},
+				AgentTypeID:      validID,
+				ProviderID:       validID,
+				CountryCode:      "US",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Empty agent type ID",
 			agent: &Agent{
-				Name:            "test-agent",
-				State:           AgentConnected,
-				LastStateUpdate: validTime,
-				AgentTypeID:     uuid.Nil,
-				ProviderID:      validID,
-				CountryCode:     "US",
+				Name:             "test-agent",
+				Status:           AgentConnected,
+				LastStatusUpdate: validTime,
+				AgentTypeID:      uuid.Nil,
+				ProviderID:       validID,
+				CountryCode:      "US",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Empty participant ID",
 			agent: &Agent{
-				Name:            "test-agent",
-				State:           AgentConnected,
-				LastStateUpdate: validTime,
-				AgentTypeID:     validID,
-				ProviderID:      uuid.Nil,
-				CountryCode:     "US",
+				Name:             "test-agent",
+				Status:           AgentConnected,
+				LastStatusUpdate: validTime,
+				AgentTypeID:      validID,
+				ProviderID:       uuid.Nil,
+				CountryCode:      "US",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Invalid country code",
 			agent: &Agent{
-				Name:            "test-agent",
-				State:           AgentConnected,
-				LastStateUpdate: validTime,
-				AgentTypeID:     validID,
-				ProviderID:      validID,
-				CountryCode:     "INVALID",
+				Name:             "test-agent",
+				Status:           AgentConnected,
+				LastStatusUpdate: validTime,
+				AgentTypeID:      validID,
+				ProviderID:       validID,
+				CountryCode:      "INVALID",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Valid with attributes",
 			agent: &Agent{
-				Name:            "test-agent",
-				State:           AgentConnected,
-				LastStateUpdate: validTime,
-				AgentTypeID:     validID,
-				ProviderID:      validID,
-				CountryCode:     "US",
-				Attributes:      Attributes{"key": []string{"value"}},
+				Name:             "test-agent",
+				Status:           AgentConnected,
+				LastStatusUpdate: validTime,
+				AgentTypeID:      validID,
+				ProviderID:       validID,
+				CountryCode:      "US",
+				Attributes:       Attributes{"key": []string{"value"}},
 			},
 			wantErr: false,
 		},
@@ -280,7 +280,7 @@ func TestAgentCommander_Create(t *testing.T) {
 					assert.Equal(t, validAttributes, agent.Attributes)
 					assert.Equal(t, validID, agent.ProviderID)
 					assert.Equal(t, validID, agent.AgentTypeID)
-					assert.Equal(t, AgentDisconnected, agent.State)
+					assert.Equal(t, AgentDisconnected, agent.Status)
 					return nil
 				}
 
@@ -394,19 +394,19 @@ func TestAgentCommander_Update(t *testing.T) {
 	newName := "updated-agent"
 	existingCountryCode := CountryCode("US")
 	newCountryCode := CountryCode("CA")
-	existingState := AgentDisconnected
-	newState := AgentConnected
+	existingStatus := AgentDisconnected
+	newStatus := AgentConnected
 
 	existingAgent := &Agent{
 		BaseEntity: BaseEntity{
 			ID: agentID,
 		},
-		Name:            existingName,
-		CountryCode:     existingCountryCode,
-		State:           existingState,
-		LastStateUpdate: time.Now(),
-		ProviderID:      providerID,
-		AgentTypeID:     agentTypeID,
+		Name:             existingName,
+		CountryCode:      existingCountryCode,
+		Status:           existingStatus,
+		LastStatusUpdate: time.Now(),
+		ProviderID:       providerID,
+		AgentTypeID:      agentTypeID,
 	}
 
 	tests := []struct {
@@ -417,7 +417,7 @@ func TestAgentCommander_Update(t *testing.T) {
 		nameParam      *string
 		countryCode    *CountryCode
 		attributes     *Attributes
-		stateParam     *AgentState
+		statusParam    *AgentStatus
 		wantErr        bool
 	}{
 		{
@@ -446,7 +446,7 @@ func TestAgentCommander_Update(t *testing.T) {
 			nameParam:   &newName,
 			countryCode: nil,
 			attributes:  nil,
-			stateParam:  nil,
+			statusParam: nil,
 			wantErr:     false,
 		},
 		{
@@ -471,11 +471,11 @@ func TestAgentCommander_Update(t *testing.T) {
 			nameParam:   nil,
 			countryCode: &newCountryCode,
 			attributes:  nil,
-			stateParam:  nil,
+			statusParam: nil,
 			wantErr:     false,
 		},
 		{
-			testName: "Update state",
+			testName: "Update status",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				agentRepo := &MockAgentRepository{}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
@@ -496,7 +496,7 @@ func TestAgentCommander_Update(t *testing.T) {
 			nameParam:   nil,
 			countryCode: nil,
 			attributes:  nil,
-			stateParam:  &newState,
+			statusParam: &newStatus,
 			wantErr:     false,
 		},
 		{
@@ -511,7 +511,7 @@ func TestAgentCommander_Update(t *testing.T) {
 			nameParam:   &newName,
 			countryCode: nil,
 			attributes:  nil,
-			stateParam:  nil,
+			statusParam: nil,
 			wantErr:     true,
 		},
 		{
@@ -524,7 +524,7 @@ func TestAgentCommander_Update(t *testing.T) {
 
 				store.atomicFunc = func(ctx context.Context, fn func(Store) error) error {
 					// Simulate validation failure
-					return InvalidInputError{Err: errors.New("invalid state")}
+					return InvalidInputError{Err: errors.New("invalid status")}
 				}
 
 				store.WithAgentRepo(agentRepo)
@@ -532,7 +532,7 @@ func TestAgentCommander_Update(t *testing.T) {
 			nameParam:   nil,
 			countryCode: nil,
 			attributes:  nil,
-			stateParam:  &existingState,
+			statusParam: &existingStatus,
 			wantErr:     true,
 		},
 	}
@@ -544,7 +544,7 @@ func TestAgentCommander_Update(t *testing.T) {
 			tt.setupMocks(store, audit)
 
 			commander := NewAgentCommander(store, audit)
-			agent, err := commander.Update(ctx, agentID, tt.nameParam, tt.countryCode, tt.attributes, tt.stateParam)
+			agent, err := commander.Update(ctx, agentID, tt.nameParam, tt.countryCode, tt.attributes, tt.statusParam)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -566,10 +566,10 @@ func TestAgentCommander_Update(t *testing.T) {
 					assert.Equal(t, existingCountryCode, agent.CountryCode)
 				}
 
-				if tt.stateParam != nil {
-					assert.Equal(t, *tt.stateParam, agent.State)
+				if tt.statusParam != nil {
+					assert.Equal(t, *tt.statusParam, agent.Status)
 				} else {
-					assert.Equal(t, existingState, agent.State)
+					assert.Equal(t, existingStatus, agent.Status)
 				}
 			}
 		})
@@ -585,10 +585,10 @@ func TestAgentCommander_Delete(t *testing.T) {
 		BaseEntity: BaseEntity{
 			ID: agentID,
 		},
-		Name:            "test-agent",
-		ProviderID:      providerID,
-		State:           AgentDisconnected,
-		LastStateUpdate: time.Now(),
+		Name:             "test-agent",
+		ProviderID:       providerID,
+		Status:           AgentDisconnected,
+		LastStatusUpdate: time.Now(),
 	}
 
 	tests := []struct {
@@ -681,19 +681,19 @@ func TestAgentCommander_Delete(t *testing.T) {
 	}
 }
 
-func TestAgentCommander_UpdateState(t *testing.T) {
+func TestAgentCommander_UpdateStatus(t *testing.T) {
 	ctx := context.Background()
 	agentID := uuid.New()
 	providerID := uuid.New()
 	agentTypeID := uuid.New()
 
-	// Set up a more complete agent with required fields for UpdateState to succeed
+	// Set up a more complete agent with required fields for UpdateStatus to succeed
 	currentTime := time.Now().Add(-time.Hour)
 	countryCode := CountryCode("US")
 	agentName := "test-agent"
 
-	existingState := AgentDisconnected
-	newState := AgentConnected
+	existingStatus := AgentDisconnected
+	newStatus := AgentConnected
 
 	existingAgent := &Agent{
 		BaseEntity: BaseEntity{
@@ -710,18 +710,18 @@ func TestAgentCommander_UpdateState(t *testing.T) {
 	tests := []struct {
 		name       string
 		setupMocks func(store *MockStore, audit *MockAuditEntryCommander)
-		state      AgentState
+		status     AgentStatus
 		wantErr    bool
 	}{
 		{
-			name: "Update state success",
+			name: "Update status success",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				agentRepo := &MockAgentRepository{}
 
 				// Important: Make a complete copy of existingAgent that has all required fields
 				agentCopy := *existingAgent
-				agentCopy.State = existingState
-				agentCopy.LastStateUpdate = time.Now().Add(-time.Hour)
+				agentCopy.Status = existingStatus
+				agentCopy.LastStatusUpdate = time.Now().Add(-time.Hour)
 
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
 					return &agentCopy, nil
@@ -733,15 +733,15 @@ func TestAgentCommander_UpdateState(t *testing.T) {
 				}
 
 				agentRepo.updateFunc = func(ctx context.Context, agent *Agent) error {
-					assert.Equal(t, newState, agent.State)
-					// Verify last state update was updated
-					assert.True(t, agent.LastStateUpdate.After(existingAgent.LastStateUpdate))
+					assert.Equal(t, newStatus, agent.Status)
+					// Verify last status update was updated
+					assert.True(t, agent.LastStatusUpdate.After(existingAgent.LastStatusUpdate))
 					return nil
 				}
 
 				store.WithAgentRepo(agentRepo)
 			},
-			state:   newState,
+			status:  newStatus,
 			wantErr: false,
 		},
 		{
@@ -754,11 +754,11 @@ func TestAgentCommander_UpdateState(t *testing.T) {
 
 				store.WithAgentRepo(agentRepo)
 			},
-			state:   newState,
+			status:  newStatus,
 			wantErr: true,
 		},
 		{
-			name: "Invalid state",
+			name: "Invalid status",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				agentRepo := &MockAgentRepository{}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
@@ -767,12 +767,12 @@ func TestAgentCommander_UpdateState(t *testing.T) {
 
 				// The atomic function will simulate the validation failure
 				store.atomicFunc = func(ctx context.Context, fn func(Store) error) error {
-					return InvalidInputError{Err: errors.New("invalid state")}
+					return InvalidInputError{Err: errors.New("invalid status")}
 				}
 
 				store.WithAgentRepo(agentRepo)
 			},
-			state:   AgentState("InvalidState"),
+			status:  AgentStatus("InvalidStatus"),
 			wantErr: true,
 		},
 	}
@@ -784,7 +784,7 @@ func TestAgentCommander_UpdateState(t *testing.T) {
 			tt.setupMocks(store, audit)
 
 			commander := NewAgentCommander(store, audit)
-			agent, err := commander.UpdateState(ctx, agentID, tt.state)
+			agent, err := commander.UpdateStatus(ctx, agentID, tt.status)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -792,7 +792,7 @@ func TestAgentCommander_UpdateState(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, agent)
-				assert.Equal(t, tt.state, agent.State)
+				assert.Equal(t, tt.status, agent.Status)
 			}
 		})
 	}

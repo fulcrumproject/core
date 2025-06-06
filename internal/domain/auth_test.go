@@ -157,8 +157,8 @@ func TestAuthAction_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Valid UpdateState action",
-			action:  ActionUpdateState,
+			name:    "Valid UpdateStatus action",
+			action:  ActionUpdateStatus,
 			wantErr: false,
 		},
 		{

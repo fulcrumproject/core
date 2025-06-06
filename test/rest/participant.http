@@ -14,7 +14,7 @@ Authorization: Bearer {{adminToken}}
 
 {
   "name": "Test Consumer",
-  "state": "Enabled"
+  "status": "Enabled"
 }
 
 @consumerId = {{createConsumer.response.body.$.id}}
@@ -26,7 +26,7 @@ Authorization: Bearer {{adminToken}}
 
 {
   "name": "Test Consumer 2",
-  "state": "Disabled"
+  "status": "Disabled"
 }
 
 @consumerId2 = {{createConsumer2.response.body.$.id}}

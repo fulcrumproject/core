@@ -45,7 +45,7 @@ func TestAgentRepository(t *testing.T) {
 			found, err := agentRepo.FindByID(ctx, agent.ID)
 			require.NoError(t, err)
 			assert.Equal(t, agent.Name, found.Name)
-			assert.Equal(t, agent.State, found.State)
+			assert.Equal(t, agent.Status, found.Status)
 			assert.Equal(t, agent.CountryCode, found.CountryCode)
 			assert.Equal(t, agent.Attributes, found.Attributes)
 			assert.Equal(t, agent.ProviderID, found.ProviderID)
@@ -94,7 +94,7 @@ func TestAgentRepository(t *testing.T) {
 			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
-				Filters:  map[string][]string{"state": {"Connected"}},
+				Filters:  map[string][]string{"status": {"Connected"}},
 			}
 
 			// Execute
@@ -103,7 +103,7 @@ func TestAgentRepository(t *testing.T) {
 			// Assert
 			require.NoError(t, err)
 			for _, a := range result.Items {
-				assert.Equal(t, domain.AgentConnected, a.State)
+				assert.Equal(t, domain.AgentConnected, a.Status)
 			}
 		})
 
@@ -205,7 +205,7 @@ func TestAgentRepository(t *testing.T) {
 
 			// Update agent
 			agent.Name = "Updated Agent"
-			agent.State = domain.AgentConnected
+			agent.Status = domain.AgentConnected
 			agent.CountryCode = "UK"
 			agent.Attributes = domain.Attributes{"new_key": []string{"new_value"}}
 
@@ -219,7 +219,7 @@ func TestAgentRepository(t *testing.T) {
 			updated, err := agentRepo.FindByID(ctx, agent.ID)
 			require.NoError(t, err)
 			assert.Equal(t, "Updated Agent", updated.Name)
-			assert.Equal(t, domain.AgentConnected, updated.State)
+			assert.Equal(t, domain.AgentConnected, updated.Status)
 			assert.Equal(t, domain.CountryCode("UK"), updated.CountryCode)
 			assert.Equal(t, domain.Attributes{"new_key": []string{"new_value"}}, updated.Attributes)
 		})
@@ -282,18 +282,18 @@ func TestAgentRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, int64(1), count, "Should mark exactly one agent as disconnected")
 
-			// Verify the states of all agents
+			// Verify the statuss of all agents
 			found, err := agentRepo.FindByID(ctx, recentAgent.ID)
 			require.NoError(t, err)
-			assert.Equal(t, domain.AgentConnected, found.State, "Recent agent should still be connected")
+			assert.Equal(t, domain.AgentConnected, found.Status, "Recent agent should still be connected")
 
 			found, err = agentRepo.FindByID(ctx, oldAgent.ID)
 			require.NoError(t, err)
-			assert.Equal(t, domain.AgentDisconnected, found.State, "Old agent should be disconnected")
+			assert.Equal(t, domain.AgentDisconnected, found.Status, "Old agent should be disconnected")
 
 			found, err = agentRepo.FindByID(ctx, discoAgent.ID)
 			require.NoError(t, err)
-			assert.Equal(t, domain.AgentDisconnected, found.State, "Disconnected agent should remain disconnected")
+			assert.Equal(t, domain.AgentDisconnected, found.Status, "Disconnected agent should remain disconnected")
 		})
 
 		t.Run("no agents to update", func(t *testing.T) {

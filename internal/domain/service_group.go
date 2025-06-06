@@ -105,7 +105,7 @@ func (s *serviceGroupCommander) Create(ctx context.Context, name string, consume
 		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeServiceGroupCreated,
-			JSON{"state": sg},
+			JSON{"status": sg},
 			&sg.ID, nil, nil, &consumerID)
 
 		return err
@@ -180,7 +180,7 @@ func (s *serviceGroupCommander) Delete(ctx context.Context, id UUID) error {
 		_, err = s.auditCommander.CreateCtx(
 			ctx,
 			EventTypeServiceGroupDeleted,
-			JSON{"state": sg}, &id, nil, nil, &sg.ConsumerID)
+			JSON{"status": sg}, &id, nil, nil, &sg.ConsumerID)
 		return err
 	})
 }

@@ -5,51 +5,51 @@ import (
 	"fmt"
 )
 
-// ParticipantState represents the possible states of a Participant
-type ParticipantState string
+// ParticipantStatus represents the possible statuss of a Participant
+type ParticipantStatus string
 
 const (
-	ParticipantEnabled  ParticipantState = "Enabled"
-	ParticipantDisabled ParticipantState = "Disabled"
+	ParticipantEnabled  ParticipantStatus = "Enabled"
+	ParticipantDisabled ParticipantStatus = "Disabled"
 )
 
-// Validate checks if the participant state is valid
-func (s ParticipantState) Validate() error {
+// Validate checks if the participant status is valid
+func (s ParticipantStatus) Validate() error {
 	switch s {
 	case ParticipantEnabled, ParticipantDisabled:
 		return nil
 	default:
-		return fmt.Errorf("invalid participant state: %s", s)
+		return fmt.Errorf("invalid participant status: %s", s)
 	}
 }
 
-// ParseParticipantState parses a string into a ParticipantState
-func ParseParticipantState(value string) (ParticipantState, error) {
-	state := ParticipantState(value)
-	if err := state.Validate(); err != nil {
+// ParseParticipantStatus parses a string into a ParticipantStatus
+func ParseParticipantStatus(value string) (ParticipantStatus, error) {
+	status := ParticipantStatus(value)
+	if err := status.Validate(); err != nil {
 		return "", err
 	}
-	return state, nil
+	return status, nil
 }
 
 // Participant represents a unified entity for providers and consumers
 type Participant struct {
 	BaseEntity
 
-	Name        string           `json:"name" gorm:"not null"`
-	CountryCode CountryCode      `json:"countryCode,omitempty" gorm:"size:2"`
-	Attributes  Attributes       `json:"attributes,omitempty" gorm:"type:jsonb"`
-	State       ParticipantState `json:"state" gorm:"not null"`
+	Name        string            `json:"name" gorm:"not null"`
+	CountryCode CountryCode       `json:"countryCode,omitempty" gorm:"size:2"`
+	Attributes  Attributes        `json:"attributes,omitempty" gorm:"type:jsonb"`
+	Status      ParticipantStatus `json:"status" gorm:"not null"`
 
 	// Relationships
 	Agents []Agent `json:"agents,omitempty" gorm:"foreignKey:ProviderID"` // Agent struct will be updated later
 }
 
 // NewParticipant creates a new Participant without validation
-func NewParticipant(name string, state ParticipantState, countryCode CountryCode, attributes Attributes) *Participant {
+func NewParticipant(name string, status ParticipantStatus, countryCode CountryCode, attributes Attributes) *Participant {
 	return &Participant{
 		Name:        name,
-		State:       state,
+		Status:      status,
 		CountryCode: countryCode,
 		Attributes:  attributes,
 	}
@@ -76,19 +76,19 @@ func (p *Participant) Validate() error {
 			return err
 		}
 	}
-	if err := p.State.Validate(); err != nil {
+	if err := p.Status.Validate(); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Update updates the participant fields if the pointers are non-nil
-func (p *Participant) Update(name *string, state *ParticipantState, countryCode *CountryCode, attributes *Attributes) {
+func (p *Participant) Update(name *string, status *ParticipantStatus, countryCode *CountryCode, attributes *Attributes) {
 	if name != nil {
 		p.Name = *name
 	}
-	if state != nil {
-		p.State = *state
+	if status != nil {
+		p.Status = *status
 	}
 	if countryCode != nil {
 		p.CountryCode = *countryCode
@@ -101,10 +101,10 @@ func (p *Participant) Update(name *string, state *ParticipantState, countryCode 
 // ParticipantCommander defines the interface for participant command operations
 type ParticipantCommander interface {
 	// Create creates a new participant
-	Create(ctx context.Context, name string, state ParticipantState, countryCode CountryCode, attributes Attributes) (*Participant, error)
+	Create(ctx context.Context, name string, status ParticipantStatus, countryCode CountryCode, attributes Attributes) (*Participant, error)
 
 	// Update updates a participant
-	Update(ctx context.Context, id UUID, name *string, state *ParticipantState, countryCode *CountryCode, attributes *Attributes) (*Participant, error)
+	Update(ctx context.Context, id UUID, name *string, status *ParticipantStatus, countryCode *CountryCode, attributes *Attributes) (*Participant, error)
 
 	// Delete removes a participant by ID after checking for dependencies
 	Delete(ctx context.Context, id UUID) error
@@ -130,13 +130,13 @@ func NewParticipantCommander(
 func (c *participantCommander) Create(
 	ctx context.Context,
 	name string,
-	state ParticipantState,
+	status ParticipantStatus,
 	countryCode CountryCode,
 	attributes Attributes,
 ) (*Participant, error) {
 	var participant *Participant
 	err := c.store.Atomic(ctx, func(store Store) error {
-		participant = NewParticipant(name, state, countryCode, attributes)
+		participant = NewParticipant(name, status, countryCode, attributes)
 		if err := participant.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -145,7 +145,7 @@ func (c *participantCommander) Create(
 		}
 		// EventTypeParticipantCreated will be defined in audit_entry.go as per plan
 		_, err := c.auditCommander.CreateCtx(
-			ctx, "EventTypeParticipantCreated", JSON{"state": participant}, // Placeholder
+			ctx, "EventTypeParticipantCreated", JSON{"status": participant}, // Placeholder
 			&participant.ID, &participant.ID, nil, nil) // ParticipantID is the authority
 		return err
 	})
@@ -159,7 +159,7 @@ func (c *participantCommander) Update(
 	ctx context.Context,
 	id UUID,
 	name *string,
-	state *ParticipantState,
+	status *ParticipantStatus,
 	countryCode *CountryCode,
 	attributes *Attributes,
 ) (*Participant, error) {
@@ -169,7 +169,7 @@ func (c *participantCommander) Update(
 	}
 	beforeParticipant := *participant
 
-	participant.Update(name, state, countryCode, attributes)
+	participant.Update(name, status, countryCode, attributes)
 	if err := participant.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
@@ -218,7 +218,7 @@ func (c *participantCommander) Delete(ctx context.Context, id UUID) error {
 
 		// EventTypeParticipantDeleted will be defined in audit_entry.go as per plan
 		_, err = c.auditCommander.CreateCtx(ctx, "EventTypeParticipantDeleted", // Placeholder
-			JSON{"state": participant}, &id, &id, nil, nil) // ParticipantID is the authority
+			JSON{"status": participant}, &id, &id, nil, nil) // ParticipantID is the authority
 		return err
 	})
 }

@@ -12,7 +12,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test K8s Participant Provider",
-    "state": "Enabled",
+    "status": "Enabled",
     "countryCode": "IT",
     "attributes": {
         "type": ["kubernetes"]
@@ -56,7 +56,7 @@ Authorization: Bearer {{adminToken}}
 
 {
   "name": "Test K8s Participant Consumer",
-  "state": "Enabled"
+  "status": "Enabled"
 }
 
 @consumerId = {{createConsumer.response.body.$.id}}
@@ -87,7 +87,7 @@ Authorization: Bearer {{consumerToken}}
 
 @serviceGroupId = {{createServiceGroup.response.body.$.id}}
 
-### Step 1: Create a K8s cluster service with 1 node (id: node1, size: s1, state: on)
+### Step 1: Create a K8s cluster service with 1 node (id: node1, size: s1, status: on)
 # @name createService
 POST {{baseUrl}}/services
 Authorization: Bearer {{consumerToken}}
@@ -102,7 +102,7 @@ Authorization: Bearer {{consumerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "On"
+                "status": "On"
             }
         ]
     },
@@ -123,7 +123,7 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/services?page=1
 Authorization: Bearer {{agentToken}}
 
-### Verify service is in Created state
+### Verify service is in Created status
 # @name getService1
 GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{consumerToken}}
@@ -133,7 +133,7 @@ Authorization: Bearer {{consumerToken}}
 POST {{baseUrl}}/services/{{serviceId}}/start
 Authorization: Bearer {{consumerToken}}
 
-### Verify service is in Started state
+### Verify service is in Started status
 # @name getService2
 GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{consumerToken}}
@@ -149,12 +149,12 @@ Authorization: Bearer {{consumerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "On"
+                "status": "On"
             },
             {
                 "id": "node2",
                 "size": "s2",
-                "state": "On"
+                "status": "On"
             }
         ]
     }
@@ -176,12 +176,12 @@ Authorization: Bearer {{consumerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "On"
+                "status": "On"
             },
             {
                 "id": "node2",
                 "size": "s2",
-                "state": "Off"
+                "status": "Off"
             }
         ]
     }
@@ -203,12 +203,12 @@ Authorization: Bearer {{consumerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "On"
+                "status": "On"
             },
             {
                 "id": "node2",
                 "size": "s2",
-                "state": "On"
+                "status": "On"
             }
         ]
     }
@@ -230,12 +230,12 @@ Authorization: Bearer {{consumerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "On"
+                "status": "On"
             },
             {
                 "id": "node2",
                 "size": "s2",
-                "state": "Off"
+                "status": "Off"
             }
         ]
     }
@@ -267,7 +267,7 @@ Authorization: Bearer {{consumerToken}}
             {
                 "id": "node1",
                 "size": "s1",
-                "state": "On"
+                "status": "On"
             }
         ]
     }

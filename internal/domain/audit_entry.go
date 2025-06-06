@@ -92,7 +92,7 @@ func NewEventAudit(
 	}
 }
 
-// GenerateDiff calculates and stores the diff between two entity states
+// GenerateDiff calculates and stores the diff between two entity statuss
 func (p *AuditEntry) GenerateDiff(beforeEntity, afterEntity interface{}) error {
 	// Convert entities to JSON
 	beforeJSON, err := json.Marshal(beforeEntity)
@@ -137,7 +137,7 @@ type AuditEntryCommander interface {
 	// Create creates a new audit entry
 	Create(ctx context.Context, authorityType AuthorityType, authorityID string, eventType EventType, properties JSON, entityID, providerID, agentID, consumerID *UUID) (*AuditEntry, error)
 
-	// CreateWithDiff creates an audit entry with a diff between two entity states
+	// CreateWithDiff creates an audit entry with a diff between two entity statuss
 	CreateWithDiff(ctx context.Context, authorityType AuthorityType, authorityID string, eventType EventType,
 		entityID, providerID, agentID, consumerID *UUID, beforeEntity, afterEntity interface{}) (*AuditEntry, error)
 
@@ -196,7 +196,7 @@ func (s *auditEntryCommander) Create(
 	return auditEntry, nil
 }
 
-// CreateWithDiff creates an audit entry with a JSON diff between two entity states using jsondiff
+// CreateWithDiff creates an audit entry with a JSON diff between two entity statuss using jsondiff
 func (s *auditEntryCommander) CreateWithDiff(
 	ctx context.Context,
 	authorityType AuthorityType,

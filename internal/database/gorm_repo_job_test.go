@@ -35,7 +35,7 @@ func TestJobRepository(t *testing.T) {
 	agentRepo := NewAgentRepository(testDB.DB)
 	agent := &domain.Agent{
 		Name:        "Test Agent",
-		State:       domain.AgentConnected,
+		Status:      domain.AgentConnected,
 		ProviderID:  provider.ID,
 		AgentTypeID: agentType.ID,
 	}
@@ -57,7 +57,7 @@ func TestJobRepository(t *testing.T) {
 	serviceRepo := NewServiceRepository(testDB.DB)
 	service := &domain.Service{
 		Name:              "Test Service",
-		CurrentState:      domain.ServiceStarted,
+		CurrentStatus:     domain.ServiceStarted,
 		CurrentProperties: &(domain.JSON{"key": "value"}),
 		Attributes:        domain.Attributes{"key": []string{"value"}},
 		Resources:         &(domain.JSON{"cpu": 1}),
@@ -91,7 +91,7 @@ func TestJobRepository(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, job.ID, found.ID)
 		assert.Equal(t, job.Action, found.Action)
-		assert.Equal(t, job.State, found.State)
+		assert.Equal(t, job.Status, found.Status)
 		assert.Equal(t, job.AgentID, found.AgentID)
 		assert.Equal(t, job.ServiceID, found.ServiceID)
 		assert.Equal(t, job.Priority, found.Priority)
@@ -115,7 +115,7 @@ func TestJobRepository(t *testing.T) {
 		require.NoError(t, err)
 
 		// Update the job
-		job.State = domain.JobProcessing
+		job.Status = domain.JobProcessing
 		job.Priority = 2
 
 		err = repo.Save(context.Background(), job)
@@ -124,7 +124,7 @@ func TestJobRepository(t *testing.T) {
 		// Verify the update
 		found, err := repo.FindByID(context.Background(), job.ID)
 		require.NoError(t, err)
-		assert.Equal(t, domain.JobProcessing, found.State)
+		assert.Equal(t, domain.JobProcessing, found.Status)
 		assert.Equal(t, 2, found.Priority)
 	})
 
@@ -171,18 +171,18 @@ func TestJobRepository(t *testing.T) {
 			assert.NotNil(t, result.Items[0].Service)
 		})
 
-		t.Run("success - list with state filter", func(t *testing.T) {
+		t.Run("success - list with status filter", func(t *testing.T) {
 			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
-				Filters:  map[string][]string{"state": {string(domain.JobPending)}},
+				Filters:  map[string][]string{"status": {string(domain.JobPending)}},
 			}
 
 			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 1)
 			for _, item := range result.Items {
-				assert.Equal(t, domain.JobPending, item.State)
+				assert.Equal(t, domain.JobPending, item.Status)
 			}
 		})
 
@@ -234,7 +234,7 @@ func TestJobRepository(t *testing.T) {
 
 		// Create a processing job for the agent (shouldn't be returned)
 		processingJob := domain.NewJob(service, domain.ServiceActionCreate, 4)
-		processingJob.State = domain.JobProcessing
+		processingJob.Status = domain.JobProcessing
 		err := repo.Create(context.Background(), processingJob)
 		require.NoError(t, err)
 
@@ -245,7 +245,7 @@ func TestJobRepository(t *testing.T) {
 
 		// Verify all returned jobs are pending
 		for _, job := range jobs {
-			assert.Equal(t, domain.JobPending, job.State)
+			assert.Equal(t, domain.JobPending, job.Status)
 		}
 
 		// Test limit
@@ -258,12 +258,12 @@ func TestJobRepository(t *testing.T) {
 	})
 
 	t.Run("GetTimeOutJobs", func(t *testing.T) {
-		// Create a job in processing state with an old created_at time
+		// Create a job in processing status with an old created_at time
 		now := time.Now()
 		oldTime := now.Add(-2 * time.Hour) // 2 hours ago
 
 		oldJob := domain.NewJob(service, domain.ServiceActionCreate, 1)
-		oldJob.State = domain.JobProcessing
+		oldJob.Status = domain.JobProcessing
 		// Set BaseEntity.CreatedAt directly since it's normally set during Insert
 		oldJob.BaseEntity = domain.BaseEntity{
 			CreatedAt: oldTime,
@@ -271,10 +271,10 @@ func TestJobRepository(t *testing.T) {
 		err := repo.Create(context.Background(), oldJob)
 		require.NoError(t, err)
 
-		// Create a job in processing state with a recent created_at time (will use current time)
+		// Create a job in processing status with a recent created_at time (will use current time)
 		newJob := domain.NewJob(service, domain.ServiceActionStart, 2)
 		require.NoError(t, err)
-		newJob.State = domain.JobProcessing
+		newJob.Status = domain.JobProcessing
 		newJob.ClaimedAt = &now // use current time for claimed time
 		err = repo.Create(context.Background(), newJob)
 		require.NoError(t, err)
@@ -288,7 +288,7 @@ func TestJobRepository(t *testing.T) {
 		// Verify the recent job was not returned as timed out
 		updatedNewJob, err := repo.FindByID(context.Background(), newJob.ID)
 		require.NoError(t, err)
-		assert.Equal(t, domain.JobProcessing, updatedNewJob.State)
+		assert.Equal(t, domain.JobProcessing, updatedNewJob.Status)
 		assert.NotContains(t, timedOutJobs, newJob.ID)
 	})
 
@@ -298,25 +298,25 @@ func TestJobRepository(t *testing.T) {
 
 		// Create jobs with completion times at different intervals
 		oldCompletedJob := domain.NewJob(service, domain.ServiceActionStop, 1)
-		oldCompletedJob.State = domain.JobCompleted
+		oldCompletedJob.Status = domain.JobCompleted
 		oldCompletedTime := now.Add(-48 * time.Hour) // 2 days ago
 		oldCompletedJob.CompletedAt = &oldCompletedTime
 		require.NoError(t, repo.Create(context.Background(), oldCompletedJob))
 
 		oldFailedJob := domain.NewJob(service, domain.ServiceActionStart, 1)
-		oldFailedJob.State = domain.JobFailed
+		oldFailedJob.Status = domain.JobFailed
 		oldFailedTime := now.Add(-36 * time.Hour) // 1.5 days ago
 		oldFailedJob.CompletedAt = &oldFailedTime
 		require.NoError(t, repo.Create(context.Background(), oldFailedJob))
 
 		recentCompletedJob := domain.NewJob(service, domain.ServiceActionHotUpdate, 1)
-		recentCompletedJob.State = domain.JobCompleted
+		recentCompletedJob.Status = domain.JobCompleted
 		recentCompletedTime := now.Add(-12 * time.Hour) // 12 hours ago
 		recentCompletedJob.CompletedAt = &recentCompletedTime
 		require.NoError(t, repo.Create(context.Background(), recentCompletedJob))
 
 		pendingJob := domain.NewJob(service, domain.ServiceActionHotUpdate, 1)
-		pendingJob.State = domain.JobPending
+		pendingJob.Status = domain.JobPending
 		require.NoError(t, repo.Create(context.Background(), pendingJob))
 
 		// Call DeleteOldCompletedJobs with a 24-hour threshold

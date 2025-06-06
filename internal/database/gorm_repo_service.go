@@ -14,8 +14,8 @@ type GormServiceRepository struct {
 }
 
 var applyServiceFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"name":         stringInFilterFieldApplier("services.name"),
-	"currentState": parserInFilterFieldApplier("services.current_state", domain.ParseServiceState),
+	"name":          stringInFilterFieldApplier("services.name"),
+	"currentStatus": parserInFilterFieldApplier("services.current_status", domain.ParseServiceStatus),
 })
 
 var applyServiceSort = mapSortApplier(map[string]string{

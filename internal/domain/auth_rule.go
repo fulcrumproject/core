@@ -106,7 +106,7 @@ var defaultAuthzRules = []AuthRule{
 	{Subject: SubjectAgent, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 	{Subject: SubjectAgent, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 	{Subject: SubjectAgent, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
-	{Subject: SubjectAgent, Action: ActionUpdateState, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant, RoleAgent}},
+	{Subject: SubjectAgent, Action: ActionUpdateStatus, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant, RoleAgent}},
 
 	// AgentType permissions
 	{Subject: SubjectAgentType, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant, RoleAgent}},

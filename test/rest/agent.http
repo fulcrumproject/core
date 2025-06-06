@@ -11,7 +11,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Agent Provider",
-    "state": "Enabled",
+    "status": "Enabled",
     "countryCode": "US",
     "attributes": {
         "type": ["test"]
@@ -62,7 +62,7 @@ PUT {{baseUrl}}/agents/me/status
 Authorization: Bearer {{agentToken}}
 
 {
-    "state": "Connected"
+    "status": "Connected"
 }
 
 ### Get an agent by ID
@@ -78,7 +78,7 @@ GET {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
 
 ### List agents with filters
-GET {{baseUrl}}/agents?state=Connected&countryCode=US
+GET {{baseUrl}}/agents?status=Connected&countryCode=US
 Authorization: Bearer {{adminToken}}
 
 ### List agents for specific provider
@@ -91,7 +91,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Agent Updated",
-    "state": "Disconnected",
+    "status": "Disconnected",
     "countryCode": "UK",
     "attributes": {
         "environment": ["staging"],
@@ -118,7 +118,7 @@ PUT {{baseUrl}}/agents/me/status
 Authorization: Bearer {{newAgentToken}}
 
 {
-    "state": "Connected"
+    "status": "Connected"
 }
 
 ### Test new token by getting agent information with rotated token

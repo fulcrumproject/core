@@ -47,7 +47,7 @@ func TestJobHandleList(t *testing.T) {
 								AgentID:    uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
 								ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 								Action:     domain.ServiceActionCreate,
-								State:      domain.JobPending,
+								Status:     domain.JobPending,
 								Priority:   1,
 							},
 						},
@@ -145,7 +145,7 @@ func TestJobHandleList(t *testing.T) {
 					firstItem := items[0].(map[string]interface{})
 					assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", firstItem["id"])
 					assert.Equal(t, "ServiceCreate", firstItem["action"])
-					assert.Equal(t, "Pending", firstItem["state"])
+					assert.Equal(t, "Pending", firstItem["status"])
 				}
 			}
 		})
@@ -184,7 +184,7 @@ func TestJobHandleGet(t *testing.T) {
 						AgentID:    uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
 						ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 						Action:     domain.ServiceActionCreate,
-						State:      domain.JobPending,
+						Status:     domain.JobPending,
 						Priority:   1,
 					}, nil
 				}
@@ -281,7 +281,7 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 							AgentID:    agentID,
 							ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 							Action:     domain.ServiceActionCreate,
-							State:      domain.JobPending,
+							Status:     domain.JobPending,
 							Priority:   1,
 						},
 						{
@@ -295,7 +295,7 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 							AgentID:    agentID,
 							ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 							Action:     domain.ServiceActionDelete,
-							State:      domain.JobPending,
+							Status:     domain.JobPending,
 							Priority:   2,
 						},
 					}, nil
@@ -626,7 +626,7 @@ func TestJobToResponse(t *testing.T) {
 		AgentID:      uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
 		ServiceID:    uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
 		Action:       domain.ServiceActionCreate,
-		State:        domain.JobProcessing,
+		Status:       domain.JobProcessing,
 		Priority:     1,
 		ClaimedAt:    &claimedAt,
 		ErrorMessage: "",
@@ -642,7 +642,7 @@ func TestJobToResponse(t *testing.T) {
 	assert.Equal(t, "850e8400-e29b-41d4-a716-446655440000", response.AgentID.String())
 	assert.Equal(t, "950e8400-e29b-41d4-a716-446655440000", response.ServiceID.String())
 	assert.Equal(t, domain.ServiceActionCreate, response.Action)
-	assert.Equal(t, domain.JobProcessing, response.State)
+	assert.Equal(t, domain.JobProcessing, response.Status)
 	assert.Equal(t, 1, response.Priority)
 	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(updatedAt), response.UpdatedAt)

@@ -7,80 +7,80 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestServiceState_Validate(t *testing.T) {
+func TestServiceStatus_Validate(t *testing.T) {
 	tests := []struct {
 		name       string
-		state      ServiceState
+		status     ServiceStatus
 		wantErr    bool
 		errMessage string
 	}{
 		{
-			name:    "Valid Creating state",
-			state:   ServiceCreating,
+			name:    "Valid Creating status",
+			status:  ServiceCreating,
 			wantErr: false,
 		},
 		{
-			name:    "Valid Created state",
-			state:   ServiceCreated,
+			name:    "Valid Created status",
+			status:  ServiceCreated,
 			wantErr: false,
 		},
 		{
-			name:    "Valid Starting state",
-			state:   ServiceStarting,
+			name:    "Valid Starting status",
+			status:  ServiceStarting,
 			wantErr: false,
 		},
 		{
-			name:    "Valid Started state",
-			state:   ServiceStarted,
+			name:    "Valid Started status",
+			status:  ServiceStarted,
 			wantErr: false,
 		},
 		{
-			name:    "Valid Stopping state",
-			state:   ServiceStopping,
+			name:    "Valid Stopping status",
+			status:  ServiceStopping,
 			wantErr: false,
 		},
 		{
-			name:    "Valid Stopped state",
-			state:   ServiceStopped,
+			name:    "Valid Stopped status",
+			status:  ServiceStopped,
 			wantErr: false,
 		},
 		{
-			name:    "Valid HotUpdating state",
-			state:   ServiceHotUpdating,
+			name:    "Valid HotUpdating status",
+			status:  ServiceHotUpdating,
 			wantErr: false,
 		},
 		{
-			name:    "Valid ColdUpdating state",
-			state:   ServiceColdUpdating,
+			name:    "Valid ColdUpdating status",
+			status:  ServiceColdUpdating,
 			wantErr: false,
 		},
 		{
-			name:    "Valid Deleting state",
-			state:   ServiceDeleting,
+			name:    "Valid Deleting status",
+			status:  ServiceDeleting,
 			wantErr: false,
 		},
 		{
-			name:    "Valid Deleted state",
-			state:   ServiceDeleted,
+			name:    "Valid Deleted status",
+			status:  ServiceDeleted,
 			wantErr: false,
 		},
 		{
-			name:       "Invalid state",
-			state:      "InvalidState",
+			name:       "Invalid status",
+			status:     "InvalidStatus",
 			wantErr:    true,
-			errMessage: "invalid service state",
+			errMessage: "invalid service status",
 		},
 		{
-			name:       "Empty state",
-			state:      "",
+			name:       "Empty status",
+			status:     "",
 			wantErr:    true,
-			errMessage: "invalid service state",
+			errMessage: "invalid service status",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.state.Validate()
+			err := tt.status.Validate()
 			if tt.wantErr {
 				assert.Error(t, err)
 				if tt.errMessage != "" {
@@ -93,58 +93,58 @@ func TestServiceState_Validate(t *testing.T) {
 	}
 }
 
-func TestParseServiceState(t *testing.T) {
+func TestParseServiceStatus(t *testing.T) {
 	tests := []struct {
 		name       string
 		input      string
-		want       ServiceState
+		want       ServiceStatus
 		wantErr    bool
 		errMessage string
 	}{
 		{
-			name:    "Valid Creating state",
+			name:    "Valid Creating status",
 			input:   "Creating",
 			want:    ServiceCreating,
 			wantErr: false,
 		},
 		{
-			name:    "Valid Created state",
+			name:    "Valid Created status",
 			input:   "Created",
 			want:    ServiceCreated,
 			wantErr: false,
 		},
 		{
-			name:    "Valid Started state",
+			name:    "Valid Started status",
 			input:   "Started",
 			want:    ServiceStarted,
 			wantErr: false,
 		},
 		{
-			name:       "Invalid state",
-			input:      "InvalidState",
+			name:       "Invalid status",
+			input:      "InvalidStatus",
 			wantErr:    true,
-			errMessage: "invalid service state",
+			errMessage: "invalid service status",
 		},
 		{
-			name:       "Empty state",
+			name:       "Empty status",
 			input:      "",
 			wantErr:    true,
-			errMessage: "invalid service state",
+			errMessage: "invalid service status",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			state, err := ParseServiceState(tt.input)
+			status, err := ParseServiceStatus(tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 				if tt.errMessage != "" {
 					assert.Contains(t, err.Error(), tt.errMessage)
 				}
-				assert.Equal(t, ServiceState(""), state)
+				assert.Equal(t, ServiceStatus(""), status)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.want, state)
+				assert.Equal(t, tt.want, status)
 			}
 		})
 	}
@@ -157,7 +157,7 @@ func TestService_TableName(t *testing.T) {
 
 func TestService_Validate(t *testing.T) {
 	validID := uuid.New()
-	createdState := ServiceCreated
+	createdStatus := ServiceCreated
 
 	tests := []struct {
 		name       string
@@ -169,7 +169,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Valid service",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
+				CurrentStatus: ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -182,7 +182,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Empty name",
 			service: &Service{
 				Name:          "",
-				CurrentState:  ServiceCreated,
+				CurrentStatus: ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -193,10 +193,10 @@ func TestService_Validate(t *testing.T) {
 			errMessage: "service name cannot be empty",
 		},
 		{
-			name: "Invalid current state",
+			name: "Invalid current status",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  "InvalidState",
+				CurrentStatus: "InvalidStatus",
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -204,14 +204,14 @@ func TestService_Validate(t *testing.T) {
 				ConsumerID:    validID,
 			},
 			wantErr:    true,
-			errMessage: "invalid service state",
+			errMessage: "invalid service status",
 		},
 		{
-			name: "Invalid target state",
+			name: "Invalid target status",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
-				TargetState:   (*ServiceState)(stringPtr("InvalidState")),
+				CurrentStatus: ServiceCreated,
+				TargetStatus:  (*ServiceStatus)(stringPtr("InvalidStatus")),
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -219,14 +219,14 @@ func TestService_Validate(t *testing.T) {
 				ConsumerID:    validID,
 			},
 			wantErr:    true,
-			errMessage: "invalid service state",
+			errMessage: "invalid service status",
 		},
 		{
-			name: "Valid target state",
+			name: "Valid target status",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
-				TargetState:   &createdState,
+				CurrentStatus: ServiceCreated,
+				TargetStatus:  &createdStatus,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -239,7 +239,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Nil group ID",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
+				CurrentStatus: ServiceCreated,
 				GroupID:       uuid.Nil,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -253,7 +253,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Nil agent ID",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
+				CurrentStatus: ServiceCreated,
 				GroupID:       validID,
 				AgentID:       uuid.Nil,
 				ServiceTypeID: validID,
@@ -267,7 +267,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Nil service type ID",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
+				CurrentStatus: ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: uuid.Nil,
@@ -281,7 +281,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With valid attributes",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
+				CurrentStatus: ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -295,7 +295,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With invalid attributes",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
+				CurrentStatus: ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -310,7 +310,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With properties",
 			service: &Service{
 				Name:              "Web Server",
-				CurrentState:      ServiceCreated,
+				CurrentStatus:     ServiceCreated,
 				GroupID:           validID,
 				AgentID:           validID,
 				ServiceTypeID:     validID,
@@ -325,7 +325,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With external ID",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
+				CurrentStatus: ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -339,7 +339,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With resources",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
+				CurrentStatus: ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -353,7 +353,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With error message",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
+				CurrentStatus: ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -367,7 +367,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With failed action",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentState:  ServiceCreated,
+				CurrentStatus: ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -394,74 +394,74 @@ func TestService_Validate(t *testing.T) {
 	}
 }
 
-func TestServiceNextStateAndAction(t *testing.T) {
+func TestServiceNextStatusAndAction(t *testing.T) {
 	tests := []struct {
-		name         string
-		currentState ServiceState
-		targetState  ServiceState
-		wantState    ServiceState
-		wantAction   ServiceAction
-		wantErr      bool
-		errMessage   string
+		name          string
+		currentStatus ServiceStatus
+		targetStatus  ServiceStatus
+		wantStatus    ServiceStatus
+		wantAction    ServiceAction
+		wantErr       bool
+		errMessage    string
 	}{
 		{
-			name:         "Created to Started",
-			currentState: ServiceCreated,
-			targetState:  ServiceStarted,
-			wantState:    ServiceStarting,
-			wantAction:   ServiceActionStart,
-			wantErr:      false,
+			name:          "Created to Started",
+			currentStatus: ServiceCreated,
+			targetStatus:  ServiceStarted,
+			wantStatus:    ServiceStarting,
+			wantAction:    ServiceActionStart,
+			wantErr:       false,
 		},
 		{
-			name:         "Started to Stopped",
-			currentState: ServiceStarted,
-			targetState:  ServiceStopped,
-			wantState:    ServiceStopping,
-			wantAction:   ServiceActionStop,
-			wantErr:      false,
+			name:          "Started to Stopped",
+			currentStatus: ServiceStarted,
+			targetStatus:  ServiceStopped,
+			wantStatus:    ServiceStopping,
+			wantAction:    ServiceActionStop,
+			wantErr:       false,
 		},
 		{
-			name:         "Stopped to Started",
-			currentState: ServiceStopped,
-			targetState:  ServiceStarted,
-			wantState:    ServiceStarting,
-			wantAction:   ServiceActionStart,
-			wantErr:      false,
+			name:          "Stopped to Started",
+			currentStatus: ServiceStopped,
+			targetStatus:  ServiceStarted,
+			wantStatus:    ServiceStarting,
+			wantAction:    ServiceActionStart,
+			wantErr:       false,
 		},
 		{
-			name:         "Stopped to Deleted",
-			currentState: ServiceStopped,
-			targetState:  ServiceDeleted,
-			wantState:    ServiceDeleting,
-			wantAction:   ServiceActionDelete,
-			wantErr:      false,
+			name:          "Stopped to Deleted",
+			currentStatus: ServiceStopped,
+			targetStatus:  ServiceDeleted,
+			wantStatus:    ServiceDeleting,
+			wantAction:    ServiceActionDelete,
+			wantErr:       false,
 		},
 		{
-			name:         "Invalid transition",
-			currentState: ServiceStarting,
-			targetState:  ServiceStopped,
-			wantErr:      true,
-			errMessage:   "invalid transition",
+			name:          "Invalid transition",
+			currentStatus: ServiceStarting,
+			targetStatus:  ServiceStopped,
+			wantErr:       true,
+			errMessage:    "invalid transition",
 		},
 		{
-			name:         "Invalid - Started to Deleted",
-			currentState: ServiceStarted,
-			targetState:  ServiceDeleted,
-			wantErr:      true,
-			errMessage:   "invalid transition",
+			name:          "Invalid - Started to Deleted",
+			currentStatus: ServiceStarted,
+			targetStatus:  ServiceDeleted,
+			wantErr:       true,
+			errMessage:    "invalid transition",
 		},
 		{
-			name:         "Invalid - Creating to Stopped",
-			currentState: ServiceCreating,
-			targetState:  ServiceStopped,
-			wantErr:      true,
-			errMessage:   "invalid transition",
+			name:          "Invalid - Creating to Stopped",
+			currentStatus: ServiceCreating,
+			targetStatus:  ServiceStopped,
+			wantErr:       true,
+			errMessage:    "invalid transition",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			state, action, err := serviceNextStateAndAction(tt.currentState, tt.targetState)
+			status, action, err := serviceNextStatusAndAction(tt.currentStatus, tt.targetStatus)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -470,53 +470,53 @@ func TestServiceNextStateAndAction(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantState, state)
+				assert.Equal(t, tt.wantStatus, status)
 				assert.Equal(t, tt.wantAction, action)
 			}
 		})
 	}
 }
 
-func TestServiceUpdateNextStateAndAction(t *testing.T) {
+func TestServiceUpdateNextStatusAndAction(t *testing.T) {
 	tests := []struct {
-		name         string
-		currentState ServiceState
-		wantState    ServiceState
-		wantAction   ServiceAction
-		wantErr      bool
-		errMessage   string
+		name          string
+		currentStatus ServiceStatus
+		wantStatus    ServiceStatus
+		wantAction    ServiceAction
+		wantErr       bool
+		errMessage    string
 	}{
 		{
-			name:         "Stopped to ColdUpdating",
-			currentState: ServiceStopped,
-			wantState:    ServiceColdUpdating,
-			wantAction:   ServiceActionColdUpdate,
-			wantErr:      false,
+			name:          "Stopped to ColdUpdating",
+			currentStatus: ServiceStopped,
+			wantStatus:    ServiceColdUpdating,
+			wantAction:    ServiceActionColdUpdate,
+			wantErr:       false,
 		},
 		{
-			name:         "Started to HotUpdating",
-			currentState: ServiceStarted,
-			wantState:    ServiceHotUpdating,
-			wantAction:   ServiceActionHotUpdate,
-			wantErr:      false,
+			name:          "Started to HotUpdating",
+			currentStatus: ServiceStarted,
+			wantStatus:    ServiceHotUpdating,
+			wantAction:    ServiceActionHotUpdate,
+			wantErr:       false,
 		},
 		{
-			name:         "Invalid - Creating",
-			currentState: ServiceCreating,
-			wantErr:      true,
-			errMessage:   "cannot update attributes",
+			name:          "Invalid - Creating",
+			currentStatus: ServiceCreating,
+			wantErr:       true,
+			errMessage:    "cannot update attributes",
 		},
 		{
-			name:         "Invalid - Deleting",
-			currentState: ServiceDeleting,
-			wantErr:      true,
-			errMessage:   "cannot update attributes",
+			name:          "Invalid - Deleting",
+			currentStatus: ServiceDeleting,
+			wantErr:       true,
+			errMessage:    "cannot update attributes",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			state, action, err := serviceUpdateNextStateAndAction(tt.currentState)
+			status, action, err := serviceUpdateNextStatusAndAction(tt.currentStatus)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -525,7 +525,7 @@ func TestServiceUpdateNextStateAndAction(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantState, state)
+				assert.Equal(t, tt.wantStatus, status)
 				assert.Equal(t, tt.wantAction, action)
 			}
 		})

@@ -129,7 +129,7 @@ classDiagram
         class Participant {
             id : UUID
             name : string
-            state : enum[Enabled|Disabled]
+            status : enum[Enabled|Disabled]
             countryCode : string 
             attributes : map[string]string[]
             createdAt : datetime
@@ -153,10 +153,10 @@ classDiagram
         class Agent {
             id : UUID
             name : string
-            state : enum[New|Connected|Disconnected|Error|Disabled]
+            status : enum[New|Connected|Disconnected|Error|Disabled]
             countryCode : string
             attributes : map[string]string[]
-            lastStateUpdate : datetime
+            lastStatusUpdate : datetime
             createdAt : datetime
             updatedAt : datetime
         }
@@ -167,8 +167,8 @@ classDiagram
             id : UUID
             externalId : string
             name : string
-            currentState : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]
-            targetState : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]
+            currentStatus : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]
+            targetStatus : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]
             errorMessage : string
             failedAction : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
             retryCount : int
@@ -192,7 +192,7 @@ classDiagram
         class Job {
             id : UUID
             action : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
-            state : enum[Pending,Processing,Completed,Failed]
+            status : enum[Pending,Processing,Completed,Failed]
             agentId : UUID
             serviceId : UUID
             priority : int
@@ -248,8 +248,8 @@ classDiagram
         }
     }
 
-    note for Service "Service has a sophisticated state management system with:
-    - Current and target states
+    note for Service "Service has a sophisticated status management system with:
+    - Current and target statuss
     - Error handling
     - Support for hot and cold updates"
 
@@ -268,7 +268,7 @@ classDiagram
     - Hot/cold updating services
     - Deleting services
     
-    Each job transitions service state appropriately"
+    Each job transitions service status appropriately"
 ```
 
 #### Entities
@@ -278,7 +278,7 @@ classDiagram
 1. **Participant**
    - Unified entity replacing the separate Provider and Consumer entities
    - Represents an entity that can act as both a service provider and consumer
-   - Has name and operational state (Enabled/Disabled)
+   - Has name and operational status (Enabled/Disabled)
    - Contains geographical information via country code
    - Stores flexible metadata through custom attributes
    - Has many agents deployed within its infrastructure (when acting as a provider)
@@ -288,15 +288,15 @@ classDiagram
 2. **Agent**
    - Deployed software component that manages services
    - Belongs to a specific Participant (acting as provider) and AgentType
-   - Tracks connectivity state (New, Connected, Disconnected, Error, Disabled)
+   - Tracks connectivity status (New, Connected, Disconnected, Error, Disabled)
    - Uses secure token-based authentication (via Token entity)
-   - Tracks last state update timestamp
+   - Tracks last status update timestamp
    - Processes jobs from the job queue to perform service operations
 
 3. **Service**
    - Cloud resource managed by an agent
-   - Sophisticated state management with current and target states
-   - State transitions: Creating → Created → Starting → Started → Stopping → Stopped → Deleting → Deleted
+   - Sophisticated status management with current and target statuss
+   - Status transitions: Creating → Created → Starting → Started → Stopping → Stopped → Deleting → Deleted
    - Supports both hot updates (while running) and cold updates (while stopped)
    - Tracks failed operations with error messages and retry counts
    - Contains attributes for metadata about the service
@@ -305,7 +305,7 @@ classDiagram
    - Can be linked to a consumer participant via ConsumerParticipantID (optional)
 
    Properties vs Attributes:
-   - Properties: JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger state transitions (hot or cold update depending on current state).
+   - Properties: JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger status transitions (hot or cold update depending on current status).
    - Attributes: Metadata about the service that is set during creation and remains static throughout the service lifecycle. Used for participant and agent selection during service creation and more generally for identification, categorization, and filtering.
 
 4. **AgentType**
@@ -325,7 +325,7 @@ classDiagram
 7. **Job**
    - Represents a discrete operation to be performed by an agent
    - Action types match service transitions: Create, Start, Stop, HotUpdate, ColdUpdate, Delete
-   - Lifecycle states: Pending → Processing → Completed/Failed
+   - Lifecycle statuss: Pending → Processing → Completed/Failed
    - Prioritizes operations for execution order
    - Tracks execution timing through claimedAt and completedAt
    - Records error details for failed operations
@@ -386,9 +386,9 @@ For detailed information about the system's architecture, layers, and implementa
 
 ### Services, Agents, and Jobs
 
-#### Service State Transitions
+#### Service Status Transitions
 
-The following diagram illustrates the various states a service can transition through during its lifecycle:
+The following diagram illustrates the various statuss a service can transition through during its lifecycle:
 
 ```mermaid
 stateDiagram-v2
@@ -434,7 +434,7 @@ sequenceDiagram
 
 #### Job Management Flow
 
-Job states and transitions can be visualized as follows:
+Job statuss and transitions can be visualized as follows:
 
 ```mermaid
 stateDiagram-v2
@@ -457,7 +457,7 @@ sequenceDiagram
 
     %% Job Creation
     Client->>API: Request service operation (create/update/delete)
-    API->>API: Update service state (transitioning)
+    API->>API: Update service status (transitioning)
     API->>API: Create pending job
     API-->>Client: Return response with job ID
 
@@ -467,7 +467,7 @@ sequenceDiagram
     API-->>Agent: Return list of pending jobs
     
     Agent->>API: Claim job (POST /jobs/{id}/claim)
-    API->>API: Update job state to Processing
+    API->>API: Update job status to Processing
     API-->>Agent: Confirm job claimed
 
     %% Job Execution
@@ -478,15 +478,15 @@ sequenceDiagram
     alt Successful Operation
         MS-->>Agent: Operation succeeded
         Agent->>API: Complete job (POST /jobs/{id}/complete)
-        API->>API: Update job state to Completed
-        API->>API: Update service state
+        API->>API: Update job status to Completed
+        API->>API: Update service status
         API-->>Agent: Confirm job completed
 
     %% Failed Operation Path
     else Failed Operation
         MS-->>Agent: Operation failed with error
         Agent->>API: Fail job (POST /jobs/{id}/fail)
-        API->>API: Update job state to Failed and record error
+        API->>API: Update job status to Failed and record error
         API->>API: Update service with error info
         API-->>Agent: Confirm job failed
     end
@@ -497,32 +497,32 @@ The job management process follows these steps:
 
 1. **Job Creation**: 
    - When a service operation (create, update, delete) is initiated via the API
-   - The ServiceCommander creates a job with state "Pending"
+   - The ServiceCommander creates a job with status "Pending"
    - The job is assigned to the appropriate agent
    - Job contains all necessary data to perform the operation
 
 2. **Job Polling and Claiming**:
    - Agents periodically poll `/api/v1/jobs/pending` for new jobs
    - When a job is available, the agent claims it using `/api/v1/jobs/{id}/claim`
-   - The job state changes to "Processing"
+   - The job status changes to "Processing"
    - A timestamp is recorded in the `claimedAt` field
 
 3. **Job Processing**:
    - The agent performs the requested operation on the cloud participant
    - The agent maintains a secure connection with the job queue using token-based authentication
-   - During processing, the service state reflects the operation (Creating, Starting, Stopping, HotUpdating, ColdUpdating, Deleting)
+   - During processing, the service status reflects the operation (Creating, Starting, Stopping, HotUpdating, ColdUpdating, Deleting)
 
 4. **Job Completion**:
    - On successful completion, the agent calls `/api/v1/jobs/{id}/complete` with result data
-   - The job state changes to "Completed"
+   - The job status changes to "Completed"
    - A timestamp is recorded in the `completedAt` field
-   - The service state is updated accordingly (Created, Started, Stopped, Deleted)
+   - The service status is updated accordingly (Created, Started, Stopped, Deleted)
    - For property updates, the `currentProperties` are set to match the `targetProperties` upon successful completion
 
 5. **Job Failure Handling**:
    - If an operation fails, the agent calls `/api/v1/jobs/{id}/fail` with error details
-   - The job state changes to "Failed"
-   - The service state is updated to reflect the error
+   - The job status changes to "Failed"
+   - The service status is updated to reflect the error
    - Jobs may be automatically retried based on error type and configured policies
 
 6. **Job Maintenance**:

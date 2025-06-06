@@ -50,7 +50,7 @@ type UpdateServiceRequest struct {
 	Properties *domain.JSON `json:"properties,omitempty"`
 }
 
-// ServiceActionRequest represents a state transition request
+// ServiceActionRequest represents a status transition request
 type ServiceActionRequest struct {
 	Action string `json:"action"`
 }
@@ -227,7 +227,7 @@ func (h *ServiceHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 	h.handleTransition(w, r, domain.ServiceDeleted)
 }
 
-func (h *ServiceHandler) handleTransition(w http.ResponseWriter, r *http.Request, t domain.ServiceState) {
+func (h *ServiceHandler) handleTransition(w http.ResponseWriter, r *http.Request, t domain.ServiceStatus) {
 	id := MustGetID(r.Context())
 
 	if _, err := h.commander.Transition(r.Context(), id, t); err != nil {
@@ -258,8 +258,8 @@ type ServiceResponse struct {
 	ExternalID        *string               `json:"externalId,omitempty"`
 	Name              string                `json:"name"`
 	Attributes        domain.Attributes     `json:"attributes"`
-	CurrentState      domain.ServiceState   `json:"currentState"`
-	TargetState       *domain.ServiceState  `json:"targetState,omitempty"`
+	CurrentStatus     domain.ServiceStatus  `json:"currentStatus"`
+	TargetStatus      *domain.ServiceStatus `json:"targetStatus,omitempty"`
 	FailedAction      *domain.ServiceAction `json:"failedAction,omitempty"`
 	ErrorMessage      *string               `json:"errorMessage,omitempty"`
 	RetryCount        int                   `json:"retryCount,omitempty"`
@@ -282,8 +282,8 @@ func serviceToResponse(s *domain.Service) *ServiceResponse {
 		ExternalID:        s.ExternalID,
 		Name:              s.Name,
 		Attributes:        s.Attributes,
-		CurrentState:      s.CurrentState,
-		TargetState:       s.TargetState,
+		CurrentStatus:     s.CurrentStatus,
+		TargetStatus:      s.TargetStatus,
 		FailedAction:      s.FailedAction,
 		ErrorMessage:      s.ErrorMessage,
 		RetryCount:        s.RetryCount,

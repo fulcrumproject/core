@@ -35,7 +35,7 @@ func TestServiceRepository(t *testing.T) {
 	agentRepo := NewAgentRepository(testDB.DB)
 	agent := &domain.Agent{
 		Name:        "Test Agent",
-		State:       domain.AgentConnected,
+		Status:      domain.AgentConnected,
 		ProviderID:  provider.ID,
 		AgentTypeID: agentType.ID,
 	}
@@ -54,7 +54,7 @@ func TestServiceRepository(t *testing.T) {
 	t.Run("Create", func(t *testing.T) {
 		service := &domain.Service{
 			Name:              "Test Service",
-			CurrentState:      domain.ServiceStarted,
+			CurrentStatus:     domain.ServiceStarted,
 			CurrentProperties: &(domain.JSON{"key": "value"}),
 			Resources:         &(domain.JSON{"cpu": "1"}),
 			AgentID:           agent.ID,
@@ -75,7 +75,7 @@ func TestServiceRepository(t *testing.T) {
 		// Create a service
 		service := &domain.Service{
 			Name:              "Test Service",
-			CurrentState:      domain.ServiceStarted,
+			CurrentStatus:     domain.ServiceStarted,
 			CurrentProperties: &(domain.JSON{"key": "value"}),
 			Attributes:        domain.Attributes{"key": []string{"value"}},
 			Resources:         &(domain.JSON{"cpu": "1"}),
@@ -93,7 +93,7 @@ func TestServiceRepository(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, service.ID, found.ID)
 		assert.Equal(t, service.Name, found.Name)
-		assert.Equal(t, service.CurrentState, found.CurrentState)
+		assert.Equal(t, service.CurrentStatus, found.CurrentStatus)
 		assert.Equal(t, service.CurrentProperties, found.CurrentProperties)
 		assert.Equal(t, &(domain.JSON{"cpu": "1"}), found.Resources)
 		assert.Equal(t, service.AgentID, found.AgentID)
@@ -117,7 +117,7 @@ func TestServiceRepository(t *testing.T) {
 		// Create a service
 		service := &domain.Service{
 			Name:              "Test Service",
-			CurrentState:      domain.ServiceStarted,
+			CurrentStatus:     domain.ServiceStarted,
 			CurrentProperties: &(domain.JSON{"key": "value"}),
 			Attributes:        domain.Attributes{"key": []string{"value"}},
 			Resources:         &(domain.JSON{"cpu": "1"}),
@@ -132,7 +132,7 @@ func TestServiceRepository(t *testing.T) {
 
 		// Update the service
 		service.Name = "Updated Service"
-		service.CurrentState = domain.ServiceStarted
+		service.CurrentStatus = domain.ServiceStarted
 		service.CurrentProperties = &(domain.JSON{"key": "value"})
 		service.Resources = &(domain.JSON{"cpu": "2"})
 
@@ -143,7 +143,7 @@ func TestServiceRepository(t *testing.T) {
 		found, err := repo.FindByID(context.Background(), service.ID)
 		require.NoError(t, err)
 		assert.Equal(t, "Updated Service", found.Name)
-		assert.Equal(t, domain.ServiceStarted, found.CurrentState)
+		assert.Equal(t, domain.ServiceStarted, found.CurrentStatus)
 		assert.Equal(t, &(domain.JSON{"key": "value"}), found.CurrentProperties)
 		assert.Equal(t, &(domain.JSON{"cpu": "2"}), found.Resources)
 	})
@@ -152,7 +152,7 @@ func TestServiceRepository(t *testing.T) {
 		// Create a service
 		service := &domain.Service{
 			Name:          "Test Service",
-			CurrentState:  domain.ServiceStarted,
+			CurrentStatus: domain.ServiceStarted,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID, // Set ProviderID
 			ConsumerID:    consumer.ID, // Set ConsumerID
@@ -177,9 +177,9 @@ func TestServiceRepository(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
 			// Create multiple services
 			services := []*domain.Service{
-				{Name: "Service A", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-				{Name: "Service B", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-				{Name: "Service C", CurrentState: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service A", CurrentStatus: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service B", CurrentStatus: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service C", CurrentStatus: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
 			}
 			for _, service := range services {
 				err := repo.Create(context.Background(), service)
@@ -213,18 +213,18 @@ func TestServiceRepository(t *testing.T) {
 			assert.Equal(t, "Service A", result.Items[0].Name)
 		})
 
-		t.Run("success - list with state filter", func(t *testing.T) {
+		t.Run("success - list with status filter", func(t *testing.T) {
 			page := &domain.PageRequest{
 				Page:     1,
 				PageSize: 10,
-				Filters:  map[string][]string{"currentState": {string(domain.ServiceStarted)}},
+				Filters:  map[string][]string{"currentStatus": {string(domain.ServiceStarted)}},
 			}
 
 			result, err := repo.List(context.Background(), &domain.EmptyAuthIdentityScope, page)
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 1)
 			for _, item := range result.Items {
-				assert.Equal(t, domain.ServiceStarted, item.CurrentState)
+				assert.Equal(t, domain.ServiceStarted, item.CurrentStatus)
 			}
 		})
 
@@ -251,7 +251,7 @@ func TestServiceRepository(t *testing.T) {
 			for i := 0; i < 5; i++ {
 				service := &domain.Service{
 					Name:          "Paginated Service",
-					CurrentState:  domain.ServiceStarted,
+					CurrentStatus: domain.ServiceStarted,
 					ProviderID:    provider.ID, // Set ProviderID
 					ConsumerID:    consumer.ID, // Set ConsumerID
 					AgentID:       agent.ID,
@@ -289,7 +289,7 @@ func TestServiceRepository(t *testing.T) {
 		// Create a service in the group
 		service := &domain.Service{
 			Name:          "Group Test Service",
-			CurrentState:  domain.ServiceStarted,
+			CurrentStatus: domain.ServiceStarted,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID, // Set ProviderID
 			ConsumerID:    consumer.ID, // Set ConsumerID
@@ -314,7 +314,7 @@ func TestServiceRepository(t *testing.T) {
 		// Create a service for the agent
 		service := &domain.Service{
 			Name:          "Agent Test Service",
-			CurrentState:  domain.ServiceStarted,
+			CurrentStatus: domain.ServiceStarted,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID,
 			ConsumerID:    consumer.ID,
@@ -341,7 +341,7 @@ func TestServiceRepository(t *testing.T) {
 		externalID := "ext-123456"
 		service := &domain.Service{
 			Name:          "External ID Test Service",
-			CurrentState:  domain.ServiceStarted,
+			CurrentStatus: domain.ServiceStarted,
 			ExternalID:    &externalID,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID,

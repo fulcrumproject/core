@@ -14,7 +14,7 @@ type GormParticipantRepository struct {
 
 var applyParticipantFilter = mapFilterApplier(map[string]FilterFieldApplier{
 	"name":        stringInFilterFieldApplier("name"),
-	"state":       parserInFilterFieldApplier("state", domain.ParseParticipantState),
+	"status":      parserInFilterFieldApplier("status", domain.ParseParticipantStatus),
 	"countryCode": parserInFilterFieldApplier("country_code", domain.ParseCountryCode),
 })
 
