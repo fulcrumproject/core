@@ -117,3 +117,7 @@ func (s *GormStore) MetricEntryRepo() domain.MetricEntryRepository {
 	}
 	return s.metricEntryRepo
 }
+
+func (s *GormStore) ServiceActionRepo() domain.ServiceActivationRepository {
+	panic("not yet implemented")
+}

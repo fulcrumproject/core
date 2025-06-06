@@ -144,6 +144,10 @@ func (m *MockStore) MetricEntryRepo() MetricEntryRepository {
 	return m.metricEntryRepo
 }
 
+func (s *MockStore) ServiceActionRepo() ServiceActivationRepository {
+	panic("not yet implemented")
+}
+
 // ParticipantRepo returns the ParticipantRepository
 func (m *MockStore) ParticipantRepo() ParticipantRepository {
 	if m.participantRepoFunc != nil {
