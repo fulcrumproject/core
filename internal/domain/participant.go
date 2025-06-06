@@ -9,6 +9,10 @@ import (
 type ParticipantStatus string
 
 const (
+	EventTypeParticipantCreated EventType = "participant_created"
+	EventTypeParticipantUpdated EventType = "participant_updated"
+	EventTypeParticipantDeleted EventType = "participant_deleted"
+
 	ParticipantEnabled  ParticipantStatus = "Enabled"
 	ParticipantDisabled ParticipantStatus = "Disabled"
 )

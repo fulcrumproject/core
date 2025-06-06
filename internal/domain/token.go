@@ -9,6 +9,13 @@ import (
 	"time"
 )
 
+const (
+	EventTypeTokenCreated     EventType = "token_created"
+	EventTypeTokenUpdated     EventType = "token_updated"
+	EventTypeTokenDeleted     EventType = "token_deleted"
+	EventTypeTokenRegenerated EventType = "token_regenerate"
+)
+
 // Token represents an authentication token
 type Token struct {
 	BaseEntity

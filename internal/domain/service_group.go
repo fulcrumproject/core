@@ -7,6 +7,12 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	EventTypeServiceGroupCreated EventType = "service_group_created"
+	EventTypeServiceGroupUpdated EventType = "service_group_updated"
+	EventTypeServiceGroupDeleted EventType = "service_group_deleted"
+)
+
 // ServiceGroup represents a group of related services
 type ServiceGroup struct {
 	BaseEntity

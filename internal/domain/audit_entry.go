@@ -22,41 +22,6 @@ const (
 	AuthorityTypeAgent       AuthorityType = "agent"
 )
 
-// Predefined event types
-const (
-	// Agent commands
-	EventTypeAgentCreated EventType = "agent_created"
-	EventTypeAgentUpdated EventType = "agent_updated"
-	EventTypeAgentDeleted EventType = "agent_deleted"
-
-	// Particpiant commands
-	EventTypeParticipantCreated EventType = "participant_created"
-	EventTypeParticipantUpdated EventType = "participant_updated"
-	EventTypeParticipantDeleted EventType = "participant_deleted"
-
-	// Service commands
-	EventTypeServiceCreated      EventType = "service_created"
-	EventTypeServiceUpdated      EventType = "service_updated"
-	EventTypeServiceTransitioned EventType = "service_transitioned"
-	EventTypeServiceRetried      EventType = "service_retried"
-
-	// ServiceGroup commands
-	EventTypeServiceGroupCreated EventType = "service_group_created"
-	EventTypeServiceGroupUpdated EventType = "service_group_updated"
-	EventTypeServiceGroupDeleted EventType = "service_group_deleted"
-
-	// Token commands
-	EventTypeTokenCreated     EventType = "token_created"
-	EventTypeTokenUpdated     EventType = "token_updated"
-	EventTypeTokenDeleted     EventType = "token_deleted"
-	EventTypeTokenRegenerated EventType = "token_regenerate"
-
-	// MetricType commands
-	EventTypeMetricTypeCreated EventType = "metric_type_created"
-	EventTypeMetricTypeUpdated EventType = "metric_type_updated"
-	EventTypeMetricTypeDeleted EventType = "metric_type_deleted"
-)
-
 // AuditEntry represents an audit log entry
 type AuditEntry struct {
 	BaseEntity

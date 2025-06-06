@@ -6,6 +6,12 @@ import (
 	"fmt"
 )
 
+const (
+	EventTypeMetricTypeCreated EventType = "metric_type_created"
+	EventTypeMetricTypeUpdated EventType = "metric_type_updated"
+	EventTypeMetricTypeDeleted EventType = "metric_type_deleted"
+)
+
 // MetricEntityType represents the possible types of entities that can be measured
 type MetricEntityType string
 

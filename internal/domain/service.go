@@ -14,6 +14,11 @@ import (
 type ServiceStatus string
 
 const (
+	EventTypeServiceCreated      EventType = "service_created"
+	EventTypeServiceUpdated      EventType = "service_updated"
+	EventTypeServiceTransitioned EventType = "service_transitioned"
+	EventTypeServiceRetried      EventType = "service_retried"
+
 	ServiceCreating     ServiceStatus = "Creating"
 	ServiceCreated      ServiceStatus = "Created"
 	ServiceStarting     ServiceStatus = "Starting"
@@ -76,16 +81,18 @@ type Service struct {
 	Resources *JSON `json:"resources,omitempty" gorm:"type:jsonb"`
 
 	// Relationships
-	ProviderID    UUID          `json:"providerId" gorm:"not null"`
-	Provider      *Participant  `json:"-" gorm:"foreignKey:ProviderID"`
-	ConsumerID    UUID          `json:"consumerId" gorm:"not null"`
-	Consumer      *Participant  `json:"-" gorm:"foreignKey:ConsumerID"`
-	GroupID       UUID          `gorm:"not null" json:"groupId"`
-	Group         *ServiceGroup `json:"-" gorm:"foreignKey:GroupID"`
-	AgentID       UUID          `json:"agentId" gorm:"not null"`
-	Agent         *Agent        `json:"-" gorm:"foreignKey:AgentID"`
-	ServiceTypeID UUID          `json:"serviceTypeId" gorm:"not null"`
-	ServiceType   *ServiceType  `json:"-" gorm:"foreignKey:ServiceTypeID"`
+	ProviderID          UUID               `json:"providerId" gorm:"not null"`
+	Provider            *Participant       `json:"-" gorm:"foreignKey:ProviderID"`
+	ConsumerID          UUID               `json:"consumerId" gorm:"not null"`
+	Consumer            *Participant       `json:"-" gorm:"foreignKey:ConsumerID"`
+	GroupID             UUID               `gorm:"not null" json:"groupId"`
+	Group               *ServiceGroup      `json:"-" gorm:"foreignKey:GroupID"`
+	AgentID             UUID               `json:"agentId" gorm:"not null"`
+	Agent               *Agent             `json:"-" gorm:"foreignKey:AgentID"`
+	ServiceTypeID       UUID               `json:"serviceTypeId" gorm:"not null"`
+	ServiceType         *ServiceType       `json:"-" gorm:"foreignKey:ServiceTypeID"`
+	ServiceActivationID *UUID              `json:"serviceActivationId,omitempty" gorm:"index"`
+	ServiceActivation   *ServiceActivation `json:"-" gorm:"foreignKey:ServiceActivationID"`
 }
 
 // NewService creates a new Service without validation
@@ -97,18 +104,20 @@ func NewService(
 	serviceTypeID UUID,
 	name string,
 	properties *JSON,
+	serviceActivationID *UUID,
 ) *Service {
 	target := ServiceCreated
 	return &Service{
-		ConsumerID:       consumerID,
-		GroupID:          groupID,
-		ProviderID:       providerID,
-		AgentID:          agentID,
-		ServiceTypeID:    serviceTypeID,
-		Name:             name,
-		CurrentStatus:    ServiceCreating,
-		TargetStatus:     &target,
-		TargetProperties: properties,
+		ConsumerID:          consumerID,
+		GroupID:             groupID,
+		ProviderID:          providerID,
+		AgentID:             agentID,
+		ServiceTypeID:       serviceTypeID,
+		Name:                name,
+		CurrentStatus:       ServiceCreating,
+		TargetStatus:        &target,
+		TargetProperties:    properties,
+		ServiceActivationID: serviceActivationID,
 	}
 }
 
@@ -293,6 +302,7 @@ func (s *serviceCommander) Create(
 		serviceTypeID,
 		name,
 		&properties,
+		nil, // ServiceActivationID is nil by default
 	)
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}

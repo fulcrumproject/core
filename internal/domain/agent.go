@@ -9,6 +9,12 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	EventTypeAgentCreated EventType = "agent_created"
+	EventTypeAgentUpdated EventType = "agent_updated"
+	EventTypeAgentDeleted EventType = "agent_deleted"
+)
+
 // AgentStatus represents the possible statuss of an Agent
 type AgentStatus string
 
