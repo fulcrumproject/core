@@ -46,7 +46,6 @@ func TestAgentRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, agent.Name, found.Name)
 			assert.Equal(t, agent.Status, found.Status)
-			assert.Equal(t, agent.CountryCode, found.CountryCode)
 			assert.Equal(t, agent.Attributes, found.Attributes)
 			assert.Equal(t, agent.ProviderID, found.ProviderID)
 			assert.Equal(t, agent.AgentTypeID, found.AgentTypeID)
@@ -206,7 +205,6 @@ func TestAgentRepository(t *testing.T) {
 			// Update agent
 			agent.Name = "Updated Agent"
 			agent.Status = domain.AgentConnected
-			agent.CountryCode = "UK"
 			agent.Attributes = domain.Attributes{"new_key": []string{"new_value"}}
 
 			// Execute
@@ -220,7 +218,6 @@ func TestAgentRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, "Updated Agent", updated.Name)
 			assert.Equal(t, domain.AgentConnected, updated.Status)
-			assert.Equal(t, domain.CountryCode("UK"), updated.CountryCode)
 			assert.Equal(t, domain.Attributes{"new_key": []string{"new_value"}}, updated.Attributes)
 		})
 	})

@@ -10,22 +10,22 @@ import (
 
 // mockAgentCommander is a custom mock for AgentCommander
 type mockAgentCommander struct {
-	createFunc       func(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error)
-	updateFunc       func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, status *domain.AgentStatus) (*domain.Agent, error)
+	createFunc       func(ctx context.Context, name string, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error)
+	updateFunc       func(ctx context.Context, id domain.UUID, name *string, attributes *domain.Attributes, status *domain.AgentStatus) (*domain.Agent, error)
 	deleteFunc       func(ctx context.Context, id domain.UUID) error
 	updateStatusFunc func(ctx context.Context, id domain.UUID, status domain.AgentStatus) (*domain.Agent, error)
 }
 
-func (m *mockAgentCommander) Create(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
+func (m *mockAgentCommander) Create(ctx context.Context, name string, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
 	if m.createFunc != nil {
-		return m.createFunc(ctx, name, countryCode, attributes, providerID, agentTypeID)
+		return m.createFunc(ctx, name, attributes, providerID, agentTypeID)
 	}
 	return nil, fmt.Errorf("create not mocked")
 }
 
-func (m *mockAgentCommander) Update(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, status *domain.AgentStatus) (*domain.Agent, error) {
+func (m *mockAgentCommander) Update(ctx context.Context, id domain.UUID, name *string, attributes *domain.Attributes, status *domain.AgentStatus) (*domain.Agent, error) {
 	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name, countryCode, attributes, status)
+		return m.updateFunc(ctx, id, name, attributes, status)
 	}
 	return nil, fmt.Errorf("update not mocked")
 }
@@ -81,21 +81,21 @@ func (m *mockAuditEntryCommander) CreateCtxWithDiff(ctx context.Context, eventTy
 }
 
 type mockParticipantCommander struct {
-	createFunc func(ctx context.Context, name string, status domain.ParticipantStatus, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error)
-	updateFunc func(ctx context.Context, id domain.UUID, name *string, status *domain.ParticipantStatus, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Participant, error)
+	createFunc func(ctx context.Context, name string, status domain.ParticipantStatus, attributes domain.Attributes) (*domain.Participant, error)
+	updateFunc func(ctx context.Context, id domain.UUID, name *string, status *domain.ParticipantStatus, attributes *domain.Attributes) (*domain.Participant, error)
 	deleteFunc func(ctx context.Context, id domain.UUID) error
 }
 
-func (m *mockParticipantCommander) Create(ctx context.Context, name string, status domain.ParticipantStatus, countryCode domain.CountryCode, attributes domain.Attributes) (*domain.Participant, error) {
+func (m *mockParticipantCommander) Create(ctx context.Context, name string, status domain.ParticipantStatus, attributes domain.Attributes) (*domain.Participant, error) {
 	if m.createFunc != nil {
-		return m.createFunc(ctx, name, status, countryCode, attributes)
+		return m.createFunc(ctx, name, status, attributes)
 	}
 	return nil, nil
 }
 
-func (m *mockParticipantCommander) Update(ctx context.Context, id domain.UUID, name *string, status *domain.ParticipantStatus, countryCode *domain.CountryCode, attributes *domain.Attributes) (*domain.Participant, error) {
+func (m *mockParticipantCommander) Update(ctx context.Context, id domain.UUID, name *string, status *domain.ParticipantStatus, attributes *domain.Attributes) (*domain.Participant, error) {
 	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name, status, countryCode, attributes)
+		return m.updateFunc(ctx, id, name, status, attributes)
 	}
 	return nil, nil
 }

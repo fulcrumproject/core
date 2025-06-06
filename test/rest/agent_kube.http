@@ -13,7 +13,6 @@ Authorization: Bearer {{adminToken}}
 {
     "name": "Test K8s Participant Provider",
     "status": "Enabled",
-    "countryCode": "IT",
     "attributes": {
         "type": ["kubernetes"]
     }
@@ -28,7 +27,6 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Kube Agent Test",
-    "countryCode": "IT",
     "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
     "providerId": "{{providerId}}"
 }

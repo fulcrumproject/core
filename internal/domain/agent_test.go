@@ -61,11 +61,6 @@ func TestAgentStatus_Validate(t *testing.T) {
 	}
 }
 
-func TestAgent_TableName(t *testing.T) {
-	agent := Agent{}
-	assert.Equal(t, "agents", agent.TableName())
-}
-
 func TestParseAgentStatus(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -124,6 +119,11 @@ func TestParseAgentStatus(t *testing.T) {
 	}
 }
 
+func TestAgent_TableName(t *testing.T) {
+	agent := Agent{}
+	assert.Equal(t, "agents", agent.TableName())
+}
+
 func TestAgent_Validate(t *testing.T) {
 	validID := uuid.New()
 	validTime := time.Now()
@@ -141,7 +141,6 @@ func TestAgent_Validate(t *testing.T) {
 				LastStatusUpdate: validTime,
 				AgentTypeID:      validID,
 				ProviderID:       validID,
-				CountryCode:      "US",
 			},
 			wantErr: false,
 		},
@@ -153,7 +152,6 @@ func TestAgent_Validate(t *testing.T) {
 				LastStatusUpdate: validTime,
 				AgentTypeID:      validID,
 				ProviderID:       validID,
-				CountryCode:      "US",
 			},
 			wantErr: true,
 		},
@@ -165,7 +163,6 @@ func TestAgent_Validate(t *testing.T) {
 				LastStatusUpdate: validTime,
 				AgentTypeID:      validID,
 				ProviderID:       validID,
-				CountryCode:      "US",
 			},
 			wantErr: true,
 		},
@@ -177,7 +174,6 @@ func TestAgent_Validate(t *testing.T) {
 				LastStatusUpdate: time.Time{},
 				AgentTypeID:      validID,
 				ProviderID:       validID,
-				CountryCode:      "US",
 			},
 			wantErr: true,
 		},
@@ -189,7 +185,6 @@ func TestAgent_Validate(t *testing.T) {
 				LastStatusUpdate: validTime,
 				AgentTypeID:      uuid.Nil,
 				ProviderID:       validID,
-				CountryCode:      "US",
 			},
 			wantErr: true,
 		},
@@ -201,19 +196,6 @@ func TestAgent_Validate(t *testing.T) {
 				LastStatusUpdate: validTime,
 				AgentTypeID:      validID,
 				ProviderID:       uuid.Nil,
-				CountryCode:      "US",
-			},
-			wantErr: true,
-		},
-		{
-			name: "Invalid country code",
-			agent: &Agent{
-				Name:             "test-agent",
-				Status:           AgentConnected,
-				LastStatusUpdate: validTime,
-				AgentTypeID:      validID,
-				ProviderID:       validID,
-				CountryCode:      "INVALID",
 			},
 			wantErr: true,
 		},
@@ -225,7 +207,6 @@ func TestAgent_Validate(t *testing.T) {
 				LastStatusUpdate: validTime,
 				AgentTypeID:      validID,
 				ProviderID:       validID,
-				CountryCode:      "US",
 				Attributes:       Attributes{"key": []string{"value"}},
 			},
 			wantErr: false,
@@ -251,7 +232,6 @@ func TestAgentCommander_Create(t *testing.T) {
 	ctx := context.Background()
 	validID := uuid.New()
 	validName := "test-agent"
-	validCountryCode := CountryCode("US")
 	validAttributes := Attributes{"key": []string{"value"}}
 
 	tests := []struct {
@@ -276,7 +256,6 @@ func TestAgentCommander_Create(t *testing.T) {
 				agentRepo := &MockAgentRepository{}
 				agentRepo.createFunc = func(ctx context.Context, agent *Agent) error {
 					assert.Equal(t, validName, agent.Name)
-					assert.Equal(t, validCountryCode, agent.CountryCode)
 					assert.Equal(t, validAttributes, agent.Attributes)
 					assert.Equal(t, validID, agent.ProviderID)
 					assert.Equal(t, validID, agent.AgentTypeID)
@@ -345,7 +324,7 @@ func TestAgentCommander_Create(t *testing.T) {
 
 				// Force an agent validation error with a bad country code
 				store.atomicFunc = func(ctx context.Context, fn func(Store) error) error {
-					return InvalidInputError{Err: errors.New("invalid country code")}
+					return InvalidInputError{Err: errors.New("validation error")}
 				}
 
 				store.WithParticipantRepo(participantRepo)
@@ -366,7 +345,7 @@ func TestAgentCommander_Create(t *testing.T) {
 			tt.setupMocks(store, audit)
 
 			commander := NewAgentCommander(store, audit)
-			agent, err := commander.Create(ctx, validName, validCountryCode, validAttributes, validID, validID)
+			agent, err := commander.Create(ctx, validName, validAttributes, validID, validID)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -378,7 +357,6 @@ func TestAgentCommander_Create(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, agent)
 				assert.Equal(t, validName, agent.Name)
-				assert.Equal(t, validCountryCode, agent.CountryCode)
 				assert.Equal(t, validAttributes, agent.Attributes)
 			}
 		})
@@ -392,8 +370,6 @@ func TestAgentCommander_Update(t *testing.T) {
 	agentTypeID := uuid.New()
 	existingName := "existing-agent"
 	newName := "updated-agent"
-	existingCountryCode := CountryCode("US")
-	newCountryCode := CountryCode("CA")
 	existingStatus := AgentDisconnected
 	newStatus := AgentConnected
 
@@ -402,7 +378,6 @@ func TestAgentCommander_Update(t *testing.T) {
 			ID: agentID,
 		},
 		Name:             existingName,
-		CountryCode:      existingCountryCode,
 		Status:           existingStatus,
 		LastStatusUpdate: time.Now(),
 		ProviderID:       providerID,
@@ -415,7 +390,6 @@ func TestAgentCommander_Update(t *testing.T) {
 		setupAgentCopy func() *Agent
 		setupMocks     func(store *MockStore, audit *MockAuditEntryCommander)
 		nameParam      *string
-		countryCode    *CountryCode
 		attributes     *Attributes
 		statusParam    *AgentStatus
 		wantErr        bool
@@ -444,32 +418,6 @@ func TestAgentCommander_Update(t *testing.T) {
 				store.WithAgentRepo(agentRepo)
 			},
 			nameParam:   &newName,
-			countryCode: nil,
-			attributes:  nil,
-			statusParam: nil,
-			wantErr:     false,
-		},
-		{
-			testName: "Update country code",
-			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				agentRepo := &MockAgentRepository{}
-				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
-					copy := *existingAgent
-					return &copy, nil
-				}
-				agentRepo.updateFunc = func(ctx context.Context, agent *Agent) error {
-					return nil
-				}
-
-				// Make atomic work correctly
-				store.atomicFunc = func(ctx context.Context, fn func(Store) error) error {
-					return fn(store)
-				}
-
-				store.WithAgentRepo(agentRepo)
-			},
-			nameParam:   nil,
-			countryCode: &newCountryCode,
 			attributes:  nil,
 			statusParam: nil,
 			wantErr:     false,
@@ -494,7 +442,6 @@ func TestAgentCommander_Update(t *testing.T) {
 				store.WithAgentRepo(agentRepo)
 			},
 			nameParam:   nil,
-			countryCode: nil,
 			attributes:  nil,
 			statusParam: &newStatus,
 			wantErr:     false,
@@ -504,35 +451,35 @@ func TestAgentCommander_Update(t *testing.T) {
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				agentRepo := &MockAgentRepository{}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
-					return nil, NewNotFoundErrorf("agent not found")
+					return nil, NewNotFoundErrorf("agent with ID %s not found", id.String())
 				}
+
 				store.WithAgentRepo(agentRepo)
 			},
 			nameParam:   &newName,
-			countryCode: nil,
 			attributes:  nil,
 			statusParam: nil,
 			wantErr:     true,
 		},
 		{
-			testName: "Validation error",
+			testName: "Update validation error",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				agentRepo := &MockAgentRepository{}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
-					return existingAgent, nil
+					copy := *existingAgent
+					return &copy, nil
 				}
 
+				// Make atomic return an error during validation
 				store.atomicFunc = func(ctx context.Context, fn func(Store) error) error {
-					// Simulate validation failure
-					return InvalidInputError{Err: errors.New("invalid status")}
+					return InvalidInputError{Err: errors.New("validation error")}
 				}
 
 				store.WithAgentRepo(agentRepo)
 			},
-			nameParam:   nil,
-			countryCode: nil,
+			nameParam:   func() *string { s := ""; return &s }(), // Empty name to cause validation error
 			attributes:  nil,
-			statusParam: &existingStatus,
+			statusParam: nil,
 			wantErr:     true,
 		},
 	}
@@ -544,7 +491,7 @@ func TestAgentCommander_Update(t *testing.T) {
 			tt.setupMocks(store, audit)
 
 			commander := NewAgentCommander(store, audit)
-			agent, err := commander.Update(ctx, agentID, tt.nameParam, tt.countryCode, tt.attributes, tt.statusParam)
+			agent, err := commander.Update(ctx, agentID, tt.nameParam, tt.attributes, tt.statusParam)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -553,17 +500,10 @@ func TestAgentCommander_Update(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, agent)
 
-				// Verify updates
 				if tt.nameParam != nil {
 					assert.Equal(t, *tt.nameParam, agent.Name)
 				} else {
 					assert.Equal(t, existingName, agent.Name)
-				}
-
-				if tt.countryCode != nil {
-					assert.Equal(t, *tt.countryCode, agent.CountryCode)
-				} else {
-					assert.Equal(t, existingCountryCode, agent.CountryCode)
 				}
 
 				if tt.statusParam != nil {
@@ -576,49 +516,227 @@ func TestAgentCommander_Update(t *testing.T) {
 	}
 }
 
-func TestAgentCommander_Delete(t *testing.T) {
+func TestAgent_UpdateStatus(t *testing.T) {
+	now := time.Now()
+	agent := &Agent{
+		Status:           AgentDisconnected,
+		LastStatusUpdate: now.Add(-time.Hour), // Set to 1 hour ago
+	}
+
+	agent.UpdateStatus(AgentConnected)
+
+	assert.Equal(t, AgentConnected, agent.Status)
+	assert.True(t, agent.LastStatusUpdate.After(now), "LastStatusUpdate should be updated to a newer time")
+}
+
+func TestAgent_UpdateHeartbeat(t *testing.T) {
+	now := time.Now()
+	agent := &Agent{
+		Status:           AgentConnected,
+		LastStatusUpdate: now.Add(-time.Hour), // Set to 1 hour ago
+	}
+
+	agent.UpdateHeartbeat()
+
+	assert.Equal(t, AgentConnected, agent.Status, "Status should not change")
+	assert.True(t, agent.LastStatusUpdate.After(now), "LastStatusUpdate should be updated to a newer time")
+}
+
+func TestAgent_RegisterMetadata(t *testing.T) {
+	agent := &Agent{
+		Name:       "original-name",
+		Attributes: Attributes{"key1": []string{"value1"}},
+	}
+
+	// Test updating all fields
+	newName := "new-name"
+	newAttributes := Attributes{"key2": []string{"value2"}}
+
+	agent.RegisterMetadata(&newName, &newAttributes)
+
+	assert.Equal(t, newName, agent.Name)
+	assert.Equal(t, newAttributes, agent.Attributes)
+
+	// Test partial update (only name)
+	newerName := "newer-name"
+	agent.RegisterMetadata(&newerName, nil)
+
+	assert.Equal(t, newerName, agent.Name)
+	assert.Equal(t, newAttributes, agent.Attributes) // Should be unchanged
+
+	// Test partial update (only attributes)
+	newerAttributes := Attributes{"key3": []string{"value3"}}
+	agent.RegisterMetadata(nil, &newerAttributes)
+
+	assert.Equal(t, newerName, agent.Name) // Should be unchanged
+	assert.Equal(t, newerAttributes, agent.Attributes)
+}
+
+func TestAgentCommander_UpdateStatus(t *testing.T) {
 	ctx := context.Background()
 	agentID := uuid.New()
 	providerID := uuid.New()
+	currentTime := time.Now().Add(-time.Hour)
+	agentName := "test-agent"
 
 	existingAgent := &Agent{
 		BaseEntity: BaseEntity{
 			ID: agentID,
 		},
-		Name:             "test-agent",
-		ProviderID:       providerID,
-		Status:           AgentDisconnected,
-		LastStatusUpdate: time.Now(),
+		Name:        agentName,
+		ProviderID:  providerID,
+		Status:      AgentDisconnected,
+		AgentTypeID: uuid.New(),
 	}
 
 	tests := []struct {
-		name       string
-		setupMocks func(store *MockStore, audit *MockAuditEntryCommander)
-		wantErr    bool
-		errorCheck func(t *testing.T, err error)
+		name        string
+		setupMocks  func(store *MockStore, audit *MockAuditEntryCommander)
+		newStatus   AgentStatus
+		wantErr     bool
+		errorString string
+	}{
+		{
+			name: "Update status success",
+			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
+				agentRepo := &MockAgentRepository{}
+				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
+					require.Equal(t, agentID, id)
+					copy := *existingAgent
+					copy.LastStatusUpdate = currentTime
+					return &copy, nil
+				}
+				agentRepo.updateFunc = func(ctx context.Context, agent *Agent) error {
+					assert.Equal(t, agentID, agent.ID)
+					assert.Equal(t, AgentConnected, agent.Status)
+					assert.True(t, agent.LastStatusUpdate.After(currentTime))
+					return nil
+				}
+
+				// Make atomic work correctly
+				store.atomicFunc = func(ctx context.Context, fn func(Store) error) error {
+					return fn(store)
+				}
+
+				store.WithAgentRepo(agentRepo)
+				audit.CreateCtxWithDiffFunc = func(ctx context.Context, eventType EventType, entityID *UUID, providerID *UUID, agentID *UUID, consumerID *UUID, before interface{}, after interface{}) (*AuditEntry, error) {
+					return &AuditEntry{}, nil
+				}
+			},
+			newStatus: AgentConnected,
+			wantErr:   false,
+		},
+		{
+			name: "Agent not found",
+			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
+				agentRepo := &MockAgentRepository{}
+				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
+					return nil, NewNotFoundErrorf("agent not found")
+				}
+				store.WithAgentRepo(agentRepo)
+			},
+			newStatus:   AgentConnected,
+			wantErr:     true,
+			errorString: "agent not found",
+		},
+		{
+			name: "Invalid status",
+			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
+				agentRepo := &MockAgentRepository{}
+				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
+					copy := *existingAgent
+					return &copy, nil
+				}
+
+				// Make atomic return an error during validation
+				store.atomicFunc = func(ctx context.Context, fn func(Store) error) error {
+					return InvalidInputError{Err: errors.New("invalid status")}
+				}
+
+				store.WithAgentRepo(agentRepo)
+			},
+			newStatus:   "InvalidStatus",
+			wantErr:     true,
+			errorString: "invalid agent status",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := NewMockStore()
+			audit := &MockAuditEntryCommander{}
+			tt.setupMocks(store, audit)
+
+			commander := NewAgentCommander(store, audit)
+			agent, err := commander.UpdateStatus(ctx, agentID, tt.newStatus)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errorString != "" {
+					assert.Contains(t, err.Error(), tt.errorString)
+				}
+				assert.Nil(t, agent)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, agent)
+				assert.Equal(t, tt.newStatus, agent.Status)
+				assert.True(t, agent.LastStatusUpdate.After(currentTime))
+			}
+		})
+	}
+}
+
+func TestAgentCommander_Delete(t *testing.T) {
+	ctx := context.Background()
+	agentID := uuid.New()
+	providerID := uuid.New()
+
+	tests := []struct {
+		name          string
+		setupMocks    func(store *MockStore, audit *MockAuditEntryCommander)
+		wantErr       bool
+		expectedError string
 	}{
 		{
 			name: "Delete success",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				agentRepo := &MockAgentRepository{}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
-					assert.Equal(t, agentID, id)
-					return existingAgent, nil
+					require.Equal(t, agentID, id)
+					return &Agent{
+						BaseEntity: BaseEntity{ID: agentID},
+						ProviderID: providerID,
+					}, nil
 				}
-
 				serviceRepo := &MockServiceRepository{}
-				serviceRepo.countByAgentFunc = func(ctx context.Context, agentID UUID) (int64, error) {
-					return 0, nil // No services associated
+				serviceRepo.countByAgentFunc = func(ctx context.Context, id UUID) (int64, error) {
+					require.Equal(t, agentID, id)
+					return 0, nil
+				}
+				tokenRepo := &MockTokenRepository{}
+				tokenRepo.deleteByAgentIDFunc = func(ctx context.Context, id UUID) error {
+					require.Equal(t, agentID, id)
+					return nil
+				}
+				agentRepo.deleteFunc = func(ctx context.Context, id UUID) error {
+					require.Equal(t, agentID, id)
+					return nil
 				}
 
-				tokenRepo := &MockTokenRepository{}
-				tokenRepo.deleteByAgentIDFunc = func(ctx context.Context, agentID UUID) error {
-					return nil
+				// Make atomic work correctly
+				store.atomicFunc = func(ctx context.Context, fn func(Store) error) error {
+					return fn(store)
 				}
 
 				store.WithAgentRepo(agentRepo)
 				store.WithServiceRepo(serviceRepo)
 				store.WithTokenRepo(tokenRepo)
+
+				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID *UUID, providerID *UUID, agentID *UUID, consumerID *UUID) (*AuditEntry, error) {
+					assert.NotNil(t, entityID)
+					assert.Equal(t, agentID, entityID)
+					return &AuditEntry{}, nil
+				}
 			},
 			wantErr: false,
 		},
@@ -629,34 +747,33 @@ func TestAgentCommander_Delete(t *testing.T) {
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
 					return nil, NewNotFoundErrorf("agent not found")
 				}
-
 				store.WithAgentRepo(agentRepo)
 			},
-			wantErr: true,
-			errorCheck: func(t *testing.T, err error) {
-				assert.Contains(t, err.Error(), "not found")
-			},
+			wantErr:       true,
+			expectedError: "agent not found",
 		},
 		{
-			name: "Agent has services",
+			name: "Has dependent services",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				agentRepo := &MockAgentRepository{}
 				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
-					return existingAgent, nil
+					return &Agent{BaseEntity: BaseEntity{ID: agentID}}, nil
+				}
+				serviceRepo := &MockServiceRepository{}
+				serviceRepo.countByAgentFunc = func(ctx context.Context, id UUID) (int64, error) {
+					return 5, nil
 				}
 
-				serviceRepo := &MockServiceRepository{}
-				serviceRepo.countByAgentFunc = func(ctx context.Context, agentID UUID) (int64, error) {
-					return 5, nil // Has 5 services associated
+				// Make atomic work correctly
+				store.atomicFunc = func(ctx context.Context, fn func(Store) error) error {
+					return fn(store)
 				}
 
 				store.WithAgentRepo(agentRepo)
 				store.WithServiceRepo(serviceRepo)
 			},
-			wantErr: true,
-			errorCheck: func(t *testing.T, err error) {
-				assert.Contains(t, err.Error(), "cannot delete agent with associated services")
-			},
+			wantErr:       true,
+			expectedError: "cannot delete agent with associated services",
 		},
 	}
 
@@ -671,128 +788,11 @@ func TestAgentCommander_Delete(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				if tt.errorCheck != nil {
-					tt.errorCheck(t, err)
+				if tt.expectedError != "" {
+					assert.Contains(t, err.Error(), tt.expectedError)
 				}
 			} else {
 				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestAgentCommander_UpdateStatus(t *testing.T) {
-	ctx := context.Background()
-	agentID := uuid.New()
-	providerID := uuid.New()
-	agentTypeID := uuid.New()
-
-	// Set up a more complete agent with required fields for UpdateStatus to succeed
-	currentTime := time.Now().Add(-time.Hour)
-	countryCode := CountryCode("US")
-	agentName := "test-agent"
-
-	existingStatus := AgentDisconnected
-	newStatus := AgentConnected
-
-	existingAgent := &Agent{
-		BaseEntity: BaseEntity{
-			ID:        agentID,
-			CreatedAt: currentTime,
-			UpdatedAt: currentTime,
-		},
-		Name:        agentName,
-		CountryCode: countryCode,
-		ProviderID:  providerID,
-		AgentTypeID: agentTypeID,
-	}
-
-	tests := []struct {
-		name       string
-		setupMocks func(store *MockStore, audit *MockAuditEntryCommander)
-		status     AgentStatus
-		wantErr    bool
-	}{
-		{
-			name: "Update status success",
-			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				agentRepo := &MockAgentRepository{}
-
-				// Important: Make a complete copy of existingAgent that has all required fields
-				agentCopy := *existingAgent
-				agentCopy.Status = existingStatus
-				agentCopy.LastStatusUpdate = time.Now().Add(-time.Hour)
-
-				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
-					return &agentCopy, nil
-				}
-
-				// Make atomic work correctly
-				store.atomicFunc = func(ctx context.Context, fn func(Store) error) error {
-					return fn(store)
-				}
-
-				agentRepo.updateFunc = func(ctx context.Context, agent *Agent) error {
-					assert.Equal(t, newStatus, agent.Status)
-					// Verify last status update was updated
-					assert.True(t, agent.LastStatusUpdate.After(existingAgent.LastStatusUpdate))
-					return nil
-				}
-
-				store.WithAgentRepo(agentRepo)
-			},
-			status:  newStatus,
-			wantErr: false,
-		},
-		{
-			name: "Agent not found",
-			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				agentRepo := &MockAgentRepository{}
-				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
-					return nil, NewNotFoundErrorf("agent not found")
-				}
-
-				store.WithAgentRepo(agentRepo)
-			},
-			status:  newStatus,
-			wantErr: true,
-		},
-		{
-			name: "Invalid status",
-			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
-				agentRepo := &MockAgentRepository{}
-				agentRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Agent, error) {
-					return existingAgent, nil
-				}
-
-				// The atomic function will simulate the validation failure
-				store.atomicFunc = func(ctx context.Context, fn func(Store) error) error {
-					return InvalidInputError{Err: errors.New("invalid status")}
-				}
-
-				store.WithAgentRepo(agentRepo)
-			},
-			status:  AgentStatus("InvalidStatus"),
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			store := NewMockStore()
-			audit := &MockAuditEntryCommander{}
-			tt.setupMocks(store, audit)
-
-			commander := NewAgentCommander(store, audit)
-			agent, err := commander.UpdateStatus(ctx, agentID, tt.status)
-
-			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, agent)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, agent)
-				assert.Equal(t, tt.status, agent.Status)
 			}
 		})
 	}

@@ -130,7 +130,6 @@ classDiagram
             id : UUID
             name : string
             status : enum[Enabled|Disabled]
-            countryCode : string 
             attributes : map[string]string[]
             createdAt : datetime
             updatedAt : datetime
@@ -154,7 +153,6 @@ classDiagram
             id : UUID
             name : string
             status : enum[New|Connected|Disconnected|Error|Disabled]
-            countryCode : string
             attributes : map[string]string[]
             lastStatusUpdate : datetime
             createdAt : datetime
@@ -279,7 +277,6 @@ classDiagram
    - Unified entity replacing the separate Provider and Consumer entities
    - Represents an entity that can act as both a service provider and consumer
    - Has name and operational status (Enabled/Disabled)
-   - Contains geographical information via country code
    - Stores flexible metadata through custom attributes
    - Has many agents deployed within its infrastructure (when acting as a provider)
    - Can consume services (via Service.ConsumerParticipantID)

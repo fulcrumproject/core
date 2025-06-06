@@ -12,7 +12,6 @@ Authorization: Bearer {{adminToken}}
 {
     "name": "CloudConf Service Provider",
     "status": "Enabled",
-    "countryCode": "IT",
     "attributes": {
         "certifications": ["ISO-9001","ISO-27001"]
     }
@@ -27,7 +26,6 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "VM Agent",
-    "countryCode": "IT",
     "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
     "providerId": "{{providerId}}",
     "attributes": {

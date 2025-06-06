@@ -33,7 +33,6 @@ Authorization: Bearer {{adminTokenNew}}
 {
     "name": "Provider",
     "status": "Enabled",
-    "countryCode": "US",
     "attributes": {
         "regions": ["us-east-1", "us-west-2"],
         "tier": ["enterprise"]
@@ -69,7 +68,6 @@ Authorization: Bearer {{adminTokenNew}}
 {
     "name": "Provider 2",
     "status": "Enabled",
-    "countryCode": "US",
     "attributes": {
         "regions": ["us-east-1", "us-west-2"],
         "tier": ["enterprise"]

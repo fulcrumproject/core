@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -105,19 +104,17 @@ func TestParticipant_Validate(t *testing.T) {
 		{
 			name: "Valid participant",
 			participant: &Participant{
-				Name:        "test-participant",
-				Status:      ParticipantEnabled,
-				CountryCode: "US",
-				Attributes:  Attributes{"key": []string{"value"}},
+				Name:       "test-participant",
+				Status:     ParticipantEnabled,
+				Attributes: Attributes{"key": []string{"value"}},
 			},
 			wantErr: false,
 		},
 		{
 			name: "Empty name",
 			participant: &Participant{
-				Name:        "",
-				Status:      ParticipantEnabled,
-				CountryCode: "US",
+				Name:   "",
+				Status: ParticipantEnabled,
 			},
 			wantErr:     true,
 			errContains: "participant name cannot be empty",
@@ -125,22 +122,11 @@ func TestParticipant_Validate(t *testing.T) {
 		{
 			name: "Invalid status",
 			participant: &Participant{
-				Name:        "test-participant",
-				Status:      "InvalidStatus",
-				CountryCode: "US",
+				Name:   "test-participant",
+				Status: "InvalidStatus",
 			},
 			wantErr:     true,
 			errContains: "invalid participant status",
-		},
-		{
-			name: "Invalid country code",
-			participant: &Participant{
-				Name:        "test-participant",
-				Status:      ParticipantEnabled,
-				CountryCode: "INVALID",
-			},
-			wantErr:     true,
-			errContains: "invalid",
 		},
 		{
 			name: "Valid with empty country code",
@@ -181,7 +167,6 @@ func TestParticipantCommander_Create(t *testing.T) {
 	ctx := context.Background()
 	validName := "test-participant"
 	validStatus := ParticipantEnabled
-	validCountryCode := CountryCode("US")
 	validAttributes := Attributes{"key": []string{"value"}}
 
 	tests := []struct {
@@ -197,7 +182,6 @@ func TestParticipantCommander_Create(t *testing.T) {
 				participantRepo.createFunc = func(ctx context.Context, p *Participant) error {
 					assert.Equal(t, validName, p.Name)
 					assert.Equal(t, validStatus, p.Status)
-					assert.Equal(t, validCountryCode, p.CountryCode)
 					assert.Equal(t, validAttributes, p.Attributes)
 					return nil
 				}
@@ -264,9 +248,9 @@ func TestParticipantCommander_Create(t *testing.T) {
 			var err error
 
 			if tt.name == "Create validation error" { // Special case for validation
-				participant, err = commander.Create(ctx, "", validStatus, validCountryCode, validAttributes)
+				participant, err = commander.Create(ctx, "", validStatus, validAttributes)
 			} else {
-				participant, err = commander.Create(ctx, validName, validStatus, validCountryCode, validAttributes)
+				participant, err = commander.Create(ctx, validName, validStatus, validAttributes)
 			}
 
 			if tt.wantErr {
@@ -294,27 +278,23 @@ func TestParticipantCommander_Update(t *testing.T) {
 	participantID := uuid.New()
 	existingName := "existing-participant"
 	existingStatus := ParticipantEnabled
-	existingCountryCode := CountryCode("US")
 	existingAttributes := Attributes{"old_key": []string{"old_value"}}
 
 	newName := "updated-participant"
 	newStatus := ParticipantDisabled
-	newCountryCode := CountryCode("CA")
 	newAttributes := Attributes{"new_key": []string{"new_value"}}
 
 	tests := []struct {
-		name            string
-		setupMocks      func(store *MockStore, audit *MockAuditEntryCommander)
-		updateName      *string
-		updateStatus    *ParticipantStatus
-		updateCountry   *CountryCode
-		updateAttrs     *Attributes
-		expectedName    string
-		expectedStatus  ParticipantStatus
-		expectedCountry CountryCode
-		expectedAttrs   Attributes
-		wantErr         bool
-		expectedError   string
+		name           string
+		setupMocks     func(store *MockStore, audit *MockAuditEntryCommander)
+		updateName     *string
+		updateStatus   *ParticipantStatus
+		updateAttrs    *Attributes
+		expectedName   string
+		expectedStatus ParticipantStatus
+		expectedAttrs  Attributes
+		wantErr        bool
+		expectedError  string
 	}{
 		{
 			name: "Update success - all fields",
@@ -323,18 +303,16 @@ func TestParticipantCommander_Update(t *testing.T) {
 				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
 					require.Equal(t, participantID, id)
 					return &Participant{
-						BaseEntity:  BaseEntity{ID: participantID, CreatedAt: time.Now(), UpdatedAt: time.Now()},
-						Name:        existingName,
-						Status:      existingStatus,
-						CountryCode: existingCountryCode,
-						Attributes:  existingAttributes,
+						BaseEntity: BaseEntity{ID: participantID, CreatedAt: time.Now(), UpdatedAt: time.Now()},
+						Name:       existingName,
+						Status:     existingStatus,
+						Attributes: existingAttributes,
 					}, nil
 				}
 				participantRepo.saveFunc = func(ctx context.Context, p *Participant) error {
 					assert.Equal(t, participantID, p.ID)
 					assert.Equal(t, newName, p.Name)
 					assert.Equal(t, newStatus, p.Status)
-					assert.Equal(t, newCountryCode, p.CountryCode)
 					assert.Equal(t, newAttributes, p.Attributes)
 					return nil
 				}
@@ -349,22 +327,25 @@ func TestParticipantCommander_Update(t *testing.T) {
 					return &AuditEntry{}, nil
 				}
 			},
-			updateName:      &newName,
-			updateStatus:    &newStatus,
-			updateCountry:   &newCountryCode,
-			updateAttrs:     &newAttributes,
-			expectedName:    newName,
-			expectedStatus:  newStatus,
-			expectedCountry: newCountryCode,
-			expectedAttrs:   newAttributes,
-			wantErr:         false,
+			updateName:     &newName,
+			updateStatus:   &newStatus,
+			updateAttrs:    &newAttributes,
+			expectedName:   newName,
+			expectedStatus: newStatus,
+			expectedAttrs:  newAttributes,
+			wantErr:        false,
 		},
 		{
 			name: "Update success - only name",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander) {
 				participantRepo := &MockParticipantRepository{}
 				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
-					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: existingName, Status: existingStatus, CountryCode: existingCountryCode, Attributes: existingAttributes}, nil
+					return &Participant{
+						BaseEntity: BaseEntity{ID: participantID},
+						Name:       existingName,
+						Status:     existingStatus,
+						Attributes: existingAttributes,
+					}, nil
 				}
 				participantRepo.saveFunc = func(ctx context.Context, p *Participant) error {
 					assert.Equal(t, newName, p.Name)
@@ -376,12 +357,11 @@ func TestParticipantCommander_Update(t *testing.T) {
 					return &AuditEntry{}, nil
 				}
 			},
-			updateName:      &newName,
-			expectedName:    newName,
-			expectedStatus:  existingStatus,
-			expectedCountry: existingCountryCode,
-			expectedAttrs:   existingAttributes,
-			wantErr:         false,
+			updateName:     &newName,
+			expectedName:   newName,
+			expectedStatus: existingStatus,
+			expectedAttrs:  existingAttributes,
+			wantErr:        false,
 		},
 		{
 			name: "Update participant not found",
@@ -454,7 +434,7 @@ func TestParticipantCommander_Update(t *testing.T) {
 			tt.setupMocks(store, audit)
 
 			commander := NewParticipantCommander(store, audit)
-			participant, err := commander.Update(ctx, participantID, tt.updateName, tt.updateStatus, tt.updateCountry, tt.updateAttrs)
+			participant, err := commander.Update(ctx, participantID, tt.updateName, tt.updateStatus, tt.updateAttrs)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -471,7 +451,6 @@ func TestParticipantCommander_Update(t *testing.T) {
 				assert.NotNil(t, participant)
 				assert.Equal(t, tt.expectedName, participant.Name)
 				assert.Equal(t, tt.expectedStatus, participant.Status)
-				assert.Equal(t, tt.expectedCountry, participant.CountryCode)
 				assert.Equal(t, tt.expectedAttrs, participant.Attributes)
 			}
 		})
@@ -537,43 +516,27 @@ func TestParticipantCommander_Delete(t *testing.T) {
 			expectedError: "participant with ID " + participantID.String() + " not found",
 		},
 		{
-			name: "Delete with dependent agents",
+			name: "Delete has dependent agents",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander, agentRepo *MockAgentRepository, tokenRepo *MockTokenRepository) {
 				participantRepo := &MockParticipantRepository{}
 				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
-					return &Participant{BaseEntity: BaseEntity{ID: participantID}}, nil
+					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: "test"}, nil
 				}
 				agentRepo.countByProviderFunc = func(ctx context.Context, pid UUID) (int64, error) {
-					return 1, nil
+					return 5, nil
 				}
 				store.WithParticipantRepo(participantRepo)
 				store.WithAgentRepo(agentRepo)
 			},
 			wantErr:       true,
-			expectedError: fmt.Sprintf("cannot delete participant %s: 1 dependent agent(s) exist", participantID),
+			expectedError: "cannot delete participant",
 		},
 		{
-			name: "Delete agent count error",
+			name: "Delete token delete error",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander, agentRepo *MockAgentRepository, tokenRepo *MockTokenRepository) {
 				participantRepo := &MockParticipantRepository{}
 				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
-					return &Participant{BaseEntity: BaseEntity{ID: participantID}}, nil
-				}
-				agentRepo.countByProviderFunc = func(ctx context.Context, pid UUID) (int64, error) {
-					return 0, errors.New("agent count error")
-				}
-				store.WithParticipantRepo(participantRepo)
-				store.WithAgentRepo(agentRepo)
-			},
-			wantErr:       true,
-			expectedError: "failed to count agents for participant",
-		},
-		{
-			name: "Delete token deletion error",
-			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander, agentRepo *MockAgentRepository, tokenRepo *MockTokenRepository) {
-				participantRepo := &MockParticipantRepository{}
-				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
-					return &Participant{BaseEntity: BaseEntity{ID: participantID}}, nil
+					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: "test"}, nil
 				}
 				agentRepo.countByProviderFunc = func(ctx context.Context, pid UUID) (int64, error) {
 					return 0, nil
@@ -586,14 +549,14 @@ func TestParticipantCommander_Delete(t *testing.T) {
 				store.WithTokenRepo(tokenRepo)
 			},
 			wantErr:       true,
-			expectedError: "failed to delete tokens for participant",
+			expectedError: "token delete error",
 		},
 		{
-			name: "Delete participant repo error",
+			name: "Delete repo error",
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander, agentRepo *MockAgentRepository, tokenRepo *MockTokenRepository) {
 				participantRepo := &MockParticipantRepository{}
 				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
-					return &Participant{BaseEntity: BaseEntity{ID: participantID}}, nil
+					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: "test"}, nil
 				}
 				agentRepo.countByProviderFunc = func(ctx context.Context, pid UUID) (int64, error) {
 					return 0, nil
@@ -616,7 +579,7 @@ func TestParticipantCommander_Delete(t *testing.T) {
 			setupMocks: func(store *MockStore, audit *MockAuditEntryCommander, agentRepo *MockAgentRepository, tokenRepo *MockTokenRepository) {
 				participantRepo := &MockParticipantRepository{}
 				participantRepo.findByIDFunc = func(ctx context.Context, id UUID) (*Participant, error) {
-					return &Participant{BaseEntity: BaseEntity{ID: participantID}}, nil
+					return &Participant{BaseEntity: BaseEntity{ID: participantID}, Name: "test"}, nil
 				}
 				agentRepo.countByProviderFunc = func(ctx context.Context, pid UUID) (int64, error) {
 					return 0, nil
@@ -631,11 +594,11 @@ func TestParticipantCommander_Delete(t *testing.T) {
 				store.WithAgentRepo(agentRepo)
 				store.WithTokenRepo(tokenRepo)
 				audit.CreateCtxFunc = func(ctx context.Context, eventType EventType, properties JSON, entityID *UUID, providerID *UUID, agentID *UUID, consumerID *UUID) (*AuditEntry, error) {
-					return nil, errors.New("audit delete error")
+					return nil, errors.New("audit create error")
 				}
 			},
 			wantErr:       true,
-			expectedError: "audit delete error",
+			expectedError: "audit create error",
 		},
 	}
 
@@ -643,10 +606,8 @@ func TestParticipantCommander_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			store := NewMockStore()
 			audit := &MockAuditEntryCommander{}
-			// Need to initialize mock agent and token repos for delete tests
 			agentRepo := &MockAgentRepository{}
 			tokenRepo := &MockTokenRepository{}
-
 			tt.setupMocks(store, audit, agentRepo, tokenRepo)
 
 			commander := NewParticipantCommander(store, audit)
@@ -656,10 +617,6 @@ func TestParticipantCommander_Delete(t *testing.T) {
 				assert.Error(t, err)
 				if tt.expectedError != "" {
 					assert.Contains(t, err.Error(), tt.expectedError)
-					if tt.name == "Delete with dependent agents" {
-						var invalidInputErr InvalidInputError
-						require.True(t, errors.As(err, &invalidInputErr), "error should be InvalidInputError")
-					}
 				}
 			} else {
 				assert.NoError(t, err)

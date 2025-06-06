@@ -36,22 +36,20 @@ func ParseParticipantStatus(value string) (ParticipantStatus, error) {
 type Participant struct {
 	BaseEntity
 
-	Name        string            `json:"name" gorm:"not null"`
-	CountryCode CountryCode       `json:"countryCode,omitempty" gorm:"size:2"`
-	Attributes  Attributes        `json:"attributes,omitempty" gorm:"type:jsonb"`
-	Status      ParticipantStatus `json:"status" gorm:"not null"`
+	Name       string            `json:"name" gorm:"not null"`
+	Attributes Attributes        `json:"attributes,omitempty" gorm:"type:jsonb"`
+	Status     ParticipantStatus `json:"status" gorm:"not null"`
 
 	// Relationships
 	Agents []Agent `json:"agents,omitempty" gorm:"foreignKey:ProviderID"` // Agent struct will be updated later
 }
 
 // NewParticipant creates a new Participant without validation
-func NewParticipant(name string, status ParticipantStatus, countryCode CountryCode, attributes Attributes) *Participant {
+func NewParticipant(name string, status ParticipantStatus, attributes Attributes) *Participant {
 	return &Participant{
-		Name:        name,
-		Status:      status,
-		CountryCode: countryCode,
-		Attributes:  attributes,
+		Name:       name,
+		Status:     status,
+		Attributes: attributes,
 	}
 }
 
@@ -65,12 +63,6 @@ func (p *Participant) Validate() error {
 	if p.Name == "" {
 		return fmt.Errorf("participant name cannot be empty")
 	}
-	if err := p.CountryCode.Validate(); err != nil {
-		// Allow empty country code
-		if string(p.CountryCode) != "" {
-			return err
-		}
-	}
 	if p.Attributes != nil {
 		if err := p.Attributes.Validate(); err != nil {
 			return err
@@ -83,15 +75,12 @@ func (p *Participant) Validate() error {
 }
 
 // Update updates the participant fields if the pointers are non-nil
-func (p *Participant) Update(name *string, status *ParticipantStatus, countryCode *CountryCode, attributes *Attributes) {
+func (p *Participant) Update(name *string, status *ParticipantStatus, attributes *Attributes) {
 	if name != nil {
 		p.Name = *name
 	}
 	if status != nil {
 		p.Status = *status
-	}
-	if countryCode != nil {
-		p.CountryCode = *countryCode
 	}
 	if attributes != nil {
 		p.Attributes = *attributes
@@ -101,10 +90,10 @@ func (p *Participant) Update(name *string, status *ParticipantStatus, countryCod
 // ParticipantCommander defines the interface for participant command operations
 type ParticipantCommander interface {
 	// Create creates a new participant
-	Create(ctx context.Context, name string, status ParticipantStatus, countryCode CountryCode, attributes Attributes) (*Participant, error)
+	Create(ctx context.Context, name string, status ParticipantStatus, attributes Attributes) (*Participant, error)
 
 	// Update updates a participant
-	Update(ctx context.Context, id UUID, name *string, status *ParticipantStatus, countryCode *CountryCode, attributes *Attributes) (*Participant, error)
+	Update(ctx context.Context, id UUID, name *string, status *ParticipantStatus, attributes *Attributes) (*Participant, error)
 
 	// Delete removes a participant by ID after checking for dependencies
 	Delete(ctx context.Context, id UUID) error
@@ -131,12 +120,11 @@ func (c *participantCommander) Create(
 	ctx context.Context,
 	name string,
 	status ParticipantStatus,
-	countryCode CountryCode,
 	attributes Attributes,
 ) (*Participant, error) {
 	var participant *Participant
 	err := c.store.Atomic(ctx, func(store Store) error {
-		participant = NewParticipant(name, status, countryCode, attributes)
+		participant = NewParticipant(name, status, attributes)
 		if err := participant.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -160,7 +148,6 @@ func (c *participantCommander) Update(
 	id UUID,
 	name *string,
 	status *ParticipantStatus,
-	countryCode *CountryCode,
 	attributes *Attributes,
 ) (*Participant, error) {
 	participant, err := c.store.ParticipantRepo().FindByID(ctx, id)
@@ -169,7 +156,7 @@ func (c *participantCommander) Update(
 	}
 	beforeParticipant := *participant
 
-	participant.Update(name, status, countryCode, attributes)
+	participant.Update(name, status, attributes)
 	if err := participant.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}

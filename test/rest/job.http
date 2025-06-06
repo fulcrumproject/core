@@ -12,7 +12,6 @@ Authorization: Bearer {{adminToken}}
 {
     "name": "Test Provider",
     "status": "Enabled",
-    "countryCode": "US",
     "attributes": {
         "type": ["test"]
     }
@@ -27,7 +26,6 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Job Agent",
-    "countryCode": "US",
     "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
     "providerId": "{{providerId}}"
 }

@@ -12,7 +12,6 @@ Authorization: Bearer {{adminToken}}
 {
     "name": "Test Agent Provider",
     "status": "Enabled",
-    "countryCode": "US",
     "attributes": {
         "type": ["test"]
     }
@@ -27,7 +26,6 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Agent",
-    "countryCode": "US",
     "attributes": {
         "environment": ["production"],
         "version": ["1.0.0"]
@@ -78,7 +76,7 @@ GET {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
 
 ### List agents with filters
-GET {{baseUrl}}/agents?status=Connected&countryCode=US
+GET {{baseUrl}}/agents?status=Connected
 Authorization: Bearer {{adminToken}}
 
 ### List agents for specific provider
@@ -92,7 +90,6 @@ Authorization: Bearer {{adminToken}}
 {
     "name": "Test Agent Updated",
     "status": "Disconnected",
-    "countryCode": "UK",
     "attributes": {
         "environment": ["staging"],
         "version": ["1.1.1"]
