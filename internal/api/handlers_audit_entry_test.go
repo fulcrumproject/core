@@ -147,12 +147,11 @@ func TestAuditEntryHandleList(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
 			querier := &mockAuditEntryQuerier{}
-			commander := &mockAuditEntryCommander{}
 			authz := &MockAuthorizer{ShouldSucceed: true}
 			tc.mockSetup(querier)
 
 			// Create the handler
-			handler := NewAuditEntryHandler(querier, commander, authz)
+			handler := NewAuditEntryHandler(querier, authz)
 
 			// Create request with simulated middleware context
 			req := httptest.NewRequest("GET", "/audit-entries"+tc.queryParams, nil)
@@ -207,13 +206,11 @@ func TestAuditEntryHandleList(t *testing.T) {
 // TestNewAuditEntryHandler tests the constructor
 func TestNewAuditEntryHandler(t *testing.T) {
 	querier := &mockAuditEntryQuerier{}
-	commander := &mockAuditEntryCommander{}
 	authz := &MockAuthorizer{ShouldSucceed: true}
 
-	handler := NewAuditEntryHandler(querier, commander, authz)
+	handler := NewAuditEntryHandler(querier, authz)
 	assert.NotNil(t, handler)
 	assert.Equal(t, querier, handler.querier)
-	assert.Equal(t, commander, handler.commander)
 	assert.Equal(t, authz, handler.authz)
 }
 
@@ -221,11 +218,10 @@ func TestNewAuditEntryHandler(t *testing.T) {
 func TestAuditEntryHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := &mockAuditEntryQuerier{}
-	commander := &mockAuditEntryCommander{}
 	authz := &MockAuthorizer{ShouldSucceed: true}
 
 	// Create the handler
-	handler := NewAuditEntryHandler(querier, commander, authz)
+	handler := NewAuditEntryHandler(querier, authz)
 
 	// Execute
 	routeFunc := handler.Routes()

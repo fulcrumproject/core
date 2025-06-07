@@ -365,6 +365,10 @@ func TestService_Validate(t *testing.T) {
 	}
 }
 
+func svcActionPtr(svcAction ServiceAction) *ServiceAction {
+	return &svcAction
+}
+
 func TestServiceNextStatusAndAction(t *testing.T) {
 	tests := []struct {
 		name          string

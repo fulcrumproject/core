@@ -260,18 +260,15 @@ type ServiceCommander interface {
 
 // serviceCommander is the concrete implementation of ServiceCommander
 type serviceCommander struct {
-	store          Store
-	auditCommander AuditEntryCommander
+	store Store
 }
 
 // NewServiceCommander creates a new commander for services
 func NewServiceCommander(
 	store Store,
-	auditCommander AuditEntryCommander,
 ) *serviceCommander {
 	return &serviceCommander{
-		store:          store,
-		auditCommander: auditCommander,
+		store: store,
 	}
 }
 
@@ -313,6 +310,7 @@ func (s *serviceCommander) Create(
 		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
 			return err
 		}
+
 		job := NewJob(svc, ServiceActionCreate, 1)
 		if err := job.Validate(); err != nil {
 			return err
@@ -320,14 +318,15 @@ func (s *serviceCommander) Create(
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtx(
-			ctx,
-			EventTypeServiceCreated,
-			JSON{"status": svc},
-			&svc.ID,
-			&svc.ProviderID,
-			&svc.AgentID,
-			&svc.ConsumerID)
+
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeServiceCreated, JSON{"status": svc}, &svc.ID, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
+
 		return err
 	})
 	if err != nil {
@@ -362,9 +361,11 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 			if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 				return err
 			}
-			if _, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceUpdated,
-				&id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID,
-				&originalSvc, svc); err != nil {
+			auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceUpdated, JSON{}, &id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+			if err != nil {
+				return err
+			}
+			if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
 				return err
 			}
 		}
@@ -417,9 +418,13 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceTransitioned,
-			&id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID,
-			&originalSvc, svc)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceTransitioned, JSON{}, &id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {
@@ -460,8 +465,13 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceRetried,
-			&id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceRetried, JSON{}, &id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {

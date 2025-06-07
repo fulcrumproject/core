@@ -124,18 +124,15 @@ type ServiceActivationCommander interface {
 
 // serviceActivationCommander is the concrete implementation of ServiceActivationCommander
 type serviceActivationCommander struct {
-	store          Store
-	auditCommander AuditEntryCommander
+	store Store
 }
 
 // NewServiceActivationCommander creates a new default ServiceActivationCommander
 func NewServiceActivationCommander(
 	store Store,
-	auditCommander AuditEntryCommander,
 ) *serviceActivationCommander {
 	return &serviceActivationCommander{
-		store:          store,
-		auditCommander: auditCommander,
+		store: store,
 	}
 }
 

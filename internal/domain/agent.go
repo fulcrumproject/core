@@ -132,18 +132,15 @@ type AgentCommander interface {
 
 // agentCommander is the concrete implementation of AgentCommander
 type agentCommander struct {
-	store          Store
-	auditCommander AuditEntryCommander
+	store Store
 }
 
 // NewAgentCommander creates a new default AgentCommander
 func NewAgentCommander(
 	store Store,
-	auditCommander AuditEntryCommander,
 ) *agentCommander {
 	return &agentCommander{
-		store:          store,
-		auditCommander: auditCommander,
+		store: store,
 	}
 }
 
@@ -180,9 +177,13 @@ func (s *agentCommander) Create(
 		if err := store.AgentRepo().Create(ctx, agent); err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtx(
-			ctx, EventTypeAgentCreated, JSON{"status": agent},
-			&agent.ID, &providerID, nil, nil)
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeAgentCreated, JSON{"status": agent}, &agent.ID, &providerID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {
@@ -220,8 +221,13 @@ func (s *agentCommander) Update(ctx context.Context,
 		if err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
-			&id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeAgentUpdated, JSON{}, &id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {
@@ -255,8 +261,13 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 		if err := store.AgentRepo().Delete(ctx, id); err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtx(ctx, EventTypeAgentDeleted,
-			JSON{"status": agent}, &id, &providerID, &id, nil)
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeAgentDeleted, JSON{"status": agent}, &id, &providerID, &id, nil)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 }
@@ -281,8 +292,13 @@ func (s *agentCommander) UpdateStatus(ctx context.Context, id UUID, status Agent
 		if err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
-			&id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeAgentUpdated, JSON{}, &id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {

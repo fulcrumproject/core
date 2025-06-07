@@ -85,18 +85,15 @@ type MetricTypeCommander interface {
 
 // metricTypeCommander is the concrete implementation of MetricTypeCommander
 type metricTypeCommander struct {
-	store          Store
-	auditCommander AuditEntryCommander
+	store Store
 }
 
 // NewMetricTypeCommander creates a new MetricTypeService
 func NewMetricTypeCommander(
 	store Store,
-	auditCommander AuditEntryCommander,
 ) *metricTypeCommander {
 	return &metricTypeCommander{
-		store:          store,
-		auditCommander: auditCommander,
+		store: store,
 	}
 }
 
@@ -118,11 +115,14 @@ func (s *metricTypeCommander) Create(
 			return err
 		}
 
-		_, err := s.auditCommander.CreateCtx(
-			ctx,
-			EventTypeMetricTypeCreated,
-			JSON{"status": metricType},
-			&metricType.ID, nil, nil, nil)
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeMetricTypeCreated, JSON{"status": metricType}, &metricType.ID, nil, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
+
 		return err
 	})
 
@@ -159,11 +159,14 @@ func (s *metricTypeCommander) Update(ctx context.Context,
 			return err
 		}
 
-		_, err = s.auditCommander.CreateCtxWithDiff(
-			ctx,
-			EventTypeMetricTypeUpdated,
-			&id, nil, nil, nil,
-			&beforeMetricType, metricType)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeMetricTypeUpdated, JSON{}, &id, nil, nil, nil, &beforeMetricType, metricType)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
+
 		return err
 	})
 	if err != nil {
@@ -193,9 +196,14 @@ func (s *metricTypeCommander) Delete(ctx context.Context, id UUID) error {
 			return err
 		}
 
-		_, err = s.auditCommander.CreateCtx(
-			ctx, EventTypeMetricTypeDeleted,
-			JSON{"status": metricType}, &id, nil, nil, nil)
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeMetricTypeDeleted, JSON{"status": metricType}, &id, nil, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
+
 		return err
 	})
 }

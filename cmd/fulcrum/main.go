@@ -52,17 +52,14 @@ func main() {
 	store := database.NewGormStore(db)
 
 	// Initialize commanders
-	// Initialize audit commander first since it's needed by other commanders
-	auditEntryCmd := domain.NewAuditEntryCommander(store)
-
-	serviceCmd := domain.NewServiceCommander(store, auditEntryCmd)
-	serviceGroupCmd := domain.NewServiceGroupCommander(store, auditEntryCmd)
-	participantCmd := domain.NewParticipantCommander(store, auditEntryCmd)
-	jobCmd := domain.NewJobCommander(store, auditEntryCmd)
+	serviceCmd := domain.NewServiceCommander(store)
+	serviceGroupCmd := domain.NewServiceGroupCommander(store)
+	participantCmd := domain.NewParticipantCommander(store)
+	jobCmd := domain.NewJobCommander(store)
 	metricEntryCmd := domain.NewMetricEntryCommander(store)
-	metricTypeCmd := domain.NewMetricTypeCommander(store, auditEntryCmd)
-	agentCmd := domain.NewAgentCommander(store, auditEntryCmd)
-	tokenCmd := domain.NewTokenCommander(store, auditEntryCmd)
+	metricTypeCmd := domain.NewMetricTypeCommander(store)
+	agentCmd := domain.NewAgentCommander(store)
+	tokenCmd := domain.NewTokenCommander(store)
 
 	// Initialize auth and authorizer
 	auth := database.NewTokenAuthenticator(store)
@@ -78,7 +75,7 @@ func main() {
 	jobHandler := api.NewJobHandler(store.JobRepo(), jobCmd, authz)
 	metricTypeHandler := api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, authz)
 	metricEntryHandler := api.NewMetricEntryHandler(store.MetricEntryRepo(), store.ServiceRepo(), metricEntryCmd, authz)
-	auditEntryHandler := api.NewAuditEntryHandler(store.AuditEntryRepo(), auditEntryCmd, authz)
+	auditEntryHandler := api.NewAuditEntryHandler(store.AuditEntryRepo(), authz)
 	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), authz)
 
 	// Initialize router

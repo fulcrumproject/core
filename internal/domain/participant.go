@@ -95,18 +95,15 @@ type ParticipantCommander interface {
 
 // participantCommander is the concrete implementation of ParticipantCommander
 type participantCommander struct {
-	store          Store
-	auditCommander AuditEntryCommander
+	store Store
 }
 
 // NewParticipantCommander creates a new default ParticipantCommander
 func NewParticipantCommander(
 	store Store,
-	auditCommander AuditEntryCommander,
 ) ParticipantCommander {
 	return &participantCommander{
-		store:          store,
-		auditCommander: auditCommander,
+		store: store,
 	}
 }
 
@@ -124,10 +121,13 @@ func (c *participantCommander) Create(
 		if err := store.ParticipantRepo().Create(ctx, participant); err != nil {
 			return err
 		}
-		// EventTypeParticipantCreated will be defined in audit_entry.go as per plan
-		_, err := c.auditCommander.CreateCtx(
-			ctx, "EventTypeParticipantCreated", JSON{"status": participant}, // Placeholder
-			&participant.ID, &participant.ID, nil, nil) // ParticipantID is the authority
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeParticipantCreated, JSON{"status": participant}, &participant.ID, &participant.ID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {
@@ -157,9 +157,13 @@ func (c *participantCommander) Update(
 		if err := store.ParticipantRepo().Save(ctx, participant); err != nil {
 			return err
 		}
-		// EventTypeParticipantUpdated will be defined in audit_entry.go as per plan
-		_, err = c.auditCommander.CreateCtxWithDiff(ctx, "EventTypeParticipantUpdated", // Placeholder
-			&id, &id, nil, nil, &beforeParticipant, participant) // ParticipantID is the authority
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeParticipantUpdated, JSON{}, &id, &id, nil, nil, &beforeParticipant, participant)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {
@@ -195,9 +199,14 @@ func (c *participantCommander) Delete(ctx context.Context, id UUID) error {
 			return err
 		}
 
-		// EventTypeParticipantDeleted will be defined in audit_entry.go as per plan
-		_, err = c.auditCommander.CreateCtx(ctx, "EventTypeParticipantDeleted", // Placeholder
-			JSON{"status": participant}, &id, &id, nil, nil) // ParticipantID is the authority
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeParticipantDeleted, JSON{"status": participant}, &id, &id, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
+
 		return err
 	})
 }
