@@ -85,40 +85,30 @@ func (sa *ServiceActivation) Update(tags *[]string) bool {
 type ServiceActivationRepository interface {
 	ServiceActivationQuerier
 
-	// Create creates a new service activation
 	Create(ctx context.Context, entity *ServiceActivation) error
 
-	// Save updates an existing service activation
 	Save(ctx context.Context, entity *ServiceActivation) error
 
-	// Delete removes a service activation by ID
 	Delete(ctx context.Context, id UUID) error
 }
 
 // ServiceActivationQuerier defines the interface for the ServiceActivation read-only queries
 type ServiceActivationQuerier interface {
-	// FindByID retrieves a service activation by ID
 	FindByID(ctx context.Context, id UUID) (*ServiceActivation, error)
 
-	// Exists checks if a service activation with the given ID exists
 	Exists(ctx context.Context, id UUID) (bool, error)
 
-	// List retrieves a list of service activations based on the provided filters
 	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[ServiceActivation], error)
 
-	// Retrieve the auth scope for the entity
 	AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error)
 }
 
 // ServiceActivationCommander defines the interface for service activation command operations
 type ServiceActivationCommander interface {
-	// Create creates a new service activation
 	Create(ctx context.Context, providerID UUID, serviceTypeID UUID, tags []string) (*ServiceActivation, error)
 
-	// Update updates a service activation
 	Update(ctx context.Context, id UUID, tags *[]string) (*ServiceActivation, error)
 
-	// Delete removes a service activation by ID after checking for dependencies
 	Delete(ctx context.Context, id UUID) error
 }
 
@@ -136,7 +126,6 @@ func NewServiceActivationCommander(
 	}
 }
 
-// Create creates a new service activation
 func (s *serviceActivationCommander) Create(
 	ctx context.Context,
 	providerID UUID,
@@ -146,7 +135,6 @@ func (s *serviceActivationCommander) Create(
 	return nil, errors.New("not implemented")
 }
 
-// Update updates a service activation
 func (s *serviceActivationCommander) Update(
 	ctx context.Context,
 	id UUID,
@@ -155,7 +143,6 @@ func (s *serviceActivationCommander) Update(
 	return nil, errors.New("not implemented")
 }
 
-// Delete removes a service activation by ID after checking for dependencies
 func (s *serviceActivationCommander) Delete(ctx context.Context, id UUID) error {
 	return errors.New("not implemented")
 }
