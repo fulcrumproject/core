@@ -2,7 +2,9 @@ package database
 
 import (
 	"context"
+	"errors"
 
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -47,4 +49,40 @@ func serviceActivationAuthzFilterApplier(s *domain.AuthIdentityScope, q *gorm.DB
 
 func (r *GormServiceActivationRepository) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	return r.getAuthScope(ctx, id, "provider_id")
+}
+
+func (r *GormServiceActivationRepository) FindByServiceTypeAndTags(ctx context.Context, serviceTypeID domain.UUID, tags []string) ([]*domain.ServiceActivation, error) {
+	var activations []*domain.ServiceActivation
+
+	query := r.db.WithContext(ctx).Preload("Agents").Where("service_type_id = ?", serviceTypeID)
+
+	if len(tags) > 0 {
+		query = query.Where("tags @> ?", pq.StringArray(tags))
+	}
+
+	if err := query.Find(&activations).Error; err != nil {
+		return nil, err
+	}
+
+	return activations, nil
+}
+
+func (r *GormServiceActivationRepository) FindByAgentAndServiceType(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID) (*domain.ServiceActivation, error) {
+	var activation domain.ServiceActivation
+
+	err := r.db.WithContext(ctx).
+		Preload("Agents").
+		Where("service_type_id = ?", serviceTypeID).
+		Joins("JOIN service_activation_agents ON service_activations.id = service_activation_agents.service_activation_id").
+		Where("service_activation_agents.agent_id = ?", agentID).
+		First(&activation).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.NotFoundError{Err: errors.New("service activation not found")}
+		}
+		return nil, err
+	}
+
+	return &activation, nil
 }

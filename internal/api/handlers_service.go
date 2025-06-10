@@ -36,11 +36,12 @@ func NewServiceHandler(
 
 // CreateServiceRequest represents the request to create a service
 type CreateServiceRequest struct {
-	GroupID       domain.UUID `json:"groupId"`
-	AgentID       domain.UUID `json:"agentId"`
-	ServiceTypeID domain.UUID `json:"serviceTypeId"`
-	Name          string      `json:"name"`
-	Properties    domain.JSON `json:"properties"`
+	GroupID       domain.UUID  `json:"groupId"`
+	AgentID       *domain.UUID `json:"agentId,omitempty"`
+	ServiceTypeID domain.UUID  `json:"serviceTypeId"`
+	ServiceTags   []string     `json:"serviceTags,omitempty"`
+	Name          string       `json:"name"`
+	Properties    domain.JSON  `json:"properties"`
 }
 
 // UpdateServiceRequest represents the request to update a service
@@ -70,17 +71,8 @@ func CreateServiceScopeExtractor(
 			return nil, err
 		}
 
-		// Get agent scope
-		agentScope, err := agentQuerier.AuthScope(r.Context(), body.AgentID)
-		if err != nil {
-			return nil, err
-		}
-
-		// Combine the scopes
 		scope := &domain.AuthTargetScope{
-			ConsumerID:    serviceGroupScope.ConsumerID,
-			ParticipantID: agentScope.ParticipantID,
-			AgentID:       &body.AgentID,
+			ConsumerID: serviceGroupScope.ConsumerID,
 		}
 
 		return scope, nil
@@ -148,14 +140,31 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	// Get decoded body from context
 	body := MustGetBody[CreateServiceRequest](r.Context())
 
-	service, err := h.commander.Create(
-		r.Context(),
-		body.AgentID,
-		body.ServiceTypeID,
-		body.GroupID,
-		body.Name,
-		body.Properties,
-	)
+	var service *domain.Service
+	var err error
+
+	if body.AgentID != nil {
+		// Direct agent specification
+		service, err = h.commander.Create(
+			r.Context(),
+			*body.AgentID,
+			body.ServiceTypeID,
+			body.GroupID,
+			body.Name,
+			body.Properties,
+		)
+	} else {
+		// Service activation discovery using tags
+		service, err = h.commander.CreateWithTags(
+			r.Context(),
+			body.ServiceTypeID,
+			body.GroupID,
+			body.Name,
+			body.Properties,
+			body.ServiceTags,
+		)
+	}
+
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return

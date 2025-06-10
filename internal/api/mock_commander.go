@@ -178,6 +178,7 @@ func (m *mockServiceGroupCommander) Delete(ctx context.Context, id domain.UUID) 
 // mockServiceCommander is a custom mock for ServiceCommander
 type mockServiceCommander struct {
 	createFunc                     func(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, properties domain.JSON) (*domain.Service, error)
+	createWithTagsFunc             func(ctx context.Context, serviceTypeID domain.UUID, groupID domain.UUID, name string, properties domain.JSON, serviceTags []string) (*domain.Service, error)
 	updateFunc                     func(ctx context.Context, id domain.UUID, name *string, properties *domain.JSON) (*domain.Service, error)
 	transitionFunc                 func(ctx context.Context, id domain.UUID, status domain.ServiceStatus) (*domain.Service, error)
 	retryFunc                      func(ctx context.Context, id domain.UUID) (*domain.Service, error)
@@ -189,6 +190,13 @@ func (m *mockServiceCommander) Create(ctx context.Context, agentID domain.UUID, 
 		return m.createFunc(ctx, agentID, serviceTypeID, groupID, name, properties)
 	}
 	return nil, fmt.Errorf("create not mocked")
+}
+
+func (m *mockServiceCommander) CreateWithTags(ctx context.Context, serviceTypeID domain.UUID, groupID domain.UUID, name string, properties domain.JSON, serviceTags []string) (*domain.Service, error) {
+	if m.createWithTagsFunc != nil {
+		return m.createWithTagsFunc(ctx, serviceTypeID, groupID, name, properties, serviceTags)
+	}
+	return nil, fmt.Errorf("createWithTags not mocked")
 }
 
 func (m *mockServiceCommander) Update(ctx context.Context, id domain.UUID, name *string, properties *domain.JSON) (*domain.Service, error) {

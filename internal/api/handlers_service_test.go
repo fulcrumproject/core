@@ -104,7 +104,7 @@ func TestServiceHandleCreate(t *testing.T) {
 			name: "Success",
 			request: CreateServiceRequest{
 				Name:          "Test Service",
-				AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+				AgentID:       &[]domain.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
 				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    domain.JSON{"prop": "value"},
@@ -143,7 +143,7 @@ func TestServiceHandleCreate(t *testing.T) {
 			name: "CommanderError",
 			request: CreateServiceRequest{
 				Name:          "Test Service",
-				AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+				AgentID:       &[]domain.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
 				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    domain.JSON{"prop": "value"},

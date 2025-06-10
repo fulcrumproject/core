@@ -102,6 +102,10 @@ type ServiceActivationQuerier interface {
 	List(ctx context.Context, authIdentityScope *AuthIdentityScope, req *PageRequest) (*PageResponse[ServiceActivation], error)
 
 	AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error)
+
+	FindByServiceTypeAndTags(ctx context.Context, serviceTypeID UUID, tags []string) ([]*ServiceActivation, error)
+
+	FindByAgentAndServiceType(ctx context.Context, agentID UUID, serviceTypeID UUID) (*ServiceActivation, error)
 }
 
 // ServiceActivationCommander defines the interface for service activation command operations

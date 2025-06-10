@@ -142,3 +142,93 @@ Authorization: Bearer {{adminToken}}
 ### List all service activations (should be empty or not include deleted ones)
 GET {{baseUrl}}/service-activations
 Authorization: Bearer {{adminToken}}
+
+### ===== SERVICE CREATION WITH SERVICE ACTIVATIONS =====
+
+### Create a consumer participant for service creation
+# @name createConsumer
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Demo Service Consumer",
+    "status": "Enabled"
+}
+
+@consumerId = {{createConsumer.response.body.$.id}}
+
+### Create a service group for the consumer
+# @name createServiceGroup
+POST {{baseUrl}}/service-groups
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Test Service Group",
+    "consumerId": "{{consumerId}}"
+}
+
+@serviceGroupId = {{createServiceGroup.response.body.$.id}}
+
+### Recreate service activation for service creation testing
+# @name createServiceActivationForServices
+POST {{baseUrl}}/service-activations
+Authorization: Bearer {{adminToken}}
+
+{
+    "providerId": "{{providerId}}",
+    "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
+    "tags": ["ISO 27001", "SOC 2 Type II", "Enterprise"],
+    "agentIds": ["{{agentId}}"]
+}
+
+@serviceActivationIdForServices = {{createServiceActivationForServices.response.body.$.id}}
+
+### Create service using service activation discovery (with tags)
+# @name createServiceWithTags
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+
+{
+    "groupId": "{{serviceGroupId}}",
+    "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
+    "serviceTags": ["ISO 27001", "SOC 2 Type II"],
+    "name": "Service Created via Activation Discovery",
+    "properties": {
+        "cpu": "4",
+        "memory": "8GB",
+        "storage": "100GB"
+    }
+}
+
+@serviceIdFromActivation = {{createServiceWithTags.response.body.$.id}}
+
+### Create service using direct agent specification
+# @name createServiceWithAgent
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+
+{
+    "groupId": "{{serviceGroupId}}",
+    "agentId": "{{agentId}}",
+    "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
+    "name": "Service Created via Direct Agent",
+    "properties": {
+        "cpu": "2",
+        "memory": "4GB",
+        "storage": "50GB"
+    }
+}
+
+@serviceIdFromAgent = {{createServiceWithAgent.response.body.$.id}}
+
+### Get service created via activation discovery
+GET {{baseUrl}}/services/{{serviceIdFromActivation}}
+Authorization: Bearer {{adminToken}}
+
+### Get service created via direct agent
+GET {{baseUrl}}/services/{{serviceIdFromAgent}}
+Authorization: Bearer {{adminToken}}
+
+### List all services
+GET {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
