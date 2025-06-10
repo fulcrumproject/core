@@ -406,4 +406,337 @@ func TestServiceActivationRepository(t *testing.T) {
 			assert.Nil(t, scope.AgentID, "AgentID should be nil for service activations")
 		})
 	})
+
+	t.Run("FindByServiceTypeAndTags", func(t *testing.T) {
+		t.Run("success - find by service type only", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create fresh test data for this test
+			testProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, testProvider))
+
+			testServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, testServiceType))
+
+			// Setup
+			tags1 := []string{"FindByType1", "SOC2"}
+			sa1 := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, tags1)
+			require.NoError(t, repo.Create(ctx, sa1))
+
+			tags2 := []string{"FindByType2", "PCIDSS"}
+			sa2 := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, tags2)
+			require.NoError(t, repo.Create(ctx, sa2))
+
+			// Create another service type and activation to ensure filtering works
+			otherServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, otherServiceType))
+			otherSA := createTestServiceActivation(t, testProvider.ID, otherServiceType.ID, []string{"OtherType"})
+			require.NoError(t, repo.Create(ctx, otherSA))
+
+			// Execute - find by service type only (no tags filter)
+			result, err := repo.FindByServiceTypeAndTags(ctx, testServiceType.ID, nil)
+
+			// Assert
+			require.NoError(t, err)
+			assert.Len(t, result, 2)
+			for _, activation := range result {
+				assert.Equal(t, testServiceType.ID, activation.ServiceTypeID)
+			}
+		})
+
+		t.Run("success - find by service type and tags", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create fresh test data for this test
+			testProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, testProvider))
+
+			testServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, testServiceType))
+
+			// Setup
+			tags1 := []string{"TagSearch1", "TagSearch2", "TagSearch3"}
+			sa1 := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, tags1)
+			require.NoError(t, repo.Create(ctx, sa1))
+
+			tags2 := []string{"TagSearch4", "TagSearch5"}
+			sa2 := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, tags2)
+			require.NoError(t, repo.Create(ctx, sa2))
+
+			tags3 := []string{"TagSearch1", "TagSearch2", "TagSearch6"}
+			sa3 := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, tags3)
+			require.NoError(t, repo.Create(ctx, sa3))
+
+			// Execute - find activations that contain both "TagSearch1" and "TagSearch2"
+			searchTags := []string{"TagSearch1", "TagSearch2"}
+			result, err := repo.FindByServiceTypeAndTags(ctx, testServiceType.ID, searchTags)
+
+			// Assert
+			require.NoError(t, err)
+			assert.Len(t, result, 2) // sa1 and sa3 should match
+			for _, activation := range result {
+				assert.Equal(t, testServiceType.ID, activation.ServiceTypeID)
+				activationTags := []string(activation.Tags)
+				assert.Contains(t, activationTags, "TagSearch1")
+				assert.Contains(t, activationTags, "TagSearch2")
+			}
+		})
+
+		t.Run("success - no matches for tags", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create fresh test data for this test
+			testProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, testProvider))
+
+			testServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, testServiceType))
+
+			// Setup
+			tags := []string{"NoMatchTag1", "NoMatchTag2"}
+			sa := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, tags)
+			require.NoError(t, repo.Create(ctx, sa))
+
+			// Execute - search for tags that don't exist
+			searchTags := []string{"NonExistentTag1", "NonExistentTag2"}
+			result, err := repo.FindByServiceTypeAndTags(ctx, testServiceType.ID, searchTags)
+
+			// Assert
+			require.NoError(t, err)
+			assert.Empty(t, result)
+		})
+
+		t.Run("success - empty tags array", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create fresh test data for this test
+			testProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, testProvider))
+
+			testServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, testServiceType))
+
+			// Setup
+			sa := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, []string{"EmptyTestTag"})
+			require.NoError(t, repo.Create(ctx, sa))
+
+			// Execute - search with empty tags array
+			result, err := repo.FindByServiceTypeAndTags(ctx, testServiceType.ID, []string{})
+
+			// Assert
+			require.NoError(t, err)
+			assert.Len(t, result, 1)
+			assert.Equal(t, sa.ID, result[0].ID)
+		})
+
+		t.Run("success - preloads agents", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create fresh test data for this test
+			testProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, testProvider))
+
+			testServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, testServiceType))
+
+			testAgent1 := createTestAgent(t, testProvider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, testAgent1))
+			testAgent2 := createTestAgent(t, testProvider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, testAgent2))
+
+			// Setup
+			sa := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, []string{"PreloadAgentTest"})
+			sa.Agents = []domain.Agent{*testAgent1, *testAgent2}
+			require.NoError(t, repo.Create(ctx, sa))
+
+			// Execute
+			result, err := repo.FindByServiceTypeAndTags(ctx, testServiceType.ID, nil)
+
+			// Assert
+			require.NoError(t, err)
+			assert.Len(t, result, 1)
+			assert.Len(t, result[0].Agents, 2)
+		})
+	})
+
+	t.Run("FindByAgentAndServiceType", func(t *testing.T) {
+		t.Run("success - find activation by agent and service type", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create fresh test data for this test
+			testProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, testProvider))
+
+			testServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, testServiceType))
+
+			testAgent1 := createTestAgent(t, testProvider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, testAgent1))
+			testAgent2 := createTestAgent(t, testProvider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, testAgent2))
+
+			// Setup
+			sa := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, []string{"AgentServiceTest"})
+			sa.Agents = []domain.Agent{*testAgent1, *testAgent2}
+			require.NoError(t, repo.Create(ctx, sa))
+
+			// Execute
+			result, err := repo.FindByAgentAndServiceType(ctx, testAgent1.ID, testServiceType.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotNil(t, result)
+			assert.Equal(t, sa.ID, result.ID)
+			assert.Equal(t, testServiceType.ID, result.ServiceTypeID)
+			assert.Len(t, result.Agents, 2)
+		})
+
+		t.Run("success - find with second agent", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create fresh test data for this test
+			testProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, testProvider))
+
+			testServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, testServiceType))
+
+			testAgent1 := createTestAgent(t, testProvider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, testAgent1))
+			testAgent2 := createTestAgent(t, testProvider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, testAgent2))
+
+			// Setup
+			sa := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, []string{"SecondAgentTest"})
+			sa.Agents = []domain.Agent{*testAgent1, *testAgent2}
+			require.NoError(t, repo.Create(ctx, sa))
+
+			// Execute
+			result, err := repo.FindByAgentAndServiceType(ctx, testAgent2.ID, testServiceType.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotNil(t, result)
+			assert.Equal(t, sa.ID, result.ID)
+			assert.Equal(t, testServiceType.ID, result.ServiceTypeID)
+		})
+
+		t.Run("not found - agent not associated with service type", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create fresh test data for this test
+			testProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, testProvider))
+
+			testServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, testServiceType))
+
+			testAgent := createTestAgent(t, testProvider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, testAgent))
+
+			// Setup - create activation without associating the agent
+			sa := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, []string{"NoAgentTest"})
+			require.NoError(t, repo.Create(ctx, sa))
+
+			// Execute
+			result, err := repo.FindByAgentAndServiceType(ctx, testAgent.ID, testServiceType.ID)
+
+			// Assert
+			assert.Nil(t, result)
+			assert.ErrorAs(t, err, &domain.NotFoundError{})
+		})
+
+		t.Run("not found - wrong service type", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create fresh test data for this test
+			testProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, testProvider))
+
+			testServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, testServiceType))
+
+			testAgent := createTestAgent(t, testProvider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, testAgent))
+
+			// Setup
+			sa := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, []string{"WrongServiceTypeTest"})
+			sa.Agents = []domain.Agent{*testAgent}
+			require.NoError(t, repo.Create(ctx, sa))
+
+			// Create another service type
+			otherServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, otherServiceType))
+
+			// Execute - search with different service type
+			result, err := repo.FindByAgentAndServiceType(ctx, testAgent.ID, otherServiceType.ID)
+
+			// Assert
+			assert.Nil(t, result)
+			assert.ErrorAs(t, err, &domain.NotFoundError{})
+		})
+
+		t.Run("not found - nonexistent agent", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create fresh test data for this test
+			testProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, testProvider))
+
+			testServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, testServiceType))
+
+			testAgent := createTestAgent(t, testProvider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, testAgent))
+
+			// Setup
+			sa := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, []string{"NonexistentAgentTest"})
+			sa.Agents = []domain.Agent{*testAgent}
+			require.NoError(t, repo.Create(ctx, sa))
+
+			// Execute - search with nonexistent agent ID
+			nonexistentAgentID := domain.NewUUID()
+			result, err := repo.FindByAgentAndServiceType(ctx, nonexistentAgentID, testServiceType.ID)
+
+			// Assert
+			assert.Nil(t, result)
+			assert.ErrorAs(t, err, &domain.NotFoundError{})
+		})
+
+		t.Run("success - preloads agents", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Create fresh test data for this test
+			testProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, testProvider))
+
+			testServiceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, testServiceType))
+
+			testAgent1 := createTestAgent(t, testProvider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, testAgent1))
+			testAgent2 := createTestAgent(t, testProvider.ID, agentType.ID, domain.AgentConnected)
+			require.NoError(t, agentRepo.Create(ctx, testAgent2))
+
+			// Setup
+			sa := createTestServiceActivation(t, testProvider.ID, testServiceType.ID, []string{"PreloadTest"})
+			sa.Agents = []domain.Agent{*testAgent1, *testAgent2}
+			require.NoError(t, repo.Create(ctx, sa))
+
+			// Execute
+			result, err := repo.FindByAgentAndServiceType(ctx, testAgent1.ID, testServiceType.ID)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotNil(t, result)
+			assert.Len(t, result.Agents, 2)
+			// Verify the agents are properly loaded
+			agentIDs := make([]domain.UUID, len(result.Agents))
+			for i, agent := range result.Agents {
+				agentIDs[i] = agent.ID
+			}
+			assert.Contains(t, agentIDs, testAgent1.ID)
+			assert.Contains(t, agentIDs, testAgent2.ID)
+		})
+	})
 }

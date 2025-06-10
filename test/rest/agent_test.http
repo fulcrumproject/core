@@ -51,11 +51,12 @@ Authorization: Bearer {{adminToken}}
 {
     "providerId": "{{providerId}}",
     "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
-    "tags": ["ISO 27001"],
+    "tags": ["ISO 27001 {{$datetime iso8601 1 y}}"],
     "agentIds": ["{{agentId}}"]
 }
 
 @serviceActivationId = {{createServiceActivation.response.body.$.id}}
+@activationTag = {{createServiceActivation.response.body.$.tags.[0]}}
 
 ### Get agent's own information via authenticated endpoint
 # @name getAgentMe
@@ -111,7 +112,7 @@ Authorization: Bearer {{consumerToken}}
         "cpu": 4,
         "memory": 8
     },
-    "agentId": "{{agentId}}",
+    "tags": ["{{activationTag}}"],
     "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
     "groupId": "{{serviceGroupId}}"
 }
