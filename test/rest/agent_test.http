@@ -10,7 +10,7 @@ POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
 
 {
-    "name": "CloudConf Service Provider",
+    "name": "Demo Service Provider",
     "status": "Enabled"
 }
 
@@ -42,6 +42,36 @@ Authorization: Bearer {{adminToken}}
 }
 
 @agentToken = {{createAgentToken.response.body.$.value}}
+
+### Create a service activation
+# @name createServiceActivation
+POST {{baseUrl}}/service-activations
+Authorization: Bearer {{adminToken}}
+
+{
+    "providerId": "{{providerId}}",
+    "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
+    "tags": ["ISO 27001"],
+    "agentIds": ["{{agentId}}"]
+}
+
+@serviceActivationId = {{createServiceActivation.response.body.$.id}}
+
+### Update a service activation
+# @name updateServiceActivation
+PATCH {{baseUrl}}/service-activations/{{serviceActivationId}}
+Authorization: Bearer {{adminToken}}
+
+{
+    "providerId": "{{providerId}}",
+    "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
+    "tags": ["ISO 27001", "IT", "GaiaXLevel3"],
+    "agentIds": ["{{agentId}}"]
+}
+
+### Get service activation by ID
+GET {{baseUrl}}/service-activations/{{serviceActivationId}}
+Authorization: Bearer {{adminToken}}
 
 ### Get agent's own information via authenticated endpoint
 # @name getAgentMe
@@ -80,7 +110,7 @@ POST {{baseUrl}}/service-groups
 Authorization: Bearer {{consumerToken}}
 
 {
-    "name": "Project CloudConf2025",
+    "name": "Project Demo",
     "consumerId": "{{consumerId}}"
 }
 
@@ -113,7 +143,7 @@ PATCH {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{consumerToken}}
 
 {
-    "name": "Proxmox VM - CloudConf2025"
+    "name": "Proxmox VM - Demo"
 }
 
 ### Start Service

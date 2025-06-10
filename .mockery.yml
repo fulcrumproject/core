@@ -4,7 +4,7 @@ filename: mocks_test.go
 force-file-write: true
 formatter: goimports
 log-level: info
-structname: "{{.Mock}}2{{.InterfaceName}}"
+structname: "{{.Mock}}_{{.InterfaceName}}"
 pkgname: "{{.SrcPackageName}}"
 recursive: false
 require-template-schema-exists: true

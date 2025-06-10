@@ -163,6 +163,28 @@ Fulcrum Core uses a role-based authorization system where permissions are define
   - participant: service groups owned by its participant
   - agent: none (not authorized)
 
+### ServiceActivation
+- **create**:
+  - fulcrum_admin: always
+  - participant: for its participant (as provider)
+  - agent: none (not authorized)
+- **get**:
+  - fulcrum_admin: all service activations
+  - participant: service activations where it is the provider
+  - agent: none (not authorized)
+- **list**:
+  - fulcrum_admin: all service activations
+  - participant: service activations where it is the provider
+  - agent: none (not authorized)
+- **update**:
+  - fulcrum_admin: always
+  - participant: service activations where it is the provider
+  - agent: none (not authorized)
+- **delete**:
+  - fulcrum_admin: always
+  - participant: service activations where it is the provider
+  - agent: none (not authorized)
+
 ### Job
 - **get**:
   - fulcrum_admin: all jobs

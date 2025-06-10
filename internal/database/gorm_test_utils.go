@@ -77,6 +77,11 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, pro
 	}
 }
 
+func createTestServiceActivation(t *testing.T, providerID, serviceTypeID domain.UUID, tags []string) *domain.ServiceActivation {
+	t.Helper()
+	return domain.NewServiceActivation(providerID, serviceTypeID, tags)
+}
+
 func createTestToken(t *testing.T, role domain.AuthRole, scopeID *domain.UUID) *domain.Token {
 	t.Helper()
 	randomSuffix := uuid.New().String()

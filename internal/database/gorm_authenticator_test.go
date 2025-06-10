@@ -88,7 +88,7 @@ func (m *MockStore) MetricTypeRepo() domain.MetricTypeRepository {
 func (m *MockStore) MetricEntryRepo() domain.MetricEntryRepository {
 	return nil
 }
-func (m *MockStore) ServiceActionRepo() domain.ServiceActivationRepository {
+func (m *MockStore) ServiceActivationRepo() domain.ServiceActivationRepository {
 	return nil
 }
 

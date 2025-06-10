@@ -113,6 +113,9 @@ classDiagram
     Service "0..1" --> "1" ServiceType : is of type
     Service "1" --> "0..N" Job : related to
     ServiceGroup "1" --> "0..N" Service : groups
+    ServiceActivation "0..N" --> "1" Participant : belongs to provider
+    ServiceActivation "0..N" --> "1" ServiceType : activates
+    ServiceActivation "0..N" <--> "0..N" Agent : can be provisioned by
     MetricType "1" --> "0..N" MetricEntry : categorizes
     Participant "1" --> "0..N" Token : has many
     Agent "1" --> "0..N" Token : has many
@@ -124,6 +127,7 @@ classDiagram
     AuditEntry "0..N" <-- "1" Agent : audited via
     AuditEntry "0..N" <-- "1" Service : audited via
     AuditEntry "0..N" <-- "1" Participant : audited via
+    AuditEntry "0..N" <-- "1" ServiceActivation : audited via
 
     namespace Participants {
         class Participant {
@@ -180,6 +184,15 @@ classDiagram
             id : UUID
             name : string
             participantID : UUID
+            createdAt : datetime
+            updatedAt : datetime
+        }
+
+        class ServiceActivation {
+            id : UUID
+            providerID : UUID
+            serviceTypeID : UUID
+            tags : string[]
             createdAt : datetime
             updatedAt : datetime
         }
@@ -254,7 +267,11 @@ classDiagram
     - MicroK8s application
     - Kubernetes Cluster
     - Container Runtime services
-    - Kubernetes Application controller"
+    - Kubernetes Application controller
+    
+    Service types can be activated through
+    ServiceActivation entities that define
+    specific capabilities and agent assignments"
     
     note for Job "Jobs represent operations that agents
     perform on services including:
@@ -264,6 +281,15 @@ classDiagram
     - Deleting services
     
     Each job transitions service status appropriately"
+    
+    note for ServiceActivation "ServiceActivation defines standardized
+    service offerings with:
+    - Tags for capabilities/certifications
+    - Associated agents that can provision
+    - Provider participant ownership
+    - Service type specification
+    
+    Enables service discovery and capability matching"
 ```
 
 #### Entities
@@ -313,7 +339,15 @@ classDiagram
    - Belongs to a specific Participant
    - Enables collective management of related services
 
-7. **Job**
+7. **ServiceActivation**
+   - Represents a standardized service activation with specific tags
+   - Defines which services can be provisioned by a set of agents
+   - Belongs to a provider participant and references a specific service type
+   - Contains tags representing certifications or capabilities
+   - Has many-to-many relationship with agents that can provision this activation
+   - Enables service discovery and capability matching for service provisioning
+
+8. **Job**
    - Represents a discrete operation to be performed by an agent
    - Action types match service transitions: Create, Start, Stop, HotUpdate, ColdUpdate, Delete
    - Lifecycle statuss: Pending → Processing → Completed/Failed
