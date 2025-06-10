@@ -303,7 +303,7 @@ components:
           example: "web-server-01"
         properties:
           $ref: "#/components/schemas/JSONObject"
-        serviceTags:
+        agentTags:
           type: array
           items:
             type: string
@@ -311,7 +311,7 @@ components:
           description: "Tags used for agent discovery when agentId is not specified"
         agentId:
           $ref: "#/components/schemas/UUID"
-          description: "Specific agent ID (optional - if not provided, agent discovery will use serviceTags)"
+          description: "Specific agent ID (optional - if not provided, agent discovery will use agentTags)"
         serviceTypeId:
           $ref: "#/components/schemas/UUID"
         groupId:

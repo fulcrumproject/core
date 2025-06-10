@@ -39,7 +39,7 @@ type CreateServiceRequest struct {
 	GroupID       domain.UUID  `json:"groupId"`
 	AgentID       *domain.UUID `json:"agentId,omitempty"`
 	ServiceTypeID domain.UUID  `json:"serviceTypeId"`
-	ServiceTags   []string     `json:"serviceTags,omitempty"`
+	AgentTags     []string     `json:"agentTags,omitempty"`
 	Name          string       `json:"name"`
 	Properties    domain.JSON  `json:"properties"`
 }
@@ -161,7 +161,7 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 			body.GroupID,
 			body.Name,
 			body.Properties,
-			body.ServiceTags,
+			body.AgentTags,
 		)
 	}
 

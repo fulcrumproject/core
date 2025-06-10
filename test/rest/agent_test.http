@@ -99,7 +99,7 @@ Authorization: Bearer {{consumerToken}}
         "cpu": 4,
         "memory": 8
     },
-    "serviceTags": ["{{uniqueTag}}"],
+    "agentTags": ["{{uniqueTag}}"],
     "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
     "groupId": "{{serviceGroupId}}"
 }
