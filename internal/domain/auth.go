@@ -39,18 +39,17 @@ func (r AuthRole) Validate() error {
 type AuthSubject string
 
 const (
-	SubjectParticipant       AuthSubject = "participant"
-	SubjectAgent             AuthSubject = "agent"
-	SubjectAgentType         AuthSubject = "agent_type"
-	SubjectService           AuthSubject = "service"
-	SubjectServiceType       AuthSubject = "service_type"
-	SubjectServiceGroup      AuthSubject = "service_group"
-	SubjectServiceActivation AuthSubject = "service_activation"
-	SubjectJob               AuthSubject = "job"
-	SubjectMetricType        AuthSubject = "metric_type"
-	SubjectMetricEntry       AuthSubject = "metric_entry"
-	SubjectAuditEntry        AuthSubject = "audit_entry"
-	SubjectToken             AuthSubject = "token"
+	SubjectParticipant  AuthSubject = "participant"
+	SubjectAgent        AuthSubject = "agent"
+	SubjectAgentType    AuthSubject = "agent_type"
+	SubjectService      AuthSubject = "service"
+	SubjectServiceType  AuthSubject = "service_type"
+	SubjectServiceGroup AuthSubject = "service_group"
+	SubjectJob          AuthSubject = "job"
+	SubjectMetricType   AuthSubject = "metric_type"
+	SubjectMetricEntry  AuthSubject = "metric_entry"
+	SubjectAuditEntry   AuthSubject = "audit_entry"
+	SubjectToken        AuthSubject = "token"
 )
 
 // Validate ensures the AuthSubject is one of the predefined values
@@ -58,8 +57,7 @@ func (s AuthSubject) Validate() error {
 	switch s {
 	case SubjectParticipant, SubjectAgent, SubjectAgentType,
 		SubjectService, SubjectServiceType, SubjectServiceGroup,
-		SubjectServiceActivation, SubjectJob, SubjectMetricType,
-		SubjectMetricEntry, SubjectAuditEntry, SubjectToken:
+		SubjectJob, SubjectMetricType, SubjectMetricEntry, SubjectAuditEntry, SubjectToken:
 		return nil
 	default:
 		return fmt.Errorf("invalid auth subject: %s", s)

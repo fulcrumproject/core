@@ -54,7 +54,6 @@ func main() {
 	// Initialize commanders
 	serviceCmd := domain.NewServiceCommander(store)
 	serviceGroupCmd := domain.NewServiceGroupCommander(store)
-	serviceActivationCmd := domain.NewServiceActivationCommander(store)
 	participantCmd := domain.NewParticipantCommander(store)
 	jobCmd := domain.NewJobCommander(store)
 	metricEntryCmd := domain.NewMetricEntryCommander(store)
@@ -73,7 +72,6 @@ func main() {
 	agentHandler := api.NewAgentHandler(store.AgentRepo(), agentCmd, authz)
 	serviceGroupHandler := api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, authz)
 	serviceHandler := api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, authz)
-	serviceActivationHandler := api.NewServiceActivationHandler(store.ServiceActivationRepo(), serviceActivationCmd, authz)
 	jobHandler := api.NewJobHandler(store.JobRepo(), jobCmd, authz)
 	metricTypeHandler := api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, authz)
 	metricEntryHandler := api.NewMetricEntryHandler(store.MetricEntryRepo(), store.ServiceRepo(), metricEntryCmd, authz)
@@ -103,7 +101,6 @@ func main() {
 		r.Route("/agents", agentHandler.Routes())
 		r.Route("/service-groups", serviceGroupHandler.Routes())
 		r.Route("/services", serviceHandler.Routes())
-		r.Route("/service-activations", serviceActivationHandler.Routes())
 		r.Route("/metric-types", metricTypeHandler.Routes())
 		r.Route("/metric-entries", metricEntryHandler.Routes())
 		r.Route("/audit-entries", auditEntryHandler.Routes())

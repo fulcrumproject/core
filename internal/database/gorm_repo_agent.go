@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 
 	"fulcrumproject.org/core/internal/domain"
@@ -46,6 +47,26 @@ func (r *GormAgentRepository) CountByProvider(ctx context.Context, providerID do
 		return 0, result.Error
 	}
 	return count, nil
+}
+
+func (r *GormAgentRepository) FindByServiceTypeAndTags(ctx context.Context, serviceTypeID domain.UUID, tags []string) ([]*domain.Agent, error) {
+	var agents []*domain.Agent
+
+	query := r.db.WithContext(ctx).
+		Joins("JOIN agent_types ON agents.agent_type_id = agent_types.id").
+		Joins("JOIN agent_type_service_types ON agent_types.id = agent_type_service_types.agent_type_id").
+		Where("agent_type_service_types.service_type_id = ?", serviceTypeID)
+
+	if len(tags) > 0 {
+		query = query.Where("agents.tags @> ?", pq.StringArray(tags))
+	}
+
+	result := query.Preload("Provider").Preload("AgentType").Find(&agents)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return agents, nil
 }
 
 func (r *GormAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Context, inactiveDuration time.Duration) (int64, error) {

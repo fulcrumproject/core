@@ -12,6 +12,7 @@ type CreateAgentRequest struct {
 	Name        string      `json:"name"`
 	ProviderID  domain.UUID `json:"providerId"`
 	AgentTypeID domain.UUID `json:"agentTypeId"`
+	Tags        []string    `json:"tags"`
 }
 
 // AuthTargetScope implements AuthTargetScopeProvider interface
@@ -22,6 +23,7 @@ func (r CreateAgentRequest) AuthTargetScope() (*domain.AuthTargetScope, error) {
 type UpdateAgentRequest struct {
 	Name   *string             `json:"name"`
 	Status *domain.AgentStatus `json:"status"`
+	Tags   *[]string           `json:"tags"`
 }
 
 type UpdateAgentStatusRequest struct {
@@ -101,6 +103,7 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		p.Name,
 		p.ProviderID,
 		p.AgentTypeID,
+		p.Tags,
 	)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -163,6 +166,7 @@ func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		id,
 		p.Name,
 		p.Status,
+		p.Tags,
 	)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -205,6 +209,7 @@ type AgentResponse struct {
 	Status      domain.AgentStatus   `json:"status"`
 	ProviderID  domain.UUID          `json:"providerId"`
 	AgentTypeID domain.UUID          `json:"agentTypeId"`
+	Tags        []string             `json:"tags"`
 	Participant *ParticipantResponse `json:"participant,omitempty"`
 	AgentType   *AgentTypeResponse   `json:"agentType,omitempty"`
 	CreatedAt   JSONUTCTime          `json:"createdAt"`
@@ -219,6 +224,7 @@ func agentToResponse(a *domain.Agent) *AgentResponse {
 		Status:      a.Status,
 		ProviderID:  a.ProviderID,
 		AgentTypeID: a.AgentTypeID,
+		Tags:        []string(a.Tags),
 		CreatedAt:   JSONUTCTime(a.CreatedAt),
 		UpdatedAt:   JSONUTCTime(a.UpdatedAt),
 	}

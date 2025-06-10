@@ -19,5 +19,4 @@ type Store interface {
 	MetricTypeRepo() MetricTypeRepository
 	MetricEntryRepo() MetricEntryRepository
 	ParticipantRepo() ParticipantRepository
-	ServiceActivationRepo() ServiceActivationRepository
 }

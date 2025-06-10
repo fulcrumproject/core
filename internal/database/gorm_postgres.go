@@ -43,7 +43,6 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.AgentType{},
 		&domain.ServiceType{},
 		&domain.ServiceGroup{},
-		&domain.ServiceActivation{},
 		&domain.Service{},
 		&domain.Job{},
 		&domain.MetricType{},

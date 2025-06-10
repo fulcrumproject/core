@@ -35,7 +35,7 @@ func TestHandleCreate(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				commander.createFunc = func(ctx context.Context, name string, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
+				commander.createFunc = func(ctx context.Context, name string, providerID domain.UUID, agentTypeID domain.UUID, tags []string) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
 							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440001"),
@@ -57,6 +57,7 @@ func TestHandleCreate(t *testing.T) {
 				"status":      "Disconnected",
 				"providerId":  "550e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "660e8400-e29b-41d4-a716-446655440000",
+				"tags":        interface{}(nil),
 				"createdAt":   "2023-01-01T00:00:00Z",
 				"updatedAt":   "2023-01-01T00:00:00Z",
 			},
@@ -69,7 +70,7 @@ func TestHandleCreate(t *testing.T) {
 				AgentTypeID: uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 			},
 			mockSetup: func(commander *mockAgentCommander) {
-				commander.createFunc = func(ctx context.Context, name string, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
+				commander.createFunc = func(ctx context.Context, name string, providerID domain.UUID, agentTypeID domain.UUID, tags []string) (*domain.Agent, error) {
 					return nil, domain.NewInvalidInputErrorf("provider not found")
 				}
 			},
@@ -151,6 +152,7 @@ func TestAgentHandleGet(t *testing.T) {
 				"status":      "Connected",
 				"providerId":  "660e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "770e8400-e29b-41d4-a716-446655440000",
+				"tags":        interface{}(nil),
 				"createdAt":   "2023-01-01T00:00:00Z",
 				"updatedAt":   "2023-01-01T00:00:00Z",
 			},
@@ -242,6 +244,7 @@ func TestHandleGetMe(t *testing.T) {
 				"status":      "Connected",
 				"providerId":  "660e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "770e8400-e29b-41d4-a716-446655440000",
+				"tags":        interface{}(nil),
 				"createdAt":   "2023-01-01T00:00:00Z",
 				"updatedAt":   "2023-01-01T00:00:00Z",
 			},
@@ -390,7 +393,7 @@ func TestHandleUpdate(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, status *domain.AgentStatus) (*domain.Agent, error) {
+				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, status *domain.AgentStatus, tags *[]string) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
 							ID:        id,
@@ -412,7 +415,7 @@ func TestHandleUpdate(t *testing.T) {
 				Name: stringPtr("UpdatedAgent"),
 			},
 			mockSetup: func(commander *mockAgentCommander) {
-				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, status *domain.AgentStatus) (*domain.Agent, error) {
+				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, status *domain.AgentStatus, tags *[]string) (*domain.Agent, error) {
 					return nil, domain.NewNotFoundErrorf("agent not found")
 				}
 			},

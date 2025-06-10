@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 const (
@@ -54,6 +55,9 @@ type Agent struct {
 	Status           AgentStatus `json:"status" gorm:"not null"`
 	LastStatusUpdate time.Time   `json:"lastStatusUpdate" gorm:"index"`
 
+	// Tags representing capabilities or certifications of this agent
+	Tags pq.StringArray `json:"tags" gorm:"type:text[]"`
+
 	// Relationships
 	AgentTypeID UUID         `json:"agentTypeId" gorm:"not null"`
 	AgentType   *AgentType   `json:"agentType,omitempty" gorm:"foreignKey:AgentTypeID"`
@@ -62,13 +66,14 @@ type Agent struct {
 }
 
 // NewAgent creates a new agent with proper validation
-func NewAgent(name string, providerID UUID, agentTypeID UUID) *Agent {
+func NewAgent(name string, providerID UUID, agentTypeID UUID, tags []string) *Agent {
 	return &Agent{
 		Name:             name,
 		Status:           AgentDisconnected,
 		LastStatusUpdate: time.Now(),
 		ProviderID:       providerID,
 		AgentTypeID:      agentTypeID,
+		Tags:             pq.StringArray(tags),
 	}
 }
 
@@ -82,18 +87,31 @@ func (a *Agent) Validate() error {
 	if a.Name == "" {
 		return fmt.Errorf("agent name cannot be empty")
 	}
+
 	if err := a.Status.Validate(); err != nil {
 		return err
 	}
+
 	if a.LastStatusUpdate.IsZero() {
 		return fmt.Errorf("status last update cannot be empty")
 	}
+
 	if a.AgentTypeID == uuid.Nil {
 		return fmt.Errorf("agent type ID cannot be empty")
 	}
 	if a.ProviderID == uuid.Nil {
 		return fmt.Errorf("provider ID cannot be empty")
 	}
+
+	for i, tag := range []string(a.Tags) {
+		if len(tag) == 0 {
+			return fmt.Errorf("tag at index %d cannot be empty", i)
+		}
+		if len(tag) > 100 {
+			return fmt.Errorf("tag at index %d exceeds maximum length of 100 characters", i)
+		}
+	}
+
 	return nil
 }
 
@@ -115,13 +133,30 @@ func (a *Agent) RegisterMetadata(name *string) {
 	}
 }
 
+// Update updates the agent's fields
+func (a *Agent) Update(name *string, tags *[]string) bool {
+	updated := false
+
+	if name != nil {
+		a.Name = *name
+		updated = true
+	}
+
+	if tags != nil {
+		a.Tags = pq.StringArray(*tags)
+		updated = true
+	}
+
+	return updated
+}
+
 // AgentCommander defines the interface for agent command operations
 type AgentCommander interface {
 	// Create creates a new agent
-	Create(ctx context.Context, name string, providerID UUID, agentTypeID UUID) (*Agent, error)
+	Create(ctx context.Context, name string, providerID UUID, agentTypeID UUID, tags []string) (*Agent, error)
 
 	// Update updates an agent
-	Update(ctx context.Context, id UUID, name *string, status *AgentStatus) (*Agent, error)
+	Update(ctx context.Context, id UUID, name *string, status *AgentStatus, tags *[]string) (*Agent, error)
 
 	// Delete removes an agent by ID after checking for dependencies
 	Delete(ctx context.Context, id UUID) error
@@ -149,6 +184,7 @@ func (s *agentCommander) Create(
 	name string,
 	providerID UUID,
 	agentTypeID UUID,
+	tags []string,
 ) (*Agent, error) {
 	// Validate references
 	// Assuming store.ParticipantRepo().Exists will be available
@@ -170,7 +206,7 @@ func (s *agentCommander) Create(
 	// Create and save
 	var agent *Agent
 	err = s.store.Atomic(ctx, func(store Store) error {
-		agent = NewAgent(name, providerID, agentTypeID)
+		agent = NewAgent(name, providerID, agentTypeID, tags)
 		if err := agent.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -196,6 +232,7 @@ func (s *agentCommander) Update(ctx context.Context,
 	id UUID,
 	name *string,
 	status *AgentStatus,
+	tags *[]string,
 ) (*Agent, error) {
 	// Find it
 	agent, err := s.store.AgentRepo().FindByID(ctx, id)
@@ -208,9 +245,7 @@ func (s *agentCommander) Update(ctx context.Context,
 	if status != nil {
 		agent.UpdateStatus(*status)
 	}
-	if name != nil {
-		agent.RegisterMetadata(name)
-	}
+	agent.Update(name, tags)
 	if err := agent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
@@ -335,6 +370,9 @@ type AgentQuerier interface {
 
 	// CountByProvider returns the number of agents for a specific provider
 	CountByProvider(ctx context.Context, providerID UUID) (int64, error)
+
+	// FindByServiceTypeAndTags finds agents that support a service type and have all required tags
+	FindByServiceTypeAndTags(ctx context.Context, serviceTypeID UUID, tags []string) ([]*Agent, error)
 
 	// Retrieve the auth scope for the entity
 	AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error)

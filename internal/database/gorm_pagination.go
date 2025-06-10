@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"fulcrumproject.org/core/internal/domain"
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -72,22 +71,6 @@ func parserInFilterFieldApplier[T any](f string, t func(string) (T, error)) Filt
 
 func stringInFilterFieldApplier(f string) FilterFieldApplier {
 	return parserInFilterFieldApplier(f, func(v string) (string, error) { return v, nil })
-}
-
-func uuidFilterFieldApplier(f string) FilterFieldApplier {
-	return parserInFilterFieldApplier(f, domain.ParseUUID)
-}
-
-func arrayContainsAllFilterFieldApplier(f string) FilterFieldApplier {
-	return func(db *gorm.DB, vv []string) (*gorm.DB, error) {
-		if len(vv) == 0 {
-			return db, nil
-		}
-
-		// For PostgreSQL, use the @> operator to check if the array contains all elements
-		// We need to use pq.Array to properly format the array for PostgreSQL
-		return db.Where(f+" @> ?", pq.Array(vv)), nil
-	}
 }
 
 // list implements a generic list operation for any model type

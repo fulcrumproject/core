@@ -88,9 +88,6 @@ func (m *MockStore) MetricTypeRepo() domain.MetricTypeRepository {
 func (m *MockStore) MetricEntryRepo() domain.MetricEntryRepository {
 	return nil
 }
-func (m *MockStore) ServiceActivationRepo() domain.ServiceActivationRepository {
-	return nil
-}
 
 // TestGormTokenIdentity_ID tests the ID method
 func TestGormTokenIdentity_ID(t *testing.T) {

@@ -10,19 +10,18 @@ import (
 
 // GormStore implements the domain.Store interface using GORM
 type GormStore struct {
-	db                    *gorm.DB
-	participantRepo       domain.ParticipantRepository
-	tokenRepo             domain.TokenRepository
-	agentTypeRepo         domain.AgentTypeRepository
-	agentRepo             domain.AgentRepository
-	serviceTypeRepo       domain.ServiceTypeRepository
-	serviceGroupRepo      domain.ServiceGroupRepository
-	serviceActivationRepo domain.ServiceActivationRepository
-	serviceRepo           domain.ServiceRepository
-	jobRepo               domain.JobRepository
-	auditEntryRepo        domain.AuditEntryRepository
-	metricTypeRepo        domain.MetricTypeRepository
-	metricEntryRepo       domain.MetricEntryRepository
+	db               *gorm.DB
+	participantRepo  domain.ParticipantRepository
+	tokenRepo        domain.TokenRepository
+	agentTypeRepo    domain.AgentTypeRepository
+	agentRepo        domain.AgentRepository
+	serviceTypeRepo  domain.ServiceTypeRepository
+	serviceGroupRepo domain.ServiceGroupRepository
+	serviceRepo      domain.ServiceRepository
+	jobRepo          domain.JobRepository
+	auditEntryRepo   domain.AuditEntryRepository
+	metricTypeRepo   domain.MetricTypeRepository
+	metricEntryRepo  domain.MetricEntryRepository
 }
 
 // NewGormStore creates a new GormStore instance
@@ -117,11 +116,4 @@ func (s *GormStore) MetricEntryRepo() domain.MetricEntryRepository {
 		s.metricEntryRepo = NewMetricEntryRepository(s.db)
 	}
 	return s.metricEntryRepo
-}
-
-func (s *GormStore) ServiceActivationRepo() domain.ServiceActivationRepository {
-	if s.serviceActivationRepo == nil {
-		s.serviceActivationRepo = NewServiceActivationRepository(s.db)
-	}
-	return s.serviceActivationRepo
 }

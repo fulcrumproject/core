@@ -10,22 +10,22 @@ import (
 
 // mockAgentCommander is a custom mock for AgentCommander
 type mockAgentCommander struct {
-	createFunc       func(ctx context.Context, name string, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error)
-	updateFunc       func(ctx context.Context, id domain.UUID, name *string, status *domain.AgentStatus) (*domain.Agent, error)
+	createFunc       func(ctx context.Context, name string, providerID domain.UUID, agentTypeID domain.UUID, tags []string) (*domain.Agent, error)
+	updateFunc       func(ctx context.Context, id domain.UUID, name *string, status *domain.AgentStatus, tags *[]string) (*domain.Agent, error)
 	deleteFunc       func(ctx context.Context, id domain.UUID) error
 	updateStatusFunc func(ctx context.Context, id domain.UUID, status domain.AgentStatus) (*domain.Agent, error)
 }
 
-func (m *mockAgentCommander) Create(ctx context.Context, name string, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
+func (m *mockAgentCommander) Create(ctx context.Context, name string, providerID domain.UUID, agentTypeID domain.UUID, tags []string) (*domain.Agent, error) {
 	if m.createFunc != nil {
-		return m.createFunc(ctx, name, providerID, agentTypeID)
+		return m.createFunc(ctx, name, providerID, agentTypeID, tags)
 	}
 	return nil, fmt.Errorf("create not mocked")
 }
 
-func (m *mockAgentCommander) Update(ctx context.Context, id domain.UUID, name *string, status *domain.AgentStatus) (*domain.Agent, error) {
+func (m *mockAgentCommander) Update(ctx context.Context, id domain.UUID, name *string, status *domain.AgentStatus, tags *[]string) (*domain.Agent, error) {
 	if m.updateFunc != nil {
-		return m.updateFunc(ctx, id, name, status)
+		return m.updateFunc(ctx, id, name, status, tags)
 	}
 	return nil, fmt.Errorf("update not mocked")
 }

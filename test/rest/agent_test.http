@@ -16,7 +16,7 @@ Authorization: Bearer {{adminToken}}
 
 @providerId = {{createProvider.response.body.$.id}}
 
-### Create an agent
+### Create an agent with tags
 # @name createAgent
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
@@ -24,10 +24,12 @@ Authorization: Bearer {{adminToken}}
 {
     "name": "VM Agent",
     "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
-    "providerId": "{{providerId}}"
+    "providerId": "{{providerId}}",
+    "tags": ["gpu-{{$timestamp}}", "high-memory", "ssd-storage"]
 }
 
 @agentId = {{createAgent.response.body.$.id}}
+@uniqueTag = {{createAgent.response.body.$.tags.[0]}}
 
 ### Create a new agent token
 # @name createAgentToken
@@ -42,21 +44,6 @@ Authorization: Bearer {{adminToken}}
 }
 
 @agentToken = {{createAgentToken.response.body.$.value}}
-
-### Create a service activation
-# @name createServiceActivation
-POST {{baseUrl}}/service-activations
-Authorization: Bearer {{adminToken}}
-
-{
-    "providerId": "{{providerId}}",
-    "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
-    "tags": ["ISO 27001 {{$datetime iso8601 1 y}}"],
-    "agentIds": ["{{agentId}}"]
-}
-
-@serviceActivationId = {{createServiceActivation.response.body.$.id}}
-@activationTag = {{createServiceActivation.response.body.$.tags.[0]}}
 
 ### Get agent's own information via authenticated endpoint
 # @name getAgentMe
@@ -101,7 +88,7 @@ Authorization: Bearer {{consumerToken}}
 
 @serviceGroupId = {{createServiceGroup.response.body.$.id}}
 
-### Create a new service
+### Create a new service using agent's unique tag for discovery
 # @name createService
 POST {{baseUrl}}/services
 Authorization: Bearer {{consumerToken}}
@@ -112,7 +99,7 @@ Authorization: Bearer {{consumerToken}}
         "cpu": 4,
         "memory": 8
     },
-    "tags": ["{{activationTag}}"],
+    "serviceTags": ["{{uniqueTag}}"],
     "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
     "groupId": "{{serviceGroupId}}"
 }

@@ -128,12 +128,6 @@ var defaultAuthzRules = []AuthRule{
 	{Subject: SubjectServiceGroup, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 	{Subject: SubjectServiceGroup, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
 
-	// ServiceActivation permissions
-	{Subject: SubjectServiceActivation, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
-	{Subject: SubjectServiceActivation, Action: ActionCreate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
-	{Subject: SubjectServiceActivation, Action: ActionUpdate, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
-	{Subject: SubjectServiceActivation, Action: ActionDelete, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant}},
-
 	// Job permissions
 	{Subject: SubjectJob, Action: ActionRead, Roles: []AuthRole{RoleFulcrumAdmin, RoleParticipant, RoleAgent}},
 	{Subject: SubjectJob, Action: ActionClaim, Roles: []AuthRole{RoleAgent}},

@@ -36,11 +36,20 @@ func createTestAgentType(t *testing.T) *domain.AgentType {
 
 func createTestAgent(t *testing.T, participantID, agentTypeID domain.UUID, status domain.AgentStatus) *domain.Agent {
 	t.Helper()
-	return createTestAgentWithStatusUpdate(t, participantID, agentTypeID, status, time.Now())
+	return createTestAgentWithTags(t, participantID, agentTypeID, status, nil)
 }
 
-// Helper function to create a test agent with a specific LastStatusUpdate time
+func createTestAgentWithTags(t *testing.T, participantID, agentTypeID domain.UUID, status domain.AgentStatus, tags []string) *domain.Agent {
+	t.Helper()
+	return createTestAgentWithStatusUpdateAndTags(t, participantID, agentTypeID, status, time.Now(), tags)
+}
+
 func createTestAgentWithStatusUpdate(t *testing.T, participantID, agentTypeID domain.UUID, status domain.AgentStatus, lastUpdate time.Time) *domain.Agent {
+	t.Helper()
+	return createTestAgentWithStatusUpdateAndTags(t, participantID, agentTypeID, status, lastUpdate, nil)
+}
+
+func createTestAgentWithStatusUpdateAndTags(t *testing.T, participantID, agentTypeID domain.UUID, status domain.AgentStatus, lastUpdate time.Time, tags []string) *domain.Agent {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Agent{
@@ -49,6 +58,7 @@ func createTestAgentWithStatusUpdate(t *testing.T, participantID, agentTypeID do
 		ProviderID:       participantID,
 		AgentTypeID:      agentTypeID,
 		LastStatusUpdate: lastUpdate,
+		Tags:             tags,
 	}
 }
 
@@ -75,11 +85,6 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, pro
 		CurrentProperties: &(domain.JSON{}),
 		Resources:         &(domain.JSON{}),
 	}
-}
-
-func createTestServiceActivation(t *testing.T, providerID, serviceTypeID domain.UUID, tags []string) *domain.ServiceActivation {
-	t.Helper()
-	return domain.NewServiceActivation(providerID, serviceTypeID, tags)
 }
 
 func createTestToken(t *testing.T, role domain.AuthRole, scopeID *domain.UUID) *domain.Token {

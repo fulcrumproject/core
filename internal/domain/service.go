@@ -81,18 +81,16 @@ type Service struct {
 	Resources *JSON `json:"resources,omitempty" gorm:"type:jsonb"`
 
 	// Relationships
-	ProviderID          UUID               `json:"providerId" gorm:"not null"`
-	Provider            *Participant       `json:"-" gorm:"foreignKey:ProviderID"`
-	ConsumerID          UUID               `json:"consumerId" gorm:"not null"`
-	Consumer            *Participant       `json:"-" gorm:"foreignKey:ConsumerID"`
-	GroupID             UUID               `gorm:"not null" json:"groupId"`
-	Group               *ServiceGroup      `json:"-" gorm:"foreignKey:GroupID"`
-	AgentID             UUID               `json:"agentId" gorm:"not null"`
-	Agent               *Agent             `json:"-" gorm:"foreignKey:AgentID"`
-	ServiceTypeID       UUID               `json:"serviceTypeId" gorm:"not null"`
-	ServiceType         *ServiceType       `json:"-" gorm:"foreignKey:ServiceTypeID"`
-	ServiceActivationID UUID               `json:"serviceActivationId" gorm:"not null;index"`
-	ServiceActivation   *ServiceActivation `json:"-" gorm:"foreignKey:ServiceActivationID"`
+	ProviderID    UUID          `json:"providerId" gorm:"not null"`
+	Provider      *Participant  `json:"-" gorm:"foreignKey:ProviderID"`
+	ConsumerID    UUID          `json:"consumerId" gorm:"not null"`
+	Consumer      *Participant  `json:"-" gorm:"foreignKey:ConsumerID"`
+	GroupID       UUID          `gorm:"not null" json:"groupId"`
+	Group         *ServiceGroup `json:"-" gorm:"foreignKey:GroupID"`
+	AgentID       UUID          `json:"agentId" gorm:"not null"`
+	Agent         *Agent        `json:"-" gorm:"foreignKey:AgentID"`
+	ServiceTypeID UUID          `json:"serviceTypeId" gorm:"not null"`
+	ServiceType   *ServiceType  `json:"-" gorm:"foreignKey:ServiceTypeID"`
 }
 
 // NewService creates a new Service without validation
@@ -104,20 +102,18 @@ func NewService(
 	serviceTypeID UUID,
 	name string,
 	properties *JSON,
-	serviceActivationID UUID,
 ) *Service {
 	target := ServiceCreated
 	return &Service{
-		ConsumerID:          consumerID,
-		GroupID:             groupID,
-		ProviderID:          providerID,
-		AgentID:             agentID,
-		ServiceTypeID:       serviceTypeID,
-		Name:                name,
-		CurrentStatus:       ServiceCreating,
-		TargetStatus:        &target,
-		TargetProperties:    properties,
-		ServiceActivationID: serviceActivationID,
+		ConsumerID:       consumerID,
+		GroupID:          groupID,
+		ProviderID:       providerID,
+		AgentID:          agentID,
+		ServiceTypeID:    serviceTypeID,
+		Name:             name,
+		CurrentStatus:    ServiceCreating,
+		TargetStatus:     &target,
+		TargetProperties: properties,
 	}
 }
 
@@ -245,7 +241,7 @@ type ServiceCommander interface {
 	// Create handles service creation and creates a job for the agent
 	Create(ctx context.Context, agentID UUID, serviceTypeID UUID, groupID UUID, name string, properties JSON) (*Service, error)
 
-	// CreateWithTags handles service creation using service activation discovery
+	// CreateWithTags handles service creation using agent discovery by tags
 	CreateWithTags(ctx context.Context, serviceTypeID UUID, groupID UUID, name string, properties JSON, serviceTags []string) (*Service, error)
 
 	// Update handles service updates and creates a job for the agent
@@ -275,42 +271,32 @@ func NewServiceCommander(
 	}
 }
 
-func (s *serviceCommander) Create(
+func (s *serviceCommander) createServiceWithAgent(
 	ctx context.Context,
-	agentID UUID,
+	agent *Agent,
 	serviceTypeID UUID,
 	groupID UUID,
 	name string,
 	properties JSON,
 ) (*Service, error) {
-	// Find and check dependencies
 	group, err := s.store.ServiceGroupRepo().FindByID(ctx, groupID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Find a matching service activation (required)
-	activation, err := s.store.ServiceActivationRepo().FindByAgentAndServiceType(ctx, agentID, serviceTypeID)
-	if err != nil {
-		return nil, NewInvalidInputErrorf("no service activation found for agent %s and service type %s", agentID, serviceTypeID)
-	}
-
-	// Create and validate
 	svc := NewService(
 		group.ConsumerID,
 		groupID,
-		activation.ProviderID,
-		agentID,
+		agent.ProviderID,
+		agent.ID,
 		serviceTypeID,
 		name,
 		&properties,
-		activation.ID,
 	)
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
-	// Save, audit and create job
 	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
 			return err
@@ -341,6 +327,22 @@ func (s *serviceCommander) Create(
 	return svc, nil
 }
 
+func (s *serviceCommander) Create(
+	ctx context.Context,
+	agentID UUID,
+	serviceTypeID UUID,
+	groupID UUID,
+	name string,
+	properties JSON,
+) (*Service, error) {
+	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
+	if err != nil {
+		return nil, NewInvalidInputErrorf("agent with ID %s does not exist", agentID)
+	}
+
+	return s.createServiceWithAgent(ctx, agent, serviceTypeID, groupID, name, properties)
+}
+
 func (s *serviceCommander) CreateWithTags(
 	ctx context.Context,
 	serviceTypeID UUID,
@@ -349,75 +351,17 @@ func (s *serviceCommander) CreateWithTags(
 	properties JSON,
 	serviceTags []string,
 ) (*Service, error) {
-	// Find service activations matching the criteria
-	activations, err := s.store.ServiceActivationRepo().FindByServiceTypeAndTags(ctx, serviceTypeID, serviceTags)
+	agents, err := s.store.AgentRepo().FindByServiceTypeAndTags(ctx, serviceTypeID, serviceTags)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(activations) == 0 {
-		return nil, NewInvalidInputErrorf("no service activation found for service type %s with tags %v", serviceTypeID, serviceTags)
+	if len(agents) == 0 {
+		return nil, NewInvalidInputErrorf("no agent found for service type %s with tags %v", serviceTypeID, serviceTags)
 	}
 
-	// Use the first activation found and get an agent from it
-	activation := activations[0]
-	if len(activation.Agents) == 0 {
-		return nil, NewInvalidInputErrorf("service activation %s has no agents available", activation.ID)
-	}
-
-	// Use the first available agent
-	agent := activation.Agents[0]
-
-	// Find and check dependencies
-	group, err := s.store.ServiceGroupRepo().FindByID(ctx, groupID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create and validate
-	svc := NewService(
-		group.ConsumerID,
-		groupID,
-		agent.ProviderID,
-		agent.ID,
-		serviceTypeID,
-		name,
-		&properties,
-		activation.ID,
-	)
-	if err := svc.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
-	}
-
-	// Save, audit and create job
-	err = s.store.Atomic(ctx, func(store Store) error {
-		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
-			return err
-		}
-
-		job := NewJob(svc, ServiceActionCreate, 1)
-		if err := job.Validate(); err != nil {
-			return err
-		}
-		if err := store.JobRepo().Create(ctx, job); err != nil {
-			return err
-		}
-
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeServiceCreated, JSON{"status": svc}, &svc.ID, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID)
-		if err != nil {
-			return err
-		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
-			return err
-		}
-
-		return err
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return svc, nil
+	agent := agents[0]
+	return s.createServiceWithAgent(ctx, agent, serviceTypeID, groupID, name, properties)
 }
 
 func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, props *JSON) (*Service, error) {

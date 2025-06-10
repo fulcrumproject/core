@@ -154,7 +154,7 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 			body.Properties,
 		)
 	} else {
-		// Service activation discovery using tags
+		// Agent discovery using service type and tags
 		service, err = h.commander.CreateWithTags(
 			r.Context(),
 			body.ServiceTypeID,
