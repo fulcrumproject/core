@@ -89,16 +89,6 @@ components:
       format: uuid
       example: "123e4567-e89b-12d3-a456-426614174000"
 
-    Attributes:
-      type: object
-      additionalProperties:
-        type: array
-        items:
-          type: string
-      example:
-        region: ["us-east-1"]
-        capabilities: ["compute", "storage"]
-
     JSONObject:
       type: object
       additionalProperties: true
@@ -116,11 +106,6 @@ components:
           example: "Test Participant"
         status:
           $ref: "#/components/schemas/ParticipantStatus"
-        countryCode:
-          type: string
-          example: "US"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
 
     ParticipantResponse:
       type: object
@@ -132,11 +117,6 @@ components:
           example: "Test Participant"
         status:
           $ref: "#/components/schemas/ParticipantStatus"
-        countryCode:
-          type: string
-          example: "US"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         createdAt:
           type: string
           format: date-time
@@ -224,11 +204,6 @@ components:
           example: "aws-agent-01"
         status:
           $ref: "#/components/schemas/AgentStatus"
-        countryCode:
-          type: string
-          example: "US"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         properties:
           $ref: "#/components/schemas/JSONObject"
         participantId:
@@ -246,17 +221,15 @@ components:
           example: "aws-agent-01"
         status:
           $ref: "#/components/schemas/AgentStatus"
-        countryCode:
-          type: string
-          example: "US"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
-        properties:
-          $ref: "#/components/schemas/JSONObject"
-        participantId:
+        providerId:
           $ref: "#/components/schemas/UUID"
         agentTypeId:
           $ref: "#/components/schemas/UUID"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["gpu", "high-memory", "ssd"]
         participant:
           $ref: "#/components/schemas/ParticipantResponse"
         agentType:
@@ -323,23 +296,22 @@ components:
       type: object
       required:
         - name
-        - status
-        - agentId
         - serviceTypeId
       properties:
         name:
           type: string
           example: "web-server-01"
-        status:
-          $ref: "#/components/schemas/ServiceStatus"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         properties:
           $ref: "#/components/schemas/JSONObject"
-        resources:
-          $ref: "#/components/schemas/JSONObject"
+        agentTags:
+          type: array
+          items:
+            type: string
+          example: ["gpu", "high-memory"]
+          description: "Tags used for agent discovery when agentId is not specified"
         agentId:
           $ref: "#/components/schemas/UUID"
+          description: "Specific agent ID (optional - if not provided, agent discovery will use agentTags)"
         serviceTypeId:
           $ref: "#/components/schemas/UUID"
         groupId:
@@ -355,8 +327,6 @@ components:
           example: "web-server-01"
         currentStatus:
           $ref: "#/components/schemas/ServiceStatus"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         targetStatus:
           $ref: "#/components/schemas/ServiceStatus"
         currentProperties:
@@ -1764,7 +1734,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  #
   # Job endpoints
   #
   /jobs:

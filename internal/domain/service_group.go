@@ -7,6 +7,12 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	EventTypeServiceGroupCreated EventType = "service_group_created"
+	EventTypeServiceGroupUpdated EventType = "service_group_updated"
+	EventTypeServiceGroupDeleted EventType = "service_group_deleted"
+)
+
 // ServiceGroup represents a group of related services
 type ServiceGroup struct {
 	BaseEntity
@@ -65,18 +71,15 @@ type ServiceGroupCommander interface {
 
 // serviceGroupCommander is the concrete implementation of ServiceGroupCommander
 type serviceGroupCommander struct {
-	store          Store
-	auditCommander AuditEntryCommander
+	store Store
 }
 
 // NewServiceGroupCommander creates a new ServiceGroupService
 func NewServiceGroupCommander(
 	store Store,
-	auditCommander AuditEntryCommander,
 ) *serviceGroupCommander {
 	return &serviceGroupCommander{
-		store:          store,
-		auditCommander: auditCommander,
+		store: store,
 	}
 }
 
@@ -102,11 +105,13 @@ func (s *serviceGroupCommander) Create(ctx context.Context, name string, consume
 			return err
 		}
 
-		_, err = s.auditCommander.CreateCtx(
-			ctx,
-			EventTypeServiceGroupCreated,
-			JSON{"status": sg},
-			&sg.ID, nil, nil, &consumerID)
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeServiceGroupCreated, JSON{"status": sg}, &sg.ID, nil, nil, &consumerID)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 
 		return err
 	})
@@ -141,11 +146,14 @@ func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 			return err
 		}
 
-		_, err := s.auditCommander.CreateCtxWithDiff(
-			ctx,
-			EventTypeServiceGroupUpdated,
-			&id, nil, nil, &sg.ConsumerID,
-			&beforeSgCopy, sg)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceGroupUpdated, JSON{}, &id, nil, nil, &sg.ConsumerID, &beforeSgCopy, sg)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
+
 		return err
 	})
 	if err != nil {
@@ -177,10 +185,14 @@ func (s *serviceGroupCommander) Delete(ctx context.Context, id UUID) error {
 			return err
 		}
 
-		_, err = s.auditCommander.CreateCtx(
-			ctx,
-			EventTypeServiceGroupDeleted,
-			JSON{"status": sg}, &id, nil, nil, &sg.ConsumerID)
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeServiceGroupDeleted, JSON{"status": sg}, &id, nil, nil, &sg.ConsumerID)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
+
 		return err
 	})
 }

@@ -104,17 +104,15 @@ func TestServiceHandleCreate(t *testing.T) {
 			name: "Success",
 			request: CreateServiceRequest{
 				Name:          "Test Service",
-				AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+				AgentID:       &[]domain.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
 				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
-				Attributes:    domain.Attributes{"key": []string{"value"}},
 				Properties:    domain.JSON{"prop": "value"},
 			},
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander for successful creation
-				commander.createFunc = func(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, attributes domain.Attributes, properties domain.JSON) (*domain.Service, error) {
+				commander.createFunc = func(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, properties domain.JSON) (*domain.Service, error) {
 					assert.Equal(t, "Test Service", name)
-					assert.Equal(t, domain.Attributes{"key": []string{"value"}}, attributes)
 					assert.Equal(t, domain.JSON{"prop": "value"}, properties)
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -134,7 +132,6 @@ func TestServiceHandleCreate(t *testing.T) {
 						GroupID:           groupID,
 						ConsumerID:        consumerID,
 						ProviderID:        providerID,
-						Attributes:        domain.Attributes{"key": []string{"value"}},
 						CurrentStatus:     domain.ServiceCreated,
 						CurrentProperties: &properties,
 					}, nil
@@ -146,15 +143,14 @@ func TestServiceHandleCreate(t *testing.T) {
 			name: "CommanderError",
 			request: CreateServiceRequest{
 				Name:          "Test Service",
-				AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+				AgentID:       &[]domain.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
 				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
-				Attributes:    domain.Attributes{"key": []string{"value"}},
 				Properties:    domain.JSON{"prop": "value"},
 			},
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander to return an error
-				commander.createFunc = func(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, attributes domain.Attributes, properties domain.JSON) (*domain.Service, error) {
+				commander.createFunc = func(ctx context.Context, agentID domain.UUID, serviceTypeID domain.UUID, groupID domain.UUID, name string, properties domain.JSON) (*domain.Service, error) {
 					return nil, domain.NewInvalidInputErrorf("invalid input")
 				}
 			},
@@ -245,7 +241,6 @@ func TestServiceHandleGet(t *testing.T) {
 						GroupID:       groupID,
 						ConsumerID:    consumerID,
 						ProviderID:    providerID,
-						Attributes:    domain.Attributes{"key": []string{"value"}},
 						CurrentStatus: domain.ServiceStarted,
 					}, nil
 				}
@@ -850,7 +845,6 @@ func TestServiceToResponse(t *testing.T) {
 		ConsumerID:        consumerID,
 		ProviderID:        providerID,
 		ExternalID:        &externalID,
-		Attributes:        domain.Attributes{"env": []string{"prod"}},
 		CurrentStatus:     domain.ServiceCreated,
 		TargetStatus:      &targetStatus,
 		FailedAction:      &failedAction,
@@ -873,7 +867,6 @@ func TestServiceToResponse(t *testing.T) {
 	assert.Equal(t, consumerID, response.ConsumerID)
 	assert.Equal(t, providerID, response.ProviderID)
 	assert.Equal(t, externalID, *response.ExternalID)
-	assert.Equal(t, domain.Attributes{"env": []string{"prod"}}, response.Attributes)
 	assert.Equal(t, domain.ServiceCreated, response.CurrentStatus)
 	assert.Equal(t, targetStatus, *response.TargetStatus)
 	assert.Equal(t, failedAction, *response.FailedAction)

@@ -14,6 +14,11 @@ import (
 type ServiceStatus string
 
 const (
+	EventTypeServiceCreated      EventType = "service_created"
+	EventTypeServiceUpdated      EventType = "service_updated"
+	EventTypeServiceTransitioned EventType = "service_transitioned"
+	EventTypeServiceRetried      EventType = "service_retried"
+
 	ServiceCreating     ServiceStatus = "Creating"
 	ServiceCreated      ServiceStatus = "Created"
 	ServiceStarting     ServiceStatus = "Starting"
@@ -59,8 +64,7 @@ func (s ServiceStatus) Validate() error {
 type Service struct {
 	BaseEntity
 
-	Name       string     `json:"name" gorm:"not null"`
-	Attributes Attributes `json:"attributes,omitempty" gorm:"type:jsonb"`
+	Name string `json:"name" gorm:"not null"`
 
 	// Status management
 	CurrentStatus     ServiceStatus  `json:"currentStatus" gorm:"not null"`
@@ -97,7 +101,6 @@ func NewService(
 	agentID UUID,
 	serviceTypeID UUID,
 	name string,
-	attributes Attributes,
 	properties *JSON,
 ) *Service {
 	target := ServiceCreated
@@ -110,7 +113,6 @@ func NewService(
 		Name:             name,
 		CurrentStatus:    ServiceCreating,
 		TargetStatus:     &target,
-		Attributes:       attributes,
 		TargetProperties: properties,
 	}
 }
@@ -154,7 +156,7 @@ func serviceUpdateNextStatusAndAction(status ServiceStatus) (ServiceStatus, Serv
 	case ServiceStarted:
 		return ServiceHotUpdating, ServiceActionHotUpdate, nil
 	default:
-		return "", "", NewInvalidInputErrorf("cannot update attributes on a service with status %v", status)
+		return "", "", NewInvalidInputErrorf("cannot update properties on a service with status %v", status)
 	}
 }
 
@@ -226,11 +228,6 @@ func (s Service) Validate() error {
 	if s.ServiceTypeID == uuid.Nil {
 		return errors.New("service type ID cannot be nil")
 	}
-	if s.Attributes != nil {
-		if err := s.Attributes.Validate(); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -242,7 +239,10 @@ func (Service) TableName() string {
 // ServiceCommander defines the interface for service command operations
 type ServiceCommander interface {
 	// Create handles service creation and creates a job for the agent
-	Create(ctx context.Context, agentID UUID, serviceTypeID UUID, groupID UUID, name string, attributes Attributes, properties JSON) (*Service, error)
+	Create(ctx context.Context, agentID UUID, serviceTypeID UUID, groupID UUID, name string, properties JSON) (*Service, error)
+
+	// CreateWithTags handles service creation using agent discovery by tags
+	CreateWithTags(ctx context.Context, serviceTypeID UUID, groupID UUID, name string, properties JSON, serviceTags []string) (*Service, error)
 
 	// Update handles service updates and creates a job for the agent
 	Update(ctx context.Context, id UUID, name *string, props *JSON) (*Service, error)
@@ -259,18 +259,15 @@ type ServiceCommander interface {
 
 // serviceCommander is the concrete implementation of ServiceCommander
 type serviceCommander struct {
-	store          Store
-	auditCommander AuditEntryCommander
+	store Store
 }
 
 // NewServiceCommander creates a new commander for services
 func NewServiceCommander(
 	store Store,
-	auditCommander AuditEntryCommander,
 ) *serviceCommander {
 	return &serviceCommander{
-		store:          store,
-		auditCommander: auditCommander,
+		store: store,
 	}
 }
 
@@ -280,39 +277,80 @@ func (s *serviceCommander) Create(
 	serviceTypeID UUID,
 	groupID UUID,
 	name string,
-	attributes Attributes,
 	properties JSON,
 ) (*Service, error) {
-	// Find and check dependencies
 	agent, err := s.store.AgentRepo().FindByID(ctx, agentID)
+	if err != nil {
+		return nil, NewInvalidInputErrorf("agent with ID %s does not exist", agentID)
+	}
+
+	return s.createServiceWithAgent(ctx, agent, serviceTypeID, groupID, name, properties)
+}
+
+func (s *serviceCommander) CreateWithTags(
+	ctx context.Context,
+	serviceTypeID UUID,
+	groupID UUID,
+	name string,
+	properties JSON,
+	serviceTags []string,
+) (*Service, error) {
+	agents, err := s.store.AgentRepo().FindByServiceTypeAndTags(ctx, serviceTypeID, serviceTags)
 	if err != nil {
 		return nil, err
 	}
+
+	if len(agents) == 0 {
+		return nil, NewInvalidInputErrorf("no agent found for service type %s with tags %v", serviceTypeID, serviceTags)
+	}
+
+	agent := agents[0]
+	return s.createServiceWithAgent(ctx, agent, serviceTypeID, groupID, name, properties)
+}
+
+func (s *serviceCommander) createServiceWithAgent(
+	ctx context.Context,
+	agent *Agent,
+	serviceTypeID UUID,
+	groupID UUID,
+	name string,
+	properties JSON,
+) (*Service, error) {
 	group, err := s.store.ServiceGroupRepo().FindByID(ctx, groupID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create and validate
+	// Check if the agent's type supports the requested service type
+	supported := false
+	for _, serviceType := range agent.AgentType.ServiceTypes {
+		if serviceType.ID == serviceTypeID {
+			supported = true
+			break
+		}
+	}
+	if !supported {
+		return nil, NewInvalidInputErrorf("agent type %s does not support service type %s", agent.AgentType.Name, serviceTypeID)
+	}
+
 	svc := NewService(
 		group.ConsumerID,
 		groupID,
 		agent.ProviderID,
-		agentID,
+		agent.ID,
 		serviceTypeID,
 		name,
-		attributes,
 		&properties,
 	)
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
-	// Save, audit and create job
 	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
 			return err
 		}
+
 		job := NewJob(svc, ServiceActionCreate, 1)
 		if err := job.Validate(); err != nil {
 			return err
@@ -320,14 +358,15 @@ func (s *serviceCommander) Create(
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtx(
-			ctx,
-			EventTypeServiceCreated,
-			JSON{"status": svc},
-			&svc.ID,
-			&svc.ProviderID,
-			&svc.AgentID,
-			&svc.ConsumerID)
+
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeServiceCreated, JSON{"status": svc}, &svc.ID, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
+
 		return err
 	})
 	if err != nil {
@@ -362,9 +401,11 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 			if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 				return err
 			}
-			if _, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceUpdated,
-				&id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID,
-				&originalSvc, svc); err != nil {
+			auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceUpdated, JSON{}, &id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+			if err != nil {
+				return err
+			}
+			if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
 				return err
 			}
 		}
@@ -417,9 +458,13 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceTransitioned,
-			&id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID,
-			&originalSvc, svc)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceTransitioned, JSON{}, &id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {
@@ -460,8 +505,13 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceRetried,
-			&id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceRetried, JSON{}, &id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {

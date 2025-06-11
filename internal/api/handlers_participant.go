@@ -9,17 +9,13 @@ import (
 )
 
 type CreateParticipantRequest struct {
-	Name        string                   `json:"name"`
-	Status      domain.ParticipantStatus `json:"status"`
-	CountryCode domain.CountryCode       `json:"countryCode,omitempty"`
-	Attributes  domain.Attributes        `json:"attributes,omitempty"`
+	Name   string                   `json:"name"`
+	Status domain.ParticipantStatus `json:"status"`
 }
 
 type UpdateParticipantRequest struct {
-	Name        *string                   `json:"name"`
-	Status      *domain.ParticipantStatus `json:"status"`
-	CountryCode *domain.CountryCode       `json:"countryCode,omitempty"`
-	Attributes  *domain.Attributes        `json:"attributes,omitempty"`
+	Name   *string                   `json:"name"`
+	Status *domain.ParticipantStatus `json:"status"`
 }
 
 type ParticipantHandler struct {
@@ -80,7 +76,7 @@ func (h *ParticipantHandler) Routes() func(r chi.Router) {
 func (h *ParticipantHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	req := MustGetBody[CreateParticipantRequest](r.Context())
 
-	participant, err := h.commander.Create(r.Context(), req.Name, req.Status, req.CountryCode, req.Attributes)
+	participant, err := h.commander.Create(r.Context(), req.Name, req.Status)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -123,7 +119,7 @@ func (h *ParticipantHandler) handleUpdate(w http.ResponseWriter, r *http.Request
 	id := MustGetID(r.Context())
 	req := MustGetBody[UpdateParticipantRequest](r.Context())
 
-	participant, err := h.commander.Update(r.Context(), id, req.Name, req.Status, req.CountryCode, req.Attributes)
+	participant, err := h.commander.Update(r.Context(), id, req.Name, req.Status)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -145,24 +141,20 @@ func (h *ParticipantHandler) handleDelete(w http.ResponseWriter, r *http.Request
 
 // ParticipantResponse represents the response body for participant operations
 type ParticipantResponse struct {
-	ID          domain.UUID              `json:"id"`
-	Name        string                   `json:"name"`
-	Status      domain.ParticipantStatus `json:"status"`
-	CountryCode string                   `json:"countryCode,omitempty"`
-	Attributes  map[string][]string      `json:"attributes,omitempty"`
-	CreatedAt   JSONUTCTime              `json:"createdAt"`
-	UpdatedAt   JSONUTCTime              `json:"updatedAt"`
+	ID        domain.UUID              `json:"id"`
+	Name      string                   `json:"name"`
+	Status    domain.ParticipantStatus `json:"status"`
+	CreatedAt JSONUTCTime              `json:"createdAt"`
+	UpdatedAt JSONUTCTime              `json:"updatedAt"`
 }
 
 // participantToResponse converts a domain.Participant to a ParticipantResponse
 func participantToResponse(p *domain.Participant) *ParticipantResponse {
 	return &ParticipantResponse{
-		ID:          p.ID,
-		Name:        p.Name,
-		Status:      p.Status,
-		CountryCode: string(p.CountryCode),
-		Attributes:  map[string][]string(p.Attributes),
-		CreatedAt:   JSONUTCTime(p.CreatedAt),
-		UpdatedAt:   JSONUTCTime(p.UpdatedAt),
+		ID:        p.ID,
+		Name:      p.Name,
+		Status:    p.Status,
+		CreatedAt: JSONUTCTime(p.CreatedAt),
+		UpdatedAt: JSONUTCTime(p.UpdatedAt),
 	}
 }

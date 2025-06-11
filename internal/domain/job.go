@@ -196,18 +196,15 @@ type JobCommander interface {
 
 // jobCommander is the concrete implementation of JobCommander
 type jobCommander struct {
-	store          Store
-	auditCommander AuditEntryCommander
+	store Store
 }
 
 // NewJobCommander creates a new command executor
 func NewJobCommander(
 	store Store,
-	auditCommander AuditEntryCommander,
 ) *jobCommander {
 	return &jobCommander{
-		store:          store,
-		auditCommander: auditCommander,
+		store: store,
 	}
 }
 
@@ -259,10 +256,13 @@ func (s *jobCommander) Complete(ctx context.Context, jobID UUID, resources *JSON
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
 		}
-		_, err := s.auditCommander.CreateCtxWithDiff(
-			ctx,
-			EventTypeServiceTransitioned,
-			&svc.ID, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceTransitioned, JSON{}, &svc.ID, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 }
@@ -297,8 +297,13 @@ func (s *jobCommander) Fail(ctx context.Context, jobID UUID, errorMessage string
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
 		}
-		_, err := s.auditCommander.CreateCtxWithDiff(ctx, EventTypeServiceTransitioned,
-			&svc.ID, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceTransitioned, JSON{}, &svc.ID, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 }

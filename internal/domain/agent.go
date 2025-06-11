@@ -7,6 +7,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
+)
+
+const (
+	EventTypeAgentCreated EventType = "agent_created"
+	EventTypeAgentUpdated EventType = "agent_updated"
+	EventTypeAgentDeleted EventType = "agent_deleted"
 )
 
 // AgentStatus represents the possible statuss of an Agent
@@ -42,13 +49,14 @@ func ParseAgentStatus(value string) (AgentStatus, error) {
 type Agent struct {
 	BaseEntity
 
-	Name        string      `json:"name" gorm:"not null"`
-	Attributes  Attributes  `json:"attributes,omitempty" gorm:"type:jsonb"`
-	CountryCode CountryCode `json:"countryCode,omitempty" gorm:"size:2"`
+	Name string `json:"name" gorm:"not null"`
 
 	// Status management
 	Status           AgentStatus `json:"status" gorm:"not null"`
 	LastStatusUpdate time.Time   `json:"lastStatusUpdate" gorm:"index"`
+
+	// Tags representing capabilities or certifications of this agent
+	Tags pq.StringArray `json:"tags" gorm:"type:text[]"`
 
 	// Relationships
 	AgentTypeID UUID         `json:"agentTypeId" gorm:"not null"`
@@ -58,15 +66,14 @@ type Agent struct {
 }
 
 // NewAgent creates a new agent with proper validation
-func NewAgent(name string, countryCode CountryCode, attributes Attributes, providerID UUID, agentTypeID UUID) *Agent {
+func NewAgent(name string, providerID UUID, agentTypeID UUID, tags []string) *Agent {
 	return &Agent{
 		Name:             name,
 		Status:           AgentDisconnected,
 		LastStatusUpdate: time.Now(),
-		CountryCode:      countryCode,
-		Attributes:       attributes,
 		ProviderID:       providerID,
 		AgentTypeID:      agentTypeID,
+		Tags:             pq.StringArray(tags),
 	}
 }
 
@@ -80,34 +87,31 @@ func (a *Agent) Validate() error {
 	if a.Name == "" {
 		return fmt.Errorf("agent name cannot be empty")
 	}
+
 	if err := a.Status.Validate(); err != nil {
 		return err
 	}
+
 	if a.LastStatusUpdate.IsZero() {
 		return fmt.Errorf("status last update cannot be empty")
 	}
+
 	if a.AgentTypeID == uuid.Nil {
 		return fmt.Errorf("agent type ID cannot be empty")
 	}
 	if a.ProviderID == uuid.Nil {
 		return fmt.Errorf("provider ID cannot be empty")
 	}
-	if err := a.CountryCode.Validate(); err != nil {
-		// Allow empty country code
-		if string(a.CountryCode) != "" {
-			return err
+
+	for i, tag := range []string(a.Tags) {
+		if len(tag) == 0 {
+			return fmt.Errorf("tag at index %d cannot be empty", i)
+		}
+		if len(tag) > 100 {
+			return fmt.Errorf("tag at index %d exceeds maximum length of 100 characters", i)
 		}
 	}
-	if a.Attributes != nil {
-		if err := a.Attributes.Validate(); err != nil {
-			return err
-		}
-	}
-	if a.Attributes != nil {
-		if err := a.Attributes.Validate(); err != nil {
-			return err
-		}
-	}
+
 	return nil
 }
 
@@ -122,28 +126,37 @@ func (a *Agent) UpdateHeartbeat() {
 	a.LastStatusUpdate = time.Now()
 }
 
-// RegisterMetadata updates the agent's metadata properties (name, country code, attributes)
-func (a *Agent) RegisterMetadata(name *string, countryCode *CountryCode, attributes *Attributes) {
+// RegisterMetadata updates the agent's metadata properties (name)
+func (a *Agent) RegisterMetadata(name *string) {
 	if name != nil {
 		a.Name = *name
 	}
+}
 
-	if countryCode != nil {
-		a.CountryCode = *countryCode
+// Update updates the agent's fields
+func (a *Agent) Update(name *string, tags *[]string) bool {
+	updated := false
+
+	if name != nil {
+		a.Name = *name
+		updated = true
 	}
 
-	if attributes != nil {
-		a.Attributes = *attributes
+	if tags != nil {
+		a.Tags = pq.StringArray(*tags)
+		updated = true
 	}
+
+	return updated
 }
 
 // AgentCommander defines the interface for agent command operations
 type AgentCommander interface {
 	// Create creates a new agent
-	Create(ctx context.Context, name string, countryCode CountryCode, attributes Attributes, providerID UUID, agentTypeID UUID) (*Agent, error)
+	Create(ctx context.Context, name string, providerID UUID, agentTypeID UUID, tags []string) (*Agent, error)
 
 	// Update updates an agent
-	Update(ctx context.Context, id UUID, name *string, countryCode *CountryCode, attributes *Attributes, status *AgentStatus) (*Agent, error)
+	Update(ctx context.Context, id UUID, name *string, status *AgentStatus, tags *[]string) (*Agent, error)
 
 	// Delete removes an agent by ID after checking for dependencies
 	Delete(ctx context.Context, id UUID) error
@@ -154,28 +167,24 @@ type AgentCommander interface {
 
 // agentCommander is the concrete implementation of AgentCommander
 type agentCommander struct {
-	store          Store
-	auditCommander AuditEntryCommander
+	store Store
 }
 
 // NewAgentCommander creates a new default AgentCommander
 func NewAgentCommander(
 	store Store,
-	auditCommander AuditEntryCommander,
 ) *agentCommander {
 	return &agentCommander{
-		store:          store,
-		auditCommander: auditCommander,
+		store: store,
 	}
 }
 
 func (s *agentCommander) Create(
 	ctx context.Context,
 	name string,
-	countryCode CountryCode,
-	attributes Attributes,
 	providerID UUID,
 	agentTypeID UUID,
+	tags []string,
 ) (*Agent, error) {
 	// Validate references
 	// Assuming store.ParticipantRepo().Exists will be available
@@ -197,16 +206,20 @@ func (s *agentCommander) Create(
 	// Create and save
 	var agent *Agent
 	err = s.store.Atomic(ctx, func(store Store) error {
-		agent = NewAgent(name, countryCode, attributes, providerID, agentTypeID)
+		agent = NewAgent(name, providerID, agentTypeID, tags)
 		if err := agent.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
 		if err := store.AgentRepo().Create(ctx, agent); err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtx(
-			ctx, EventTypeAgentCreated, JSON{"status": agent},
-			&agent.ID, &providerID, nil, nil)
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeAgentCreated, JSON{"status": agent}, &agent.ID, &providerID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {
@@ -218,9 +231,8 @@ func (s *agentCommander) Create(
 func (s *agentCommander) Update(ctx context.Context,
 	id UUID,
 	name *string,
-	countryCode *CountryCode,
-	attributes *Attributes,
 	status *AgentStatus,
+	tags *[]string,
 ) (*Agent, error) {
 	// Find it
 	agent, err := s.store.AgentRepo().FindByID(ctx, id)
@@ -233,9 +245,7 @@ func (s *agentCommander) Update(ctx context.Context,
 	if status != nil {
 		agent.UpdateStatus(*status)
 	}
-	if name != nil || countryCode != nil || attributes != nil {
-		agent.RegisterMetadata(name, countryCode, attributes)
-	}
+	agent.Update(name, tags)
 	if err := agent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
@@ -246,8 +256,13 @@ func (s *agentCommander) Update(ctx context.Context,
 		if err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
-			&id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeAgentUpdated, JSON{}, &id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {
@@ -281,8 +296,13 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 		if err := store.AgentRepo().Delete(ctx, id); err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtx(ctx, EventTypeAgentDeleted,
-			JSON{"status": agent}, &id, &providerID, nil, nil)
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeAgentDeleted, JSON{"status": agent}, &id, &providerID, &id, nil)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 }
@@ -307,8 +327,13 @@ func (s *agentCommander) UpdateStatus(ctx context.Context, id UUID, status Agent
 		if err != nil {
 			return err
 		}
-		_, err = s.auditCommander.CreateCtxWithDiff(ctx, EventTypeAgentUpdated,
-			&id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeAgentUpdated, JSON{}, &id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {
@@ -345,6 +370,9 @@ type AgentQuerier interface {
 
 	// CountByProvider returns the number of agents for a specific provider
 	CountByProvider(ctx context.Context, providerID UUID) (int64, error)
+
+	// FindByServiceTypeAndTags finds agents that support a service type and have all required tags
+	FindByServiceTypeAndTags(ctx context.Context, serviceTypeID UUID, tags []string) ([]*Agent, error)
 
 	// Retrieve the auth scope for the entity
 	AuthScope(ctx context.Context, id UUID) (*AuthTargetScope, error)

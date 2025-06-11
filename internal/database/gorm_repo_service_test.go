@@ -77,7 +77,6 @@ func TestServiceRepository(t *testing.T) {
 			Name:              "Test Service",
 			CurrentStatus:     domain.ServiceStarted,
 			CurrentProperties: &(domain.JSON{"key": "value"}),
-			Attributes:        domain.Attributes{"key": []string{"value"}},
 			Resources:         &(domain.JSON{"cpu": "1"}),
 			AgentID:           agent.ID,
 			ProviderID:        provider.ID, // Set ProviderID
@@ -119,7 +118,6 @@ func TestServiceRepository(t *testing.T) {
 			Name:              "Test Service",
 			CurrentStatus:     domain.ServiceStarted,
 			CurrentProperties: &(domain.JSON{"key": "value"}),
-			Attributes:        domain.Attributes{"key": []string{"value"}},
 			Resources:         &(domain.JSON{"cpu": "1"}),
 			AgentID:           agent.ID,
 			ProviderID:        provider.ID, // Set ProviderID

@@ -57,8 +57,7 @@ func (s AuthSubject) Validate() error {
 	switch s {
 	case SubjectParticipant, SubjectAgent, SubjectAgentType,
 		SubjectService, SubjectServiceType, SubjectServiceGroup,
-		SubjectJob, SubjectMetricType, SubjectMetricEntry,
-		SubjectAuditEntry, SubjectToken:
+		SubjectJob, SubjectMetricType, SubjectMetricEntry, SubjectAuditEntry, SubjectToken:
 		return nil
 	default:
 		return fmt.Errorf("invalid auth subject: %s", s)

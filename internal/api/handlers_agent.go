@@ -9,11 +9,10 @@ import (
 )
 
 type CreateAgentRequest struct {
-	Name        string             `json:"name"`
-	CountryCode domain.CountryCode `json:"countryCode,omitempty"`
-	Attributes  domain.Attributes  `json:"attributes,omitempty"`
-	ProviderID  domain.UUID        `json:"providerId"`
-	AgentTypeID domain.UUID        `json:"agentTypeId"`
+	Name        string      `json:"name"`
+	ProviderID  domain.UUID `json:"providerId"`
+	AgentTypeID domain.UUID `json:"agentTypeId"`
+	Tags        []string    `json:"tags"`
 }
 
 // AuthTargetScope implements AuthTargetScopeProvider interface
@@ -22,10 +21,9 @@ func (r CreateAgentRequest) AuthTargetScope() (*domain.AuthTargetScope, error) {
 }
 
 type UpdateAgentRequest struct {
-	Name        *string             `json:"name"`
-	Status      *domain.AgentStatus `json:"status"`
-	CountryCode *domain.CountryCode `json:"countryCode,omitempty"`
-	Attributes  *domain.Attributes  `json:"attributes,omitempty"`
+	Name   *string             `json:"name"`
+	Status *domain.AgentStatus `json:"status"`
+	Tags   *[]string           `json:"tags"`
 }
 
 type UpdateAgentStatusRequest struct {
@@ -103,10 +101,9 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	agent, err := h.commander.Create(
 		r.Context(),
 		p.Name,
-		p.CountryCode,
-		p.Attributes,
 		p.ProviderID,
 		p.AgentTypeID,
+		p.Tags,
 	)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -168,9 +165,8 @@ func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		r.Context(),
 		id,
 		p.Name,
-		p.CountryCode,
-		p.Attributes,
 		p.Status,
+		p.Tags,
 	)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
@@ -211,10 +207,9 @@ type AgentResponse struct {
 	ID          domain.UUID          `json:"id"`
 	Name        string               `json:"name"`
 	Status      domain.AgentStatus   `json:"status"`
-	CountryCode domain.CountryCode   `json:"countryCode,omitempty"`
-	Attributes  domain.Attributes    `json:"attributes,omitempty"`
 	ProviderID  domain.UUID          `json:"providerId"`
 	AgentTypeID domain.UUID          `json:"agentTypeId"`
+	Tags        []string             `json:"tags"`
 	Participant *ParticipantResponse `json:"participant,omitempty"`
 	AgentType   *AgentTypeResponse   `json:"agentType,omitempty"`
 	CreatedAt   JSONUTCTime          `json:"createdAt"`
@@ -227,10 +222,9 @@ func agentToResponse(a *domain.Agent) *AgentResponse {
 		ID:          a.ID,
 		Name:        a.Name,
 		Status:      a.Status,
-		CountryCode: a.CountryCode,
-		Attributes:  map[string][]string(a.Attributes),
 		ProviderID:  a.ProviderID,
 		AgentTypeID: a.AgentTypeID,
+		Tags:        []string(a.Tags),
 		CreatedAt:   JSONUTCTime(a.CreatedAt),
 		UpdatedAt:   JSONUTCTime(a.UpdatedAt),
 	}

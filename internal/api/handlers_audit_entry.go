@@ -9,20 +9,17 @@ import (
 )
 
 type AuditEntryHandler struct {
-	querier   domain.AuditEntryQuerier
-	commander domain.AuditEntryCommander
-	authz     domain.Authorizer
+	querier domain.AuditEntryQuerier
+	authz   domain.Authorizer
 }
 
 func NewAuditEntryHandler(
 	querier domain.AuditEntryQuerier,
-	commander domain.AuditEntryCommander,
 	authz domain.Authorizer,
 ) *AuditEntryHandler {
 	return &AuditEntryHandler{
-		querier:   querier,
-		commander: commander,
-		authz:     authz,
+		querier: querier,
+		authz:   authz,
 	}
 }
 

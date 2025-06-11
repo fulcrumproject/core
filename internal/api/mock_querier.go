@@ -13,11 +13,12 @@ var _ domain.AgentQuerier = (*mockAgentQuerier)(nil)
 
 // mockAgentQuerier is a custom mock for AgentQuerier
 type mockAgentQuerier struct {
-	findByIDFunc           func(ctx context.Context, id domain.UUID) (*domain.Agent, error)
-	listFunc               func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error)
-	countByParticipantFunc func(ctx context.Context, participantID domain.UUID) (int64, error)
-	existsFunc             func(ctx context.Context, id domain.UUID) (bool, error)
-	authScopeFunc          func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
+	findByIDFunc                 func(ctx context.Context, id domain.UUID) (*domain.Agent, error)
+	listFunc                     func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error)
+	countByParticipantFunc       func(ctx context.Context, participantID domain.UUID) (int64, error)
+	existsFunc                   func(ctx context.Context, id domain.UUID) (bool, error)
+	authScopeFunc                func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
+	findByServiceTypeAndTagsFunc func(ctx context.Context, serviceTypeID domain.UUID, tags []string) ([]*domain.Agent, error)
 }
 
 func (m *mockAgentQuerier) FindByID(ctx context.Context, id domain.UUID) (*domain.Agent, error) {
@@ -62,6 +63,13 @@ func (m *mockAgentQuerier) Exists(ctx context.Context, id domain.UUID) (bool, er
 	}
 	// Default implementation returns true
 	return true, nil
+}
+
+func (m *mockAgentQuerier) FindByServiceTypeAndTags(ctx context.Context, serviceTypeID domain.UUID, tags []string) ([]*domain.Agent, error) {
+	if m.findByServiceTypeAndTagsFunc != nil {
+		return m.findByServiceTypeAndTagsFunc(ctx, serviceTypeID, tags)
+	}
+	return []*domain.Agent{}, nil
 }
 
 // Ensure interface compatibility

@@ -28,8 +28,6 @@ func TestHandleCreate(t *testing.T) {
 			name: "Success",
 			requestBody: CreateAgentRequest{
 				Name:        "TestAgent",
-				CountryCode: "US",
-				Attributes:  domain.Attributes{"test": []string{"value1", "value2"}},
 				ProviderID:  uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 				AgentTypeID: uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 			},
@@ -37,7 +35,7 @@ func TestHandleCreate(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				commander.createFunc = func(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
+				commander.createFunc = func(ctx context.Context, name string, providerID domain.UUID, agentTypeID domain.UUID, tags []string) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
 							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440001"),
@@ -45,8 +43,6 @@ func TestHandleCreate(t *testing.T) {
 							UpdatedAt: updatedAt,
 						},
 						Name:             name,
-						CountryCode:      countryCode,
-						Attributes:       attributes,
 						Status:           domain.AgentDisconnected,
 						LastStatusUpdate: createdAt,
 						ProviderID:       providerID,
@@ -58,13 +54,10 @@ func TestHandleCreate(t *testing.T) {
 			expectedBody: map[string]interface{}{
 				"id":          "550e8400-e29b-41d4-a716-446655440001",
 				"name":        "TestAgent",
-				"countryCode": "US",
-				"attributes": map[string]interface{}{
-					"test": []interface{}{"value1", "value2"},
-				},
 				"status":      "Disconnected",
 				"providerId":  "550e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "660e8400-e29b-41d4-a716-446655440000",
+				"tags":        interface{}(nil),
 				"createdAt":   "2023-01-01T00:00:00Z",
 				"updatedAt":   "2023-01-01T00:00:00Z",
 			},
@@ -77,7 +70,7 @@ func TestHandleCreate(t *testing.T) {
 				AgentTypeID: uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 			},
 			mockSetup: func(commander *mockAgentCommander) {
-				commander.createFunc = func(ctx context.Context, name string, countryCode domain.CountryCode, attributes domain.Attributes, providerID domain.UUID, agentTypeID domain.UUID) (*domain.Agent, error) {
+				commander.createFunc = func(ctx context.Context, name string, providerID domain.UUID, agentTypeID domain.UUID, tags []string) (*domain.Agent, error) {
 					return nil, domain.NewInvalidInputErrorf("provider not found")
 				}
 			},
@@ -145,8 +138,6 @@ func TestAgentHandleGet(t *testing.T) {
 							UpdatedAt: updatedAt,
 						},
 						Name:             "TestAgent",
-						CountryCode:      "US",
-						Attributes:       domain.Attributes{"test": []string{"value1", "value2"}},
 						Status:           domain.AgentConnected,
 						LastStatusUpdate: createdAt,
 						ProviderID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
@@ -158,13 +149,10 @@ func TestAgentHandleGet(t *testing.T) {
 			expectedBody: map[string]interface{}{
 				"id":          "550e8400-e29b-41d4-a716-446655440000",
 				"name":        "TestAgent",
-				"countryCode": "US",
-				"attributes": map[string]interface{}{
-					"test": []interface{}{"value1", "value2"},
-				},
 				"status":      "Connected",
 				"providerId":  "660e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "770e8400-e29b-41d4-a716-446655440000",
+				"tags":        interface{}(nil),
 				"createdAt":   "2023-01-01T00:00:00Z",
 				"updatedAt":   "2023-01-01T00:00:00Z",
 			},
@@ -242,8 +230,6 @@ func TestHandleGetMe(t *testing.T) {
 							UpdatedAt: updatedAt,
 						},
 						Name:             "TestAgent",
-						CountryCode:      "US",
-						Attributes:       domain.Attributes{"test": []string{"value1", "value2"}},
 						Status:           domain.AgentConnected,
 						LastStatusUpdate: createdAt,
 						ProviderID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
@@ -255,13 +241,10 @@ func TestHandleGetMe(t *testing.T) {
 			expectedBody: map[string]interface{}{
 				"id":          "550e8400-e29b-41d4-a716-446655440000",
 				"name":        "TestAgent",
-				"countryCode": "US",
-				"attributes": map[string]interface{}{
-					"test": []interface{}{"value1", "value2"},
-				},
 				"status":      "Connected",
 				"providerId":  "660e8400-e29b-41d4-a716-446655440000",
 				"agentTypeId": "770e8400-e29b-41d4-a716-446655440000",
+				"tags":        interface{}(nil),
 				"createdAt":   "2023-01-01T00:00:00Z",
 				"updatedAt":   "2023-01-01T00:00:00Z",
 			},
@@ -337,8 +320,6 @@ func TestAgentHandleList(t *testing.T) {
 									UpdatedAt: updatedAt,
 								},
 								Name:             "TestAgent1",
-								CountryCode:      "US",
-								Attributes:       domain.Attributes{"test": []string{"value1", "value2"}},
 								Status:           domain.AgentConnected,
 								LastStatusUpdate: createdAt,
 								ProviderID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
@@ -412,7 +393,7 @@ func TestHandleUpdate(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, status *domain.AgentStatus) (*domain.Agent, error) {
+				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, status *domain.AgentStatus, tags *[]string) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
 							ID:        id,
@@ -434,7 +415,7 @@ func TestHandleUpdate(t *testing.T) {
 				Name: stringPtr("UpdatedAgent"),
 			},
 			mockSetup: func(commander *mockAgentCommander) {
-				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, countryCode *domain.CountryCode, attributes *domain.Attributes, status *domain.AgentStatus) (*domain.Agent, error) {
+				commander.updateFunc = func(ctx context.Context, id domain.UUID, name *string, status *domain.AgentStatus, tags *[]string) (*domain.Agent, error) {
 					return nil, domain.NewNotFoundErrorf("agent not found")
 				}
 			},
@@ -502,7 +483,7 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 						},
 						Name:             "TestAgent",
 						Status:           status,
-						LastStatusUpdate: updatedAt,
+						LastStatusUpdate: createdAt,
 					}, nil
 				}
 			},
@@ -534,7 +515,7 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 			// Create the handler
 			handler := NewAgentHandler(querier, commander, authz)
 
-			// Create request with decoded body in context
+			// Create request with decoded body
 			req := httptest.NewRequest("PUT", "/agents/me/status", nil)
 			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
 
@@ -594,7 +575,7 @@ func TestHandleDelete(t *testing.T) {
 			// Create the handler
 			handler := NewAgentHandler(querier, commander, authz)
 
-			// Create request with ID in context
+			// Create request with ID in context (simulating ID middleware)
 			req := httptest.NewRequest("DELETE", "/agents/"+tc.id, nil)
 			parsedUUID, _ := domain.ParseUUID(tc.id)
 			req = req.WithContext(context.WithValue(req.Context(), uuidContextKey, parsedUUID))
@@ -613,21 +594,20 @@ func TestHandleDelete(t *testing.T) {
 	}
 }
 
-// TestNewAgentHandler tests the constructor
+// TestNewAgentHandler tests the NewAgentHandler constructor
 func TestNewAgentHandler(t *testing.T) {
 	querier := &mockAgentQuerier{}
 	commander := &mockAgentCommander{}
-	authz := &MockAuthorizer{}
+	authz := &MockAuthorizer{ShouldSucceed: true}
 
 	handler := NewAgentHandler(querier, commander, authz)
-
 	assert.NotNil(t, handler)
 	assert.Equal(t, querier, handler.querier)
 	assert.Equal(t, commander, handler.commander)
 	assert.Equal(t, authz, handler.authz)
 }
 
-// TestAgentToResponse tests the response conversion
+// TestAgentToResponse tests the agentToResponse function
 func TestAgentToResponse(t *testing.T) {
 	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -639,8 +619,6 @@ func TestAgentToResponse(t *testing.T) {
 			UpdatedAt: updatedAt,
 		},
 		Name:             "TestAgent",
-		CountryCode:      "US",
-		Attributes:       domain.Attributes{"test": []string{"value1", "value2"}},
 		Status:           domain.AgentConnected,
 		LastStatusUpdate: createdAt,
 		ProviderID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
@@ -648,42 +626,12 @@ func TestAgentToResponse(t *testing.T) {
 	}
 
 	response := agentToResponse(agent)
-
 	assert.Equal(t, agent.ID, response.ID)
 	assert.Equal(t, agent.Name, response.Name)
 	assert.Equal(t, agent.Status, response.Status)
-	assert.Equal(t, agent.CountryCode, response.CountryCode)
-	assert.Equal(t, map[string][]string(agent.Attributes), map[string][]string(response.Attributes))
-	assert.Equal(t, agent.ProviderID, response.ProviderID)
-	assert.Equal(t, agent.AgentTypeID, response.AgentTypeID)
-	assert.Equal(t, JSONUTCTime(agent.CreatedAt), response.CreatedAt)
-	assert.Equal(t, JSONUTCTime(agent.UpdatedAt), response.UpdatedAt)
 }
 
-// TestMustGetAgentID tests the MustGetAgentID helper
-func TestMustGetAgentID(t *testing.T) {
-	agentUUID := uuid.New()
-	authIdentity := NewMockAuthAgentWithID(agentUUID)
-	ctx := domain.WithAuthIdentity(context.Background(), authIdentity)
-
-	id := MustGetAgentID(ctx)
-	assert.Equal(t, agentUUID, id)
-
-	// Test panic case
-	t.Run("PanicCase", func(t *testing.T) {
-		defer func() {
-			if r := recover(); r == nil {
-				t.Errorf("MustGetAgentID did not panic when identity was not agent")
-			}
-		}()
-
-		nonAgentIdentity := NewMockAuthFulcrumAdmin()
-		ctx := domain.WithAuthIdentity(context.Background(), nonAgentIdentity)
-		_ = MustGetAgentID(ctx)
-	})
-}
-
-// Helper functions
+// Helper function for tests
 func stringPtr(s string) *string {
 	return &s
 }

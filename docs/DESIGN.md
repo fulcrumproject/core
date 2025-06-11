@@ -130,8 +130,6 @@ classDiagram
             id : UUID
             name : string
             status : enum[Enabled|Disabled]
-            countryCode : string 
-            attributes : map[string]string[]
             createdAt : datetime
             updatedAt : datetime
         }
@@ -154,9 +152,8 @@ classDiagram
             id : UUID
             name : string
             status : enum[New|Connected|Disconnected|Error|Disabled]
-            countryCode : string
-            attributes : map[string]string[]
             lastStatusUpdate : datetime
+            tags : string[]
             createdAt : datetime
             updatedAt : datetime
         }
@@ -172,7 +169,6 @@ classDiagram
             errorMessage : string
             failedAction : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
             retryCount : int
-            attributes : map[string]string[]
             currentProperties : json
             targetProperties : json
             resources : json
@@ -188,7 +184,7 @@ classDiagram
             createdAt : datetime
             updatedAt : datetime
         }
-        
+
         class Job {
             id : UUID
             action : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
@@ -259,7 +255,11 @@ classDiagram
     - MicroK8s application
     - Kubernetes Cluster
     - Container Runtime services
-    - Kubernetes Application controller"
+    - Kubernetes Application controller
+    
+    Agents can provide specific service types
+    based on their AgentType capabilities and
+    tags for specialized requirements"
     
     note for Job "Jobs represent operations that agents
     perform on services including:
@@ -269,6 +269,7 @@ classDiagram
     - Deleting services
     
     Each job transitions service status appropriately"
+    
 ```
 
 #### Entities
@@ -279,8 +280,6 @@ classDiagram
    - Unified entity replacing the separate Provider and Consumer entities
    - Represents an entity that can act as both a service provider and consumer
    - Has name and operational status (Enabled/Disabled)
-   - Contains geographical information via country code
-   - Stores flexible metadata through custom attributes
    - Has many agents deployed within its infrastructure (when acting as a provider)
    - Can consume services (via Service.ConsumerParticipantID)
    - The functional role (provider/consumer) is determined by context and relationships
@@ -291,7 +290,9 @@ classDiagram
    - Tracks connectivity status (New, Connected, Disconnected, Error, Disabled)
    - Uses secure token-based authentication (via Token entity)
    - Tracks last status update timestamp
+   - Contains tags for capabilities and specializations
    - Processes jobs from the job queue to perform service operations
+   - Selected for service provisioning based on service type and tag matching
 
 3. **Service**
    - Cloud resource managed by an agent
@@ -299,14 +300,12 @@ classDiagram
    - Status transitions: Creating → Created → Starting → Started → Stopping → Stopped → Deleting → Deleted
    - Supports both hot updates (while running) and cold updates (while stopped)
    - Tracks failed operations with error messages and retry counts
-   - Contains attributes for metadata about the service
    - Manages configuration changes through current and target properties
    - Stores service-specific resource configuration
    - Can be linked to a consumer participant via ConsumerParticipantID (optional)
 
-   Properties vs Attributes:
+   Properties:
    - Properties: JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger status transitions (hot or cold update depending on current status).
-   - Attributes: Metadata about the service that is set during creation and remains static throughout the service lifecycle. Used for participant and agent selection during service creation and more generally for identification, categorization, and filtering.
 
 4. **AgentType**
    - Defines the type classification for agents

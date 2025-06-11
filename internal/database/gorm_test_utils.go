@@ -22,10 +22,8 @@ func createTestParticipant(t *testing.T, status domain.ParticipantStatus) *domai
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Participant{
-		Name:        fmt.Sprintf("Test Participant %s", randomSuffix),
-		Status:      status,
-		CountryCode: "US",
-		Attributes:  domain.Attributes{"key": []string{"value"}},
+		Name:   fmt.Sprintf("Test Participant %s", randomSuffix),
+		Status: status,
 	}
 }
 func createTestAgentType(t *testing.T) *domain.AgentType {
@@ -38,21 +36,29 @@ func createTestAgentType(t *testing.T) *domain.AgentType {
 
 func createTestAgent(t *testing.T, participantID, agentTypeID domain.UUID, status domain.AgentStatus) *domain.Agent {
 	t.Helper()
-	return createTestAgentWithStatusUpdate(t, participantID, agentTypeID, status, time.Now())
+	return createTestAgentWithTags(t, participantID, agentTypeID, status, nil)
 }
 
-// Helper function to create a test agent with a specific LastStatusUpdate time
+func createTestAgentWithTags(t *testing.T, participantID, agentTypeID domain.UUID, status domain.AgentStatus, tags []string) *domain.Agent {
+	t.Helper()
+	return createTestAgentWithStatusUpdateAndTags(t, participantID, agentTypeID, status, time.Now(), tags)
+}
+
 func createTestAgentWithStatusUpdate(t *testing.T, participantID, agentTypeID domain.UUID, status domain.AgentStatus, lastUpdate time.Time) *domain.Agent {
+	t.Helper()
+	return createTestAgentWithStatusUpdateAndTags(t, participantID, agentTypeID, status, lastUpdate, nil)
+}
+
+func createTestAgentWithStatusUpdateAndTags(t *testing.T, participantID, agentTypeID domain.UUID, status domain.AgentStatus, lastUpdate time.Time, tags []string) *domain.Agent {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Agent{
 		Name:             fmt.Sprintf("Test Agent %s", randomSuffix),
 		Status:           status,
-		CountryCode:      "US",
-		Attributes:       domain.Attributes{"key": []string{"value"}},
 		ProviderID:       participantID,
 		AgentTypeID:      agentTypeID,
 		LastStatusUpdate: lastUpdate,
+		Tags:             tags,
 	}
 }
 

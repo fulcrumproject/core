@@ -278,35 +278,6 @@ func TestService_Validate(t *testing.T) {
 			errMessage: "service type ID cannot be nil",
 		},
 		{
-			name: "With valid attributes",
-			service: &Service{
-				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
-				GroupID:       validID,
-				AgentID:       validID,
-				ServiceTypeID: validID,
-				ProviderID:    validID,
-				ConsumerID:    validID,
-				Attributes:    Attributes{"tier": {"premium"}},
-			},
-			wantErr: false,
-		},
-		{
-			name: "With invalid attributes",
-			service: &Service{
-				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
-				GroupID:       validID,
-				AgentID:       validID,
-				ServiceTypeID: validID,
-				ProviderID:    validID,
-				ConsumerID:    validID,
-				Attributes:    Attributes{"tier": {""}}, // Empty value
-			},
-			wantErr:    true,
-			errMessage: "has an empty value",
-		},
-		{
 			name: "With properties",
 			service: &Service{
 				Name:              "Web Server",
@@ -392,6 +363,10 @@ func TestService_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func svcActionPtr(svcAction ServiceAction) *ServiceAction {
+	return &svcAction
 }
 
 func TestServiceNextStatusAndAction(t *testing.T) {
@@ -504,13 +479,13 @@ func TestServiceUpdateNextStatusAndAction(t *testing.T) {
 			name:          "Invalid - Creating",
 			currentStatus: ServiceCreating,
 			wantErr:       true,
-			errMessage:    "cannot update attributes",
+			errMessage:    "cannot update properties",
 		},
 		{
 			name:          "Invalid - Deleting",
 			currentStatus: ServiceDeleting,
 			wantErr:       true,
-			errMessage:    "cannot update attributes",
+			errMessage:    "cannot update properties",
 		},
 	}
 

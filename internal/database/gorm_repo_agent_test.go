@@ -46,8 +46,6 @@ func TestAgentRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, agent.Name, found.Name)
 			assert.Equal(t, agent.Status, found.Status)
-			assert.Equal(t, agent.CountryCode, found.CountryCode)
-			assert.Equal(t, agent.Attributes, found.Attributes)
 			assert.Equal(t, agent.ProviderID, found.ProviderID)
 			assert.Equal(t, agent.AgentTypeID, found.AgentTypeID)
 			assert.NotNil(t, found.Provider)
@@ -206,8 +204,6 @@ func TestAgentRepository(t *testing.T) {
 			// Update agent
 			agent.Name = "Updated Agent"
 			agent.Status = domain.AgentConnected
-			agent.CountryCode = "UK"
-			agent.Attributes = domain.Attributes{"new_key": []string{"new_value"}}
 
 			// Execute
 			err = agentRepo.Save(ctx, agent)
@@ -220,8 +216,6 @@ func TestAgentRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, "Updated Agent", updated.Name)
 			assert.Equal(t, domain.AgentConnected, updated.Status)
-			assert.Equal(t, domain.CountryCode("UK"), updated.CountryCode)
-			assert.Equal(t, domain.Attributes{"new_key": []string{"new_value"}}, updated.Attributes)
 		})
 	})
 
@@ -380,6 +374,118 @@ func TestAgentRepository(t *testing.T) {
 			require.NoError(t, err, "AuthScope should not return an error for non-existent agent")
 			assert.NotNil(t, nonExistentScope, "Should return an empty auth scope")
 			assert.Equal(t, &domain.AuthTargetScope{}, nonExistentScope, "Should return empty auth scope for non-existent agent")
+		})
+	})
+
+	t.Run("FindByServiceTypeAndTags", func(t *testing.T) {
+		t.Run("success with matching agents", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup participants
+			participant1 := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant1))
+			participant2 := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant2))
+
+			// Setup agent types
+			agentType1 := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType1))
+			agentType2 := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType2))
+
+			// Setup service types
+			serviceTypeRepo := NewServiceTypeRepository(tdb.DB)
+			serviceType1 := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType1))
+			serviceType2 := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType2))
+
+			// Create agent type service type relationships
+			require.NoError(t, tdb.DB.Exec("INSERT INTO agent_type_service_types (agent_type_id, service_type_id) VALUES (?, ?)", agentType1.ID, serviceType1.ID).Error)
+			require.NoError(t, tdb.DB.Exec("INSERT INTO agent_type_service_types (agent_type_id, service_type_id) VALUES (?, ?)", agentType2.ID, serviceType1.ID).Error)
+
+			// Setup agents with different tags
+			agent1 := createTestAgentWithTags(t, participant1.ID, agentType1.ID, domain.AgentConnected, []string{"tag1", "tag2"})
+			require.NoError(t, agentRepo.Create(ctx, agent1))
+
+			agent2 := createTestAgentWithTags(t, participant2.ID, agentType2.ID, domain.AgentConnected, []string{"tag1", "tag3"})
+			require.NoError(t, agentRepo.Create(ctx, agent2))
+
+			agent3 := createTestAgentWithTags(t, participant1.ID, agentType1.ID, domain.AgentDisconnected, []string{"tag2", "tag3"})
+			require.NoError(t, agentRepo.Create(ctx, agent3))
+
+			// Test case 1: Find agents with tag1 for serviceType1
+			agents, err := agentRepo.FindByServiceTypeAndTags(ctx, serviceType1.ID, []string{"tag1"})
+			require.NoError(t, err)
+			assert.Len(t, agents, 2)
+
+			agentIDs := make([]domain.UUID, len(agents))
+			for i, agent := range agents {
+				agentIDs[i] = agent.ID
+			}
+			assert.Contains(t, agentIDs, agent1.ID)
+			assert.Contains(t, agentIDs, agent2.ID)
+
+			// Test case 2: Find agents with both tag1 and tag2
+			agents, err = agentRepo.FindByServiceTypeAndTags(ctx, serviceType1.ID, []string{"tag1", "tag2"})
+			require.NoError(t, err)
+			assert.Len(t, agents, 1)
+			assert.Equal(t, agent1.ID, agents[0].ID)
+
+			// Test case 3: Find agents with no tags specified
+			agents, err = agentRepo.FindByServiceTypeAndTags(ctx, serviceType1.ID, []string{})
+			require.NoError(t, err)
+			assert.Len(t, agents, 3) // All agents that support serviceType1
+
+			// Test case 4: Find agents with non-existent tag
+			agents, err = agentRepo.FindByServiceTypeAndTags(ctx, serviceType1.ID, []string{"nonexistent"})
+			require.NoError(t, err)
+			assert.Len(t, agents, 0)
+
+			// Test case 5: Find agents for service type that no agent supports
+			agents, err = agentRepo.FindByServiceTypeAndTags(ctx, serviceType2.ID, []string{"tag1"})
+			require.NoError(t, err)
+			assert.Len(t, agents, 0)
+		})
+
+		t.Run("success with no matching agents", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
+
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+
+			serviceTypeRepo := NewServiceTypeRepository(tdb.DB)
+			serviceType := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType))
+
+			// Create agent type service type relationship
+			require.NoError(t, tdb.DB.Exec("INSERT INTO agent_type_service_types (agent_type_id, service_type_id) VALUES (?, ?)", agentType.ID, serviceType.ID).Error)
+
+			agent := createTestAgentWithTags(t, participant.ID, agentType.ID, domain.AgentConnected, []string{"different-tag"})
+			require.NoError(t, agentRepo.Create(ctx, agent))
+
+			// Execute - search for agents with tags that don't match
+			agents, err := agentRepo.FindByServiceTypeAndTags(ctx, serviceType.ID, []string{"required-tag"})
+
+			// Assert
+			require.NoError(t, err)
+			assert.Len(t, agents, 0)
+		})
+
+		t.Run("success with non-existent service type", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Execute - search for agents with non-existent service type
+			nonExistentServiceTypeID := domain.NewUUID()
+			agents, err := agentRepo.FindByServiceTypeAndTags(ctx, nonExistentServiceTypeID, []string{"tag1"})
+
+			// Assert
+			require.NoError(t, err)
+			assert.Len(t, agents, 0)
 		})
 	})
 }

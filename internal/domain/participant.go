@@ -9,6 +9,10 @@ import (
 type ParticipantStatus string
 
 const (
+	EventTypeParticipantCreated EventType = "participant_created"
+	EventTypeParticipantUpdated EventType = "participant_updated"
+	EventTypeParticipantDeleted EventType = "participant_deleted"
+
 	ParticipantEnabled  ParticipantStatus = "Enabled"
 	ParticipantDisabled ParticipantStatus = "Disabled"
 )
@@ -36,22 +40,18 @@ func ParseParticipantStatus(value string) (ParticipantStatus, error) {
 type Participant struct {
 	BaseEntity
 
-	Name        string            `json:"name" gorm:"not null"`
-	CountryCode CountryCode       `json:"countryCode,omitempty" gorm:"size:2"`
-	Attributes  Attributes        `json:"attributes,omitempty" gorm:"type:jsonb"`
-	Status      ParticipantStatus `json:"status" gorm:"not null"`
+	Name   string            `json:"name" gorm:"not null"`
+	Status ParticipantStatus `json:"status" gorm:"not null"`
 
 	// Relationships
 	Agents []Agent `json:"agents,omitempty" gorm:"foreignKey:ProviderID"` // Agent struct will be updated later
 }
 
 // NewParticipant creates a new Participant without validation
-func NewParticipant(name string, status ParticipantStatus, countryCode CountryCode, attributes Attributes) *Participant {
+func NewParticipant(name string, status ParticipantStatus) *Participant {
 	return &Participant{
-		Name:        name,
-		Status:      status,
-		CountryCode: countryCode,
-		Attributes:  attributes,
+		Name:   name,
+		Status: status,
 	}
 }
 
@@ -65,17 +65,6 @@ func (p *Participant) Validate() error {
 	if p.Name == "" {
 		return fmt.Errorf("participant name cannot be empty")
 	}
-	if err := p.CountryCode.Validate(); err != nil {
-		// Allow empty country code
-		if string(p.CountryCode) != "" {
-			return err
-		}
-	}
-	if p.Attributes != nil {
-		if err := p.Attributes.Validate(); err != nil {
-			return err
-		}
-	}
 	if err := p.Status.Validate(); err != nil {
 		return err
 	}
@@ -83,28 +72,22 @@ func (p *Participant) Validate() error {
 }
 
 // Update updates the participant fields if the pointers are non-nil
-func (p *Participant) Update(name *string, status *ParticipantStatus, countryCode *CountryCode, attributes *Attributes) {
+func (p *Participant) Update(name *string, status *ParticipantStatus) {
 	if name != nil {
 		p.Name = *name
 	}
 	if status != nil {
 		p.Status = *status
 	}
-	if countryCode != nil {
-		p.CountryCode = *countryCode
-	}
-	if attributes != nil {
-		p.Attributes = *attributes
-	}
 }
 
 // ParticipantCommander defines the interface for participant command operations
 type ParticipantCommander interface {
 	// Create creates a new participant
-	Create(ctx context.Context, name string, status ParticipantStatus, countryCode CountryCode, attributes Attributes) (*Participant, error)
+	Create(ctx context.Context, name string, status ParticipantStatus) (*Participant, error)
 
 	// Update updates a participant
-	Update(ctx context.Context, id UUID, name *string, status *ParticipantStatus, countryCode *CountryCode, attributes *Attributes) (*Participant, error)
+	Update(ctx context.Context, id UUID, name *string, status *ParticipantStatus) (*Participant, error)
 
 	// Delete removes a participant by ID after checking for dependencies
 	Delete(ctx context.Context, id UUID) error
@@ -112,18 +95,15 @@ type ParticipantCommander interface {
 
 // participantCommander is the concrete implementation of ParticipantCommander
 type participantCommander struct {
-	store          Store
-	auditCommander AuditEntryCommander
+	store Store
 }
 
 // NewParticipantCommander creates a new default ParticipantCommander
 func NewParticipantCommander(
 	store Store,
-	auditCommander AuditEntryCommander,
 ) ParticipantCommander {
 	return &participantCommander{
-		store:          store,
-		auditCommander: auditCommander,
+		store: store,
 	}
 }
 
@@ -131,22 +111,23 @@ func (c *participantCommander) Create(
 	ctx context.Context,
 	name string,
 	status ParticipantStatus,
-	countryCode CountryCode,
-	attributes Attributes,
 ) (*Participant, error) {
 	var participant *Participant
 	err := c.store.Atomic(ctx, func(store Store) error {
-		participant = NewParticipant(name, status, countryCode, attributes)
+		participant = NewParticipant(name, status)
 		if err := participant.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
 		if err := store.ParticipantRepo().Create(ctx, participant); err != nil {
 			return err
 		}
-		// EventTypeParticipantCreated will be defined in audit_entry.go as per plan
-		_, err := c.auditCommander.CreateCtx(
-			ctx, "EventTypeParticipantCreated", JSON{"status": participant}, // Placeholder
-			&participant.ID, &participant.ID, nil, nil) // ParticipantID is the authority
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeParticipantCreated, JSON{"status": participant}, &participant.ID, &participant.ID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {
@@ -160,8 +141,6 @@ func (c *participantCommander) Update(
 	id UUID,
 	name *string,
 	status *ParticipantStatus,
-	countryCode *CountryCode,
-	attributes *Attributes,
 ) (*Participant, error) {
 	participant, err := c.store.ParticipantRepo().FindByID(ctx, id)
 	if err != nil {
@@ -169,7 +148,7 @@ func (c *participantCommander) Update(
 	}
 	beforeParticipant := *participant
 
-	participant.Update(name, status, countryCode, attributes)
+	participant.Update(name, status)
 	if err := participant.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
@@ -178,9 +157,13 @@ func (c *participantCommander) Update(
 		if err := store.ParticipantRepo().Save(ctx, participant); err != nil {
 			return err
 		}
-		// EventTypeParticipantUpdated will be defined in audit_entry.go as per plan
-		_, err = c.auditCommander.CreateCtxWithDiff(ctx, "EventTypeParticipantUpdated", // Placeholder
-			&id, &id, nil, nil, &beforeParticipant, participant) // ParticipantID is the authority
+		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeParticipantUpdated, JSON{}, &id, &id, nil, nil, &beforeParticipant, participant)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
 		return err
 	})
 	if err != nil {
@@ -216,9 +199,14 @@ func (c *participantCommander) Delete(ctx context.Context, id UUID) error {
 			return err
 		}
 
-		// EventTypeParticipantDeleted will be defined in audit_entry.go as per plan
-		_, err = c.auditCommander.CreateCtx(ctx, "EventTypeParticipantDeleted", // Placeholder
-			JSON{"status": participant}, &id, &id, nil, nil) // ParticipantID is the authority
+		auditEntry, err := NewEventAuditCtx(ctx, EventTypeParticipantDeleted, JSON{"status": participant}, &id, &id, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			return err
+		}
+
 		return err
 	})
 }

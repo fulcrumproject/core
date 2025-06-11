@@ -36,12 +36,12 @@ func NewServiceHandler(
 
 // CreateServiceRequest represents the request to create a service
 type CreateServiceRequest struct {
-	GroupID       domain.UUID       `json:"groupId"`
-	AgentID       domain.UUID       `json:"agentId"`
-	ServiceTypeID domain.UUID       `json:"serviceTypeId"`
-	Name          string            `json:"name"`
-	Attributes    domain.Attributes `json:"attributes"`
-	Properties    domain.JSON       `json:"properties"`
+	GroupID       domain.UUID  `json:"groupId"`
+	AgentID       *domain.UUID `json:"agentId,omitempty"`
+	ServiceTypeID domain.UUID  `json:"serviceTypeId"`
+	AgentTags     []string     `json:"agentTags,omitempty"`
+	Name          string       `json:"name"`
+	Properties    domain.JSON  `json:"properties"`
 }
 
 // UpdateServiceRequest represents the request to update a service
@@ -71,17 +71,8 @@ func CreateServiceScopeExtractor(
 			return nil, err
 		}
 
-		// Get agent scope
-		agentScope, err := agentQuerier.AuthScope(r.Context(), body.AgentID)
-		if err != nil {
-			return nil, err
-		}
-
-		// Combine the scopes
 		scope := &domain.AuthTargetScope{
-			ConsumerID:    serviceGroupScope.ConsumerID,
-			ParticipantID: agentScope.ParticipantID,
-			AgentID:       &body.AgentID,
+			ConsumerID: serviceGroupScope.ConsumerID,
 		}
 
 		return scope, nil
@@ -149,15 +140,31 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	// Get decoded body from context
 	body := MustGetBody[CreateServiceRequest](r.Context())
 
-	service, err := h.commander.Create(
-		r.Context(),
-		body.AgentID,
-		body.ServiceTypeID,
-		body.GroupID,
-		body.Name,
-		body.Attributes,
-		body.Properties,
-	)
+	var service *domain.Service
+	var err error
+
+	if body.AgentID != nil {
+		// Direct agent specification
+		service, err = h.commander.Create(
+			r.Context(),
+			*body.AgentID,
+			body.ServiceTypeID,
+			body.GroupID,
+			body.Name,
+			body.Properties,
+		)
+	} else {
+		// Agent discovery using service type and tags
+		service, err = h.commander.CreateWithTags(
+			r.Context(),
+			body.ServiceTypeID,
+			body.GroupID,
+			body.Name,
+			body.Properties,
+			body.AgentTags,
+		)
+	}
+
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -257,7 +264,6 @@ type ServiceResponse struct {
 	GroupID           domain.UUID           `json:"groupId"`
 	ExternalID        *string               `json:"externalId,omitempty"`
 	Name              string                `json:"name"`
-	Attributes        domain.Attributes     `json:"attributes"`
 	CurrentStatus     domain.ServiceStatus  `json:"currentStatus"`
 	TargetStatus      *domain.ServiceStatus `json:"targetStatus,omitempty"`
 	FailedAction      *domain.ServiceAction `json:"failedAction,omitempty"`
@@ -281,7 +287,6 @@ func serviceToResponse(s *domain.Service) *ServiceResponse {
 		GroupID:           s.GroupID,
 		ExternalID:        s.ExternalID,
 		Name:              s.Name,
-		Attributes:        s.Attributes,
 		CurrentStatus:     s.CurrentStatus,
 		TargetStatus:      s.TargetStatus,
 		FailedAction:      s.FailedAction,
