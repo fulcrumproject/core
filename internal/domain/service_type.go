@@ -1,11 +1,16 @@
 package domain
 
-import "context"
+import (
+	"context"
+
+	"fulcrumproject.org/core/internal/schema"
+)
 
 // ServiceType represents a type of service that can be provided
 type ServiceType struct {
 	BaseEntity
-	Name string `json:"name" gorm:"not null;unique"`
+	Name           string               `json:"name" gorm:"not null;unique"`
+	PropertySchema *schema.CustomSchema `json:"propertySchema,omitempty" gorm:"type:jsonb"`
 }
 
 // TableName returns the table name for the service type

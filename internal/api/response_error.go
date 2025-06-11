@@ -18,8 +18,20 @@ type ErrResponse struct {
 	ErrorText  string `json:"error,omitempty"` // application-level error message
 }
 
+// ValidationErrResponse represents a validation error response with detailed errors
+type ValidationErrResponse struct {
+	Err            error                          `json:"-"` // low-level runtime error
+	HTTPStatusCode int                            `json:"-"` // http response status code
+	StatusText     string                         `json:"status"`
+	Valid          bool                           `json:"valid"`
+	Errors         []domain.ValidationErrorDetail `json:"errors"`
+}
+
 func ErrDomain(err error) render.Renderer {
 	slog.Error("API domain error", "error", err)
+	if validationErr, ok := err.(domain.ValidationError); ok {
+		return ErrValidation(validationErr)
+	}
 	if errors.As(err, &domain.InvalidInputError{}) {
 		return ErrInvalidRequest(err)
 	}
@@ -73,7 +85,22 @@ func ErrUnauthorized(err error) render.Renderer {
 	}
 }
 
+func ErrValidation(err domain.ValidationError) render.Renderer {
+	return &ValidationErrResponse{
+		Err:            err,
+		HTTPStatusCode: http.StatusBadRequest,
+		StatusText:     "Validation failed",
+		Valid:          false,
+		Errors:         err.Errors,
+	}
+}
+
 func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	w.WriteHeader(e.HTTPStatusCode)
+	return nil
+}
+
+func (e *ValidationErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	w.WriteHeader(e.HTTPStatusCode)
 	return nil
 }

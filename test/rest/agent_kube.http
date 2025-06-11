@@ -27,7 +27,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Kube Agent Test",
-    "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
+    "agentTypeId": "019760d0-0f14-7853-9cad-b9ab8ce950f4",
     "providerId": "{{providerId}}"
 }
 
@@ -105,7 +105,7 @@ Authorization: Bearer {{consumerToken}}
         ]
     },
     "agentId": "{{agentId}}",
-    "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
+    "serviceTypeId": "019760cf-94bd-7859-bea9-62d945ec5ce3",
     "groupId": "{{serviceGroupId}}"
 }
 

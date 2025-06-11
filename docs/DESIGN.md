@@ -19,7 +19,8 @@ The system is built as a RESTful API and enables organizations to:
 This document provides a high-level overview of the Fulcrum Core system design. For more detailed information, please refer to:
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): Detailed description of the system's layered architecture, package structure, and implementation patterns
-- [AUTH.md](AUTH.md): Comprehensive authorization rules and role-based permissions
+- [AUTHORIZATION.md](AUTHORIZATION.md): Comprehensive authorization rules and role-based permissions
+- [SERVICE_TYPE_SCHEMA.md](SERVICE_TYPE_SCHEMA.md): Service property schema validation syntax and usage guide
 - [openapi.yaml](openapi.yaml): Complete API specification in OpenAPI format
 
 ## Context
@@ -137,6 +138,7 @@ classDiagram
         class ServiceType {
             id : UUID
             name : string
+            propertySchema : CustomSchema
             createdAt : datetime
             updatedAt : datetime
         }
@@ -370,7 +372,7 @@ Fulcrum Core implements a comprehensive authorization system with role-based acc
 
 The authentication system currently uses tokens, which will be replaced with an industry-standard external authentication mechanism in the future, such as OAuth 2.0, OpenID Connect, or SAML.
 
-For detailed information about roles, permissions, and authorization rules, refer to [AUTH.md](AUTH.md).
+For detailed information about roles, permissions, and authorization rules, refer to [AUTHORIZATION.md](AUTHORIZATION.md).
 
 
 ## Technical Overview
@@ -405,6 +407,62 @@ stateDiagram-v2
     ColdUpdating --> Stopped: update complete
     Deleting --> Deleted: operation complete
 ```
+
+#### Service Property Schema Validation
+
+Fulcrum Core provides a flexible JSON-based validation system for service properties through the Service Property Schema feature. This system ensures data integrity and consistency for service configurations while providing dynamic validation without requiring application recompilation.
+
+##### Schema Structure
+
+Each ServiceType can have an optional `propertySchema` field that defines validation rules for service properties. The schema supports:
+
+- **Primitive Types**: string, integer, number, boolean
+- **Complex Types**: object (with nested properties), array (with item schemas)
+- **Validation Rules**: minLength, maxLength, pattern, enum, min, max, minItems, maxItems, uniqueItems
+- **Nested Validation**: Recursive validation for objects and arrays
+- **Default Values**: Automatic application of default values for missing properties
+
+##### Validation Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Fulcrum Core API
+    participant Schema as Schema Validator
+    participant DB as Database
+    
+    Client->>API: POST /api/v1/services (with properties)
+    API->>DB: Fetch ServiceType
+    DB-->>API: ServiceType with propertySchema
+    
+    alt propertySchema exists
+        API->>Schema: Validate properties against schema
+        Schema-->>API: Validation results
+        
+        alt validation passes
+            API->>DB: Create service with validated properties
+            DB-->>API: Service created
+            API-->>Client: 201 Created
+        else validation fails
+            API-->>Client: 400 Bad Request (validation errors)
+        end
+    else no propertySchema
+        API->>DB: Create service without validation
+        DB-->>API: Service created
+        API-->>Client: 201 Created
+    end
+```
+
+##### Validation API Endpoint
+
+The system provides a dedicated validation endpoint for testing property schemas:
+
+- **Endpoint**: `POST /api/v1/service-types/{id}/validate`
+- **Purpose**: Validate service properties against a ServiceType's schema
+- **Response**: Returns validation status and detailed error messages
+- **Use Cases**: Frontend validation, schema testing, development workflows
+
+For detailed schema syntax and examples, see [SERVICE_TYPE_SCHEMA.md](SERVICE_TYPE_SCHEMA.md).
 
 #### Agent Authentication Flow
 

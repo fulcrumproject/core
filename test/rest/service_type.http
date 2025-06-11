@@ -14,3 +14,15 @@ Authorization: Bearer {{adminToken}}
 ### Get a service type by ID
 GET {{baseUrl}}/service-types/{{serviceTypeId}}
 Authorization: Bearer {{adminToken}}
+
+### Validate service properties before creation
+# @name validateServiceProperties
+POST {{baseUrl}}/service-types/0195c3c8-69e5-7806-9598-8523c01ea54f/validate
+Authorization: Bearer {{adminToken}}
+
+{
+    "properties": {
+        "cpu": 4,
+        "memory": 5112
+    }
+}

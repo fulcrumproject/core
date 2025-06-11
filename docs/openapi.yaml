@@ -388,6 +388,8 @@ components:
         name:
           type: string
           example: "VM"
+        propertySchema:
+          $ref: "#/components/schemas/PropertySchema"
         resourceDefinitions:
           $ref: "#/components/schemas/JSONObject"
         createdAt:
@@ -618,6 +620,98 @@ components:
           type: integer
         page:
           type: integer
+
+    PropertySchema:
+      type: object
+      description: JSON schema defining validation rules for service properties
+      additionalProperties:
+        $ref: "#/components/schemas/PropertyDefinition"
+
+    PropertyDefinition:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [string, integer, number, boolean, object, array]
+          description: The data type of the property
+        label:
+          type: string
+          description: Human-readable label for the property
+        required:
+          type: boolean
+          description: Whether the property is required
+          default: false
+        default:
+          description: Default value for the property
+        validators:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidatorDefinition"
+          description: Array of validation rules
+        properties:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/PropertyDefinition"
+          description: Nested properties for object types
+        items:
+          $ref: "#/components/schemas/PropertyDefinition"
+          description: Schema for array items
+
+    ValidatorDefinition:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          enum:
+            [
+              minLength,
+              maxLength,
+              pattern,
+              enum,
+              min,
+              max,
+              minItems,
+              maxItems,
+              uniqueItems,
+            ]
+          description: Type of validator
+        value:
+          description: Value for the validator (type depends on validator type)
+
+    ValidatePropertiesRequest:
+      type: object
+      required:
+        - properties
+      properties:
+        properties:
+          type: object
+          description: Properties to validate against the schema
+          additionalProperties: true
+
+    ValidatePropertiesResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          description: Whether the properties are valid
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationError"
+          description: Array of validation errors (empty if valid)
+
+    ValidationError:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Path to the property that failed validation
+        message:
+          type: string
+          description: Error message describing the validation failure
 
 paths:
   #
@@ -1340,11 +1434,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ServiceResponse"
         "400":
-          description: Invalid request
+          description: Invalid request or validation failed
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                oneOf:
+                  - $ref: "#/components/schemas/ErrorResponse"
+                  - $ref: "#/components/schemas/ValidatePropertiesResponse"
 
   /services/{id}:
     parameters:
@@ -1421,6 +1517,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ServiceResponse"
+        "400":
+          description: Invalid request or validation failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ErrorResponse"
+                  - $ref: "#/components/schemas/ValidatePropertiesResponse"
         "404":
           description: Service not found
           content:
@@ -1604,6 +1708,51 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ServiceTypeResponse"
+        "404":
+          description: Service type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /service-types/{id}/validate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+    post:
+      summary: Validate service properties
+      tags:
+        - Services
+      description: Validates service properties against the service type's property schema
+      x-auth-permissions:
+        - role: fulcrum_admin
+          permission: all service types
+        - role: participant
+          permission: all service types
+        - role: agent
+          permission: all service types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidatePropertiesRequest"
+      responses:
+        "200":
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidatePropertiesResponse"
+        "400":
+          description: Bad request (e.g., service type has no property schema)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Service type not found
           content:

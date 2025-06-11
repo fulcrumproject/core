@@ -50,6 +50,7 @@ func TestServiceTypeHandlerRoutes(t *testing.T) {
 		switch {
 		case method == "GET" && route == "/":
 		case method == "GET" && route == "/{id}":
+		case method == "POST" && route == "/{id}/validate":
 		default:
 			return fmt.Errorf("unexpected route: %s %s", method, route)
 		}

@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"time"
 
+	"fulcrumproject.org/core/internal/schema"
 	"github.com/google/uuid"
 )
 
@@ -321,10 +322,17 @@ func (s *serviceCommander) createServiceWithAgent(
 		return nil, err
 	}
 
+	// Validate properties against schema
+	validatedProperties, err := s.validatePropertiesAgainstSchema(ctx, properties, serviceTypeID)
+	if err != nil {
+		return nil, err
+	}
+	properties = validatedProperties
+
 	// Check if the agent's type supports the requested service type
 	supported := false
-	for _, serviceType := range agent.AgentType.ServiceTypes {
-		if serviceType.ID == serviceTypeID {
+	for _, agentServiceType := range agent.AgentType.ServiceTypes {
+		if agentServiceType.ID == serviceTypeID {
 			supported = true
 			break
 		}
@@ -383,6 +391,15 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 		return nil, err
 	}
 
+	// Validate properties against schema if provided
+	if props != nil {
+		validatedProperties, err := s.validatePropertiesAgainstSchema(ctx, *props, svc.ServiceTypeID)
+		if err != nil {
+			return nil, err
+		}
+		props = &validatedProperties
+	}
+
 	// Audit copy
 	originalSvc := *svc
 
@@ -425,6 +442,39 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 	}
 
 	return svc, nil
+}
+
+// validatePropertiesAgainstSchema validates properties against a service type's schema
+func (s *serviceCommander) validatePropertiesAgainstSchema(ctx context.Context, properties JSON, serviceTypeID UUID) (JSON, error) {
+	// Fetch the service type to get its schema
+	serviceType, err := s.store.ServiceTypeRepo().FindByID(ctx, serviceTypeID)
+	if err != nil {
+		return nil, err
+	}
+
+	// If no schema, return properties as-is
+	if serviceType.PropertySchema == nil {
+		return properties, nil
+	}
+
+	// Validate properties against schema
+	propertiesMap := map[string]any(properties)
+	propertiesWithDefaults, validationErrors := schema.ValidateWithDefaults(propertiesMap, *serviceType.PropertySchema)
+
+	if len(validationErrors) > 0 {
+		// Convert schema validation errors to domain validation error details
+		var errorDetails []ValidationErrorDetail
+		for _, err := range validationErrors {
+			errorDetails = append(errorDetails, ValidationErrorDetail{
+				Path:    err.Path,
+				Message: err.Message,
+			})
+		}
+		return nil, NewValidationError(errorDetails)
+	}
+
+	// Return properties with defaults applied
+	return JSON(propertiesWithDefaults), nil
 }
 
 func (s *serviceCommander) Transition(ctx context.Context, id UUID, target ServiceStatus) (*Service, error) {

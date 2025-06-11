@@ -80,13 +80,13 @@ Authorization: Bearer {{adminToken}}
 {
     "name": "Test Service",
     "status": "Created",
-    "attributes": {
-        "environment": ["production"],
-        "region": ["us-west"]
-    },
     "agentId": "{{agentId}}",
     "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
-    "groupId": "{{serviceGroupId}}"
+    "groupId": "{{serviceGroupId}}",
+    "properties": {
+        "cpu": 4,
+        "memory": 512
+    }
 }
 
 @serviceId = {{createService.response.body.$.id}}

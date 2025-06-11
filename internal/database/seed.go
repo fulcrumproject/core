@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"fulcrumproject.org/core/internal/domain"
+	"fulcrumproject.org/core/internal/schema"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -25,13 +26,97 @@ func Seed(db *gorm.DB) error {
 		return err
 	}
 	if !exists {
+		// Create VM service type with property schema
+		vmSchema := &schema.CustomSchema{
+			"cpu": schema.PropertyDefinition{
+				Type:     schema.TypeInteger,
+				Label:    "CPU Cores",
+				Required: true,
+				Validators: []schema.ValidatorDefinition{
+					{Type: schema.ValidatorEnum, Value: []any{1, 2, 4, 8, 16, 32}},
+				},
+			},
+			"memory": schema.PropertyDefinition{
+				Type:     schema.TypeInteger,
+				Label:    "Memory (MB)",
+				Required: true,
+				Validators: []schema.ValidatorDefinition{
+					{Type: schema.ValidatorEnum, Value: []any{512, 1024, 2048, 4096, 8192, 16384, 32768, 65536}},
+				},
+			},
+		}
+
 		vmServiceType = domain.ServiceType{
 			BaseEntity: domain.BaseEntity{
 				ID: vmServiceTypeID,
 			},
-			Name: "vm",
+			Name:           "vm",
+			PropertySchema: vmSchema,
 		}
 		if err := serviceTypeRepo.Create(ctx, &vmServiceType); err != nil {
+			return err
+		}
+	}
+
+	// Create kubernetes service type if needed
+	var kubernetesServiceType domain.ServiceType
+	kubernetesServiceTypeID := uuid.MustParse("019760cf-94bd-7859-bea9-62d945ec5ce3")
+	exists, err = serviceTypeRepo.Exists(ctx, kubernetesServiceTypeID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		// Create Kubernetes cluster service type with property schema
+		kubernetesSchema := &schema.CustomSchema{
+			"nodes": schema.PropertyDefinition{
+				Type:     schema.TypeArray,
+				Label:    "Cluster Nodes",
+				Required: true,
+				Items: &schema.PropertyDefinition{
+					Type: schema.TypeObject,
+					Properties: map[string]schema.PropertyDefinition{
+						"id": {
+							Type:     schema.TypeString,
+							Label:    "Node ID",
+							Required: true,
+							Validators: []schema.ValidatorDefinition{
+								{Type: schema.ValidatorMinLength, Value: 1},
+								{Type: schema.ValidatorMaxLength, Value: 50},
+							},
+						},
+						"size": {
+							Type:     schema.TypeString,
+							Label:    "Node Size",
+							Required: true,
+							Validators: []schema.ValidatorDefinition{
+								{Type: schema.ValidatorEnum, Value: []any{"s1", "s2", "s4"}},
+							},
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Label:    "Node Status",
+							Required: true,
+							Validators: []schema.ValidatorDefinition{
+								{Type: schema.ValidatorEnum, Value: []any{"On", "Off"}},
+							},
+						},
+					},
+				},
+				Validators: []schema.ValidatorDefinition{
+					{Type: schema.ValidatorMinItems, Value: 1},
+					{Type: schema.ValidatorMaxItems, Value: 100},
+				},
+			},
+		}
+
+		kubernetesServiceType = domain.ServiceType{
+			BaseEntity: domain.BaseEntity{
+				ID: kubernetesServiceTypeID,
+			},
+			Name:           "kubernetes-cluster",
+			PropertySchema: kubernetesSchema,
+		}
+		if err := serviceTypeRepo.Create(ctx, &kubernetesServiceType); err != nil {
 			return err
 		}
 	}
@@ -53,6 +138,27 @@ func Seed(db *gorm.DB) error {
 			},
 		}
 		if err := agentTypeRepo.Create(ctx, dummyAgentType); err != nil {
+			return err
+		}
+	}
+
+	// Create kubernetes agent type if needed
+	kubernetesAgentTypeID := uuid.MustParse("019760d0-0f14-7853-9cad-b9ab8ce950f4")
+	exists, err = agentTypeRepo.Exists(ctx, kubernetesAgentTypeID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		kubernetesAgentType := &domain.AgentType{
+			BaseEntity: domain.BaseEntity{
+				ID: kubernetesAgentTypeID,
+			},
+			Name: "kubernetes",
+			ServiceTypes: []domain.ServiceType{
+				kubernetesServiceType,
+			},
+		}
+		if err := agentTypeRepo.Create(ctx, kubernetesAgentType); err != nil {
 			return err
 		}
 	}

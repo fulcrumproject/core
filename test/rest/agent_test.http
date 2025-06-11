@@ -88,6 +88,18 @@ Authorization: Bearer {{consumerToken}}
 
 @serviceGroupId = {{createServiceGroup.response.body.$.id}}
 
+### Validate service properties before creation
+# @name validateServiceProperties
+POST {{baseUrl}}/service-types/0195c3c8-69e5-7806-9598-8523c01ea54f/validate
+Authorization: Bearer {{consumerToken}}
+
+{
+    "properties": {
+        "cpu": 4,
+        "memory": 512
+    }
+}
+
 ### Create a new service using agent's unique tag for discovery
 # @name createService
 POST {{baseUrl}}/services
@@ -97,7 +109,7 @@ Authorization: Bearer {{consumerToken}}
     "name": "Proxmox VM",
     "properties": {
         "cpu": 4,
-        "memory": 8
+        "memory": 512
     },
     "agentTags": ["{{uniqueTag}}"],
     "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
@@ -133,7 +145,7 @@ Authorization: Bearer {{consumerToken}}
 {
     "properties": {
         "cpu": 8,
-        "memory": 24
+        "memory": 1024
     }
 }
 
@@ -156,7 +168,7 @@ Authorization: Bearer {{consumerToken}}
 {
     "properties": {
         "cpu": 4,
-        "memory": 16
+        "memory": 4096
     }
 }
 
