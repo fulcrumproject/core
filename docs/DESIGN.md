@@ -337,7 +337,7 @@ classDiagram
    - Contains hashed value stored in database to verify authentication
    - Has expiration date for enhanced security
    - Scoped to specific Participant or Agent based on role
-   - Note: The current token implementation is a facility to handle authentication locally and will be replaced with an external authentication standard mechanism in the future, such as OAuth 2.0, OpenID Connect, or SAML
+   - Used alongside or instead of OAuth/OIDC authentication depending on system configuration
 
 ##### Metrics
 
@@ -370,7 +370,12 @@ Fulcrum Core implements a comprehensive authorization system with role-based acc
 - Fine-grained permission control for different resource types and actions
 - Context-aware permissions based on resource ownership and relationships
 
-The authentication system currently uses tokens, which will be replaced with an industry-standard external authentication mechanism in the future, such as OAuth 2.0, OpenID Connect, or SAML.
+The authentication system supports multiple authenticators that can be enabled via the `FULCRUM_AUTHENTICATORS` configuration:
+
+- **Token Authentication**: Local token-based authentication using secure hashed tokens
+- **OAuth/OIDC Authentication**: Integration with external OAuth 2.0/OpenID Connect providers (e.g., Keycloak)
+
+The system can be configured to use one or both authentication methods simultaneously through a composite authenticator pattern. OAuth authentication supports JWT token validation with custom claims for role and scope extraction.
 
 For detailed information about roles, permissions, and authorization rules, refer to [AUTHORIZATION.md](AUTHORIZATION.md).
 

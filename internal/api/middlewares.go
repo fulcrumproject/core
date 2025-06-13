@@ -40,6 +40,32 @@ func Auth(auth domain.Authenticator) func(http.Handler) http.Handler {
 	}
 }
 
+// CompositeAuthenticator implements domain.Authenticator by trying multiple authenticators in order
+type CompositeAuthenticator struct {
+	authenticators []domain.Authenticator
+}
+
+// NewCompositeAuthenticator creates a new composite authenticator
+func NewCompositeAuthenticator(authenticators ...domain.Authenticator) *CompositeAuthenticator {
+	return &CompositeAuthenticator{
+		authenticators: authenticators,
+	}
+}
+
+// Authenticate tries each authenticator in order until one succeeds
+// Returns nil if all authenticators fail
+func (c *CompositeAuthenticator) Authenticate(ctx context.Context, token string) domain.AuthIdentity {
+	// Try each authenticator in order
+	for _, authenticator := range c.authenticators {
+		if identity := authenticator.Authenticate(ctx, token); identity != nil {
+			return identity
+		}
+	}
+
+	// All authenticators failed
+	return nil
+}
+
 // ID extracts and validates the UUID from URL paths with /{id} format
 func ID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

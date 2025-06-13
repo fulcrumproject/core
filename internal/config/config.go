@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -39,11 +40,13 @@ var (
 
 // Fulcrum configuration
 type Config struct {
-	Port        uint        `json:"port" env:"PORT"`
-	JobConfig   JobConfig   `json:"job"`
-	AgentConfig AgentConfig `json:"agent"`
-	LogConfig   LogConfig   `json:"log"`
-	DBConfig    DBConfig    `json:"db"`
+	Port           uint        `json:"port" env:"PORT"`
+	Authenticators []string    `json:"authenticators" env:"AUTHENTICATORS"`
+	JobConfig      JobConfig   `json:"job"`
+	AgentConfig    AgentConfig `json:"agent"`
+	LogConfig      LogConfig   `json:"log"`
+	DBConfig       DBConfig    `json:"db"`
+	OAuthConfig    OAuthConfig `json:"oauth"`
 }
 
 // Fulcrum Agent configuration
@@ -79,6 +82,26 @@ type DBConfig struct {
 	SSLMode   string `json:"sslMode" env:"DB_SSL_MODE"`
 	LogLevel  string `json:"logLevel" env:"DB_LOG_LEVEL"`
 	LogFormat string `json:"logFormat" env:"DB_LOG_FORMAT"`
+}
+
+// Fulcrum OAuth configuration
+type OAuthConfig struct {
+	KeycloakURL    string `json:"keycloakUrl" env:"OAUTH_KEYCLOAK_URL"`
+	Realm          string `json:"realm" env:"OAUTH_REALM"`
+	ClientID       string `json:"clientId" env:"OAUTH_CLIENT_ID"`
+	ClientSecret   string `json:"clientSecret" env:"OAUTH_CLIENT_SECRET"`
+	JWKSCacheTTL   int    `json:"jwksCacheTtl" env:"OAUTH_JWKS_CACHE_TTL"`
+	ValidateIssuer bool   `json:"validateIssuer" env:"OAUTH_VALIDATE_ISSUER"`
+}
+
+// GetJWKSURL returns the JWKS endpoint URL for the Keycloak realm
+func (c *OAuthConfig) GetJWKSURL() string {
+	return fmt.Sprintf("%s/realms/%s/protocol/openid_connect/certs", c.KeycloakURL, c.Realm)
+}
+
+// GetIssuer returns the expected issuer for JWT tokens
+func (c *OAuthConfig) GetIssuer() string {
+	return fmt.Sprintf("%s/realms/%s", c.KeycloakURL, c.Realm)
 }
 
 // DSN returns the PostgreSQL connection string
@@ -165,6 +188,30 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid log level: %s", c.DBConfig.LogLevel)
 	}
 
+	// Validate authenticators
+	for _, auth := range c.Authenticators {
+		switch auth {
+		case "token":
+			// Token authenticator requires no specific config validation here
+		case "oauth":
+			// OAuth authenticator requires OAuthConfig validation
+			if c.OAuthConfig.KeycloakURL == "" {
+				return fmt.Errorf("oauth keycloak URL cannot be empty when oauth authenticator is enabled")
+			}
+			if c.OAuthConfig.Realm == "" {
+				return fmt.Errorf("oauth realm cannot be empty when oauth authenticator is enabled")
+			}
+			if c.OAuthConfig.ClientID == "" {
+				return fmt.Errorf("oauth client ID cannot be empty when oauth authenticator is enabled")
+			}
+			if c.OAuthConfig.JWKSCacheTTL <= 0 {
+				return fmt.Errorf("oauth JWKS cache TTL must be positive when oauth authenticator is enabled")
+			}
+		default:
+			return fmt.Errorf("unknown authenticator: %s", auth)
+		}
+	}
+
 	return nil
 }
 
@@ -178,7 +225,8 @@ type ConfigBuilder struct {
 func Builder() *ConfigBuilder {
 	return &ConfigBuilder{
 		config: &Config{
-			Port: 3000,
+			Port:           3000,
+			Authenticators: []string{"token"},
 			LogConfig: LogConfig{
 				Format: "text",
 				Level:  "info",
@@ -199,6 +247,14 @@ func Builder() *ConfigBuilder {
 				Port:     5432,
 				SSLMode:  "disable",
 				LogLevel: "warn",
+			},
+			OAuthConfig: OAuthConfig{
+				KeycloakURL:    "",
+				Realm:          "",
+				ClientID:       "",
+				ClientSecret:   "",
+				JWKSCacheTTL:   3600, // 1 hour in seconds
+				ValidateIssuer: true,
 			},
 		},
 	}
@@ -243,6 +299,12 @@ func (b *ConfigBuilder) WithEnv() *ConfigBuilder {
 	if err := loadEnvToStruct(b.config, envPrefix, tag); err != nil {
 		b.err = fmt.Errorf("failed to override configuration from environment: %w", err)
 		return b
+	}
+
+	// Manually load and parse FULCRUM_AUTHENTICATORS
+	authenticatorsStr := os.Getenv(envPrefix + "AUTHENTICATORS")
+	if authenticatorsStr != "" {
+		b.config.Authenticators = strings.Split(authenticatorsStr, ",")
 	}
 
 	return b

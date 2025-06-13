@@ -1,0 +1,96 @@
+# See KEYCLOAK_SETUP.md for manual setup instructions
+
+### Variables
+
+@baseURL = http://localhost:3000/api/v1
+@kcBaseURL = http://localhost:8080/realms/fulcrum
+@kcClientId = fulcrum-api
+@kcClientSecret = secret
+
+### Get ID Token for admin1 user
+# @name admin1Login
+POST {{kcBaseURL}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{kcClientId}}&client_secret={{kcClientSecret}}&username=admin1&password=password&scope=openid
+
+### Extract the ID Token from the response
+@admin1IdToken = {{admin1Login.response.body.$.access_token}}
+
+### Test Fulcrum API with OAuth Token - List Participants
+GET {{baseURL}}/participants
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+### Create a new Participant
+# @name createParticipant
+POST {{baseURL}}/participants
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Participant",
+  "status": "Enabled"
+}
+
+### SET IT IN KEYCLOAK USER ATTRIBUTES
+@participantId = {{createParticipant.response.body.$.id}}
+
+### Login as participant user
+# @name participantLogin
+POST {{kcBaseURL}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{kcClientId}}&client_secret={{kcClientSecret}}&username=participant1&password=password&scope=openid
+
+### Extract the ID Token from the response
+@participantIdToken = {{participantLogin.response.body.$.access_token}}
+
+### Get Participant by ID
+GET {{baseURL}}/participants/{{participantId}}
+Authorization: Bearer {{participantIdToken}}
+Content-Type: application/json
+
+### Create a new Agent
+# @name createAgent
+POST {{baseURL}}/agents
+Authorization: Bearer {{participantIdToken}}
+Content-Type: application/json
+
+{
+    "name": "OAuth Test Agent",
+    "providerId": "{{participantId}}",
+    "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
+    "tags": ["test-agent-{{$timestamp}}", "high-performance", "ssd-storage"]
+}
+
+@agentId = {{createAgent.response.body.$.id}}
+
+### Login as agent user
+# @name agentLogin
+POST {{kcBaseURL}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{kcClientId}}&client_secret={{kcClientSecret}}&username=agent1&password=password&scope=openid
+
+#### Extract the ID Token from the response
+@agentIdToken = {{agentLogin.response.body.$.access_token}}
+
+### Get Agent by ID
+GET {{baseURL}}/agents/{{agentId}}
+Authorization: Bearer {{agentIdToken}}
+Content-Type: application/json
+
+### Troubleshooting: Decode JWT Token
+### You can decode the tokens at https://jwt.io to inspect claims
+### The ID token should contain:
+### - sub: user ID
+### - realm_access.roles: ["fulcrum_admin"]
+### - preferred_username: "admin1"
+### - name: "Admin User"
+
+### Troubleshooting: Check Keycloak Configuration
+GET {{kcBaseURL}}/.well-known/openid-configuration
+    
+### Troubleshooting: Get JWKS (public keys for token verification)
+GET {{kcBaseURL}}/protocol/openid-connect/certs

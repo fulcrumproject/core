@@ -36,6 +36,34 @@ services:
     networks:
       - fulcrum-network
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2.5
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+      KC_LOG_LEVEL: info
+    command: ["start-dev", "--http-port", "8080", "--https-port", "8443"]
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    networks:
+      - fulcrum-network
+
+  keycloak-provisioning:
+    image: quay.io/adorsys/keycloak-config-cli:latest
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: "true"
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: "120s"
+      IMPORT_FILES_LOCATION: "/config/*"
+    volumes:
+      - ./test/keycloak:/config:z
+    networks:
+      - fulcrum-network
+
 volumes:
   postgres_data:
 

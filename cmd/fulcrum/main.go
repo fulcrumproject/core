@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -18,6 +19,7 @@ import (
 	"fulcrumproject.org/core/internal/database"
 	"fulcrumproject.org/core/internal/domain"
 	"fulcrumproject.org/core/internal/logging"
+	"fulcrumproject.org/core/internal/oauth"
 )
 
 func main() {
@@ -61,8 +63,36 @@ func main() {
 	agentCmd := domain.NewAgentCommander(store)
 	tokenCmd := domain.NewTokenCommander(store)
 
-	// Initialize auth and authorizer
-	auth := database.NewTokenAuthenticator(store)
+	// Initialize authenticators
+	authenticators := []domain.Authenticator{}
+
+	for _, authType := range cfg.Authenticators {
+		switch strings.TrimSpace(authType) {
+		case "token":
+			tokenAuth := database.NewTokenAuthenticator(store)
+			authenticators = append(authenticators, tokenAuth)
+			slog.Info("Token authentication enabled")
+		case "oauth":
+			ctx := context.Background()
+			oauthAuth, err := oauth.NewOIDCAuthenticator(ctx, cfg.OAuthConfig)
+			if err != nil {
+				slog.Error("Failed to initialize OAuth authenticator", "error", err)
+				os.Exit(1)
+			}
+			authenticators = append(authenticators, oauthAuth)
+			slog.Info("OAuth authentication enabled", "issuer", cfg.OAuthConfig.GetIssuer())
+		default:
+			slog.Warn("Unknown authenticator type in config", "type", authType)
+		}
+	}
+
+	if len(authenticators) == 0 {
+		slog.Warn("No authenticators enabled in configuration. API will be unprotected.")
+		// Optionally, you might want to exit or use a no-op authenticator
+	}
+
+	auth := api.NewCompositeAuthenticator(authenticators...)
+
 	authz := domain.NewDefaultRuleAuthorizer()
 
 	// Initialize handlers
