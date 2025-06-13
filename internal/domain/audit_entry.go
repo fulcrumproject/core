@@ -131,7 +131,7 @@ func extractAuditAuthority(ctx context.Context) (AuthorityType, string) {
 	// Map role to authority type
 	var authorityType AuthorityType
 	switch identity.Role() {
-	case RoleFulcrumAdmin:
+	case RoleAdmin:
 		authorityType = AuthorityTypeAdmin
 	case RoleParticipant:
 		authorityType = AuthorityTypeParticipant

@@ -15,10 +15,10 @@ func NewMockAuthParticipant() *MockAuthIdentity {
 	}
 }
 
-func NewMockAuthFulcrumAdmin() *MockAuthIdentity {
+func NewMockAuthAdmin() *MockAuthIdentity {
 	return &MockAuthIdentity{
 		id:   uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
-		role: domain.RoleFulcrumAdmin,
+		role: domain.RoleAdmin,
 	}
 }
 

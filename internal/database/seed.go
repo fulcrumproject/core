@@ -198,7 +198,7 @@ func Seed(db *gorm.DB) error {
 			Name:        "Admin Test Token",
 			PlainValue:  adminTokenValue,
 			HashedValue: domain.HashTokenValue(adminTokenValue),
-			Role:        domain.RoleFulcrumAdmin,
+			Role:        domain.RoleAdmin,
 			ExpireAt:    time.Now().AddDate(10, 0, 0), // 10 years in the future
 		}
 		if err := tokenRepo.Create(ctx, adminToken); err != nil {

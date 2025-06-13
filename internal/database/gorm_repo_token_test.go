@@ -37,7 +37,7 @@ func TestTokenRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			token := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			token := createTestToken(t, domain.RoleAdmin, nil)
 
 			// Execute
 			err := repo.Create(ctx, token)
@@ -107,9 +107,9 @@ func TestTokenRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			token1 := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			token1 := createTestToken(t, domain.RoleAdmin, nil)
 			require.NoError(t, repo.Create(ctx, token1))
-			token2 := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			token2 := createTestToken(t, domain.RoleAdmin, nil)
 			require.NoError(t, repo.Create(ctx, token2))
 
 			page := &domain.PageRequest{
@@ -129,7 +129,7 @@ func TestTokenRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			token := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			token := createTestToken(t, domain.RoleAdmin, nil)
 			token.Name = "UniqueTokenName"
 			require.NoError(t, repo.Create(ctx, token))
 
@@ -181,11 +181,11 @@ func TestTokenRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			token1 := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			token1 := createTestToken(t, domain.RoleAdmin, nil)
 			token1.Name = "A Token"
 			require.NoError(t, repo.Create(ctx, token1))
 
-			token2 := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			token2 := createTestToken(t, domain.RoleAdmin, nil)
 			token2.Name = "B Token"
 			require.NoError(t, repo.Create(ctx, token2))
 
@@ -215,7 +215,7 @@ func TestTokenRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			token := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			token := createTestToken(t, domain.RoleAdmin, nil)
 			require.NoError(t, repo.Create(ctx, token))
 
 			// Read
@@ -246,7 +246,7 @@ func TestTokenRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			token := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			token := createTestToken(t, domain.RoleAdmin, nil)
 			require.NoError(t, repo.Create(ctx, token))
 
 			// Execute
@@ -267,7 +267,7 @@ func TestTokenRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			token := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			token := createTestToken(t, domain.RoleAdmin, nil)
 			require.NoError(t, repo.Create(ctx, token))
 
 			// Execute
@@ -320,7 +320,7 @@ func TestTokenRepository(t *testing.T) {
 			require.NoError(t, repo.Create(ctx, agentToken2))
 
 			// Create a token with a different role that shouldn't be affected
-			otherToken := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			otherToken := createTestToken(t, domain.RoleAdmin, nil)
 			require.NoError(t, repo.Create(ctx, otherToken))
 
 			// Execute
@@ -369,7 +369,7 @@ func TestTokenRepository(t *testing.T) {
 			require.NoError(t, repo.Create(ctx, participantToken2))
 
 			// Create a token with a different role that shouldn't be affected
-			otherToken := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			otherToken := createTestToken(t, domain.RoleAdmin, nil)
 			require.NoError(t, repo.Create(ctx, otherToken))
 
 			// Execute
@@ -418,7 +418,7 @@ func TestTokenRepository(t *testing.T) {
 			require.NoError(t, repo.Create(ctx, consumerToken2))
 
 			// Create a token with a different role that shouldn't be affected
-			otherToken := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			otherToken := createTestToken(t, domain.RoleAdmin, nil)
 			require.NoError(t, repo.Create(ctx, otherToken))
 
 			// Execute
@@ -446,7 +446,7 @@ func TestTokenRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Create tokens with different roles and scope IDs
-			adminToken := createTestToken(t, domain.RoleFulcrumAdmin, nil)
+			adminToken := createTestToken(t, domain.RoleAdmin, nil)
 			require.NoError(t, repo.Create(ctx, adminToken))
 
 			participantToken := &domain.Token{

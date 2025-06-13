@@ -135,7 +135,7 @@ func TestServiceGroupHandleCreate(t *testing.T) {
 			// Create request with simulated middleware context
 			req := httptest.NewRequest("POST", "/service-groups", nil)
 			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -224,7 +224,7 @@ func TestServiceGroupHandleGet(t *testing.T) {
 			req = simulateIDMiddleware(req, tc.id)
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -322,7 +322,7 @@ func TestServiceGroupHandleList(t *testing.T) {
 			req := httptest.NewRequest("GET", "/service-groups?page=1&pageSize=10", nil)
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -432,7 +432,7 @@ func TestServiceGroupHandleUpdate(t *testing.T) {
 			req = addIDToChiContext(req, tc.id)
 			req = simulateIDMiddleware(req, tc.id)
 			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -509,7 +509,7 @@ func TestServiceGroupHandleDelete(t *testing.T) {
 			req = simulateIDMiddleware(req, tc.id)
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request

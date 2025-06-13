@@ -15,8 +15,8 @@ func TestAuthRole_Validate(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Valid FulcrumAdmin role",
-			role:    RoleFulcrumAdmin,
+			name:    "Valid Admin role",
+			role:    RoleAdmin,
 			wantErr: false,
 		},
 		{
@@ -220,7 +220,7 @@ func TestAuthContextFunctions(t *testing.T) {
 	// Setup
 	baseCtx := context.Background()
 	identityID := uuid.New()
-	identity := NewMockAuthIdentity(identityID, RoleFulcrumAdmin)
+	identity := NewMockAuthIdentity(identityID, RoleAdmin)
 
 	// Test WithAuthIdentity
 	ctxWithIdentity := WithAuthIdentity(baseCtx, identity)
@@ -262,16 +262,16 @@ func TestValidateAuthScope(t *testing.T) {
 		{
 			name: "Nil target scope",
 			setupIdentity: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleFulcrumAdmin)
+				return NewMockAuthIdentity(uuid.New(), RoleAdmin)
 			},
 			targetScope: nil,
 			wantErr:     true,
 			errContains: "nil authorization target scope",
 		},
 		{
-			name: "FulcrumAdmin has access to any scope",
+			name: "Admin has access to any scope",
 			setupIdentity: func() AuthIdentity {
-				return NewMockAuthIdentity(uuid.New(), RoleFulcrumAdmin)
+				return NewMockAuthIdentity(uuid.New(), RoleAdmin)
 			},
 			targetScope: &AuthTargetScope{
 				ParticipantID: &participantID,

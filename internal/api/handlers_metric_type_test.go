@@ -133,7 +133,7 @@ func TestMetricTypeHandleCreate(t *testing.T) {
 			// Create request with simulated middleware context
 			req := httptest.NewRequest("POST", "/metric-types", nil)
 			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -218,7 +218,7 @@ func TestMetricTypeHandleGet(t *testing.T) {
 			// Simulate ID middleware
 			parsedUUID, _ := domain.ParseUUID(tc.id)
 			req = req.WithContext(context.WithValue(req.Context(), uuidContextKey, parsedUUID))
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -313,7 +313,7 @@ func TestMetricTypeHandleList(t *testing.T) {
 			req := httptest.NewRequest("GET", "/metric-types?page=1&pageSize=10", nil)
 
 			// Add auth identity to context (required by handler)
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -423,7 +423,7 @@ func TestMetricTypeHandleUpdate(t *testing.T) {
 			parsedUUID, _ := domain.ParseUUID(tc.id)
 			req = req.WithContext(context.WithValue(req.Context(), uuidContextKey, parsedUUID))
 			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()
@@ -542,7 +542,7 @@ func TestMetricTypeHandleDelete(t *testing.T) {
 			// Simulate ID middleware
 			parsedUUID, _ := domain.ParseUUID(tc.id)
 			req = req.WithContext(context.WithValue(req.Context(), uuidContextKey, parsedUUID))
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()

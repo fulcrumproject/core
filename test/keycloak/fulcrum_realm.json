@@ -17,7 +17,7 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["fulcrum_admin"]
+      "realmRoles": ["admin"]
     },
     {
       "username": "participant1",
@@ -74,7 +74,7 @@
   ],
   "roles": {
     "realm": [
-      { "name": "fulcrum_admin" },
+      { "name": "admin" },
       { "name": "participant" },
       { "name": "agent" }
     ]

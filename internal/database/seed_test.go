@@ -90,6 +90,6 @@ func TestSeed(t *testing.T) {
 	adminToken, err := tokenRepo.FindByID(ctx, adminTokenID)
 	assert.NoError(t, err, "Error getting admin token")
 	assert.Equal(t, "Admin Test Token", adminToken.Name, "Admin token should have correct name")
-	assert.Equal(t, domain.RoleFulcrumAdmin, adminToken.Role, "Admin token should have admin role")
+	assert.Equal(t, domain.RoleAdmin, adminToken.Role, "Admin token should have admin role")
 	assert.Equal(t, domain.HashTokenValue("admin-test-token"), adminToken.HashedValue, "Admin token should have correct hashed value")
 }

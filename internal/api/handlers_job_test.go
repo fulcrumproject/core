@@ -119,7 +119,7 @@ func TestJobHandleList(t *testing.T) {
 			req := httptest.NewRequest("GET", "/jobs"+tc.queryParams, nil)
 
 			// Add auth identity to context (required by all handlers)
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -236,7 +236,7 @@ func TestJobHandleGet(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request

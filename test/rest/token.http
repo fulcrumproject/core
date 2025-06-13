@@ -14,7 +14,7 @@ Authorization: Bearer {{adminToken}}
 
 {
   "name": "Test Admin Token",
-  "role": "fulcrum_admin",
+  "role": "admin",
   "expireAt": "{{$datetime iso8601 1 y}}"
 }
 

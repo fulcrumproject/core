@@ -85,7 +85,7 @@ Content-Type: application/json
 ### You can decode the tokens at https://jwt.io to inspect claims
 ### The ID token should contain:
 ### - sub: user ID
-### - realm_access.roles: ["fulcrum_admin"]
+### - realm_access.roles: ["admin"]
 ### - preferred_username: "admin1"
 ### - name: "Admin User"
 

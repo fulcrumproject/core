@@ -43,12 +43,12 @@ components:
         implicit:
           authorizationUrl: https://api.fulcrum.testudosrl.dev/oauth/authorize
           scopes:
-            fulcrum_admin: System administrator with unrestricted access
+            admin: System administrator with unrestricted access
             participant: Participant administrator that can act as both provider and consumer
             agent: Agent role with access to specific operations
 
   x-auth-roles:
-    fulcrum_admin:
+    admin:
       description: System administrator with unrestricted access
     participant:
       description: Participant administrator that can act as both provider and consumer
@@ -131,7 +131,7 @@ components:
     # Token schemas
     AuthRole:
       type: string
-      enum: [fulcrum_admin, participant, agent]
+      enum: [admin, participant, agent]
       description: Access role for the token
 
     TokenRequest:
@@ -724,7 +724,7 @@ paths:
         - Participants
       description: Retrieves a paginated list of participants
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all participants
         - role: participant
           permission: only its own participant
@@ -761,7 +761,7 @@ paths:
         - Participants
       description: Creates a new participant
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: not authorized
@@ -800,7 +800,7 @@ paths:
         - Participants
       description: Retrieves a specific participant by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all participants
         - role: participant
           permission: its own participant
@@ -825,7 +825,7 @@ paths:
         - Participants
       description: Updates an existing participant
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: its own participant
@@ -856,7 +856,7 @@ paths:
         - Participants
       description: Deletes a participant by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: not authorized
@@ -882,7 +882,7 @@ paths:
         - Tokens
       description: Retrieves a paginated list of tokens
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all tokens
         - role: participant
           permission: tokens for its participant and associated agents
@@ -919,7 +919,7 @@ paths:
         - Tokens
       description: Creates a new authentication token. The plain token value is only returned in this response and cannot be retrieved later.
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: for itself and for its agents
@@ -958,7 +958,7 @@ paths:
         - Tokens
       description: Retrieves a specific token by ID. Note that the plain token value is not returned in this endpoint.
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all tokens
         - role: participant
           permission: its own tokens and those of its agents
@@ -983,7 +983,7 @@ paths:
         - Tokens
       description: Updates an existing token
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: its own tokens and those of its agents
@@ -1025,7 +1025,7 @@ paths:
         - Tokens
       description: Deletes a token by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: its own tokens and those of its agents
@@ -1054,7 +1054,7 @@ paths:
         - Tokens
       description: Regenerates the value for an existing token. The new plain token value is returned in the response and cannot be retrieved later.
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: its own tokens and those of its agents
@@ -1084,7 +1084,7 @@ paths:
         - Agents
       description: Retrieves a paginated list of agents
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all agents
         - role: participant
           permission: agents belonging to its participant
@@ -1121,7 +1121,7 @@ paths:
         - Agents
       description: Creates a new agent and returns the agent data with an authentication token
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: for its participant (when acting as provider)
@@ -1160,7 +1160,7 @@ paths:
         - Agents
       description: Retrieves a specific agent by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all agents
         - role: participant
           permission: agents belonging to its participant
@@ -1185,7 +1185,7 @@ paths:
         - Agents
       description: Updates an existing agent
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: agents belonging to its participant
@@ -1216,7 +1216,7 @@ paths:
         - Agents
       description: Deletes an agent by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: agents belonging to its participant
@@ -1303,7 +1303,7 @@ paths:
         - Agents
       description: Retrieves a paginated list of agent types
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all agent types
         - role: participant
           permission: all agent types
@@ -1348,7 +1348,7 @@ paths:
         - Agents
       description: Retrieves a specific agent type by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all agent types
         - role: participant
           permission: all agent types
@@ -1377,7 +1377,7 @@ paths:
         - Services
       description: Retrieves a paginated list of services
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all services
         - role: participant
           permission: services associated with its participant (as provider or consumer)
@@ -1414,7 +1414,7 @@ paths:
         - Services
       description: Creates a new service
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: when acting as consumer
@@ -1455,7 +1455,7 @@ paths:
         - Services
       description: Retrieves a specific service by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all services
         - role: participant
           permission: services associated with its participant (as provider or consumer)
@@ -1480,7 +1480,7 @@ paths:
         - Services
       description: Updates an existing service
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: services where it is the consumer participant
@@ -1537,7 +1537,7 @@ paths:
         - Services
       description: Deletes a service by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: services where it is the consumer participant
@@ -1566,7 +1566,7 @@ paths:
         - Services
       description: Starts a service by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: services where it is the consumer participant
@@ -1595,7 +1595,7 @@ paths:
         - Services
       description: Stops a service by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: services where it is the consumer participant
@@ -1624,7 +1624,7 @@ paths:
         - Services
       description: Retries the last failed operation on a service
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: services where it is the consumer participant
@@ -1650,7 +1650,7 @@ paths:
         - Services
       description: Retrieves a paginated list of service types
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all service types
         - role: participant
           permission: all service types
@@ -1695,7 +1695,7 @@ paths:
         - Services
       description: Retrieves a specific service type by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all service types
         - role: participant
           permission: all service types
@@ -1728,7 +1728,7 @@ paths:
         - Services
       description: Validates service properties against the service type's property schema
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all service types
         - role: participant
           permission: all service types
@@ -1892,7 +1892,7 @@ paths:
         - Jobs
       description: Retrieves a paginated list of jobs (admin route)
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all jobs
         - role: participant
           permission: jobs related to its participant (as provider via agents or as consumer via services)
@@ -1933,7 +1933,7 @@ paths:
       security:
         - BearerAuth: []
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: not authorized
         - role: participant
           permission: not authorized
@@ -2099,7 +2099,7 @@ paths:
         - Metrics
       description: Retrieves a paginated list of metric types
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all metric types
         - role: participant
           permission: all metric types
@@ -2296,7 +2296,7 @@ paths:
         - Audit
       description: Retrieves a paginated list of audit entries
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all audit entries
         - role: participant
           permission: audit entries related to its participant

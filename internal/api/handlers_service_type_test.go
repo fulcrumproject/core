@@ -123,7 +123,7 @@ func TestServiceTypeHandleGet(t *testing.T) {
 			req = simulateIDMiddleware(req, tc.id)
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -217,7 +217,7 @@ func TestServiceTypeHandleList(t *testing.T) {
 			req := httptest.NewRequest("GET", "/service-types?page=1&pageSize=10", nil)
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request

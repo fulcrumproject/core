@@ -133,7 +133,7 @@ func TestParticipantHandleCreate(t *testing.T) {
 			// Create request with simulated middleware context
 			req := httptest.NewRequest("POST", "/participants", nil)
 			req = req.WithContext(context.WithValue(req.Context(), decodedBodyContextKey, tc.requestBody))
-			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthFulcrumAdmin()))
+			req = req.WithContext(domain.WithAuthIdentity(req.Context(), NewMockAuthAdmin()))
 
 			// Execute request
 			w := httptest.NewRecorder()

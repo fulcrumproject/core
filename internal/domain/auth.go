@@ -20,15 +20,15 @@ const (
 type AuthRole string
 
 const (
-	RoleFulcrumAdmin AuthRole = "fulcrum_admin"
-	RoleParticipant  AuthRole = "participant"
-	RoleAgent        AuthRole = "agent"
+	RoleAdmin       AuthRole = "admin"
+	RoleParticipant AuthRole = "participant"
+	RoleAgent       AuthRole = "agent"
 )
 
 // Validate ensures the AuthRole is one of the predefined values
 func (r AuthRole) Validate() error {
 	switch r {
-	case RoleFulcrumAdmin, RoleParticipant, RoleAgent:
+	case RoleAdmin, RoleParticipant, RoleAgent:
 		return nil
 	default:
 		return fmt.Errorf("invalid auth role: %s", r)

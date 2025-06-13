@@ -31,7 +31,7 @@ func TestNewEventAuditCtx(t *testing.T) {
 	// Setup context with mock auth identity
 	baseCtx := context.Background()
 	identityID := uuid.New()
-	identity := NewMockAuthIdentity(identityID, RoleFulcrumAdmin)
+	identity := NewMockAuthIdentity(identityID, RoleAdmin)
 	ctx := ContextWithMockAuth(baseCtx, identity)
 
 	entry, err := NewEventAuditCtx(
@@ -138,7 +138,7 @@ func TestNewEventAuditCtxDiff_ErrorHandling(t *testing.T) {
 	// Setup context with mock auth identity
 	baseCtx := context.Background()
 	identityID := uuid.New()
-	identity := NewMockAuthIdentity(identityID, RoleFulcrumAdmin)
+	identity := NewMockAuthIdentity(identityID, RoleAdmin)
 	ctx := ContextWithMockAuth(baseCtx, identity)
 
 	entityID := uuid.New()
@@ -226,7 +226,7 @@ func TestExtractAuditAuthority(t *testing.T) {
 		{
 			name: "Admin role",
 			setupContext: func() context.Context {
-				identity := NewMockAuthIdentity(identityID, RoleFulcrumAdmin)
+				identity := NewMockAuthIdentity(identityID, RoleAdmin)
 				return ContextWithMockAuth(baseCtx, identity)
 			},
 			wantAuthority:   AuthorityTypeAdmin,

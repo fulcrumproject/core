@@ -115,7 +115,7 @@ func (t *Token) Validate() error {
 
 	// Validate scope ID based on role
 	switch t.Role {
-	case RoleFulcrumAdmin:
+	case RoleAdmin:
 		// No scope ID needed for admin
 		if t.ParticipantID != nil || t.AgentID != nil { // Updated to check ParticipantID
 			return fmt.Errorf("fulcrum admin tokens should not have any scope IDs")
@@ -224,7 +224,7 @@ func (s *tokenCommander) Create(
 ) (*Token, error) {
 	// Validate permissions
 	id := MustGetAuthIdentity(ctx)
-	if !id.IsRole(RoleFulcrumAdmin) && role != id.Role() {
+	if !id.IsRole(RoleAdmin) && role != id.Role() {
 		return nil, NewInvalidInputErrorf("role %s not allowed", role)
 	}
 

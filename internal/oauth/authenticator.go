@@ -204,10 +204,10 @@ func (a *OIDCAuthenticator) extractRole(claims *KeycloakClaims) (domain.AuthRole
 // validateRoleRequirements ensures that role-specific ID requirements are met
 func (a *OIDCAuthenticator) validateRoleRequirements(role domain.AuthRole, participantID, agentID *domain.UUID) error {
 	switch role {
-	case domain.RoleFulcrumAdmin:
+	case domain.RoleAdmin:
 		// Admin should not have participant or agent IDs
 		if participantID != nil || agentID != nil {
-			return errors.New("fulcrum_admin role should not have participant_id or agent_id")
+			return errors.New("admin role should not have participant_id or agent_id")
 		}
 	case domain.RoleParticipant:
 		// Participant must have participant ID but not agent ID

@@ -40,7 +40,7 @@ func TestAuthMiddleware(t *testing.T) {
 			token: "valid-token",
 			authenticator: &MockAuthenticator{
 				ValidToken:       "valid-token",
-				IdentityToReturn: NewMockAuthFulcrumAdmin(),
+				IdentityToReturn: NewMockAuthAdmin(),
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -49,7 +49,7 @@ func TestAuthMiddleware(t *testing.T) {
 			token: "",
 			authenticator: &MockAuthenticator{
 				ValidToken:       "valid-token",
-				IdentityToReturn: NewMockAuthFulcrumAdmin(),
+				IdentityToReturn: NewMockAuthAdmin(),
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},
@@ -58,7 +58,7 @@ func TestAuthMiddleware(t *testing.T) {
 			token: "invalid-token",
 			authenticator: &MockAuthenticator{
 				ValidToken:       "valid-token",
-				IdentityToReturn: NewMockAuthFulcrumAdmin(),
+				IdentityToReturn: NewMockAuthAdmin(),
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},
@@ -104,7 +104,7 @@ func TestAuthMiddleware(t *testing.T) {
 // TestAuthMiddlewareContext tests that the middleware adds the identity to the context
 func TestAuthMiddlewareContext(t *testing.T) {
 	validToken := "valid-token"
-	testIdentity := NewMockAuthFulcrumAdmin()
+	testIdentity := NewMockAuthAdmin()
 
 	// Create authenticator that returns identity for valid token
 	auth := &MockAuthenticator{
@@ -292,7 +292,7 @@ func TestAuthzFromExtractor(t *testing.T) {
 	}{
 		{
 			name:     "Successful authorization",
-			identity: NewMockAuthFulcrumAdmin(),
+			identity: NewMockAuthAdmin(),
 			extractor: func(r *http.Request) (*domain.AuthTargetScope, error) {
 				return &domain.EmptyAuthTargetScope, nil
 			},
@@ -303,7 +303,7 @@ func TestAuthzFromExtractor(t *testing.T) {
 		},
 		{
 			name:     "Extractor error",
-			identity: NewMockAuthFulcrumAdmin(),
+			identity: NewMockAuthAdmin(),
 			extractor: func(r *http.Request) (*domain.AuthTargetScope, error) {
 				return nil, domain.NewNotFoundErrorf("scope not found")
 			},
@@ -314,7 +314,7 @@ func TestAuthzFromExtractor(t *testing.T) {
 		},
 		{
 			name:     "Authorization failure",
-			identity: NewMockAuthFulcrumAdmin(),
+			identity: NewMockAuthAdmin(),
 			extractor: func(r *http.Request) (*domain.AuthTargetScope, error) {
 				return &domain.EmptyAuthTargetScope, nil
 			},
@@ -383,7 +383,7 @@ func TestAuthzFromID(t *testing.T) {
 	}{
 		{
 			name:     "Successful authorization",
-			identity: NewMockAuthFulcrumAdmin(),
+			identity: NewMockAuthAdmin(),
 			scopeRetriever: &MockAuthScopeRetriever{
 				ScopeToReturn: &domain.AuthTargetScope{
 					ProviderID: &testUUID,
@@ -396,7 +396,7 @@ func TestAuthzFromID(t *testing.T) {
 		},
 		{
 			name:     "Resource not found",
-			identity: NewMockAuthFulcrumAdmin(),
+			identity: NewMockAuthAdmin(),
 			scopeRetriever: &MockAuthScopeRetriever{
 				ShouldError: true,
 			},
@@ -407,7 +407,7 @@ func TestAuthzFromID(t *testing.T) {
 		},
 		{
 			name:     "Authorization failure",
-			identity: NewMockAuthFulcrumAdmin(),
+			identity: NewMockAuthAdmin(),
 			scopeRetriever: &MockAuthScopeRetriever{
 				ScopeToReturn: &domain.AuthTargetScope{
 					ProviderID: &testUUID,
@@ -463,7 +463,7 @@ func TestAuthzSimple(t *testing.T) {
 	}{
 		{
 			name:     "Successful authorization",
-			identity: NewMockAuthFulcrumAdmin(),
+			identity: NewMockAuthAdmin(),
 			authorizer: &MockAuthorizer{
 				ShouldSucceed: true,
 			},
@@ -471,7 +471,7 @@ func TestAuthzSimple(t *testing.T) {
 		},
 		{
 			name:     "Authorization failure",
-			identity: NewMockAuthFulcrumAdmin(),
+			identity: NewMockAuthAdmin(),
 			authorizer: &MockAuthorizer{
 				ShouldSucceed: false,
 			},
@@ -523,7 +523,7 @@ func TestAuthzFromBody(t *testing.T) {
 	}{
 		{
 			name:     "Successful authorization",
-			identity: NewMockAuthFulcrumAdmin(),
+			identity: NewMockAuthAdmin(),
 			body: AuthTargetScopeProviderMock{
 				ScopeToReturn: &domain.AuthTargetScope{
 					ProviderID: &testUUID,
@@ -536,7 +536,7 @@ func TestAuthzFromBody(t *testing.T) {
 		},
 		{
 			name:     "Body scope extraction error",
-			identity: NewMockAuthFulcrumAdmin(),
+			identity: NewMockAuthAdmin(),
 			body: AuthTargetScopeProviderMock{
 				ShouldError: true,
 			},
@@ -547,7 +547,7 @@ func TestAuthzFromBody(t *testing.T) {
 		},
 		{
 			name:     "Authorization failure",
-			identity: NewMockAuthFulcrumAdmin(),
+			identity: NewMockAuthAdmin(),
 			body: AuthTargetScopeProviderMock{
 				ScopeToReturn: &domain.AuthTargetScope{
 					ProviderID: &testUUID,

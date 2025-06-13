@@ -178,7 +178,7 @@ func TestServiceHandleCreate(t *testing.T) {
 			ctx := context.WithValue(req.Context(), decodedBodyContextKey, tc.request)
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			ctx = domain.WithAuthIdentity(ctx, authIdentity)
 
 			req = req.WithContext(ctx)
@@ -281,7 +281,7 @@ func TestServiceHandleGet(t *testing.T) {
 			ctx := context.WithValue(req.Context(), uuidContextKey, parsedUUID)
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			ctx = domain.WithAuthIdentity(ctx, authIdentity)
 
 			req = req.WithContext(ctx)
@@ -438,7 +438,7 @@ func TestServiceHandleList(t *testing.T) {
 			}
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -566,7 +566,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 			ctx = context.WithValue(ctx, decodedBodyContextKey, tc.request)
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			ctx = domain.WithAuthIdentity(ctx, authIdentity)
 
 			req = req.WithContext(ctx)
@@ -711,7 +711,7 @@ func TestServiceHandleTransition(t *testing.T) {
 			ctx := context.WithValue(req.Context(), uuidContextKey, parsedUUID)
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			ctx = domain.WithAuthIdentity(ctx, authIdentity)
 
 			req = req.WithContext(ctx)
@@ -798,7 +798,7 @@ func TestServiceHandleRetry(t *testing.T) {
 			ctx := context.WithValue(req.Context(), uuidContextKey, parsedUUID)
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			ctx = domain.WithAuthIdentity(ctx, authIdentity)
 
 			req = req.WithContext(ctx)

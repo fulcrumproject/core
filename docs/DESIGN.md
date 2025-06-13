@@ -206,7 +206,7 @@ classDiagram
         class Token {
             id : UUID
             name : string
-            role : enum[fulcrum_admin|participant|agent]
+            role : enum[admin|participant|agent]
             hashedValue : string
             expireAt : datetime
             participantID : UUID
@@ -333,7 +333,7 @@ classDiagram
 
 8. **Token**
    - Provides secure authentication mechanism for system access
-   - Supports different roles: fulcrum_admin, participant, agent
+   - Supports different roles: admin, participant, agent
    - Contains hashed value stored in database to verify authentication
    - Has expiration date for enhanced security
    - Scoped to specific Participant or Agent based on role
@@ -366,7 +366,7 @@ classDiagram
 
 Fulcrum Core implements a comprehensive authorization system with role-based access control (RBAC):
 
-- Three predefined roles: fulcrum_admin, participant, and agent
+- Three predefined roles: admin, participant, and agent
 - Fine-grained permission control for different resource types and actions
 - Context-aware permissions based on resource ownership and relationships
 

@@ -96,7 +96,7 @@ func TestGormTokenIdentity_ID(t *testing.T) {
 	identity := GormTokenIdentity{
 		id:            id,
 		name:          "test-token",
-		role:          domain.RoleFulcrumAdmin,
+		role:          domain.RoleAdmin,
 		participantID: nil,
 		agentID:       nil,
 	}
@@ -115,7 +115,7 @@ func TestGormTokenIdentity_Name(t *testing.T) {
 	identity := GormTokenIdentity{
 		id:            domain.NewUUID(),
 		name:          name,
-		role:          domain.RoleFulcrumAdmin,
+		role:          domain.RoleAdmin,
 		participantID: nil,
 		agentID:       nil,
 	}
@@ -184,7 +184,7 @@ func TestGormTokenIdentity_IsRole(t *testing.T) {
 	// Act & Assert
 	assert.True(t, identity.IsRole(domain.RoleParticipant))
 	assert.False(t, identity.IsRole(domain.RoleAgent))
-	assert.False(t, identity.IsRole(domain.RoleFulcrumAdmin))
+	assert.False(t, identity.IsRole(domain.RoleAdmin))
 }
 
 // TestNewTokenAuthenticator tests the NewTokenAuthenticator function
@@ -283,7 +283,7 @@ func TestGormTokenAuthenticator_Authenticate(t *testing.T) {
 						return &domain.Token{
 							BaseEntity:  domain.BaseEntity{ID: tokenID},
 							Name:        "expired-token",
-							Role:        domain.RoleFulcrumAdmin,
+							Role:        domain.RoleAdmin,
 							HashedValue: expectedHash,
 							ExpireAt:    time.Now().Add(-time.Hour), // Expired 1 hour ago
 						}, nil

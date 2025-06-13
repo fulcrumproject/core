@@ -87,7 +87,7 @@ func TestTokenHandleCreate(t *testing.T) {
 			name: "Success - Create Admin Token",
 			requestBody: fmt.Sprintf(`{
 				"name": "Test Admin Token",
-				"role": "fulcrum_admin",
+				"role": "admin",
 				"expireAt": "%s"
 			}`, wantedExpireAt.Format(time.RFC3339)),
 			mockSetup: func(tokenQuerier *mockTokenQuerier, agentQuerier *mockAgentQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
@@ -97,7 +97,7 @@ func TestTokenHandleCreate(t *testing.T) {
 				// Setup the commander
 				commander.createFunc = func(ctx context.Context, name string, role domain.AuthRole, expireAt *time.Time, scopeID *domain.UUID) (*domain.Token, error) {
 					assert.Equal(t, "Test Admin Token", name)
-					assert.Equal(t, domain.RoleFulcrumAdmin, role)
+					assert.Equal(t, domain.RoleAdmin, role)
 					assert.WithinDuration(t, wantedExpireAt, *expireAt, time.Second) // Compare with some tolerance
 					assert.Nil(t, scopeID)
 
@@ -165,14 +165,14 @@ func TestTokenHandleCreate(t *testing.T) {
 			name: "Success - Create Admin Token",
 			requestBody: fmt.Sprintf(`{
 				"name": "Test Admin Token",
-				"role": "fulcrum_admin",
+				"role": "admin",
 				"expireAt": "%s"
 			}`, wantedExpireAt.Format(time.RFC3339)),
 			mockSetup: func(tokenQuerier *mockTokenQuerier, agentQuerier *mockAgentQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
 				// Setup the commander for successful creation
 				commander.createFunc = func(ctx context.Context, name string, role domain.AuthRole, expireAt *time.Time, scopeID *domain.UUID) (*domain.Token, error) {
 					assert.Equal(t, "Test Admin Token", name)
-					assert.Equal(t, domain.RoleFulcrumAdmin, role)
+					assert.Equal(t, domain.RoleAdmin, role)
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 					return &domain.Token{
@@ -194,7 +194,7 @@ func TestTokenHandleCreate(t *testing.T) {
 			name: "CommanderError",
 			requestBody: fmt.Sprintf(`{
 				"name": "Test Admin Token",
-				"role": "fulcrum_admin",
+				"role": "admin",
 				"expireAt": "%s"
 			}`, wantedExpireAt.Format(time.RFC3339)),
 			mockSetup: func(tokenQuerier *mockTokenQuerier, agentQuerier *mockAgentQuerier, commander *mockTokenCommander, authz *MockAuthorizer) {
@@ -244,7 +244,7 @@ func TestTokenHandleCreate(t *testing.T) {
 			ctx := context.WithValue(req.Context(), decodedBodyContextKey, &createReq)
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			ctx = domain.WithAuthIdentity(ctx, authIdentity)
 
 			req = req.WithContext(ctx)
@@ -307,7 +307,7 @@ func TestTokenHandleGet(t *testing.T) {
 							UpdatedAt: updatedAt,
 						},
 						Name:        "Test Token",
-						Role:        domain.RoleFulcrumAdmin,
+						Role:        domain.RoleAdmin,
 						ExpireAt:    expireAt,
 						HashedValue: "hashed_value",
 					}, nil
@@ -356,7 +356,7 @@ func TestTokenHandleGet(t *testing.T) {
 			ctx := context.WithValue(req.Context(), uuidContextKey, parsedUUID)
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			ctx = domain.WithAuthIdentity(ctx, authIdentity)
 
 			req = req.WithContext(ctx)
@@ -415,7 +415,7 @@ func TestTokenHandleList(t *testing.T) {
 									UpdatedAt: updatedAt,
 								},
 								Name:        "Token 1",
-								Role:        domain.RoleFulcrumAdmin,
+								Role:        domain.RoleAdmin,
 								ExpireAt:    expireAt,
 								HashedValue: "hashed_value_1",
 							},
@@ -477,7 +477,7 @@ func TestTokenHandleList(t *testing.T) {
 			}
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			ctx := domain.WithAuthIdentity(req.Context(), authIdentity)
 			req = req.WithContext(ctx)
 
@@ -561,7 +561,7 @@ func TestTokenHandleUpdate(t *testing.T) {
 							UpdatedAt: updatedAt,
 						},
 						Name:        newName,
-						Role:        domain.RoleFulcrumAdmin,
+						Role:        domain.RoleAdmin,
 						ExpireAt:    expireDate,
 						HashedValue: "hashed_value",
 					}, nil
@@ -600,7 +600,7 @@ func TestTokenHandleUpdate(t *testing.T) {
 							UpdatedAt: updatedAt,
 						},
 						Name:        "Test Token",
-						Role:        domain.RoleFulcrumAdmin,
+						Role:        domain.RoleAdmin,
 						ExpireAt:    *expireAt,
 						HashedValue: "hashed_value",
 					}, nil
@@ -658,7 +658,7 @@ func TestTokenHandleUpdate(t *testing.T) {
 			ctx = context.WithValue(ctx, decodedBodyContextKey, reqBody)
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			ctx = domain.WithAuthIdentity(ctx, authIdentity)
 
 			req = req.WithContext(ctx)
@@ -756,7 +756,7 @@ func TestTokenHandleDelete(t *testing.T) {
 			req = simulateIDMiddleware(req, tc.id)
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -806,7 +806,7 @@ func TestTokenHandleRegenerateValue(t *testing.T) {
 							UpdatedAt: updatedAt,
 						},
 						Name:        "Test Token",
-						Role:        domain.RoleFulcrumAdmin,
+						Role:        domain.RoleAdmin,
 						ExpireAt:    expireAt,
 						HashedValue: "new_hashed_value",
 						PlainValue:  "new_plain_value",
@@ -857,7 +857,7 @@ func TestTokenHandleRegenerateValue(t *testing.T) {
 			req = simulateIDMiddleware(req, tc.id)
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthFulcrumAdmin()
+			authIdentity := NewMockAuthAdmin()
 			req = req.WithContext(domain.WithAuthIdentity(req.Context(), authIdentity))
 
 			// Execute request

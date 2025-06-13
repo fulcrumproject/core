@@ -27,7 +27,7 @@ func TestToken_Validate(t *testing.T) {
 			name: "Valid fulcrum admin token",
 			token: &Token{
 				Name:        "Admin Token",
-				Role:        RoleFulcrumAdmin,
+				Role:        RoleAdmin,
 				HashedValue: "hashedvalue",
 				ExpireAt:    now,
 			},
@@ -60,7 +60,7 @@ func TestToken_Validate(t *testing.T) {
 			name: "Empty name",
 			token: &Token{
 				Name:        "",
-				Role:        RoleFulcrumAdmin,
+				Role:        RoleAdmin,
 				HashedValue: "hashedvalue",
 				ExpireAt:    now,
 			},
@@ -71,7 +71,7 @@ func TestToken_Validate(t *testing.T) {
 			name: "Empty hashed value",
 			token: &Token{
 				Name:        "Admin Token",
-				Role:        RoleFulcrumAdmin,
+				Role:        RoleAdmin,
 				HashedValue: "",
 				ExpireAt:    now,
 			},
@@ -93,7 +93,7 @@ func TestToken_Validate(t *testing.T) {
 			name: "Zero expire time",
 			token: &Token{
 				Name:        "Admin Token",
-				Role:        RoleFulcrumAdmin,
+				Role:        RoleAdmin,
 				HashedValue: "hashedvalue",
 				ExpireAt:    time.Time{},
 			},
@@ -104,7 +104,7 @@ func TestToken_Validate(t *testing.T) {
 			name: "Fulcrum admin with participant ID",
 			token: &Token{
 				Name:          "Admin Token",
-				Role:          RoleFulcrumAdmin,
+				Role:          RoleAdmin,
 				HashedValue:   "hashedvalue",
 				ExpireAt:      now,
 				ParticipantID: &validID,
