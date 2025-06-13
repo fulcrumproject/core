@@ -9,9 +9,9 @@ import (
 type ParticipantStatus string
 
 const (
-	EventTypeParticipantCreated EventType = "participant_created"
-	EventTypeParticipantUpdated EventType = "participant_updated"
-	EventTypeParticipantDeleted EventType = "participant_deleted"
+	EventTypeParticipantCreated EventType = "participant.created"
+	EventTypeParticipantUpdated EventType = "participant.updated"
+	EventTypeParticipantDeleted EventType = "participant.deleted"
 
 	ParticipantEnabled  ParticipantStatus = "Enabled"
 	ParticipantDisabled ParticipantStatus = "Disabled"
@@ -121,11 +121,11 @@ func (c *participantCommander) Create(
 		if err := store.ParticipantRepo().Create(ctx, participant); err != nil {
 			return err
 		}
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeParticipantCreated, JSON{"status": participant}, &participant.ID, &participant.ID, nil, nil)
+		eventEntry, err := NewEvent(EventTypeParticipantCreated, WithInitiatorCtx(ctx), WithParticipant(participant))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err
@@ -157,11 +157,11 @@ func (c *participantCommander) Update(
 		if err := store.ParticipantRepo().Save(ctx, participant); err != nil {
 			return err
 		}
-		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeParticipantUpdated, JSON{}, &id, &id, nil, nil, &beforeParticipant, participant)
+		eventEntry, err := NewEvent(EventTypeParticipantUpdated, WithInitiatorCtx(ctx), WithDiff(&beforeParticipant, participant), WithParticipant(participant))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err
@@ -189,6 +189,14 @@ func (c *participantCommander) Delete(ctx context.Context, id UUID) error {
 			return NewInvalidInputErrorf("cannot delete participant %s: %d dependent agent(s) exist", id, agentCount)
 		}
 
+		eventEntry, err := NewEvent(EventTypeParticipantDeleted, WithInitiatorCtx(ctx), WithParticipant(participant))
+		if err != nil {
+			return err
+		}
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
+			return err
+		}
+
 		// Delete associated Tokens
 		// TokenRepository.DeleteByParticipantID() will be added in a later step as per the plan
 		if err := store.TokenRepo().DeleteByParticipantID(ctx, id); err != nil {
@@ -196,14 +204,6 @@ func (c *participantCommander) Delete(ctx context.Context, id UUID) error {
 		}
 
 		if err := store.ParticipantRepo().Delete(ctx, id); err != nil {
-			return err
-		}
-
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeParticipantDeleted, JSON{"status": participant}, &id, &id, nil, nil)
-		if err != nil {
-			return err
-		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
 			return err
 		}
 

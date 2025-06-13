@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	EventTypeServiceGroupCreated EventType = "service_group_created"
-	EventTypeServiceGroupUpdated EventType = "service_group_updated"
-	EventTypeServiceGroupDeleted EventType = "service_group_deleted"
+	EventTypeServiceGroupCreated EventType = "service_group.created"
+	EventTypeServiceGroupUpdated EventType = "service_group.updated"
+	EventTypeServiceGroupDeleted EventType = "service_group.deleted"
 )
 
 // ServiceGroup represents a group of related services
@@ -105,11 +105,11 @@ func (s *serviceGroupCommander) Create(ctx context.Context, name string, consume
 			return err
 		}
 
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeServiceGroupCreated, JSON{"status": sg}, &sg.ID, nil, nil, &consumerID)
+		eventEntry, err := NewEvent(EventTypeServiceGroupCreated, WithInitiatorCtx(ctx), WithServiceGroup(sg))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 
@@ -129,7 +129,7 @@ func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 		return nil, err
 	}
 
-	// Store a copy for audit diff
+	// Store a copy for event diff
 	beforeSgCopy := *sg
 
 	// Update and validate
@@ -140,17 +140,17 @@ func (s *serviceGroupCommander) Update(ctx context.Context, id UUID, name *strin
 		return nil, InvalidInputError{Err: err}
 	}
 
-	// Save and audit
+	// Save and event
 	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceGroupRepo().Save(ctx, sg); err != nil {
 			return err
 		}
 
-		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceGroupUpdated, JSON{}, &id, nil, nil, &sg.ConsumerID, &beforeSgCopy, sg)
+		eventEntry, err := NewEvent(EventTypeServiceGroupUpdated, WithInitiatorCtx(ctx), WithDiff(&beforeSgCopy, sg), WithServiceGroup(sg))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 
@@ -179,17 +179,17 @@ func (s *serviceGroupCommander) Delete(ctx context.Context, id UUID) error {
 		return errors.New("cannot delete service group with associated services")
 	}
 
-	// Delete and audit
+	// Delete and event
 	return s.store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceGroupRepo().Delete(ctx, id); err != nil {
 			return err
 		}
 
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeServiceGroupDeleted, JSON{"status": sg}, &id, nil, nil, &sg.ConsumerID)
+		eventEntry, err := NewEvent(EventTypeServiceGroupDeleted, WithInitiatorCtx(ctx), WithServiceGroup(sg))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 

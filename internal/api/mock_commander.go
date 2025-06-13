@@ -8,6 +8,67 @@ import (
 	"fulcrumproject.org/core/internal/domain"
 )
 
+// mockEventSubscriptionCommander is a custom mock for EventSubscriptionCommander
+type mockEventSubscriptionCommander struct {
+	createOrGetFunc       func(ctx context.Context, subscriberID string) (*domain.EventSubscription, error)
+	updateProgressFunc    func(ctx context.Context, subscriberID string, lastEventSequenceProcessed int64) (*domain.EventSubscription, error)
+	acquireLeaseFunc      func(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*domain.EventSubscription, error)
+	renewLeaseFunc        func(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*domain.EventSubscription, error)
+	releaseLeaseFunc      func(ctx context.Context, subscriberID string, instanceID string) (*domain.EventSubscription, error)
+	acknowledgeEventsFunc func(ctx context.Context, subscriberID string, instanceID string, lastEventSequenceProcessed int64) (*domain.EventSubscription, error)
+	setActiveFunc         func(ctx context.Context, subscriberID string, isActive bool) (*domain.EventSubscription, error)
+	deleteFunc            func(ctx context.Context, subscriberID string) error
+}
+
+func (m *mockEventSubscriptionCommander) UpdateProgress(ctx context.Context, subscriberID string, lastEventSequenceProcessed int64) (*domain.EventSubscription, error) {
+	if m.updateProgressFunc != nil {
+		return m.updateProgressFunc(ctx, subscriberID, lastEventSequenceProcessed)
+	}
+	return nil, fmt.Errorf("updateProgress not mocked")
+}
+
+func (m *mockEventSubscriptionCommander) AcquireLease(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*domain.EventSubscription, error) {
+	if m.acquireLeaseFunc != nil {
+		return m.acquireLeaseFunc(ctx, subscriberID, instanceID, duration)
+	}
+	return nil, fmt.Errorf("acquireLease not mocked")
+}
+
+func (m *mockEventSubscriptionCommander) RenewLease(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*domain.EventSubscription, error) {
+	if m.renewLeaseFunc != nil {
+		return m.renewLeaseFunc(ctx, subscriberID, instanceID, duration)
+	}
+	return nil, fmt.Errorf("renewLease not mocked")
+}
+
+func (m *mockEventSubscriptionCommander) ReleaseLease(ctx context.Context, subscriberID string, instanceID string) (*domain.EventSubscription, error) {
+	if m.releaseLeaseFunc != nil {
+		return m.releaseLeaseFunc(ctx, subscriberID, instanceID)
+	}
+	return nil, fmt.Errorf("releaseLease not mocked")
+}
+
+func (m *mockEventSubscriptionCommander) AcknowledgeEvents(ctx context.Context, subscriberID string, instanceID string, lastEventSequenceProcessed int64) (*domain.EventSubscription, error) {
+	if m.acknowledgeEventsFunc != nil {
+		return m.acknowledgeEventsFunc(ctx, subscriberID, instanceID, lastEventSequenceProcessed)
+	}
+	return nil, fmt.Errorf("acknowledgeEvents not mocked")
+}
+
+func (m *mockEventSubscriptionCommander) SetActive(ctx context.Context, subscriberID string, isActive bool) (*domain.EventSubscription, error) {
+	if m.setActiveFunc != nil {
+		return m.setActiveFunc(ctx, subscriberID, isActive)
+	}
+	return nil, fmt.Errorf("setActive not mocked")
+}
+
+func (m *mockEventSubscriptionCommander) Delete(ctx context.Context, subscriberID string) error {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx, subscriberID)
+	}
+	return fmt.Errorf("delete not mocked")
+}
+
 // mockAgentCommander is a custom mock for AgentCommander
 type mockAgentCommander struct {
 	createFunc       func(ctx context.Context, name string, providerID domain.UUID, agentTypeID domain.UUID, tags []string) (*domain.Agent, error)

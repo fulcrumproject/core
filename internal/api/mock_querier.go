@@ -181,20 +181,21 @@ func (m *mockAgentTypeQuerier) Count(ctx context.Context) (int64, error) {
 }
 
 // Ensure interface compatibility
-var _ domain.AuditEntryQuerier = (*mockAuditEntryQuerier)(nil)
+var _ domain.EventQuerier = (*mockEventQuerier)(nil)
 
-// mockAuditEntryQuerier is a custom mock for AuditEntryQuerier
-type mockAuditEntryQuerier struct {
-	listFunc      func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error)
-	authScopeFunc func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
+// mockEventQuerier is a custom mock for EventQuerier
+type mockEventQuerier struct {
+	listFunc             func(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Event], error)
+	listFromSequenceFunc func(ctx context.Context, fromSequenceNumber int64, limit int) ([]*domain.Event, error)
+	authScopeFunc        func(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error)
 }
 
-func (m *mockAuditEntryQuerier) List(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AuditEntry], error) {
+func (m *mockEventQuerier) List(ctx context.Context, authScope *domain.AuthIdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Event], error) {
 	if m.listFunc != nil {
 		return m.listFunc(ctx, authScope, req)
 	}
-	return &domain.PageResponse[domain.AuditEntry]{
-		Items:       []domain.AuditEntry{},
+	return &domain.PageResponse[domain.Event]{
+		Items:       []domain.Event{},
 		TotalItems:  0,
 		CurrentPage: 1,
 		TotalPages:  0,
@@ -202,7 +203,14 @@ func (m *mockAuditEntryQuerier) List(ctx context.Context, authScope *domain.Auth
 	}, nil
 }
 
-func (m *mockAuditEntryQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
+func (m *mockEventQuerier) ListFromSequence(ctx context.Context, fromSequenceNumber int64, limit int) ([]*domain.Event, error) {
+	if m.listFromSequenceFunc != nil {
+		return m.listFromSequenceFunc(ctx, fromSequenceNumber, limit)
+	}
+	return []*domain.Event{}, nil
+}
+
+func (m *mockEventQuerier) AuthScope(ctx context.Context, id domain.UUID) (*domain.AuthTargetScope, error) {
 	if m.authScopeFunc != nil {
 		return m.authScopeFunc(ctx, id)
 	}

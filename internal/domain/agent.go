@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	EventTypeAgentCreated EventType = "agent_created"
-	EventTypeAgentUpdated EventType = "agent_updated"
-	EventTypeAgentDeleted EventType = "agent_deleted"
+	EventTypeAgentCreated EventType = "agent.created"
+	EventTypeAgentUpdated EventType = "agent.updated"
+	EventTypeAgentDeleted EventType = "agent.deleted"
 )
 
 // AgentStatus represents the possible statuss of an Agent
@@ -213,11 +213,11 @@ func (s *agentCommander) Create(
 		if err := store.AgentRepo().Create(ctx, agent); err != nil {
 			return err
 		}
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeAgentCreated, JSON{"status": agent}, &agent.ID, &providerID, nil, nil)
+		eventEntry, err := NewEvent(EventTypeAgentCreated, WithInitiatorCtx(ctx), WithAgent(agent))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err
@@ -250,17 +250,17 @@ func (s *agentCommander) Update(ctx context.Context,
 		return nil, InvalidInputError{Err: err}
 	}
 
-	// Save and audit
+	// Save and event
 	err = s.store.Atomic(ctx, func(store Store) error {
 		err := store.AgentRepo().Save(ctx, agent)
 		if err != nil {
 			return err
 		}
-		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeAgentUpdated, JSON{}, &id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+		eventEntry, err := NewEvent(EventTypeAgentUpdated, WithInitiatorCtx(ctx), WithDiff(&beforeAgent, agent), WithAgent(agent))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err
@@ -277,9 +277,8 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 	if err != nil {
 		return err
 	}
-	providerID := agent.ProviderID
 
-	// Delete and audit
+	// Delete and event
 	return s.store.Atomic(ctx, func(store Store) error {
 		// Check dependencies
 		numOfServices, err := store.ServiceRepo().CountByAgent(ctx, id)
@@ -296,11 +295,11 @@ func (s *agentCommander) Delete(ctx context.Context, id UUID) error {
 		if err := store.AgentRepo().Delete(ctx, id); err != nil {
 			return err
 		}
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeAgentDeleted, JSON{"status": agent}, &id, &providerID, &id, nil)
+		eventEntry, err := NewEvent(EventTypeAgentDeleted, WithInitiatorCtx(ctx), WithAgent(agent))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err
@@ -321,17 +320,17 @@ func (s *agentCommander) UpdateStatus(ctx context.Context, id UUID, status Agent
 		return nil, InvalidInputError{Err: err}
 	}
 
-	// Save and audit
+	// Save and event
 	err = s.store.Atomic(ctx, func(store Store) error {
 		err := store.AgentRepo().Save(ctx, agent)
 		if err != nil {
 			return err
 		}
-		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeAgentUpdated, JSON{}, &id, &agent.ProviderID, nil, nil, &beforeAgent, agent)
+		eventEntry, err := NewEvent(EventTypeAgentUpdated, WithInitiatorCtx(ctx), WithDiff(&beforeAgent, agent), WithAgent(agent))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err

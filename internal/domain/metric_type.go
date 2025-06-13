@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	EventTypeMetricTypeCreated EventType = "metric_type_created"
-	EventTypeMetricTypeUpdated EventType = "metric_type_updated"
-	EventTypeMetricTypeDeleted EventType = "metric_type_deleted"
+	EventTypeMetricTypeUpdated EventType = "metric_type.updated"
+	EventTypeMetricTypeCreated EventType = "metric_type.created"
+	EventTypeMetricTypeDeleted EventType = "metric_type.deleted"
 )
 
 // MetricEntityType represents the possible types of entities that can be measured
@@ -115,11 +115,11 @@ func (s *metricTypeCommander) Create(
 			return err
 		}
 
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeMetricTypeCreated, JSON{"status": metricType}, &metricType.ID, nil, nil, nil)
+		eventEntry, err := NewEvent(EventTypeMetricTypeCreated, WithInitiatorCtx(ctx), WithMetricType(metricType))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 
@@ -143,7 +143,7 @@ func (s *metricTypeCommander) Update(ctx context.Context,
 		return nil, err
 	}
 
-	// Store a copy of the metricType before modifications for audit diff
+	// Store a copy of the metricType before modifications for event diff
 	beforeMetricType := *metricType
 
 	// Update and validate
@@ -152,18 +152,18 @@ func (s *metricTypeCommander) Update(ctx context.Context,
 		return nil, InvalidInputError{Err: err}
 	}
 
-	// Save and audit
+	// Save and event
 	err = s.store.Atomic(ctx, func(store Store) error {
 		err := store.MetricTypeRepo().Save(ctx, metricType)
 		if err != nil {
 			return err
 		}
 
-		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeMetricTypeUpdated, JSON{}, &id, nil, nil, nil, &beforeMetricType, metricType)
+		eventEntry, err := NewEvent(EventTypeMetricTypeUpdated, WithInitiatorCtx(ctx), WithDiff(&beforeMetricType, metricType), WithMetricType(metricType))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 
@@ -196,11 +196,11 @@ func (s *metricTypeCommander) Delete(ctx context.Context, id UUID) error {
 			return err
 		}
 
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeMetricTypeDeleted, JSON{"status": metricType}, &id, nil, nil, nil)
+		eventEntry, err := NewEvent(EventTypeMetricTypeDeleted, WithInitiatorCtx(ctx), WithMetricType(metricType))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 

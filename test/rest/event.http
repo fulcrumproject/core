@@ -1,0 +1,160 @@
+### Test Event API
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = admin-test-token
+
+### List all events
+GET {{baseUrl}}/events
+Authorization: Bearer {{adminToken}}
+
+### List events with pagination
+GET {{baseUrl}}/events?page=1&pageSize=10
+Authorization: Bearer {{adminToken}}
+
+### List events filtered by initiator type
+GET {{baseUrl}}/events?initiatorType=agent
+Authorization: Bearer {{adminToken}}
+
+### List events filtered by type
+GET {{baseUrl}}/events?type=agent.updated
+Authorization: Bearer {{adminToken}}
+
+### List events with sorting
+GET {{baseUrl}}/events?sort=-createdAt
+Authorization: Bearer {{adminToken}}
+
+### Event Subscription and Consumption API Tests
+### This test demonstrates the event lease and acknowledgement workflow
+
+### Step 1: Create a test participant to generate events
+### Expected: 201 Created with participant ID (copy this ID for next steps)
+# @name createParticipant
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Event Participant",
+  "status": "Enabled"
+}
+
+@participantId = {{createParticipant.response.body.$.id}}  
+
+### Step 2: Update the participant to generate participant.updated event
+### Expected: 200 OK - Replace {{participantId}} with ID from Step 1
+PATCH {{baseUrl}}/participants/{{participantId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Event Participant 1",
+  "status": "Enabled"
+}
+
+### Step 3: Update the participant again to generate another event
+### Expected: 200 OK
+PATCH {{baseUrl}}/participants/{{participantId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Event Participant 2",
+  "status": "Disabled"
+}
+
+### Step 4: Update the participant one more time
+### Expected: 200 OK
+PATCH {{baseUrl}}/participants/{{participantId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Final Event Participant",
+  "status": "Enabled"
+}
+
+### Step 5: Acquire event lease and fetch events (first time)
+### Expected: 200 OK with events array and lease info
+# @name acquireLease
+POST {{baseUrl}}/events/lease
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "subscriberId": "test-subscriber",
+  "instanceId": "instance-1",
+  "leaseDurationSeconds": 300,
+  "limit": 10
+}
+
+@lastSequenceNumber = {{acquireLease.response.body.$.events[-1:].sequenceNumber}}
+
+### Step 6: Acknowledge processed events
+### Expected: 200 OK with updated lastEventSequenceProcessed
+POST {{baseUrl}}/events/ack
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "subscriberId": "test-subscriber",
+  "instanceId": "instance-1",
+  "lastEventSequenceProcessed": {{lastSequenceNumber}}
+}
+
+### Step 7: Renew lease and fetch more events
+### Expected: 200 OK with empty events array (all processed)
+POST {{baseUrl}}/events/lease
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "subscriberId": "test-subscriber",
+  "instanceId": "instance-1",
+  "leaseDurationSeconds": 300,
+  "limit": 10
+}
+
+@lastSequenceNumber = {{acquireLease.response.body.$.events[-1:].sequenceNumber}}
+
+### Step 8: Test conflict scenario - try to acquire lease with different instance
+### Expected: 409 Conflict (lease held by instance-1)
+POST {{baseUrl}}/events/lease
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "subscriberId": "test-subscriber",
+  "instanceId": "instance-2",
+  "leaseDurationSeconds": 300,
+  "limit": 10
+}
+
+### Step 9: Test acknowledgement conflict - try to ack with wrong instance
+### Expected: 409 Conflict (lease not owned by instance-2)
+POST {{baseUrl}}/events/ack
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "subscriberId": "test-subscriber",
+  "instanceId": "instance-2",
+  "lastEventSequenceProcessed": 5
+}
+
+### Step 10: Test sequence regression prevention
+### Expected: 409 Conflict (cannot acknowledge lower sequence)
+POST {{baseUrl}}/events/ack
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "subscriberId": "test-subscriber",
+  "instanceId": "instance-1",
+  "lastEventSequenceProcessed": 1
+}
+
+### Step 11: Verify events were created by listing them
+### Expected: 200 OK with all generated events visible
+GET {{baseUrl}}/events?pageSize=20
+Authorization: Bearer {{adminToken}}

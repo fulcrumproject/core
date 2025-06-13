@@ -191,7 +191,6 @@ type ServiceCommander interface {
 // Commander implementation with transaction handling
 type serviceCommander struct {
     store Store
-    auditCommander AuditCommander
 }
 
 func (c *serviceCommander) Create(ctx context.Context, params...) (*Service, error) {
@@ -211,8 +210,8 @@ func (c *serviceCommander) Create(ctx context.Context, params...) (*Service, err
             return err
         }
         
-        // Create audit entry
-        if _, err := c.auditCommander.Create(ctx, ...); err != nil {
+        // Create event entry
+        if _, err := store.EventRepo().Create(ctx, ...); err != nil {
             return err
         }
         
@@ -234,12 +233,12 @@ The system implements a robust approach to transaction management through the St
 1. **Store Interface**: Provides an `Atomic` method that executes a function within a transaction
 2. **Transaction Boundaries**: Each command operation defines clear transaction boundaries
 3. **All-or-Nothing Operations**: Multiple repository operations are executed atomically
-4. **Consistent Audit Trail**: Audit entries are created within the same transaction as the data changes
+4. **Consistent Event Log**: Events are created within the same transaction as the data changes
 
 This pattern ensures:
 - Data consistency across related entities
 - Proper error handling with automatic rollback
-- Audit records that perfectly match actual data changes
+- Events that perfectly match actual data changes
 - Clean, reusable transaction logic that isn't tied to specific repositories
 
 The `Atomic` method abstracts the transaction mechanism, allowing the domain layer to define transaction boundaries without coupling to database-specific transaction implementations.

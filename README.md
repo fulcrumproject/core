@@ -31,7 +31,7 @@ Fulcrum is currently under active development. New agents and features are being
 - Provision and monitor various service types (VMs, containers, Kubernetes clusters, etc.)
 - Organize services into logical groups for easier management
 - Collect and analyze metrics from agents and services
-- Maintain a comprehensive audit trail of all system operations
+- Maintain a comprehensive log of all system events and operations
 - Coordinate service operations with agents through a robust job queue system
 
 ## Getting Started

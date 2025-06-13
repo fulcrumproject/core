@@ -48,7 +48,7 @@ const (
 	SubjectJob          AuthSubject = "job"
 	SubjectMetricType   AuthSubject = "metric_type"
 	SubjectMetricEntry  AuthSubject = "metric_entry"
-	SubjectAuditEntry   AuthSubject = "audit_entry"
+	SubjectEvent        AuthSubject = "event_entry"
 	SubjectToken        AuthSubject = "token"
 )
 
@@ -57,7 +57,7 @@ func (s AuthSubject) Validate() error {
 	switch s {
 	case SubjectParticipant, SubjectAgent, SubjectAgentType,
 		SubjectService, SubjectServiceType, SubjectServiceGroup,
-		SubjectJob, SubjectMetricType, SubjectMetricEntry, SubjectAuditEntry, SubjectToken:
+		SubjectJob, SubjectMetricType, SubjectMetricEntry, SubjectEvent, SubjectToken:
 		return nil
 	default:
 		return fmt.Errorf("invalid auth subject: %s", s)
@@ -83,6 +83,8 @@ const (
 	ActionComplete      AuthAction = "complete"
 	ActionFail          AuthAction = "fail"
 	ActionListPending   AuthAction = "list_pending"
+	ActionLease         AuthAction = "lease"
+	ActionAck           AuthAction = "ack"
 )
 
 // Validate ensures the AuthAction is one of the predefined values
@@ -90,7 +92,7 @@ func (a AuthAction) Validate() error {
 	switch a {
 	case ActionCreate, ActionRead, ActionUpdate, ActionDelete,
 		ActionUpdateStatus, ActionGenerateToken, ActionStart, ActionStop,
-		ActionClaim, ActionComplete, ActionFail, ActionListPending:
+		ActionClaim, ActionComplete, ActionFail, ActionListPending, ActionLease, ActionAck:
 		return nil
 	default:
 		return fmt.Errorf("invalid auth action: %s", a)

@@ -21,8 +21,8 @@ tags:
     description: Job queue and processing
   - name: Metrics
     description: Metrics collection and management
-  - name: Audit
-    description: Audit logging
+  - name: Event
+    description: Event logging
   - name: Tokens
     description: Authentication token management
 
@@ -584,16 +584,16 @@ components:
           type: string
           format: date-time
 
-    # Audit schemas
-    AuditEntryResponse:
+    # Event schemas
+    EventResponse:
       type: object
       properties:
         id:
           $ref: "#/components/schemas/UUID"
-        authorityType:
+        initiatorType:
           type: string
           example: "user"
-        authorityId:
+        initiatorId:
           type: string
           example: "admin"
         type:
@@ -604,6 +604,84 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    EventLeaseRequest:
+      type: object
+      required:
+        - subscriberId
+        - instanceId
+      properties:
+        subscriberId:
+          type: string
+          description: Unique identifier for the subscriber system
+          example: "external-system"
+        instanceId:
+          type: string
+          description: Unique identifier for the consuming instance
+          example: "instance-1"
+        leaseDurationSeconds:
+          type: integer
+          description: Lease duration in seconds (default 300, max 3600, min 30)
+          minimum: 30
+          maximum: 3600
+          default: 300
+          example: 300
+        limit:
+          type: integer
+          description: Maximum number of events to fetch (default 100, max 1000, min 1)
+          minimum: 1
+          maximum: 1000
+          default: 100
+          example: 100
+
+    EventLeaseResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventResponse"
+          description: Array of events fetched in chronological order
+        leaseExpiresAt:
+          type: string
+          format: date-time
+          description: When the current lease expires
+        lastEventSequenceProcessed:
+          type: integer
+          format: int64
+          description: Last event sequence number processed by this subscriber
+          example: 150
+
+    EventAckRequest:
+      type: object
+      required:
+        - subscriberId
+        - instanceId
+        - lastEventSequenceProcessed
+      properties:
+        subscriberId:
+          type: string
+          description: Unique identifier for the subscriber system
+          example: "external-system"
+        instanceId:
+          type: string
+          description: Unique identifier for the consuming instance
+          example: "instance-1"
+        lastEventSequenceProcessed:
+          type: integer
+          format: int64
+          description: Sequence number of the last event successfully processed
+          minimum: 1
+          example: 150
+
+    EventAckResponse:
+      type: object
+      properties:
+        lastEventSequenceProcessed:
+          type: integer
+          format: int64
+          description: Updated last event sequence processed
+          example: 150
 
     PageResponse:
       type: object
@@ -712,6 +790,38 @@ components:
         message:
           type: string
           description: Error message describing the validation failure
+
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
 
 paths:
   #
@@ -1498,8 +1608,6 @@ paths:
                   example: "web-server-01"
                 status:
                   $ref: "#/components/schemas/ServiceStatus"
-                attributes:
-                  $ref: "#/components/schemas/Attributes"
                 properties:
                   $ref: "#/components/schemas/JSONObject"
                 resources:
@@ -2287,19 +2395,19 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   #
-  # Audit Entry endpoints
+  # Event Entry endpoints
   #
-  /audit-entries:
+  /events:
     get:
-      summary: List audit entries
+      summary: List events
       tags:
-        - Audit
-      description: Retrieves a paginated list of audit entries
+        - Event
+      description: Retrieves a paginated list of events
       x-auth-permissions:
         - role: admin
-          permission: all audit entries
+          permission: all events
         - role: participant
-          permission: audit entries related to its participant
+          permission: events related to its participant
         - role: agent
           permission: not authorized
       parameters:
@@ -2315,7 +2423,7 @@ paths:
             default: 20
       responses:
         "200":
-          description: A paginated list of audit entries
+          description: A paginated list of events
           content:
             application/json:
               schema:
@@ -2326,4 +2434,94 @@ paths:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/AuditEntryResponse"
+                          $ref: "#/components/schemas/EventResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /events/lease:
+    post:
+      summary: Acquire event lease and fetch events
+      tags:
+        - Event
+      description: Acquire or renew a lease for event processing and fetch events in chronological order
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: not authorized
+        - role: agent
+          permission: not authorized
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventLeaseRequest"
+      responses:
+        "200":
+          description: Lease acquired successfully with events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventLeaseResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Lease conflict - held by another instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /events/ack:
+    post:
+      summary: Acknowledge processed events
+      tags:
+        - Event
+      description: Acknowledge processed events and update progress (Option B - does not renew lease)
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: not authorized
+        - role: agent
+          permission: not authorized
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventAckRequest"
+      responses:
+        "200":
+          description: Events acknowledged successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventAckResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Acknowledgement conflict - lease not held or sequence regression
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"

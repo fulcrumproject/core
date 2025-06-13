@@ -101,8 +101,8 @@ func TestAuthSubject_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Valid AuditEntry subject",
-			subject: SubjectAuditEntry,
+			name:    "Valid Event subject",
+			subject: SubjectEvent,
 			wantErr: false,
 		},
 		{

@@ -221,12 +221,20 @@ Fulcrum Core uses a role-based authorization system where permissions are define
   - participant: metric entries for its participant (as provider or consumer)
   - agent: metric entries it created
 
-### AuditEntry
+### Event
 - **list**:
-  - admin: all audit entries
-  - participant: audit entries related to its participant
+  - admin: all events
+  - participant: events related to its participant
+  - agent: none (not authorized)
+- **lease**:
+  - admin: always
+  - participant: none (not authorized)
+  - agent: none (not authorized)
+- **ack**:
+  - admin: always
+  - participant: none (not authorized)
   - agent: none (not authorized)
 
 ## Notes
-- Creation of audit entries is handled automatically by the backend and is not exposed as a user action.
+- Creation of events is handled automatically by the backend and is not exposed as a user action.
 - Agent types and service types are pre-provisioned in the system. While create/update/delete operations exist for administrators, these operations are primarily intended for system initialization and maintenance rather than regular use.

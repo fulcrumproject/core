@@ -47,6 +47,7 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.Job{},
 		&domain.MetricType{},
 		&domain.MetricEntry{},
-		&domain.AuditEntry{},
+		&domain.Event{},
+		&domain.EventSubscription{},
 	)
 }

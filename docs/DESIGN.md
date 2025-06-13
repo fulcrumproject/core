@@ -11,7 +11,7 @@ The system is built as a RESTful API and enables organizations to:
 - Provision and monitor various service types (VMs, containers, Kubernetes clusters, etc.)
 - Organize services into logical groups for easier management
 - Collect and analyze metrics from agents and services
-- Maintain a comprehensive audit trail of all system operations
+- Maintain a detailed event log of all system activities
 - Coordinate service operations with agents through a robust job queue system
 
 ## Documentation Structure
@@ -80,7 +80,7 @@ Fulcrum Administrators are responsible for the overall management of the Fulcrum
 - Configure global system settings and policies
 - Monitor the health and performance of the entire system
 - Manage user access and permissions
-- Review audit logs and system metrics
+- Review event logs and system metrics
 - Orchestrate service groups across multiple participants
 - Define service types and their resource requirements
 - Oversee agent deployments and their operational status
@@ -122,9 +122,10 @@ classDiagram
     Participant "1" --> "0..N" Service : consumes (via ConsumerParticipantID)
     Participant "1" --> "0..N" ServiceGroup : owns
     Participant "1" --> "0..N" Service : hosts (via Agent)
-    AuditEntry "0..N" <-- "1" Agent : audited via
-    AuditEntry "0..N" <-- "1" Service : audited via
-    AuditEntry "0..N" <-- "1" Participant : audited via
+    Event "0..N" <-- "1" Agent : created via
+    Event "0..N" <-- "1" Service : created via
+    Event "0..N" <-- "1" Participant : created via
+    EventSubscription "1" --> "0..N" Event : tracks processing of
 
     namespace Participants {
         class Participant {
@@ -235,14 +236,25 @@ classDiagram
         }
     }
 
-    namespace Audit {
-        class AuditEntry {
+    namespace Domain Events {
+        class Event {
             id : UUID
+            sequenceNumber : int64
             createdAt : datetime
-            authorityType : string
-            authorityId : string
+            initiatorType : string
+            initiatorId : string
             type : string
-            properties : json
+            payload : json
+        }
+        
+        class EventSubscription {
+            id : UUID
+            subscriberId : string
+            instanceId : string
+            lastProcessedSequence : int64
+            leaseExpiresAt : datetime
+            createdAt : datetime
+            updatedAt : datetime
         }
     }
 
@@ -353,14 +365,23 @@ classDiagram
    - Specifies the entity type being measured (Agent, Service, or Resource)
    - Provides naming and classification for metrics
 
-##### Audit
+##### Events
 
-1. **AuditEntry**
-   - Tracks system events and changes
-   - Records the authority (type and ID) that initiated the action
+1. **Event**
+   - Tracks system events and changes for audit purposes
+   - Records the initiator (type and ID) that initiated the action
    - Categorizes events by type
    - Stores detailed event information in properties
+   - Has a sequence number for chronological ordering
    - Provides audit trail for system operations and changes
+
+2. **EventSubscription**
+   - Manages external system subscriptions to domain events
+   - Tracks processing progress through lastProcessedSequence
+   - Implements lease-based exclusive processing to prevent conflicts
+   - Supports multiple instances of the same subscriber for high availability
+   - Enables ordered event consumption through sequence-based fetching
+   - Used by external systems to maintain consistent event processing state
 
 ##### Security
 
@@ -593,6 +614,67 @@ The job management process follows these steps:
      - Clean up old completed jobs after retention period
      - Handle retry logic for failed jobs
      - Monitor queue health and performance metrics
+
+### Event Consumption API
+
+The Event Consumption API provides external systems with a reliable mechanism to consume domain events in chronological order. This API implements lease-based exclusive processing to ensure events are processed exactly once, even in distributed environments with multiple consumer instances.
+
+#### Event Lease Management Flow
+
+```mermaid
+sequenceDiagram
+    participant ES as External System
+    participant API as Fulcrum Core API
+    participant DB as Database
+    
+    ES->>API: POST /api/v1/events/lease
+    Note right of ES: Acquire lease and fetch events
+    
+    API->>DB: Find or create EventSubscription
+    API->>DB: Check existing lease
+    
+    alt No active lease
+        API->>DB: Acquire lease (update leaseExpiresAt)
+        API->>DB: Fetch events from lastProcessedSequence
+        API-->>ES: 200 OK with events and lease info
+        
+        Note over ES: Process events...
+        
+        ES->>API: POST /api/v1/events/ack
+        Note right of ES: Acknowledge processed events
+        API->>DB: Validate lease ownership
+        API->>DB: Update lastProcessedSequence
+        API-->>ES: 200 OK
+        
+    else Active lease held by different instance
+        API-->>ES: 409 Conflict
+        Note right of ES: Retry after lease expires
+        
+    else Active lease held by same instance
+        API->>DB: Extend lease
+        API->>DB: Fetch new events
+        API-->>ES: 200 OK with events
+    end
+```
+
+#### Key Features
+
+1. **Ordered Processing**: Events are fetched in chronological order using sequence numbers
+2. **Exclusive Leases**: Only one instance of a subscriber can hold a lease at a time
+3. **Automatic Renewal**: Leases can be renewed by making subsequent lease API calls
+4. **Progress Tracking**: Each subscription tracks the last processed sequence number
+5. **Conflict Resolution**: Returns HTTP 409 when lease is held by another instance
+6. **Configurable Duration**: Lease duration can be customized (default: 5 minutes, max: 1 hour)
+7. **Separate Acknowledgement**: Events are acknowledged separately from lease acquisition (Option B)
+
+#### API Endpoints
+
+The Event Consumption API provides two main endpoints:
+
+- `POST /api/v1/events/lease` - Acquire or renew a lease and fetch events
+- `POST /api/v1/events/ack` - Acknowledge processed events and update progress
+
+For detailed API specifications, request/response schemas, and authentication requirements, see [openapi.yaml](openapi.yaml).
 
 ### High-Availability Deployment
 

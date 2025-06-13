@@ -79,7 +79,10 @@ func (m *MockStore) ServiceRepo() domain.ServiceRepository {
 func (m *MockStore) JobRepo() domain.JobRepository {
 	return nil
 }
-func (m *MockStore) AuditEntryRepo() domain.AuditEntryRepository {
+func (m *MockStore) EventRepo() domain.EventRepository {
+	return nil
+}
+func (m *MockStore) EventSubscriptionRepo() domain.EventSubscriptionRepository {
 	return nil
 }
 func (m *MockStore) MetricTypeRepo() domain.MetricTypeRepository {

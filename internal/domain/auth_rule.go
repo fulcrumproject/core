@@ -145,8 +145,10 @@ var defaultAuthzRules = []AuthRule{
 	{Subject: SubjectMetricEntry, Action: ActionRead, Roles: []AuthRole{RoleAdmin, RoleParticipant}},
 	{Subject: SubjectMetricEntry, Action: ActionCreate, Roles: []AuthRole{RoleAgent}},
 
-	// AuditEntry permissions
-	{Subject: SubjectAuditEntry, Action: ActionRead, Roles: []AuthRole{RoleAdmin, RoleParticipant}},
+	// Event permissions
+	{Subject: SubjectEvent, Action: ActionRead, Roles: []AuthRole{RoleAdmin, RoleParticipant}},
+	{Subject: SubjectEvent, Action: ActionLease, Roles: []AuthRole{RoleAdmin}},
+	{Subject: SubjectEvent, Action: ActionAck, Roles: []AuthRole{RoleAdmin}},
 
 	// Token permissions
 	{Subject: SubjectToken, Action: ActionRead, Roles: []AuthRole{RoleAdmin, RoleParticipant}},

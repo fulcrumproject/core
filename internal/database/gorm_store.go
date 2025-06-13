@@ -10,18 +10,19 @@ import (
 
 // GormStore implements the domain.Store interface using GORM
 type GormStore struct {
-	db               *gorm.DB
-	participantRepo  domain.ParticipantRepository
-	tokenRepo        domain.TokenRepository
-	agentTypeRepo    domain.AgentTypeRepository
-	agentRepo        domain.AgentRepository
-	serviceTypeRepo  domain.ServiceTypeRepository
-	serviceGroupRepo domain.ServiceGroupRepository
-	serviceRepo      domain.ServiceRepository
-	jobRepo          domain.JobRepository
-	auditEntryRepo   domain.AuditEntryRepository
-	metricTypeRepo   domain.MetricTypeRepository
-	metricEntryRepo  domain.MetricEntryRepository
+	db                    *gorm.DB
+	participantRepo       domain.ParticipantRepository
+	tokenRepo             domain.TokenRepository
+	agentTypeRepo         domain.AgentTypeRepository
+	agentRepo             domain.AgentRepository
+	serviceTypeRepo       domain.ServiceTypeRepository
+	serviceGroupRepo      domain.ServiceGroupRepository
+	serviceRepo           domain.ServiceRepository
+	jobRepo               domain.JobRepository
+	eventEntryRepo        domain.EventRepository
+	eventSubscriptionRepo domain.EventSubscriptionRepository
+	metricTypeRepo        domain.MetricTypeRepository
+	metricEntryRepo       domain.MetricEntryRepository
 }
 
 // NewGormStore creates a new GormStore instance
@@ -97,11 +98,18 @@ func (s *GormStore) JobRepo() domain.JobRepository {
 	return s.jobRepo
 }
 
-func (s *GormStore) AuditEntryRepo() domain.AuditEntryRepository {
-	if s.auditEntryRepo == nil {
-		s.auditEntryRepo = NewAuditEntryRepository(s.db)
+func (s *GormStore) EventRepo() domain.EventRepository {
+	if s.eventEntryRepo == nil {
+		s.eventEntryRepo = NewEventRepository(s.db)
 	}
-	return s.auditEntryRepo
+	return s.eventEntryRepo
+}
+
+func (s *GormStore) EventSubscriptionRepo() domain.EventSubscriptionRepository {
+	if s.eventSubscriptionRepo == nil {
+		s.eventSubscriptionRepo = NewEventSubscriptionRepository(s.db)
+	}
+	return s.eventSubscriptionRepo
 }
 
 func (s *GormStore) MetricTypeRepo() domain.MetricTypeRepository {

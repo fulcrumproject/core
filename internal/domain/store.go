@@ -15,7 +15,8 @@ type Store interface {
 	ServiceGroupRepo() ServiceGroupRepository
 	ServiceRepo() ServiceRepository
 	JobRepo() JobRepository
-	AuditEntryRepo() AuditEntryRepository
+	EventRepo() EventRepository
+	EventSubscriptionRepo() EventSubscriptionRepository
 	MetricTypeRepo() MetricTypeRepository
 	MetricEntryRepo() MetricEntryRepository
 	ParticipantRepo() ParticipantRepository

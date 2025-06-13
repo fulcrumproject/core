@@ -15,10 +15,10 @@ import (
 type ServiceStatus string
 
 const (
-	EventTypeServiceCreated      EventType = "service_created"
-	EventTypeServiceUpdated      EventType = "service_updated"
-	EventTypeServiceTransitioned EventType = "service_transitioned"
-	EventTypeServiceRetried      EventType = "service_retried"
+	EventTypeServiceCreated      EventType = "service.created"
+	EventTypeServiceUpdated      EventType = "service.updated"
+	EventTypeServiceTransitioned EventType = "service.transitioned"
+	EventTypeServiceRetried      EventType = "service.retried"
 
 	ServiceCreating     ServiceStatus = "Creating"
 	ServiceCreated      ServiceStatus = "Created"
@@ -367,11 +367,11 @@ func (s *serviceCommander) createServiceWithAgent(
 			return err
 		}
 
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeServiceCreated, JSON{"status": svc}, &svc.ID, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID)
+		eventEntry, err := NewEvent(EventTypeServiceCreated, WithInitiatorCtx(ctx), WithService(svc))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 
@@ -400,7 +400,7 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 		props = &validatedProperties
 	}
 
-	// Audit copy
+	// Event copy
 	originalSvc := *svc
 
 	// Update
@@ -412,17 +412,17 @@ func (s *serviceCommander) Update(ctx context.Context, id UUID, name *string, pr
 		return nil, InvalidInputError{Err: err}
 	}
 
-	// Save, audit and create job
+	// Save, event and create job
 	err = s.store.Atomic(ctx, func(store Store) error {
 		if updateSvc {
 			if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 				return err
 			}
-			auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceUpdated, JSON{}, &id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+			eventEntry, err := NewEvent(EventTypeServiceUpdated, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
 			if err != nil {
 				return err
 			}
-			if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+			if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 				return err
 			}
 		}
@@ -484,7 +484,7 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 		return nil, err
 	}
 
-	// Audit copy
+	// Event copy
 	originalSvc := *svc
 
 	// Transition
@@ -496,7 +496,7 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 		return nil, InvalidInputError{Err: err}
 	}
 
-	// Save, audit and create job if needed
+	// Save, event and create job if needed
 	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
@@ -508,11 +508,11 @@ func (s *serviceCommander) Transition(ctx context.Context, id UUID, target Servi
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceTransitioned, JSON{}, &id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		eventEntry, err := NewEvent(EventTypeServiceTransitioned, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err
@@ -531,7 +531,7 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 		return nil, err
 	}
 
-	// Audit copy
+	// Event copy
 	originalSvc := *svc
 
 	// Retry
@@ -543,7 +543,7 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 		return svc, nil // Nothing to retry
 	}
 
-	// Save, audit and create job if needed
+	// Save, event and create job if needed
 	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
@@ -555,11 +555,11 @@ func (s *serviceCommander) Retry(ctx context.Context, id UUID) (*Service, error)
 		if err := store.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
-		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeServiceRetried, JSON{}, &id, &svc.ProviderID, &svc.AgentID, &svc.ConsumerID, &originalSvc, svc)
+		eventEntry, err := NewEvent(EventTypeServiceRetried, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err

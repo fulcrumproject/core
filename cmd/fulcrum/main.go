@@ -105,7 +105,8 @@ func main() {
 	jobHandler := api.NewJobHandler(store.JobRepo(), jobCmd, authz)
 	metricTypeHandler := api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, authz)
 	metricEntryHandler := api.NewMetricEntryHandler(store.MetricEntryRepo(), store.ServiceRepo(), metricEntryCmd, authz)
-	auditEntryHandler := api.NewAuditEntryHandler(store.AuditEntryRepo(), authz)
+	eventSubscriptionCmd := domain.NewEventSubscriptionCommander(store)
+	eventHandler := api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, authz)
 	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), authz)
 
 	// Initialize router
@@ -133,7 +134,7 @@ func main() {
 		r.Route("/services", serviceHandler.Routes())
 		r.Route("/metric-types", metricTypeHandler.Routes())
 		r.Route("/metric-entries", metricEntryHandler.Routes())
-		r.Route("/audit-entries", auditEntryHandler.Routes())
+		r.Route("/events", eventHandler.Routes())
 		r.Route("/jobs", jobHandler.Routes())
 		r.Route("/tokens", tokenHandler.Routes())
 	})

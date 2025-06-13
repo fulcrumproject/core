@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	EventTypeTokenCreated     EventType = "token_created"
-	EventTypeTokenUpdated     EventType = "token_updated"
-	EventTypeTokenDeleted     EventType = "token_deleted"
-	EventTypeTokenRegenerated EventType = "token_regenerate"
+	EventTypeTokenCreated     EventType = "token.created"
+	EventTypeTokenUpdated     EventType = "token.updated"
+	EventTypeTokenDeleted     EventType = "token.deleted"
+	EventTypeTokenRegenerated EventType = "token.regenerate"
 )
 
 // Token represents an authentication token
@@ -228,7 +228,7 @@ func (s *tokenCommander) Create(
 		return nil, NewInvalidInputErrorf("role %s not allowed", role)
 	}
 
-	// Create, save and audit
+	// Create, save and event
 	var token *Token
 	err := s.store.Atomic(ctx, func(store Store) error {
 		var err error
@@ -239,11 +239,11 @@ func (s *tokenCommander) Create(
 		if err := store.TokenRepo().Create(ctx, token); err != nil {
 			return err
 		}
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeTokenCreated, JSON{"status": token}, &token.ID, token.ParticipantID, token.AgentID, nil)
+		eventEntry, err := NewEvent(EventTypeTokenCreated, WithInitiatorCtx(ctx), WithToken(token))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err
@@ -266,10 +266,10 @@ func (s *tokenCommander) Update(ctx context.Context,
 		return nil, err
 	}
 
-	// Make a copy for audit diff
+	// Make a copy for event diff
 	beforeTokenCopy := *token
 
-	// Update, save and audit
+	// Update, save and event
 	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := token.Update(name, expireAt); err != nil {
 			return err
@@ -277,11 +277,11 @@ func (s *tokenCommander) Update(ctx context.Context,
 		if err := store.TokenRepo().Save(ctx, token); err != nil {
 			return err
 		}
-		auditEntry, err := NewEventAuditCtxDiff(ctx, EventTypeTokenUpdated, JSON{}, &id, token.ParticipantID, token.AgentID, nil, &beforeTokenCopy, token)
+		eventEntry, err := NewEvent(EventTypeTokenUpdated, WithInitiatorCtx(ctx), WithDiff(&beforeTokenCopy, token), WithToken(token))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err
@@ -294,23 +294,23 @@ func (s *tokenCommander) Update(ctx context.Context,
 }
 
 func (s *tokenCommander) Delete(ctx context.Context, id UUID) error {
-	// Get token before deletion for audit purposes
+	// Get token before deletion for event purposes
 	token, err := s.store.TokenRepo().FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	// Delete and audit
+	// Delete and event
 	return s.store.Atomic(ctx, func(store Store) error {
 		if err := store.TokenRepo().Delete(ctx, id); err != nil {
 			return err
 		}
 
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeTokenDeleted, JSON{"status": token}, &id, token.ParticipantID, token.AgentID, nil)
+		eventEntry, err := NewEvent(EventTypeTokenDeleted, WithInitiatorCtx(ctx), WithToken(token))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err
@@ -324,7 +324,7 @@ func (s *tokenCommander) Regenerate(ctx context.Context, id UUID) (*Token, error
 		return nil, err
 	}
 
-	// Regenerate, save and audit
+	// Regenerate, save and event
 	err = s.store.Atomic(ctx, func(store Store) error {
 		if err := token.GenerateTokenValue(); err != nil {
 			return err
@@ -332,11 +332,12 @@ func (s *tokenCommander) Regenerate(ctx context.Context, id UUID) (*Token, error
 		if err := store.TokenRepo().Save(ctx, token); err != nil {
 			return err
 		}
-		auditEntry, err := NewEventAuditCtx(ctx, EventTypeTokenRegenerated, JSON{"status": token}, &id, token.ParticipantID, token.AgentID, nil)
+
+		eventEntry, err := NewEvent(EventTypeTokenRegenerated, WithInitiatorCtx(ctx), WithToken(token))
 		if err != nil {
 			return err
 		}
-		if err := store.AuditEntryRepo().Create(ctx, auditEntry); err != nil {
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err
