@@ -1,0 +1,123 @@
+{
+  "realm": "fulcrum",
+  "displayName": "fulcrum",
+  "enabled": true,
+  "users": [
+    {
+      "username": "admin1",
+      "email": "admin1@fulcrumproject.org",
+      "emailVerified": true,
+      "firstName": "Fulcrum",
+      "lastName": "Admin 1",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "participant1",
+      "email": "participant11@fulcrumproject.org",
+      "emailVerified": true,
+      "firstName": "Fulcrum",
+      "lastName": "Participant 1",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["participant"],
+      "attributes": {
+        "participant_id": "participant1-id"
+      }
+    },
+    {
+      "username": "agent1",
+      "email": "agent1@fulcrumproject.org",
+      "emailVerified": true,
+      "firstName": "Fulcrum",
+      "lastName": "Agent 1",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["agent"],
+      "attributes": {
+        "participant_id": "agent1-participant-id",
+        "agent_id": "agent1-id"
+      }
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "fulcrum-api",
+      "name": "fulcrum-api",
+      "enabled": true,
+      "secret": "secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": ["fulcrum_ids", "profile", "roles", "basic"]
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "admin" },
+      { "name": "participant" },
+      { "name": "agent" }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "fulcrum_ids",
+      "description": "User attribute mappers for participant_id and agent_id",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": true,
+        "display.on.consent.screen": false,
+        "consent.screen.text": ""
+      },
+      "protocolMappers": [
+        {
+          "name": "participant_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "participant_id",
+            "claim.name": "participant_id",
+            "jsonType.label": "String",
+            "id.token.claim": true,
+            "access.token.claim": true
+          }
+        },
+        {
+          "name": "agent_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "agent_id",
+            "claim.name": "agent_id",
+            "jsonType.label": "String",
+            "id.token.claim": true,
+            "access.token.claim": true
+          }
+        }
+      ],
+      "defaultScope": true
+    }
+  ]
+}

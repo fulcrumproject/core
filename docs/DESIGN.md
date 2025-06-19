@@ -11,7 +11,7 @@ The system is built as a RESTful API and enables organizations to:
 - Provision and monitor various service types (VMs, containers, Kubernetes clusters, etc.)
 - Organize services into logical groups for easier management
 - Collect and analyze metrics from agents and services
-- Maintain a comprehensive audit trail of all system operations
+- Maintain a detailed event log of all system activities
 - Coordinate service operations with agents through a robust job queue system
 
 ## Documentation Structure
@@ -19,7 +19,8 @@ The system is built as a RESTful API and enables organizations to:
 This document provides a high-level overview of the Fulcrum Core system design. For more detailed information, please refer to:
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): Detailed description of the system's layered architecture, package structure, and implementation patterns
-- [AUTH.md](AUTH.md): Comprehensive authorization rules and role-based permissions
+- [AUTHORIZATION.md](AUTHORIZATION.md): Comprehensive authorization rules and role-based permissions
+- [SERVICE_TYPE_SCHEMA.md](SERVICE_TYPE_SCHEMA.md): Service property schema validation syntax and usage guide
 - [openapi.yaml](openapi.yaml): Complete API specification in OpenAPI format
 
 ## Context
@@ -79,7 +80,7 @@ Fulcrum Administrators are responsible for the overall management of the Fulcrum
 - Configure global system settings and policies
 - Monitor the health and performance of the entire system
 - Manage user access and permissions
-- Review audit logs and system metrics
+- Review event logs and system metrics
 - Orchestrate service groups across multiple participants
 - Define service types and their resource requirements
 - Oversee agent deployments and their operational status
@@ -121,42 +122,41 @@ classDiagram
     Participant "1" --> "0..N" Service : consumes (via ConsumerParticipantID)
     Participant "1" --> "0..N" ServiceGroup : owns
     Participant "1" --> "0..N" Service : hosts (via Agent)
-    AuditEntry "0..N" <-- "1" Agent : audited via
-    AuditEntry "0..N" <-- "1" Service : audited via
-    AuditEntry "0..N" <-- "1" Participant : audited via
+    Event "0..N" <-- "1" Agent : created via
+    Event "0..N" <-- "1" Service : created via
+    Event "0..N" <-- "1" Participant : created via
+    EventSubscription "1" --> "0..N" Event : tracks processing of
 
     namespace Participants {
         class Participant {
-            id : UUID
+            id : properties.UUID
             name : string
             status : enum[Enabled|Disabled]
-            countryCode : string 
-            attributes : map[string]string[]
             createdAt : datetime
             updatedAt : datetime
         }
 
         class ServiceType {
-            id : UUID
+            id : properties.UUID
             name : string
+            propertySchema : CustomSchema
             createdAt : datetime
             updatedAt : datetime
         }
 
         class AgentType {
-            id : UUID
+            id : properties.UUID
             name : string
             createdAt : datetime
             updatedAt : datetime
         }
 
         class Agent {
-            id : UUID
+            id : properties.UUID
             name : string
             status : enum[New|Connected|Disconnected|Error|Disabled]
-            countryCode : string
-            attributes : map[string]string[]
             lastStatusUpdate : datetime
+            tags : string[]
             createdAt : datetime
             updatedAt : datetime
         }
@@ -164,7 +164,7 @@ classDiagram
 
     namespace Services {
         class Service {
-            id : UUID
+            id : properties.UUID
             externalId : string
             name : string
             currentStatus : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]
@@ -172,29 +172,28 @@ classDiagram
             errorMessage : string
             failedAction : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
             retryCount : int
-            attributes : map[string]string[]
             currentProperties : json
             targetProperties : json
             resources : json
-            consumerParticipantID : UUID
+            consumerParticipantID : properties.UUID
             createdAt : datetime
             updatedAt : datetime
         }
 
         class ServiceGroup {
-            id : UUID
+            id : properties.UUID
             name : string
-            participantID : UUID
+            participantID : properties.UUID
             createdAt : datetime
             updatedAt : datetime
         }
-        
+
         class Job {
-            id : UUID
+            id : properties.UUID
             action : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
             status : enum[Pending,Processing,Completed,Failed]
-            agentId : UUID
-            serviceId : UUID
+            agentId : properties.UUID
+            serviceId : properties.UUID
             priority : int
             errorMessage : string
             claimedAt : datetime
@@ -206,13 +205,13 @@ classDiagram
 
     namespace Security {
         class Token {
-            id : UUID
+            id : properties.UUID
             name : string
-            role : enum[fulcrum_admin|participant|agent]
+            role : enum[admin|participant|agent]
             hashedValue : string
             expireAt : datetime
-            participantID : UUID
-            agentID : UUID
+            participantID : properties.UUID
+            agentID : properties.UUID
             createdAt : datetime
             updatedAt : datetime
         }
@@ -220,16 +219,16 @@ classDiagram
 
     namespace Metrics {
         class MetricEntry {
-            id : UUID
+            id : properties.UUID
             createdAt : datetime
-            agentId : UUID        
-            serviceId : UUID        
+            agentId : properties.UUID        
+            serviceId : properties.UUID        
             resourceId : string
             value : number
         }
 
         class MetricType {
-            id : UUID
+            id : properties.UUID
             entityType : enum[Agent,Service,Resource] 
             name : string
             createdAt : datetime
@@ -237,14 +236,25 @@ classDiagram
         }
     }
 
-    namespace Audit {
-        class AuditEntry {
-            id : UUID
+    namespace Domain Events {
+        class Event {
+            id : properties.UUID
+            sequenceNumber : int64
             createdAt : datetime
-            authorityType : string
-            authorityId : string
+            initiatorType : string
+            initiatorId : string
             type : string
-            properties : json
+            payload : json
+        }
+        
+        class EventSubscription {
+            id : properties.UUID
+            subscriberId : string
+            instanceId : string
+            lastProcessedSequence : int64
+            leaseExpiresAt : datetime
+            createdAt : datetime
+            updatedAt : datetime
         }
     }
 
@@ -259,7 +269,11 @@ classDiagram
     - MicroK8s application
     - Kubernetes Cluster
     - Container Runtime services
-    - Kubernetes Application controller"
+    - Kubernetes Application controller
+    
+    Agents can provide specific service types
+    based on their AgentType capabilities and
+    tags for specialized requirements"
     
     note for Job "Jobs represent operations that agents
     perform on services including:
@@ -269,6 +283,7 @@ classDiagram
     - Deleting services
     
     Each job transitions service status appropriately"
+    
 ```
 
 #### Entities
@@ -279,8 +294,6 @@ classDiagram
    - Unified entity replacing the separate Provider and Consumer entities
    - Represents an entity that can act as both a service provider and consumer
    - Has name and operational status (Enabled/Disabled)
-   - Contains geographical information via country code
-   - Stores flexible metadata through custom attributes
    - Has many agents deployed within its infrastructure (when acting as a provider)
    - Can consume services (via Service.ConsumerParticipantID)
    - The functional role (provider/consumer) is determined by context and relationships
@@ -291,7 +304,9 @@ classDiagram
    - Tracks connectivity status (New, Connected, Disconnected, Error, Disabled)
    - Uses secure token-based authentication (via Token entity)
    - Tracks last status update timestamp
+   - Contains tags for capabilities and specializations
    - Processes jobs from the job queue to perform service operations
+   - Selected for service provisioning based on service type and tag matching
 
 3. **Service**
    - Cloud resource managed by an agent
@@ -299,14 +314,12 @@ classDiagram
    - Status transitions: Creating → Created → Starting → Started → Stopping → Stopped → Deleting → Deleted
    - Supports both hot updates (while running) and cold updates (while stopped)
    - Tracks failed operations with error messages and retry counts
-   - Contains attributes for metadata about the service
    - Manages configuration changes through current and target properties
    - Stores service-specific resource configuration
    - Can be linked to a consumer participant via ConsumerParticipantID (optional)
 
-   Properties vs Attributes:
-   - Properties: JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger status transitions (hot or cold update depending on current status).
-   - Attributes: Metadata about the service that is set during creation and remains static throughout the service lifecycle. Used for participant and agent selection during service creation and more generally for identification, categorization, and filtering.
+   Properties:
+   - Properties: properties.JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger status transitions (hot or cold update depending on current status).
 
 4. **AgentType**
    - Defines the type classification for agents
@@ -332,11 +345,11 @@ classDiagram
 
 8. **Token**
    - Provides secure authentication mechanism for system access
-   - Supports different roles: fulcrum_admin, participant, agent
+   - Supports different roles: admin, participant, agent
    - Contains hashed value stored in database to verify authentication
    - Has expiration date for enhanced security
    - Scoped to specific Participant or Agent based on role
-   - Note: The current token implementation is a facility to handle authentication locally and will be replaced with an external authentication standard mechanism in the future, such as OAuth 2.0, OpenID Connect, or SAML
+   - Used alongside or instead of OAuth/OIDC authentication depending on system configuration
 
 ##### Metrics
 
@@ -352,26 +365,40 @@ classDiagram
    - Specifies the entity type being measured (Agent, Service, or Resource)
    - Provides naming and classification for metrics
 
-##### Audit
+##### Events
 
-1. **AuditEntry**
-   - Tracks system events and changes
-   - Records the authority (type and ID) that initiated the action
+1. **Event**
+   - Tracks system events and changes for audit purposes
+   - Records the initiator (type and ID) that initiated the action
    - Categorizes events by type
    - Stores detailed event information in properties
+   - Has a sequence number for chronological ordering
    - Provides audit trail for system operations and changes
+
+2. **EventSubscription**
+   - Manages external system subscriptions to domain events
+   - Tracks processing progress through lastProcessedSequence
+   - Implements lease-based exclusive processing to prevent conflicts
+   - Supports multiple instances of the same subscriber for high availability
+   - Enables ordered event consumption through sequence-based fetching
+   - Used by external systems to maintain consistent event processing state
 
 ##### Security
 
 Fulcrum Core implements a comprehensive authorization system with role-based access control (RBAC):
 
-- Three predefined roles: fulcrum_admin, participant, and agent
+- Three predefined roles: admin, participant, and agent
 - Fine-grained permission control for different resource types and actions
 - Context-aware permissions based on resource ownership and relationships
 
-The authentication system currently uses tokens, which will be replaced with an industry-standard external authentication mechanism in the future, such as OAuth 2.0, OpenID Connect, or SAML.
+The authentication system supports multiple authenticators that can be enabled via the `FULCRUM_AUTHENTICATORS` configuration:
 
-For detailed information about roles, permissions, and authorization rules, refer to [AUTH.md](AUTH.md).
+- **Token Authentication**: Local token-based authentication using secure hashed tokens
+- **OAuth/OIDC Authentication**: Integration with external OAuth 2.0/OpenID Connect providers (e.g., Keycloak)
+
+The system can be configured to use one or both authentication methods simultaneously through a composite authenticator pattern. OAuth authentication supports JWT token validation with custom claims for role and scope extraction.
+
+For detailed information about roles, permissions, and authorization rules, refer to [AUTHORIZATION.md](AUTHORIZATION.md).
 
 
 ## Technical Overview
@@ -406,6 +433,62 @@ stateDiagram-v2
     ColdUpdating --> Stopped: update complete
     Deleting --> Deleted: operation complete
 ```
+
+#### Service Property Schema Validation
+
+Fulcrum Core provides a flexible properties.JSON-based validation system for service properties through the Service Property Schema feature. This system ensures data integrity and consistency for service configurations while providing dynamic validation without requiring application recompilation.
+
+##### Schema Structure
+
+Each ServiceType can have an optional `propertySchema` field that defines validation rules for service properties. The schema supports:
+
+- **Primitive Types**: string, integer, number, boolean
+- **Complex Types**: object (with nested properties), array (with item schemas)
+- **Validation Rules**: minLength, maxLength, pattern, enum, min, max, minItems, maxItems, uniqueItems
+- **Nested Validation**: Recursive validation for objects and arrays
+- **Default Values**: Automatic application of default values for missing properties
+
+##### Validation Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Fulcrum Core API
+    participant Schema as Schema Validator
+    participant DB as Database
+    
+    Client->>API: POST /api/v1/services (with properties)
+    API->>DB: Fetch ServiceType
+    DB-->>API: ServiceType with propertySchema
+    
+    alt propertySchema exists
+        API->>Schema: Validate properties against schema
+        Schema-->>API: Validation results
+        
+        alt validation passes
+            API->>DB: Create service with validated properties
+            DB-->>API: Service created
+            API-->>Client: 201 Created
+        else validation fails
+            API-->>Client: 400 Bad Request (validation errors)
+        end
+    else no propertySchema
+        API->>DB: Create service without validation
+        DB-->>API: Service created
+        API-->>Client: 201 Created
+    end
+```
+
+##### Validation API Endpoint
+
+The system provides a dedicated validation endpoint for testing property schemas:
+
+- **Endpoint**: `POST /api/v1/service-types/{id}/validate`
+- **Purpose**: Validate service properties against a ServiceType's schema
+- **Response**: Returns validation status and detailed error messages
+- **Use Cases**: Frontend validation, schema testing, development workflows
+
+For detailed schema syntax and examples, see [SERVICE_TYPE_SCHEMA.md](SERVICE_TYPE_SCHEMA.md).
 
 #### Agent Authentication Flow
 
@@ -531,6 +614,67 @@ The job management process follows these steps:
      - Clean up old completed jobs after retention period
      - Handle retry logic for failed jobs
      - Monitor queue health and performance metrics
+
+### Event Consumption API
+
+The Event Consumption API provides external systems with a reliable mechanism to consume domain events in chronological order. This API implements lease-based exclusive processing to ensure events are processed exactly once, even in distributed environments with multiple consumer instances.
+
+#### Event Lease Management Flow
+
+```mermaid
+sequenceDiagram
+    participant ES as External System
+    participant API as Fulcrum Core API
+    participant DB as Database
+    
+    ES->>API: POST /api/v1/events/lease
+    Note right of ES: Acquire lease and fetch events
+    
+    API->>DB: Find or create EventSubscription
+    API->>DB: Check existing lease
+    
+    alt No active lease
+        API->>DB: Acquire lease (update leaseExpiresAt)
+        API->>DB: Fetch events from lastProcessedSequence
+        API-->>ES: 200 OK with events and lease info
+        
+        Note over ES: Process events...
+        
+        ES->>API: POST /api/v1/events/ack
+        Note right of ES: Acknowledge processed events
+        API->>DB: Validate lease ownership
+        API->>DB: Update lastProcessedSequence
+        API-->>ES: 200 OK
+        
+    else Active lease held by different instance
+        API-->>ES: 409 Conflict
+        Note right of ES: Retry after lease expires
+        
+    else Active lease held by same instance
+        API->>DB: Extend lease
+        API->>DB: Fetch new events
+        API-->>ES: 200 OK with events
+    end
+```
+
+#### Key Features
+
+1. **Ordered Processing**: Events are fetched in chronological order using sequence numbers
+2. **Exclusive Leases**: Only one instance of a subscriber can hold a lease at a time
+3. **Automatic Renewal**: Leases can be renewed by making subsequent lease API calls
+4. **Progress Tracking**: Each subscription tracks the last processed sequence number
+5. **Conflict Resolution**: Returns HTTP 409 when lease is held by another instance
+6. **Configurable Duration**: Lease duration can be customized (default: 5 minutes, max: 1 hour)
+7. **Separate Acknowledgement**: Events are acknowledged separately from lease acquisition (Option B)
+
+#### API Endpoints
+
+The Event Consumption API provides two main endpoints:
+
+- `POST /api/v1/events/lease` - Acquire or renew a lease and fetch events
+- `POST /api/v1/events/ack` - Acknowledge processed events and update progress
+
+For detailed API specifications, request/response schemas, and authentication requirements, see [openapi.yaml](openapi.yaml).
 
 ### High-Availability Deployment
 

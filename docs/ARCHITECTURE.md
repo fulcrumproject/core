@@ -38,117 +38,41 @@ The architecture adheres to several key design principles:
 The API layer is responsible for handling HTTP requests and providing a RESTful interface to clients. It:
 
 - Defines routes and endpoints for all operations
-- Converts between JSON/HTTP and domain objects
+- Converts between JSON/HTTP and domain objects using commons package types
 - Implements authentication and authorization through middleware
 - Manages pagination and filtering of results
 - Implements error handling and response formatting
+- The API layer uses a comprehensive middleware pattern that separates cross-cutting concerns from business logic
 
-#### 3.1.1 Middleware Architecture
+#### 3.1.1 Authentication and Authorization
 
-The API layer uses a comprehensive middleware pattern that separates cross-cutting concerns from business logic:
+The system implements a comprehensive authentication and authorization framework:
 
-**Authentication Middleware** ([`Auth`](internal/api/middlewares.go:23))
-- Extracts and validates Bearer tokens from requests
-- Adds authenticated identity to request context
-- Rejects unauthenticated requests
-
-**Authorization Middleware Pattern**
-The system uses a flexible authorization middleware pattern based on [`AuthzFromExtractor`](internal/api/middlewares.go:120):
-
-```go
-// Base authorization middleware using scope extractors
-AuthzFromExtractor(subject, action, authorizer, scopeExtractor)
-
-// Specialized authorization middlewares:
-AuthzSimple(subject, action, authorizer)              // No resource scope
-AuthzFromID(subject, action, authorizer, querier)     // Resource ID-based
-AuthzFromBody[T](subject, action, authorizer)         // Request body-based
-```
-
-**Request Processing Middleware**
-- [`DecodeBody[T]()`](internal/api/middlewares.go:73): Type-safe request body decoding
-- [`ID`](internal/api/middlewares.go:44): UUID extraction and validation from URL paths
-- [`RequireAgentIdentity()`](internal/api/middlewares.go:238): Agent-specific authentication
+- **Token-based Authentication**: Uses secure tokens for API access with different roles (fulcrum_admin, participant, agent)
+- **Role-based Authorization**: Different access levels based on user roles and resource ownership
+- **Middleware Chain**: Authentication and authorization handled through middleware before reaching business logic
+- **Resource Scoping**: Authorization decisions based on resource ownership and participant relationships
+- **Commons Integration**: Uses shared authentication types and utilities from the commons package
 
 #### 3.1.2 Handler Pattern
 
-Each entity has its own handler following a consistent pattern:
+Each entity has its own handler following a consistent pattern with:
 
-```go
-// Handler structure
-type EntityHandler struct {
-    querier   domain.EntityQuerier
-    commander domain.EntityCommander
-    authz     domain.Authorizer
-}
+- Handler structure containing querier, commander, and authorization components
+- Routes with middleware chains for cross-cutting concerns
+- Simple authorization for list operations
+- Body decoding and authorization for create operations
+- Resource-specific routes with ID extraction
+- Consistent patterns for GET, POST, and PATCH operations
 
-// Routes with middleware chain
-func (h *EntityHandler) Routes() func(r chi.Router) {
-    return func(r chi.Router) {
-        // List with simple authorization
-        r.With(
-            AuthzSimple(domain.SubjectEntity, domain.ActionRead, h.authz),
-        ).Get("/", h.handleList)
-        
-        // Create with body decoding and authorization
-        r.With(
-            DecodeBody[CreateEntityRequest](),
-            AuthzFromBody[CreateEntityRequest](domain.SubjectEntity, domain.ActionCreate, h.authz),
-        ).Post("/", h.handleCreate)
-        
-        // Resource-specific routes
-        r.Group(func(r chi.Router) {
-            r.Use(ID) // Extract UUID for all sub-routes
-            
-            r.With(
-                AuthzFromID(domain.SubjectEntity, domain.ActionRead, h.authz, h.querier),
-            ).Get("/{id}", h.handleGet)
-            
-            r.With(
-                DecodeBody[UpdateEntityRequest](),
-                AuthzFromID(domain.SubjectEntity, domain.ActionUpdate, h.authz, h.querier),
-            ).Patch("/{id}", h.handleUpdate)
-        })
-    }
-}
-```
+#### 3.1.3 Pure Handler Methods
 
-#### 3.1.3 Request Types
+Handler methods focus solely on business logic, with authentication/authorization handled by middleware. They follow a pattern of:
 
-Request types implement the [`AuthTargetScopeProvider`](internal/api/middlewares.go:203) interface for authorization:
-
-```go
-type CreateEntityRequest struct {
-    Name       string      `json:"name"`
-    ProviderID domain.UUID `json:"providerId"`
-}
-
-func (r CreateEntityRequest) AuthTargetScope() (*domain.AuthTargetScope, error) {
-    return &domain.AuthTargetScope{ProviderID: &r.ProviderID}, nil
-}
-```
-
-#### 3.1.4 Pure Handler Methods
-
-Handler methods focus solely on business logic, with authentication/authorization handled by middleware:
-
-```go
-func (h *EntityHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-    // Get pre-validated request body
-    req := MustGetBody[CreateEntityRequest](r.Context())
-    
-    // Execute business logic
-    entity, err := h.commander.Create(r.Context(), req.Name, req.ProviderID)
-    if err != nil {
-        render.Render(w, r, ErrFromDomain(err))
-        return
-    }
-    
-    // Return response
-    render.Status(r, http.StatusCreated)
-    render.JSON(w, r, entity)
-}
-```
+- Getting pre-validated request data from context
+- Executing business logic through commanders
+- Handling domain errors appropriately
+- Returning structured responses
 
 ### 3.2 Domain Layer
 
@@ -160,72 +84,15 @@ The domain layer contains the core business logic, entities, and interfaces. It:
 - Implements domain services for complex operations
 - Uses value objects for domain concepts
 
-Domain entities use a rich domain model approach with behaviors encapsulated in the entities themselves:
+Domain entities use a rich domain model approach with behaviors encapsulated in the entities themselves, including state transitions and update operations.
 
-```go
-// Example domain entity with behavior
-type Service struct {
-    ID           UUID
-    Name         string
-    CurrentStatus ServiceStatus
-    TargetStatus  *ServiceStatus
-    // Other properties...
-    
-    // Domain behavior
-    Transition(targetStatus ServiceStatus) (*Action, error)
-    Update(name *string, props *Properties) (bool, *Action, error)
-}
-```
+The domain layer also defines `Commander` interfaces that encapsulate complex operations involving multiple entities. These commanders:
 
-The domain layer also defines `Commander` interfaces that encapsulate complex operations involving multiple entities:
-
-```go
-// Service command interface
-type ServiceCommander interface {
-    Create(ctx context.Context, params...) (*Service, error)
-    Update(ctx context.Context, id UUID, params...) (*Service, error)
-    Transition(ctx context.Context, id UUID, target ServiceStatus) (*Service, error)
-    // Other operations...
-}
-
-// Commander implementation with transaction handling
-type serviceCommander struct {
-    store Store
-    auditCommander AuditCommander
-}
-
-func (c *serviceCommander) Create(ctx context.Context, params...) (*Service, error) {
-    // Create the entity
-    entity := NewService(...)
-    
-    // Use store to handle transaction
-    err := c.store.Atomic(ctx, func(s Store) error {
-        // Multiple operations within a single transaction
-        if err := s.ServiceRepo().Create(ctx, entity); err != nil {
-            return err
-        }
-        
-        // Create a related job
-        job := NewJob(...)
-        if err := s.JobRepo().Create(ctx, job); err != nil {
-            return err
-        }
-        
-        // Create audit entry
-        if _, err := c.auditCommander.Create(ctx, ...); err != nil {
-            return err
-        }
-        
-        return nil
-    })
-    
-    if err != nil {
-        return nil, err
-    }
-    
-    return entity, nil
-}
-```
+- Define interfaces for create, update, and transition operations
+- Implement transaction handling through the store interface
+- Coordinate multiple repository operations atomically
+- Create related entities (like jobs and events) within the same transaction
+- Ensure data consistency across entity boundaries
 
 ### 3.2.1 Transaction Management in Commands
 
@@ -234,12 +101,12 @@ The system implements a robust approach to transaction management through the St
 1. **Store Interface**: Provides an `Atomic` method that executes a function within a transaction
 2. **Transaction Boundaries**: Each command operation defines clear transaction boundaries
 3. **All-or-Nothing Operations**: Multiple repository operations are executed atomically
-4. **Consistent Audit Trail**: Audit entries are created within the same transaction as the data changes
+4. **Consistent Event Log**: Events are created within the same transaction as the data changes
 
 This pattern ensures:
 - Data consistency across related entities
 - Proper error handling with automatic rollback
-- Audit records that perfectly match actual data changes
+- Events that perfectly match actual data changes
 - Clean, reusable transaction logic that isn't tied to specific repositories
 
 The `Atomic` method abstracts the transaction mechanism, allowing the domain layer to define transaction boundaries without coupling to database-specific transaction implementations.
@@ -262,32 +129,11 @@ The layer employs a Command-Query Responsibility Separation (CQRS) inspired appr
 
 The database layer uses a repository pattern with a store interface managing transaction boundaries:
 
-```go
-// Store interface
-type Store interface {
-    Atomic(ctx context.Context, fn func(Store) error) error
-    EntityRepo() EntityRepository
-    // Other repository getters...
-}
-
-// Repository implementation pattern
-type EntityRepository interface {
-    EntityQuerier // Embeds the querier interface
-    
-    // Command operations
-    Create(ctx context.Context, entity *Entity) error
-    Save(ctx context.Context, entity *Entity) error
-    Delete(ctx context.Context, id UUID) error
-}
-
-// Querier implementation pattern (read-only operations)
-type EntityQuerier interface {
-    FindByID(ctx context.Context, id UUID) (*Entity, error)
-    List(ctx context.Context, filter Filter) ([]*Entity, error)
-    Exists(ctx context.Context, id UUID) (bool, error)
-    // Other read-only methods...
-}
-```
+- **Store interface**: Provides atomic transaction handling and repository access
+- **Repository interfaces**: Embed querier interfaces and add command operations
+- **Querier interfaces**: Define read-only operations for query separation
+- **Command operations**: Handle create, save, and delete operations
+- **Transaction management**: Ensures atomic operations across multiple repositories
 
 ### 3.4 Application Layer
 
@@ -307,12 +153,12 @@ The system follows a modular directory structure that reinforces the separation 
 ├── cmd/             # Application entry points
 │   └── server/      # Main application entry point
 ├── docs/            # Documentation
-├── internal/        # Private application and library code
+├── pkg/             # Application and library code
 │   ├── api/         # HTTP handlers and routes
+│   ├── authz/       # Authorization rules and policies
 │   ├── config/      # Configuration handling
 │   ├── database/    # Database implementations of repositories
-│   ├── domain/      # Domain models and repository interfaces
-│   └── logging/     # Logging utilities
+│   └── domain/      # Domain models and repository interfaces
 └── test/            # Test files
     └── rest/        # HTTP test files for API testing
 ```
@@ -326,20 +172,27 @@ The `cmd` directory contains the application entry points. Each subdirectory is 
 - `server/`: The main API server application
 - Additional executables might include CLI tools, migration utilities, etc.
 
-#### internal/
+#### pkg/
 
-The `internal` directory contains all private application code, organized by architectural layer:
+The `pkg` directory contains all private application code, organized by architectural layer:
 
 - `api/`: Contains all HTTP handlers, route definitions, middleware, and request/response models
   - Handler files are typically organized by domain entity
-  - Middleware for authentication, logging, error handling
+  - Middleware for authentication, authorization, and error handling
   - Response formatting utilities
+  - Uses commons package for shared types and utilities
+
+- `authz/`: Contains authorization rules and policies
+  - Role-based access control implementation
+  - Resource-specific authorization rules
+  - Authorization middleware and extractors
 
 - `domain/`: Contains the core business logic and entities
   - Entity definitions with behavior methods
   - Repository interfaces
   - Service/commander interfaces and implementations
   - Value objects and enums
+  - Uses commons package for shared domain types
 
 - `database/`: Contains repository implementations
   - ORM-specific repository implementations
@@ -351,11 +204,6 @@ The `internal` directory contains all private application code, organized by arc
   - Environment variable processing
   - Configuration struct definitions
   - Defaults and validation
-
-- `logging/`: Contains logging utilities
-  - Log formatting
-  - Log level management
-  - Context-aware logging helpers
 
 #### test/
 
@@ -370,14 +218,17 @@ The package dependencies follow the dependency rule of clean architecture, with 
 
 ```
 api → domain ← database
-       ↑
-     config
+  ↓     ↑        ↑
+authz  config  commons
 ```
 
 - `api` depends on `domain` to access entities and repository interfaces
+- `api` depends on `authz` for authorization rules and policies
 - `database` depends on `domain` to implement repository interfaces
+- `authz` depends on `domain` for entity-specific authorization
 - `config` is used by multiple packages but doesn't depend on other packages
-- `domain` doesn't depend on any other package
+- `domain` doesn't depend on any other internal package
+- All layers use the `commons` package for shared types and utilities
 
 ## 5. Testing Strategies
 

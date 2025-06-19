@@ -23,8 +23,6 @@ Fulcrum is currently under active development. New agents and features are being
   - [Design Documentation](#design-documentation)
   - [Troubleshooting](#troubleshooting)
     - [Common Issues](#common-issues)
-  - [License](LICENSE.md)
-  - [Vision and support](VISIONANDSUPPORT.md)
 
 ## Features
 
@@ -33,7 +31,7 @@ Fulcrum is currently under active development. New agents and features are being
 - Provision and monitor various service types (VMs, containers, Kubernetes clusters, etc.)
 - Organize services into logical groups for easier management
 - Collect and analyze metrics from agents and services
-- Maintain a comprehensive audit trail of all system operations
+- Maintain a comprehensive log of all system events and operations
 - Coordinate service operations with agents through a robust job queue system
 
 ## Getting Started
@@ -65,6 +63,18 @@ FULCRUM_DB_LOG_FORMAT=text
 
 # Server Configuration
 FULCRUM_PORT=3000
+
+# Authentication Configuration
+# Comma-separated list of enabled authenticators (e.g., "token", "oauth", "token,oauth")
+FULCRUM_AUTHENTICATORS=token,oauth
+
+# OAuth/Keycloak Configuration (only required if "oauth" authenticator is enabled)
+FULCRUM_OAUTH_KEYCLOAK_URL=http://localhost:8080
+FULCRUM_OAUTH_REALM=fulcrum
+FULCRUM_OAUTH_CLIENT_ID=fulcrum-api
+FULCRUM_OAUTH_CLIENT_SECRET=your_client_secret
+FULCRUM_OAUTH_JWKS_CACHE_TTL=3600
+FULCRUM_OAUTH_VALIDATE_ISSUER=true
 
 # Logging Configuration
 FULCRUM_LOG_FORMAT=text
@@ -142,7 +152,7 @@ fulcrum-core/
 ├── cmd/             # Application entry points
 │   └── fulcrum/     # Main application entry point
 ├── docs/            # Documentation
-├── internal/        # Private application and library code
+├── pkg/        # Private application and library code
 │   ├── api/         # HTTP handlers and routes
 │   ├── config/      # Configuration handling
 │   ├── database/    # Database implementations of repositories

@@ -7,17 +7,23 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 
-	"fulcrumproject.org/core/internal/api"
-	"fulcrumproject.org/core/internal/config"
-	"fulcrumproject.org/core/internal/database"
-	"fulcrumproject.org/core/internal/domain"
-	"fulcrumproject.org/core/internal/logging"
+	"fulcrumproject.org/core/pkg/api"
+	"fulcrumproject.org/core/pkg/authz"
+	"fulcrumproject.org/core/pkg/config"
+	"fulcrumproject.org/core/pkg/database"
+	"fulcrumproject.org/core/pkg/domain"
+	"github.com/fulcrumproject/commons/auth"
+	cb "github.com/fulcrumproject/commons/config"
+	"github.com/fulcrumproject/commons/keycloak"
+	"github.com/fulcrumproject/commons/logging"
+	"github.com/fulcrumproject/commons/middlewares"
 )
 
 func main() {
@@ -25,15 +31,24 @@ func main() {
 	configPath := flag.String("config", "", "Path to configuration file")
 	flag.Parse()
 
-	// Load configuration
-	cfg, err := config.Builder().LoadFile(configPath).WithEnv().Build()
+	opts := []cb.BuilderOption[*config.Config]{
+		cb.WithEnvPrefix[*config.Config](config.EnvPrefix),
+		cb.WithEnvFiles[*config.Config](".env"),
+	}
+	cb := cb.New(&config.Default, opts...).WithEnv()
+
+	if configPath != nil && *configPath != "" {
+		cb.LoadFile(configPath)
+	}
+
+	cfg, err := cb.Build()
 	if err != nil {
 		slog.Error("Invalid configuration", "error", err)
 		os.Exit(1)
 	}
 
 	// Setup structured logger
-	logger := logging.NewLogger(cfg)
+	logger := logging.NewLogger(&cfg.LogConfig)
 	slog.SetDefault(logger)
 
 	// Initialize database
@@ -52,34 +67,60 @@ func main() {
 	store := database.NewGormStore(db)
 
 	// Initialize commanders
-	// Initialize audit commander first since it's needed by other commanders
-	auditEntryCmd := domain.NewAuditEntryCommander(store)
-
-	serviceCmd := domain.NewServiceCommander(store, auditEntryCmd)
-	serviceGroupCmd := domain.NewServiceGroupCommander(store, auditEntryCmd)
-	participantCmd := domain.NewParticipantCommander(store, auditEntryCmd)
-	jobCmd := domain.NewJobCommander(store, auditEntryCmd)
+	serviceCmd := domain.NewServiceCommander(store)
+	serviceGroupCmd := domain.NewServiceGroupCommander(store)
+	participantCmd := domain.NewParticipantCommander(store)
+	jobCmd := domain.NewJobCommander(store)
 	metricEntryCmd := domain.NewMetricEntryCommander(store)
-	metricTypeCmd := domain.NewMetricTypeCommander(store, auditEntryCmd)
-	agentCmd := domain.NewAgentCommander(store, auditEntryCmd)
-	tokenCmd := domain.NewTokenCommander(store, auditEntryCmd)
+	metricTypeCmd := domain.NewMetricTypeCommander(store)
+	agentCmd := domain.NewAgentCommander(store)
+	tokenCmd := domain.NewTokenCommander(store)
 
-	// Initialize auth and authorizer
-	auth := database.NewTokenAuthenticator(store)
-	authz := domain.NewDefaultRuleAuthorizer()
+	// Initialize authenticators
+	authenticators := []auth.Authenticator{}
+
+	for _, authType := range cfg.Authenticators {
+		switch strings.TrimSpace(authType) {
+		case "token":
+			tokenAuth := database.NewTokenAuthenticator(store)
+			authenticators = append(authenticators, tokenAuth)
+			slog.Info("Token authentication enabled")
+		case "oauth":
+			ctx := context.Background()
+			oauthAuth, err := keycloak.NewAuthenticator(ctx, &cfg.OAuthConfig)
+			if err != nil {
+				slog.Error("Failed to initialize OAuth authenticator", "error", err)
+				os.Exit(1)
+			}
+			authenticators = append(authenticators, oauthAuth)
+			slog.Info("OAuth authentication enabled", "issuer", cfg.OAuthConfig.GetIssuer())
+		default:
+			slog.Warn("Unknown authenticator type in config", "type", authType)
+		}
+	}
+
+	if len(authenticators) == 0 {
+		slog.Warn("No authenticators enabled in configuration. API will be unprotected.")
+		// Optionally, you might want to exit or use a no-op authenticator
+	}
+
+	ath := auth.NewCompositeAuthenticator(authenticators...)
+
+	athz := auth.NewRuleBasedAuthorizer(authz.Rules)
 
 	// Initialize handlers
-	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo(), authz)
-	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), authz)
-	participantHandler := api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, authz)
-	agentHandler := api.NewAgentHandler(store.AgentRepo(), agentCmd, authz)
-	serviceGroupHandler := api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, authz)
-	serviceHandler := api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, authz)
-	jobHandler := api.NewJobHandler(store.JobRepo(), jobCmd, authz)
-	metricTypeHandler := api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, authz)
-	metricEntryHandler := api.NewMetricEntryHandler(store.MetricEntryRepo(), store.ServiceRepo(), metricEntryCmd, authz)
-	auditEntryHandler := api.NewAuditEntryHandler(store.AuditEntryRepo(), auditEntryCmd, authz)
-	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), authz)
+	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo(), athz)
+	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), athz)
+	participantHandler := api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz)
+	agentHandler := api.NewAgentHandler(store.AgentRepo(), agentCmd, athz)
+	serviceGroupHandler := api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz)
+	serviceHandler := api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, athz)
+	jobHandler := api.NewJobHandler(store.JobRepo(), jobCmd, athz)
+	metricTypeHandler := api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, athz)
+	metricEntryHandler := api.NewMetricEntryHandler(store.MetricEntryRepo(), store.ServiceRepo(), metricEntryCmd, athz)
+	eventSubscriptionCmd := domain.NewEventSubscriptionCommander(store)
+	eventHandler := api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz)
+	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -93,7 +134,7 @@ func main() {
 		render.SetContentType(render.ContentTypeJSON),
 	)
 
-	authMiddleware := api.Auth(auth)
+	authMiddleware := middlewares.Auth(ath)
 
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
@@ -106,7 +147,7 @@ func main() {
 		r.Route("/services", serviceHandler.Routes())
 		r.Route("/metric-types", metricTypeHandler.Routes())
 		r.Route("/metric-entries", metricEntryHandler.Routes())
-		r.Route("/audit-entries", auditEntryHandler.Routes())
+		r.Route("/events", eventHandler.Routes())
 		r.Route("/jobs", jobHandler.Routes())
 		r.Route("/tokens", tokenHandler.Routes())
 	})

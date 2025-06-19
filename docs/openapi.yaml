@@ -21,8 +21,8 @@ tags:
     description: Job queue and processing
   - name: Metrics
     description: Metrics collection and management
-  - name: Audit
-    description: Audit logging
+  - name: Event
+    description: Event logging
   - name: Tokens
     description: Authentication token management
 
@@ -43,12 +43,12 @@ components:
         implicit:
           authorizationUrl: https://api.fulcrum.testudosrl.dev/oauth/authorize
           scopes:
-            fulcrum_admin: System administrator with unrestricted access
+            admin: System administrator with unrestricted access
             participant: Participant administrator that can act as both provider and consumer
             agent: Agent role with access to specific operations
 
   x-auth-roles:
-    fulcrum_admin:
+    admin:
       description: System administrator with unrestricted access
     participant:
       description: Participant administrator that can act as both provider and consumer
@@ -84,25 +84,15 @@ components:
           description: Additional error details
           example: "The field 'name' is required"
 
-    UUID:
+    properties.UUID:
       type: string
       format: uuid
       example: "123e4567-e89b-12d3-a456-426614174000"
 
-    Attributes:
-      type: object
-      additionalProperties:
-        type: array
-        items:
-          type: string
-      example:
-        region: ["us-east-1"]
-        capabilities: ["compute", "storage"]
-
     JSONObject:
       type: object
       additionalProperties: true
-      description: A generic JSON object
+      description: A generic properties.JSON object
 
     # Participant schemas
     ParticipantRequest:
@@ -116,27 +106,17 @@ components:
           example: "Test Participant"
         status:
           $ref: "#/components/schemas/ParticipantStatus"
-        countryCode:
-          type: string
-          example: "US"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
 
     ParticipantResponse:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: "Test Participant"
         status:
           $ref: "#/components/schemas/ParticipantStatus"
-        countryCode:
-          type: string
-          example: "US"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         createdAt:
           type: string
           format: date-time
@@ -151,7 +131,7 @@ components:
     # Token schemas
     AuthRole:
       type: string
-      enum: [fulcrum_admin, participant, agent]
+      enum: [admin, participant, agent]
       description: Access role for the token
 
     TokenRequest:
@@ -171,14 +151,14 @@ components:
           format: date-time
           example: "2025-12-31T23:59:59Z"
         scopeId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
           description: "Required for participant and agent roles. For participant role - the participant ID; for agent role - the agent ID"
 
     TokenResponse:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: "API Access Token"
@@ -188,13 +168,13 @@ components:
           type: string
           format: date-time
         scopeId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
           description: "For participant role - the participant ID; for agent role - the agent ID"
         agentId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
           description: "For agent role tokens only - the agent ID"
         participantId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         createdAt:
           type: string
           format: date-time
@@ -224,39 +204,32 @@ components:
           example: "aws-agent-01"
         status:
           $ref: "#/components/schemas/AgentStatus"
-        countryCode:
-          type: string
-          example: "US"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         properties:
           $ref: "#/components/schemas/JSONObject"
         participantId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         agentTypeId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
 
     AgentResponse:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: "aws-agent-01"
         status:
           $ref: "#/components/schemas/AgentStatus"
-        countryCode:
-          type: string
-          example: "US"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
-        properties:
-          $ref: "#/components/schemas/JSONObject"
-        participantId:
-          $ref: "#/components/schemas/UUID"
+        providerId:
+          $ref: "#/components/schemas/properties.UUID"
         agentTypeId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["gpu", "high-memory", "ssd"]
         participant:
           $ref: "#/components/schemas/ParticipantResponse"
         agentType:
@@ -291,10 +264,15 @@ components:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: "Participant VM Agent"
+        serviceTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceTypeResponse"
+          description: "Service types that this agent type can provide"
         createdAt:
           type: string
           format: date-time
@@ -323,40 +301,38 @@ components:
       type: object
       required:
         - name
-        - status
-        - agentId
         - serviceTypeId
+        - groupId
       properties:
         name:
           type: string
           example: "web-server-01"
-        status:
-          $ref: "#/components/schemas/ServiceStatus"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         properties:
           $ref: "#/components/schemas/JSONObject"
-        resources:
-          $ref: "#/components/schemas/JSONObject"
+        agentTags:
+          type: array
+          items:
+            type: string
+          example: ["gpu", "high-memory"]
+          description: "Tags used for agent discovery when agentId is not specified"
         agentId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
+          description: "Specific agent ID (optional - if not provided, agent discovery will use agentTags)"
         serviceTypeId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         groupId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
 
     ServiceResponse:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: "web-server-01"
         currentStatus:
           $ref: "#/components/schemas/ServiceStatus"
-        attributes:
-          $ref: "#/components/schemas/Attributes"
         targetStatus:
           $ref: "#/components/schemas/ServiceStatus"
         currentProperties:
@@ -376,13 +352,15 @@ components:
         externalId:
           type: string
         agentId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         serviceTypeId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         groupId:
-          $ref: "#/components/schemas/UUID"
-        consumerParticipantId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
+        providerId:
+          $ref: "#/components/schemas/properties.UUID"
+        consumerId:
+          $ref: "#/components/schemas/properties.UUID"
         agent:
           $ref: "#/components/schemas/AgentResponse"
         serviceType:
@@ -414,12 +392,12 @@ components:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: "VM"
-        resourceDefinitions:
-          $ref: "#/components/schemas/JSONObject"
+        propertySchema:
+          $ref: "#/components/schemas/PropertySchema"
         createdAt:
           type: string
           format: date-time
@@ -432,16 +410,20 @@ components:
       type: object
       required:
         - name
+        - consumerId
       properties:
         name:
           type: string
           example: "Web Servers"
+        consumerId:
+          $ref: "#/components/schemas/properties.UUID"
+          description: "ID of the consumer participant that owns this service group"
 
     ServiceGroupResponse:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: "Web Servers"
@@ -476,15 +458,15 @@ components:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         action:
           $ref: "#/components/schemas/ServiceAction" # Use the common ServiceAction enum
         status:
           $ref: "#/components/schemas/JobStatus"
         agentId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         serviceId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         priority:
           type: integer
           example: 1
@@ -550,7 +532,7 @@ components:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         entityType:
           $ref: "#/components/schemas/MetricEntityType"
         name:
@@ -574,7 +556,7 @@ components:
         - required: ["externalId"]
       properties:
         serviceId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
           description: "ID of the service associated with this metric"
         externalId:
           type: string
@@ -596,11 +578,11 @@ components:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         agentId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         serviceId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
         resourceId:
           type: string
           example: "cpu-1"
@@ -612,16 +594,16 @@ components:
           type: string
           format: date-time
 
-    # Audit schemas
-    AuditEntryResponse:
+    # Event schemas
+    EventResponse:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
-        authorityType:
+          $ref: "#/components/schemas/properties.UUID"
+        initiatorType:
           type: string
           example: "user"
-        authorityId:
+        initiatorId:
           type: string
           example: "admin"
         type:
@@ -632,6 +614,84 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    EventLeaseRequest:
+      type: object
+      required:
+        - subscriberId
+        - instanceId
+      properties:
+        subscriberId:
+          type: string
+          description: Unique identifier for the subscriber system
+          example: "external-system"
+        instanceId:
+          type: string
+          description: Unique identifier for the consuming instance
+          example: "instance-1"
+        leaseDurationSeconds:
+          type: integer
+          description: Lease duration in seconds (default 300, max 3600, min 30)
+          minimum: 30
+          maximum: 3600
+          default: 300
+          example: 300
+        limit:
+          type: integer
+          description: Maximum number of events to fetch (default 100, max 1000, min 1)
+          minimum: 1
+          maximum: 1000
+          default: 100
+          example: 100
+
+    EventLeaseResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventResponse"
+          description: Array of events fetched in chronological order
+        leaseExpiresAt:
+          type: string
+          format: date-time
+          description: When the current lease expires
+        lastEventSequenceProcessed:
+          type: integer
+          format: int64
+          description: Last event sequence number processed by this subscriber
+          example: 150
+
+    EventAckRequest:
+      type: object
+      required:
+        - subscriberId
+        - instanceId
+        - lastEventSequenceProcessed
+      properties:
+        subscriberId:
+          type: string
+          description: Unique identifier for the subscriber system
+          example: "external-system"
+        instanceId:
+          type: string
+          description: Unique identifier for the consuming instance
+          example: "instance-1"
+        lastEventSequenceProcessed:
+          type: integer
+          format: int64
+          description: Sequence number of the last event successfully processed
+          minimum: 1
+          example: 150
+
+    EventAckResponse:
+      type: object
+      properties:
+        lastEventSequenceProcessed:
+          type: integer
+          format: int64
+          description: Updated last event sequence processed
+          example: 150
 
     PageResponse:
       type: object
@@ -649,6 +709,130 @@ components:
         page:
           type: integer
 
+    PropertySchema:
+      type: object
+      description: properties.JSON schema defining validation rules for service properties
+      additionalProperties:
+        $ref: "#/components/schemas/PropertyDefinition"
+
+    PropertyDefinition:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [string, integer, number, boolean, object, array]
+          description: The data type of the property
+        label:
+          type: string
+          description: Human-readable label for the property
+        required:
+          type: boolean
+          description: Whether the property is required
+          default: false
+        default:
+          description: Default value for the property
+        validators:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidatorDefinition"
+          description: Array of validation rules
+        properties:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/PropertyDefinition"
+          description: Nested properties for object types
+        items:
+          $ref: "#/components/schemas/PropertyDefinition"
+          description: Schema for array items
+
+    ValidatorDefinition:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          enum:
+            [
+              minLength,
+              maxLength,
+              pattern,
+              enum,
+              min,
+              max,
+              minItems,
+              maxItems,
+              uniqueItems,
+            ]
+          description: Type of validator
+        value:
+          description: Value for the validator (type depends on validator type)
+
+    ValidatePropertiesRequest:
+      type: object
+      required:
+        - properties
+      properties:
+        properties:
+          type: object
+          description: Properties to validate against the schema
+          additionalProperties: true
+
+    ValidatePropertiesResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          description: Whether the properties are valid
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationError"
+          description: Array of validation errors (empty if valid)
+
+    ValidationError:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Path to the property that failed validation
+        message:
+          type: string
+          description: Error message describing the validation failure
+
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
 paths:
   #
   # Participant endpoints
@@ -660,7 +844,7 @@ paths:
         - Participants
       description: Retrieves a paginated list of participants
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all participants
         - role: participant
           permission: only its own participant
@@ -697,7 +881,7 @@ paths:
         - Participants
       description: Creates a new participant
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: not authorized
@@ -729,14 +913,14 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     get:
       summary: Get a participant
       tags:
         - Participants
       description: Retrieves a specific participant by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all participants
         - role: participant
           permission: its own participant
@@ -761,7 +945,7 @@ paths:
         - Participants
       description: Updates an existing participant
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: its own participant
@@ -792,7 +976,7 @@ paths:
         - Participants
       description: Deletes a participant by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: not authorized
@@ -818,7 +1002,7 @@ paths:
         - Tokens
       description: Retrieves a paginated list of tokens
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all tokens
         - role: participant
           permission: tokens for its participant and associated agents
@@ -855,7 +1039,7 @@ paths:
         - Tokens
       description: Creates a new authentication token. The plain token value is only returned in this response and cannot be retrieved later.
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: for itself and for its agents
@@ -887,14 +1071,14 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     get:
       summary: Get a token
       tags:
         - Tokens
       description: Retrieves a specific token by ID. Note that the plain token value is not returned in this endpoint.
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all tokens
         - role: participant
           permission: its own tokens and those of its agents
@@ -919,7 +1103,7 @@ paths:
         - Tokens
       description: Updates an existing token
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: its own tokens and those of its agents
@@ -941,7 +1125,7 @@ paths:
                   type: string
                   format: date-time
                 scopeId:
-                  $ref: "#/components/schemas/UUID"
+                  $ref: "#/components/schemas/properties.UUID"
       responses:
         "200":
           description: Token updated successfully
@@ -961,7 +1145,7 @@ paths:
         - Tokens
       description: Deletes a token by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: its own tokens and those of its agents
@@ -983,14 +1167,14 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     post:
       summary: Regenerate token value
       tags:
         - Tokens
       description: Regenerates the value for an existing token. The new plain token value is returned in the response and cannot be retrieved later.
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: its own tokens and those of its agents
@@ -1020,7 +1204,7 @@ paths:
         - Agents
       description: Retrieves a paginated list of agents
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all agents
         - role: participant
           permission: agents belonging to its participant
@@ -1057,7 +1241,7 @@ paths:
         - Agents
       description: Creates a new agent and returns the agent data with an authentication token
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: for its participant (when acting as provider)
@@ -1089,14 +1273,14 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     get:
       summary: Get an agent
       tags:
         - Agents
       description: Retrieves a specific agent by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all agents
         - role: participant
           permission: agents belonging to its participant
@@ -1115,13 +1299,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-    put:
+    patch:
       summary: Update an agent
       tags:
         - Agents
       description: Updates an existing agent
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: agents belonging to its participant
@@ -1152,7 +1336,7 @@ paths:
         - Agents
       description: Deletes an agent by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: agents belonging to its participant
@@ -1239,7 +1423,7 @@ paths:
         - Agents
       description: Retrieves a paginated list of agent types
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all agent types
         - role: participant
           permission: all agent types
@@ -1277,14 +1461,14 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     get:
       summary: Get an agent type
       tags:
         - Agents
       description: Retrieves a specific agent type by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all agent types
         - role: participant
           permission: all agent types
@@ -1313,7 +1497,7 @@ paths:
         - Services
       description: Retrieves a paginated list of services
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all services
         - role: participant
           permission: services associated with its participant (as provider or consumer)
@@ -1350,7 +1534,7 @@ paths:
         - Services
       description: Creates a new service
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: when acting as consumer
@@ -1370,11 +1554,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ServiceResponse"
         "400":
-          description: Invalid request
+          description: Invalid request or validation failed
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                oneOf:
+                  - $ref: "#/components/schemas/ErrorResponse"
+                  - $ref: "#/components/schemas/ValidatePropertiesResponse"
 
   /services/{id}:
     parameters:
@@ -1382,14 +1568,14 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     get:
       summary: Get a service
       tags:
         - Services
       description: Retrieves a specific service by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all services
         - role: participant
           permission: services associated with its participant (as provider or consumer)
@@ -1414,7 +1600,7 @@ paths:
         - Services
       description: Updates an existing service
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: services where it is the consumer participant
@@ -1432,18 +1618,16 @@ paths:
                   example: "web-server-01"
                 status:
                   $ref: "#/components/schemas/ServiceStatus"
-                attributes:
-                  $ref: "#/components/schemas/Attributes"
                 properties:
                   $ref: "#/components/schemas/JSONObject"
                 resources:
                   $ref: "#/components/schemas/JSONObject"
                 agentId:
-                  $ref: "#/components/schemas/UUID"
+                  $ref: "#/components/schemas/properties.UUID"
                 serviceTypeId:
-                  $ref: "#/components/schemas/UUID"
+                  $ref: "#/components/schemas/properties.UUID"
                 groupId:
-                  $ref: "#/components/schemas/UUID"
+                  $ref: "#/components/schemas/properties.UUID"
       responses:
         "200":
           description: Service updated successfully
@@ -1451,6 +1635,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ServiceResponse"
+        "400":
+          description: Invalid request or validation failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ErrorResponse"
+                  - $ref: "#/components/schemas/ValidatePropertiesResponse"
         "404":
           description: Service not found
           content:
@@ -1463,7 +1655,7 @@ paths:
         - Services
       description: Deletes a service by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: services where it is the consumer participant
@@ -1485,14 +1677,14 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     post:
       summary: Start a service
       tags:
         - Services
       description: Starts a service by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: services where it is the consumer participant
@@ -1514,14 +1706,14 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     post:
       summary: Stop a service
       tags:
         - Services
       description: Stops a service by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: services where it is the consumer participant
@@ -1543,14 +1735,14 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     post:
       summary: Retry a failed service operation
       tags:
         - Services
       description: Retries the last failed operation on a service
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: always
         - role: participant
           permission: services where it is the consumer participant
@@ -1576,7 +1768,7 @@ paths:
         - Services
       description: Retrieves a paginated list of service types
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all service types
         - role: participant
           permission: all service types
@@ -1614,14 +1806,14 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     get:
       summary: Get a service type
       tags:
         - Services
       description: Retrieves a specific service type by ID
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all service types
         - role: participant
           permission: all service types
@@ -1641,6 +1833,51 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /service-types/{id}/validate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/properties.UUID"
+    post:
+      summary: Validate service properties
+      tags:
+        - Services
+      description: Validates service properties against the service type's property schema
+      x-auth-permissions:
+        - role: admin
+          permission: all service types
+        - role: participant
+          permission: all service types
+        - role: agent
+          permission: all service types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidatePropertiesRequest"
+      responses:
+        "200":
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidatePropertiesResponse"
+        "400":
+          description: Bad request (e.g., service type has no property schema)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Service type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   #
   # Service Group endpoints
   #
@@ -1650,6 +1887,13 @@ paths:
       tags:
         - Services
       description: Retrieves a paginated list of service groups
+      x-auth-permissions:
+        - role: admin
+          permission: all service groups
+        - role: participant
+          permission: service groups belonging to its participant
+        - role: agent
+          permission: not authorized
       parameters:
         - name: page
           in: query
@@ -1680,6 +1924,13 @@ paths:
       tags:
         - Services
       description: Creates a new service group
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: for its participant
+        - role: agent
+          permission: not authorized
       requestBody:
         required: true
         content:
@@ -1706,12 +1957,19 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     get:
       summary: Get a service group
       tags:
         - Services
       description: Retrieves a specific service group by ID
+      x-auth-permissions:
+        - role: admin
+          permission: all service groups
+        - role: participant
+          permission: service groups belonging to its participant
+        - role: agent
+          permission: not authorized
       responses:
         "200":
           description: The service group details
@@ -1730,6 +1988,13 @@ paths:
       tags:
         - Services
       description: Updates an existing service group
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: service groups belonging to its participant
+        - role: agent
+          permission: not authorized
       requestBody:
         required: true
         content:
@@ -1754,6 +2019,13 @@ paths:
       tags:
         - Services
       description: Deletes a service group by ID
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: service groups belonging to its participant
+        - role: agent
+          permission: not authorized
       responses:
         "204":
           description: Service group deleted successfully
@@ -1764,7 +2036,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  #
   # Job endpoints
   #
   /jobs:
@@ -1774,7 +2045,7 @@ paths:
         - Jobs
       description: Retrieves a paginated list of jobs (admin route)
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all jobs
         - role: participant
           permission: jobs related to its participant (as provider via agents or as consumer via services)
@@ -1815,7 +2086,7 @@ paths:
       security:
         - BearerAuth: []
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: not authorized
         - role: participant
           permission: not authorized
@@ -1849,7 +2120,7 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     get:
       summary: Get a job
       tags:
@@ -1875,7 +2146,7 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     post:
       summary: Claim a job
       tags:
@@ -1905,7 +2176,7 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     post:
       summary: Complete a job
       tags:
@@ -1941,7 +2212,7 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     post:
       summary: Fail a job
       tags:
@@ -1981,7 +2252,7 @@ paths:
         - Metrics
       description: Retrieves a paginated list of metric types
       x-auth-permissions:
-        - role: fulcrum_admin
+        - role: admin
           permission: all metric types
         - role: participant
           permission: all metric types
@@ -2017,6 +2288,13 @@ paths:
       tags:
         - Metrics
       description: Creates a new metric type
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: not authorized
+        - role: agent
+          permission: not authorized
       requestBody:
         required: true
         content:
@@ -2043,12 +2321,19 @@ paths:
         in: path
         required: true
         schema:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/properties.UUID"
     get:
       summary: Get a metric type
       tags:
         - Metrics
       description: Retrieves a specific metric type by ID
+      x-auth-permissions:
+        - role: admin
+          permission: all metric types
+        - role: participant
+          permission: all metric types
+        - role: agent
+          permission: all metric types
       responses:
         "200":
           description: The metric type details
@@ -2067,12 +2352,23 @@ paths:
       tags:
         - Metrics
       description: Updates an existing metric type
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: not authorized
+        - role: agent
+          permission: not authorized
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MetricTypeRequest"
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "cpu_usage_updated"
       responses:
         "200":
           description: Metric type updated successfully
@@ -2091,6 +2387,13 @@ paths:
       tags:
         - Metrics
       description: Deletes a metric type by ID
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: not authorized
+        - role: agent
+          permission: not authorized
       responses:
         "204":
           description: Metric type deleted successfully
@@ -2169,19 +2472,19 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   #
-  # Audit Entry endpoints
+  # Event Entry endpoints
   #
-  /audit-entries:
+  /events:
     get:
-      summary: List audit entries
+      summary: List events
       tags:
-        - Audit
-      description: Retrieves a paginated list of audit entries
+        - Event
+      description: Retrieves a paginated list of events
       x-auth-permissions:
-        - role: fulcrum_admin
-          permission: all audit entries
+        - role: admin
+          permission: all events
         - role: participant
-          permission: audit entries related to its participant
+          permission: events related to its participant
         - role: agent
           permission: not authorized
       parameters:
@@ -2197,7 +2500,7 @@ paths:
             default: 20
       responses:
         "200":
-          description: A paginated list of audit entries
+          description: A paginated list of events
           content:
             application/json:
               schema:
@@ -2208,4 +2511,94 @@ paths:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/AuditEntryResponse"
+                          $ref: "#/components/schemas/EventResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /events/lease:
+    post:
+      summary: Acquire event lease and fetch events
+      tags:
+        - Event
+      description: Acquire or renew a lease for event processing and fetch events in chronological order
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: not authorized
+        - role: agent
+          permission: not authorized
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventLeaseRequest"
+      responses:
+        "200":
+          description: Lease acquired successfully with events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventLeaseResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Lease conflict - held by another instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /events/ack:
+    post:
+      summary: Acknowledge processed events
+      tags:
+        - Event
+      description: Acknowledge processed events and update progress (Option B - does not renew lease)
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: not authorized
+        - role: agent
+          permission: not authorized
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventAckRequest"
+      responses:
+        "200":
+          description: Events acknowledged successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventAckResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Acknowledgement conflict - lease not held or sequence regression
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
