@@ -2,7 +2,7 @@
 
 ## Custom Attributes Configuration
 
-The automatic configuration of custom attributes (participant_id and agent_id) through the realm JSON configuration is not working as expected. These attributes need to be created manually in the Keycloak admin console.
+The automatic configuration of custom attributes (participant_id and agent_id) through the realm properties.JSON configuration is not working as expected. These attributes need to be created manually in the Keycloak admin console.
 
 ### Steps to Create Custom Attributes:
 
@@ -15,7 +15,7 @@ The automatic configuration of custom attributes (participant_id and agent_id) t
 
 These attributes are required for proper user identification and authorization in the Fulcrum system. The attributes are used in the protocol mappers to include the values in the JWT tokens.
 
-Note: While the protocol mappers are correctly configured in the realm JSON, the underlying attributes must exist before the mappers can function properly.
+Note: While the protocol mappers are correctly configured in the realm properties.JSON, the underlying attributes must exist before the mappers can function properly.
 
 ## Not working configuration
 

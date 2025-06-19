@@ -2,11 +2,11 @@
 
 ## Overview
 
-The ServiceType Property Schema is a flexible JSON-based validation system that allows administrators to define custom validation rules for service properties. This schema ensures data integrity and consistency for service configurations while providing dynamic validation without requiring application recompilation.
+The ServiceType Property Schema is a flexible properties.JSON-based validation system that allows administrators to define custom validation rules for service properties. This schema ensures data integrity and consistency for service configurations while providing dynamic validation without requiring application recompilation.
 
 ## Schema Structure
 
-Each ServiceType can have an optional `propertySchema` field that defines validation rules for service properties. The schema is a JSON object where each key represents a property name, and its value defines the validation rules for that property.
+Each ServiceType can have an optional `propertySchema` field that defines validation rules for service properties. The schema is a properties.JSON object where each key represents a property name, and its value defines the validation rules for that property.
 
 ### Basic Property Definition
 

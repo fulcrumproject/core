@@ -129,7 +129,7 @@ classDiagram
 
     namespace Participants {
         class Participant {
-            id : UUID
+            id : properties.UUID
             name : string
             status : enum[Enabled|Disabled]
             createdAt : datetime
@@ -137,7 +137,7 @@ classDiagram
         }
 
         class ServiceType {
-            id : UUID
+            id : properties.UUID
             name : string
             propertySchema : CustomSchema
             createdAt : datetime
@@ -145,14 +145,14 @@ classDiagram
         }
 
         class AgentType {
-            id : UUID
+            id : properties.UUID
             name : string
             createdAt : datetime
             updatedAt : datetime
         }
 
         class Agent {
-            id : UUID
+            id : properties.UUID
             name : string
             status : enum[New|Connected|Disconnected|Error|Disabled]
             lastStatusUpdate : datetime
@@ -164,7 +164,7 @@ classDiagram
 
     namespace Services {
         class Service {
-            id : UUID
+            id : properties.UUID
             externalId : string
             name : string
             currentStatus : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]
@@ -175,25 +175,25 @@ classDiagram
             currentProperties : json
             targetProperties : json
             resources : json
-            consumerParticipantID : UUID
+            consumerParticipantID : properties.UUID
             createdAt : datetime
             updatedAt : datetime
         }
 
         class ServiceGroup {
-            id : UUID
+            id : properties.UUID
             name : string
-            participantID : UUID
+            participantID : properties.UUID
             createdAt : datetime
             updatedAt : datetime
         }
 
         class Job {
-            id : UUID
+            id : properties.UUID
             action : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
             status : enum[Pending,Processing,Completed,Failed]
-            agentId : UUID
-            serviceId : UUID
+            agentId : properties.UUID
+            serviceId : properties.UUID
             priority : int
             errorMessage : string
             claimedAt : datetime
@@ -205,13 +205,13 @@ classDiagram
 
     namespace Security {
         class Token {
-            id : UUID
+            id : properties.UUID
             name : string
             role : enum[admin|participant|agent]
             hashedValue : string
             expireAt : datetime
-            participantID : UUID
-            agentID : UUID
+            participantID : properties.UUID
+            agentID : properties.UUID
             createdAt : datetime
             updatedAt : datetime
         }
@@ -219,16 +219,16 @@ classDiagram
 
     namespace Metrics {
         class MetricEntry {
-            id : UUID
+            id : properties.UUID
             createdAt : datetime
-            agentId : UUID        
-            serviceId : UUID        
+            agentId : properties.UUID        
+            serviceId : properties.UUID        
             resourceId : string
             value : number
         }
 
         class MetricType {
-            id : UUID
+            id : properties.UUID
             entityType : enum[Agent,Service,Resource] 
             name : string
             createdAt : datetime
@@ -238,7 +238,7 @@ classDiagram
 
     namespace Domain Events {
         class Event {
-            id : UUID
+            id : properties.UUID
             sequenceNumber : int64
             createdAt : datetime
             initiatorType : string
@@ -248,7 +248,7 @@ classDiagram
         }
         
         class EventSubscription {
-            id : UUID
+            id : properties.UUID
             subscriberId : string
             instanceId : string
             lastProcessedSequence : int64
@@ -319,7 +319,7 @@ classDiagram
    - Can be linked to a consumer participant via ConsumerParticipantID (optional)
 
    Properties:
-   - Properties: JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger status transitions (hot or cold update depending on current status).
+   - Properties: properties.JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger status transitions (hot or cold update depending on current status).
 
 4. **AgentType**
    - Defines the type classification for agents
@@ -436,7 +436,7 @@ stateDiagram-v2
 
 #### Service Property Schema Validation
 
-Fulcrum Core provides a flexible JSON-based validation system for service properties through the Service Property Schema feature. This system ensures data integrity and consistency for service configurations while providing dynamic validation without requiring application recompilation.
+Fulcrum Core provides a flexible properties.JSON-based validation system for service properties through the Service Property Schema feature. This system ensures data integrity and consistency for service configurations while providing dynamic validation without requiring application recompilation.
 
 ##### Schema Structure
 

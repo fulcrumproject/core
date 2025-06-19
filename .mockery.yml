@@ -11,6 +11,6 @@ require-template-schema-exists: true
 template: testify
 template-schema: "{{.Template}}.schema.json"
 packages:
-  fulcrumproject.org/core/internal/domain:
+  fulcrumproject.org/core/pkg/domain:
     config:
       all: true

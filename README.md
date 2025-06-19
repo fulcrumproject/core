@@ -152,7 +152,7 @@ fulcrum-core/
 ├── cmd/             # Application entry points
 │   └── fulcrum/     # Main application entry point
 ├── docs/            # Documentation
-├── internal/        # Private application and library code
+├── pkg/        # Private application and library code
 │   ├── api/         # HTTP handlers and routes
 │   ├── config/      # Configuration handling
 │   ├── database/    # Database implementations of repositories
