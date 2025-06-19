@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"fulcrumproject.org/core/pkg/domain"
 	"github.com/fulcrumproject/commons/auth"
+	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

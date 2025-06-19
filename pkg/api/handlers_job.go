@@ -10,8 +10,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
-	"fulcrumproject.org/core/pkg/authz"
-	"fulcrumproject.org/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/authz"
+	"github.com/fulcrumproject/core/pkg/domain"
 )
 
 type CompleteJobRequest struct {

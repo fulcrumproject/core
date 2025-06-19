@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"fulcrumproject.org/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain"
 )
 
 const (

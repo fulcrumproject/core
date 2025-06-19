@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"fulcrumproject.org/core/pkg/domain"
 	"github.com/fulcrumproject/commons/auth"
+	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

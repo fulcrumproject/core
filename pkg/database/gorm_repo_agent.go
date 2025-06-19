@@ -9,7 +9,7 @@ import (
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 
-	"fulcrumproject.org/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain"
 )
 
 type GormAgentRepository struct {

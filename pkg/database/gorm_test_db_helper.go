@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"testing"
 
-	"fulcrumproject.org/core/pkg/config"
 	cb "github.com/fulcrumproject/commons/config"
+	"github.com/fulcrumproject/core/pkg/config"
 	"gorm.io/gorm"
 )
 

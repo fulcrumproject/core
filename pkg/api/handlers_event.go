@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"fulcrumproject.org/core/pkg/authz"
-	"fulcrumproject.org/core/pkg/domain"
 	"github.com/fulcrumproject/commons/auth"
 	"github.com/fulcrumproject/commons/middlewares"
 	"github.com/fulcrumproject/commons/properties"
+	"github.com/fulcrumproject/core/pkg/authz"
+	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )

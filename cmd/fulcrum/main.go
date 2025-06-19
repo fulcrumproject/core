@@ -14,16 +14,16 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 
-	"fulcrumproject.org/core/pkg/api"
-	"fulcrumproject.org/core/pkg/authz"
-	"fulcrumproject.org/core/pkg/config"
-	"fulcrumproject.org/core/pkg/database"
-	"fulcrumproject.org/core/pkg/domain"
 	"github.com/fulcrumproject/commons/auth"
 	cb "github.com/fulcrumproject/commons/config"
 	"github.com/fulcrumproject/commons/keycloak"
 	"github.com/fulcrumproject/commons/logging"
 	"github.com/fulcrumproject/commons/middlewares"
+	"github.com/fulcrumproject/core/pkg/api"
+	"github.com/fulcrumproject/core/pkg/authz"
+	"github.com/fulcrumproject/core/pkg/config"
+	"github.com/fulcrumproject/core/pkg/database"
+	"github.com/fulcrumproject/core/pkg/domain"
 )
 
 func main() {

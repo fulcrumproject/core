@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"fulcrumproject.org/core/pkg/domain"
 	"github.com/fulcrumproject/commons/auth"
+	"github.com/fulcrumproject/core/pkg/domain"
 )
 
 var (

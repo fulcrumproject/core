@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"fulcrumproject.org/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/go-chi/render"
 )
 

@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"time"
 
-	"fulcrumproject.org/core/pkg/schema"
 	"github.com/fulcrumproject/commons/auth"
 	"github.com/fulcrumproject/commons/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
 )
 
