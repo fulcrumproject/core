@@ -1,4 +1,4 @@
-module fulcrumproject.org/core
+module github.com/fulcrumproject/core
 
 go 1.24.0
 
