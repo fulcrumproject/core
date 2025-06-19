@@ -50,7 +50,7 @@ var Default = Config{
 		Format: "json",
 	},
 	DBConfig: config.DB{
-		DSN:       "host=localhost user=fulcrum password=password dbname=fulcrum_db port=5432 sslmode=disable",
+		DSN:       "host=localhost user=fulcrum password=fulcrum_password dbname=fulcrum_db port=5432 sslmode=disable",
 		LogLevel:  "warn",
 		LogFormat: "text",
 	},
