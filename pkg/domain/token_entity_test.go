@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fulcrumproject/commons/auth"
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"fulcrumproject.org/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/stretchr/testify/assert"
 )
 

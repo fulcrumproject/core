@@ -3,11 +3,11 @@ package database
 import (
 	"context"
 
-	"github.com/fulcrumproject/commons/auth"
-	"github.com/fulcrumproject/commons/properties"
+	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
 
-	"fulcrumproject.org/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain"
 )
 
 type GormMetricEntryRepository struct {

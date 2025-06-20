@@ -1,8 +1,8 @@
 package api
 
 import (
-	"fulcrumproject.org/core/pkg/domain"
-	"github.com/fulcrumproject/commons/auth"
+	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/domain"
 )
 
 type MockAuthorizer struct {

@@ -3,9 +3,9 @@ package domain
 import (
 	"context"
 
-	"fulcrumproject.org/core/pkg/schema"
-	"github.com/fulcrumproject/commons/auth"
-	"github.com/fulcrumproject/commons/properties"
+	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 )
 
 // ServiceType represents a type of service that can be provided

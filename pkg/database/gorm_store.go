@@ -5,7 +5,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"fulcrumproject.org/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain"
 )
 
 // GormStore implements the domain.Store interface using GORM

@@ -4,7 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"fulcrumproject.org/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

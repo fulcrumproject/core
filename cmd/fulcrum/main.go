@@ -14,16 +14,16 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 
-	"fulcrumproject.org/core/pkg/api"
-	"fulcrumproject.org/core/pkg/authz"
-	"fulcrumproject.org/core/pkg/config"
-	"fulcrumproject.org/core/pkg/database"
-	"fulcrumproject.org/core/pkg/domain"
-	"github.com/fulcrumproject/commons/auth"
-	cb "github.com/fulcrumproject/commons/config"
-	"github.com/fulcrumproject/commons/keycloak"
-	"github.com/fulcrumproject/commons/logging"
-	"github.com/fulcrumproject/commons/middlewares"
+	"github.com/fulcrumproject/core/pkg/api"
+	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
+	"github.com/fulcrumproject/core/pkg/config"
+	"github.com/fulcrumproject/core/pkg/database"
+	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/keycloak"
+	"github.com/fulcrumproject/core/pkg/middlewares"
+	"github.com/fulcrumproject/utils/confbuilder"
+	"github.com/fulcrumproject/utils/logging"
 )
 
 func main() {
@@ -31,17 +31,11 @@ func main() {
 	configPath := flag.String("config", "", "Path to configuration file")
 	flag.Parse()
 
-	opts := []cb.BuilderOption[*config.Config]{
-		cb.WithEnvPrefix[*config.Config](config.EnvPrefix),
-		cb.WithEnvFiles[*config.Config](".env"),
-	}
-	cb := cb.New(&config.Default, opts...).WithEnv()
-
-	if configPath != nil && *configPath != "" {
-		cb.LoadFile(configPath)
-	}
-
-	cfg, err := cb.Build()
+	cfg, err := confbuilder.New(config.Default).
+		EnvPrefix(config.EnvPrefix).
+		EnvFiles(".env").
+		File(configPath).
+		Build()
 	if err != nil {
 		slog.Error("Invalid configuration", "error", err)
 		os.Exit(1)

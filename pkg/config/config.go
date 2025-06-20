@@ -1,10 +1,12 @@
 package config
 
 import (
+	"log/slog"
 	"time"
 
-	"github.com/fulcrumproject/commons/config"
-	"github.com/fulcrumproject/commons/keycloak"
+	"github.com/fulcrumproject/core/pkg/keycloak"
+	"github.com/fulcrumproject/utils/gormpg"
+	"github.com/fulcrumproject/utils/logging"
 )
 
 const (
@@ -17,8 +19,8 @@ type Config struct {
 	Authenticators []string        `json:"authenticators" env:"AUTHENTICATORS" validate:"omitempty,dive,oneof=oauth token"`
 	JobConfig      JobConfig       `json:"job" validate:"required"`
 	AgentConfig    AgentConfig     `json:"agent" validate:"required"`
-	LogConfig      config.Log      `json:"log" validate:"required"`
-	DBConfig       config.DB       `json:"db" validate:"required"`
+	LogConfig      logging.LogConf `json:"log" validate:"required"`
+	DBConfig       gormpg.DB       `json:"db" validate:"required"`
 	OAuthConfig    keycloak.Config `json:"oauth" validate:"required"`
 }
 
@@ -45,13 +47,13 @@ var Default = Config{
 	AgentConfig: AgentConfig{
 		HealthTimeout: 30 * time.Second,
 	},
-	LogConfig: config.Log{
-		Level:  "info",
+	LogConfig: logging.LogConf{
+		Level:  slog.LevelInfo,
 		Format: "json",
 	},
-	DBConfig: config.DB{
+	DBConfig: gormpg.DB{
 		DSN:       "host=localhost user=fulcrum password=fulcrum_password dbname=fulcrum_db port=5432 sslmode=disable",
-		LogLevel:  "warn",
+		LogLevel:  slog.LevelWarn,
 		LogFormat: "text",
 	},
 }

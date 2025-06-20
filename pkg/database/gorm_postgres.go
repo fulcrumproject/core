@@ -3,20 +3,19 @@ package database
 import (
 	"fmt"
 
-	"github.com/fulcrumproject/commons/config"
-	"github.com/fulcrumproject/commons/logging"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"fulcrumproject.org/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/utils/gormpg"
 )
 
 // NewConnection creates a new database connection
-func NewConnection(config *config.DB) (*gorm.DB, error) {
+func NewConnection(config *gormpg.DB) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: config.DSN,
 	}), &gorm.Config{
-		Logger:                                   logging.NewGormLogger(config),
+		Logger:                                   gormpg.NewGormLogger(config),
 		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
