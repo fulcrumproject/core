@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -345,36 +344,18 @@ func (s *agentCommander) UpdateStatus(ctx context.Context, id properties.UUID, s
 
 type AgentRepository interface {
 	AgentQuerier
-
-	// Create creates a new entity
-	Create(ctx context.Context, entity *Agent) error
-
-	// Update updates an existing entity
-	Save(ctx context.Context, entity *Agent) error
-
-	// Delete removes an entity by ID
-	Delete(ctx context.Context, id properties.UUID) error
+	BaseEntityRepository[Agent]
 
 	// MarkInactiveAgentsAsDisconnected marks agents that haven't updated their status in the given duration as disconnected
 	MarkInactiveAgentsAsDisconnected(ctx context.Context, inactiveDuration time.Duration) (int64, error)
 }
 
 type AgentQuerier interface {
-	// Get retrieves an entity by ID
-	Get(ctx context.Context, id properties.UUID) (*Agent, error)
-
-	// Exists checks if an entity with the given ID exists
-	Exists(ctx context.Context, id properties.UUID) (bool, error)
-
-	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authIdentityScope *auth.IdentityScope, req *PageRequest) (*PageResponse[Agent], error)
+	BaseEntityQuerier[Agent]
 
 	// CountByProvider returns the number of agents for a specific provider
 	CountByProvider(ctx context.Context, providerID properties.UUID) (int64, error)
 
 	// FindByServiceTypeAndTags finds agents that support a service type and have all required tags
 	FindByServiceTypeAndTags(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*Agent, error)
-
-	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
 }

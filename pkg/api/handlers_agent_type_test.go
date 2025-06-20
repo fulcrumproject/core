@@ -35,7 +35,7 @@ func TestAgentTypeHandleGet(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.AgentType, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.AgentType, error) {
 					return &domain.AgentType{
 						BaseEntity: domain.BaseEntity{
 							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
@@ -76,7 +76,7 @@ func TestAgentTypeHandleGet(t *testing.T) {
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(querier *mockAgentTypeQuerier) {
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.AgentType, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.AgentType, error) {
 					return nil, domain.NewNotFoundErrorf("agent type not found")
 				}
 			},
@@ -140,7 +140,7 @@ func TestAgentTypeHandleList(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
 					return &domain.PageResponse[domain.AgentType]{
 						Items: []domain.AgentType{
 							{
@@ -196,7 +196,7 @@ func TestAgentTypeHandleList(t *testing.T) {
 			name:        "EmptyResult",
 			queryParams: "?page=1&pageSize=10",
 			mockSetup: func(querier *mockAgentTypeQuerier) {
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
 					return &domain.PageResponse[domain.AgentType]{
 						Items:       []domain.AgentType{},
 						TotalItems:  0,
@@ -222,7 +222,7 @@ func TestAgentTypeHandleList(t *testing.T) {
 			queryParams: "?page=invalid",
 			mockSetup: func(querier *mockAgentTypeQuerier) {
 				// parsePageRequest uses defaults for invalid values, so this will still call the querier
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
 					return &domain.PageResponse[domain.AgentType]{
 						Items:       []domain.AgentType{},
 						TotalItems:  0,
@@ -247,7 +247,7 @@ func TestAgentTypeHandleList(t *testing.T) {
 			name:        "ListError",
 			queryParams: "?page=1&pageSize=10",
 			mockSetup: func(querier *mockAgentTypeQuerier) {
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.AgentType], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},

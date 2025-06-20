@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 )
 
@@ -213,33 +212,12 @@ func (s *metricTypeCommander) Delete(ctx context.Context, id properties.UUID) er
 
 type MetricTypeRepository interface {
 	MetricTypeQuerier
-
-	// Create creates a new entity
-	Create(ctx context.Context, entity *MetricType) error
-
-	// Update updates an existing entity
-	Save(ctx context.Context, entity *MetricType) error
-
-	// Delete removes an entity by ID
-	Delete(ctx context.Context, id properties.UUID) error
+	BaseEntityRepository[MetricType]
 }
 
 type MetricTypeQuerier interface {
-	// Get retrieves an entity by ID
-	Get(ctx context.Context, id properties.UUID) (*MetricType, error)
-
-	// Exists checks if an entity with the given ID exists
-	Exists(ctx context.Context, id properties.UUID) (bool, error)
-
-	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authIdentityScope *auth.IdentityScope, req *PageRequest) (*PageResponse[MetricType], error)
+	BaseEntityQuerier[MetricType]
 
 	// FindByName retrieves a metric type by name
 	FindByName(ctx context.Context, name string) (*MetricType, error)
-
-	// Count returns the number of entities
-	Count(ctx context.Context) (int64, error)
-
-	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
 }

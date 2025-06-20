@@ -354,15 +354,7 @@ func (s *tokenCommander) Regenerate(ctx context.Context, id properties.UUID) (*T
 
 type TokenRepository interface {
 	TokenQuerier
-
-	// Create creates a new entity
-	Create(ctx context.Context, entity *Token) error
-
-	// Update updates an existing entity
-	Save(ctx context.Context, entity *Token) error
-
-	// Delete removes an entity by ID
-	Delete(ctx context.Context, id properties.UUID) error
+	BaseEntityRepository[Token]
 
 	// DeleteByParticipantID removes all tokens associated with a participant ID
 	DeleteByParticipantID(ctx context.Context, participantID properties.UUID) error
@@ -372,15 +364,8 @@ type TokenRepository interface {
 }
 
 type TokenQuerier interface {
-	// Get retrieves an entity by ID
-	Get(ctx context.Context, id properties.UUID) (*Token, error)
-
-	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authIdentityScope *auth.IdentityScope, req *PageRequest) (*PageResponse[Token], error)
+	BaseEntityQuerier[Token]
 
 	// FindByHashedValue finds a token by its hashed value
 	FindByHashedValue(ctx context.Context, hashedValue string) (*Token, error)
-
-	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
 }

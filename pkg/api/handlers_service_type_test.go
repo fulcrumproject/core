@@ -77,7 +77,7 @@ func TestServiceTypeHandleGet(t *testing.T) {
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(querier *mockServiceTypeQuerier) {
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.ServiceType, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.ServiceType, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -100,7 +100,7 @@ func TestServiceTypeHandleGet(t *testing.T) {
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(querier *mockServiceTypeQuerier) {
 				// Setup the querier to return not found
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.ServiceType, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.ServiceType, error) {
 					return nil, domain.NotFoundError{Err: fmt.Errorf("service type not found")}
 				}
 			},
@@ -168,7 +168,7 @@ func TestServiceTypeHandleList(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceType], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceType], error) {
 					return &domain.PageResponse[domain.ServiceType]{
 						Items: []domain.ServiceType{
 							{
@@ -200,7 +200,7 @@ func TestServiceTypeHandleList(t *testing.T) {
 		{
 			name: "ListError",
 			mockSetup: func(querier *mockServiceTypeQuerier) {
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceType], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceType], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},

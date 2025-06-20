@@ -36,7 +36,7 @@ func TestJobHandleList(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
 					return &domain.PageResponse[domain.Job]{
 						Items: []domain.Job{
 							{
@@ -74,7 +74,7 @@ func TestJobHandleList(t *testing.T) {
 			name:        "EmptyResult",
 			queryParams: "?page=1&pageSize=10",
 			mockSetup: func(querier *mockJobQuerier) {
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
 					return &domain.PageResponse[domain.Job]{
 						Items:       []domain.Job{},
 						TotalItems:  0,
@@ -99,7 +99,7 @@ func TestJobHandleList(t *testing.T) {
 			name:        "ListError",
 			queryParams: "?page=1&pageSize=10",
 			mockSetup: func(querier *mockJobQuerier) {
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Job], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -175,7 +175,7 @@ func TestJobHandleGet(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Job, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Job, error) {
 					return &domain.Job{
 						BaseEntity: domain.BaseEntity{
 							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
@@ -192,7 +192,7 @@ func TestJobHandleGet(t *testing.T) {
 					}, nil
 				}
 
-				querier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 			},
@@ -205,11 +205,11 @@ func TestJobHandleGet(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Job, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Job, error) {
 					return nil, domain.NewNotFoundErrorf("job not found")
 				}
 
-				querier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 			},
@@ -358,7 +358,7 @@ func TestJobHandleClaimJob(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
@@ -375,7 +375,7 @@ func TestJobHandleClaimJob(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
@@ -442,7 +442,7 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
@@ -463,7 +463,7 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
@@ -530,7 +530,7 @@ func TestJobHandleFailJob(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
@@ -550,7 +550,7 @@ func TestJobHandleFailJob(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				querier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 

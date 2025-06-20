@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 )
@@ -219,21 +218,12 @@ func (s *metricEntryCommander) Create(
 
 type MetricEntryRepository interface {
 	MetricEntryQuerier
-
-	// Create creates a new metric entry
-	Create(ctx context.Context, entity *MetricEntry) error
+	BaseEntityRepository[MetricEntry]
 }
 
 type MetricEntryQuerier interface {
-	// List retrieves a list of metric entries based on the provided filters
-	List(ctx context.Context, authIdentityScope *auth.IdentityScope, req *PageRequest) (*PageResponse[MetricEntry], error)
-
-	// Exists checks if an entity with the given ID exists
-	Exists(ctx context.Context, id properties.UUID) (bool, error)
+	BaseEntityQuerier[MetricEntry]
 
 	// CountByMetricType counts the number of entries for a specific metric type
 	CountByMetricType(ctx context.Context, typeID properties.UUID) (int64, error)
-
-	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
 }

@@ -138,7 +138,7 @@ func TestAgentHandleGet(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
 							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
@@ -169,7 +169,7 @@ func TestAgentHandleGet(t *testing.T) {
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(querier *mockAgentQuerier) {
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
 					return nil, domain.NewNotFoundErrorf("agent not found")
 				}
 			},
@@ -234,7 +234,7 @@ func TestHandleGetMe(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
 					return &domain.Agent{
 						BaseEntity: domain.BaseEntity{
 							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
@@ -265,7 +265,7 @@ func TestHandleGetMe(t *testing.T) {
 			name:    "NotFound",
 			agentID: "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(querier *mockAgentQuerier) {
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
 					return nil, domain.NewNotFoundErrorf("agent not found")
 				}
 			},
@@ -322,7 +322,7 @@ func TestAgentHandleList(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
 					return &domain.PageResponse[domain.Agent]{
 						Items: []domain.Agent{
 							{
@@ -350,7 +350,7 @@ func TestAgentHandleList(t *testing.T) {
 		{
 			name: "ListError",
 			mockSetup: func(querier *mockAgentQuerier) {
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},

@@ -221,7 +221,7 @@ func TestServiceHandleGet(t *testing.T) {
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(querier *mockServiceQuerier) {
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -255,7 +255,7 @@ func TestServiceHandleGet(t *testing.T) {
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(querier *mockServiceQuerier) {
 				// Setup the querier to return not found
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
 					return nil, domain.NewNotFoundErrorf("service not found")
 				}
 			},
@@ -323,7 +323,7 @@ func TestServiceHandleList(t *testing.T) {
 			name: "Success",
 			mockSetup: func(querier *mockServiceQuerier) {
 				// Setup the querier for successful list operation
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
 					// Verify pagination
 					assert.Equal(t, 1, req.Page) // Default page is 1, not 0
 					assert.Equal(t, 10, req.PageSize)
@@ -365,7 +365,7 @@ func TestServiceHandleList(t *testing.T) {
 			name: "InvalidParametersUseDefaults",
 			mockSetup: func(querier *mockServiceQuerier) {
 				// Setup the querier to handle default values when invalid params are provided
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
 					// Verify that default values are used
 					assert.Equal(t, 1, req.Page)
 					assert.Equal(t, 10, req.PageSize)
@@ -407,7 +407,7 @@ func TestServiceHandleList(t *testing.T) {
 			name: "DatabaseError",
 			mockSetup: func(querier *mockServiceQuerier) {
 				// Setup the querier to return an error
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Service], error) {
 					// Even with an error, we need to verify we got the pagination params first
 					assert.Equal(t, 1, req.Page)
 					return nil, fmt.Errorf("database error")

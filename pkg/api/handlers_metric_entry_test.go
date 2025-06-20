@@ -90,7 +90,7 @@ func TestMetricEntryHandleList(t *testing.T) {
 				providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 				typeID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
 					return &domain.PageResponse[domain.MetricEntry]{
 						Items: []domain.MetricEntry{
 							{
@@ -134,7 +134,7 @@ func TestMetricEntryHandleList(t *testing.T) {
 		{
 			name: "ListError",
 			mockSetup: func(querier *mockMetricEntryQuerier) {
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.MetricEntry], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -223,7 +223,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				typeID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 
 				// Setup the service querier
-				serviceQuerier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
+				serviceQuerier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
 					assert.Equal(t, serviceID, id)
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
@@ -236,7 +236,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				serviceQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.DefaultObjectScope{
 						AgentID: &agentID,
 					}, nil
@@ -297,7 +297,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				serviceQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.DefaultObjectScope{
 						AgentID: &agentID,
 					}, nil
@@ -337,7 +337,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 			},
 			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander) {
 				// Setup the service querier to return an error
-				serviceQuerier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
+				serviceQuerier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
 					return nil, fmt.Errorf("service not found")
 				}
 			},
@@ -358,7 +358,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 
 				// Setup the service querier
-				serviceQuerier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
+				serviceQuerier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
 							ID: serviceID,
@@ -370,7 +370,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the auth scope to return an error
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				serviceQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return nil, fmt.Errorf("auth scope error")
 				}
 			},
@@ -392,7 +392,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				providerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 
 				// Setup the service querier
-				serviceQuerier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
+				serviceQuerier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
 							ID: serviceID,
@@ -404,7 +404,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the auth scope
-				serviceQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				serviceQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.DefaultObjectScope{
 						AgentID: &agentID,
 					}, nil

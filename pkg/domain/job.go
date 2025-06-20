@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 )
@@ -312,36 +311,18 @@ func (s *jobCommander) Fail(ctx context.Context, jobID properties.UUID, errorMes
 
 type JobRepository interface {
 	JobQuerier
-
-	// Create creates a new job
-	Create(ctx context.Context, job *Job) error
-
-	// Save updates an existing job
-	Save(ctx context.Context, job *Job) error
-
-	// Delete removes a job by ID
-	Delete(ctx context.Context, id properties.UUID) error
+	BaseEntityRepository[Job]
 
 	// DeleteOldCompletedJobs removes completed or failed jobs older than the specified interval
 	DeleteOldCompletedJobs(ctx context.Context, olderThan time.Duration) (int, error)
 }
 
 type JobQuerier interface {
-	// Get retrieves a job by ID
-	Get(ctx context.Context, id properties.UUID) (*Job, error)
-
-	// Exists checks if an entity with the given ID exists
-	Exists(ctx context.Context, id properties.UUID) (bool, error)
-
-	// List retrieves a list of jobs based on the provided filters
-	List(ctx context.Context, authIdentityScope *auth.IdentityScope, req *PageRequest) (*PageResponse[Job], error)
+	BaseEntityQuerier[Job]
 
 	// GetPendingJobsForAgent retrieves pending jobs targeted for a specific agent
 	GetPendingJobsForAgent(ctx context.Context, agentID properties.UUID, limit int) ([]*Job, error)
 
 	// GetTimeOutJobs retrieves jobs that have been processing for too long and returns them
 	GetTimeOutJobs(ctx context.Context, olderThan time.Duration) ([]*Job, error)
-
-	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
 }

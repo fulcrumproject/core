@@ -5,9 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/fulcrumproject/core/pkg/auth"
-	"github.com/fulcrumproject/core/pkg/properties"
 )
 
 // EventSubscription represents a subscription for external systems to consume events
@@ -335,12 +332,7 @@ func (c *eventSubscriptionCommander) Delete(ctx context.Context, subscriberID st
 // EventSubscriptionRepository defines the interface for event subscription data operations
 type EventSubscriptionRepository interface {
 	EventSubscriptionQuerier
-
-	// Create creates a new entity
-	Create(ctx context.Context, entity *EventSubscription) error
-
-	// Save updates an existing entity
-	Save(ctx context.Context, entity *EventSubscription) error
+	BaseEntityRepository[EventSubscription]
 
 	// DeleteBySubscriberID removes an entity by subscriber ID
 	DeleteBySubscriberID(ctx context.Context, subscriberID string) error
@@ -348,24 +340,14 @@ type EventSubscriptionRepository interface {
 
 // EventSubscriptionQuerier defines the interface for event subscription query operations
 type EventSubscriptionQuerier interface {
-	// Get retrieves an entity by ID
-	Get(ctx context.Context, id properties.UUID) (*EventSubscription, error)
+	BaseEntityRepository[EventSubscription]
 
 	// FindBySubscriberID retrieves an entity by subscriber ID
 	FindBySubscriberID(ctx context.Context, subscriberID string) (*EventSubscription, error)
 
-	// Exists checks if an entity with the given ID exists
-	Exists(ctx context.Context, id properties.UUID) (bool, error)
-
 	// ExistsBySubscriberID checks if an entity with the given subscriber ID exists
 	ExistsBySubscriberID(ctx context.Context, subscriberID string) (bool, error)
 
-	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authIdentityScope *auth.IdentityScope, req *PageRequest) (*PageResponse[EventSubscription], error)
-
 	// ListExpiredLeases retrieves subscriptions with expired leases
 	ListExpiredLeases(ctx context.Context) ([]*EventSubscription, error)
-
-	// AuthScope retrieves the auth scope for the entity
-	AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
 }

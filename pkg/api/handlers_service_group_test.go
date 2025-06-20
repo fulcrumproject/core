@@ -179,7 +179,7 @@ func TestServiceGroupHandleGet(t *testing.T) {
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(querier *mockServiceGroupQuerier) {
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.ServiceGroup, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.ServiceGroup, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -204,7 +204,7 @@ func TestServiceGroupHandleGet(t *testing.T) {
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(querier *mockServiceGroupQuerier) {
 				// Setup the querier to return not found
-				querier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.ServiceGroup, error) {
+				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.ServiceGroup, error) {
 					return nil, domain.NotFoundError{Err: fmt.Errorf("service group not found")}
 				}
 			},
@@ -275,7 +275,7 @@ func TestServiceGroupHandleList(t *testing.T) {
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
 					return &domain.PageResponse[domain.ServiceGroup]{
 						Items: []domain.ServiceGroup{
 							{
@@ -309,7 +309,7 @@ func TestServiceGroupHandleList(t *testing.T) {
 		{
 			name: "ListError",
 			mockSetup: func(querier *mockServiceGroupQuerier) {
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.ServiceGroup], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},

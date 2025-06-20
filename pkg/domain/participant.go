@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 )
 
@@ -217,28 +216,10 @@ func (c *participantCommander) Delete(ctx context.Context, id properties.UUID) e
 // ParticipantRepository defines the interface for participant data operations
 type ParticipantRepository interface {
 	ParticipantQuerier
-
-	// Create creates a new entity
-	Create(ctx context.Context, entity *Participant) error
-
-	// Save updates an existing entity
-	Save(ctx context.Context, entity *Participant) error
-
-	// Delete removes an entity by ID
-	Delete(ctx context.Context, id properties.UUID) error
+	BaseEntityRepository[Participant]
 }
 
 // ParticipantQuerier defines the interface for participant query operations
 type ParticipantQuerier interface {
-	// Get retrieves an entity by ID
-	Get(ctx context.Context, id properties.UUID) (*Participant, error)
-
-	// Exists checks if an entity with the given ID exists
-	Exists(ctx context.Context, id properties.UUID) (bool, error)
-
-	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authIdentityScope *auth.IdentityScope, req *PageRequest) (*PageResponse[Participant], error)
-
-	// AuthScope retrieves the auth scope for the entity
-	AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
+	BaseEntityQuerier[Participant]
 }

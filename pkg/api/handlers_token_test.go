@@ -270,12 +270,12 @@ func TestTokenHandleGet(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				tokenQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
-				tokenQuerier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Token, error) {
+				tokenQuerier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Token, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -305,12 +305,12 @@ func TestTokenHandleGet(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				tokenQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
 				// Setup the querier to return not found
-				tokenQuerier.findByIDFunc = func(ctx context.Context, id properties.UUID) (*domain.Token, error) {
+				tokenQuerier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Token, error) {
 					return nil, domain.NotFoundError{Err: fmt.Errorf("token not found")}
 				}
 			},
@@ -387,7 +387,7 @@ func TestTokenHandleList(t *testing.T) {
 				expireAt := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 				participantID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 
-				tokenQuerier.listFunc = func(ctx context.Context, scope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
+				tokenQuerier.ListFunc = func(ctx context.Context, scope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
 					return &domain.PageResponse[domain.Token]{
 						Items: []domain.Token{
 							{
@@ -429,7 +429,7 @@ func TestTokenHandleList(t *testing.T) {
 				// Return a successful auth
 				authz.ShouldSucceed = true
 
-				tokenQuerier.listFunc = func(ctx context.Context, scope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
+				tokenQuerier.ListFunc = func(ctx context.Context, scope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Token], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -519,7 +519,7 @@ func TestTokenHandleUpdate(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				tokenQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
@@ -560,7 +560,7 @@ func TestTokenHandleUpdate(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				tokenQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
@@ -599,7 +599,7 @@ func TestTokenHandleUpdate(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				tokenQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
@@ -676,7 +676,7 @@ func TestTokenHandleDelete(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				tokenQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
@@ -698,7 +698,7 @@ func TestTokenHandleDelete(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				tokenQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
@@ -763,7 +763,7 @@ func TestTokenHandleRegenerateValue(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				tokenQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
@@ -801,7 +801,7 @@ func TestTokenHandleRegenerateValue(t *testing.T) {
 				authz.ShouldSucceed = true
 
 				// Setup the querier to return auth scope
-				tokenQuerier.authScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				tokenQuerier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 

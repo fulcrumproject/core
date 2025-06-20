@@ -185,6 +185,7 @@ func (p *Event) Validate() error {
 }
 
 type EventRepository interface {
+	BaseEntityRepository[Event]
 	EventQuerier
 
 	// Create stores a new event
@@ -192,12 +193,8 @@ type EventRepository interface {
 }
 
 type EventQuerier interface {
-	// List retrieves a list of events based on the provided filters
-	List(ctx context.Context, authIdentityScope *auth.IdentityScope, req *PageRequest) (*PageResponse[Event], error)
+	BaseEntityQuerier[Event]
 
 	// ListFromSequence retrieves events starting from a specific sequence number
 	ListFromSequence(ctx context.Context, fromSequenceNumber int64, limit int) ([]*Event, error)
-
-	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
 }

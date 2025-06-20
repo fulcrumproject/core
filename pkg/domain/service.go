@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
@@ -647,37 +646,19 @@ func (s *Service) HandleJobFailure(errorMessage string, action ServiceAction) {
 // ServiceRepository defines the interface for the Service repository
 type ServiceRepository interface {
 	ServiceQuerier
-
-	// Create creates a new entity
-	Create(ctx context.Context, entity *Service) error
-
-	// Update updates an existing entity
-	Save(ctx context.Context, entity *Service) error
-
-	// Delete removes an entity by ID
-	Delete(ctx context.Context, id properties.UUID) error
+	BaseEntityRepository[Service]
 }
 
 // ServiceQuerier defines the interface for the Service read-only queries
 type ServiceQuerier interface {
-	// Get retrieves an entity by ID
-	Get(ctx context.Context, id properties.UUID) (*Service, error)
-
-	// Exists checks if an entity with the given ID exists
-	Exists(ctx context.Context, id properties.UUID) (bool, error)
+	BaseEntityQuerier[Service]
 
 	// FindByExternalID retrieves a service by its external ID and agent ID
 	FindByExternalID(ctx context.Context, agentID properties.UUID, externalID string) (*Service, error)
-
-	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authIdentityScope *auth.IdentityScope, req *PageRequest) (*PageResponse[Service], error)
 
 	// CountByGroup returns the number of services in a specific group
 	CountByGroup(ctx context.Context, groupID properties.UUID) (int64, error)
 
 	// CountByAgent returns the number of services handled by a specific agent
 	CountByAgent(ctx context.Context, agentID properties.UUID) (int64, error)
-
-	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
 }

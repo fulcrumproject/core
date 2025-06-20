@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 )
@@ -202,25 +201,10 @@ func (s *serviceGroupCommander) Delete(ctx context.Context, id properties.UUID) 
 // ServiceGroupRepository defines the interface for the ServiceGroup repository
 type ServiceGroupRepository interface {
 	ServiceGroupQuerier
-
-	// Create creates a new entity
-	Create(ctx context.Context, entity *ServiceGroup) error
-
-	// Update updates an existing entity
-	Save(ctx context.Context, entity *ServiceGroup) error
-
-	// Delete removes an entity by ID
-	Delete(ctx context.Context, id properties.UUID) error
+	BaseEntityRepository[ServiceGroup]
 }
 
 // ServiceGroupRepository defines the interface for the ServiceGroup read-only queries
 type ServiceGroupQuerier interface {
-	// Get retrieves an entity by ID
-	Get(ctx context.Context, id properties.UUID) (*ServiceGroup, error)
-
-	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, authIdentityScope *auth.IdentityScope, req *PageRequest) (*PageResponse[ServiceGroup], error)
-
-	// Retrieve the auth scope for the entity
-	AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
+	BaseEntityQuerier[ServiceGroup]
 }

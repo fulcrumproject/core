@@ -37,7 +37,7 @@ func TestEventyHandleList(t *testing.T) {
 				providerID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 				entityID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Event], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Event], error) {
 					return &domain.PageResponse[domain.Event]{
 						Items: []domain.Event{
 							{
@@ -87,7 +87,7 @@ func TestEventyHandleList(t *testing.T) {
 			name:        "EmptyResult",
 			queryParams: "?page=1&pageSize=10",
 			mockSetup: func(querier *mockEventQuerier) {
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Event], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Event], error) {
 					return &domain.PageResponse[domain.Event]{
 						Items:       []domain.Event{},
 						TotalItems:  0,
@@ -113,7 +113,7 @@ func TestEventyHandleList(t *testing.T) {
 			queryParams: "?page=invalid",
 			mockSetup: func(querier *mockEventQuerier) {
 				// parsePageRequest uses defaults for invalid values, so this will still call the querier
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Event], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Event], error) {
 					return &domain.PageResponse[domain.Event]{
 						Items:       []domain.Event{},
 						TotalItems:  0,
@@ -138,7 +138,7 @@ func TestEventyHandleList(t *testing.T) {
 			name:        "ListError",
 			queryParams: "?page=1&pageSize=10",
 			mockSetup: func(querier *mockEventQuerier) {
-				querier.listFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Event], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Event], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
