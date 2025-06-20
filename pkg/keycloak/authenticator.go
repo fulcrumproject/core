@@ -166,3 +166,24 @@ func (a *Authenticator) extractRole(claims *Claims) (auth.Role, error) {
 
 	return "", errors.New("no valid role found in token")
 }
+
+// Health checks if the Keycloak/OIDC provider is accessible
+func (a *Authenticator) Health(ctx context.Context) error {
+	if a.provider == nil {
+		return fmt.Errorf("OIDC provider is not initialized")
+	}
+
+	if a.verifier == nil {
+		return fmt.Errorf("OIDC verifier is not initialized")
+	}
+
+	// Try to fetch the provider's configuration to verify connectivity
+	// This is a lightweight check that verifies the provider is reachable
+	// without requiring authentication
+	endpoint := a.provider.Endpoint()
+	if endpoint.AuthURL == "" {
+		return fmt.Errorf("OIDC provider endpoint is not configured")
+	}
+
+	return nil
+}

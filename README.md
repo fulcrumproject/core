@@ -63,6 +63,7 @@ FULCRUM_DB_LOG_FORMAT=text
 
 # Server Configuration
 FULCRUM_PORT=3000
+FULCRUM_HEALTH_PORT=3001
 
 # Authentication Configuration
 # Comma-separated list of enabled authenticators (e.g., "token", "oauth", "token,oauth")
@@ -123,6 +124,78 @@ go install github.com/cosmtrek/air@latest
 
 # Run with hot-reload
 air
+```
+
+## Health Endpoints
+
+The application provides health and readiness endpoints on a separate port for monitoring and orchestration purposes.
+
+### Configuration
+
+The health endpoints run on a configurable port (default: 8081):
+
+```bash
+# Health endpoints port
+FULCRUM_HEALTH_PORT=8081
+```
+
+### Endpoints
+
+#### Health Check - `/healthz`
+
+Returns the overall health status of the application and its primary dependencies.
+
+**Success Response (HTTP 200):**
+```json
+{
+  "status": "UP"
+}
+```
+
+**Failure Response (HTTP 503):**
+```json
+{
+  "status": "DOWN"
+}
+```
+
+#### Readiness Check - `/ready`
+
+Returns the readiness status of the application to handle requests.
+
+**Success Response (HTTP 200):**
+```json
+{
+  "status": "UP"
+}
+```
+
+**Failure Response (HTTP 503):**
+```json
+{
+  "status": "DOWN"
+}
+```
+
+### Primary Dependencies Checked
+
+The health endpoints check the following primary dependencies:
+
+1. **Database Connectivity**: PostgreSQL database connection and ping
+2. **Authentication Services**: 
+   - Token authenticator (database-based)
+   - OAuth/Keycloak authenticator (if configured)
+
+When any primary dependency is unavailable, the API is considered unable to respond to the majority of requests, resulting in a `DOWN` status.
+
+### Usage Examples
+
+```bash
+# Check application health
+curl http://localhost:8081/healthz
+
+# Check application readiness
+curl http://localhost:8081/ready
 ```
 
 ## Testing

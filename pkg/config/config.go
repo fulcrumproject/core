@@ -16,6 +16,7 @@ const (
 // Fulcrum configuration
 type Config struct {
 	Port           uint            `json:"port" env:"PORT" validate:"required,min=1,max=65535"`
+	HealthPort     uint            `json:"healthPort" env:"HEALTH_PORT" validate:"required,min=1,max=65535"`
 	Authenticators []string        `json:"authenticators" env:"AUTHENTICATORS" validate:"omitempty,dive,oneof=oauth token"`
 	JobConfig      JobConfig       `json:"job" validate:"required"`
 	AgentConfig    AgentConfig     `json:"agent" validate:"required"`
@@ -38,6 +39,7 @@ type JobConfig struct {
 
 var Default = Config{
 	Port:           8080,
+	HealthPort:     8081,
 	Authenticators: []string{"token"},
 	JobConfig: JobConfig{
 		Maintenance: 24 * time.Hour,

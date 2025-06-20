@@ -131,6 +131,7 @@ type mockAuthenticator struct {
 	called        bool
 	receivedCtx   context.Context
 	receivedToken string
+	healthErr     error
 }
 
 func (m *mockAuthenticator) Authenticate(ctx context.Context, token string) (*Identity, error) {
@@ -138,4 +139,8 @@ func (m *mockAuthenticator) Authenticate(ctx context.Context, token string) (*Id
 	m.receivedCtx = ctx
 	m.receivedToken = token
 	return m.identity, m.err
+}
+
+func (m *mockAuthenticator) Health(ctx context.Context) error {
+	return m.healthErr
 }

@@ -747,6 +747,10 @@ func (m *mockAuthenticator) Authenticate(ctx context.Context, token string) (*au
 	return m.identity, m.err
 }
 
+func (m *mockAuthenticator) Health(ctx context.Context) error {
+	return nil
+}
+
 type mockAuthorizer struct {
 	err error
 }

@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
@@ -52,4 +53,25 @@ func (a *GormTokenAuthenticator) Authenticate(ctx context.Context, tokenValue st
 			AgentID:       token.AgentID,
 		},
 	}, nil
+}
+
+// Health checks if the token authenticator dependencies are healthy
+func (a *GormTokenAuthenticator) Health(ctx context.Context) error {
+	if a.store == nil {
+		return fmt.Errorf("store is not initialized")
+	}
+
+	// Check if we can access the token repository
+	tokenRepo := a.store.TokenRepo()
+	if tokenRepo == nil {
+		return fmt.Errorf("token repository is not available")
+	}
+
+	// Try to perform a simple count operation to verify database connectivity
+	_, err := tokenRepo.Count(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to access token repository: %w", err)
+	}
+
+	return nil
 }

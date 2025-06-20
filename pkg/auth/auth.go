@@ -129,6 +129,7 @@ type IdentityScope struct {
 
 type Authenticator interface {
 	Authenticate(ctx context.Context, token string) (*Identity, error)
+	Health(ctx context.Context) error
 }
 
 type Authorizer interface {

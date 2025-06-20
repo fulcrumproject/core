@@ -20,6 +20,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/config"
 	"github.com/fulcrumproject/core/pkg/database"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/health"
 	"github.com/fulcrumproject/core/pkg/keycloak"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/utils/confbuilder"
@@ -152,7 +153,35 @@ func main() {
 	// Setup background worker to mark inactive agents as disconnected
 	go DisconnectUnhealthyAgentsTask(&cfg.AgentConfig, store)
 
-	// Start server
+	// Initialize health checker and handlers
+	healthDeps := &health.PrimaryDependencies{
+		DB:             db,
+		Authenticators: authenticators,
+	}
+	healthChecker := health.NewHealthChecker(healthDeps)
+	healthHandler := health.NewHandler(healthChecker)
+
+	// Setup health router
+	healthRouter := chi.NewRouter()
+	healthRouter.Use(
+		middleware.RequestID,
+		middleware.RealIP,
+		middleware.Recoverer,
+		render.SetContentType(render.ContentTypeJSON),
+	)
+	healthRouter.Get("/healthz", healthHandler.HealthHandler)
+	healthRouter.Get("/ready", healthHandler.ReadinessHandler)
+
+	// Start health server in a goroutine
+	go func() {
+		slog.Info("Health server starting", "port", cfg.HealthPort)
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.HealthPort), healthRouter); err != nil {
+			slog.Error("Failed to start health server", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Start main API server
 	slog.Info("Server starting", "port", cfg.Port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), r); err != nil {
 		slog.Error("Failed to start server", "error", err)

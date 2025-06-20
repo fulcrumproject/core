@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 )
 
 // CompositeAuthenticator implements Authenticator by trying multiple authenticators in order
@@ -33,4 +34,24 @@ func (c *CompositeAuthenticator) Authenticate(ctx context.Context, token string)
 
 	// All authenticators failed
 	return nil, errors.New("authentication failed: no valid identity found")
+}
+
+// Health checks the health of all underlying authenticators
+func (c *CompositeAuthenticator) Health(ctx context.Context) error {
+	if len(c.authenticators) == 0 {
+		return errors.New("no authenticators configured")
+	}
+
+	var healthErrors []error
+	for i, authenticator := range c.authenticators {
+		if err := authenticator.Health(ctx); err != nil {
+			healthErrors = append(healthErrors, fmt.Errorf("authenticator %d: %w", i, err))
+		}
+	}
+
+	if len(healthErrors) > 0 {
+		return fmt.Errorf("authenticator health check failed: %v", healthErrors)
+	}
+
+	return nil
 }
