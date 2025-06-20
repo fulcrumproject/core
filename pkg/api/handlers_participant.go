@@ -46,7 +46,7 @@ func (h *ParticipantHandler) Routes() func(r chi.Router) {
 		// List endpoint - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeParticipant, authz.ActionRead, h.authz),
-		).Get("/", h.handleList)
+		).Get("/", List(h.querier, participantToResponse))
 
 		// Create endpoint - decode body, then simple authorization
 		r.With(
@@ -61,7 +61,7 @@ func (h *ParticipantHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using participant's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeParticipant, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", h.handleGet)
+			).Get("/{id}", Get(h.querier, participantToResponse))
 
 			// Update endpoint - decode body, authorize using participant's scope
 			r.With(
@@ -72,7 +72,7 @@ func (h *ParticipantHandler) Routes() func(r chi.Router) {
 			// Delete endpoint - authorize using participant's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeParticipant, authz.ActionDelete, h.authz, h.querier.AuthScope),
-			).Delete("/{id}", h.handleDelete)
+			).Delete("/{id}", Delete(h.querier, h.commander.Delete))
 		})
 	}
 }
@@ -90,35 +90,6 @@ func (h *ParticipantHandler) handleCreate(w http.ResponseWriter, r *http.Request
 	render.JSON(w, r, participantToResponse(participant))
 }
 
-func (h *ParticipantHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	participant, err := h.querier.Get(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrNotFound())
-		return
-	}
-
-	render.JSON(w, r, participantToResponse(participant))
-}
-
-func (h *ParticipantHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	id := auth.MustGetIdentity(r.Context())
-	pag, err := ParsePageRequest(r)
-	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
-	result, err := h.querier.List(r.Context(), &id.Scope, pag)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, NewPageResponse(result, participantToResponse))
-}
-
 func (h *ParticipantHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	id := middlewares.MustGetID(r.Context())
 	req := middlewares.MustGetBody[UpdateParticipantRequest](r.Context())
@@ -130,17 +101,6 @@ func (h *ParticipantHandler) handleUpdate(w http.ResponseWriter, r *http.Request
 	}
 
 	render.JSON(w, r, participantToResponse(participant))
-}
-
-func (h *ParticipantHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	if err := h.commander.Delete(r.Context(), id); err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
 }
 
 // ParticipantResponse represents the response body for participant operations

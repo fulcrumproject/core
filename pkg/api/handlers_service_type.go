@@ -36,7 +36,7 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 		// List endpoint - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeServiceType, authz.ActionRead, h.authz),
-		).Get("/", h.handleList)
+		).Get("/", List(h.querier, serviceTypeToResponse))
 
 		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
@@ -45,7 +45,7 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using service type's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeServiceType, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", h.handleGet)
+			).Get("/{id}", Get(h.querier, serviceTypeToResponse))
 
 			// Validate endpoint - authorize using service type's scope
 			r.With(
@@ -53,35 +53,6 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 			).Post("/{id}/validate", h.handleValidate)
 		})
 	}
-}
-
-func (h *ServiceTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	serviceType, err := h.querier.Get(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, serviceTypeToResponse(serviceType))
-}
-
-func (h *ServiceTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	id := auth.MustGetIdentity(r.Context())
-	pag, err := ParsePageRequest(r)
-	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
-	result, err := h.querier.List(r.Context(), &id.Scope, pag)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, NewPageResponse(result, serviceTypeToResponse))
 }
 
 // ServiceTypeResponse represents the response body for service type operations

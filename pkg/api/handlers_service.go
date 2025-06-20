@@ -80,7 +80,7 @@ func (h *ServiceHandler) Routes() func(r chi.Router) {
 		// List - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeService, authz.ActionRead, h.authz),
-		).Get("/", h.handleList)
+		).Get("/", List(h.querier, serviceToResponse))
 
 		// Create - decode body + specialized scope extractor for authorization
 		r.With(
@@ -100,7 +100,7 @@ func (h *ServiceHandler) Routes() func(r chi.Router) {
 			// Get - authorize from resource ID
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", h.handleGet)
+			).Get("/{id}", Get(h.querier, serviceToResponse))
 
 			// Update - decode body + authorize from resource ID
 			r.With(
@@ -167,36 +167,6 @@ func (h *ServiceHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, serviceToResponse(service))
-}
-
-func (h *ServiceHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	service, err := h.querier.Get(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, serviceToResponse(service))
-}
-
-func (h *ServiceHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	id := auth.MustGetIdentity(r.Context())
-
-	pag, err := ParsePageRequest(r)
-	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
-	result, err := h.querier.List(r.Context(), &id.Scope, pag)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, NewPageResponse(result, serviceToResponse))
 }
 
 func (h *ServiceHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {

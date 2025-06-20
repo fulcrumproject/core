@@ -57,7 +57,7 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 		// List endpoint - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeAgent, authz.ActionRead, h.authz),
-		).Get("/", h.handleList)
+		).Get("/", List(h.querier, agentToResponse))
 
 		// Create endpoint - decode body, then authorize with provider ID
 		r.With(
@@ -72,7 +72,7 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using agent's provider
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", h.handleGet)
+			).Get("/{id}", Get(h.querier, agentToResponse))
 
 			// Update endpoint - decode body, authorize using agent's provider
 			r.With(
@@ -83,7 +83,7 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 			// Delete endpoint - authorize using agent's provider
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionDelete, h.authz, h.querier.AuthScope),
-			).Delete("/{id}", h.handleDelete)
+			).Delete("/{id}", Delete(h.querier, h.commander.Delete))
 		})
 
 		// Agent-specific routes (me endpoints)
@@ -118,18 +118,6 @@ func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, agentToResponse(agent))
 }
 
-func (h *AgentHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	agent, err := h.querier.Get(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrNotFound())
-		return
-	}
-
-	render.JSON(w, r, agentToResponse(agent))
-}
-
 // handleGetMe handles GET /agents/me
 // This endpoint allows agents to retrieve their own information
 func (h *AgentHandler) handleGetMe(w http.ResponseWriter, r *http.Request) {
@@ -142,23 +130,6 @@ func (h *AgentHandler) handleGetMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.JSON(w, r, agentToResponse(agent))
-}
-
-func (h *AgentHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	id := auth.MustGetIdentity(r.Context())
-	pag, err := ParsePageRequest(r)
-	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
-	result, err := h.querier.List(r.Context(), &id.Scope, pag)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, NewPageResponse(result, agentToResponse))
 }
 
 func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
@@ -193,17 +164,6 @@ func (h *AgentHandler) handleUpdateStatusMe(w http.ResponseWriter, r *http.Reque
 	}
 
 	render.JSON(w, r, agentToResponse(agent))
-}
-
-func (h *AgentHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	if err := h.commander.Delete(r.Context(), id); err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
 }
 
 // AgentResponse represents the response body for agent operations

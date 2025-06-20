@@ -45,7 +45,7 @@ func (h *MetricTypeHandler) Routes() func(r chi.Router) {
 		// List metric types
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeMetricType, authz.ActionRead, h.authz),
-		).Get("/", h.handleList)
+		).Get("/", List(h.querier, metricTypeToResponse))
 
 		// Create metric type
 		r.With(
@@ -60,7 +60,7 @@ func (h *MetricTypeHandler) Routes() func(r chi.Router) {
 			// Get metric type
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeMetricType, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", h.handleGet)
+			).Get("/{id}", Get(h.querier, metricTypeToResponse))
 
 			// Update metric type
 			r.With(
@@ -71,7 +71,7 @@ func (h *MetricTypeHandler) Routes() func(r chi.Router) {
 			// Delete metric type
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeMetricType, authz.ActionDelete, h.authz, h.querier.AuthScope),
-			).Delete("/{id}", h.handleDelete)
+			).Delete("/{id}", Delete(h.querier, h.commander.Delete))
 		})
 	}
 }
@@ -89,35 +89,6 @@ func (h *MetricTypeHandler) handleCreate(w http.ResponseWriter, r *http.Request)
 	render.JSON(w, r, metricTypeToResponse(metricType))
 }
 
-func (h *MetricTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	metricType, err := h.querier.Get(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrNotFound())
-		return
-	}
-
-	render.JSON(w, r, metricTypeToResponse(metricType))
-}
-
-func (h *MetricTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	id := auth.MustGetIdentity(r.Context())
-	pag, err := ParsePageRequest(r)
-	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
-	result, err := h.querier.List(r.Context(), &id.Scope, pag)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, NewPageResponse(result, metricTypeToResponse))
-}
-
 func (h *MetricTypeHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	id := middlewares.MustGetID(r.Context())
 	p := middlewares.MustGetBody[UpdateMetricTypeRequest](r.Context())
@@ -129,23 +100,6 @@ func (h *MetricTypeHandler) handleUpdate(w http.ResponseWriter, r *http.Request)
 	}
 
 	render.JSON(w, r, metricTypeToResponse(metricType))
-}
-
-func (h *MetricTypeHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	_, err := h.querier.Get(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrNotFound())
-		return
-	}
-
-	if err := h.commander.Delete(r.Context(), id); err != nil {
-		render.Render(w, r, ErrInternal(err))
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
 }
 
 // MetricTypeResponse represents the response body for metric type operations

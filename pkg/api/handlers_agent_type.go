@@ -1,15 +1,12 @@
 package api
 
 import (
-	"net/http"
-
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
 type AgentTypeHandler struct {
@@ -33,7 +30,7 @@ func (h *AgentTypeHandler) Routes() func(r chi.Router) {
 		// List endpoint - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeAgentType, authz.ActionRead, h.authz),
-		).Get("/", h.handleList)
+		).Get("/", List(h.querier, agentTypeToResponse))
 
 		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
@@ -42,38 +39,9 @@ func (h *AgentTypeHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using agent type's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgentType, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", h.handleGet)
+			).Get("/{id}", Get(h.querier, agentTypeToResponse))
 		})
 	}
-}
-
-func (h *AgentTypeHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	agentType, err := h.querier.Get(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrNotFound())
-		return
-	}
-
-	render.JSON(w, r, agentTypeToResponse(agentType))
-}
-
-func (h *AgentTypeHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	id := auth.MustGetIdentity(r.Context())
-	pag, err := ParsePageRequest(r)
-	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
-	result, err := h.querier.List(r.Context(), &id.Scope, pag)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, NewPageResponse(result, agentTypeToResponse))
 }
 
 // AgentTypeResponse represents the response body for agent type operations

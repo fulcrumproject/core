@@ -50,7 +50,7 @@ func (h *EventHandler) Routes() func(r chi.Router) {
 		// List endpoint - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeEvent, authz.ActionRead, h.authz),
-		).Get("/", h.handleList)
+		).Get("/", List(h.querier, eventToResponse))
 
 		// Event consumption endpoint with leasing - requires admin role
 		r.With(
@@ -62,23 +62,6 @@ func (h *EventHandler) Routes() func(r chi.Router) {
 			middlewares.AuthzSimple(authz.ObjectTypeEvent, authz.ActionAck, h.authz),
 		).Post("/ack", h.handleAcknowledge)
 	}
-}
-
-func (h *EventHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	id := auth.MustGetIdentity(r.Context())
-	pag, err := ParsePageRequest(r)
-	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
-	result, err := h.querier.List(r.Context(), &id.Scope, pag)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, NewPageResponse(result, eventToResponse))
 }
 
 // EventResponse represents the response body for event entry operations

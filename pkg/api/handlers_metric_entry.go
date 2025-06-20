@@ -53,7 +53,7 @@ func (h *MetricEntryHandler) Routes() func(r chi.Router) {
 		// List metrics
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeMetricEntry, authz.ActionRead, h.authz),
-		).Get("/", h.handleList)
+		).Get("/", List(h.querier, metricEntryToResponse))
 
 		// Create metric entry
 		r.With(
@@ -101,21 +101,6 @@ func (h *MetricEntryHandler) handleCreate(w http.ResponseWriter, r *http.Request
 
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, metricEntryToResponse(metricEntry))
-}
-
-func (h *MetricEntryHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	id := auth.MustGetIdentity(r.Context())
-	pag, err := ParsePageRequest(r)
-	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-	result, err := h.querier.List(r.Context(), &id.Scope, pag)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-	render.JSON(w, r, NewPageResponse(result, metricEntryToResponse))
 }
 
 // MetricEntryResponse represents the response body for metric entry operations

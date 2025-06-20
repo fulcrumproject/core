@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -122,102 +121,6 @@ func TestHandleCreate(t *testing.T) {
 	}
 }
 
-// TestAgentHandleGet tests the handleGet method (pure business logic)
-func TestAgentHandleGet(t *testing.T) {
-	testCases := []struct {
-		name           string
-		id             string
-		mockSetup      func(querier *mockAgentQuerier)
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name: "Success",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier) {
-				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-
-				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
-					return &domain.Agent{
-						BaseEntity: domain.BaseEntity{
-							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
-							CreatedAt: createdAt,
-							UpdatedAt: updatedAt,
-						},
-						Name:             "TestAgent",
-						Status:           domain.AgentConnected,
-						LastStatusUpdate: createdAt,
-						ProviderID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
-						AgentTypeID:      uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
-					}, nil
-				}
-			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"id":          "550e8400-e29b-41d4-a716-446655440000",
-				"name":        "TestAgent",
-				"status":      "Connected",
-				"providerId":  "660e8400-e29b-41d4-a716-446655440000",
-				"agentTypeId": "770e8400-e29b-41d4-a716-446655440000",
-				"tags":        interface{}(nil),
-				"createdAt":   "2023-01-01T00:00:00Z",
-				"updatedAt":   "2023-01-01T00:00:00Z",
-			},
-		},
-		{
-			name: "NotFound",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier) {
-				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
-					return nil, domain.NewNotFoundErrorf("agent not found")
-				}
-			},
-			expectedStatus: http.StatusNotFound,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Setup mocks
-			querier := &mockAgentQuerier{}
-			commander := &mockAgentCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier)
-
-			// Create the handler
-			handler := NewAgentHandler(querier, commander, authz)
-
-			// Create request with ID in URL path
-			req := httptest.NewRequest("GET", "/agents/"+tc.id, nil)
-
-			// Set up chi router context for URL parameters FIRST
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.id)
-			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-			// Add auth identity to context AFTER chi context
-			authIdentity := NewMockAuthAgent()
-			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
-
-			// Apply ID middleware to simulate the middleware chain
-			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.ID(http.HandlerFunc(handler.handleGet))
-			middlewareHandler.ServeHTTP(w, req)
-
-			// Assert response
-			assert.Equal(t, tc.expectedStatus, w.Code)
-
-			if tc.expectedStatus == http.StatusOK {
-				var response map[string]interface{}
-				err := json.Unmarshal(w.Body.Bytes(), &response)
-				require.NoError(t, err)
-				assert.Equal(t, tc.expectedBody, response)
-			}
-		})
-	}
-}
-
 // TestHandleGetMe tests the handleGetMe method
 func TestHandleGetMe(t *testing.T) {
 	testCases := []struct {
@@ -305,83 +208,6 @@ func TestHandleGetMe(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.expectedBody, response)
 			}
-		})
-	}
-}
-
-// TestAgentHandleList tests the handleList method
-func TestAgentHandleList(t *testing.T) {
-	testCases := []struct {
-		name           string
-		mockSetup      func(querier *mockAgentQuerier)
-		expectedStatus int
-	}{
-		{
-			name: "Success",
-			mockSetup: func(querier *mockAgentQuerier) {
-				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-
-				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
-					return &domain.PageResponse[domain.Agent]{
-						Items: []domain.Agent{
-							{
-								BaseEntity: domain.BaseEntity{
-									ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
-									CreatedAt: createdAt,
-									UpdatedAt: updatedAt,
-								},
-								Name:             "TestAgent1",
-								Status:           domain.AgentConnected,
-								LastStatusUpdate: createdAt,
-								ProviderID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
-								AgentTypeID:      uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
-							},
-						},
-						TotalItems:  1,
-						CurrentPage: 1,
-						TotalPages:  1,
-						HasNext:     false,
-					}, nil
-				}
-			},
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name: "ListError",
-			mockSetup: func(querier *mockAgentQuerier) {
-				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[domain.Agent], error) {
-					return nil, fmt.Errorf("database error")
-				}
-			},
-			expectedStatus: http.StatusInternalServerError,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Setup mocks
-			querier := &mockAgentQuerier{}
-			commander := &mockAgentCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(querier)
-
-			// Create the handler
-			handler := NewAgentHandler(querier, commander, authz)
-
-			// Create request
-			req := httptest.NewRequest("GET", "/agents", nil)
-
-			// Add auth identity to context
-			authIdentity := NewMockAuthAgent()
-			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
-
-			// Execute request
-			w := httptest.NewRecorder()
-			handler.handleList(w, req)
-
-			// Assert response
-			assert.Equal(t, tc.expectedStatus, w.Code)
 		})
 	}
 }
@@ -546,70 +372,6 @@ func TestHandleUpdateStatusMe(t *testing.T) {
 			// Execute request with middleware
 			w := httptest.NewRecorder()
 			middlewareHandler := middlewares.DecodeBody[UpdateAgentStatusRequest]()(http.HandlerFunc(handler.handleUpdateStatusMe))
-			middlewareHandler.ServeHTTP(w, req)
-
-			// Assert response
-			assert.Equal(t, tc.expectedStatus, w.Code)
-		})
-	}
-}
-
-// TestHandleDelete tests the handleDelete method
-func TestHandleDelete(t *testing.T) {
-	testCases := []struct {
-		name           string
-		id             string
-		mockSetup      func(commander *mockAgentCommander)
-		expectedStatus int
-	}{
-		{
-			name: "Success",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(commander *mockAgentCommander) {
-				commander.deleteFunc = func(ctx context.Context, id properties.UUID) error {
-					return nil
-				}
-			},
-			expectedStatus: http.StatusNoContent,
-		},
-		{
-			name: "DeleteError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(commander *mockAgentCommander) {
-				commander.deleteFunc = func(ctx context.Context, id properties.UUID) error {
-					return domain.NewNotFoundErrorf("agent not found")
-				}
-			},
-			expectedStatus: http.StatusNotFound,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Setup mocks
-			querier := &mockAgentQuerier{}
-			commander := &mockAgentCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(commander)
-
-			// Create the handler
-			handler := NewAgentHandler(querier, commander, authz)
-
-			// Create request
-			req := httptest.NewRequest("DELETE", "/agents/"+tc.id, nil)
-
-			// Set up chi router context for URL parameters FIRST
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.id)
-			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-			// Add auth identity to context
-			authIdentity := NewMockAuthAgent()
-			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
-
-			// Execute request with middleware
-			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.ID(http.HandlerFunc(handler.handleDelete))
 			middlewareHandler.ServeHTTP(w, req)
 
 			// Assert response

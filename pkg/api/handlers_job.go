@@ -49,7 +49,7 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 		// List jobs - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeJob, authz.ActionRead, h.authz),
-		).Get("/", h.handleList)
+		).Get("/", List(h.querier, jobToResponse))
 
 		// Agent job polling - requires agent identity
 		r.With(
@@ -64,7 +64,7 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 			// Get job - authorize using job's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", h.handleGet)
+			).Get("/{id}", Get(h.querier, jobToResponse))
 
 			// Agent actions - require agent identity and authorize from job ID
 			r.With(
@@ -85,37 +85,6 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 			).Post("/{id}/fail", h.handleFailJob)
 		})
 	}
-}
-
-// handleList handles GET /jobs
-func (h *JobHandler) handleList(w http.ResponseWriter, r *http.Request) {
-	id := auth.MustGetIdentity(r.Context())
-	page, err := ParsePageRequest(r)
-	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
-	result, err := h.querier.List(r.Context(), &id.Scope, page)
-	if err != nil {
-		render.Render(w, r, ErrInternal(err))
-		return
-	}
-
-	render.JSON(w, r, NewPageResponse(result, jobToResponse))
-}
-
-// handleGet handles GET /jobs/{id}
-func (h *JobHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	job, err := h.querier.Get(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrNotFound())
-		return
-	}
-
-	render.JSON(w, r, jobToResponse(job))
 }
 
 // handleGetPendingJobs handles GET /jobs/pending

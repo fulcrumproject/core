@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,14 +30,32 @@ var reservedParams = map[string]bool{
 func ParsePageRequest(r *http.Request) (*domain.PageRequest, error) {
 	q := r.URL.Query()
 
-	// Pagination
-	page, _ := strconv.Atoi(q.Get(paramPage))
-	if page < 1 {
-		page = defaultPage
+	// Pagination - strict validation
+	page := defaultPage
+	if pageStr := q.Get(paramPage); pageStr != "" {
+		parsedPage, err := strconv.Atoi(pageStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid page parameter: %s", pageStr)
+		}
+		if parsedPage < 1 {
+			return nil, fmt.Errorf("page parameter must be greater than 0, got: %d", parsedPage)
+		}
+		page = parsedPage
 	}
-	pageSize, _ := strconv.Atoi(q.Get(paramPageSize))
-	if pageSize < 1 || pageSize > maxPageSize {
-		pageSize = defaultPageSize
+
+	pageSize := defaultPageSize
+	if pageSizeStr := q.Get(paramPageSize); pageSizeStr != "" {
+		parsedPageSize, err := strconv.Atoi(pageSizeStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid pageSize parameter: %s", pageSizeStr)
+		}
+		if parsedPageSize < 1 {
+			return nil, fmt.Errorf("pageSize parameter must be greater than 0, got: %d", parsedPageSize)
+		}
+		if parsedPageSize > maxPageSize {
+			return nil, fmt.Errorf("pageSize parameter must not exceed %d, got: %d", maxPageSize, parsedPageSize)
+		}
+		pageSize = parsedPageSize
 	}
 
 	// Sort

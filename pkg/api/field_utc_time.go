@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -15,4 +16,21 @@ type JSONUTCTime time.Time
 func (t JSONUTCTime) MarshalJSON() ([]byte, error) {
 	formatted := time.Time(t).UTC().Format(ISO8601UTC)
 	return []byte(`"` + formatted + `"`), nil
+}
+
+func (t *JSONUTCTime) UnmarshalJSON(data []byte) error {
+	// Remove quotes
+	if len(data) < 2 || data[0] != '"' || data[len(data)-1] != '"' {
+		return fmt.Errorf("invalid time format")
+	}
+	timeStr := string(data[1 : len(data)-1])
+
+	// Parse the time
+	parsed, err := time.Parse(ISO8601UTC, timeStr)
+	if err != nil {
+		return err
+	}
+
+	*t = JSONUTCTime(parsed)
+	return nil
 }

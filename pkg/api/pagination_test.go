@@ -44,51 +44,37 @@ func TestParsePageRequest(t *testing.T) {
 		{
 			name:          "Invalid Page",
 			queryString:   "?page=invalid",
-			expectedError: false, // The implementation uses defaults for invalid values
-			expectedPage:  1,
-			expectedSize:  10,
+			expectedError: true,
 		},
 		{
 			name:          "Invalid Size",
 			queryString:   "?pageSize=invalid",
-			expectedError: false, // The implementation uses defaults for invalid values
-			expectedPage:  1,
-			expectedSize:  10,
+			expectedError: true,
 		},
 		{
 			name:          "Negative Page",
 			queryString:   "?page=-1",
-			expectedError: false, // The implementation sets to default
-			expectedPage:  1,
-			expectedSize:  10,
+			expectedError: true,
 		},
 		{
 			name:          "Zero Page",
 			queryString:   "?page=0",
-			expectedError: false, // The implementation sets to default
-			expectedPage:  1,
-			expectedSize:  10,
+			expectedError: true,
 		},
 		{
 			name:          "Negative Size",
 			queryString:   "?pageSize=-10",
-			expectedError: false, // The implementation sets to default
-			expectedPage:  1,
-			expectedSize:  10,
+			expectedError: true,
 		},
 		{
 			name:          "Zero Size",
 			queryString:   "?pageSize=0",
-			expectedError: false, // The implementation sets to default
-			expectedPage:  1,
-			expectedSize:  10,
+			expectedError: true,
 		},
 		{
 			name:          "Size Too Large",
 			queryString:   "?pageSize=1001", // Max is 100 in the implementation
-			expectedError: false,            // The implementation sets to default
-			expectedPage:  1,
-			expectedSize:  10,
+			expectedError: true,             // Now returns error for oversized values
 		},
 	}
 
