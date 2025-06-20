@@ -10,6 +10,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fulcrumproject/utils v0.0.0-20250620071818-370905318ebd h1:ZBhlHl0OVwFXMzOsSU6pQHZ4uaCbkviYV99HWro27b4=
 github.com/fulcrumproject/utils v0.0.0-20250620071818-370905318ebd/go.mod h1:TneWHteC5Krpth5l1jqNPAXXNaum5fO0JM3+WdI5fmg=
+github.com/fulcrumproject/utils v0.0.0-20250620084911-aa05426555fe h1:2eTSLPDECJz4gpZ4wuyVuW0K2y45Sq4Y6WiX+MPkPDk=
+github.com/fulcrumproject/utils v0.0.0-20250620084911-aa05426555fe/go.mod h1:TneWHteC5Krpth5l1jqNPAXXNaum5fO0JM3+WdI5fmg=
 github.com/gabriel-vasile/mimetype v1.4.9 h1:5k+WDwEsD9eTLL8Tz3L0VnmVh9QxGjRmjBvAG7U/oYY=
 github.com/gabriel-vasile/mimetype v1.4.9/go.mod h1:WnSQhFKJuBlRyLiKohA/2DtIlPFAbguNaG7QCHcyGok=
 github.com/go-chi/chi v1.5.5 h1:vOB/HbEMt9QqBqErz07QehcOKHaWFtuj87tTDVz2qXE=

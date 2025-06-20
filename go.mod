@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/coreos/go-oidc/v3 v3.14.1
-	github.com/fulcrumproject/utils v0.0.0-20250620071818-370905318ebd
+	github.com/fulcrumproject/utils v0.0.0-20250620084911-aa05426555fe
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-chi/render v1.0.3
 	github.com/go-playground/validator/v10 v10.26.0

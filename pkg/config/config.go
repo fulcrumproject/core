@@ -19,8 +19,8 @@ type Config struct {
 	Authenticators []string        `json:"authenticators" env:"AUTHENTICATORS" validate:"omitempty,dive,oneof=oauth token"`
 	JobConfig      JobConfig       `json:"job" validate:"required"`
 	AgentConfig    AgentConfig     `json:"agent" validate:"required"`
-	LogConfig      logging.LogConf `json:"log" validate:"required"`
-	DBConfig       gormpg.DB       `json:"db" validate:"required"`
+	LogConfig      logging.Conf    `json:"log" validate:"required"`
+	DBConfig       gormpg.Conf     `json:"db" validate:"required"`
 	OAuthConfig    keycloak.Config `json:"oauth" validate:"required"`
 }
 
@@ -47,11 +47,11 @@ var Default = Config{
 	AgentConfig: AgentConfig{
 		HealthTimeout: 30 * time.Second,
 	},
-	LogConfig: logging.LogConf{
+	LogConfig: logging.Conf{
 		Level:  slog.LevelInfo,
 		Format: "json",
 	},
-	DBConfig: gormpg.DB{
+	DBConfig: gormpg.Conf{
 		DSN:       "host=localhost user=fulcrum password=fulcrum_password dbname=fulcrum_db port=5432 sslmode=disable",
 		LogLevel:  slog.LevelWarn,
 		LogFormat: "text",

@@ -11,7 +11,7 @@ import (
 )
 
 // NewConnection creates a new database connection
-func NewConnection(config *gormpg.DB) (*gorm.DB, error) {
+func NewConnection(config *gormpg.Conf) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: config.DSN,
 	}), &gorm.Config{
