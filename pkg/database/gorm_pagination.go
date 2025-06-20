@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/fulcrumproject/commons/auth"
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/fulcrumproject/commons/auth"
-	"github.com/fulcrumproject/commons/middlewares"
-	"github.com/fulcrumproject/commons/properties"
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/middlewares"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )

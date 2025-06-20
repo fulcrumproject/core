@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"testing"
 
-	cb "github.com/fulcrumproject/commons/config"
 	"github.com/fulcrumproject/core/pkg/config"
+	"github.com/fulcrumproject/utils/confbuilder"
 	"gorm.io/gorm"
 )
 
@@ -22,11 +22,9 @@ func NewTestDB(t *testing.T) *TestDB {
 	// uuidStr := strings.Replace(uuid.New().String(), "-", "", -1)
 	dbName := fmt.Sprintf("fulcrum_test_%s", "db") // uuidStr)
 
-	defaultConfig := config.Default
-	appConfig, err := cb.New(&defaultConfig,
-		cb.WithEnvPrefix[*config.Config](config.EnvPrefix),
-		cb.WithEnvFiles[*config.Config](".env")).
-		WithEnv().
+	appConfig, err := confbuilder.New(config.Default).
+		EnvPrefix(config.EnvPrefix).
+		EnvFiles(".env").
 		Build()
 	if err != nil {
 		t.Fatalf("Failed to get config: %v", err)
@@ -84,11 +82,9 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 	}
 
 	// Connect to postgres database to delete the test database
-	defaultConfig := config.Default
-	appConfig, err := cb.New(&defaultConfig,
-		cb.WithEnvPrefix[*config.Config](config.EnvPrefix),
-		cb.WithEnvFiles[*config.Config](".env")).
-		WithEnv().
+	appConfig, err := confbuilder.New(config.Default).
+		EnvPrefix(config.EnvPrefix).
+		EnvFiles(".env").
 		Build()
 	if err != nil {
 		t.Fatalf("Failed to get config: %v", err)

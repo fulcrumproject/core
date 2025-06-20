@@ -3,8 +3,8 @@ package domain
 import (
 	"context"
 
-	"github.com/fulcrumproject/commons/auth"
-	"github.com/fulcrumproject/commons/properties"
+	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/properties"
 )
 
 // AgentType represents a type of service manager agent

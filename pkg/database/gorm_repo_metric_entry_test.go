@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/fulcrumproject/commons/auth"
-	"github.com/fulcrumproject/commons/properties"
+	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

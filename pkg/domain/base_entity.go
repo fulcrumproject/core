@@ -3,7 +3,7 @@ package domain
 import (
 	"time"
 
-	"github.com/fulcrumproject/commons/properties"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

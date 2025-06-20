@@ -1,7 +1,7 @@
 package authz
 
 import (
-	"github.com/fulcrumproject/commons/auth"
+	"github.com/fulcrumproject/core/pkg/auth"
 )
 
 const (

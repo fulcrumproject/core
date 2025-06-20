@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/fulcrumproject/commons/auth"
-	"github.com/fulcrumproject/commons/properties"
+	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/properties"
 )
 
 const (

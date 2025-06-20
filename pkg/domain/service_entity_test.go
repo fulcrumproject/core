@@ -3,7 +3,7 @@ package domain
 import (
 	"testing"
 
-	"github.com/fulcrumproject/commons/properties"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )

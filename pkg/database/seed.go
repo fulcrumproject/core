@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/fulcrumproject/commons/auth"
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
