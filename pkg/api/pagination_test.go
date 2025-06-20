@@ -95,7 +95,7 @@ func TestParsePageRequest(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			req := httptest.NewRequest("GET", "/test"+tc.queryString, nil)
-			pageReq, err := parsePageRequest(req)
+			pageReq, err := ParsePageRequest(req)
 
 			if tc.expectedError {
 				assert.Error(t, err)

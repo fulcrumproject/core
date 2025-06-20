@@ -26,7 +26,7 @@ var reservedParams = map[string]bool{
 	paramSort:     true,
 }
 
-func parsePageRequest(r *http.Request) (*domain.PageRequest, error) {
+func ParsePageRequest(r *http.Request) (*domain.PageRequest, error) {
 	q := r.URL.Query()
 
 	// Pagination

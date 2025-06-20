@@ -90,7 +90,7 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 // handleList handles GET /jobs
 func (h *JobHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := auth.MustGetIdentity(r.Context())
-	page, err := parsePageRequest(r)
+	page, err := ParsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return

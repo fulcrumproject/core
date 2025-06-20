@@ -66,7 +66,7 @@ func (h *EventHandler) Routes() func(r chi.Router) {
 
 func (h *EventHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := auth.MustGetIdentity(r.Context())
-	pag, err := parsePageRequest(r)
+	pag, err := ParsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return

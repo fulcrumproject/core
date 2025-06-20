@@ -104,7 +104,7 @@ func (h *ParticipantHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 func (h *ParticipantHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	id := auth.MustGetIdentity(r.Context())
-	pag, err := parsePageRequest(r)
+	pag, err := ParsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
