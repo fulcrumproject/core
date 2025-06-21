@@ -14,7 +14,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-type CreateMetricEntryRequest struct {
+type CreateMetricEntryReq struct {
 	ServiceID    *properties.UUID `json:"serviceId,omitempty"`
 	ExternalID   *string          `json:"externalId,omitempty"`
 	ResourceID   string           `json:"resourceId"`
@@ -53,18 +53,18 @@ func (h *MetricEntryHandler) Routes() func(r chi.Router) {
 		// List metrics
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeMetricEntry, authz.ActionRead, h.authz),
-		).Get("/", List(h.querier, metricEntryToResponse))
+		).Get("/", List(h.querier, MetricEntryToRes))
 
 		// Create metric entry
 		r.With(
-			middlewares.DecodeBody[CreateMetricEntryRequest](),
+			middlewares.DecodeBody[CreateMetricEntryReq](),
 			middlewares.AuthzSimple(authz.ObjectTypeMetricEntry, authz.ActionCreate, h.authz),
-		).Post("/", h.handleCreate)
+		).Post("/", h.Create)
 	}
 }
 
-func (h *MetricEntryHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	p := middlewares.MustGetBody[CreateMetricEntryRequest](r.Context())
+func (h *MetricEntryHandler) Create(w http.ResponseWriter, r *http.Request) {
+	p := middlewares.MustGetBody[CreateMetricEntryReq](r.Context())
 	id := auth.MustGetIdentity(r.Context())
 
 	var (
@@ -100,29 +100,29 @@ func (h *MetricEntryHandler) handleCreate(w http.ResponseWriter, r *http.Request
 	}
 
 	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, metricEntryToResponse(metricEntry))
+	render.JSON(w, r, MetricEntryToRes(metricEntry))
 }
 
-// MetricEntryResponse represents the response body for metric entry operations
-type MetricEntryResponse struct {
-	ID         properties.UUID     `json:"id"`
-	ProviderID properties.UUID     `json:"providerId"`
-	ConsumerID properties.UUID     `json:"consumerId"`
-	AgentID    properties.UUID     `json:"agentId"`
-	ServiceID  properties.UUID     `json:"serviceId"`
-	ResourceID string              `json:"resourceId"`
-	Value      float64             `json:"value"`
-	TypeID     string              `json:"typeId"`
-	CreatedAt  JSONUTCTime         `json:"createdAt"`
-	UpdatedAt  JSONUTCTime         `json:"updatedAt"`
-	Agent      *AgentResponse      `json:"agent,omitempty"`
-	Service    *ServiceResponse    `json:"service,omitempty"`
-	Type       *MetricTypeResponse `json:"type,omitempty"`
+// MetricEntryRes represents the response body for metric entry operations
+type MetricEntryRes struct {
+	ID         properties.UUID `json:"id"`
+	ProviderID properties.UUID `json:"providerId"`
+	ConsumerID properties.UUID `json:"consumerId"`
+	AgentID    properties.UUID `json:"agentId"`
+	ServiceID  properties.UUID `json:"serviceId"`
+	ResourceID string          `json:"resourceId"`
+	Value      float64         `json:"value"`
+	TypeID     string          `json:"typeId"`
+	CreatedAt  JSONUTCTime     `json:"createdAt"`
+	UpdatedAt  JSONUTCTime     `json:"updatedAt"`
+	Agent      *AgentRes       `json:"agent,omitempty"`
+	Service    *ServiceRes     `json:"service,omitempty"`
+	Type       *MetricTypeRes  `json:"type,omitempty"`
 }
 
-// metricEntryToResponse converts a domain.MetricEntry to a MetricEntryResponse
-func metricEntryToResponse(me *domain.MetricEntry) *MetricEntryResponse {
-	resp := &MetricEntryResponse{
+// MetricEntryToRes converts a domain.MetricEntry to a MetricEntryResponse
+func MetricEntryToRes(me *domain.MetricEntry) *MetricEntryRes {
+	resp := &MetricEntryRes{
 		ID:         me.ID,
 		AgentID:    me.AgentID,
 		ProviderID: me.ProviderID,
@@ -135,13 +135,13 @@ func metricEntryToResponse(me *domain.MetricEntry) *MetricEntryResponse {
 		UpdatedAt:  JSONUTCTime(me.UpdatedAt),
 	}
 	if me.Agent != nil {
-		resp.Agent = agentToResponse(me.Agent)
+		resp.Agent = AgentToRes(me.Agent)
 	}
 	if me.Service != nil {
-		resp.Service = serviceToResponse(me.Service)
+		resp.Service = ServiceToRes(me.Service)
 	}
 	if me.Type != nil {
-		resp.Type = metricTypeToResponse(me.Type)
+		resp.Type = MetricTypeToRes(me.Type)
 	}
 	return resp
 }

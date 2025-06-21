@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -14,12 +15,12 @@ import (
 	"github.com/fulcrumproject/core/pkg/domain"
 )
 
-type CompleteJobRequest struct {
+type CompleteJobReq struct {
 	Resources  *properties.JSON `json:"resources"`
 	ExternalID *string          `json:"externalID"`
 }
 
-type FailJobRequest struct {
+type FailJobReq struct {
 	ErrorMessage string `json:"errorMessage"`
 }
 
@@ -49,13 +50,13 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 		// List jobs - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeJob, authz.ActionRead, h.authz),
-		).Get("/", List(h.querier, jobToResponse))
+		).Get("/", List(h.querier, JobToRes))
 
 		// Agent job polling - requires agent identity
 		r.With(
 			middlewares.MustHaveRoles(auth.RoleAgent),
 			middlewares.AuthzSimple(authz.ObjectTypeJob, authz.ActionListPending, h.authz),
-		).Get("/pending", h.handleGetPendingJobs)
+		).Get("/pending", h.Pending)
 
 		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
@@ -64,31 +65,31 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 			// Get job - authorize using job's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, jobToResponse))
+			).Get("/{id}", Get(h.querier, JobToRes))
 
 			// Agent actions - require agent identity and authorize from job ID
 			r.With(
 				middlewares.MustHaveRoles(auth.RoleAgent),
 				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionComplete, h.authz, h.querier.AuthScope),
-			).Post("/{id}/claim", h.handleClaimJob)
+			).Post("/{id}/claim", CommandWithoutBody(h.commander.Claim))
 
 			r.With(
 				middlewares.MustHaveRoles(auth.RoleAgent),
-				middlewares.DecodeBody[CompleteJobRequest](),
+				middlewares.DecodeBody[CompleteJobReq](),
 				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionComplete, h.authz, h.querier.AuthScope),
-			).Post("/{id}/complete", h.handleCompleteJob)
+			).Post("/{id}/complete", Command(h.Complete))
 
 			r.With(
 				middlewares.MustHaveRoles(auth.RoleAgent),
-				middlewares.DecodeBody[FailJobRequest](),
+				middlewares.DecodeBody[FailJobReq](),
 				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionFail, h.authz, h.querier.AuthScope),
-			).Post("/{id}/fail", h.handleFailJob)
+			).Post("/{id}/fail", Command(h.Fail))
 		})
 	}
 }
 
-// handleGetPendingJobs handles GET /jobs/pending
-func (h *JobHandler) handleGetPendingJobs(w http.ResponseWriter, r *http.Request) {
+// Pending handles GET /jobs/pending
+func (h *JobHandler) Pending(w http.ResponseWriter, r *http.Request) {
 	// Parse limit parameter
 	limitStr := r.URL.Query().Get("limit")
 	limit := 10 // Default
@@ -110,57 +111,25 @@ func (h *JobHandler) handleGetPendingJobs(w http.ResponseWriter, r *http.Request
 	}
 
 	// Convert to response
-	jobResponses := make([]*JobResponse, len(jobs))
+	jobResponses := make([]*JobRes, len(jobs))
 	for i, job := range jobs {
-		jobResponses[i] = jobToResponse(job)
+		jobResponses[i] = JobToRes(job)
 	}
 
 	render.JSON(w, r, jobResponses)
 }
 
-// handleClaimJob handles POST /jobs/{id}/claim
-func (h *JobHandler) handleClaimJob(w http.ResponseWriter, r *http.Request) {
-	jobID := middlewares.MustGetID(r.Context())
-
-	// Claim job for this agent
-	if err := h.commander.Claim(r.Context(), jobID); err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+// Adapter functions for standard handlers
+func (h *JobHandler) Complete(ctx context.Context, id properties.UUID, req *CompleteJobReq) error {
+	return h.commander.Complete(ctx, id, req.Resources, req.ExternalID)
 }
 
-// handleCompleteJob handles POST /jobs/{id}/complete
-func (h *JobHandler) handleCompleteJob(w http.ResponseWriter, r *http.Request) {
-	jobID := middlewares.MustGetID(r.Context())
-	req := middlewares.MustGetBody[CompleteJobRequest](r.Context())
-
-	// Complete the job
-	if err := h.commander.Complete(r.Context(), jobID, req.Resources, req.ExternalID); err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+func (h *JobHandler) Fail(ctx context.Context, id properties.UUID, req *FailJobReq) error {
+	return h.commander.Fail(ctx, id, req.ErrorMessage)
 }
 
-// handleFailJob handles POST /jobs/{id}/fail
-func (h *JobHandler) handleFailJob(w http.ResponseWriter, r *http.Request) {
-	jobID := middlewares.MustGetID(r.Context())
-	req := middlewares.MustGetBody[FailJobRequest](r.Context())
-
-	// Fail the job
-	if err := h.commander.Fail(r.Context(), jobID, req.ErrorMessage); err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-// JobResponse represents the response for a job
-type JobResponse struct {
+// JobRes represents the response for a job
+type JobRes struct {
 	ID           properties.UUID      `json:"id"`
 	ProviderID   properties.UUID      `json:"providerId"`
 	ConsumerID   properties.UUID      `json:"consumerId"`
@@ -174,12 +143,12 @@ type JobResponse struct {
 	CompletedAt  *JSONUTCTime         `json:"completedAt,omitempty"`
 	CreatedAt    JSONUTCTime          `json:"createdAt"`
 	UpdatedAt    JSONUTCTime          `json:"updatedAt"`
-	Service      *ServiceResponse     `json:"service,omitempty"`
+	Service      *ServiceRes          `json:"service,omitempty"`
 }
 
-// jobToResponse converts a job entity to a response
-func jobToResponse(job *domain.Job) *JobResponse {
-	resp := &JobResponse{
+// JobToRes converts a job entity to a response
+func JobToRes(job *domain.Job) *JobRes {
+	resp := &JobRes{
 		ID:           job.ID,
 		AgentID:      job.AgentID,
 		ProviderID:   job.ProviderID,
@@ -199,7 +168,7 @@ func jobToResponse(job *domain.Job) *JobResponse {
 		resp.CompletedAt = (*JSONUTCTime)(job.CompletedAt)
 	}
 	if job.Service != nil {
-		resp.Service = serviceToResponse(job.Service)
+		resp.Service = ServiceToRes(job.Service)
 	}
 	return resp
 }

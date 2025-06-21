@@ -14,7 +14,7 @@ import (
 type BaseMockQuerier[T domain.Entity] struct {
 	GetFunc       func(ctx context.Context, id properties.UUID) (*T, error)
 	ExistsFunc    func(ctx context.Context, id properties.UUID) (bool, error)
-	ListFunc      func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[T], error)
+	ListFunc      func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageReq) (*domain.PageRes[T], error)
 	CountFunc     func(ctx context.Context) (int64, error)
 	AuthScopeFunc func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
 }
@@ -36,11 +36,11 @@ func (m *BaseMockQuerier[T]) Exists(ctx context.Context, id properties.UUID) (bo
 }
 
 // List retrieves a list of entities based on the provided filters
-func (m *BaseMockQuerier[T]) List(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[T], error) {
+func (m *BaseMockQuerier[T]) List(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageReq) (*domain.PageRes[T], error) {
 	if m.ListFunc != nil {
 		return m.ListFunc(ctx, authScope, req)
 	}
-	return &domain.PageResponse[T]{
+	return &domain.PageRes[T]{
 		Items:       []T{},
 		TotalItems:  0,
 		CurrentPage: 1,

@@ -186,7 +186,7 @@ func TestServiceRepository(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 			}
@@ -201,7 +201,7 @@ func TestServiceRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with name filter", func(t *testing.T) {
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"name": {"Service A"}},
@@ -214,7 +214,7 @@ func TestServiceRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with status filter", func(t *testing.T) {
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"currentStatus": {string(domain.ServiceStarted)}},
@@ -229,7 +229,7 @@ func TestServiceRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with sorting", func(t *testing.T) {
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Sort:     true,
@@ -262,7 +262,7 @@ func TestServiceRepository(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 2,
 			}

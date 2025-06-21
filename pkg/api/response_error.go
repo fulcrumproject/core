@@ -9,8 +9,8 @@ import (
 	"github.com/go-chi/render"
 )
 
-// ErrResponse represents an error response
-type ErrResponse struct {
+// ErrRes represents an error response
+type ErrRes struct {
 	Err            error `json:"-"` // low-level runtime error
 	HTTPStatusCode int   `json:"-"` // http response status code
 
@@ -18,8 +18,8 @@ type ErrResponse struct {
 	ErrorText  string `json:"error,omitempty"` // application-level error message
 }
 
-// ValidationErrResponse represents a validation error response with detailed errors
-type ValidationErrResponse struct {
+// ValidationErrRes represents a validation error response with detailed errors
+type ValidationErrRes struct {
 	Err            error                          `json:"-"` // low-level runtime error
 	HTTPStatusCode int                            `json:"-"` // http response status code
 	StatusText     string                         `json:"status"`
@@ -45,7 +45,7 @@ func ErrDomain(err error) render.Renderer {
 }
 
 func ErrInvalidRequest(err error) render.Renderer {
-	return &ErrResponse{
+	return &ErrRes{
 		Err:            err,
 		HTTPStatusCode: http.StatusBadRequest,
 		StatusText:     "Invalid request",
@@ -54,14 +54,14 @@ func ErrInvalidRequest(err error) render.Renderer {
 }
 
 func ErrNotFound() render.Renderer {
-	return &ErrResponse{
+	return &ErrRes{
 		HTTPStatusCode: http.StatusNotFound,
 		StatusText:     "Resource not found",
 	}
 }
 
 func ErrInternal(err error) render.Renderer {
-	return &ErrResponse{
+	return &ErrRes{
 		Err:            err,
 		HTTPStatusCode: http.StatusInternalServerError,
 		StatusText:     "Internal server error",
@@ -70,7 +70,7 @@ func ErrInternal(err error) render.Renderer {
 }
 
 func ErrUnauthenticated() render.Renderer {
-	return &ErrResponse{
+	return &ErrRes{
 		HTTPStatusCode: http.StatusUnauthorized,
 		StatusText:     "Unauthorized",
 		ErrorText:      "Authentication required",
@@ -78,7 +78,7 @@ func ErrUnauthenticated() render.Renderer {
 }
 
 func ErrUnauthorized(err error) render.Renderer {
-	return &ErrResponse{
+	return &ErrRes{
 		HTTPStatusCode: http.StatusForbidden,
 		StatusText:     "Forbidden",
 		ErrorText:      err.Error(),
@@ -86,7 +86,7 @@ func ErrUnauthorized(err error) render.Renderer {
 }
 
 func ErrValidation(err domain.ValidationError) render.Renderer {
-	return &ValidationErrResponse{
+	return &ValidationErrRes{
 		Err:            err,
 		HTTPStatusCode: http.StatusBadRequest,
 		StatusText:     "Validation failed",
@@ -95,12 +95,12 @@ func ErrValidation(err domain.ValidationError) render.Renderer {
 	}
 }
 
-func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (e *ErrRes) Render(w http.ResponseWriter, r *http.Request) error {
 	w.WriteHeader(e.HTTPStatusCode)
 	return nil
 }
 
-func (e *ValidationErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (e *ValidationErrRes) Render(w http.ResponseWriter, r *http.Request) error {
 	w.WriteHeader(e.HTTPStatusCode)
 	return nil
 }

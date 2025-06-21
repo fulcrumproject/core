@@ -11,8 +11,8 @@ var (
 	ErrInvalidFields = errors.New("invalid fields in request")
 )
 
-// ErrResponse represents an error response
-type ErrResponse struct {
+// ErrRes represents an error response
+type ErrRes struct {
 	Err       error  `json:"-"`               // low-level runtime error
 	ErrorText string `json:"error,omitempty"` // application-level error message
 
@@ -27,13 +27,13 @@ type ValidationError struct {
 	Message string `json:"message"`
 }
 
-func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (e *ErrRes) Render(w http.ResponseWriter, r *http.Request) error {
 	w.WriteHeader(e.HTTPStatusCode)
 	return nil
 }
 
 func ErrInvalidRequest(err error) render.Renderer {
-	return &ErrResponse{
+	return &ErrRes{
 		Err:            err,
 		ErrorText:      err.Error(),
 		HTTPStatusCode: http.StatusBadRequest,
@@ -42,7 +42,7 @@ func ErrInvalidRequest(err error) render.Renderer {
 }
 
 func MultiErrInvalidRequest(validationErrs []ValidationError) render.Renderer {
-	return &ErrResponse{
+	return &ErrRes{
 		Err:              ErrInvalidFields,
 		ErrorText:        ErrInvalidFields.Error(),
 		HTTPStatusCode:   http.StatusBadRequest,
@@ -52,7 +52,7 @@ func MultiErrInvalidRequest(validationErrs []ValidationError) render.Renderer {
 }
 
 func ErrNotFound(err error) render.Renderer {
-	return &ErrResponse{
+	return &ErrRes{
 		Err:            err,
 		ErrorText:      err.Error(),
 		HTTPStatusCode: http.StatusNotFound,
@@ -61,7 +61,7 @@ func ErrNotFound(err error) render.Renderer {
 }
 
 func ErrInternal(err error) render.Renderer {
-	return &ErrResponse{
+	return &ErrRes{
 		Err:            err,
 		ErrorText:      err.Error(),
 		HTTPStatusCode: http.StatusInternalServerError,
@@ -70,7 +70,7 @@ func ErrInternal(err error) render.Renderer {
 }
 
 func ErrUnauthenticated(err error) render.Renderer {
-	return &ErrResponse{
+	return &ErrRes{
 		Err:            err,
 		ErrorText:      err.Error(),
 		HTTPStatusCode: http.StatusUnauthorized,
@@ -79,7 +79,7 @@ func ErrUnauthenticated(err error) render.Renderer {
 }
 
 func ErrUnauthorized(err error) render.Renderer {
-	return &ErrResponse{
+	return &ErrRes{
 		Err:            err,
 		ErrorText:      err.Error(),
 		HTTPStatusCode: http.StatusForbidden,

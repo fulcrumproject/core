@@ -36,7 +36,7 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 		// List endpoint - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeServiceType, authz.ActionRead, h.authz),
-		).Get("/", List(h.querier, serviceTypeToResponse))
+		).Get("/", List(h.querier, ServiceTypeToRes))
 
 		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
@@ -45,18 +45,18 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using service type's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeServiceType, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, serviceTypeToResponse))
+			).Get("/{id}", Get(h.querier, ServiceTypeToRes))
 
 			// Validate endpoint - authorize using service type's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeServiceType, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Post("/{id}/validate", h.handleValidate)
+			).Post("/{id}/validate", h.Validate)
 		})
 	}
 }
 
-// ServiceTypeResponse represents the response body for service type operations
-type ServiceTypeResponse struct {
+// ServiceTypeRes represents the response body for service type operations
+type ServiceTypeRes struct {
 	ID             properties.UUID      `json:"id"`
 	Name           string               `json:"name"`
 	PropertySchema *schema.CustomSchema `json:"propertySchema,omitempty"`
@@ -64,9 +64,9 @@ type ServiceTypeResponse struct {
 	UpdatedAt      JSONUTCTime          `json:"updatedAt"`
 }
 
-// serviceTypeToResponse converts a domain.ServiceType to a ServiceTypeResponse
-func serviceTypeToResponse(st *domain.ServiceType) *ServiceTypeResponse {
-	return &ServiceTypeResponse{
+// ServiceTypeToRes converts a domain.ServiceType to a ServiceTypeResponse
+func ServiceTypeToRes(st *domain.ServiceType) *ServiceTypeRes {
+	return &ServiceTypeRes{
 		ID:             st.ID,
 		Name:           st.Name,
 		PropertySchema: st.PropertySchema,
@@ -75,18 +75,18 @@ func serviceTypeToResponse(st *domain.ServiceType) *ServiceTypeResponse {
 	}
 }
 
-// ValidateRequest represents the request body for property validation
-type ValidateRequest struct {
+// ValidateReq represents the request body for property validation
+type ValidateReq struct {
 	Properties map[string]any `json:"properties"`
 }
 
-// ValidateResponse represents the response body for property validation
-type ValidateResponse struct {
+// ValidateRes represents the response body for property validation
+type ValidateRes struct {
 	Valid  bool                     `json:"valid"`
 	Errors []schema.ValidationError `json:"errors,omitempty"`
 }
 
-func (h *ServiceTypeHandler) handleValidate(w http.ResponseWriter, r *http.Request) {
+func (h *ServiceTypeHandler) Validate(w http.ResponseWriter, r *http.Request) {
 	id := middlewares.MustGetID(r.Context())
 
 	// Get the service type
@@ -103,7 +103,7 @@ func (h *ServiceTypeHandler) handleValidate(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Parse request body
-	var req ValidateRequest
+	var req ValidateReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -112,7 +112,7 @@ func (h *ServiceTypeHandler) handleValidate(w http.ResponseWriter, r *http.Reque
 	// Validate properties against schema
 	validationErrors := schema.Validate(req.Properties, *serviceType.PropertySchema)
 
-	response := ValidateResponse{
+	response := ValidateRes{
 		Valid:  len(validationErrors) == 0,
 		Errors: validationErrors,
 	}

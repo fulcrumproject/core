@@ -27,7 +27,7 @@ var reservedParams = map[string]bool{
 	paramSort:     true,
 }
 
-func ParsePageRequest(r *http.Request) (*domain.PageRequest, error) {
+func ParsePageRequest(r *http.Request) (*domain.PageReq, error) {
 	q := r.URL.Query()
 
 	// Pagination - strict validation
@@ -83,15 +83,15 @@ func ParsePageRequest(r *http.Request) (*domain.PageRequest, error) {
 		}
 	}
 
-	return &domain.PageRequest{
+	return &domain.PageReq{
 		Page: page, PageSize: pageSize,
 		Sort: sort != "", SortBy: sortBy, SortAsc: sortAsc,
 		Filters: filters,
 	}, nil
 }
 
-// PageResponse represents a generic paginated response
-type PageResponse[T any] struct {
+// PageRes represents a generic paginated response
+type PageRes[T any] struct {
 	Items       []*T  `json:"items"`
 	TotalItems  int64 `json:"totalItems"`
 	TotalPages  int   `json:"totalPages"`
@@ -101,13 +101,13 @@ type PageResponse[T any] struct {
 }
 
 // NewPageResponse creates a new PaginatedResponse from a domain.PaginatedResult
-func NewPageResponse[E any, R any](result *domain.PageResponse[E], conv func(*E) *R) *PageResponse[R] {
+func NewPageResponse[E any, R any](result *domain.PageRes[E], conv func(*E) *R) *PageRes[R] {
 	items := make([]*R, len(result.Items))
 	for i, e := range result.Items {
 		items[i] = conv(&e)
 	}
 
-	return &PageResponse[R]{
+	return &PageRes[R]{
 		Items:       items,
 		TotalItems:  result.TotalItems,
 		TotalPages:  result.TotalPages,

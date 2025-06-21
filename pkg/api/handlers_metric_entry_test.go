@@ -75,13 +75,13 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		requestBody    CreateMetricEntryRequest
+		requestBody    CreateMetricEntryReq
 		mockSetup      func(serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander)
 		expectedStatus int
 	}{
 		{
 			name: "SuccessWithServiceID",
-			requestBody: CreateMetricEntryRequest{
+			requestBody: CreateMetricEntryReq{
 				ServiceID:  &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
 				ResourceID: "resource-1",
 				Value:      123.45,
@@ -141,7 +141,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 		},
 		{
 			name: "SuccessWithExternalID",
-			requestBody: CreateMetricEntryRequest{
+			requestBody: CreateMetricEntryReq{
 				ExternalID: &[]string{"service-ext-1"}[0],
 				ResourceID: "resource-1",
 				Value:      123.45,
@@ -202,7 +202,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 		},
 		{
 			name: "ServiceQueryError",
-			requestBody: CreateMetricEntryRequest{
+			requestBody: CreateMetricEntryReq{
 				ServiceID:  &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
 				ResourceID: "resource-1",
 				Value:      123.45,
@@ -218,7 +218,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 		},
 		{
 			name: "AuthScopeError",
-			requestBody: CreateMetricEntryRequest{
+			requestBody: CreateMetricEntryReq{
 				ServiceID:  &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
 				ResourceID: "resource-1",
 				Value:      123.45,
@@ -251,7 +251,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 		},
 		{
 			name: "CommanderError",
-			requestBody: CreateMetricEntryRequest{
+			requestBody: CreateMetricEntryReq{
 				ServiceID:  &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
 				ResourceID: "resource-1",
 				Value:      123.45,
@@ -313,7 +313,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 
 			// Execute request with middleware
 			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.DecodeBody[CreateMetricEntryRequest]()(http.HandlerFunc(handler.handleCreate))
+			middlewareHandler := middlewares.DecodeBody[CreateMetricEntryReq]()(http.HandlerFunc(handler.Create))
 			middlewareHandler.ServeHTTP(w, req)
 
 			// Assert response
@@ -378,7 +378,7 @@ func TestMetricEntryToResponse(t *testing.T) {
 		},
 	}
 
-	response := metricEntryToResponse(metricEntry)
+	response := MetricEntryToRes(metricEntry)
 
 	// Verify all fields are correctly mapped
 	assert.Equal(t, metricEntry.ID, response.ID)
@@ -410,7 +410,7 @@ func TestMetricEntryToResponse(t *testing.T) {
 	metricEntry.Service = nil
 	metricEntry.Type = nil
 
-	responseSparse := metricEntryToResponse(metricEntry)
+	responseSparse := MetricEntryToRes(metricEntry)
 
 	assert.Nil(t, responseSparse.Agent)
 	assert.Nil(t, responseSparse.Service)

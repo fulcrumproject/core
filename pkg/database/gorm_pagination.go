@@ -10,12 +10,12 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type PageFilterApplier func(db *gorm.DB, r *domain.PageRequest) (*gorm.DB, error)
+type PageFilterApplier func(db *gorm.DB, r *domain.PageReq) (*gorm.DB, error)
 
 type FilterFieldApplier func(db *gorm.DB, vv []string) (*gorm.DB, error)
 
 func mapFilterApplier(fields map[string]FilterFieldApplier) PageFilterApplier {
-	return func(db *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
+	return func(db *gorm.DB, r *domain.PageReq) (*gorm.DB, error) {
 		if len(r.Filters) == 0 {
 			return db, nil
 		}
@@ -35,7 +35,7 @@ func mapFilterApplier(fields map[string]FilterFieldApplier) PageFilterApplier {
 }
 
 func mapSortApplier(fields map[string]string) PageFilterApplier {
-	return func(db *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
+	return func(db *gorm.DB, r *domain.PageReq) (*gorm.DB, error) {
 		if !r.Sort {
 			return db, nil
 		}
@@ -47,7 +47,7 @@ func mapSortApplier(fields map[string]string) PageFilterApplier {
 	}
 }
 
-func applyPagination(db *gorm.DB, r *domain.PageRequest) (*gorm.DB, error) {
+func applyPagination(db *gorm.DB, r *domain.PageReq) (*gorm.DB, error) {
 	offset := (r.Page - 1) * r.PageSize
 	db = db.Offset(offset).Limit(r.PageSize)
 	return db, nil
@@ -78,13 +78,13 @@ func stringInFilterFieldApplier(f string) FilterFieldApplier {
 func list[T any](
 	ctx context.Context,
 	db *gorm.DB,
-	page *domain.PageRequest,
+	page *domain.PageReq,
 	filterApplier PageFilterApplier,
 	sortApplier PageFilterApplier,
 	authzFilterApplier AuthzFilterApplier,
 	preloadPaths []string,
 	authIdentityScope *auth.IdentityScope,
-) (*domain.PageResponse[T], error) {
+) (*domain.PageRes[T], error) {
 	var items []T
 
 	// Start the query with the model type

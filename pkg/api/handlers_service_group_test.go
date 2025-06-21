@@ -1,23 +1,15 @@
 package api
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
-	"github.com/fulcrumproject/core/pkg/middlewares"
-	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestNewServiceGroupHandler tests the constructor
@@ -70,213 +62,14 @@ func TestServiceGroupHandlerRoutes(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// TestServiceGroupHandleCreate tests the handleCreate method
-func TestServiceGroupHandleCreate(t *testing.T) {
-	// Setup test cases
-	testCases := []struct {
-		name           string
-		requestBody    CreateServiceGroupRequest
-		mockSetup      func(commander *mockServiceGroupCommander)
-		expectedStatus int
-	}{
-		{
-			name: "Success",
-			requestBody: CreateServiceGroupRequest{
-				Name:       "Test Group",
-				ConsumerID: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
-			},
-			mockSetup: func(commander *mockServiceGroupCommander) {
-				consumerID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
-
-				// Setup the commander
-				commander.createFunc = func(ctx context.Context, name string, bID properties.UUID) (*domain.ServiceGroup, error) {
-					assert.Equal(t, "Test Group", name)
-					assert.Equal(t, consumerID, bID)
-
-					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-
-					return &domain.ServiceGroup{
-						BaseEntity: domain.BaseEntity{
-							ID:        uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
-							CreatedAt: createdAt,
-							UpdatedAt: updatedAt,
-						},
-						Name:       name,
-						ConsumerID: bID,
-					}, nil
-				}
-			},
-			expectedStatus: http.StatusCreated,
-		},
-		{
-			name: "CommanderError",
-			requestBody: CreateServiceGroupRequest{
-				Name:       "Test Group",
-				ConsumerID: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
-			},
-			mockSetup: func(commander *mockServiceGroupCommander) {
-				// Setup the commander to return an error
-				commander.createFunc = func(ctx context.Context, name string, consumerID properties.UUID) (*domain.ServiceGroup, error) {
-					return nil, fmt.Errorf("database error")
-				}
-			},
-			expectedStatus: http.StatusInternalServerError,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Setup mocks
-			querier := &mockServiceGroupQuerier{}
-			commander := &mockServiceGroupCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(commander)
-
-			// Create the handler
-			handler := NewServiceGroupHandler(querier, commander, authz)
-
-			// Create request with body
-			bodyBytes, err := json.Marshal(tc.requestBody)
-			require.NoError(t, err)
-			req := httptest.NewRequest("POST", "/service-groups", bytes.NewReader(bodyBytes))
-			req = req.WithContext(auth.WithIdentity(req.Context(), NewMockAuthAdmin()))
-			req.Header.Set("Content-Type", "application/json")
-
-			// Execute request with middleware
-			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.DecodeBody[CreateServiceGroupRequest]()(http.HandlerFunc(handler.handleCreate))
-			middlewareHandler.ServeHTTP(w, req)
-
-			// Assert response
-			assert.Equal(t, tc.expectedStatus, w.Code)
-
-			if tc.expectedStatus == http.StatusCreated {
-				var response map[string]any
-				err := json.Unmarshal(w.Body.Bytes(), &response)
-				require.NoError(t, err)
-
-				// Verify response structure
-				assert.Equal(t, "660e8400-e29b-41d4-a716-446655440000", response["id"])
-				assert.Equal(t, "Test Group", response["name"])
-				assert.NotEmpty(t, response["createdAt"])
-				assert.NotEmpty(t, response["updatedAt"])
-			}
-		})
-	}
-}
-
-// TestServiceGroupHandleUpdate tests the handleUpdate method
-func TestServiceGroupHandleUpdate(t *testing.T) {
-	// Setup test cases
-	testCases := []struct {
-		name           string
-		id             string
-		requestBody    UpdateServiceGroupRequest
-		mockSetup      func(commander *mockServiceGroupCommander)
-		expectedStatus int
-	}{
-		{
-			name: "Success",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: UpdateServiceGroupRequest{
-				Name: stringPtr("Updated Group"),
-			},
-			mockSetup: func(commander *mockServiceGroupCommander) {
-				// Setup the commander to update
-				commander.updateFunc = func(ctx context.Context, id properties.UUID, name *string) (*domain.ServiceGroup, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					require.NotNil(t, name)
-					assert.Equal(t, "Updated Group", *name)
-
-					newName := "Updated Group"
-					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
-					consumerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
-
-					return &domain.ServiceGroup{
-						BaseEntity: domain.BaseEntity{
-							ID:        id,
-							CreatedAt: createdAt,
-							UpdatedAt: updatedAt,
-						},
-						Name:       newName,
-						ConsumerID: consumerID,
-					}, nil
-				}
-			},
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name: "CommanderError",
-			id:   "550e8400-e29b-41d4-a716-446655440000",
-			requestBody: UpdateServiceGroupRequest{
-				Name: stringPtr("Updated Group"),
-			},
-			mockSetup: func(commander *mockServiceGroupCommander) {
-				// Setup the commander to return an error
-				commander.updateFunc = func(ctx context.Context, id properties.UUID, name *string) (*domain.ServiceGroup, error) {
-					return nil, fmt.Errorf("update error")
-				}
-			},
-			expectedStatus: http.StatusInternalServerError,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Setup mocks
-			querier := &mockServiceGroupQuerier{}
-			commander := &mockServiceGroupCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(commander)
-
-			// Create the handler
-			handler := NewServiceGroupHandler(querier, commander, authz)
-
-			// Create request with body
-			bodyBytes, err := json.Marshal(tc.requestBody)
-			require.NoError(t, err)
-			req := httptest.NewRequest("PATCH", "/service-groups/"+tc.id, bytes.NewReader(bodyBytes))
-			req = req.WithContext(auth.WithIdentity(req.Context(), NewMockAuthAdmin()))
-			req.Header.Set("Content-Type", "application/json")
-
-			// Set up chi router context for URL parameters FIRST
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.id)
-			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-			// Execute request with middleware
-			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.DecodeBody[UpdateServiceGroupRequest]()(middlewares.ID(http.HandlerFunc(handler.handleUpdate)))
-			middlewareHandler.ServeHTTP(w, req)
-
-			// Assert response
-			assert.Equal(t, tc.expectedStatus, w.Code)
-
-			if tc.expectedStatus == http.StatusOK {
-				var response map[string]any
-				err := json.Unmarshal(w.Body.Bytes(), &response)
-				require.NoError(t, err)
-
-				// Verify response structure
-				assert.Equal(t, tc.id, response["id"])
-				assert.Equal(t, "Updated Group", response["name"])
-				assert.NotEmpty(t, response["createdAt"])
-				assert.NotEmpty(t, response["updatedAt"])
-			}
-		})
-	}
-}
-
 // TestServiceGroupToResponse tests the serviceGroupToResponse function
 func TestServiceGroupToResponse(t *testing.T) {
-	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-	updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	// Create a service group
 	id := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 	consumerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
+	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
 
-	// Create a service group
 	serviceGroup := &domain.ServiceGroup{
 		BaseEntity: domain.BaseEntity{
 			ID:        id,
@@ -287,11 +80,13 @@ func TestServiceGroupToResponse(t *testing.T) {
 		ConsumerID: consumerID,
 	}
 
-	response := serviceGroupToResponse(serviceGroup)
+	// Convert to response
+	response := ServiceGroupToRes(serviceGroup)
 
 	// Verify all fields are correctly mapped
-	assert.Equal(t, serviceGroup.ID, response.ID)
-	assert.Equal(t, serviceGroup.Name, response.Name)
-	assert.Equal(t, JSONUTCTime(serviceGroup.CreatedAt), response.CreatedAt)
-	assert.Equal(t, JSONUTCTime(serviceGroup.UpdatedAt), response.UpdatedAt)
+	assert.Equal(t, id, response.ID)
+	assert.Equal(t, "Test Group", response.Name)
+	assert.Equal(t, consumerID, response.ConsumerID)
+	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)
+	assert.Equal(t, JSONUTCTime(updatedAt), response.UpdatedAt)
 }

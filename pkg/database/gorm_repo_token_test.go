@@ -113,7 +113,7 @@ func TestTokenRepository(t *testing.T) {
 			token2 := createTestToken(t, auth.RoleAdmin, nil)
 			require.NoError(t, repo.Create(ctx, token2))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 			}
@@ -134,7 +134,7 @@ func TestTokenRepository(t *testing.T) {
 			token.Name = "UniqueTokenName"
 			require.NoError(t, repo.Create(ctx, token))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"name": {"UniqueTokenName"}},
@@ -162,7 +162,7 @@ func TestTokenRepository(t *testing.T) {
 			token := createTestToken(t, auth.RoleParticipant, &participant.ID)
 			require.NoError(t, repo.Create(ctx, token))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"role": {"participant"}},
@@ -190,7 +190,7 @@ func TestTokenRepository(t *testing.T) {
 			token2.Name = "B Token"
 			require.NoError(t, repo.Create(ctx, token2))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Sort:     true,

@@ -80,7 +80,7 @@ func TestAgentTypeToResponse(t *testing.T) {
 		},
 	}
 
-	response := agentTypeToResponse(agentType)
+	response := AgentTypeToRes(agentType)
 
 	assert.Equal(t, agentType.ID, response.ID)
 	assert.Equal(t, agentType.Name, response.Name)

@@ -68,7 +68,7 @@ components:
           description: The number of items per page
           default: 20
 
-    ErrorResponse:
+    ErrorRes:
       type: object
       properties:
         status:
@@ -95,7 +95,7 @@ components:
       description: A generic properties.JSON object
 
     # Participant schemas
-    ParticipantRequest:
+    ParticipantReq:
       type: object
       required:
         - name
@@ -107,7 +107,7 @@ components:
         status:
           $ref: "#/components/schemas/ParticipantStatus"
 
-    ParticipantResponse:
+    ParticipantRes:
       type: object
       properties:
         id:
@@ -134,7 +134,7 @@ components:
       enum: [admin, participant, agent]
       description: Access role for the token
 
-    TokenRequest:
+    TokenReq:
       type: object
       required:
         - name
@@ -154,7 +154,7 @@ components:
           $ref: "#/components/schemas/properties.UUID"
           description: "Required for participant and agent roles. For participant role - the participant ID; for agent role - the agent ID"
 
-    TokenResponse:
+    TokenRes:
       type: object
       properties:
         id:
@@ -191,7 +191,7 @@ components:
       type: string
       enum: [New, Connected, Disconnected, Error, Disabled]
 
-    AgentRequest:
+    AgentReq:
       type: object
       required:
         - name
@@ -211,7 +211,7 @@ components:
         agentTypeId:
           $ref: "#/components/schemas/properties.UUID"
 
-    AgentResponse:
+    AgentRes:
       type: object
       properties:
         id:
@@ -231,9 +231,9 @@ components:
             type: string
           example: ["gpu", "high-memory", "ssd"]
         participant:
-          $ref: "#/components/schemas/ParticipantResponse"
+          $ref: "#/components/schemas/ParticipantRes"
         agentType:
-          $ref: "#/components/schemas/AgentTypeResponse"
+          $ref: "#/components/schemas/AgentTypeRes"
         createdAt:
           type: string
           format: date-time
@@ -241,17 +241,17 @@ components:
           type: string
           format: date-time
 
-    AgentCreateResponse:
+    AgentCreateRes:
       allOf:
-        - $ref: "#/components/schemas/AgentResponse"
+        - $ref: "#/components/schemas/AgentRes"
         - type: object
           properties:
             token:
-              $ref: "#/components/schemas/TokenResponse"
+              $ref: "#/components/schemas/TokenRes"
               description: "The agent authentication token"
 
     # Agent Type schemas
-    AgentTypeRequest:
+    AgentTypeReq:
       type: object
       required:
         - name
@@ -260,7 +260,7 @@ components:
           type: string
           example: "Participant VM Agent"
 
-    AgentTypeResponse:
+    AgentTypeRes:
       type: object
       properties:
         id:
@@ -271,7 +271,7 @@ components:
         serviceTypes:
           type: array
           items:
-            $ref: "#/components/schemas/ServiceTypeResponse"
+            $ref: "#/components/schemas/ServiceTypeRes"
           description: "Service types that this agent type can provide"
         createdAt:
           type: string
@@ -297,7 +297,7 @@ components:
           Deleted,
         ]
 
-    ServiceRequest:
+    ServiceReq:
       type: object
       required:
         - name
@@ -323,7 +323,7 @@ components:
         groupId:
           $ref: "#/components/schemas/properties.UUID"
 
-    ServiceResponse:
+    ServiceRes:
       type: object
       properties:
         id:
@@ -362,13 +362,13 @@ components:
         consumerId:
           $ref: "#/components/schemas/properties.UUID"
         agent:
-          $ref: "#/components/schemas/AgentResponse"
+          $ref: "#/components/schemas/AgentRes"
         serviceType:
-          $ref: "#/components/schemas/ServiceTypeResponse"
+          $ref: "#/components/schemas/ServiceTypeRes"
         group:
-          $ref: "#/components/schemas/ServiceGroupResponse"
+          $ref: "#/components/schemas/ServiceGroupRes"
         consumerParticipant:
-          $ref: "#/components/schemas/ParticipantResponse"
+          $ref: "#/components/schemas/ParticipantRes"
         createdAt:
           type: string
           format: date-time
@@ -377,7 +377,7 @@ components:
           format: date-time
 
     # Service Type schemas
-    ServiceTypeRequest:
+    ServiceTypeReq:
       type: object
       required:
         - name
@@ -388,7 +388,7 @@ components:
         resourceDefinitions:
           $ref: "#/components/schemas/JSONObject"
 
-    ServiceTypeResponse:
+    ServiceTypeRes:
       type: object
       properties:
         id:
@@ -406,7 +406,7 @@ components:
           format: date-time
 
     # Service Group schemas
-    ServiceGroupRequest:
+    ServiceGroupReq:
       type: object
       required:
         - name
@@ -419,7 +419,7 @@ components:
           $ref: "#/components/schemas/properties.UUID"
           description: "ID of the consumer participant that owns this service group"
 
-    ServiceGroupResponse:
+    ServiceGroupRes:
       type: object
       properties:
         id:
@@ -454,7 +454,7 @@ components:
       type: string
       enum: [Pending, Processing, Completed, Failed]
 
-    JobResponse:
+    JobRes:
       type: object
       properties:
         id:
@@ -490,11 +490,11 @@ components:
           type: string
           format: date-time
         agent:
-          $ref: "#/components/schemas/AgentResponse"
+          $ref: "#/components/schemas/AgentRes"
         service:
-          $ref: "#/components/schemas/ServiceResponse"
+          $ref: "#/components/schemas/ServiceRes"
 
-    CompleteJobRequest:
+    CompleteJobReq:
       type: object
       properties:
         externalId:
@@ -502,7 +502,7 @@ components:
         resources:
           $ref: "#/components/schemas/JSONObject"
 
-    FailJobRequest:
+    FailJobReq:
       type: object
       required:
         - errorMessage
@@ -516,7 +516,7 @@ components:
       type: string
       enum: [Agent, Service, Resource]
 
-    MetricTypeRequest:
+    MetricTypeReq:
       type: object
       required:
         - name
@@ -528,7 +528,7 @@ components:
         entityType:
           $ref: "#/components/schemas/MetricEntityType"
 
-    MetricTypeResponse:
+    MetricTypeRes:
       type: object
       properties:
         id:
@@ -545,7 +545,7 @@ components:
           type: string
           format: date-time
 
-    MetricEntryRequest:
+    MetricEntryReq:
       type: object
       required:
         - resourceId
@@ -574,7 +574,7 @@ components:
           description: "Name of the metric type"
           example: "cpu.usage"
 
-    MetricEntryResponse:
+    MetricEntryRes:
       type: object
       properties:
         id:
@@ -595,7 +595,7 @@ components:
           format: date-time
 
     # Event schemas
-    EventResponse:
+    EventRes:
       type: object
       properties:
         id:
@@ -615,7 +615,7 @@ components:
           type: string
           format: date-time
 
-    EventLeaseRequest:
+    EventLeaseReq:
       type: object
       required:
         - subscriberId
@@ -644,13 +644,13 @@ components:
           default: 100
           example: 100
 
-    EventLeaseResponse:
+    EventLeaseRes:
       type: object
       properties:
         events:
           type: array
           items:
-            $ref: "#/components/schemas/EventResponse"
+            $ref: "#/components/schemas/EventRes"
           description: Array of events fetched in chronological order
         leaseExpiresAt:
           type: string
@@ -662,7 +662,7 @@ components:
           description: Last event sequence number processed by this subscriber
           example: 150
 
-    EventAckRequest:
+    EventAckReq:
       type: object
       required:
         - subscriberId
@@ -684,7 +684,7 @@ components:
           minimum: 1
           example: 150
 
-    EventAckResponse:
+    EventAckRes:
       type: object
       properties:
         lastEventSequenceProcessed:
@@ -693,7 +693,7 @@ components:
           description: Updated last event sequence processed
           example: 150
 
-    PageResponse:
+    PageRes:
       type: object
       properties:
         items:
@@ -769,7 +769,7 @@ components:
         value:
           description: Value for the validator (type depends on validator type)
 
-    ValidatePropertiesRequest:
+    ValidatePropertiesReq:
       type: object
       required:
         - properties
@@ -779,7 +779,7 @@ components:
           description: Properties to validate against the schema
           additionalProperties: true
 
-    ValidatePropertiesResponse:
+    ValidatePropertiesRes:
       type: object
       properties:
         valid:
@@ -807,31 +807,31 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: "#/components/schemas/ErrorRes"
     Unauthorized:
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: "#/components/schemas/ErrorRes"
     Forbidden:
       description: Forbidden
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: "#/components/schemas/ErrorRes"
     NotFound:
       description: Not Found
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: "#/components/schemas/ErrorRes"
     InternalServerError:
       description: Internal Server Error
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: "#/components/schemas/ErrorRes"
 
 paths:
   #
@@ -868,13 +868,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/PageResponse"
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/ParticipantResponse"
+                          $ref: "#/components/schemas/ParticipantRes"
     post:
       summary: Create a participant
       tags:
@@ -892,20 +892,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ParticipantRequest"
+              $ref: "#/components/schemas/ParticipantReq"
       responses:
         "201":
           description: Participant created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ParticipantResponse"
+                $ref: "#/components/schemas/ParticipantRes"
         "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /participants/{id}:
     parameters:
@@ -932,13 +932,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ParticipantResponse"
+                $ref: "#/components/schemas/ParticipantRes"
         "404":
           description: Participant not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       summary: Update a participant
       tags:
@@ -956,20 +956,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ParticipantRequest"
+              $ref: "#/components/schemas/ParticipantReq"
       responses:
         "200":
           description: Participant updated successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ParticipantResponse"
+                $ref: "#/components/schemas/ParticipantRes"
         "404":
           description: Participant not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       summary: Delete a participant
       tags:
@@ -990,7 +990,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   #
   # Token endpoints
@@ -1026,13 +1026,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/PageResponse"
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/TokenResponse"
+                          $ref: "#/components/schemas/TokenRes"
     post:
       summary: Create a token
       tags:
@@ -1050,20 +1050,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/TokenRequest"
+              $ref: "#/components/schemas/TokenReq"
       responses:
         "201":
           description: Token created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TokenResponse"
+                $ref: "#/components/schemas/TokenRes"
         "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /tokens/{id}:
     parameters:
@@ -1090,13 +1090,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TokenResponse"
+                $ref: "#/components/schemas/TokenRes"
         "404":
           description: Token not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       summary: Update a token
       tags:
@@ -1132,13 +1132,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TokenResponse"
+                $ref: "#/components/schemas/TokenRes"
         "404":
           description: Token not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       summary: Delete a token
       tags:
@@ -1159,7 +1159,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /tokens/{id}/regenerate:
     parameters:
@@ -1186,13 +1186,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TokenResponse"
+                $ref: "#/components/schemas/TokenRes"
         "404":
           description: Token not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   #
   # Agent endpoints
@@ -1228,13 +1228,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/PageResponse"
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/AgentResponse"
+                          $ref: "#/components/schemas/AgentRes"
     post:
       summary: Create an agent
       tags:
@@ -1252,20 +1252,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AgentRequest"
+              $ref: "#/components/schemas/AgentReq"
       responses:
         "201":
           description: Agent created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentCreateResponse"
+                $ref: "#/components/schemas/AgentCreateRes"
         "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /agents/{id}:
     parameters:
@@ -1292,13 +1292,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentResponse"
+                $ref: "#/components/schemas/AgentRes"
         "404":
           description: Agent not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       summary: Update an agent
       tags:
@@ -1316,20 +1316,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AgentRequest"
+              $ref: "#/components/schemas/AgentReq"
       responses:
         "200":
           description: Agent updated successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentResponse"
+                $ref: "#/components/schemas/AgentRes"
         "404":
           description: Agent not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       summary: Delete an agent
       tags:
@@ -1350,7 +1350,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /agents/me/status:
     put:
@@ -1377,19 +1377,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentResponse"
+                $ref: "#/components/schemas/AgentRes"
         "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /agents/me:
     get:
@@ -1405,13 +1405,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentResponse"
+                $ref: "#/components/schemas/AgentRes"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   #
   # Agent Type endpoints
@@ -1447,13 +1447,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/PageResponse"
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/AgentTypeResponse"
+                          $ref: "#/components/schemas/AgentTypeRes"
 
   /agent-types/{id}:
     parameters:
@@ -1480,13 +1480,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentTypeResponse"
+                $ref: "#/components/schemas/AgentTypeRes"
         "404":
           description: Agent type not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
   #
   # Service endpoints
   #
@@ -1521,13 +1521,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/PageResponse"
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/ServiceResponse"
+                          $ref: "#/components/schemas/ServiceRes"
     post:
       summary: Create a service
       tags:
@@ -1545,22 +1545,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ServiceRequest"
+              $ref: "#/components/schemas/ServiceReq"
       responses:
         "201":
           description: Service created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServiceResponse"
+                $ref: "#/components/schemas/ServiceRes"
         "400":
           description: Invalid request or validation failed
           content:
             application/json:
               schema:
                 oneOf:
-                  - $ref: "#/components/schemas/ErrorResponse"
-                  - $ref: "#/components/schemas/ValidatePropertiesResponse"
+                  - $ref: "#/components/schemas/ErrorRes"
+                  - $ref: "#/components/schemas/ValidatePropertiesRes"
 
   /services/{id}:
     parameters:
@@ -1587,13 +1587,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServiceResponse"
+                $ref: "#/components/schemas/ServiceRes"
         "404":
           description: Service not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       summary: Update a service
       tags:
@@ -1634,21 +1634,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServiceResponse"
+                $ref: "#/components/schemas/ServiceRes"
         "400":
           description: Invalid request or validation failed
           content:
             application/json:
               schema:
                 oneOf:
-                  - $ref: "#/components/schemas/ErrorResponse"
-                  - $ref: "#/components/schemas/ValidatePropertiesResponse"
+                  - $ref: "#/components/schemas/ErrorRes"
+                  - $ref: "#/components/schemas/ValidatePropertiesRes"
         "404":
           description: Service not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       summary: Delete a service
       tags:
@@ -1669,7 +1669,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /services/{id}/start:
     parameters:
@@ -1698,7 +1698,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /services/{id}/stop:
     parameters:
@@ -1727,7 +1727,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /services/{id}/retry:
     parameters:
@@ -1756,7 +1756,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   #
   # Service Type endpoints
@@ -1792,13 +1792,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/PageResponse"
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/ServiceTypeResponse"
+                          $ref: "#/components/schemas/ServiceTypeRes"
 
   /service-types/{id}:
     parameters:
@@ -1825,13 +1825,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServiceTypeResponse"
+                $ref: "#/components/schemas/ServiceTypeRes"
         "404":
           description: Service type not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /service-types/{id}/validate:
     parameters:
@@ -1857,26 +1857,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ValidatePropertiesRequest"
+              $ref: "#/components/schemas/ValidatePropertiesReq"
       responses:
         "200":
           description: Validation results
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ValidatePropertiesResponse"
+                $ref: "#/components/schemas/ValidatePropertiesRes"
         "400":
           description: Bad request (e.g., service type has no property schema)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
         "404":
           description: Service type not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   #
   # Service Group endpoints
@@ -1912,13 +1912,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/PageResponse"
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/ServiceGroupResponse"
+                          $ref: "#/components/schemas/ServiceGroupRes"
     post:
       summary: Create a service group
       tags:
@@ -1936,20 +1936,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ServiceGroupRequest"
+              $ref: "#/components/schemas/ServiceGroupReq"
       responses:
         "201":
           description: Service group created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServiceGroupResponse"
+                $ref: "#/components/schemas/ServiceGroupRes"
         "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /service-groups/{id}:
     parameters:
@@ -1976,13 +1976,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServiceGroupResponse"
+                $ref: "#/components/schemas/ServiceGroupRes"
         "404":
           description: Service group not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       summary: Update a service group
       tags:
@@ -2000,20 +2000,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ServiceGroupRequest"
+              $ref: "#/components/schemas/ServiceGroupReq"
       responses:
         "200":
           description: Service group updated successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServiceGroupResponse"
+                $ref: "#/components/schemas/ServiceGroupRes"
         "404":
           description: Service group not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       summary: Delete a service group
       tags:
@@ -2034,7 +2034,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   # Job endpoints
   #
@@ -2069,13 +2069,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/PageResponse"
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/JobResponse"
+                          $ref: "#/components/schemas/JobRes"
 
   /jobs/pending:
     get:
@@ -2106,13 +2106,13 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/JobResponse"
+                  $ref: "#/components/schemas/JobRes"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /jobs/{id}:
     parameters:
@@ -2132,13 +2132,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/JobResponse"
+                $ref: "#/components/schemas/JobRes"
         "404":
           description: Job not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /jobs/{id}/claim:
     parameters:
@@ -2162,13 +2162,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
         "404":
           description: Job not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /jobs/{id}/complete:
     parameters:
@@ -2189,7 +2189,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CompleteJobRequest"
+              $ref: "#/components/schemas/CompleteJobReq"
       responses:
         "204":
           description: Job completed successfully
@@ -2198,13 +2198,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
         "404":
           description: Job not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /jobs/{id}/fail:
     parameters:
@@ -2225,7 +2225,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/FailJobRequest"
+              $ref: "#/components/schemas/FailJobReq"
       responses:
         "204":
           description: Job marked as failed successfully
@@ -2234,13 +2234,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
         "404":
           description: Job not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   #
   # Metric Type endpoints
@@ -2276,13 +2276,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/PageResponse"
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/MetricTypeResponse"
+                          $ref: "#/components/schemas/MetricTypeRes"
     post:
       summary: Create a metric type
       tags:
@@ -2300,20 +2300,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MetricTypeRequest"
+              $ref: "#/components/schemas/MetricTypeReq"
       responses:
         "201":
           description: Metric type created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MetricTypeResponse"
+                $ref: "#/components/schemas/MetricTypeRes"
         "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   /metric-types/{id}:
     parameters:
@@ -2340,13 +2340,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MetricTypeResponse"
+                $ref: "#/components/schemas/MetricTypeRes"
         "404":
           description: Metric type not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       summary: Update a metric type
       tags:
@@ -2375,13 +2375,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MetricTypeResponse"
+                $ref: "#/components/schemas/MetricTypeRes"
         "404":
           description: Metric type not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       summary: Delete a metric type
       tags:
@@ -2402,7 +2402,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   #
   # Metric Entry endpoints
@@ -2431,13 +2431,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/PageResponse"
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/MetricEntryResponse"
+                          $ref: "#/components/schemas/MetricEntryRes"
     post:
       summary: Create a metric entry
       tags:
@@ -2450,26 +2450,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MetricEntryRequest"
+              $ref: "#/components/schemas/MetricEntryReq"
       responses:
         "201":
           description: Metric entry created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MetricEntryResponse"
+                $ref: "#/components/schemas/MetricEntryRes"
         "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
 
   #
   # Event Entry endpoints
@@ -2505,13 +2505,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/PageResponse"
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/EventResponse"
+                          $ref: "#/components/schemas/EventRes"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -2539,14 +2539,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EventLeaseRequest"
+              $ref: "#/components/schemas/EventLeaseReq"
       responses:
         "200":
           description: Lease acquired successfully with events
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EventLeaseResponse"
+                $ref: "#/components/schemas/EventLeaseRes"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -2558,7 +2558,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -2580,14 +2580,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EventAckRequest"
+              $ref: "#/components/schemas/EventAckReq"
       responses:
         "200":
           description: Events acknowledged successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EventAckResponse"
+                $ref: "#/components/schemas/EventAckRes"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -2599,6 +2599,6 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorRes"
         "500":
           $ref: "#/components/responses/InternalServerError"

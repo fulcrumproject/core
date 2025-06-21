@@ -1,7 +1,7 @@
 package api
 
 import (
-	"net/http"
+	"context"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
@@ -9,15 +9,14 @@ import (
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
-type CreateParticipantRequest struct {
+type CreateParticipantReq struct {
 	Name   string                   `json:"name"`
 	Status domain.ParticipantStatus `json:"status"`
 }
 
-type UpdateParticipantRequest struct {
+type UpdateParticipantReq struct {
 	Name   *string                   `json:"name"`
 	Status *domain.ParticipantStatus `json:"status"`
 }
@@ -46,13 +45,13 @@ func (h *ParticipantHandler) Routes() func(r chi.Router) {
 		// List endpoint - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeParticipant, authz.ActionRead, h.authz),
-		).Get("/", List(h.querier, participantToResponse))
+		).Get("/", List(h.querier, ParticipantToRes))
 
-		// Create endpoint - decode body, then simple authorization
+		// Create endpoint - using standard Create handler
 		r.With(
-			middlewares.DecodeBody[CreateParticipantRequest](),
+			middlewares.DecodeBody[CreateParticipantReq](),
 			middlewares.AuthzSimple(authz.ObjectTypeParticipant, authz.ActionCreate, h.authz),
-		).Post("/", h.handleCreate)
+		).Post("/", Create(h.Create, ParticipantToRes))
 
 		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
@@ -61,13 +60,13 @@ func (h *ParticipantHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using participant's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeParticipant, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, participantToResponse))
+			).Get("/{id}", Get(h.querier, ParticipantToRes))
 
-			// Update endpoint - decode body, authorize using participant's scope
+			// Update endpoint - using standard Update handler
 			r.With(
-				middlewares.DecodeBody[UpdateParticipantRequest](),
+				middlewares.DecodeBody[UpdateParticipantReq](),
 				middlewares.AuthzFromID(authz.ObjectTypeParticipant, authz.ActionUpdate, h.authz, h.querier.AuthScope),
-			).Patch("/{id}", h.handleUpdate)
+			).Patch("/{id}", Update(h.Update, ParticipantToRes))
 
 			// Delete endpoint - authorize using participant's scope
 			r.With(
@@ -77,34 +76,18 @@ func (h *ParticipantHandler) Routes() func(r chi.Router) {
 	}
 }
 
-func (h *ParticipantHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	req := middlewares.MustGetBody[CreateParticipantRequest](r.Context())
+// Adapter functions that convert request structs to commander method calls
 
-	participant, err := h.commander.Create(r.Context(), req.Name, req.Status)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, participantToResponse(participant))
+func (h *ParticipantHandler) Create(ctx context.Context, req *CreateParticipantReq) (*domain.Participant, error) {
+	return h.commander.Create(ctx, req.Name, req.Status)
 }
 
-func (h *ParticipantHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-	req := middlewares.MustGetBody[UpdateParticipantRequest](r.Context())
-
-	participant, err := h.commander.Update(r.Context(), id, req.Name, req.Status)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, participantToResponse(participant))
+func (h *ParticipantHandler) Update(ctx context.Context, id properties.UUID, req *UpdateParticipantReq) (*domain.Participant, error) {
+	return h.commander.Update(ctx, id, req.Name, req.Status)
 }
 
-// ParticipantResponse represents the response body for participant operations
-type ParticipantResponse struct {
+// ParticipantRes represents the response body for participant operations
+type ParticipantRes struct {
 	ID        properties.UUID          `json:"id"`
 	Name      string                   `json:"name"`
 	Status    domain.ParticipantStatus `json:"status"`
@@ -112,9 +95,9 @@ type ParticipantResponse struct {
 	UpdatedAt JSONUTCTime              `json:"updatedAt"`
 }
 
-// participantToResponse converts a domain.Participant to a ParticipantResponse
-func participantToResponse(p *domain.Participant) *ParticipantResponse {
-	return &ParticipantResponse{
+// ParticipantToRes converts a domain.Participant to a ParticipantResponse
+func ParticipantToRes(p *domain.Participant) *ParticipantRes {
+	return &ParticipantRes{
 		ID:        p.ID,
 		Name:      p.Name,
 		Status:    p.Status,

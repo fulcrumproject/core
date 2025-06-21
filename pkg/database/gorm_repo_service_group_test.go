@@ -83,7 +83,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			group2 := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, group2))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 			}
@@ -103,7 +103,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			serviceGroup := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, serviceGroup))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"name": {serviceGroup.Name}},
@@ -128,7 +128,7 @@ func TestServiceGroupRepository(t *testing.T) {
 			group2 := createTestServiceGroup(t, participant.ID)
 			require.NoError(t, repo.Create(ctx, group2))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Sort:     true,
@@ -157,7 +157,7 @@ func TestServiceGroupRepository(t *testing.T) {
 				require.NoError(t, repo.Create(ctx, group))
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 2,
 			}

@@ -1,22 +1,12 @@
 package api
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
-	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
-	"github.com/fulcrumproject/core/pkg/domain"
-	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestNewParticipantHandler tests the constructor
@@ -67,97 +57,4 @@ func TestParticipantHandlerRoutes(t *testing.T) {
 
 	err := chi.Walk(r, walkFunc)
 	assert.NoError(t, err)
-}
-
-// TestParticipantHandleCreate tests the handleCreate method
-func TestParticipantHandleCreate(t *testing.T) {
-	// Setup test cases
-	testCases := []struct {
-		name           string
-		requestBody    CreateParticipantRequest
-		mockSetup      func(commander *mockParticipantCommander)
-		expectedStatus int
-	}{
-		{
-			name: "Success",
-			requestBody: CreateParticipantRequest{
-				Name:   "Example Org",
-				Status: domain.ParticipantStatus("Enabled"),
-			},
-			mockSetup: func(commander *mockParticipantCommander) {
-				// Setup the commander
-				commander.createFunc = func(ctx context.Context, name string, status domain.ParticipantStatus) (*domain.Participant, error) {
-					assert.Equal(t, "Example Org", name)
-					assert.Equal(t, domain.ParticipantStatus("Enabled"), status)
-
-					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-
-					return &domain.Participant{
-						BaseEntity: domain.BaseEntity{
-							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
-							CreatedAt: createdAt,
-							UpdatedAt: updatedAt,
-						},
-						Name:   name,
-						Status: status,
-					}, nil
-				}
-			},
-			expectedStatus: http.StatusCreated,
-		},
-		{
-			name: "CommanderError",
-			requestBody: CreateParticipantRequest{
-				Name:   "Example Org",
-				Status: domain.ParticipantStatus("Enabled"),
-			},
-			mockSetup: func(commander *mockParticipantCommander) {
-				// Setup the commander to return an error
-				commander.createFunc = func(ctx context.Context, name string, status domain.ParticipantStatus) (*domain.Participant, error) {
-					return nil, fmt.Errorf("database error")
-				}
-			},
-			expectedStatus: http.StatusInternalServerError,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Setup mocks
-			querier := &mockParticipantQuerier{}
-			commander := &mockParticipantCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
-			tc.mockSetup(commander)
-
-			// Create the handler
-			handler := NewParticipantHandler(querier, commander, authz)
-
-			// Create request with body
-			bodyBytes, err := json.Marshal(tc.requestBody)
-			require.NoError(t, err)
-			req := httptest.NewRequest("POST", "/participants", bytes.NewReader(bodyBytes))
-			req = req.WithContext(auth.WithIdentity(req.Context(), NewMockAuthAdmin()))
-			req.Header.Set("Content-Type", "application/json")
-
-			// Execute request with middleware
-			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.DecodeBody[CreateParticipantRequest]()(http.HandlerFunc(handler.handleCreate))
-			middlewareHandler.ServeHTTP(w, req)
-
-			// Assert response
-			assert.Equal(t, tc.expectedStatus, w.Code)
-
-			if tc.expectedStatus == http.StatusCreated {
-				var response map[string]any
-				err := json.Unmarshal(w.Body.Bytes(), &response)
-				require.NoError(t, err)
-
-				// Verify response structure
-				assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", response["id"])
-				assert.Equal(t, "Example Org", response["name"])
-				assert.Equal(t, "Enabled", response["status"])
-			}
-		})
-	}
 }

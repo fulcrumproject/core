@@ -92,7 +92,7 @@ func TestEventyToResponse(t *testing.T) {
 		ConsumerID:    &consumerID,
 	}
 
-	response := eventToResponse(eventEntry)
+	response := EventToRes(eventEntry)
 
 	assert.Equal(t, eventEntry.ID, response.ID)
 	assert.Equal(t, eventEntry.InitiatorType, response.InitiatorType)
@@ -233,7 +233,7 @@ func TestEventHandleLease(t *testing.T) {
 			rr := httptest.NewRecorder()
 
 			// Execute
-			handler.handleLease(rr, req)
+			handler.Lease(rr, req)
 
 			// Assert status code
 			assert.Equal(t, tc.expectedStatus, rr.Code)
@@ -262,13 +262,13 @@ func TestEventHandleLease(t *testing.T) {
 func TestEventLeaseRequest_Bind(t *testing.T) {
 	testCases := []struct {
 		name        string
-		request     EventLeaseRequest
+		request     EventLeaseReq
 		expectError bool
 		errorMsg    string
 	}{
 		{
 			name: "Valid request",
-			request: EventLeaseRequest{
+			request: EventLeaseReq{
 				SubscriberID: "test-subscriber",
 				InstanceID:   "instance-1",
 			},
@@ -276,7 +276,7 @@ func TestEventLeaseRequest_Bind(t *testing.T) {
 		},
 		{
 			name: "Missing subscriberId",
-			request: EventLeaseRequest{
+			request: EventLeaseReq{
 				InstanceID: "instance-1",
 			},
 			expectError: true,
@@ -284,7 +284,7 @@ func TestEventLeaseRequest_Bind(t *testing.T) {
 		},
 		{
 			name: "Missing instanceId",
-			request: EventLeaseRequest{
+			request: EventLeaseReq{
 				SubscriberID: "test-subscriber",
 			},
 			expectError: true,
@@ -435,7 +435,7 @@ func TestEventHandleAcknowledge(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			// Call handler
-			handler.handleAcknowledge(w, req)
+			handler.Acknowledge(w, req)
 
 			// Assert response
 			assert.Equal(t, tc.expectedStatus, w.Code)
@@ -448,13 +448,13 @@ func TestEventHandleAcknowledge(t *testing.T) {
 func TestEventAckRequest_Bind(t *testing.T) {
 	testCases := []struct {
 		name        string
-		request     EventAckRequest
+		request     EventAckReq
 		expectError bool
 		errorMsg    string
 	}{
 		{
 			name: "Valid request",
-			request: EventAckRequest{
+			request: EventAckReq{
 				SubscriberID:               "test-subscriber",
 				InstanceID:                 "instance-1",
 				LastEventSequenceProcessed: 100,
@@ -463,7 +463,7 @@ func TestEventAckRequest_Bind(t *testing.T) {
 		},
 		{
 			name: "Missing subscriberId",
-			request: EventAckRequest{
+			request: EventAckReq{
 				InstanceID:                 "instance-1",
 				LastEventSequenceProcessed: 100,
 			},
@@ -472,7 +472,7 @@ func TestEventAckRequest_Bind(t *testing.T) {
 		},
 		{
 			name: "Missing instanceId",
-			request: EventAckRequest{
+			request: EventAckReq{
 				SubscriberID:               "test-subscriber",
 				LastEventSequenceProcessed: 100,
 			},
@@ -481,7 +481,7 @@ func TestEventAckRequest_Bind(t *testing.T) {
 		},
 		{
 			name: "Invalid lastEventSequenceProcessed",
-			request: EventAckRequest{
+			request: EventAckReq{
 				SubscriberID:               "test-subscriber",
 				InstanceID:                 "instance-1",
 				LastEventSequenceProcessed: 0,

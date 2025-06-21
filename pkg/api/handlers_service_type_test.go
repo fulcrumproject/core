@@ -73,7 +73,7 @@ func TestServiceTypeToResponse(t *testing.T) {
 		Name: "VM Instance",
 	}
 
-	response := serviceTypeToResponse(serviceType)
+	response := ServiceTypeToRes(serviceType)
 
 	// Verify all fields are correctly mapped
 	assert.Equal(t, serviceType.ID, response.ID)

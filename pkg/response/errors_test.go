@@ -13,26 +13,26 @@ import (
 func TestErrResponse_Render(t *testing.T) {
 	tests := []struct {
 		name           string
-		errResponse    *ErrResponse
+		errResponse    *ErrRes
 		expectedStatus int
 	}{
 		{
 			name: "Bad Request",
-			errResponse: &ErrResponse{
+			errResponse: &ErrRes{
 				HTTPStatusCode: http.StatusBadRequest,
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "Not Found",
-			errResponse: &ErrResponse{
+			errResponse: &ErrRes{
 				HTTPStatusCode: http.StatusNotFound,
 			},
 			expectedStatus: http.StatusNotFound,
 		},
 		{
 			name: "Internal Server Error",
-			errResponse: &ErrResponse{
+			errResponse: &ErrRes{
 				HTTPStatusCode: http.StatusInternalServerError,
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -55,7 +55,7 @@ func TestErrInvalidRequest(t *testing.T) {
 	testErr := errors.New("test validation error")
 
 	renderer := ErrInvalidRequest(testErr)
-	errResp, ok := renderer.(*ErrResponse)
+	errResp, ok := renderer.(*ErrRes)
 	require.True(t, ok, "Expected *ErrResponse type")
 
 	assert.Equal(t, testErr, errResp.Err, "Err should match the input error")
@@ -72,7 +72,7 @@ func TestMultiErrInvalidRequest(t *testing.T) {
 	}
 
 	renderer := MultiErrInvalidRequest(validationErrs)
-	errResp, ok := renderer.(*ErrResponse)
+	errResp, ok := renderer.(*ErrRes)
 	require.True(t, ok, "Expected *ErrResponse type")
 
 	assert.Equal(t, ErrInvalidFields, errResp.Err, "Err should be ErrInvalidFields")
@@ -88,7 +88,7 @@ func TestErrNotFound(t *testing.T) {
 	testErr := errors.New("resource not found")
 
 	renderer := ErrNotFound(testErr)
-	errResp, ok := renderer.(*ErrResponse)
+	errResp, ok := renderer.(*ErrRes)
 	require.True(t, ok, "Expected *ErrResponse type")
 
 	assert.Equal(t, testErr, errResp.Err, "Err should match the input error")
@@ -101,7 +101,7 @@ func TestErrInternal(t *testing.T) {
 	testErr := errors.New("database connection failed")
 
 	renderer := ErrInternal(testErr)
-	errResp, ok := renderer.(*ErrResponse)
+	errResp, ok := renderer.(*ErrRes)
 	require.True(t, ok, "Expected *ErrResponse type")
 
 	assert.Equal(t, testErr, errResp.Err, "Err should match the input error")
@@ -114,7 +114,7 @@ func TestErrUnauthenticated(t *testing.T) {
 	testErr := errors.New("invalid credentials")
 
 	renderer := ErrUnauthenticated(testErr)
-	errResp, ok := renderer.(*ErrResponse)
+	errResp, ok := renderer.(*ErrRes)
 	require.True(t, ok, "Expected *ErrResponse type")
 
 	assert.Equal(t, testErr, errResp.Err, "Err should match the input error")
@@ -127,7 +127,7 @@ func TestErrUnauthorized(t *testing.T) {
 	testErr := errors.New("insufficient permissions")
 
 	renderer := ErrUnauthorized(testErr)
-	errResp, ok := renderer.(*ErrResponse)
+	errResp, ok := renderer.(*ErrRes)
 	require.True(t, ok, "Expected *ErrResponse type")
 
 	assert.Equal(t, testErr, errResp.Err, "Err should match the input error")

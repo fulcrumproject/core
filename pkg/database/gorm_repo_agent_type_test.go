@@ -98,7 +98,7 @@ func TestAgentTypeRepository(t *testing.T) {
 			agentType2.ServiceTypes = []domain.ServiceType{*serviceType}
 			require.NoError(t, repo.Create(ctx, agentType2))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 			}
@@ -124,7 +124,7 @@ func TestAgentTypeRepository(t *testing.T) {
 			agentType.ServiceTypes = []domain.ServiceType{*serviceType}
 			require.NoError(t, repo.Create(ctx, agentType))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"name": {agentType.Name}},
@@ -157,7 +157,7 @@ func TestAgentTypeRepository(t *testing.T) {
 			agentType2.ServiceTypes = []domain.ServiceType{*serviceType}
 			require.NoError(t, repo.Create(ctx, agentType2))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Sort:     true,
@@ -193,7 +193,7 @@ func TestAgentTypeRepository(t *testing.T) {
 				require.NoError(t, repo.Create(ctx, agentType))
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 2,
 			}

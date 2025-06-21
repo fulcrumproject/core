@@ -71,7 +71,7 @@ func TestAgentRepository(t *testing.T) {
 			agent2 := createTestAgent(t, participant.ID, agentType.ID, domain.AgentConnected)
 			require.NoError(t, agentRepo.Create(ctx, agent2))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 			}
@@ -91,7 +91,7 @@ func TestAgentRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Setup
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"status": {"Connected"}},
@@ -125,7 +125,7 @@ func TestAgentRepository(t *testing.T) {
 			agent2.Name = "B Agent"
 			require.NoError(t, agentRepo.Create(ctx, agent2))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Sort:     true,
@@ -158,7 +158,7 @@ func TestAgentRepository(t *testing.T) {
 				require.NoError(t, agentRepo.Create(ctx, agent))
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 2,
 			}

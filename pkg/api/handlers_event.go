@@ -50,22 +50,22 @@ func (h *EventHandler) Routes() func(r chi.Router) {
 		// List endpoint - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeEvent, authz.ActionRead, h.authz),
-		).Get("/", List(h.querier, eventToResponse))
+		).Get("/", List(h.querier, EventToRes))
 
 		// Event consumption endpoint with leasing - requires admin role
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeEvent, authz.ActionLease, h.authz),
-		).Post("/lease", h.handleLease)
+		).Post("/lease", h.Lease)
 
 		// Event acknowledgement endpoint - requires admin role
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeEvent, authz.ActionAck, h.authz),
-		).Post("/ack", h.handleAcknowledge)
+		).Post("/ack", h.Acknowledge)
 	}
 }
 
-// EventResponse represents the response body for event entry operations
-type EventResponse struct {
+// EventRes represents the response body for event entry operations
+type EventRes struct {
 	ID             properties.UUID      `json:"id"`
 	SequenceNumber int64                `json:"sequenceNumber"`
 	InitiatorType  domain.InitiatorType `json:"initiatorType"`
@@ -79,9 +79,9 @@ type EventResponse struct {
 	UpdatedAt      JSONUTCTime          `json:"updatedAt"`
 }
 
-// eventToResponse converts a domain.Event to an EventResponse
-func eventToResponse(ae *domain.Event) *EventResponse {
-	return &EventResponse{
+// EventToRes converts a domain.Event to an EventResponse
+func EventToRes(ae *domain.Event) *EventRes {
+	return &EventRes{
 		ID:             ae.ID,
 		SequenceNumber: ae.SequenceNumber,
 		InitiatorType:  ae.InitiatorType,
@@ -96,8 +96,8 @@ func eventToResponse(ae *domain.Event) *EventResponse {
 	}
 }
 
-// EventLeaseRequest represents the request body for event lease operations
-type EventLeaseRequest struct {
+// EventLeaseReq represents the request body for event lease operations
+type EventLeaseReq struct {
 	SubscriberID         string `json:"subscriberId" validate:"required"`
 	InstanceID           string `json:"instanceId" validate:"required"`
 	LeaseDurationSeconds *int   `json:"leaseDurationSeconds,omitempty"`
@@ -105,7 +105,7 @@ type EventLeaseRequest struct {
 }
 
 // Bind implements the render.Binder interface for EventLeaseRequest
-func (req *EventLeaseRequest) Bind(r *http.Request) error {
+func (req *EventLeaseReq) Bind(r *http.Request) error {
 	if req.SubscriberID == "" {
 		return fmt.Errorf("subscriberId is required")
 	}
@@ -115,15 +115,15 @@ func (req *EventLeaseRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-// EventLeaseResponse represents the response body for event lease operations
-type EventLeaseResponse struct {
-	Events                     []EventResponse `json:"events"`
-	LeaseExpiresAt             JSONUTCTime     `json:"leaseExpiresAt"`
-	LastEventSequenceProcessed int64           `json:"lastEventSequenceProcessed"`
+// EventLeaseRes represents the response body for event lease operations
+type EventLeaseRes struct {
+	Events                     []EventRes  `json:"events"`
+	LeaseExpiresAt             JSONUTCTime `json:"leaseExpiresAt"`
+	LastEventSequenceProcessed int64       `json:"lastEventSequenceProcessed"`
 }
 
-func (h *EventHandler) handleLease(w http.ResponseWriter, r *http.Request) {
-	var req EventLeaseRequest
+func (h *EventHandler) Lease(w http.ResponseWriter, r *http.Request) {
+	var req EventLeaseReq
 	if err := render.Bind(r, &req); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -167,7 +167,7 @@ func (h *EventHandler) handleLease(w http.ResponseWriter, r *http.Request) {
 		if errors.As(err, &invalidInputErr) &&
 			(strings.Contains(err.Error(), "lease is already held") ||
 				strings.Contains(err.Error(), "lease is not owned")) {
-			render.Render(w, r, &ErrResponse{
+			render.Render(w, r, &ErrRes{
 				Err:            err,
 				HTTPStatusCode: 409, // Conflict
 				StatusText:     "Lease Conflict",
@@ -187,12 +187,12 @@ func (h *EventHandler) handleLease(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert events to response format
-	eventResponses := make([]EventResponse, len(events))
+	eventResponses := make([]EventRes, len(events))
 	for i, event := range events {
-		eventResponses[i] = *eventToResponse(event)
+		eventResponses[i] = *EventToRes(event)
 	}
 
-	response := EventLeaseResponse{
+	response := EventLeaseRes{
 		Events:                     eventResponses,
 		LeaseExpiresAt:             JSONUTCTime(*subscription.LeaseExpiresAt),
 		LastEventSequenceProcessed: subscription.LastEventSequenceProcessed,
@@ -201,15 +201,15 @@ func (h *EventHandler) handleLease(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, response)
 }
 
-// EventAckRequest represents the request body for event acknowledgement
-type EventAckRequest struct {
+// EventAckReq represents the request body for event acknowledgement
+type EventAckReq struct {
 	SubscriberID               string `json:"subscriberId"`
 	InstanceID                 string `json:"instanceId"`
 	LastEventSequenceProcessed int64  `json:"lastEventSequenceProcessed"`
 }
 
 // Bind implements the render.Binder interface for EventAckRequest
-func (req *EventAckRequest) Bind(r *http.Request) error {
+func (req *EventAckReq) Bind(r *http.Request) error {
 	if req.SubscriberID == "" {
 		return fmt.Errorf("subscriberId is required")
 	}
@@ -222,13 +222,13 @@ func (req *EventAckRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-// EventAckResponse represents the response body for event acknowledgement
-type EventAckResponse struct {
+// EventAckRes represents the response body for event acknowledgement
+type EventAckRes struct {
 	LastEventSequenceProcessed int64 `json:"lastEventSequenceProcessed"`
 }
 
-func (h *EventHandler) handleAcknowledge(w http.ResponseWriter, r *http.Request) {
-	var req EventAckRequest
+func (h *EventHandler) Acknowledge(w http.ResponseWriter, r *http.Request) {
+	var req EventAckReq
 	if err := render.Bind(r, &req); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
@@ -250,7 +250,7 @@ func (h *EventHandler) handleAcknowledge(w http.ResponseWriter, r *http.Request)
 			(strings.Contains(err.Error(), "no active lease") ||
 				strings.Contains(err.Error(), "lease is not owned") ||
 				strings.Contains(err.Error(), "cannot acknowledge sequence")) {
-			render.Render(w, r, &ErrResponse{
+			render.Render(w, r, &ErrRes{
 				Err:            err,
 				HTTPStatusCode: 409, // Conflict
 				StatusText:     "Acknowledgement Conflict",
@@ -262,7 +262,7 @@ func (h *EventHandler) handleAcknowledge(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	response := EventAckResponse{
+	response := EventAckRes{
 		LastEventSequenceProcessed: subscription.LastEventSequenceProcessed,
 	}
 

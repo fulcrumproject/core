@@ -140,7 +140,7 @@ func TestNewPageResponse(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a domain page response
-			domainResp := &domain.PageResponse[TestItem]{
+			domainResp := &domain.PageRes[TestItem]{
 				Items:       tc.items,
 				TotalItems:  tc.totalItems,
 				CurrentPage: tc.page,

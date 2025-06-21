@@ -92,7 +92,7 @@ func (r *GormRepository[T]) Get(ctx context.Context, id properties.UUID) (*T, er
 	return entity, nil
 }
 
-func (r *GormRepository[T]) List(ctx context.Context, authIdentityScope *auth.IdentityScope, page *domain.PageRequest) (*domain.PageResponse[T], error) {
+func (r *GormRepository[T]) List(ctx context.Context, authIdentityScope *auth.IdentityScope, page *domain.PageReq) (*domain.PageRes[T], error) {
 	return list[T](
 		ctx,
 		r.db,

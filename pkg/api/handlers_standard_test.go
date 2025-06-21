@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -35,6 +36,30 @@ type TestResponse struct {
 	UpdatedAt JSONUTCTime     `json:"updatedAt"`
 }
 
+// Test request types
+type CreateTestRequest struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
+type UpdateTestRequest struct {
+	Name   *string `json:"name,omitempty"`
+	Status *string `json:"status,omitempty"`
+}
+
+type ActionTestRequest struct {
+	Action string `json:"action"`
+}
+
+type CommandTestRequest struct {
+	Command string `json:"command"`
+}
+
+// Helper function for tests
+func stringPtr(s string) *string {
+	return &s
+}
+
 // Response converter function
 func testEntityToResponse(entity *TestEntity) *TestResponse {
 	return &TestResponse{
@@ -46,7 +71,14 @@ func testEntityToResponse(entity *TestEntity) *TestResponse {
 	}
 }
 
-// Mock delete function
+// Mock functions for testing
+type mockCreateFunc func(ctx context.Context, req *CreateTestRequest) (*TestEntity, error)
+type mockUpdateFunc func(ctx context.Context, id properties.UUID, req *UpdateTestRequest) (*TestEntity, error)
+type mockUpdateWithoutIDFunc func(ctx context.Context, req *UpdateTestRequest) (*TestEntity, error)
+type mockActionFunc func(ctx context.Context, id properties.UUID, req *ActionTestRequest) (*TestEntity, error)
+type mockActionWithoutBodyFunc func(ctx context.Context, id properties.UUID) (*TestEntity, error)
+type mockCommandFunc func(ctx context.Context, id properties.UUID, req *CommandTestRequest) error
+type mockCommandWithoutBodyFunc func(ctx context.Context, id properties.UUID) error
 type mockDeleteFunc func(ctx context.Context, id properties.UUID) error
 
 func TestList(t *testing.T) {
@@ -65,8 +97,8 @@ func TestList(t *testing.T) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[TestEntity], error) {
-					return &domain.PageResponse[TestEntity]{
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageReq) (*domain.PageRes[TestEntity], error) {
+					return &domain.PageRes[TestEntity]{
 						Items: []TestEntity{
 							{
 								BaseEntity: domain.BaseEntity{
@@ -152,7 +184,7 @@ func TestList(t *testing.T) {
 			name:        "ListError",
 			queryParams: "?page=1&pageSize=10",
 			mockSetup: func(querier *BaseMockQuerier[TestEntity]) {
-				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[TestEntity], error) {
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageReq) (*domain.PageRes[TestEntity], error) {
 					return nil, fmt.Errorf("database error")
 				}
 			},
@@ -164,8 +196,8 @@ func TestList(t *testing.T) {
 			name:        "EmptyResult",
 			queryParams: "?page=1&pageSize=10",
 			mockSetup: func(querier *BaseMockQuerier[TestEntity]) {
-				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[TestEntity], error) {
-					return &domain.PageResponse[TestEntity]{
+				querier.ListFunc = func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageReq) (*domain.PageRes[TestEntity], error) {
+					return &domain.PageRes[TestEntity]{
 						Items:       []TestEntity{},
 						TotalItems:  0,
 						CurrentPage: 1,
@@ -431,6 +463,741 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+func TestCreate(t *testing.T) {
+	testCases := []struct {
+		name           string
+		requestBody    CreateTestRequest
+		mockSetup      func(createFunc *mockCreateFunc)
+		expectedStatus int
+		expectError    bool
+	}{
+		{
+			name: "Success",
+			requestBody: CreateTestRequest{
+				Name:   "New Entity",
+				Status: "active",
+			},
+			mockSetup: func(createFunc *mockCreateFunc) {
+				*createFunc = func(ctx context.Context, req *CreateTestRequest) (*TestEntity, error) {
+					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+					return &TestEntity{
+						BaseEntity: domain.BaseEntity{
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+							CreatedAt: createdAt,
+							UpdatedAt: createdAt,
+						},
+						Name:   req.Name,
+						Status: req.Status,
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusCreated,
+			expectError:    false,
+		},
+		{
+			name: "CreateError",
+			requestBody: CreateTestRequest{
+				Name:   "Invalid Entity",
+				Status: "invalid",
+			},
+			mockSetup: func(createFunc *mockCreateFunc) {
+				*createFunc = func(ctx context.Context, req *CreateTestRequest) (*TestEntity, error) {
+					return nil, domain.NewInvalidInputErrorf("invalid status")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
+			name: "InternalError",
+			requestBody: CreateTestRequest{
+				Name:   "Test Entity",
+				Status: "active",
+			},
+			mockSetup: func(createFunc *mockCreateFunc) {
+				*createFunc = func(ctx context.Context, req *CreateTestRequest) (*TestEntity, error) {
+					return nil, fmt.Errorf("database connection failed")
+				}
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectError:    true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup mock
+			var createFunc mockCreateFunc
+			tc.mockSetup(&createFunc)
+
+			// Create handler
+			handler := Create(createFunc, testEntityToResponse)
+
+			// Create request
+			bodyBytes, err := json.Marshal(tc.requestBody)
+			require.NoError(t, err)
+			req := httptest.NewRequest("POST", "/test", bytes.NewReader(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			// Execute request with middleware
+			w := httptest.NewRecorder()
+			middlewareHandler := middlewares.DecodeBody[CreateTestRequest]()(handler)
+			middlewareHandler.ServeHTTP(w, req)
+
+			// Assert response
+			assert.Equal(t, tc.expectedStatus, w.Code)
+
+			if !tc.expectError {
+				var response TestResponse
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", response.ID.String())
+				assert.Equal(t, tc.requestBody.Name, response.Name)
+				assert.Equal(t, tc.requestBody.Status, response.Status)
+			}
+		})
+	}
+}
+
+func TestUpdate(t *testing.T) {
+	testCases := []struct {
+		name           string
+		id             string
+		requestBody    UpdateTestRequest
+		mockSetup      func(updateFunc *mockUpdateFunc)
+		expectedStatus int
+		expectError    bool
+	}{
+		{
+			name: "Success",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: UpdateTestRequest{
+				Name:   stringPtr("Updated Entity"),
+				Status: stringPtr("inactive"),
+			},
+			mockSetup: func(updateFunc *mockUpdateFunc) {
+				*updateFunc = func(ctx context.Context, id properties.UUID, req *UpdateTestRequest) (*TestEntity, error) {
+					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+					return &TestEntity{
+						BaseEntity: domain.BaseEntity{
+							ID:        id,
+							CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+							UpdatedAt: updatedAt,
+						},
+						Name:   *req.Name,
+						Status: *req.Status,
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusOK,
+			expectError:    false,
+		},
+		{
+			name: "PartialUpdate",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: UpdateTestRequest{
+				Name: stringPtr("Only Name Updated"),
+			},
+			mockSetup: func(updateFunc *mockUpdateFunc) {
+				*updateFunc = func(ctx context.Context, id properties.UUID, req *UpdateTestRequest) (*TestEntity, error) {
+					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+					return &TestEntity{
+						BaseEntity: domain.BaseEntity{
+							ID:        id,
+							CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+							UpdatedAt: updatedAt,
+						},
+						Name:   *req.Name,
+						Status: "active", // unchanged
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusOK,
+			expectError:    false,
+		},
+		{
+			name: "NotFound",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: UpdateTestRequest{
+				Name: stringPtr("Updated Entity"),
+			},
+			mockSetup: func(updateFunc *mockUpdateFunc) {
+				*updateFunc = func(ctx context.Context, id properties.UUID, req *UpdateTestRequest) (*TestEntity, error) {
+					return nil, domain.NewNotFoundErrorf("entity not found")
+				}
+			},
+			expectedStatus: http.StatusNotFound,
+			expectError:    true,
+		},
+		{
+			name: "ValidationError",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: UpdateTestRequest{
+				Status: stringPtr("invalid"),
+			},
+			mockSetup: func(updateFunc *mockUpdateFunc) {
+				*updateFunc = func(ctx context.Context, id properties.UUID, req *UpdateTestRequest) (*TestEntity, error) {
+					return nil, domain.NewInvalidInputErrorf("invalid status")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup mock
+			var updateFunc mockUpdateFunc
+			tc.mockSetup(&updateFunc)
+
+			// Create handler
+			handler := Update(updateFunc, testEntityToResponse)
+
+			// Create request
+			bodyBytes, err := json.Marshal(tc.requestBody)
+			require.NoError(t, err)
+			req := httptest.NewRequest("PATCH", "/test/"+tc.id, bytes.NewReader(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			// Set up chi router context for URL parameters
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.id)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Execute request with middleware
+			w := httptest.NewRecorder()
+			middlewareHandler := middlewares.DecodeBody[UpdateTestRequest]()(middlewares.ID(handler))
+			middlewareHandler.ServeHTTP(w, req)
+
+			// Assert response
+			assert.Equal(t, tc.expectedStatus, w.Code)
+
+			if !tc.expectError {
+				var response TestResponse
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, tc.id, response.ID.String())
+				if tc.requestBody.Name != nil {
+					assert.Equal(t, *tc.requestBody.Name, response.Name)
+				}
+			}
+		})
+	}
+}
+
+func TestUpdateWithoutID(t *testing.T) {
+	testCases := []struct {
+		name           string
+		requestBody    UpdateTestRequest
+		mockSetup      func(updateFunc *mockUpdateWithoutIDFunc)
+		expectedStatus int
+		expectError    bool
+	}{
+		{
+			name: "Success",
+			requestBody: UpdateTestRequest{
+				Name:   stringPtr("Updated Entity"),
+				Status: stringPtr("active"),
+			},
+			mockSetup: func(updateFunc *mockUpdateWithoutIDFunc) {
+				*updateFunc = func(ctx context.Context, req *UpdateTestRequest) (*TestEntity, error) {
+					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+					return &TestEntity{
+						BaseEntity: domain.BaseEntity{
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+							CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+							UpdatedAt: updatedAt,
+						},
+						Name:   *req.Name,
+						Status: *req.Status,
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusOK,
+			expectError:    false,
+		},
+		{
+			name: "PartialUpdate",
+			requestBody: UpdateTestRequest{
+				Status: stringPtr("inactive"),
+			},
+			mockSetup: func(updateFunc *mockUpdateWithoutIDFunc) {
+				*updateFunc = func(ctx context.Context, req *UpdateTestRequest) (*TestEntity, error) {
+					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+					return &TestEntity{
+						BaseEntity: domain.BaseEntity{
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+							CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+							UpdatedAt: updatedAt,
+						},
+						Name:   "Existing Name", // unchanged
+						Status: *req.Status,
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusOK,
+			expectError:    false,
+		},
+		{
+			name: "NotFound",
+			requestBody: UpdateTestRequest{
+				Name: stringPtr("Updated Entity"),
+			},
+			mockSetup: func(updateFunc *mockUpdateWithoutIDFunc) {
+				*updateFunc = func(ctx context.Context, req *UpdateTestRequest) (*TestEntity, error) {
+					return nil, domain.NewNotFoundErrorf("entity not found")
+				}
+			},
+			expectedStatus: http.StatusNotFound,
+			expectError:    true,
+		},
+		{
+			name: "ValidationError",
+			requestBody: UpdateTestRequest{
+				Status: stringPtr("invalid"),
+			},
+			mockSetup: func(updateFunc *mockUpdateWithoutIDFunc) {
+				*updateFunc = func(ctx context.Context, req *UpdateTestRequest) (*TestEntity, error) {
+					return nil, domain.NewInvalidInputErrorf("invalid status")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
+			name: "InternalError",
+			requestBody: UpdateTestRequest{
+				Name: stringPtr("Updated Entity"),
+			},
+			mockSetup: func(updateFunc *mockUpdateWithoutIDFunc) {
+				*updateFunc = func(ctx context.Context, req *UpdateTestRequest) (*TestEntity, error) {
+					return nil, fmt.Errorf("database connection failed")
+				}
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectError:    true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup mock
+			var updateFunc mockUpdateWithoutIDFunc
+			tc.mockSetup(&updateFunc)
+
+			// Create handler
+			handler := UpdateWithoutID(updateFunc, testEntityToResponse)
+
+			// Create request
+			bodyBytes, err := json.Marshal(tc.requestBody)
+			require.NoError(t, err)
+			req := httptest.NewRequest("PUT", "/test/me", bytes.NewReader(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			// Execute request with middleware (no ID middleware needed)
+			w := httptest.NewRecorder()
+			middlewareHandler := middlewares.DecodeBody[UpdateTestRequest]()(handler)
+			middlewareHandler.ServeHTTP(w, req)
+
+			// Assert response
+			assert.Equal(t, tc.expectedStatus, w.Code)
+
+			if !tc.expectError {
+				var response TestResponse
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", response.ID.String())
+				if tc.requestBody.Name != nil {
+					assert.Equal(t, *tc.requestBody.Name, response.Name)
+				}
+				if tc.requestBody.Status != nil {
+					assert.Equal(t, *tc.requestBody.Status, response.Status)
+				}
+			}
+		})
+	}
+}
+
+func TestAction(t *testing.T) {
+	testCases := []struct {
+		name           string
+		id             string
+		requestBody    ActionTestRequest
+		mockSetup      func(actionFunc *mockActionFunc)
+		expectedStatus int
+		expectError    bool
+	}{
+		{
+			name: "Success",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: ActionTestRequest{
+				Action: "activate",
+			},
+			mockSetup: func(actionFunc *mockActionFunc) {
+				*actionFunc = func(ctx context.Context, id properties.UUID, req *ActionTestRequest) (*TestEntity, error) {
+					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+					return &TestEntity{
+						BaseEntity: domain.BaseEntity{
+							ID:        id,
+							CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+							UpdatedAt: updatedAt,
+						},
+						Name:   "Test Entity",
+						Status: "active",
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusOK,
+			expectError:    false,
+		},
+		{
+			name: "NotFound",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: ActionTestRequest{
+				Action: "activate",
+			},
+			mockSetup: func(actionFunc *mockActionFunc) {
+				*actionFunc = func(ctx context.Context, id properties.UUID, req *ActionTestRequest) (*TestEntity, error) {
+					return nil, domain.NewNotFoundErrorf("entity not found")
+				}
+			},
+			expectedStatus: http.StatusNotFound,
+			expectError:    true,
+		},
+		{
+			name: "ActionError",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: ActionTestRequest{
+				Action: "invalid",
+			},
+			mockSetup: func(actionFunc *mockActionFunc) {
+				*actionFunc = func(ctx context.Context, id properties.UUID, req *ActionTestRequest) (*TestEntity, error) {
+					return nil, domain.NewInvalidInputErrorf("invalid action")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup mock
+			var actionFunc mockActionFunc
+			tc.mockSetup(&actionFunc)
+
+			// Create handler
+			handler := Action(actionFunc, testEntityToResponse)
+
+			// Create request
+			bodyBytes, err := json.Marshal(tc.requestBody)
+			require.NoError(t, err)
+			req := httptest.NewRequest("POST", "/test/"+tc.id+"/action", bytes.NewReader(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			// Set up chi router context for URL parameters
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.id)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Execute request with middleware
+			w := httptest.NewRecorder()
+			middlewareHandler := middlewares.DecodeBody[ActionTestRequest]()(middlewares.ID(handler))
+			middlewareHandler.ServeHTTP(w, req)
+
+			// Assert response
+			assert.Equal(t, tc.expectedStatus, w.Code)
+
+			if !tc.expectError {
+				var response TestResponse
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, tc.id, response.ID.String())
+				assert.Equal(t, "active", response.Status)
+			}
+		})
+	}
+}
+
+func TestActionWithoutBody(t *testing.T) {
+	testCases := []struct {
+		name           string
+		id             string
+		mockSetup      func(actionFunc *mockActionWithoutBodyFunc)
+		expectedStatus int
+		expectError    bool
+	}{
+		{
+			name: "Success",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			mockSetup: func(actionFunc *mockActionWithoutBodyFunc) {
+				*actionFunc = func(ctx context.Context, id properties.UUID) (*TestEntity, error) {
+					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+					return &TestEntity{
+						BaseEntity: domain.BaseEntity{
+							ID:        id,
+							CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+							UpdatedAt: updatedAt,
+						},
+						Name:   "Test Entity",
+						Status: "processed",
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusOK,
+			expectError:    false,
+		},
+		{
+			name: "NotFound",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			mockSetup: func(actionFunc *mockActionWithoutBodyFunc) {
+				*actionFunc = func(ctx context.Context, id properties.UUID) (*TestEntity, error) {
+					return nil, domain.NewNotFoundErrorf("entity not found")
+				}
+			},
+			expectedStatus: http.StatusNotFound,
+			expectError:    true,
+		},
+		{
+			name: "InternalError",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			mockSetup: func(actionFunc *mockActionWithoutBodyFunc) {
+				*actionFunc = func(ctx context.Context, id properties.UUID) (*TestEntity, error) {
+					return nil, fmt.Errorf("processing failed")
+				}
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectError:    true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup mock
+			var actionFunc mockActionWithoutBodyFunc
+			tc.mockSetup(&actionFunc)
+
+			// Create handler
+			handler := ActionWithoutBody(actionFunc, testEntityToResponse)
+
+			// Create request
+			req := httptest.NewRequest("POST", "/test/"+tc.id+"/process", nil)
+
+			// Set up chi router context for URL parameters
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.id)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Execute request with middleware
+			w := httptest.NewRecorder()
+			middlewareHandler := middlewares.ID(handler)
+			middlewareHandler.ServeHTTP(w, req)
+
+			// Assert response
+			assert.Equal(t, tc.expectedStatus, w.Code)
+
+			if !tc.expectError {
+				var response TestResponse
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, tc.id, response.ID.String())
+				assert.Equal(t, "processed", response.Status)
+			}
+		})
+	}
+}
+
+func TestCommand(t *testing.T) {
+	testCases := []struct {
+		name           string
+		id             string
+		requestBody    CommandTestRequest
+		mockSetup      func(commandFunc *mockCommandFunc)
+		expectedStatus int
+		expectError    bool
+	}{
+		{
+			name: "Success",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: CommandTestRequest{
+				Command: "execute",
+			},
+			mockSetup: func(commandFunc *mockCommandFunc) {
+				*commandFunc = func(ctx context.Context, id properties.UUID, req *CommandTestRequest) error {
+					return nil
+				}
+			},
+			expectedStatus: http.StatusNoContent,
+			expectError:    false,
+		},
+		{
+			name: "ValidationError",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: CommandTestRequest{
+				Command: "invalid",
+			},
+			mockSetup: func(commandFunc *mockCommandFunc) {
+				*commandFunc = func(ctx context.Context, id properties.UUID, req *CommandTestRequest) error {
+					return domain.NewInvalidInputErrorf("invalid command")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
+			name: "NotFound",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: CommandTestRequest{
+				Command: "execute",
+			},
+			mockSetup: func(commandFunc *mockCommandFunc) {
+				*commandFunc = func(ctx context.Context, id properties.UUID, req *CommandTestRequest) error {
+					return domain.NewNotFoundErrorf("entity not found")
+				}
+			},
+			expectedStatus: http.StatusNotFound,
+			expectError:    true,
+		},
+		{
+			name: "InternalError",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: CommandTestRequest{
+				Command: "execute",
+			},
+			mockSetup: func(commandFunc *mockCommandFunc) {
+				*commandFunc = func(ctx context.Context, id properties.UUID, req *CommandTestRequest) error {
+					return fmt.Errorf("execution failed")
+				}
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectError:    true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup mock
+			var commandFunc mockCommandFunc
+			tc.mockSetup(&commandFunc)
+
+			// Create handler
+			handler := Command(commandFunc)
+
+			// Create request
+			bodyBytes, err := json.Marshal(tc.requestBody)
+			require.NoError(t, err)
+			req := httptest.NewRequest("POST", "/test/"+tc.id+"/command", bytes.NewReader(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			// Set up chi router context for URL parameters
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.id)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Execute request with middleware
+			w := httptest.NewRecorder()
+			middlewareHandler := middlewares.DecodeBody[CommandTestRequest]()(middlewares.ID(handler))
+			middlewareHandler.ServeHTTP(w, req)
+
+			// Assert response
+			assert.Equal(t, tc.expectedStatus, w.Code)
+
+			if !tc.expectError {
+				// For successful command, body should be empty
+				assert.Empty(t, w.Body.String())
+			}
+		})
+	}
+}
+
+func TestCommandWithoutBody(t *testing.T) {
+	testCases := []struct {
+		name           string
+		id             string
+		mockSetup      func(commandFunc *mockCommandWithoutBodyFunc)
+		expectedStatus int
+		expectError    bool
+	}{
+		{
+			name: "Success",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			mockSetup: func(commandFunc *mockCommandWithoutBodyFunc) {
+				*commandFunc = func(ctx context.Context, id properties.UUID) error {
+					return nil
+				}
+			},
+			expectedStatus: http.StatusNoContent,
+			expectError:    false,
+		},
+		{
+			name: "NotFound",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			mockSetup: func(commandFunc *mockCommandWithoutBodyFunc) {
+				*commandFunc = func(ctx context.Context, id properties.UUID) error {
+					return domain.NewNotFoundErrorf("entity not found")
+				}
+			},
+			expectedStatus: http.StatusNotFound,
+			expectError:    true,
+		},
+		{
+			name: "ValidationError",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			mockSetup: func(commandFunc *mockCommandWithoutBodyFunc) {
+				*commandFunc = func(ctx context.Context, id properties.UUID) error {
+					return domain.NewInvalidInputErrorf("operation not allowed")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
+			name: "InternalError",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			mockSetup: func(commandFunc *mockCommandWithoutBodyFunc) {
+				*commandFunc = func(ctx context.Context, id properties.UUID) error {
+					return fmt.Errorf("operation failed")
+				}
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectError:    true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup mock
+			var commandFunc mockCommandWithoutBodyFunc
+			tc.mockSetup(&commandFunc)
+
+			// Create handler
+			handler := CommandWithoutBody(commandFunc)
+
+			// Create request
+			req := httptest.NewRequest("POST", "/test/"+tc.id+"/execute", nil)
+
+			// Set up chi router context for URL parameters
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.id)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Execute request with middleware
+			w := httptest.NewRecorder()
+			middlewareHandler := middlewares.ID(handler)
+			middlewareHandler.ServeHTTP(w, req)
+
+			// Assert response
+			assert.Equal(t, tc.expectedStatus, w.Code)
+
+			if !tc.expectError {
+				// For successful command, body should be empty
+				assert.Empty(t, w.Body.String())
+			}
+		})
+	}
+}
+
 // Integration tests to verify all handlers work together
 func TestStandardHandlersIntegration(t *testing.T) {
 	// Create test data
@@ -450,8 +1217,8 @@ func TestStandardHandlersIntegration(t *testing.T) {
 
 	// Setup shared querier
 	querier := &BaseMockQuerier[TestEntity]{
-		ListFunc: func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageRequest) (*domain.PageResponse[TestEntity], error) {
-			return &domain.PageResponse[TestEntity]{
+		ListFunc: func(ctx context.Context, authScope *auth.IdentityScope, req *domain.PageReq) (*domain.PageRes[TestEntity], error) {
+			return &domain.PageRes[TestEntity]{
 				Items:       []TestEntity{*testEntity},
 				TotalItems:  1,
 				CurrentPage: 1,

@@ -125,7 +125,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 			}
@@ -141,7 +141,7 @@ func TestMetricEntryRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with agent filter", func(t *testing.T) {
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"agentId": {agent.ID.String()}},
@@ -166,7 +166,7 @@ func TestMetricEntryRepository(t *testing.T) {
 			require.NoError(t, err)
 
 			// Filter by service metric type
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"typeId": {metricTypeService.ID.String()}},
@@ -203,7 +203,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Sort:     true,
@@ -236,7 +236,7 @@ func TestMetricEntryRepository(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 2,
 			}

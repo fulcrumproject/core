@@ -66,7 +66,7 @@ func TestHealthEndpoints_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, w.Code)
 
 			// Assert response body
-			var response Response
+			var response Res
 			err := json.Unmarshal(w.Body.Bytes(), &response)
 			require.NoError(t, err)
 
@@ -134,7 +134,7 @@ func TestHealthEndpoints_HealthyDependencies(t *testing.T) {
 			// Assert
 			assert.Equal(t, tt.expectedStatus, w.Code)
 
-			var response Response
+			var response Res
 			err := json.Unmarshal(w.Body.Bytes(), &response)
 			require.NoError(t, err)
 			assert.Equal(t, "UP", response.Status)

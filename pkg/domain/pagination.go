@@ -1,6 +1,6 @@
 package domain
 
-type PageRequest struct {
+type PageReq struct {
 	Filters  map[string][]string // Filters to be applied
 	Sort     bool                // Should sort
 	SortBy   string              // Field to sort by
@@ -9,7 +9,7 @@ type PageRequest struct {
 	PageSize int                 // Number of items per page
 }
 
-type PageResponse[T any] struct {
+type PageRes[T any] struct {
 	Items       []T
 	TotalItems  int64
 	TotalPages  int
@@ -19,13 +19,13 @@ type PageResponse[T any] struct {
 }
 
 // NewPaginatedResult creates a new PaginatedResult with calculated pagination fields
-func NewPaginatedResult[T any](items []T, totalItems int64, page *PageRequest) *PageResponse[T] {
+func NewPaginatedResult[T any](items []T, totalItems int64, page *PageReq) *PageRes[T] {
 	totalPages := int(totalItems) / page.PageSize
 	if int(totalItems)%page.PageSize > 0 {
 		totalPages++
 	}
 
-	return &PageResponse[T]{
+	return &PageRes[T]{
 		Items:       items,
 		TotalItems:  totalItems,
 		TotalPages:  totalPages,

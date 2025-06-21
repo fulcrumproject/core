@@ -1,7 +1,7 @@
 package api
 
 import (
-	"net/http"
+	"context"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
@@ -9,19 +9,18 @@ import (
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
-type CreateServiceGroupRequest struct {
+type CreateServiceGroupReq struct {
 	Name       string          `json:"name"`
 	ConsumerID properties.UUID `json:"consumerId"`
 }
 
-func (r CreateServiceGroupRequest) ObjectScope() (auth.ObjectScope, error) {
+func (r CreateServiceGroupReq) ObjectScope() (auth.ObjectScope, error) {
 	return &auth.DefaultObjectScope{ConsumerID: &r.ConsumerID}, nil
 }
 
-type UpdateServiceGroupRequest struct {
+type UpdateServiceGroupReq struct {
 	Name *string `json:"name"`
 }
 
@@ -49,13 +48,13 @@ func (h *ServiceGroupHandler) Routes() func(r chi.Router) {
 		// List endpoint - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeServiceGroup, authz.ActionRead, h.authz),
-		).Get("/", List(h.querier, serviceGroupToResponse))
+		).Get("/", List(h.querier, ServiceGroupToRes))
 
-		// Create endpoint - decode body, then authorize with consumer ID
+		// Create endpoint - using standard Create handler
 		r.With(
-			middlewares.DecodeBody[CreateServiceGroupRequest](),
-			middlewares.AuthzFromBody[CreateServiceGroupRequest](authz.ObjectTypeServiceGroup, authz.ActionCreate, h.authz),
-		).Post("/", h.handleCreate)
+			middlewares.DecodeBody[CreateServiceGroupReq](),
+			middlewares.AuthzFromBody[CreateServiceGroupReq](authz.ObjectTypeServiceGroup, authz.ActionCreate, h.authz),
+		).Post("/", Create(h.Create, ServiceGroupToRes))
 
 		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
@@ -64,13 +63,13 @@ func (h *ServiceGroupHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using service group's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeServiceGroup, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, serviceGroupToResponse))
+			).Get("/{id}", Get(h.querier, ServiceGroupToRes))
 
-			// Update endpoint - decode body, authorize using service group's scope
+			// Update endpoint - using standard Update handler
 			r.With(
-				middlewares.DecodeBody[UpdateServiceGroupRequest](),
+				middlewares.DecodeBody[UpdateServiceGroupReq](),
 				middlewares.AuthzFromID(authz.ObjectTypeServiceGroup, authz.ActionUpdate, h.authz, h.querier.AuthScope),
-			).Patch("/{id}", h.handleUpdate)
+			).Patch("/{id}", Update(h.Update, ServiceGroupToRes))
 
 			// Delete endpoint - authorize using service group's scope
 			r.With(
@@ -80,46 +79,32 @@ func (h *ServiceGroupHandler) Routes() func(r chi.Router) {
 	}
 }
 
-func (h *ServiceGroupHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	req := middlewares.MustGetBody[CreateServiceGroupRequest](r.Context())
-
-	sg, err := h.commander.Create(r.Context(), req.Name, req.ConsumerID)
-	if err != nil {
-		render.Render(w, r, ErrInternal(err))
-		return
-	}
-
-	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, serviceGroupToResponse(sg))
+// Adapter functions that convert request structs to commander method calls
+func (h *ServiceGroupHandler) Create(ctx context.Context, req *CreateServiceGroupReq) (*domain.ServiceGroup, error) {
+	return h.commander.Create(ctx, req.Name, req.ConsumerID)
 }
 
-func (h *ServiceGroupHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-	req := middlewares.MustGetBody[UpdateServiceGroupRequest](r.Context())
-
-	sg, err := h.commander.Update(r.Context(), id, req.Name)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, serviceGroupToResponse(sg))
+// Adapter functions that convert request structs to commander method calls
+func (h *ServiceGroupHandler) Update(ctx context.Context, id properties.UUID, req *UpdateServiceGroupReq) (*domain.ServiceGroup, error) {
+	return h.commander.Update(ctx, id, req.Name)
 }
 
-// ServiceGroupResponse represents the response body for service group operations
-type ServiceGroupResponse struct {
-	ID        properties.UUID `json:"id"`
-	Name      string          `json:"name"`
-	CreatedAt JSONUTCTime     `json:"createdAt"`
-	UpdatedAt JSONUTCTime     `json:"updatedAt"`
+// ServiceGroupRes represents the response body for service group operations
+type ServiceGroupRes struct {
+	ID         properties.UUID `json:"id"`
+	Name       string          `json:"name"`
+	ConsumerID properties.UUID `json:"consumerId"`
+	CreatedAt  JSONUTCTime     `json:"createdAt"`
+	UpdatedAt  JSONUTCTime     `json:"updatedAt"`
 }
 
-// serviceGroupToResponse converts a domain.ServiceGroup to a ServiceGroupResponse
-func serviceGroupToResponse(sg *domain.ServiceGroup) *ServiceGroupResponse {
-	return &ServiceGroupResponse{
-		ID:        sg.ID,
-		Name:      sg.Name,
-		CreatedAt: JSONUTCTime(sg.CreatedAt),
-		UpdatedAt: JSONUTCTime(sg.UpdatedAt),
+// ServiceGroupToRes converts a domain.ServiceGroup to a ServiceGroupResponse
+func ServiceGroupToRes(sg *domain.ServiceGroup) *ServiceGroupRes {
+	return &ServiceGroupRes{
+		ID:         sg.ID,
+		Name:       sg.Name,
+		ConsumerID: sg.ConsumerID,
+		CreatedAt:  JSONUTCTime(sg.CreatedAt),
+		UpdatedAt:  JSONUTCTime(sg.UpdatedAt),
 	}
 }

@@ -96,7 +96,7 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 
 			// Execute request
 			w := httptest.NewRecorder()
-			handler.handleGetPendingJobs(w, req)
+			handler.Pending(w, req)
 
 			// Assert response
 			assert.Equal(t, tc.expectedStatus, w.Code)
@@ -181,7 +181,7 @@ func TestJobHandleClaimJob(t *testing.T) {
 
 			// Execute request with middleware
 			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.ID(http.HandlerFunc(handler.handleClaimJob))
+			middlewareHandler := middlewares.ID(CommandWithoutBody(handler.commander.Claim))
 			middlewareHandler.ServeHTTP(w, req)
 
 			// Assert response
@@ -270,7 +270,7 @@ func TestJobHandleCompleteJob(t *testing.T) {
 
 			// Execute request with middleware
 			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.DecodeBody[CompleteJobRequest]()(middlewares.ID(http.HandlerFunc(handler.handleCompleteJob)))
+			middlewareHandler := middlewares.DecodeBody[CompleteJobReq]()(middlewares.ID(Command(handler.Complete)))
 			middlewareHandler.ServeHTTP(w, req)
 
 			// Assert response
@@ -357,7 +357,7 @@ func TestJobHandleFailJob(t *testing.T) {
 
 			// Execute request with middleware
 			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.DecodeBody[FailJobRequest]()(middlewares.ID(http.HandlerFunc(handler.handleFailJob)))
+			middlewareHandler := middlewares.DecodeBody[FailJobReq]()(middlewares.ID(Command(handler.Fail)))
 			middlewareHandler.ServeHTTP(w, req)
 
 			// Assert response
@@ -391,7 +391,7 @@ func TestJobToResponse(t *testing.T) {
 	}
 
 	// Execute
-	response := jobToResponse(job)
+	response := JobToRes(job)
 
 	// Assert
 	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", response.ID.String())

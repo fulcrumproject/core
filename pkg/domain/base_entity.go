@@ -59,7 +59,7 @@ type BaseEntityQuerier[T Entity] interface {
 	Exists(ctx context.Context, id properties.UUID) (bool, error)
 
 	// List retrieves a list of entities based on the provided filters
-	List(ctx context.Context, scope *auth.IdentityScope, req *PageRequest) (*PageResponse[T], error)
+	List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[T], error)
 
 	// Count returns the number of entities
 	Count(ctx context.Context) (int64, error)

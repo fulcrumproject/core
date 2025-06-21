@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -10,13 +11,12 @@ import (
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
 // Request types
 
-// CreateTokenRequest represents a request to create a new token
-type CreateTokenRequest struct {
+// CreateTokenReq represents a request to create a new token
+type CreateTokenReq struct {
 	Name     string           `json:"name"`
 	Role     auth.Role        `json:"role"`
 	ScopeID  *properties.UUID `json:"scopeId,omitempty"`
@@ -24,8 +24,8 @@ type CreateTokenRequest struct {
 	ExpireAt *time.Time       `json:"expireAt,omitempty"` // Match the original field name in tests
 }
 
-// UpdateTokenRequest represents a request to update a token
-type UpdateTokenRequest struct {
+// UpdateTokenReq represents a request to update a token
+type UpdateTokenReq struct {
 	Name     *string    `json:"name,omitempty"`
 	ExpireAt *time.Time `json:"expireAt,omitempty"`
 }
@@ -34,7 +34,7 @@ type UpdateTokenRequest struct {
 func CreateTokenScopeExtractor() middlewares.ObjectScopeExtractor {
 	return func(r *http.Request) (auth.ObjectScope, error) {
 		// Get decoded body from context
-		body := middlewares.MustGetBody[CreateTokenRequest](r.Context())
+		body := middlewares.MustGetBody[CreateTokenReq](r.Context())
 
 		// Determine scope based on role
 		scope := &auth.DefaultObjectScope{}
@@ -77,18 +77,18 @@ func (h *TokenHandler) Routes() func(r chi.Router) {
 		// List - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeToken, authz.ActionRead, h.authz),
-		).Get("/", List(h.querier, tokenToResponse))
+		).Get("/", List(h.querier, TokenToRes))
 
-		// Create - decode body + specialized scope extractor for authorization
+		// Create - using standard Create handler
 		r.With(
-			middlewares.DecodeBody[CreateTokenRequest](),
+			middlewares.DecodeBody[CreateTokenReq](),
 			middlewares.AuthzFromExtractor(
 				authz.ObjectTypeToken,
 				authz.ActionCreate,
 				h.authz,
 				CreateTokenScopeExtractor(),
 			),
-		).Post("/", h.handleCreate)
+		).Post("/", Create(h.Create, TokenToRes))
 
 		// Resource-specific routes
 		r.Group(func(r chi.Router) {
@@ -97,67 +97,39 @@ func (h *TokenHandler) Routes() func(r chi.Router) {
 			// Get - authorize from resource ID
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeToken, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, tokenToResponse))
+			).Get("/{id}", Get(h.querier, TokenToRes))
 
-			// Update - decode body + authorize from resource ID
+			// Update - using standard Update handler
 			r.With(
-				middlewares.DecodeBody[UpdateTokenRequest](),
+				middlewares.DecodeBody[UpdateTokenReq](),
 				middlewares.AuthzFromID(authz.ObjectTypeToken, authz.ActionUpdate, h.authz, h.querier.AuthScope),
-			).Patch("/{id}", h.handleUpdate)
+			).Patch("/{id}", Update(h.Update, TokenToRes))
 
 			// Delete - authorize from resource ID
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeToken, authz.ActionDelete, h.authz, h.querier.AuthScope),
 			).Delete("/{id}", Delete(h.querier, h.commander.Delete))
 
-			// Regenerate - authorize from resource ID
+			// Regenerate - using standard ActionWithoutBody handler
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeToken, authz.ActionGenerateToken, h.authz, h.querier.AuthScope),
-			).Post("/{id}/regenerate", h.handleRegenerateValue)
+			).Post("/{id}/regenerate", ActionWithoutBody(h.commander.Regenerate, TokenToRes))
 		})
 	}
 }
 
-func (h *TokenHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	// Get decoded body from context
-	req := middlewares.MustGetBody[CreateTokenRequest](r.Context())
+// Adapter functions that convert request structs to commander method calls
 
-	token, err := h.commander.Create(r.Context(), req.Name, req.Role, req.ExpireAt, req.ScopeID)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, tokenToResponse(token))
+func (h *TokenHandler) Create(ctx context.Context, req *CreateTokenReq) (*domain.Token, error) {
+	return h.commander.Create(ctx, req.Name, req.Role, req.ExpireAt, req.ScopeID)
 }
 
-func (h *TokenHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-	req := middlewares.MustGetBody[UpdateTokenRequest](r.Context())
-
-	token, err := h.commander.Update(r.Context(), id, req.Name, req.ExpireAt)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-	render.JSON(w, r, tokenToResponse(token))
+func (h *TokenHandler) Update(ctx context.Context, id properties.UUID, req *UpdateTokenReq) (*domain.Token, error) {
+	return h.commander.Update(ctx, id, req.Name, req.ExpireAt)
 }
 
-func (h *TokenHandler) handleRegenerateValue(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	token, err := h.commander.Regenerate(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, tokenToResponse(token))
-}
-
-// TokenResponse represents the response body for token operations
-type TokenResponse struct {
+// TokenRes represents the response body for token operations
+type TokenRes struct {
 	ID            properties.UUID  `json:"id"`
 	Name          string           `json:"name"`
 	Role          auth.Role        `json:"role"`
@@ -169,9 +141,9 @@ type TokenResponse struct {
 	Value         string           `json:"value,omitempty"`
 }
 
-// tokenToResponse converts a domain.Token to a TokenResponse
-func tokenToResponse(t *domain.Token) *TokenResponse {
-	return &TokenResponse{
+// TokenToRes converts a domain.Token to a TokenResponse
+func TokenToRes(t *domain.Token) *TokenRes {
+	return &TokenRes{
 		ID:            t.ID,
 		Name:          t.Name,
 		Role:          t.Role,
@@ -180,6 +152,6 @@ func tokenToResponse(t *domain.Token) *TokenResponse {
 		AgentID:       t.AgentID,
 		CreatedAt:     JSONUTCTime(t.CreatedAt),
 		UpdatedAt:     JSONUTCTime(t.UpdatedAt),
-		Value:         t.PlainValue,
+		Value:         t.PlainValue, // Only populated on create/regenerate
 	}
 }

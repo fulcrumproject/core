@@ -136,7 +136,7 @@ func TestMetricTypeRepository(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 			}
@@ -147,7 +147,7 @@ func TestMetricTypeRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with name filter", func(t *testing.T) {
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"name": {"CPU Usage"}},
@@ -173,7 +173,7 @@ func TestMetricTypeRepository(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Sort:     true,
@@ -201,7 +201,7 @@ func TestMetricTypeRepository(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 2,
 			}

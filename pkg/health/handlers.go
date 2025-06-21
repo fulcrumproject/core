@@ -8,8 +8,8 @@ import (
 	"github.com/go-chi/render"
 )
 
-// Response represents the HTTP response for health endpoints
-type Response struct {
+// Res represents the HTTP response for health endpoints
+type Res struct {
 	Status string `json:"status"`
 }
 
@@ -32,7 +32,7 @@ func (h *Handler) HealthHandler(w http.ResponseWriter, r *http.Request) {
 
 	result := h.checker.CheckHealth(ctx)
 
-	response := Response{
+	response := Res{
 		Status: string(result.Status),
 	}
 
@@ -52,7 +52,7 @@ func (h *Handler) ReadinessHandler(w http.ResponseWriter, r *http.Request) {
 
 	result := h.checker.CheckReadiness(ctx)
 
-	response := Response{
+	response := Res{
 		Status: string(result.Status),
 	}
 

@@ -70,7 +70,7 @@ func TestEventRepository(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 			}
@@ -84,7 +84,7 @@ func TestEventRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with initiator type filter", func(t *testing.T) {
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"initiatorType": {string(domain.InitiatorTypeUser)}},
@@ -102,7 +102,7 @@ func TestEventRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with type filter", func(t *testing.T) {
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"type": {string(domain.EventTypeAgentUpdated)}},
@@ -133,7 +133,7 @@ func TestEventRepository(t *testing.T) {
 				time.Sleep(time.Millisecond * 100) // Ensure different timestamps
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Sort:     true,
@@ -166,7 +166,7 @@ func TestEventRepository(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 2,
 			}

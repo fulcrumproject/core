@@ -119,7 +119,7 @@ func TestNewPaginatedResult(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create PageRequest with the test case parameters
-			pageRequest := &PageRequest{
+			pageRequest := &PageReq{
 				Page:     tt.page,
 				PageSize: tt.pageSize,
 			}

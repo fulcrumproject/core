@@ -159,7 +159,7 @@ func TestJobRepository(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 			}
@@ -173,7 +173,7 @@ func TestJobRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with status filter", func(t *testing.T) {
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"status": {string(domain.JobPending)}},
@@ -188,7 +188,7 @@ func TestJobRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with type filter", func(t *testing.T) {
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"action": {string(domain.ServiceActionCreate)}},
@@ -203,7 +203,7 @@ func TestJobRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with sorting by priority", func(t *testing.T) {
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Sort:     true,

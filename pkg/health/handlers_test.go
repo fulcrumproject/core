@@ -42,7 +42,7 @@ func TestHealthHandler_UP(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response Response
+	var response Res
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 	assert.Equal(t, "UP", response.Status)
@@ -68,7 +68,7 @@ func TestHealthHandler_DOWN(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 
-	var response Response
+	var response Res
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 	assert.Equal(t, "DOWN", response.Status)
@@ -91,7 +91,7 @@ func TestReadinessHandler_UP(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response Response
+	var response Res
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 	assert.Equal(t, "UP", response.Status)
@@ -117,7 +117,7 @@ func TestReadinessHandler_DOWN(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 
-	var response Response
+	var response Res
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 	assert.Equal(t, "DOWN", response.Status)

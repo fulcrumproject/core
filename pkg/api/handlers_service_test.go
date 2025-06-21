@@ -12,6 +12,7 @@ import (
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
@@ -100,13 +101,13 @@ func TestServiceHandleCreate(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		request        CreateServiceRequest
+		request        CreateServiceReq
 		mockSetup      func(commander *mockServiceCommander)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
-			request: CreateServiceRequest{
+			request: CreateServiceReq{
 				Name:          "Test Service",
 				AgentID:       &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
 				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
@@ -145,7 +146,7 @@ func TestServiceHandleCreate(t *testing.T) {
 		},
 		{
 			name: "CommanderError",
-			request: CreateServiceRequest{
+			request: CreateServiceReq{
 				Name:          "Test Service",
 				AgentID:       &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
 				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
@@ -187,7 +188,7 @@ func TestServiceHandleCreate(t *testing.T) {
 
 			// Execute request with middleware
 			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.DecodeBody[CreateServiceRequest]()(http.HandlerFunc(handler.handleCreate))
+			middlewareHandler := middlewares.DecodeBody[CreateServiceReq]()(http.HandlerFunc(handler.Create))
 			middlewareHandler.ServeHTTP(w, req)
 
 			// Assert response
@@ -208,27 +209,22 @@ func TestServiceHandleCreate(t *testing.T) {
 	}
 }
 
-// Helper functions for update tests
-func jsonPtr(j properties.JSON) *properties.JSON {
-	return &j
-}
-
 // TestServiceHandleUpdate tests the handleUpdate method
 func TestServiceHandleUpdate(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
 		id             string
-		request        UpdateServiceRequest
+		request        UpdateServiceReq
 		mockSetup      func(commander *mockServiceCommander)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			request: UpdateServiceRequest{
-				Name:       stringPtr("Updated Service"),
-				Properties: jsonPtr(properties.JSON{"updated": "value"}),
+			request: UpdateServiceReq{
+				Name:       helpers.StringPtr("Updated Service"),
+				Properties: helpers.JSONPtr(properties.JSON{"updated": "value"}),
 			},
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander for successful update
@@ -257,9 +253,9 @@ func TestServiceHandleUpdate(t *testing.T) {
 		{
 			name: "ValidationError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			request: UpdateServiceRequest{
-				Name:       stringPtr("Invalid"),
-				Properties: jsonPtr(properties.JSON{"invalid": "data"}),
+			request: UpdateServiceReq{
+				Name:       helpers.StringPtr("Invalid"),
+				Properties: helpers.JSONPtr(properties.JSON{"invalid": "data"}),
 			},
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander to return a validation error
@@ -272,9 +268,9 @@ func TestServiceHandleUpdate(t *testing.T) {
 		{
 			name: "NotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			request: UpdateServiceRequest{
-				Name:       stringPtr("Updated Service"),
-				Properties: jsonPtr(properties.JSON{"updated": "value"}),
+			request: UpdateServiceReq{
+				Name:       helpers.StringPtr("Updated Service"),
+				Properties: helpers.JSONPtr(properties.JSON{"updated": "value"}),
 			},
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander to return not found
@@ -317,7 +313,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 
 			// Execute request with middleware
 			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.DecodeBody[UpdateServiceRequest]()(middlewares.ID(http.HandlerFunc(handler.handleUpdate)))
+			middlewareHandler := middlewares.DecodeBody[UpdateServiceReq]()(middlewares.ID(Update(handler.Update, ServiceToRes)))
 			middlewareHandler.ServeHTTP(w, req)
 
 			// Assert response
@@ -462,8 +458,17 @@ func TestServiceHandleTransition(t *testing.T) {
 
 			// Execute request with middleware
 			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.ID(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				handler.handleTransition(w, r, tc.transitionTo)
+			middlewareHandler := middlewares.ID(CommandWithoutBody(func(ctx context.Context, id properties.UUID) error {
+				switch tc.transitionTo {
+				case domain.ServiceStarted:
+					return handler.Start(ctx, id)
+				case domain.ServiceStopped:
+					return handler.Stop(ctx, id)
+				case domain.ServiceDeleted:
+					return handler.Delete(ctx, id)
+				default:
+					return fmt.Errorf("unsupported transition: %v", tc.transitionTo)
+				}
 			}))
 			middlewareHandler.ServeHTTP(w, req)
 
@@ -551,7 +556,7 @@ func TestServiceHandleRetry(t *testing.T) {
 
 			// Execute request with middleware
 			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.ID(http.HandlerFunc(handler.handleRetry))
+			middlewareHandler := middlewares.ID(CommandWithoutBody(handler.Retry))
 			middlewareHandler.ServeHTTP(w, req)
 
 			// Assert response
@@ -603,7 +608,7 @@ func TestServiceToResponse(t *testing.T) {
 	}
 
 	// Convert to response
-	response := serviceToResponse(service)
+	response := ServiceToRes(service)
 
 	// Verify response
 	assert.Equal(t, serviceID, response.ID)

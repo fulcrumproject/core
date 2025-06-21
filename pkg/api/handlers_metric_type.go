@@ -1,7 +1,7 @@
 package api
 
 import (
-	"net/http"
+	"context"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
@@ -9,15 +9,14 @@ import (
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
-type CreateMetricTypeRequest struct {
+type CreateMetricTypeReq struct {
 	Name       string                  `json:"name"`
 	EntityType domain.MetricEntityType `json:"entityType"`
 }
 
-type UpdateMetricTypeRequest struct {
+type UpdateMetricTypeReq struct {
 	Name *string `json:"name"`
 }
 
@@ -45,13 +44,13 @@ func (h *MetricTypeHandler) Routes() func(r chi.Router) {
 		// List metric types
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeMetricType, authz.ActionRead, h.authz),
-		).Get("/", List(h.querier, metricTypeToResponse))
+		).Get("/", List(h.querier, MetricTypeToRes))
 
-		// Create metric type
+		// Create metric type - using standard Create handler
 		r.With(
-			middlewares.DecodeBody[CreateMetricTypeRequest](),
+			middlewares.DecodeBody[CreateMetricTypeReq](),
 			middlewares.AuthzSimple(authz.ObjectTypeMetricType, authz.ActionCreate, h.authz),
-		).Post("/", h.handleCreate)
+		).Post("/", Create(h.Create, MetricTypeToRes))
 
 		// Resource-specific routes
 		r.Group(func(r chi.Router) {
@@ -60,13 +59,13 @@ func (h *MetricTypeHandler) Routes() func(r chi.Router) {
 			// Get metric type
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeMetricType, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, metricTypeToResponse))
+			).Get("/{id}", Get(h.querier, MetricTypeToRes))
 
-			// Update metric type
+			// Update metric type - using standard Update handler
 			r.With(
-				middlewares.DecodeBody[UpdateMetricTypeRequest](),
+				middlewares.DecodeBody[UpdateMetricTypeReq](),
 				middlewares.AuthzFromID(authz.ObjectTypeMetricType, authz.ActionUpdate, h.authz, h.querier.AuthScope),
-			).Patch("/{id}", h.handleUpdate)
+			).Patch("/{id}", Update(h.Update, MetricTypeToRes))
 
 			// Delete metric type
 			r.With(
@@ -76,34 +75,18 @@ func (h *MetricTypeHandler) Routes() func(r chi.Router) {
 	}
 }
 
-func (h *MetricTypeHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	p := middlewares.MustGetBody[CreateMetricTypeRequest](r.Context())
+// Adapter functions that convert request structs to commander method calls
 
-	metricType, err := h.commander.Create(r.Context(), p.Name, p.EntityType)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, metricTypeToResponse(metricType))
+func (h *MetricTypeHandler) Create(ctx context.Context, req *CreateMetricTypeReq) (*domain.MetricType, error) {
+	return h.commander.Create(ctx, req.Name, req.EntityType)
 }
 
-func (h *MetricTypeHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-	p := middlewares.MustGetBody[UpdateMetricTypeRequest](r.Context())
-
-	metricType, err := h.commander.Update(r.Context(), id, p.Name)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, metricTypeToResponse(metricType))
+func (h *MetricTypeHandler) Update(ctx context.Context, id properties.UUID, req *UpdateMetricTypeReq) (*domain.MetricType, error) {
+	return h.commander.Update(ctx, id, req.Name)
 }
 
-// MetricTypeResponse represents the response body for metric type operations
-type MetricTypeResponse struct {
+// MetricTypeRes represents the response body for metric type operations
+type MetricTypeRes struct {
 	ID         properties.UUID         `json:"id"`
 	Name       string                  `json:"name"`
 	EntityType domain.MetricEntityType `json:"entityType"`
@@ -111,9 +94,9 @@ type MetricTypeResponse struct {
 	UpdatedAt  JSONUTCTime             `json:"updatedAt"`
 }
 
-// metricTypeToResponse converts a domain.MetricType to a MetricTypeResponse
-func metricTypeToResponse(mt *domain.MetricType) *MetricTypeResponse {
-	return &MetricTypeResponse{
+// MetricTypeToRes converts a domain.MetricType to a MetricTypeResponse
+func MetricTypeToRes(mt *domain.MetricType) *MetricTypeRes {
+	return &MetricTypeRes{
 		ID:         mt.ID,
 		Name:       mt.Name,
 		EntityType: mt.EntityType,

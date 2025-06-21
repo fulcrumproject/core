@@ -79,7 +79,7 @@ func TestServiceTypeRepository(t *testing.T) {
 			serviceType2 := createTestServiceType(t)
 			require.NoError(t, repo.Create(ctx, serviceType2))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 			}
@@ -100,7 +100,7 @@ func TestServiceTypeRepository(t *testing.T) {
 			serviceType := createTestServiceType(t)
 			require.NoError(t, repo.Create(ctx, serviceType))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"name": {serviceType.Name}},
@@ -127,7 +127,7 @@ func TestServiceTypeRepository(t *testing.T) {
 			serviceType2.Name = "B Service Type"
 			require.NoError(t, repo.Create(ctx, serviceType2))
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Sort:     true,
@@ -156,7 +156,7 @@ func TestServiceTypeRepository(t *testing.T) {
 				require.NoError(t, repo.Create(ctx, serviceType))
 			}
 
-			page := &domain.PageRequest{
+			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 2,
 			}

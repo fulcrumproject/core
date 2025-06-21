@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/fulcrumproject/core/pkg/auth"
@@ -12,7 +13,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-type CreateAgentRequest struct {
+type CreateAgentReq struct {
 	Name        string          `json:"name"`
 	ProviderID  properties.UUID `json:"providerId"`
 	AgentTypeID properties.UUID `json:"agentTypeId"`
@@ -20,17 +21,17 @@ type CreateAgentRequest struct {
 }
 
 // auth.ObjectScope implements auth.ObjectScopeProvider interface
-func (r CreateAgentRequest) ObjectScope() (auth.ObjectScope, error) {
+func (r CreateAgentReq) ObjectScope() (auth.ObjectScope, error) {
 	return &auth.DefaultObjectScope{ParticipantID: &r.ProviderID}, nil
 }
 
-type UpdateAgentRequest struct {
+type UpdateAgentReq struct {
 	Name   *string             `json:"name"`
 	Status *domain.AgentStatus `json:"status"`
 	Tags   *[]string           `json:"tags"`
 }
 
-type UpdateAgentStatusRequest struct {
+type UpdateAgentStatusReq struct {
 	Status domain.AgentStatus `json:"status"`
 }
 
@@ -57,13 +58,13 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 		// List endpoint - simple authorization
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeAgent, authz.ActionRead, h.authz),
-		).Get("/", List(h.querier, agentToResponse))
+		).Get("/", List(h.querier, AgentToRes))
 
-		// Create endpoint - decode body, then authorize with provider ID
+		// Create endpoint - using standard Create handler
 		r.With(
-			middlewares.DecodeBody[CreateAgentRequest](),
-			middlewares.AuthzFromBody[CreateAgentRequest](authz.ObjectTypeAgent, authz.ActionCreate, h.authz),
-		).Post("/", h.handleCreate)
+			middlewares.DecodeBody[CreateAgentReq](),
+			middlewares.AuthzFromBody[CreateAgentReq](authz.ObjectTypeAgent, authz.ActionCreate, h.authz),
+		).Post("/", Create(h.Create, AgentToRes))
 
 		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
@@ -72,13 +73,13 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using agent's provider
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, agentToResponse))
+			).Get("/{id}", Get(h.querier, AgentToRes))
 
-			// Update endpoint - decode body, authorize using agent's provider
+			// Update endpoint - using standard Update handler
 			r.With(
-				middlewares.DecodeBody[UpdateAgentRequest](),
+				middlewares.DecodeBody[UpdateAgentReq](),
 				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionUpdate, h.authz, h.querier.AuthScope),
-			).Patch("/{id}", h.handleUpdate)
+			).Patch("/{id}", Update(h.Update, AgentToRes))
 
 			// Delete endpoint - authorize using agent's provider
 			r.With(
@@ -90,37 +91,34 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 		// Note: These endpoints have special auth requirements
 		r.With(
 			middlewares.MustHaveRoles(auth.RoleAgent),
-			middlewares.DecodeBody[UpdateAgentStatusRequest](),
-		).Put("/me/status", h.handleUpdateStatusMe)
+			middlewares.DecodeBody[UpdateAgentStatusReq](),
+		).Put("/me/status", UpdateWithoutID(h.UpdateStatusMe, AgentToRes))
 
 		r.With(
 			middlewares.MustHaveRoles(auth.RoleAgent),
-		).Get("/me", h.handleGetMe)
+		).Get("/me", h.GetMe)
 	}
 }
 
-func (h *AgentHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
-	p := middlewares.MustGetBody[CreateAgentRequest](r.Context())
-
-	agent, err := h.commander.Create(
-		r.Context(),
-		p.Name,
-		p.ProviderID,
-		p.AgentTypeID,
-		p.Tags,
-	)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, agentToResponse(agent))
+// Adapter functions that convert request structs to commander method calls
+func (h *AgentHandler) Create(ctx context.Context, req *CreateAgentReq) (*domain.Agent, error) {
+	return h.commander.Create(ctx, req.Name, req.ProviderID, req.AgentTypeID, req.Tags)
 }
 
-// handleGetMe handles GET /agents/me
+// Adapter functions that convert request structs to commander method calls
+func (h *AgentHandler) Update(ctx context.Context, id properties.UUID, req *UpdateAgentReq) (*domain.Agent, error) {
+	return h.commander.Update(ctx, id, req.Name, req.Status, req.Tags)
+}
+
+// Adapter functions that convert request structs to commander method calls
+func (h *AgentHandler) UpdateStatusMe(ctx context.Context, req *UpdateAgentStatusReq) (*domain.Agent, error) {
+	agentID := auth.MustGetIdentity(ctx).Scope.AgentID
+	return h.commander.UpdateStatus(ctx, *agentID, req.Status)
+}
+
+// GetMe handles GET /agents/me
 // This endpoint allows agents to retrieve their own information
-func (h *AgentHandler) handleGetMe(w http.ResponseWriter, r *http.Request) {
+func (h *AgentHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	agentID := auth.MustGetIdentity(r.Context()).Scope.AgentID
 
 	agent, err := h.querier.Get(r.Context(), *agentID)
@@ -129,60 +127,26 @@ func (h *AgentHandler) handleGetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.JSON(w, r, agentToResponse(agent))
+	render.JSON(w, r, AgentToRes(agent))
 }
 
-func (h *AgentHandler) handleUpdate(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-	p := middlewares.MustGetBody[UpdateAgentRequest](r.Context())
-
-	agent, err := h.commander.Update(
-		r.Context(),
-		id,
-		p.Name,
-		p.Status,
-		p.Tags,
-	)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, agentToResponse(agent))
+// AgentRes represents the response body for agent operations
+type AgentRes struct {
+	ID          properties.UUID    `json:"id"`
+	Name        string             `json:"name"`
+	Status      domain.AgentStatus `json:"status"`
+	ProviderID  properties.UUID    `json:"providerId"`
+	AgentTypeID properties.UUID    `json:"agentTypeId"`
+	Tags        []string           `json:"tags"`
+	Participant *ParticipantRes    `json:"participant,omitempty"`
+	AgentType   *AgentTypeRes      `json:"agentType,omitempty"`
+	CreatedAt   JSONUTCTime        `json:"createdAt"`
+	UpdatedAt   JSONUTCTime        `json:"updatedAt"`
 }
 
-// handleUpdateStatusMe handles PUT /agents/me/status
-// This endpoint allows agents to update their own status
-func (h *AgentHandler) handleUpdateStatusMe(w http.ResponseWriter, r *http.Request) {
-	p := middlewares.MustGetBody[UpdateAgentStatusRequest](r.Context())
-	agentID := auth.MustGetIdentity(r.Context()).Scope.AgentID
-
-	agent, err := h.commander.UpdateStatus(r.Context(), *agentID, p.Status)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.JSON(w, r, agentToResponse(agent))
-}
-
-// AgentResponse represents the response body for agent operations
-type AgentResponse struct {
-	ID          properties.UUID      `json:"id"`
-	Name        string               `json:"name"`
-	Status      domain.AgentStatus   `json:"status"`
-	ProviderID  properties.UUID      `json:"providerId"`
-	AgentTypeID properties.UUID      `json:"agentTypeId"`
-	Tags        []string             `json:"tags"`
-	Participant *ParticipantResponse `json:"participant,omitempty"`
-	AgentType   *AgentTypeResponse   `json:"agentType,omitempty"`
-	CreatedAt   JSONUTCTime          `json:"createdAt"`
-	UpdatedAt   JSONUTCTime          `json:"updatedAt"`
-}
-
-// agentToResponse converts a domain.Agent to an AgentResponse
-func agentToResponse(a *domain.Agent) *AgentResponse {
-	response := &AgentResponse{
+// AgentToRes converts a domain.Agent to an AgentResponse
+func AgentToRes(a *domain.Agent) *AgentRes {
+	response := &AgentRes{
 		ID:          a.ID,
 		Name:        a.Name,
 		Status:      a.Status,
@@ -193,10 +157,10 @@ func agentToResponse(a *domain.Agent) *AgentResponse {
 		UpdatedAt:   JSONUTCTime(a.UpdatedAt),
 	}
 	if a.Provider != nil {
-		response.Participant = participantToResponse(a.Provider)
+		response.Participant = ParticipantToRes(a.Provider)
 	}
 	if a.AgentType != nil {
-		response.AgentType = agentTypeToResponse(a.AgentType)
+		response.AgentType = AgentTypeToRes(a.AgentType)
 	}
 	return response
 }
