@@ -492,10 +492,10 @@ func validatePropertiesAgainstSchema(ctx context.Context, store Store, props pro
 }
 
 func (s *serviceCommander) Transition(ctx context.Context, id properties.UUID, target ServiceStatus) (*Service, error) {
-	return Transition(ctx, s.store, id, target)
+	return TransitionService(ctx, s.store, id, target)
 }
 
-func Transition(ctx context.Context, store Store, id properties.UUID, target ServiceStatus) (*Service, error) {
+func TransitionService(ctx context.Context, store Store, id properties.UUID, target ServiceStatus) (*Service, error) {
 	// Find it
 	svc, err := store.ServiceRepo().Get(ctx, id)
 	if err != nil {
@@ -541,10 +541,13 @@ func Transition(ctx context.Context, store Store, id properties.UUID, target Ser
 
 	return svc, nil
 }
-
 func (s *serviceCommander) Retry(ctx context.Context, id properties.UUID) (*Service, error) {
+	return RetryService(ctx, s.store, id)
+}
+
+func RetryService(ctx context.Context, store Store, id properties.UUID) (*Service, error) {
 	// Find it
-	svc, err := s.store.ServiceRepo().Get(ctx, id)
+	svc, err := store.ServiceRepo().Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -562,7 +565,7 @@ func (s *serviceCommander) Retry(ctx context.Context, id properties.UUID) (*Serv
 	}
 
 	// Save, event and create job if needed
-	err = s.store.Atomic(ctx, func(store Store) error {
+	err = store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
 		}
