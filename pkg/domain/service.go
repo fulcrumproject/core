@@ -286,7 +286,7 @@ func (s *serviceCommander) Create(
 		return nil, NewInvalidInputErrorf("agent with ID %s does not exist", agentID)
 	}
 
-	return s.createServiceWithAgent(ctx, agent, serviceTypeID, groupID, name, properties)
+	return CreateServiceWithAgent(ctx, s.store, agent, serviceTypeID, groupID, name, properties)
 }
 
 func (s *serviceCommander) CreateWithTags(
@@ -297,7 +297,19 @@ func (s *serviceCommander) CreateWithTags(
 	properties properties.JSON,
 	serviceTags []string,
 ) (*Service, error) {
-	agents, err := s.store.AgentRepo().FindByServiceTypeAndTags(ctx, serviceTypeID, serviceTags)
+	return CreateServiceWithTags(ctx, s.store, serviceTypeID, groupID, name, properties, serviceTags)
+}
+
+func CreateServiceWithTags(
+	ctx context.Context,
+	store Store,
+	serviceTypeID properties.UUID,
+	groupID properties.UUID,
+	name string,
+	properties properties.JSON,
+	serviceTags []string,
+) (*Service, error) {
+	agents, err := store.AgentRepo().FindByServiceTypeAndTags(ctx, serviceTypeID, serviceTags)
 	if err != nil {
 		return nil, err
 	}
@@ -307,24 +319,25 @@ func (s *serviceCommander) CreateWithTags(
 	}
 
 	agent := agents[0]
-	return s.createServiceWithAgent(ctx, agent, serviceTypeID, groupID, name, properties)
+	return CreateServiceWithAgent(ctx, store, agent, serviceTypeID, groupID, name, properties)
 }
 
-func (s *serviceCommander) createServiceWithAgent(
+func CreateServiceWithAgent(
 	ctx context.Context,
+	store Store,
 	agent *Agent,
 	serviceTypeID properties.UUID,
 	groupID properties.UUID,
 	name string,
 	properties properties.JSON,
 ) (*Service, error) {
-	group, err := s.store.ServiceGroupRepo().Get(ctx, groupID)
+	group, err := store.ServiceGroupRepo().Get(ctx, groupID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Validate properties against schema
-	validatedProperties, err := s.validatePropertiesAgainstSchema(ctx, properties, serviceTypeID)
+	validatedProperties, err := validatePropertiesAgainstSchema(ctx, store, properties, serviceTypeID)
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +368,7 @@ func (s *serviceCommander) createServiceWithAgent(
 		return nil, InvalidInputError{Err: err}
 	}
 
-	err = s.store.Atomic(ctx, func(store Store) error {
+	err = store.Atomic(ctx, func(store Store) error {
 		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
 			return err
 		}
@@ -394,7 +407,7 @@ func (s *serviceCommander) Update(ctx context.Context, id properties.UUID, name 
 
 	// Validate properties against schema if provided
 	if props != nil {
-		validatedProperties, err := s.validatePropertiesAgainstSchema(ctx, *props, svc.ServiceTypeID)
+		validatedProperties, err := validatePropertiesAgainstSchema(ctx, s.store, *props, svc.ServiceTypeID)
 		if err != nil {
 			return nil, err
 		}
@@ -446,9 +459,9 @@ func (s *serviceCommander) Update(ctx context.Context, id properties.UUID, name 
 }
 
 // validatePropertiesAgainstSchema validates properties against a service type's schema
-func (s *serviceCommander) validatePropertiesAgainstSchema(ctx context.Context, props properties.JSON, serviceTypeID properties.UUID) (properties.JSON, error) {
+func validatePropertiesAgainstSchema(ctx context.Context, store Store, props properties.JSON, serviceTypeID properties.UUID) (properties.JSON, error) {
 	// Fetch the service type to get its schema
-	serviceType, err := s.store.ServiceTypeRepo().Get(ctx, serviceTypeID)
+	serviceType, err := store.ServiceTypeRepo().Get(ctx, serviceTypeID)
 	if err != nil {
 		return nil, err
 	}
