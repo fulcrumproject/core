@@ -58,5 +58,5 @@ func serviceGroupAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) *gorm.DB 
 }
 
 func (r *GormServiceGroupRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-	return r.getAuthScope(ctx, id, "null", "null", "null", "consumer_id")
+	return r.AuthScopeByFields(ctx, id, "null", "null", "null", "consumer_id")
 }

@@ -82,5 +82,5 @@ func (r *GormTokenRepository) DeleteByParticipantID(ctx context.Context, partici
 
 // AuthScope returns the auth scope for the token
 func (r *GormTokenRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-	return r.getAuthScope(ctx, id, "participant_id", "null", "agent_id", "null")
+	return r.AuthScopeByFields(ctx, id, "participant_id", "null", "agent_id", "null")
 }

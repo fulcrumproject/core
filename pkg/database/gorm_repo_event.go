@@ -56,5 +56,5 @@ func (r *GormEventRepository) ListFromSequence(ctx context.Context, fromSequence
 }
 
 func (r *GormEventRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-	return r.getAuthScope(ctx, id, "null", "provider_id", "agent_id", "consumer_id")
+	return r.AuthScopeByFields(ctx, id, "null", "provider_id", "agent_id", "consumer_id")
 }

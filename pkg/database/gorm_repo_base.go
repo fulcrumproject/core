@@ -153,8 +153,8 @@ func providerConsumerAgentAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) 
 	return q
 }
 
-// getAuthScope retrieves auth scope for an entity with specified scope fields
-func (r *GormRepository[T]) getAuthScope(ctx context.Context, id properties.UUID, scopeFields ...string) (auth.ObjectScope, error) {
+// AuthScopeByFields retrieves auth scope for an entity with specified scope fields
+func (r *GormRepository[T]) AuthScopeByFields(ctx context.Context, id properties.UUID, scopeFields ...string) (auth.ObjectScope, error) {
 	var scope auth.DefaultObjectScope
 	entity := new(T)
 	entityValue := *entity
