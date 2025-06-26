@@ -16,13 +16,13 @@ type GormMetricEntryRepository struct {
 	*GormRepository[domain.MetricEntry]
 }
 
-var applyMetricEntryFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"agentId":   parserInFilterFieldApplier("metric_entries.agent_id", properties.ParseUUID),
-	"serviceId": parserInFilterFieldApplier("metric_entries.service_id", properties.ParseUUID),
-	"typeId":    parserInFilterFieldApplier("metric_entries.type_id", properties.ParseUUID),
+var applyMetricEntryFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"agentId":   ParserInFilterFieldApplier("metric_entries.agent_id", properties.ParseUUID),
+	"serviceId": ParserInFilterFieldApplier("metric_entries.service_id", properties.ParseUUID),
+	"typeId":    ParserInFilterFieldApplier("metric_entries.type_id", properties.ParseUUID),
 })
 
-var applyMetricEntrySort = mapSortApplier(map[string]string{
+var applyMetricEntrySort = MapSortApplier(map[string]string{
 	"createdAt": "metric_entries.created_at",
 	"value":     "metric_entries.value",
 })

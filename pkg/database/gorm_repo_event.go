@@ -14,13 +14,13 @@ type GormEventRepository struct {
 	*GormRepository[domain.Event]
 }
 
-var applyEventFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"initiatorType": stringInFilterFieldApplier("initiator_type"),
-	"initiatorId":   parserInFilterFieldApplier("initiator_id", properties.ParseUUID),
-	"type":          stringInFilterFieldApplier("type"),
+var applyEventFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"initiatorType": StringInFilterFieldApplier("initiator_type"),
+	"initiatorId":   ParserInFilterFieldApplier("initiator_id", properties.ParseUUID),
+	"type":          StringInFilterFieldApplier("type"),
 })
 
-var applyEventSort = mapSortApplier(map[string]string{
+var applyEventSort = MapSortApplier(map[string]string{
 	"createdAt": "created_at",
 })
 

@@ -16,9 +16,9 @@ type GormEventSubscriptionRepository struct {
 	*GormRepository[domain.EventSubscription]
 }
 
-var applyEventSubscriptionFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"subscriber_id": stringInFilterFieldApplier("subscriber_id"),
-	"is_active":     parserInFilterFieldApplier("is_active", parseBool),
+var applyEventSubscriptionFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"subscriber_id": StringInFilterFieldApplier("subscriber_id"),
+	"is_active":     ParserInFilterFieldApplier("is_active", parseBool),
 })
 
 // parseBool parses a string to boolean
@@ -33,7 +33,7 @@ func parseBool(s string) (bool, error) {
 	}
 }
 
-var applyEventSubscriptionSort = mapSortApplier(map[string]string{
+var applyEventSubscriptionSort = MapSortApplier(map[string]string{
 	"subscriber_id":                 "subscriber_id",
 	"last_event_sequence_processed": "last_event_sequence_processed",
 	"lease_expires_at":              "lease_expires_at",

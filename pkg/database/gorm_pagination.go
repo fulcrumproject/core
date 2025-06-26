@@ -14,7 +14,7 @@ type PageFilterApplier func(db *gorm.DB, r *domain.PageReq) (*gorm.DB, error)
 
 type FilterFieldApplier func(db *gorm.DB, vv []string) (*gorm.DB, error)
 
-func mapFilterApplier(fields map[string]FilterFieldApplier) PageFilterApplier {
+func MapFilterApplier(fields map[string]FilterFieldApplier) PageFilterApplier {
 	return func(db *gorm.DB, r *domain.PageReq) (*gorm.DB, error) {
 		if len(r.Filters) == 0 {
 			return db, nil
@@ -34,7 +34,7 @@ func mapFilterApplier(fields map[string]FilterFieldApplier) PageFilterApplier {
 	}
 }
 
-func mapSortApplier(fields map[string]string) PageFilterApplier {
+func MapSortApplier(fields map[string]string) PageFilterApplier {
 	return func(db *gorm.DB, r *domain.PageReq) (*gorm.DB, error) {
 		if !r.Sort {
 			return db, nil
@@ -47,13 +47,7 @@ func mapSortApplier(fields map[string]string) PageFilterApplier {
 	}
 }
 
-func applyPagination(db *gorm.DB, r *domain.PageReq) (*gorm.DB, error) {
-	offset := (r.Page - 1) * r.PageSize
-	db = db.Offset(offset).Limit(r.PageSize)
-	return db, nil
-}
-
-func parserInFilterFieldApplier[T any](f string, t func(string) (T, error)) FilterFieldApplier {
+func ParserInFilterFieldApplier[T any](f string, t func(string) (T, error)) FilterFieldApplier {
 	return func(db *gorm.DB, vv []string) (*gorm.DB, error) {
 		if len(vv) == 0 {
 			return db, nil
@@ -70,12 +64,12 @@ func parserInFilterFieldApplier[T any](f string, t func(string) (T, error)) Filt
 	}
 }
 
-func stringInFilterFieldApplier(f string) FilterFieldApplier {
-	return parserInFilterFieldApplier(f, func(v string) (string, error) { return v, nil })
+func StringInFilterFieldApplier(f string) FilterFieldApplier {
+	return ParserInFilterFieldApplier(f, func(v string) (string, error) { return v, nil })
 }
 
-// list implements a generic list operation for any model type
-func list[T any](
+// listPaginated implements a generic listPaginated operation for any model type
+func listPaginated[T any](
 	ctx context.Context,
 	db *gorm.DB,
 	page *domain.PageReq,
@@ -133,4 +127,10 @@ func list[T any](
 	}
 
 	return domain.NewPaginatedResult(items, count, page), nil
+}
+
+func applyPagination(db *gorm.DB, r *domain.PageReq) (*gorm.DB, error) {
+	offset := (r.Page - 1) * r.PageSize
+	db = db.Offset(offset).Limit(r.PageSize)
+	return db, nil
 }

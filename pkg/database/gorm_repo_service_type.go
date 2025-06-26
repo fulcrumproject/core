@@ -14,11 +14,11 @@ type GormServiceTypeRepository struct {
 	*GormRepository[domain.ServiceType]
 }
 
-var applyServiceTypeFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"name": stringInFilterFieldApplier("name"),
+var applyServiceTypeFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"name": StringInFilterFieldApplier("name"),
 })
 
-var applyServiceTypeSort = mapSortApplier(map[string]string{
+var applyServiceTypeSort = MapSortApplier(map[string]string{
 	"name": "name",
 })
 

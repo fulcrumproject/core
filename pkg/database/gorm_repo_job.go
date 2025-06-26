@@ -15,14 +15,14 @@ type GormJobRepository struct {
 	*GormRepository[domain.Job]
 }
 
-var applyJobFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"action":    parserInFilterFieldApplier("jobs.action", domain.ParseServiceAction),
-	"status":    parserInFilterFieldApplier("jobs.status", domain.ParseJobStatus),
-	"agentId":   parserInFilterFieldApplier("jobs.agent_id", properties.ParseUUID),
-	"serviceId": parserInFilterFieldApplier("jobs.service_id", properties.ParseUUID),
+var applyJobFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"action":    ParserInFilterFieldApplier("jobs.action", domain.ParseServiceAction),
+	"status":    ParserInFilterFieldApplier("jobs.status", domain.ParseJobStatus),
+	"agentId":   ParserInFilterFieldApplier("jobs.agent_id", properties.ParseUUID),
+	"serviceId": ParserInFilterFieldApplier("jobs.service_id", properties.ParseUUID),
 })
 
-var applyJobSort = mapSortApplier(map[string]string{
+var applyJobSort = MapSortApplier(map[string]string{
 	"priority":    "jobs.priority",
 	"createdAt":   "jobs.created_at",
 	"claimedAt":   "jobs.claimed_at",

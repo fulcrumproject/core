@@ -15,12 +15,12 @@ type GormTokenRepository struct {
 	*GormRepository[domain.Token]
 }
 
-var applyTokenFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"name": stringInFilterFieldApplier("name"),
-	"role": stringInFilterFieldApplier("role"),
+var applyTokenFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"name": StringInFilterFieldApplier("name"),
+	"role": StringInFilterFieldApplier("role"),
 })
 
-var applyTokenSort = mapSortApplier(map[string]string{
+var applyTokenSort = MapSortApplier(map[string]string{
 	"name":      "name",
 	"expireAt":  "expire_at",
 	"createdAt": "created_at",

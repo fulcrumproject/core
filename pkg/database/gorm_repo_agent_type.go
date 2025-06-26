@@ -14,11 +14,11 @@ type GormAgentTypeRepository struct {
 	*GormRepository[domain.AgentType]
 }
 
-var applyAgentTypeFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"name": stringInFilterFieldApplier("name"),
+var applyAgentTypeFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"name": StringInFilterFieldApplier("name"),
 })
 
-var applyAgentTypeSort = mapSortApplier(map[string]string{
+var applyAgentTypeSort = MapSortApplier(map[string]string{
 	"name": "name",
 })
 

@@ -14,11 +14,11 @@ type GormMetricTypeRepository struct {
 	*GormRepository[domain.MetricType]
 }
 
-var applyMetricTypeFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"name": stringInFilterFieldApplier("name"),
+var applyMetricTypeFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"name": StringInFilterFieldApplier("name"),
 })
 
-var applyMetricTypeSort = mapSortApplier(map[string]string{
+var applyMetricTypeSort = MapSortApplier(map[string]string{
 	"name": "name",
 })
 

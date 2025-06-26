@@ -14,12 +14,12 @@ type GormParticipantRepository struct {
 	*GormRepository[domain.Participant]
 }
 
-var applyParticipantFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"name":   stringInFilterFieldApplier("name"),
-	"status": parserInFilterFieldApplier("status", domain.ParseParticipantStatus),
+var applyParticipantFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"name":   StringInFilterFieldApplier("name"),
+	"status": ParserInFilterFieldApplier("status", domain.ParseParticipantStatus),
 })
 
-var applyParticipantSort = mapSortApplier(map[string]string{
+var applyParticipantSort = MapSortApplier(map[string]string{
 	"name": "name",
 })
 

@@ -93,7 +93,7 @@ func (r *GormRepository[T]) Get(ctx context.Context, id properties.UUID) (*T, er
 }
 
 func (r *GormRepository[T]) List(ctx context.Context, authIdentityScope *auth.IdentityScope, page *domain.PageReq) (*domain.PageRes[T], error) {
-	return list[T](
+	return listPaginated[T](
 		ctx,
 		r.db,
 		page,

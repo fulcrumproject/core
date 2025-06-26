@@ -16,14 +16,14 @@ type GormAgentRepository struct {
 	*GormRepository[domain.Agent]
 }
 
-var applyAgentFilter = mapFilterApplier(map[string]FilterFieldApplier{
-	"name":        stringInFilterFieldApplier("name"),
-	"status":      parserInFilterFieldApplier("status", domain.ParseAgentStatus),
-	"providerId":  parserInFilterFieldApplier("provider_id", properties.ParseUUID),
-	"agentTypeId": parserInFilterFieldApplier("agent_type_id", properties.ParseUUID),
+var applyAgentFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"name":        StringInFilterFieldApplier("name"),
+	"status":      ParserInFilterFieldApplier("status", domain.ParseAgentStatus),
+	"providerId":  ParserInFilterFieldApplier("provider_id", properties.ParseUUID),
+	"agentTypeId": ParserInFilterFieldApplier("agent_type_id", properties.ParseUUID),
 })
 
-var applyAgentSort = mapSortApplier(map[string]string{
+var applyAgentSort = MapSortApplier(map[string]string{
 	"name": "name",
 })
 
