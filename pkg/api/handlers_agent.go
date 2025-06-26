@@ -73,7 +73,7 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using agent's provider
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, AgentToRes))
+			).Get("/{id}", Get(h.querier.Get, AgentToRes))
 
 			// Update endpoint - using standard Update handler
 			r.With(

@@ -2,6 +2,8 @@ package database
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -48,6 +50,29 @@ func (r *GormMetricEntryRepository) CountByMetricType(ctx context.Context, typeI
 		Where("type_id = ?", typeID).
 		Count(&count)
 	return count, result.Error
+}
+
+// Aggregate performs aggregation operations on metric entries for a specific metric type and service within a time range
+func (r *GormMetricEntryRepository) Aggregate(ctx context.Context, aggregateType domain.AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error) {
+	var result float64
+	var err error
+
+	baseQuery := r.db.WithContext(ctx).
+		Model(&domain.MetricEntry{}).
+		Where("service_id = ? AND type_id = ? AND created_at >= ? AND created_at <= ?", serviceID, typeID, start, end)
+
+	switch aggregateType {
+	case domain.AggregateMax:
+		err = baseQuery.Select("COALESCE(MAX(value), 0)").Scan(&result).Error
+	case domain.AggregateSum:
+		err = baseQuery.Select("COALESCE(SUM(value), 0)").Scan(&result).Error
+	case domain.AggregateDiffMaxMin:
+		err = baseQuery.Select("COALESCE(MAX(value) - MIN(value), 0)").Scan(&result).Error
+	default:
+		return 0, fmt.Errorf("unsupported aggregate type: %s", aggregateType)
+	}
+
+	return result, err
 }
 
 func (r *GormMetricEntryRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {

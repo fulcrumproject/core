@@ -185,11 +185,19 @@ var _ domain.MetricEntryQuerier = (*mockMetricEntryQuerier)(nil)
 type mockMetricEntryQuerier struct {
 	BaseMockQuerier[domain.MetricEntry]
 	countByMetricTypeFunc func(ctx context.Context, typeID properties.UUID) (int64, error)
+	aggregateFunc         func(ctx context.Context, aggregateType domain.AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)
 }
 
 func (m *mockMetricEntryQuerier) CountByMetricType(ctx context.Context, typeID properties.UUID) (int64, error) {
 	if m.countByMetricTypeFunc != nil {
 		return m.countByMetricTypeFunc(ctx, typeID)
+	}
+	return 0, nil
+}
+
+func (m *mockMetricEntryQuerier) Aggregate(ctx context.Context, aggregateType domain.AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error) {
+	if m.aggregateFunc != nil {
+		return m.aggregateFunc(ctx, aggregateType, serviceID, typeID, start, end)
 	}
 	return 0, nil
 }

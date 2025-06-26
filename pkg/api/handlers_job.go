@@ -65,7 +65,7 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 			// Get job - authorize using job's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, JobToRes))
+			).Get("/{id}", Get(h.querier.Get, JobToRes))
 
 			// Agent actions - require agent identity and authorize from job ID
 			r.With(

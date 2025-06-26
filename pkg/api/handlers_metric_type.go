@@ -59,7 +59,7 @@ func (h *MetricTypeHandler) Routes() func(r chi.Router) {
 			// Get metric type
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeMetricType, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, MetricTypeToRes))
+			).Get("/{id}", Get(h.querier.Get, MetricTypeToRes))
 
 			// Update metric type - using standard Update handler
 			r.With(

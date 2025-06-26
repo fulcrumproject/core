@@ -32,11 +32,11 @@ func List[T domain.Entity, R any](querier domain.BaseEntityQuerier[T], toResp fu
 }
 
 // Get handles standard get operations that take an ID from URL and return an entity
-func Get[T domain.Entity, R any](querier domain.BaseEntityQuerier[T], toResp func(*T) *R) http.HandlerFunc {
+func Get[T domain.Entity, R any](get func(ctx context.Context, id properties.UUID) (*T, error), toResp func(*T) *R) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := middlewares.MustGetID(r.Context())
 
-		entity, err := querier.Get(r.Context(), id)
+		entity, err := get(r.Context(), id)
 		if err != nil {
 			render.Render(w, r, ErrDomain(err))
 			return

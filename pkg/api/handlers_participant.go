@@ -60,7 +60,7 @@ func (h *ParticipantHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using participant's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeParticipant, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, ParticipantToRes))
+			).Get("/{id}", Get(h.querier.Get, ParticipantToRes))
 
 			// Update endpoint - using standard Update handler
 			r.With(

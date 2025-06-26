@@ -63,7 +63,7 @@ func (h *ServiceGroupHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using service group's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeServiceGroup, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, ServiceGroupToRes))
+			).Get("/{id}", Get(h.querier.Get, ServiceGroupToRes))
 
 			// Update endpoint - using standard Update handler
 			r.With(

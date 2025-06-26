@@ -101,7 +101,7 @@ func (h *ServiceHandler) Routes() func(r chi.Router) {
 			// Get - authorize from resource ID
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, ServiceToRes))
+			).Get("/{id}", Get(h.querier.Get, ServiceToRes))
 
 			// Update - decode body + authorize from resource ID
 			r.With(

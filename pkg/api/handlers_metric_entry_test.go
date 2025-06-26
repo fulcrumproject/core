@@ -124,9 +124,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 					assert.Equal(t, 123.45, value)
 
 					return &domain.MetricEntry{
-						BaseEntity: domain.BaseEntity{
-							ID: uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
-						},
+						ID:         uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
 						ServiceID:  serviceID,
 						AgentID:    agentID,
 						ConsumerID: consumerID,
@@ -185,9 +183,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 					assert.Equal(t, 123.45, value)
 
 					return &domain.MetricEntry{
-						BaseEntity: domain.BaseEntity{
-							ID: uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
-						},
+						ID:         uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
 						ServiceID:  serviceID,
 						AgentID:    agentID,
 						ConsumerID: consumerID,
@@ -345,11 +341,9 @@ func TestMetricEntryToResponse(t *testing.T) {
 
 	// Create a metric entry with all fields populated
 	metricEntry := &domain.MetricEntry{
-		BaseEntity: domain.BaseEntity{
-			ID:        uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
-			CreatedAt: createdAt,
-			UpdatedAt: updatedAt,
-		},
+		ID:         uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
+		CreatedAt:  createdAt,
+		UpdatedAt:  updatedAt,
 		ServiceID:  serviceID,
 		AgentID:    agentID,
 		ConsumerID: consumerID,

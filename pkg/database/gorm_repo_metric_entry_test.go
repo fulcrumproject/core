@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -311,6 +312,84 @@ func TestMetricEntryRepository(t *testing.T) {
 			nonExistentCount, err := repo.CountByMetricType(context.Background(), nonExistentTypeID)
 			require.NoError(t, err)
 			assert.Equal(t, int64(0), nonExistentCount, "Should return zero for non-existent metric type")
+		})
+	})
+
+	t.Run("Aggregate", func(t *testing.T) {
+		t.Run("success - aggregates values correctly", func(t *testing.T) {
+			// Clear existing entries for better test isolation
+			testDB.DB.Exec("DELETE FROM metric_entries")
+
+			// Create test entries with known values
+			testValues := []float64{10.0, 20.0, 30.0, 40.0, 50.0}
+			expectedSum := 150.0
+			expectedMax := 50.0
+			expectedDiffMaxMin := 40.0 // 50 - 10
+
+			// Create entries
+			for i, value := range testValues {
+				entry := &domain.MetricEntry{
+					AgentID:    agent.ID,
+					ServiceID:  service.ID,
+					ResourceID: fmt.Sprintf("aggregate-test-%d", i),
+					ProviderID: provider.ID,
+					ConsumerID: consumer.ID,
+					Value:      value,
+					TypeID:     metricTypeService.ID,
+				}
+				err := repo.Create(context.Background(), entry)
+				require.NoError(t, err)
+			}
+
+			// Set time range to cover all entries
+			start := time.Now().Add(-1 * time.Hour)
+			end := time.Now().Add(1 * time.Hour)
+
+			// Test MAX aggregate
+			maxResult, err := repo.Aggregate(context.Background(), domain.AggregateMax, service.ID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, expectedMax, maxResult, "MAX aggregate should return the maximum value")
+
+			// Test SUM aggregate
+			sumResult, err := repo.Aggregate(context.Background(), domain.AggregateSum, service.ID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, expectedSum, sumResult, "SUM aggregate should return the sum of all values")
+
+			// Test DIFF_MAX_MIN aggregate
+			diffResult, err := repo.Aggregate(context.Background(), domain.AggregateDiffMaxMin, service.ID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, expectedDiffMaxMin, diffResult, "DIFF_MAX_MIN aggregate should return the difference between max and min")
+		})
+
+		t.Run("success - returns zero for no matching entries", func(t *testing.T) {
+			// Use a non-existent service ID
+			nonExistentServiceID := properties.NewUUID()
+			start := time.Now().Add(-1 * time.Hour)
+			end := time.Now().Add(1 * time.Hour)
+
+			// Test all aggregate types with non-existent service
+			maxResult, err := repo.Aggregate(context.Background(), domain.AggregateMax, nonExistentServiceID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, 0.0, maxResult, "Should return 0 when no entries match")
+
+			sumResult, err := repo.Aggregate(context.Background(), domain.AggregateSum, nonExistentServiceID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, 0.0, sumResult, "Should return 0 when no entries match")
+
+			diffResult, err := repo.Aggregate(context.Background(), domain.AggregateDiffMaxMin, nonExistentServiceID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, 0.0, diffResult, "Should return 0 when no entries match")
+		})
+
+		t.Run("error - unsupported aggregate type", func(t *testing.T) {
+			start := time.Now().Add(-1 * time.Hour)
+			end := time.Now().Add(1 * time.Hour)
+
+			// Test with invalid aggregate type
+			result, err := repo.Aggregate(context.Background(), domain.AggregateType("invalid"), service.ID, metricTypeService.ID, start, end)
+			require.Error(t, err)
+			assert.Equal(t, 0.0, result)
+			assert.Contains(t, err.Error(), "unsupported aggregate type")
 		})
 	})
 

@@ -3,24 +3,42 @@ package domain
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+// AggregateType defines the type of aggregation to perform on metric entries
+type AggregateType string
+
+const (
+	// AggregateMax returns the maximum value
+	AggregateMax AggregateType = "max"
+	// AggregateSum returns the sum of values
+	AggregateSum AggregateType = "sum"
+	// AggregateDiffMaxMin returns the difference between maximum and minimum values (for always increasing metrics)
+	AggregateDiffMaxMin AggregateType = "diff_max_min"
 )
 
 // MetricEntry represents a metric measurement for a specific resource
+// Does not extend BaseEntity because it has a custom index on created_at
 type MetricEntry struct {
-	BaseEntity
+	// Base entity fields
+	ID        properties.UUID `json:"id" gorm:"type:uuid;primary_key"`
+	CreatedAt time.Time       `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP;index:idx_metric_aggregate,priority:3"`
+	UpdatedAt time.Time       `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP"`
 
 	ResourceID string  `gorm:"not null"`
 	Value      float64 `gorm:"not null"`
 
 	// Relationships
-	TypeID     properties.UUID `gorm:"not null"`
+	TypeID     properties.UUID `gorm:"not null;index:idx_metric_aggregate,priority:2"`
 	Type       *MetricType     `gorm:"foreignKey:TypeID"`
 	AgentID    properties.UUID `gorm:"not null"`
 	Agent      *Agent          `gorm:"foreignKey:AgentID"`
-	ServiceID  properties.UUID `gorm:"not null"`
+	ServiceID  properties.UUID `gorm:"not null;index:idx_metric_aggregate,priority:1"`
 	Service    *Service        `gorm:"foreignKey:ServiceID"`
 	ProviderID properties.UUID `gorm:"not null"`
 	Provider   *Participant    `gorm:"foreignKey:ProviderID"`
@@ -52,6 +70,19 @@ func NewMetricEntry(
 // TableName returns the table name for the metric entry
 func (MetricEntry) TableName() string {
 	return "metric_entries"
+}
+
+// GetID returns the entity's ID (implements Entity interface)
+func (m MetricEntry) GetID() properties.UUID {
+	return m.ID
+}
+
+// BeforeCreate ensures properties.UUID is set before creating a record
+func (m *MetricEntry) BeforeCreate(tx *gorm.DB) error {
+	if uuid.UUID(m.ID) == uuid.Nil {
+		m.ID = properties.NewUUID()
+	}
+	return nil
 }
 
 // Validate ensures all MetricEntry fields are valid
@@ -226,4 +257,7 @@ type MetricEntryQuerier interface {
 
 	// CountByMetricType counts the number of entries for a specific metric type
 	CountByMetricType(ctx context.Context, typeID properties.UUID) (int64, error)
+
+	// Aggregate performs aggregation operations on metric entries for a specific metric type and service within a time range
+	Aggregate(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)
 }

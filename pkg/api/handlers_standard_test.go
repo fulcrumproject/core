@@ -325,7 +325,7 @@ func TestGet(t *testing.T) {
 			tc.mockSetup(querier)
 
 			// Create handler
-			handler := Get(querier, testEntityToResponse)
+			handler := Get(querier.Get, testEntityToResponse)
 
 			// Create request
 			req := httptest.NewRequest("GET", "/test/"+tc.id, nil)
@@ -1246,7 +1246,7 @@ func TestStandardHandlersIntegration(t *testing.T) {
 
 	// Create handlers
 	listHandler := List(querier, testEntityToResponse)
-	getHandler := Get(querier, testEntityToResponse)
+	getHandler := Get(querier.Get, testEntityToResponse)
 	deleteHandler := Delete(querier, deleteFunc)
 
 	// Test List

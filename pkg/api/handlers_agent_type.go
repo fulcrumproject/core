@@ -39,7 +39,7 @@ func (h *AgentTypeHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using agent type's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgentType, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, AgentTypeToRes))
+			).Get("/{id}", Get(h.querier.Get, AgentTypeToRes))
 		})
 	}
 }

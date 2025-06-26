@@ -45,7 +45,7 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 			// Get endpoint - authorize using service type's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeServiceType, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, ServiceTypeToRes))
+			).Get("/{id}", Get(h.querier.Get, ServiceTypeToRes))
 
 			// Validate endpoint - authorize using service type's scope
 			r.With(

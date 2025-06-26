@@ -97,7 +97,7 @@ func (h *TokenHandler) Routes() func(r chi.Router) {
 			// Get - authorize from resource ID
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeToken, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}", Get(h.querier, TokenToRes))
+			).Get("/{id}", Get(h.querier.Get, TokenToRes))
 
 			// Update - using standard Update handler
 			r.With(
