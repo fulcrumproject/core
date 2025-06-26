@@ -145,6 +145,7 @@ var _ domain.EventQuerier = (*mockEventQuerier)(nil)
 type mockEventQuerier struct {
 	BaseMockQuerier[domain.Event]
 	listFromSequenceFunc func(ctx context.Context, fromSequenceNumber int64, limit int) ([]*domain.Event, error)
+	uptimeFunc           func(ctx context.Context, serviceID properties.UUID, start time.Time, end time.Time) (float64, error)
 }
 
 func (m *mockEventQuerier) ListFromSequence(ctx context.Context, fromSequenceNumber int64, limit int) ([]*domain.Event, error) {
@@ -152,6 +153,13 @@ func (m *mockEventQuerier) ListFromSequence(ctx context.Context, fromSequenceNum
 		return m.listFromSequenceFunc(ctx, fromSequenceNumber, limit)
 	}
 	return []*domain.Event{}, nil
+}
+
+func (m *mockEventQuerier) Uptime(ctx context.Context, serviceID properties.UUID, start time.Time, end time.Time) (float64, error) {
+	if m.uptimeFunc != nil {
+		return m.uptimeFunc(ctx, serviceID, start, end)
+	}
+	return 0, nil
 }
 
 // Ensure interface compatibility

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/google/uuid"
 )
 
 func TestEventRepository(t *testing.T) {
@@ -18,10 +19,9 @@ func TestEventRepository(t *testing.T) {
 	defer testDB.Cleanup(t)
 	repo := NewEventRepository(testDB.DB)
 
-	ctx := context.Background()
-
 	t.Run("Create", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
+			ctx := context.Background()
 			// Setup
 			eventEntry := &domain.Event{
 				InitiatorType: domain.InitiatorTypeUser,
@@ -46,6 +46,7 @@ func TestEventRepository(t *testing.T) {
 
 	t.Run("List", func(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
+			ctx := context.Background()
 			// Create multiple event entries
 			entries := []struct {
 				initiatorType domain.InitiatorType
@@ -84,6 +85,8 @@ func TestEventRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with initiator type filter", func(t *testing.T) {
+			ctx := context.Background()
+
 			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
@@ -102,6 +105,8 @@ func TestEventRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with type filter", func(t *testing.T) {
+			ctx := context.Background()
+
 			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
@@ -120,6 +125,8 @@ func TestEventRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with sorting by created_at", func(t *testing.T) {
+			ctx := context.Background()
+
 			// Create entries with different timestamps
 			for i := 0; i < 3; i++ {
 				entry := &domain.Event{
@@ -154,6 +161,8 @@ func TestEventRepository(t *testing.T) {
 		})
 
 		t.Run("success - list with pagination", func(t *testing.T) {
+			ctx := context.Background()
+
 			// Create multiple event entries
 			for i := 0; i < 5; i++ {
 				entry := &domain.Event{
@@ -195,6 +204,8 @@ func TestEventRepository(t *testing.T) {
 
 	t.Run("AuthScope", func(t *testing.T) {
 		t.Run("success - returns correct auth scope", func(t *testing.T) {
+			ctx := context.Background()
+
 			// Setup - create an event entry with all scope IDs set
 			providerID := properties.NewUUID()
 			agentID := properties.NewUUID()
@@ -239,4 +250,121 @@ func TestEventRepository(t *testing.T) {
 			assert.Nil(t, nonExistentScope)
 		})
 	})
+}
+
+func TestGormEventRepository_Uptime(t *testing.T) {
+	testDB := NewTestDB(t)
+	defer testDB.Cleanup(t)
+
+	repo := NewEventRepository(testDB.DB)
+
+	// Test time range
+	baseTime := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
+	start := baseTime
+	end := baseTime.Add(1 * time.Hour)
+
+	t.Run("No events - service never existed", func(t *testing.T) {
+		serviceID := properties.UUID(uuid.New())
+		uptime, err := repo.Uptime(context.Background(), serviceID, start, end)
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, uptime)
+	})
+
+	t.Run("Service running entire period", func(t *testing.T) {
+		serviceID := properties.UUID(uuid.New())
+
+		// Create a service transition event before the start time showing service was started
+		createTestServiceEvent(t, repo, serviceID, domain.ServiceStarted, baseTime.Add(-30*time.Minute))
+
+		uptime, err := repo.Uptime(context.Background(), serviceID, start, end)
+		require.NoError(t, err)
+		assert.Equal(t, 100.0, uptime)
+	})
+
+	t.Run("Service stopped entire period", func(t *testing.T) {
+		serviceID := properties.UUID(uuid.New())
+
+		// Create a service transition event before the start time showing service was stopped
+		createTestServiceEvent(t, repo, serviceID, domain.ServiceStopped, baseTime.Add(-30*time.Minute))
+
+		uptime, err := repo.Uptime(context.Background(), serviceID, start, end)
+		require.NoError(t, err)
+		assert.Equal(t, 0.0, uptime)
+	})
+
+	t.Run("Service hot updating considered running", func(t *testing.T) {
+		serviceID := properties.UUID(uuid.New())
+
+		// Service starts hot updating 20 minutes into the period
+		createTestServiceEvent(t, repo, serviceID, domain.ServiceHotUpdating, start.Add(20*time.Minute))
+
+		// Service completes update 40 minutes into the period
+		createTestServiceEvent(t, repo, serviceID, domain.ServiceStarted, start.Add(40*time.Minute))
+
+		uptime, err := repo.Uptime(context.Background(), serviceID, start, end)
+		require.NoError(t, err)
+
+		// Service was running (including hot updating) for 40 minutes out of 60 minutes = 66.67%
+		// From 12:20-12:40 (ServiceHotUpdating) = 20 minutes
+		// From 12:40-13:00 (ServiceStarted) = 20 minutes
+		// Total: 40 minutes out of 60 minutes = 66.67%
+		expectedUptime := (40.0 / 60.0) * 100.0
+		assert.InDelta(t, expectedUptime, uptime, 0.01)
+	})
+}
+
+// TODO this test is failing if it runs with the other test, but passes if it runs alone
+func TestGormEventRepository_Uptime_2(t *testing.T) {
+	testDB := NewTestDB(t)
+	defer testDB.Cleanup(t)
+
+	repo := NewEventRepository(testDB.DB)
+
+	// Test time range
+	baseTime := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
+	start := baseTime
+	end := baseTime.Add(1 * time.Hour)
+
+	t.Run("Service starts and stops during period", func(t *testing.T) {
+		serviceID := properties.UUID(uuid.New())
+
+		// Service starts 15 minutes into the period
+		createTestServiceEvent(t, repo, serviceID, domain.ServiceStarted, start.Add(15*time.Minute))
+
+		// Service stops 45 minutes into the period
+		createTestServiceEvent(t, repo, serviceID, domain.ServiceStopped, start.Add(45*time.Minute))
+
+		uptime, err := repo.Uptime(context.Background(), serviceID, start, end)
+		require.NoError(t, err)
+
+		// Service was running for 30 minutes out of 60 minutes = 50%
+		assert.Equal(t, 50.0, uptime)
+	})
+}
+
+// Helper function to create test service events
+func createTestServiceEvent(t *testing.T, repo *GormEventRepository, serviceID properties.UUID, newStatus domain.ServiceStatus, createdAt time.Time) {
+	t.Helper()
+	event := &domain.Event{
+		BaseEntity: domain.BaseEntity{
+			CreatedAt: createdAt,
+			UpdatedAt: createdAt,
+		},
+		// Don't set SequenceNumber explicitly - let GORM auto-increment it
+		InitiatorType: domain.InitiatorTypeSystem,
+		InitiatorID:   "test-system",
+		Type:          domain.EventTypeServiceTransitioned,
+		EntityID:      &serviceID,
+		Payload: properties.JSON{
+			"diff": []map[string]interface{}{
+				{
+					"op":    "replace",
+					"path":  "/currentStatus",
+					"value": string(newStatus),
+				},
+			},
+		},
+	}
+	err := repo.Create(context.Background(), event)
+	require.NoError(t, err)
 }

@@ -6,8 +6,6 @@ import (
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 // Entity defines the interface that all domain entities must implement
@@ -17,17 +15,9 @@ type Entity interface {
 
 // BaseEntity provides common fields for all entities
 type BaseEntity struct {
-	ID        properties.UUID `json:"id" gorm:"type:uuid;primary_key"`
+	ID        properties.UUID `json:"id" gorm:"type:uuid;primary_key;default:uuid_generate_v7()"`
 	CreatedAt time.Time       `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time       `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP"`
-}
-
-// BeforeCreate ensures properties.UUID is set before creating a record
-func (b *BaseEntity) BeforeCreate(tx *gorm.DB) error {
-	if uuid.UUID(b.ID) == uuid.Nil {
-		b.ID = properties.NewUUID()
-	}
-	return nil
 }
 
 // GetID returns the entity's ID

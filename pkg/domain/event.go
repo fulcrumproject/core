@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -197,4 +198,7 @@ type EventQuerier interface {
 
 	// ListFromSequence retrieves events starting from a specific sequence number
 	ListFromSequence(ctx context.Context, fromSequenceNumber int64, limit int) ([]*Event, error)
+
+	// Uptime returns the uptime in percentage of a service in a time range
+	Uptime(ctx context.Context, serviceID properties.UUID, start time.Time, end time.Time) (float64, error)
 }
