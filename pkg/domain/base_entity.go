@@ -15,7 +15,7 @@ type Entity interface {
 
 // BaseEntity provides common fields for all entities
 type BaseEntity struct {
-	ID        properties.UUID `json:"id" gorm:"type:uuid;primary_key;default:uuid_generate_v7()"`
+	ID        properties.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	CreatedAt time.Time       `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time       `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP"`
 }
