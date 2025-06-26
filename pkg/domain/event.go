@@ -199,6 +199,6 @@ type EventQuerier interface {
 	// ListFromSequence retrieves events starting from a specific sequence number
 	ListFromSequence(ctx context.Context, fromSequenceNumber int64, limit int) ([]*Event, error)
 
-	// Uptime returns the uptime in percentage of a service in a time range
-	Uptime(ctx context.Context, serviceID properties.UUID, start time.Time, end time.Time) (float64, error)
+	// ServiceUptime returns the uptime and downtime in seconds of a service in a time range
+	ServiceUptime(ctx context.Context, serviceID properties.UUID, start time.Time, end time.Time) (uptimeSeconds uint64, downtimeSeconds uint64, err error)
 }

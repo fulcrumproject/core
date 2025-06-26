@@ -61,13 +61,13 @@ func (r *GormEventRepository) AuthScope(ctx context.Context, id properties.UUID)
 	return r.AuthScopeByFields(ctx, id, "null", "provider_id", "agent_id", "consumer_id")
 }
 
-// Uptime returns the uptime percentage of a service in a given time range
+// ServiceUptime returns the uptime and downtime in seconds of a service in a given time range
 // It streams service transition events and calculates uptime progressively using a result set
-func (r *GormEventRepository) Uptime(ctx context.Context, serviceID properties.UUID, start time.Time, end time.Time) (float64, error) {
+func (r *GormEventRepository) ServiceUptime(ctx context.Context, serviceID properties.UUID, start time.Time, end time.Time) (uptimeSeconds uint64, downtimeSeconds uint64, err error) {
 	// Get initial status at the start of the time range
 	currentStatus, err := r.getServiceStatusAtTime(ctx, serviceID, start)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get initial service status: %w", err)
+		return 0, 0, fmt.Errorf("failed to get initial service status: %w", err)
 	}
 
 	// Stream through service transition events within the time range using Rows()
@@ -83,7 +83,7 @@ func (r *GormEventRepository) Uptime(ctx context.Context, serviceID properties.U
 		Order("created_at ASC").
 		Rows()
 	if err != nil {
-		return 0, fmt.Errorf("failed to query service transition events: %w", err)
+		return 0, 0, fmt.Errorf("failed to query service transition events: %w", err)
 	}
 	defer rows.Close()
 
@@ -100,7 +100,7 @@ func (r *GormEventRepository) Uptime(ctx context.Context, serviceID properties.U
 
 		// Scan the row into the event struct
 		if err := r.db.ScanRows(rows, &event); err != nil {
-			return 0, fmt.Errorf("failed to scan event row: %w", err)
+			return 0, 0, fmt.Errorf("failed to scan event row: %w", err)
 		}
 
 		eventTime := event.CreatedAt
@@ -113,7 +113,7 @@ func (r *GormEventRepository) Uptime(ctx context.Context, serviceID properties.U
 		// Extract new status from event payload
 		newStatus, err := r.extractServiceStatusFromEvent(&event)
 		if err != nil {
-			return 0, fmt.Errorf("failed to extract service status from event %s: %w", event.ID, err)
+			return 0, 0, fmt.Errorf("failed to extract service status from event %s: %w", event.ID, err)
 		}
 
 		currentStatus = newStatus
@@ -122,15 +122,15 @@ func (r *GormEventRepository) Uptime(ctx context.Context, serviceID properties.U
 
 	// Check for any errors that occurred during iteration
 	if err := rows.Err(); err != nil {
-		return 0, fmt.Errorf("error occurred while iterating through events: %w", err)
+		return 0, 0, fmt.Errorf("error occurred while iterating through events: %w", err)
 	}
 
 	// If no transition events found within the range, check if service was running the entire period
 	if !hasEvents {
 		if r.isRunningStatus(currentStatus) {
-			return 100.0, nil
+			return uint64(totalDuration.Seconds()), 0, nil
 		}
-		return 0.0, nil
+		return 0, uint64(totalDuration.Seconds()), nil
 	}
 
 	// Handle the final period from last event to end time
@@ -138,22 +138,11 @@ func (r *GormEventRepository) Uptime(ctx context.Context, serviceID properties.U
 		totalUptime += end.Sub(currentTime)
 	}
 
-	// Calculate uptime percentage
-	if totalDuration == 0 {
-		return 100.0, nil
-	}
+	// Calculate uptime and downtime in seconds
+	uptimeSeconds = uint64(totalUptime.Seconds())
+	downtimeSeconds = uint64(totalDuration.Seconds()) - uptimeSeconds
 
-	uptimePercentage := (float64(totalUptime) / float64(totalDuration)) * 100.0
-
-	// Ensure percentage is within bounds
-	if uptimePercentage > 100.0 {
-		uptimePercentage = 100.0
-	}
-	if uptimePercentage < 0.0 {
-		uptimePercentage = 0.0
-	}
-
-	return uptimePercentage, nil
+	return uptimeSeconds, downtimeSeconds, nil
 }
 
 // getServiceStatusAtTime retrieves the service status at a specific point in time

@@ -265,9 +265,10 @@ func TestGormEventRepository_Uptime(t *testing.T) {
 
 	t.Run("No events - service never existed", func(t *testing.T) {
 		serviceID := properties.UUID(uuid.New())
-		uptime, err := repo.Uptime(context.Background(), serviceID, start, end)
+		uptimeSeconds, downtimeSeconds, err := repo.ServiceUptime(context.Background(), serviceID, start, end)
 		require.NoError(t, err)
-		assert.Equal(t, 0.0, uptime)
+		assert.Equal(t, uint64(0), uptimeSeconds)
+		assert.Equal(t, uint64(3600), downtimeSeconds) // 1 hour = 3600 seconds
 	})
 
 	t.Run("Service running entire period", func(t *testing.T) {
@@ -276,9 +277,10 @@ func TestGormEventRepository_Uptime(t *testing.T) {
 		// Create a service transition event before the start time showing service was started
 		createTestServiceEvent(t, repo, serviceID, domain.ServiceStarted, baseTime.Add(-30*time.Minute))
 
-		uptime, err := repo.Uptime(context.Background(), serviceID, start, end)
+		uptimeSeconds, downtimeSeconds, err := repo.ServiceUptime(context.Background(), serviceID, start, end)
 		require.NoError(t, err)
-		assert.Equal(t, 100.0, uptime)
+		assert.Equal(t, uint64(3600), uptimeSeconds) // 1 hour = 3600 seconds
+		assert.Equal(t, uint64(0), downtimeSeconds)
 	})
 
 	t.Run("Service stopped entire period", func(t *testing.T) {
@@ -287,9 +289,10 @@ func TestGormEventRepository_Uptime(t *testing.T) {
 		// Create a service transition event before the start time showing service was stopped
 		createTestServiceEvent(t, repo, serviceID, domain.ServiceStopped, baseTime.Add(-30*time.Minute))
 
-		uptime, err := repo.Uptime(context.Background(), serviceID, start, end)
+		uptimeSeconds, downtimeSeconds, err := repo.ServiceUptime(context.Background(), serviceID, start, end)
 		require.NoError(t, err)
-		assert.Equal(t, 0.0, uptime)
+		assert.Equal(t, uint64(0), uptimeSeconds)
+		assert.Equal(t, uint64(3600), downtimeSeconds) // 1 hour = 3600 seconds
 	})
 
 	t.Run("Service hot updating considered running", func(t *testing.T) {
@@ -301,15 +304,16 @@ func TestGormEventRepository_Uptime(t *testing.T) {
 		// Service completes update 40 minutes into the period
 		createTestServiceEvent(t, repo, serviceID, domain.ServiceStarted, start.Add(40*time.Minute))
 
-		uptime, err := repo.Uptime(context.Background(), serviceID, start, end)
+		uptimeSeconds, downtimeSeconds, err := repo.ServiceUptime(context.Background(), serviceID, start, end)
 		require.NoError(t, err)
 
-		// Service was running (including hot updating) for 40 minutes out of 60 minutes = 66.67%
-		// From 12:20-12:40 (ServiceHotUpdating) = 20 minutes
-		// From 12:40-13:00 (ServiceStarted) = 20 minutes
-		// Total: 40 minutes out of 60 minutes = 66.67%
-		expectedUptime := (40.0 / 60.0) * 100.0
-		assert.InDelta(t, expectedUptime, uptime, 0.01)
+		// Service was running (including hot updating) for 40 minutes out of 60 minutes
+		// From 12:20-12:40 (ServiceHotUpdating) = 20 minutes = 1200 seconds
+		// From 12:40-13:00 (ServiceStarted) = 20 minutes = 1200 seconds
+		// Total uptime: 40 minutes = 2400 seconds
+		// Total downtime: 20 minutes = 1200 seconds
+		assert.Equal(t, uint64(2400), uptimeSeconds)
+		assert.Equal(t, uint64(1200), downtimeSeconds)
 	})
 }
 
@@ -334,11 +338,14 @@ func TestGormEventRepository_Uptime_2(t *testing.T) {
 		// Service stops 45 minutes into the period
 		createTestServiceEvent(t, repo, serviceID, domain.ServiceStopped, start.Add(45*time.Minute))
 
-		uptime, err := repo.Uptime(context.Background(), serviceID, start, end)
+		uptimeSeconds, downtimeSeconds, err := repo.ServiceUptime(context.Background(), serviceID, start, end)
 		require.NoError(t, err)
 
-		// Service was running for 30 minutes out of 60 minutes = 50%
-		assert.Equal(t, 50.0, uptime)
+		// Service was running for 30 minutes out of 60 minutes
+		// 30 minutes = 1800 seconds uptime
+		// 30 minutes = 1800 seconds downtime
+		assert.Equal(t, uint64(1800), uptimeSeconds)
+		assert.Equal(t, uint64(1800), downtimeSeconds)
 	})
 }
 
