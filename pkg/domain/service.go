@@ -399,15 +399,19 @@ func CreateServiceWithAgent(
 }
 
 func (s *serviceCommander) Update(ctx context.Context, id properties.UUID, name *string, props *properties.JSON) (*Service, error) {
+	return UpdateService(ctx, s.store, id, name, props)
+}
+
+func UpdateService(ctx context.Context, store Store, id properties.UUID, name *string, props *properties.JSON) (*Service, error) {
 	// Find it
-	svc, err := s.store.ServiceRepo().Get(ctx, id)
+	svc, err := store.ServiceRepo().Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	// Validate properties against schema if provided
 	if props != nil {
-		validatedProperties, err := validatePropertiesAgainstSchema(ctx, s.store, *props, svc.ServiceTypeID)
+		validatedProperties, err := validatePropertiesAgainstSchema(ctx, store, *props, svc.ServiceTypeID)
 		if err != nil {
 			return nil, err
 		}
@@ -427,7 +431,7 @@ func (s *serviceCommander) Update(ctx context.Context, id properties.UUID, name 
 	}
 
 	// Save, event and create job
-	err = s.store.Atomic(ctx, func(store Store) error {
+	err = store.Atomic(ctx, func(store Store) error {
 		if updateSvc {
 			if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 				return err
