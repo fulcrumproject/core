@@ -68,6 +68,8 @@ func (r *GormMetricEntryRepository) Aggregate(ctx context.Context, aggregateType
 		err = baseQuery.Select("COALESCE(SUM(value), 0)").Scan(&result).Error
 	case domain.AggregateDiffMaxMin:
 		err = baseQuery.Select("COALESCE(MAX(value) - MIN(value), 0)").Scan(&result).Error
+	case domain.AggregateAvg:
+		err = baseQuery.Select("COALESCE(AVG(value), 0)").Scan(&result).Error
 	default:
 		return 0, fmt.Errorf("unsupported aggregate type: %s", aggregateType)
 	}

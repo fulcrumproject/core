@@ -19,7 +19,9 @@ const (
 	// AggregateSum returns the sum of values
 	AggregateSum AggregateType = "sum"
 	// AggregateDiffMaxMin returns the difference between maximum and minimum values (for always increasing metrics)
-	AggregateDiffMaxMin AggregateType = "diff_max_min"
+	AggregateDiffMaxMin AggregateType = "diff"
+	// AggregateAvg returns the average value
+	AggregateAvg AggregateType = "avg"
 )
 
 // MetricEntry represents a metric measurement for a specific resource

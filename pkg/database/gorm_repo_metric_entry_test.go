@@ -325,6 +325,7 @@ func TestMetricEntryRepository(t *testing.T) {
 			expectedSum := 150.0
 			expectedMax := 50.0
 			expectedDiffMaxMin := 40.0 // 50 - 10
+			expectedAvg := 30.0        // 150 / 5
 
 			// Create entries
 			for i, value := range testValues {
@@ -359,6 +360,11 @@ func TestMetricEntryRepository(t *testing.T) {
 			diffResult, err := repo.Aggregate(context.Background(), domain.AggregateDiffMaxMin, service.ID, metricTypeService.ID, start, end)
 			require.NoError(t, err)
 			assert.Equal(t, expectedDiffMaxMin, diffResult, "DIFF_MAX_MIN aggregate should return the difference between max and min")
+
+			// Test AVG aggregate
+			avgResult, err := repo.Aggregate(context.Background(), domain.AggregateAvg, service.ID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, expectedAvg, avgResult, "AVG aggregate should return the average value")
 		})
 
 		t.Run("success - returns zero for no matching entries", func(t *testing.T) {
@@ -379,6 +385,10 @@ func TestMetricEntryRepository(t *testing.T) {
 			diffResult, err := repo.Aggregate(context.Background(), domain.AggregateDiffMaxMin, nonExistentServiceID, metricTypeService.ID, start, end)
 			require.NoError(t, err)
 			assert.Equal(t, 0.0, diffResult, "Should return 0 when no entries match")
+
+			avgResult, err := repo.Aggregate(context.Background(), domain.AggregateAvg, nonExistentServiceID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, 0.0, avgResult, "Should return 0 when no entries match")
 		})
 
 		t.Run("error - unsupported aggregate type", func(t *testing.T) {
