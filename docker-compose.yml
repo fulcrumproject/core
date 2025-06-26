@@ -19,7 +19,7 @@ services:
       - fulcrum-network
 
   postgres:
-    image: postgres:15-alpine
+    image: postgres:17-alpine
     environment:
       - POSTGRES_USER=fulcrum
       - POSTGRES_PASSWORD=fulcrum_password
