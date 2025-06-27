@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -196,13 +197,23 @@ func validateType(value any, expectedType string) error {
 			if v != float64(int64(v)) {
 				return errors.New(ErrExpectedIntegerGotFloat)
 			}
+		case json.Number:
+			// Handle json.Number type
+			if _, err := v.Int64(); err != nil {
+				return errors.New(ErrExpectedIntegerGotFloat)
+			}
 		default:
 			return fmt.Errorf(ErrExpectedType, TypeInteger, value)
 		}
 	case TypeNumber:
-		switch value.(type) {
+		switch v := value.(type) {
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 			// Valid number types
+		case json.Number:
+			// Handle json.Number type - validate it's a valid number
+			if _, err := v.Float64(); err != nil {
+				return fmt.Errorf(ErrExpectedType, TypeNumber, value)
+			}
 		default:
 			return fmt.Errorf(ErrExpectedType, TypeNumber, value)
 		}
@@ -457,6 +468,24 @@ func convertToType[T Numeric](value any) (T, error) {
 	switch v := value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		return T(reflect.ValueOf(v).Convert(reflect.TypeOf(zero)).Interface().(T)), nil
+	case json.Number:
+		// Handle json.Number type
+		switch any(zero).(type) {
+		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+			// For integer types, parse as int
+			parsed, err := v.Int64()
+			if err != nil {
+				return zero, err
+			}
+			return T(parsed), nil
+		default:
+			// For float types, parse as float
+			parsed, err := v.Float64()
+			if err != nil {
+				return zero, err
+			}
+			return T(parsed), nil
+		}
 	case string:
 		// Try to determine if T is an integer type by checking the zero value
 		switch any(zero).(type) {
@@ -482,19 +511,37 @@ func convertToType[T Numeric](value any) (T, error) {
 
 // getIntValue converts a value to an integer, ensuring it has no decimal part
 func getIntValue(value any) (int, error) {
-	result, err := convertToType[int](value)
-	if err != nil {
-		return 0, err
-	}
-
-	// Special handling for float64 from properties.JSON to ensure it's a whole number
-	if v, ok := value.(float64); ok {
-		if v != float64(int(v)) {
-			return 0, errors.New(ErrFloatHasDecimalPart)
+	switch v := value.(type) {
+	case json.Number:
+		// Handle json.Number type
+		intVal, err := v.Int64()
+		if err != nil {
+			// If it fails as an integer, check if it's a float with no decimal part
+			floatVal, floatErr := v.Float64()
+			if floatErr != nil {
+				return 0, err
+			}
+			if floatVal != float64(int64(floatVal)) {
+				return 0, errors.New(ErrFloatHasDecimalPart)
+			}
+			return int(floatVal), nil
 		}
-	}
+		return int(intVal), nil
+	default:
+		result, err := convertToType[int](value)
+		if err != nil {
+			return 0, err
+		}
 
-	return result, nil
+		// Special handling for float64 from properties.JSON to ensure it's a whole number
+		if v, ok := value.(float64); ok {
+			if v != float64(int(v)) {
+				return 0, errors.New(ErrFloatHasDecimalPart)
+			}
+		}
+
+		return result, nil
+	}
 }
 
 // Generic validator value extractor
