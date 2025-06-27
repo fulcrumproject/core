@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"strconv"
 )
 
 // Validator type constants
@@ -30,6 +29,17 @@ const (
 	TypeBoolean = "boolean"
 	TypeObject  = "object"
 	TypeArray   = "array"
+)
+
+// Standard target types for each schema type
+// These are the canonical types we convert to for consistent comparisons
+type (
+	StandardString  = string
+	StandardInteger = int64
+	StandardNumber  = float64
+	StandardBoolean = bool
+	StandardObject  = map[string]any
+	StandardArray   = []any
 )
 
 // Error message templates
@@ -105,6 +115,11 @@ func Validate(data map[string]any, schema CustomSchema) []ValidationError {
 					Path:    propName,
 					Message: ErrRequiredFieldMissing,
 				})
+			} else if data[propName] == nil {
+				errors = append(errors, ValidationError{
+					Path:    propName,
+					Message: ErrRequiredFieldMissing,
+				})
 			}
 		}
 	}
@@ -131,8 +146,9 @@ func Validate(data map[string]any, schema CustomSchema) []ValidationError {
 func validateProperty(path string, value any, propDef PropertyDefinition) []ValidationError {
 	var errors []ValidationError
 
-	// Type validation
-	if err := validateType(value, propDef.Type); err != nil {
+	// Type validation - get the converted standard value
+	standardValue, err := convertToSchemaStandardType(value, propDef.Type)
+	if err != nil {
 		errors = append(errors, ValidationError{
 			Path:    path,
 			Message: err.Error(),
@@ -140,9 +156,9 @@ func validateProperty(path string, value any, propDef PropertyDefinition) []Vali
 		return errors // Don't continue if type is wrong
 	}
 
-	// Validator rules
+	// Validator rules - use the already converted standard value
 	for _, validator := range propDef.Validators {
-		if err := applyValidator(value, validator); err != nil {
+		if err := applyValidator(standardValue, validator, propDef.Type); err != nil {
 			errors = append(errors, ValidationError{
 				Path:    path,
 				Message: err.Error(),
@@ -152,7 +168,7 @@ func validateProperty(path string, value any, propDef PropertyDefinition) []Vali
 
 	// Nested validation for objects
 	if propDef.Type == TypeObject && propDef.Properties != nil {
-		if objValue, ok := value.(map[string]any); ok {
+		if objValue, ok := standardValue.(map[string]any); ok {
 			nestedErrors := Validate(objValue, propDef.Properties)
 			for _, nestedErr := range nestedErrors {
 				errors = append(errors, ValidationError{
@@ -165,7 +181,7 @@ func validateProperty(path string, value any, propDef PropertyDefinition) []Vali
 
 	// Array item validation
 	if propDef.Type == TypeArray && propDef.Items != nil {
-		if arrValue, ok := value.([]any); ok {
+		if arrValue, ok := standardValue.([]any); ok {
 			for i, item := range arrValue {
 				itemPath := fmt.Sprintf("%s[%d]", path, i)
 				itemErrors := validateProperty(itemPath, item, *propDef.Items)
@@ -177,67 +193,8 @@ func validateProperty(path string, value any, propDef PropertyDefinition) []Vali
 	return errors
 }
 
-// validateType checks if the value matches the expected type
-func validateType(value any, expectedType string) error {
-	if value == nil {
-		return nil // Allow null values for optional fields
-	}
-
-	switch expectedType {
-	case TypeString:
-		if _, ok := value.(string); !ok {
-			return fmt.Errorf(ErrExpectedType, TypeString, value)
-		}
-	case TypeInteger:
-		switch v := value.(type) {
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-			// Valid integer types
-		case float64:
-			// properties.JSON numbers are parsed as float64, check if it's a whole number
-			if v != float64(int64(v)) {
-				return errors.New(ErrExpectedIntegerGotFloat)
-			}
-		case json.Number:
-			// Handle json.Number type
-			if _, err := v.Int64(); err != nil {
-				return errors.New(ErrExpectedIntegerGotFloat)
-			}
-		default:
-			return fmt.Errorf(ErrExpectedType, TypeInteger, value)
-		}
-	case TypeNumber:
-		switch v := value.(type) {
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-			// Valid number types
-		case json.Number:
-			// Handle json.Number type - validate it's a valid number
-			if _, err := v.Float64(); err != nil {
-				return fmt.Errorf(ErrExpectedType, TypeNumber, value)
-			}
-		default:
-			return fmt.Errorf(ErrExpectedType, TypeNumber, value)
-		}
-	case TypeBoolean:
-		if _, ok := value.(bool); !ok {
-			return fmt.Errorf(ErrExpectedType, TypeBoolean, value)
-		}
-	case TypeObject:
-		if _, ok := value.(map[string]any); !ok {
-			return fmt.Errorf(ErrExpectedType, TypeObject, value)
-		}
-	case TypeArray:
-		if _, ok := value.([]any); !ok {
-			return fmt.Errorf(ErrExpectedType, TypeArray, value)
-		}
-	default:
-		return fmt.Errorf(ErrUnknownSchemaType, expectedType)
-	}
-
-	return nil
-}
-
 // applyValidator applies a specific validator to a value
-func applyValidator(value any, validator ValidatorDefinition) error {
+func applyValidator(value any, validator ValidatorDefinition, propertyType string) error {
 	switch validator.Type {
 	case ValidatorMinLength:
 		return validateMinLength(value, validator.Value)
@@ -246,7 +203,7 @@ func applyValidator(value any, validator ValidatorDefinition) error {
 	case ValidatorPattern:
 		return validatePattern(value, validator.Value)
 	case ValidatorEnum:
-		return validateEnum(value, validator.Value)
+		return validateEnum(value, validator.Value, propertyType)
 	case ValidatorMin:
 		return validateMin(value, validator.Value)
 	case ValidatorMax:
@@ -262,54 +219,60 @@ func applyValidator(value any, validator ValidatorDefinition) error {
 	}
 }
 
-// Generic string length validator
-func validateStringLength[T ~int](value any, validatorValue any, validatorName string, compare func(int, T) bool, errorMsg string) error {
-	str, ok := value.(string)
+// validateMinLength is a specific validator for minimum string length
+func validateMinLength(standardValue any, validatorValue any) error {
+	// standardValue is already converted to StandardString by validateType
+	standardStr, ok := standardValue.(StandardString)
 	if !ok {
-		return fmt.Errorf(ErrValidatorOnlyForType, validatorName, "strings")
+		return fmt.Errorf(ErrValidatorOnlyForType, ValidatorMinLength, "a string")
 	}
 
-	length, err := extractValidatorValue[T](validatorValue, validatorName)
+	// Convert validator value to standard integer
+	standardLimit, err := convertToStandardInteger(validatorValue)
 	if err != nil {
-		// Fallback for backward compatibility
-		intLength, err := getIntValue(validatorValue)
-		if err != nil {
-			return fmt.Errorf(ErrValidatorValueMustBeType, validatorName, "an integer")
-		}
-		length = T(intLength)
+		return fmt.Errorf(ErrValidatorValueMustBeType, ValidatorMinLength, "an integer")
 	}
 
-	if compare(len(str), length) {
-		return fmt.Errorf(errorMsg, len(str), length)
+	if int64(len(standardStr)) < standardLimit {
+		return fmt.Errorf(ErrStringLengthLessThanMin, len(standardStr), standardLimit)
 	}
 
 	return nil
 }
 
-// validateMinLength is a specific validator for minimum string length
-func validateMinLength(value any, validatorValue any) error {
-	return validateStringLength(value, validatorValue, ValidatorMinLength,
-		func(actual int, min int) bool { return actual < min },
-		ErrStringLengthLessThanMin)
-}
-
 // validateMaxLength is a specific validator for maximum string length
-func validateMaxLength(value any, validatorValue any) error {
-	return validateStringLength(value, validatorValue, ValidatorMaxLength,
-		func(actual int, max int) bool { return actual > max },
-		ErrStringLengthExceedsMax)
+func validateMaxLength(standardValue any, validatorValue any) error {
+	// standardValue is already converted to StandardString by validateType
+	standardStr, ok := standardValue.(StandardString)
+	if !ok {
+		return fmt.Errorf(ErrValidatorOnlyForType, ValidatorMinLength, "a string")
+	}
+
+	// Convert validator value to standard integer
+	standardLimit, err := convertToStandardInteger(validatorValue)
+	if err != nil {
+		return fmt.Errorf(ErrValidatorValueMustBeType, ValidatorMaxLength, "an integer")
+	}
+
+	if int64(len(standardStr)) > standardLimit {
+		return fmt.Errorf(ErrStringLengthExceedsMax, len(standardStr), standardLimit)
+	}
+
+	return nil
 }
 
 // validatePattern checks if a string matches a regex pattern
-func validatePattern(value any, validatorValue any) error {
-	str, ok := value.(string)
+func validatePattern(standardValue any, validatorValue any) error {
+	// standardValue is already converted to StandardString by validateType
+	standardStr, ok := standardValue.(StandardString)
 	if !ok {
-		return fmt.Errorf(ErrValidatorOnlyForType, ValidatorPattern, "strings")
+		return fmt.Errorf(ErrValidatorOnlyForType, ValidatorPattern, "a string")
 	}
 
-	pattern, err := extractValidatorValue[string](validatorValue, ValidatorPattern)
+	// Convert validator value to standard string type
+	pattern, err := convertToStandardString(validatorValue)
 	if err != nil {
-		return err
+		return fmt.Errorf(ErrValidatorValueMustBeType, ValidatorPattern, "a string")
 	}
 
 	regex, err := regexp.Compile(pattern)
@@ -317,7 +280,7 @@ func validatePattern(value any, validatorValue any) error {
 		return fmt.Errorf(ErrInvalidRegexPattern, pattern)
 	}
 
-	if !regex.MatchString(str) {
+	if !regex.MatchString(standardStr) {
 		return fmt.Errorf(ErrStringDoesNotMatchPattern, pattern)
 	}
 
@@ -325,19 +288,26 @@ func validatePattern(value any, validatorValue any) error {
 }
 
 // validateEnum checks if a value is in the allowed enum values
-func validateEnum(value any, validatorValue any) error {
-	enumValues, err := extractValidatorValue[[]any](validatorValue, ValidatorEnum)
+func validateEnum(standardValue any, validatorValue any, propertyType string) error {
+	// Convert validator value to standard array type
+	enumArray, err := convertToStandardArray(validatorValue)
 	if err != nil {
-		return err
+		return fmt.Errorf("enum validator value must be an array")
 	}
 
-	for _, enumValue := range enumValues {
-		if reflect.DeepEqual(value, enumValue) {
+	// Convert each enum value to the standard type and compare with the already-converted standardValue
+	for _, enumValue := range enumArray {
+		standardEnumValue, err := convertToSchemaStandardType(enumValue, propertyType)
+		if err != nil {
+			continue // Skip invalid enum values
+		}
+
+		if reflect.DeepEqual(standardValue, standardEnumValue) {
 			return nil
 		}
 	}
 
-	return fmt.Errorf(ErrValueNotInEnum, formatEnumValues(enumValues))
+	return fmt.Errorf(ErrValueNotInEnum, formatEnumValues(enumArray))
 }
 
 // formatEnumValues formats a slice of enum values into a nice string representation
@@ -360,87 +330,112 @@ func formatEnumValues(enumValues []any) string {
 	return result
 }
 
-// Generic range validator for numeric types
-func validateNumericRange[T Numeric](value any, validatorValue any, validatorName string, compare func(T, T) bool, errorMsg string) error {
-	numValue, err := convertToType[T](value)
-	if err != nil {
-		return fmt.Errorf(ErrValidatorOnlyForType, validatorName, "numbers")
+// validateMin is a specific validator for minimum numeric value
+func validateMin(standardValue any, validatorValue any) error {
+	// Convert standardValue to float64 for comparison (handles both int64 and float64)
+	var standardNum float64
+	switch v := standardValue.(type) {
+	case StandardInteger:
+		standardNum = float64(v)
+	case StandardNumber:
+		standardNum = v
+	default:
+		return fmt.Errorf(ErrValidatorOnlyForType, ValidatorMin, "numbers")
 	}
 
-	limitValue, err := convertToType[T](validatorValue)
+	// Convert validator value to standard number type
+	standardLimit, err := convertToStandardNumber(validatorValue)
 	if err != nil {
-		return fmt.Errorf(ErrValidatorValueMustBeType, validatorName, "a number")
+		return fmt.Errorf(ErrValidatorValueMustBeType, ValidatorMin, "a number")
 	}
 
-	if compare(numValue, limitValue) {
-		return fmt.Errorf(errorMsg, numValue, limitValue)
+	if standardNum < standardLimit {
+		return fmt.Errorf(ErrValueLessThanMin, standardNum, standardLimit)
 	}
 
 	return nil
 }
 
-// validateMin is a specific validator for minimum numeric value
-func validateMin(value any, validatorValue any) error {
-	return validateNumericRange(value, validatorValue, ValidatorMin,
-		func(actual, min float64) bool { return actual < min },
-		ErrValueLessThanMin)
-}
-
 // validateMax is a specific validator for maximum numeric value
-func validateMax(value any, validatorValue any) error {
-	return validateNumericRange(value, validatorValue, ValidatorMax,
-		func(actual, max float64) bool { return actual > max },
-		ErrValueExceedsMax)
-}
-
-// Generic array length validator
-func validateArrayLength[T ~int](value any, validatorValue any, validatorName string, compare func(int, T) bool, errorMsg string) error {
-	arr, ok := value.([]any)
-	if !ok {
-		return fmt.Errorf(ErrValidatorOnlyForType, validatorName, "arrays")
+func validateMax(standardValue any, validatorValue any) error {
+	// Convert standardValue to float64 for comparison (handles both int64 and float64)
+	var standardNum float64
+	switch v := standardValue.(type) {
+	case StandardInteger:
+		standardNum = float64(v)
+	case StandardNumber:
+		standardNum = v
+	default:
+		return fmt.Errorf(ErrValidatorOnlyForType, ValidatorMax, "numbers")
 	}
 
-	limit, err := extractValidatorValue[T](validatorValue, validatorName)
+	// Convert validator value to standard number type
+	standardLimit, err := convertToStandardNumber(validatorValue)
 	if err != nil {
-		// Fallback for backward compatibility
-		intLimit, err := getIntValue(validatorValue)
-		if err != nil {
-			return fmt.Errorf(ErrValidatorValueMustBeType, validatorName, "an integer")
-		}
-		limit = T(intLimit)
+		return fmt.Errorf(ErrValidatorValueMustBeType, ValidatorMax, "a number")
 	}
 
-	if compare(len(arr), limit) {
-		return fmt.Errorf(errorMsg, len(arr), limit)
+	if standardNum > standardLimit {
+		return fmt.Errorf(ErrValueExceedsMax, standardNum, standardLimit)
 	}
 
 	return nil
 }
 
 // validateMinItems is a specific validator for minimum array length
-func validateMinItems(value any, validatorValue any) error {
-	return validateArrayLength(value, validatorValue, ValidatorMinItems,
-		func(actual int, min int) bool { return actual < min },
-		ErrArrayLengthLessThanMin)
+func validateMinItems(standardValue any, validatorValue any) error {
+	// standardValue is already converted to StandardArray by validateType
+	standardArr, ok := standardValue.(StandardArray)
+	if !ok {
+		return fmt.Errorf(ErrValidatorOnlyForType, ValidatorMinItems, "an array")
+	}
+
+	// Convert validator value to standard integer
+	standardLimit, err := convertToStandardInteger(validatorValue)
+	if err != nil {
+		return fmt.Errorf(ErrValidatorValueMustBeType, ValidatorMinItems, "an integer")
+	}
+
+	if int64(len(standardArr)) < standardLimit {
+		return fmt.Errorf(ErrArrayLengthLessThanMin, len(standardArr), standardLimit)
+	}
+
+	return nil
 }
 
 // validateMaxItems is a specific validator for maximum array length
-func validateMaxItems(value any, validatorValue any) error {
-	return validateArrayLength(value, validatorValue, ValidatorMaxItems,
-		func(actual int, max int) bool { return actual > max },
-		ErrArrayLengthExceedsMax)
+func validateMaxItems(standardValue any, validatorValue any) error {
+	// standardValue is already converted to StandardArray by validateType
+	standardArr, ok := standardValue.(StandardArray)
+	if !ok {
+		return fmt.Errorf(ErrValidatorOnlyForType, ValidatorMaxItems, "an array")
+	}
+
+	// Convert validator value to standard integer
+	standardLimit, err := convertToStandardInteger(validatorValue)
+	if err != nil {
+		return fmt.Errorf(ErrValidatorValueMustBeType, ValidatorMaxItems, "an integer")
+	}
+
+	if int64(len(standardArr)) > standardLimit {
+		return fmt.Errorf(ErrArrayLengthExceedsMax, len(standardArr), standardLimit)
+	}
+
+	return nil
 }
 
 // validateUniqueItems checks if an array contains unique items
-func validateUniqueItems(value any, validatorValue any) error {
-	arr, ok := value.([]any)
+func validateUniqueItems(standardValue any, validatorValue any) error {
+	// standardValue is already converted to StandardArray by validateType
+	standardArr, ok := standardValue.(StandardArray)
 	if !ok {
-		return fmt.Errorf(ErrValidatorOnlyForType, ValidatorUniqueItems, "arrays")
+		return fmt.Errorf(ErrValidatorOnlyForType, ValidatorUniqueItems, "an array")
 	}
 
-	unique, err := extractValidatorValue[bool](validatorValue, ValidatorUniqueItems)
+	// Convert validator value to standard boolean
+	unique, err := convertToStandardBoolean(validatorValue)
 	if err != nil {
-		return err
+		return fmt.Errorf(ErrValidatorValueMustBeType, ValidatorUniqueItems, "a boolean")
 	}
 
 	if !unique {
@@ -448,7 +443,7 @@ func validateUniqueItems(value any, validatorValue any) error {
 	}
 
 	seen := make(map[string]bool)
-	for _, item := range arr {
+	for _, item := range standardArr {
 		key := fmt.Sprintf("%v", item)
 		if seen[key] {
 			return errors.New(ErrArrayContainsDuplicates)
@@ -459,96 +454,144 @@ func validateUniqueItems(value any, validatorValue any) error {
 	return nil
 }
 
-// Helper functions
+// convertToSchemaStandardType converts a value to the standard type for a given schema type
+func convertToSchemaStandardType(value any, schemaType string) (any, error) {
+	if value == nil {
+		return nil, nil
+	}
 
-// convertToType attempts to convert a value to the specified numeric type
-func convertToType[T Numeric](value any) (T, error) {
-	var zero T
-
-	switch v := value.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-		return T(reflect.ValueOf(v).Convert(reflect.TypeOf(zero)).Interface().(T)), nil
-	case json.Number:
-		// Handle json.Number type
-		switch any(zero).(type) {
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-			// For integer types, parse as int
-			parsed, err := v.Int64()
-			if err != nil {
-				return zero, err
-			}
-			return T(parsed), nil
-		default:
-			// For float types, parse as float
-			parsed, err := v.Float64()
-			if err != nil {
-				return zero, err
-			}
-			return T(parsed), nil
-		}
-	case string:
-		// Try to determine if T is an integer type by checking the zero value
-		switch any(zero).(type) {
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-			// For integer types, parse as int
-			parsed, err := strconv.Atoi(v)
-			if err != nil {
-				return zero, err
-			}
-			return T(parsed), nil
-		default:
-			// For float types, parse as float
-			parsed, err := strconv.ParseFloat(v, 64)
-			if err != nil {
-				return zero, err
-			}
-			return T(parsed), nil
-		}
+	switch schemaType {
+	case TypeString:
+		return convertToStandardString(value)
+	case TypeInteger:
+		return convertToStandardInteger(value)
+	case TypeNumber:
+		return convertToStandardNumber(value)
+	case TypeBoolean:
+		return convertToStandardBoolean(value)
+	case TypeObject:
+		return convertToStandardObject(value)
+	case TypeArray:
+		return convertToStandardArray(value)
 	default:
-		return zero, fmt.Errorf(ErrCannotConvertType, value, zero)
+		return nil, fmt.Errorf(ErrUnknownSchemaType, schemaType)
 	}
 }
 
-// getIntValue converts a value to an integer, ensuring it has no decimal part
-func getIntValue(value any) (int, error) {
+// convertToStandardString converts a value to the standard string type
+func convertToStandardString(value any) (StandardString, error) {
+	if str, ok := value.(string); ok {
+		return str, nil
+	}
+	return "", fmt.Errorf(ErrExpectedType, TypeString, value)
+}
+
+// convertToStandardInteger converts a value to the standard integer type
+func convertToStandardInteger(value any) (StandardInteger, error) {
 	switch v := value.(type) {
+	case int:
+		return int64(v), nil
+	case int8:
+		return int64(v), nil
+	case int16:
+		return int64(v), nil
+	case int32:
+		return int64(v), nil
+	case int64:
+		return v, nil
+	case uint:
+		return int64(v), nil
+	case uint8:
+		return int64(v), nil
+	case uint16:
+		return int64(v), nil
+	case uint32:
+		return int64(v), nil
+	case uint64:
+		return int64(v), nil
+	case float32:
+		if float32(int64(v)) != v {
+			return 0, errors.New(ErrExpectedIntegerGotFloat)
+		}
+		return int64(v), nil
+	case float64:
+		if float64(int64(v)) != v {
+			return 0, errors.New(ErrExpectedIntegerGotFloat)
+		}
+		return int64(v), nil
 	case json.Number:
-		// Handle json.Number type
 		intVal, err := v.Int64()
 		if err != nil {
-			// If it fails as an integer, check if it's a float with no decimal part
+			// Try as float to check if it's a whole number
 			floatVal, floatErr := v.Float64()
 			if floatErr != nil {
 				return 0, err
 			}
 			if floatVal != float64(int64(floatVal)) {
-				return 0, errors.New(ErrFloatHasDecimalPart)
+				return 0, errors.New(ErrExpectedIntegerGotFloat)
 			}
-			return int(floatVal), nil
+			return int64(floatVal), nil
 		}
-		return int(intVal), nil
+		return intVal, nil
 	default:
-		result, err := convertToType[int](value)
-		if err != nil {
-			return 0, err
-		}
-
-		// Special handling for float64 from properties.JSON to ensure it's a whole number
-		if v, ok := value.(float64); ok {
-			if v != float64(int(v)) {
-				return 0, errors.New(ErrFloatHasDecimalPart)
-			}
-		}
-
-		return result, nil
+		return 0, fmt.Errorf(ErrExpectedType, TypeInteger, value)
 	}
 }
 
-// Generic validator value extractor
-func extractValidatorValue[T any](validatorValue any, expectedType string) (T, error) {
-	var zero T
-	if result, ok := validatorValue.(T); ok {
-		return result, nil
+// convertToStandardNumber converts a value to the standard number type
+func convertToStandardNumber(value any) (StandardNumber, error) {
+	switch v := value.(type) {
+	case int:
+		return float64(v), nil
+	case int8:
+		return float64(v), nil
+	case int16:
+		return float64(v), nil
+	case int32:
+		return float64(v), nil
+	case int64:
+		return float64(v), nil
+	case uint:
+		return float64(v), nil
+	case uint8:
+		return float64(v), nil
+	case uint16:
+		return float64(v), nil
+	case uint32:
+		return float64(v), nil
+	case uint64:
+		return float64(v), nil
+	case float32:
+		return float64(v), nil
+	case float64:
+		return v, nil
+	case json.Number:
+		return v.Float64()
+	default:
+		return 0, fmt.Errorf(ErrExpectedType, TypeNumber, value)
 	}
-	return zero, fmt.Errorf("%s validator value must be %T", expectedType, zero)
+}
+
+// convertToStandardBoolean converts a value to the standard boolean type
+func convertToStandardBoolean(value any) (StandardBoolean, error) {
+	if b, ok := value.(bool); ok {
+		return b, nil
+	}
+	return false, fmt.Errorf(ErrExpectedType, TypeBoolean, value)
+}
+
+// convertToStandardObject converts a value to the standard object type
+func convertToStandardObject(value any) (StandardObject, error) {
+	if obj, ok := value.(map[string]any); ok {
+		return obj, nil
+	}
+	return nil, fmt.Errorf(ErrExpectedType, TypeObject, value)
+}
+
+// convertToStandardArray converts a value to the standard array type
+func convertToStandardArray(value any) (StandardArray, error) {
+	if arr, ok := value.([]any); ok {
+		return arr, nil
+	}
+	return nil, fmt.Errorf(ErrExpectedType, TypeArray, value)
 }
