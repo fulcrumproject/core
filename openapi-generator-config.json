@@ -1,21 +1,21 @@
 {
-	"supportsES6": true,
-	"npmName": "@fulcrum/core-client",
-	"npmVersion": "1.0.0",
-	"typescriptThreePlus": true,
-	"withInterfaces": true,
-	"stringEnums": true,
-	"nullSafe": true,
-	"useSingleRequestParameter": true,
-	"legacyDiscriminatorBehavior": false,
-	"disallowAdditionalPropertiesIfNotPresent": false,
-	"enumPropertyNaming": "UPPERCASE",
-	"modelPropertyNaming": "camelCase",
-	"apiPackage": "api",
-	"modelPackage": "models",
-	"additionalProperties": {
-		"supportsES6": true,
-		"npmName": "@fulcrum/core-client",
-		"npmVersion": "1.0.0"
-	}
+  "supportsES6": true,
+  "npmName": "fulcrum-core-client",
+  "npmVersion": "1.0.0",
+  "typescriptThreePlus": true,
+  "withInterfaces": true,
+  "stringEnums": true,
+  "nullSafe": true,
+  "useSingleRequestParameter": true,
+  "legacyDiscriminatorBehavior": false,
+  "disallowAdditionalPropertiesIfNotPresent": false,
+  "enumPropertyNaming": "UPPERCASE",
+  "modelPropertyNaming": "camelCase",
+  "apiPackage": "api",
+  "modelPackage": "models",
+  "additionalProperties": {
+    "supportsES6": true,
+    "npmName": "fulcrum-core-client",
+    "npmVersion": "1.0.0"
+  }
 }

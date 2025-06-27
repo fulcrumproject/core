@@ -9,7 +9,8 @@
 		"generate-client:publish": "./scripts/generate-client.sh 1.0.0 --publish",
 		"client:build": "cd generated-client && npm run build",
 		"client:test": "cd generated-client && npm test",
-		"client:install": "cd generated-client && npm install"
+		"client:install": "cd generated-client && npm install",
+		"test-client": "node scripts/test-client.js"
 	},
 	"devDependencies": {
 		"@openapitools/openapi-generator-cli": "^2.7.0"
