@@ -1,0 +1,39 @@
+{
+	"name": "fulcrum-core",
+	"version": "1.0.0",
+	"description": "Fulcrum Core - Cloud infrastructure management system",
+	"private": true,
+	"scripts": {
+		"generate-client": "./scripts/generate-client.sh",
+		"generate-client:test": "./scripts/generate-client.sh 0.0.1",
+		"generate-client:publish": "./scripts/generate-client.sh 1.0.0 --publish",
+		"client:build": "cd generated-client && npm run build",
+		"client:test": "cd generated-client && npm test",
+		"client:install": "cd generated-client && npm install"
+	},
+	"devDependencies": {
+		"@openapitools/openapi-generator-cli": "^2.7.0"
+	},
+	"engines": {
+		"node": ">=18.0.0",
+		"npm": ">=8.0.0"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/fulcrum/core.git"
+	},
+	"keywords": [
+		"fulcrum",
+		"cloud",
+		"infrastructure",
+		"management",
+		"api",
+		"typescript"
+	],
+	"author": "Fulcrum Project <https://fulcrumproject.org>",
+	"license": "Apache-2.0",
+	"bugs": {
+		"url": "https://github.com/fulcrum/core/issues"
+	},
+	"homepage": "https://github.com/fulcrum/core#readme"
+}
