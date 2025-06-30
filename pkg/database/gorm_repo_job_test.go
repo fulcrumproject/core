@@ -222,12 +222,37 @@ func TestJobRepository(t *testing.T) {
 	})
 
 	t.Run("GetPendingJobsForAgent", func(t *testing.T) {
-		// Create multiple pending jobs for the agent
+		// Create a second service group
+		serviceGroup2 := &domain.ServiceGroup{
+			Name:       "Test Service Group 2",
+			ConsumerID: consumer.ID,
+		}
+		require.NoError(t, serviceGroupRepo.Create(context.Background(), serviceGroup2))
+
+		// Create a second service in the second service group
+		service2 := &domain.Service{
+			Name:              "Test Service 2",
+			CurrentStatus:     domain.ServiceStarted,
+			CurrentProperties: &(properties.JSON{"key": "value2"}),
+			Resources:         &(properties.JSON{"cpu": 2}),
+			AgentID:           agent.ID,
+			ServiceTypeID:     serviceType.ID,
+			GroupID:           serviceGroup2.ID,
+			ConsumerID:        consumer.ID,
+			ProviderID:        provider.ID,
+		}
+		require.NoError(t, serviceRepo.Create(context.Background(), service2))
+
+		// Create multiple pending jobs for the first service (same service group)
 		job1 := domain.NewJob(service, domain.ServiceActionCreate, 1)
 		job2 := domain.NewJob(service, domain.ServiceActionHotUpdate, 2)
 		job3 := domain.NewJob(service, domain.ServiceActionDelete, 3)
 
-		pendingJobs := []*domain.Job{job1, job2, job3}
+		// Create multiple pending jobs for the second service (different service group)
+		job4 := domain.NewJob(service2, domain.ServiceActionStart, 1)
+		job5 := domain.NewJob(service2, domain.ServiceActionStop, 4)
+
+		pendingJobs := []*domain.Job{job1, job2, job3, job4, job5}
 		for _, job := range pendingJobs {
 			err := repo.Create(context.Background(), job)
 			require.NoError(t, err)
@@ -239,23 +264,26 @@ func TestJobRepository(t *testing.T) {
 		err := repo.Create(context.Background(), processingJob)
 		require.NoError(t, err)
 
-		// Test fetching pending jobs
+		// Test fetching pending jobs - should return only one job per service group
 		jobs, err := repo.GetPendingJobsForAgent(context.Background(), agent.ID, 10)
 		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(jobs), 3)
+		assert.Equal(t, 2, len(jobs), "Should return exactly 2 jobs (one per service group)")
 
 		// Verify all returned jobs are pending
 		for _, job := range jobs {
 			assert.Equal(t, domain.JobPending, job.Status)
 		}
 
-		// Test limit
-		limitedJobs, err := repo.GetPendingJobsForAgent(context.Background(), agent.ID, 2)
-		require.NoError(t, err)
-		assert.Len(t, limitedJobs, 2)
+		// Verify that we got the highest priority job from each service group
+		// job3 has priority 3 (highest in first group), job5 has priority 4 (highest in second group)
+		priorities := []int{jobs[0].Priority, jobs[1].Priority}
+		assert.Contains(t, priorities, 3, "Should contain job with priority 3 from first service group")
+		assert.Contains(t, priorities, 4, "Should contain job with priority 4 from second service group")
 
-		// Verify priority ordering (highest first)
-		assert.GreaterOrEqual(t, limitedJobs[0].Priority, limitedJobs[1].Priority)
+		// Test limit
+		limitedJobs, err := repo.GetPendingJobsForAgent(context.Background(), agent.ID, 1)
+		require.NoError(t, err)
+		assert.Len(t, limitedJobs, 1, "Should respect the limit")
 	})
 
 	t.Run("GetTimeOutJobs", func(t *testing.T) {

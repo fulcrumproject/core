@@ -45,14 +45,24 @@ func NewJobRepository(db *gorm.DB) *GormJobRepository {
 }
 
 // GetPendingJobsForAgent retrieves pending jobs targeted for a specific agent
+// Returns only one pending job per service group with the highest priority
 func (r *GormJobRepository) GetPendingJobsForAgent(ctx context.Context, agentID properties.UUID, limit int) ([]*domain.Job, error) {
 	var jobs []*domain.Job
+
+	// Use a subquery with window function to get the highest priority job per service group
+	subquery := r.db.WithContext(ctx).
+		Table("jobs").
+		Select("*, ROW_NUMBER() OVER (PARTITION BY services.group_id ORDER BY jobs.priority DESC, jobs.created_at ASC) as rn").
+		Joins("JOIN services ON jobs.service_id = services.id").
+		Where("jobs.agent_id = ? AND jobs.status = ?", agentID, domain.JobPending)
+
 	err := r.db.WithContext(ctx).
 		Preload("Service").
-		Where("agent_id = ? AND status = ?", agentID, domain.JobPending).
-		Order("priority DESC, created_at ASC").
+		Table("(?) as ranked_jobs", subquery).
+		Where("ranked_jobs.rn = 1").
 		Limit(limit).
 		Find(&jobs).Error
+
 	if err != nil {
 		return nil, err
 	}
