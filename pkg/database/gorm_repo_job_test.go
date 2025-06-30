@@ -258,32 +258,42 @@ func TestJobRepository(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		// Create a processing job for the agent (shouldn't be returned)
+		// Create a processing job for the first service group (should exclude this group from results)
 		processingJob := domain.NewJob(service, domain.ServiceActionCreate, 4)
 		processingJob.Status = domain.JobProcessing
 		err := repo.Create(context.Background(), processingJob)
 		require.NoError(t, err)
 
-		// Test fetching pending jobs - should return only one job per service group
+		// Test fetching pending jobs - should return only jobs from service groups without processing jobs
 		jobs, err := repo.GetPendingJobsForAgent(context.Background(), agent.ID, 10)
 		require.NoError(t, err)
-		assert.Equal(t, 2, len(jobs), "Should return exactly 2 jobs (one per service group)")
+		assert.Equal(t, 1, len(jobs), "Should return exactly 1 job (only from service group 2, since group 1 has a processing job)")
 
 		// Verify all returned jobs are pending
 		for _, job := range jobs {
 			assert.Equal(t, domain.JobPending, job.Status)
 		}
 
-		// Verify that we got the highest priority job from each service group
-		// job3 has priority 3 (highest in first group), job5 has priority 4 (highest in second group)
-		priorities := []int{jobs[0].Priority, jobs[1].Priority}
-		assert.Contains(t, priorities, 3, "Should contain job with priority 3 from first service group")
-		assert.Contains(t, priorities, 4, "Should contain job with priority 4 from second service group")
+		// Verify that we only got jobs from the second service group (the one without processing jobs)
+		// job5 has priority 4 (highest in second group)
+		assert.Equal(t, 4, jobs[0].Priority, "Should contain job with priority 4 from second service group")
+		assert.Equal(t, service2.ID, jobs[0].ServiceID, "Should be from the second service")
 
 		// Test limit
 		limitedJobs, err := repo.GetPendingJobsForAgent(context.Background(), agent.ID, 1)
 		require.NoError(t, err)
 		assert.Len(t, limitedJobs, 1, "Should respect the limit")
+
+		// Now let's test the reverse scenario - create a processing job in the second service group
+		processingJob2 := domain.NewJob(service2, domain.ServiceActionStart, 5)
+		processingJob2.Status = domain.JobProcessing
+		err = repo.Create(context.Background(), processingJob2)
+		require.NoError(t, err)
+
+		// Test fetching pending jobs again - should return no jobs since both groups have processing jobs
+		jobs2, err := repo.GetPendingJobsForAgent(context.Background(), agent.ID, 10)
+		require.NoError(t, err)
+		assert.Equal(t, 0, len(jobs2), "Should return no jobs since both service groups have processing jobs")
 	})
 
 	t.Run("GetTimeOutJobs", func(t *testing.T) {
