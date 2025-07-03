@@ -278,6 +278,7 @@ func TestJobRepository(t *testing.T) {
 		// job5 has priority 4 (highest in second group)
 		assert.Equal(t, 4, jobs[0].Priority, "Should contain job with priority 4 from second service group")
 		assert.Equal(t, service2.ID, jobs[0].ServiceID, "Should be from the second service")
+		assert.Equal(t, job5.ID, jobs[0].ID, "Should be the expected jobID")
 
 		// Test limit
 		limitedJobs, err := repo.GetPendingJobsForAgent(context.Background(), agent.ID, 1)

@@ -61,7 +61,7 @@ func (r *GormJobRepository) GetPendingJobsForAgent(ctx context.Context, agentID 
 	// Exclude service groups that have processing jobs
 	subquery := r.db.WithContext(ctx).
 		Table("jobs").
-		Select("*, ROW_NUMBER() OVER (PARTITION BY services.group_id ORDER BY jobs.priority DESC, jobs.created_at ASC) as rn").
+		Select("jobs.*, ROW_NUMBER() OVER (PARTITION BY services.group_id ORDER BY jobs.priority DESC, jobs.created_at ASC) as rn").
 		Joins("JOIN services ON jobs.service_id = services.id").
 		Where("jobs.agent_id = ? AND jobs.status = ?", agentID, domain.JobPending).
 		Where("services.group_id NOT IN (?)", processingGroupsSubquery)
