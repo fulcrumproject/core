@@ -148,7 +148,7 @@ func main() {
 	})
 
 	// Setup background job maintenance worker
-	// go JobMainenanceTask(&cfg.JobConfig, store, serviceCmd)
+	go JobMaintenanceTask(&cfg.JobConfig, store, serviceCmd)
 
 	// Setup background worker to mark inactive agents as disconnected
 	go DisconnectUnhealthyAgentsTask(&cfg.AgentConfig, store)
@@ -205,7 +205,7 @@ func DisconnectUnhealthyAgentsTask(cfg *config.AgentConfig, store domain.Store) 
 }
 
 // TODO move to proper worker
-func JobMainenanceTask(cfg *config.JobConfig, store domain.Store, serviceCmd domain.ServiceCommander) {
+func JobMaintenanceTask(cfg *config.JobConfig, store domain.Store, serviceCmd domain.ServiceCommander) {
 	ticker := time.NewTicker(cfg.Maintenance)
 	for range ticker.C {
 		ctx := context.Background()

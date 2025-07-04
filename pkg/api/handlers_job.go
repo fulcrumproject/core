@@ -70,7 +70,7 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 			// Agent actions - require agent identity and authorize from job ID
 			r.With(
 				middlewares.MustHaveRoles(auth.RoleAgent),
-				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionComplete, h.authz, h.querier.AuthScope),
+				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionClaim, h.authz, h.querier.AuthScope),
 			).Post("/{id}/claim", CommandWithoutBody(h.commander.Claim))
 
 			r.With(
