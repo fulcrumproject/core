@@ -152,7 +152,7 @@ jobs:
             echo "has_changes=true" >> $GITHUB_OUTPUT
           else
             # Check if there are changes in the generated client
-            git add generated-client/
+            git add -f generated-client/
             if git diff --staged --quiet; then
               echo "has_changes=false" >> $GITHUB_OUTPUT
             else
@@ -209,7 +209,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add generated-client/
+          git add -f generated-client/
           git commit -m "feat: regenerate TypeScript client from OpenAPI spec [skip ci]"
           git push
 
