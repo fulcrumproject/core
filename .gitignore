@@ -1,11 +1,35 @@
+# Debug e IDE
 __debug**
 .vscode/
+.idea/
+*.swp
+
+# File di sistema
+.DS_Store
 /tmp
+
+# Ambiente
 .env
 .env.local
-.DS_Store
+
+# Build e dipendenze
+node_modules/
+vendor/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test e coverage
+*.test
+*.out
 coverage.*
+coverage/
+
+# File temporanei
 .roorules
+
+# Directory specifiche del progetto
 features/
 fulcrum
 generated-client/
