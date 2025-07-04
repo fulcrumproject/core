@@ -177,7 +177,7 @@ jobs:
         if: steps.check-changes.outputs.has_changes == 'true'
         run: |
           cd generated-client
-          pnpm publish --access public
+          pnpm publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
