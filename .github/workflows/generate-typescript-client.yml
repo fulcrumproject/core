@@ -3,11 +3,8 @@ name: Generate and Publish TypeScript Client
 env:
   NPM_PACKAGE_NAME: "@fulcrum/core-client"
   NPM_REGISTRY: "https://registry.npmjs.org/"
-<<<<<<< HEAD
   NPM_TOKEN: "${{ secrets.NPM_TOKEN }}"
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-=======
->>>>>>> dev
 
 on:
   push:
@@ -165,21 +162,13 @@ jobs:
           cd generated-client
           npm publish --access public
         env:
-<<<<<<< HEAD
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
-=======
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
->>>>>>> dev
 
       - name: Create Release
         if: steps.check-changes.outputs.has_changes == 'true' && github.event_name == 'workflow_dispatch'
         uses: actions/create-release@v1
         env:
-<<<<<<< HEAD
           GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
-=======
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
->>>>>>> dev
         with:
           tag_name: v${{ github.event.inputs.version }}
           release_name: TypeScript Client v${{ github.event.inputs.version }}
