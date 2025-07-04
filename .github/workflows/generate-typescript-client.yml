@@ -38,15 +38,20 @@ jobs:
         with:
           fetch-depth: 0 # Per avere accesso completo alla history per il versioning
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18"
-          cache: "npm"
+          cache: "pnpm"
           registry-url: ${{ env.NPM_REGISTRY }}
 
       - name: Install OpenAPI Generator
-        run: npm install -g @openapitools/openapi-generator-cli@latest
+        run: pnpm add -g @openapitools/openapi-generator-cli@latest
 
       - name: Create client directory
         run: mkdir -p generated-client
@@ -68,8 +73,8 @@ jobs:
       - name: Setup generated client
         run: |
           cd generated-client
-          npm install
-          npm run build
+          pnpm install
+          pnpm run build
 
       - name: Add README to generated client
         run: |
@@ -81,7 +86,7 @@ jobs:
           ## Installation
 
           ```bash
-          npm install @fulcrum/core-client
+          pnpm add @fulcrum/core-client
           ```
 
           ## Usage
@@ -115,17 +120,17 @@ jobs:
       - name: Update package.json with metadata
         run: |
           cd generated-client
-          npm pkg set description="Auto-generated TypeScript client for Fulcrum Core API"
-          npm pkg set keywords="fulcrum,api,client,typescript,openapi"
-          npm pkg set author="Fulcrum Project <https://fulcrumproject.org>"
-          npm pkg set license="Apache-2.0"
-          npm pkg set repository.type="git"
-          npm pkg set repository.url="https://github.com/${{ github.repository }}.git"
-          npm pkg set repository.directory="generated-client"
-          npm pkg set bugs.url="https://github.com/${{ github.repository }}/issues"
-          npm pkg set homepage="https://github.com/${{ github.repository }}#readme"
-          npm pkg set engines.node=">=18.0.0"
-          npm pkg set engines.npm=">=8.0.0"
+          pnpm pkg set description="Auto-generated TypeScript client for Fulcrum Core API"
+          pnpm pkg set keywords="fulcrum,api,client,typescript,openapi"
+          pnpm pkg set author="Fulcrum Project <https://fulcrumproject.org>"
+          pnpm pkg set license="Apache-2.0"
+          pnpm pkg set repository.type="git"
+          pnpm pkg set repository.url="https://github.com/${{ github.repository }}.git"
+          pnpm pkg set repository.directory="generated-client"
+          pnpm pkg set bugs.url="https://github.com/${{ github.repository }}/issues"
+          pnpm pkg set homepage="https://github.com/${{ github.repository }}#readme"
+          pnpm pkg set engines.node=">=18.0.0"
+          pnpm pkg set engines.pnpm=">=8.0.0"
 
       - name: Check for changes
         id: check-changes
@@ -147,7 +152,7 @@ jobs:
         if: steps.check-changes.outputs.has_changes == 'true'
         run: |
           cd generated-client
-          npm test || echo "No tests configured, skipping..."
+          pnpm test || echo "No tests configured, skipping..."
 
       - name: Login to npm
         if: steps.check-changes.outputs.has_changes == 'true'
@@ -160,7 +165,7 @@ jobs:
         if: steps.check-changes.outputs.has_changes == 'true'
         run: |
           cd generated-client
-          npm publish --access public
+          pnpm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
@@ -182,7 +187,7 @@ jobs:
 
             ## Installation
             ```bash
-            npm install @fulcrum/core-client@${{ github.event.inputs.version }}
+            pnpm add @fulcrum/core-client@${{ github.event.inputs.version }}
             ```
           draft: false
           prerelease: false
