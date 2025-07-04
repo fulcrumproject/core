@@ -182,54 +182,54 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
-      - name: Create Release
-        if: steps.check-changes.outputs.has_changes == 'true' && github.event_name == 'workflow_dispatch'
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ github.event.inputs.version }}
-          release_name: TypeScript Client v${{ github.event.inputs.version }}
-          body: |
-            Auto-generated TypeScript client for Fulcrum Core API
+      # - name: Create Release
+      #   if: steps.check-changes.outputs.has_changes == 'true' && github.event_name == 'workflow_dispatch'
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: v${{ github.event.inputs.version }}
+      #     release_name: TypeScript Client v${{ github.event.inputs.version }}
+      #     body: |
+      #       Auto-generated TypeScript client for Fulcrum Core API
 
-            ## Changes
-            - Regenerated client from latest OpenAPI specification
-            - Updated types and interfaces
-            - Updated API methods
+      #       ## Changes
+      #       - Regenerated client from latest OpenAPI specification
+      #       - Updated types and interfaces
+      #       - Updated API methods
 
-            ## Installation
-            ```bash
-            pnpm add @fulcrum/core-client@${{ github.event.inputs.version }}
-            ```
-          draft: false
-          prerelease: false
+      #       ## Installation
+      #       ```bash
+      #       pnpm add @fulcrum/core-client@${{ github.event.inputs.version }}
+      #       ```
+      #     draft: false
+      #     prerelease: false
 
-      - name: Commit and push changes
-        if: steps.check-changes.outputs.has_changes == 'true'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add -f generated-client/
-          git commit -m "feat: regenerate TypeScript client from OpenAPI spec [skip ci]"
-          git push
+      # - name: Commit and push changes
+      #   if: steps.check-changes.outputs.has_changes == 'true'
+      #   run: |
+      #     git config --local user.email "action@github.com"
+      #     git config --local user.name "GitHub Action"
+      #     git add -f generated-client/
+      #     git commit -m "feat: regenerate TypeScript client from OpenAPI spec [skip ci]"
+      #     git push
 
-      - name: Comment on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '✅ TypeScript client has been regenerated from the OpenAPI specification.'
-            })
+      # - name: Comment on PR
+      #   if: github.event_name == 'pull_request'
+      #   uses: actions/github-script@v7
+      #   with:
+      #     script: |
+      #       github.rest.issues.createComment({
+      #         issue_number: context.issue.number,
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         body: '✅ TypeScript client has been regenerated from the OpenAPI specification.'
+      #       })
 
-      - name: Upload generated client as artifact
-        if: steps.check-changes.outputs.has_changes == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: typescript-client
-          path: generated-client/
-          retention-days: 30
+      # - name: Upload generated client as artifact
+      #   if: steps.check-changes.outputs.has_changes == 'true'
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: typescript-client
+      #     path: generated-client/
+      #     retention-days: 30
