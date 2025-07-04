@@ -85,7 +85,7 @@ jobs:
       - name: Setup generated client
         run: |
           cd generated-client
-          pnpm install --frozen-lockfile
+          pnpm install --no-frozen-lockfile
           pnpm run build
 
       - name: Add README to generated client
