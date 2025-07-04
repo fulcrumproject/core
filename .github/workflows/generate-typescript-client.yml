@@ -28,7 +28,7 @@ jobs:
   generate-and-publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
       id-token: write # Per OIDC con npm
 
