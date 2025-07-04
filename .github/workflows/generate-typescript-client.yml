@@ -12,7 +12,6 @@ on:
       - "docs/openapi.yaml"
     branches:
       - main
-      - dev
   workflow_dispatch:
     inputs:
       version:
