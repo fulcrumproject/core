@@ -71,7 +71,7 @@ func NewMetricEntry(
 
 // TableName returns the table name for the metric entry
 func (MetricEntry) TableName() string {
-	return "metric_entries"
+	return "metrics.metric_entries"
 }
 
 // GetID returns the entity's ID (implements Entity interface)

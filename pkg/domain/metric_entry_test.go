@@ -9,7 +9,7 @@ import (
 
 func TestMetricEntry_TableName(t *testing.T) {
 	entry := MetricEntry{}
-	assert.Equal(t, "metric_entries", entry.TableName())
+	assert.Equal(t, "metrics.metric_entries", entry.TableName())
 }
 
 func TestMetricEntry_Validate(t *testing.T) {

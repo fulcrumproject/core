@@ -35,6 +35,11 @@ func NewConnection(config *gormpg.Conf) (*gorm.DB, error) {
 
 // autoMigrate performs automatic database migrations
 func autoMigrate(db *gorm.DB) error {
+	// Create metrics schema if it doesn't exist
+	if err := db.Exec("CREATE SCHEMA IF NOT EXISTS metrics").Error; err != nil {
+		return fmt.Errorf("failed to create metrics schema: %w", err)
+	}
+
 	return db.AutoMigrate(
 		&domain.Token{},
 		&domain.Participant{},

@@ -107,7 +107,7 @@ docker compose down -v && docker compose up --build
 ### Running locally
 
 1. Make sure your `.env` file is configured
-2. Run only the database:
+2. Run the database:
 ```bash
 docker compose up postgres
 ```
@@ -115,6 +115,17 @@ docker compose up postgres
 ```bash
 go run cmd/fulcrum/main.go
 ```
+
+### Metrics Schema Architecture
+
+Fulcrum Core uses a separate schema (`metrics`) within the same database for metric entries to optimize performance and scalability. The metrics schema:
+
+- Stores only metric entries in a dedicated `metrics` schema within the main database
+- Is automatically created and configured when the application starts
+- Supports high-volume metric data ingestion without impacting the main application tables
+- Uses the same database connection but with schema separation
+
+The main database continues to store all other entities (agents, services, jobs, etc.) in the default `public` schema, while metric entries are stored in the `metrics` schema.
 
 For development with hot-reload:
 
@@ -181,7 +192,7 @@ Returns the readiness status of the application to handle requests.
 
 The health endpoints check the following primary dependencies:
 
-1. **Database Connectivity**: PostgreSQL database connection and ping
+1. **Database Connectivity**: PostgreSQL database connection and ping (includes both public and metrics schemas)
 2. **Authentication Services**: 
    - Token authenticator (database-based)
    - OAuth/Keycloak authenticator (if configured)

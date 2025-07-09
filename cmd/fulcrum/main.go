@@ -46,12 +46,13 @@ func main() {
 	logger := logging.NewLogger(&cfg.LogConfig)
 	slog.SetDefault(logger)
 
-	// Initialize database
+	// Initialize main database
 	db, err := database.NewConnection(&cfg.DBConfig)
 	if err != nil {
 		slog.Error("Failed to connect to database", "error", err)
 		os.Exit(1)
 	}
+
 	// Seed with basic data if empty
 	if err := database.Seed(db); err != nil {
 		slog.Error("Failed to seed the database", "error", err)
