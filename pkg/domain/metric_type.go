@@ -87,15 +87,18 @@ type MetricTypeCommander interface {
 
 // metricTypeCommander is the concrete implementation of MetricTypeCommander
 type metricTypeCommander struct {
-	store Store
+	store       Store
+	metricStore MetricStore
 }
 
 // NewMetricTypeCommander creates a new MetricTypeService
 func NewMetricTypeCommander(
 	store Store,
+	metricStore MetricStore,
 ) *metricTypeCommander {
 	return &metricTypeCommander{
-		store: store,
+		store:       store,
+		metricStore: metricStore,
 	}
 }
 
@@ -184,16 +187,18 @@ func (s *metricTypeCommander) Delete(ctx context.Context, id properties.UUID) er
 	if err != nil {
 		return err
 	}
+
+	// check if the metric type is used in the metric store
+	numOfEntries, err := s.metricStore.MetricEntryRepo().CountByMetricType(ctx, id)
+	if err != nil {
+		return err
+	}
+	if numOfEntries > 0 {
+		return InvalidInputError{Err: errors.New("cannot delete metric-type with associated entries")}
+	}
+
 	// Check dependencies and delete
 	return s.store.Atomic(ctx, func(store Store) error {
-		numOfEntries, err := store.MetricEntryRepo().CountByMetricType(ctx, id)
-		if err != nil {
-			return err
-		}
-		if numOfEntries > 0 {
-			return InvalidInputError{Err: errors.New("cannot delete metric-type with associated entries")}
-		}
-
 		if err := store.MetricTypeRepo().Delete(ctx, id); err != nil {
 			return err
 		}

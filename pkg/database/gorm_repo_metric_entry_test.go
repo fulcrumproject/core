@@ -17,7 +17,7 @@ import (
 func TestMetricEntryRepository(t *testing.T) {
 	testDB := NewTestDB(t)
 	defer testDB.Cleanup(t)
-	repo := NewMetricEntryRepository(testDB.DB)
+	repo := NewMetricEntryRepository(testDB.MetricDB)
 
 	// Create repository instances
 	participantRepo := NewParticipantRepository(testDB.DB)

@@ -14,8 +14,9 @@ import (
 
 // TestDB contains the database connection and utility functions for tests
 type TestDB struct {
-	DB     *gorm.DB
-	DBName string
+	DB       *gorm.DB
+	MetricDB *gorm.DB
+	DBName   string
 }
 
 // NewTestDB creates a new instance of TestDB
@@ -56,9 +57,16 @@ func NewTestDB(t *testing.T) *TestDB {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
 
+	appConfig.MetricDBConfig.DSN = replaceDatabaseInDSN(appConfig.DBConfig.DSN, dbName)
+	metricDb, err := NewMetricConnection(&appConfig.MetricDBConfig)
+	if err != nil {
+		t.Fatalf("Failed to connect to metric test database: %v", err)
+	}
+
 	return &TestDB{
-		DB:     db,
-		DBName: dbName,
+		DB:       db,
+		MetricDB: metricDb,
+		DBName:   dbName,
 	}
 }
 

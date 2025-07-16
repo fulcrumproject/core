@@ -22,7 +22,6 @@ type GormStore struct {
 	eventEntryRepo        domain.EventRepository
 	eventSubscriptionRepo domain.EventSubscriptionRepository
 	metricTypeRepo        domain.MetricTypeRepository
-	metricEntryRepo       domain.MetricEntryRepository
 }
 
 // NewGormStore creates a new GormStore instance
@@ -117,11 +116,4 @@ func (s *GormStore) MetricTypeRepo() domain.MetricTypeRepository {
 		s.metricTypeRepo = NewMetricTypeRepository(s.db)
 	}
 	return s.metricTypeRepo
-}
-
-func (s *GormStore) MetricEntryRepo() domain.MetricEntryRepository {
-	if s.metricEntryRepo == nil {
-		s.metricEntryRepo = NewMetricEntryRepository(s.db)
-	}
-	return s.metricEntryRepo
 }
