@@ -20,12 +20,3 @@ type Store interface {
 	MetricTypeRepo() MetricTypeRepository
 	ParticipantRepo() ParticipantRepository
 }
-
-// MetricStore provides access to metric entry repository and supports transactions for metrics.
-type MetricStore interface {
-	// Atomic executes function in a transaction for metric operations
-	Atomic(context.Context, func(MetricStore) error) error
-
-	// Repository
-	MetricEntryRepo() MetricEntryRepository
-}

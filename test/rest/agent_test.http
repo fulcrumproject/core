@@ -1,6 +1,3 @@
-### Test Service API
-
-### Variables
 @baseUrl = http://localhost:3000/api/v1
 @adminToken = admin-test-token
 

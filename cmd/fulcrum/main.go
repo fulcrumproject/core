@@ -66,15 +66,15 @@ func main() {
 
 	// Initialize the store
 	store := database.NewGormStore(db)
-	metricStore := database.NewGormMetricStore(metricDb)
+	metricEntryRepo := database.NewMetricEntryRepository(metricDb)
 
 	// Initialize commanders
 	serviceCmd := domain.NewServiceCommander(store)
 	serviceGroupCmd := domain.NewServiceGroupCommander(store)
 	participantCmd := domain.NewParticipantCommander(store)
 	jobCmd := domain.NewJobCommander(store)
-	metricEntryCmd := domain.NewMetricEntryCommander(store, metricStore)
-	metricTypeCmd := domain.NewMetricTypeCommander(store, metricStore)
+	metricEntryCmd := domain.NewMetricEntryCommander(store, metricEntryRepo)
+	metricTypeCmd := domain.NewMetricTypeCommander(store, metricEntryRepo)
 	agentCmd := domain.NewAgentCommander(store)
 	tokenCmd := domain.NewTokenCommander(store)
 
@@ -119,7 +119,7 @@ func main() {
 	serviceHandler := api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, athz)
 	jobHandler := api.NewJobHandler(store.JobRepo(), jobCmd, athz)
 	metricTypeHandler := api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, athz)
-	metricEntryHandler := api.NewMetricEntryHandler(metricStore.MetricEntryRepo(), store.ServiceRepo(), metricEntryCmd, athz)
+	metricEntryHandler := api.NewMetricEntryHandler(metricEntryRepo, store.ServiceRepo(), metricEntryCmd, athz)
 	eventSubscriptionCmd := domain.NewEventSubscriptionCommander(store)
 	eventHandler := api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz)
 	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz)

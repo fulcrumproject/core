@@ -115,18 +115,18 @@ type MetricEntryCommander interface {
 
 // metricEntryCommander is the concrete implementation of MetricEntryCommander
 type metricEntryCommander struct {
-	store       Store
-	metricStore MetricStore
+	store           Store
+	metricEntryRepo MetricEntryRepository
 }
 
 // NewMetricEntryCommander creates a new MetricEntryCommander
 func NewMetricEntryCommander(
 	store Store,
-	metricStore MetricStore,
+	metricEntryRepo MetricEntryRepository,
 ) *metricEntryCommander {
 	return &metricEntryCommander{
-		store:       store,
-		metricStore: metricStore,
+		store:           store,
+		metricEntryRepo: metricEntryRepo,
 	}
 }
 
@@ -184,7 +184,7 @@ func (s *metricEntryCommander) CreateWithExternalID(
 	}
 
 	// 6. Save
-	if err := s.metricStore.MetricEntryRepo().Create(ctx, metricEntry); err != nil {
+	if err := s.metricEntryRepo.Create(ctx, metricEntry); err != nil {
 		return nil, err
 	}
 
@@ -245,7 +245,7 @@ func (s *metricEntryCommander) Create(
 	}
 
 	// 6. Save
-	if err := s.metricStore.MetricEntryRepo().Create(ctx, metricEntry); err != nil {
+	if err := s.metricEntryRepo.Create(ctx, metricEntry); err != nil {
 		return nil, err
 	}
 

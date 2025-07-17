@@ -87,18 +87,18 @@ type MetricTypeCommander interface {
 
 // metricTypeCommander is the concrete implementation of MetricTypeCommander
 type metricTypeCommander struct {
-	store       Store
-	metricStore MetricStore
+	store           Store
+	metricEntryRepo MetricEntryRepository
 }
 
 // NewMetricTypeCommander creates a new MetricTypeService
 func NewMetricTypeCommander(
 	store Store,
-	metricStore MetricStore,
+	metricEntryRepo MetricEntryRepository,
 ) *metricTypeCommander {
 	return &metricTypeCommander{
-		store:       store,
-		metricStore: metricStore,
+		store:           store,
+		metricEntryRepo: metricEntryRepo,
 	}
 }
 
@@ -189,7 +189,7 @@ func (s *metricTypeCommander) Delete(ctx context.Context, id properties.UUID) er
 	}
 
 	// check if the metric type is used in the metric store
-	numOfEntries, err := s.metricStore.MetricEntryRepo().CountByMetricType(ctx, id)
+	numOfEntries, err := s.metricEntryRepo.CountByMetricType(ctx, id)
 	if err != nil {
 		return err
 	}
