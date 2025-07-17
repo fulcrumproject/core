@@ -10,8 +10,18 @@ import (
 	"github.com/fulcrumproject/utils/gormpg"
 )
 
+type migrateFn func(*gorm.DB) error
+
 // NewConnection creates a new database connection
 func NewConnection(config *gormpg.Conf) (*gorm.DB, error) {
+	return connection(config, autoMigrate)
+}
+
+func NewMetricConnection(config *gormpg.Conf) (*gorm.DB, error) {
+	return connection(config, autoMigrateMetric)
+}
+
+func connection(config *gormpg.Conf, fn migrateFn) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: config.DSN,
 	}), &gorm.Config{
@@ -26,7 +36,7 @@ func NewConnection(config *gormpg.Conf) (*gorm.DB, error) {
 	db = db.Set("gorm:auto_preload", true)
 
 	// Run migrations
-	if err := autoMigrate(db); err != nil {
+	if err := fn(db); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
@@ -45,8 +55,13 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.Service{},
 		&domain.Job{},
 		&domain.MetricType{},
-		&domain.MetricEntry{},
 		&domain.Event{},
 		&domain.EventSubscription{},
+	)
+}
+
+func autoMigrateMetric(db *gorm.DB) error {
+	return db.AutoMigrate(
+		&domain.MetricEntry{},
 	)
 }

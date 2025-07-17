@@ -21,7 +21,8 @@ type Config struct {
 	JobConfig      JobConfig       `json:"job" validate:"required"`
 	AgentConfig    AgentConfig     `json:"agent" validate:"required"`
 	LogConfig      logging.Conf    `json:"log" validate:"required"`
-	DBConfig       gormpg.Conf     `json:"db" validate:"required"`
+	DBConfig       gormpg.Conf     `json:"db" env:"DB" validate:"required"`
+	MetricDBConfig gormpg.Conf     `json:"metricDb" env:"METRIC_DB" validate:"required"`
 	OAuthConfig    keycloak.Config `json:"oauth" validate:"required"`
 }
 
@@ -54,6 +55,11 @@ var Default = Config{
 		Format: "json",
 	},
 	DBConfig: gormpg.Conf{
+		DSN:       "host=localhost user=fulcrum password=fulcrum_password dbname=fulcrum_db port=5432 sslmode=disable",
+		LogLevel:  slog.LevelWarn,
+		LogFormat: "text",
+	},
+	MetricDBConfig: gormpg.Conf{
 		DSN:       "host=localhost user=fulcrum password=fulcrum_password dbname=fulcrum_db port=5432 sslmode=disable",
 		LogLevel:  slog.LevelWarn,
 		LogFormat: "text",

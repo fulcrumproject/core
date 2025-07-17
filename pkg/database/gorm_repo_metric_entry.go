@@ -28,10 +28,10 @@ var applyMetricEntrySort = MapSortApplier(map[string]string{
 })
 
 // NewMetricEntryRepository creates a new instance of MetricEntryRepository
-func NewMetricEntryRepository(db *gorm.DB) *GormMetricEntryRepository {
+func NewMetricEntryRepository(metricDb *gorm.DB) *GormMetricEntryRepository {
 	repo := &GormMetricEntryRepository{
 		GormRepository: NewGormRepository[domain.MetricEntry](
-			db,
+			metricDb,
 			applyMetricEntryFilter,
 			applyMetricEntrySort,
 			providerConsumerAgentAuthzFilterApplier,
