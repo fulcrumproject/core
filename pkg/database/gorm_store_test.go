@@ -28,7 +28,7 @@ func TestGormStore(t *testing.T) {
 	assert.NotNil(t, store.JobRepo(), "JobRepo should not be nil")
 	assert.NotNil(t, store.EventRepo(), "EventRepo should not be nil")
 	assert.NotNil(t, store.MetricTypeRepo(), "MetricTypeRepo should not be nil")
-	assert.NotNil(t, store.MetricEntryRepo(), "MetricEntryRepo should not be nil")
+	// Note: MetricEntryRepo() is not supported in GormStore, use GormMetricStore for metric operations
 }
 
 func TestGormStore_Atomic(t *testing.T) {
@@ -53,7 +53,6 @@ func TestGormStore_Atomic(t *testing.T) {
 		assert.NotNil(t, txStore.JobRepo(), "Transaction JobRepo should not be nil")
 		assert.NotNil(t, txStore.EventRepo(), "Transaction EventRepo should not be nil")
 		assert.NotNil(t, txStore.MetricTypeRepo(), "Transaction MetricTypeRepo should not be nil")
-		assert.NotNil(t, txStore.MetricEntryRepo(), "Transaction MetricEntryRepo should not be nil")
 
 		return nil
 	})
