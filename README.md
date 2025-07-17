@@ -52,14 +52,15 @@ git clone https://github.com/your-organization/fulcrum-core.git
 
 ```
 # Database Configuration
-FULCRUM_DB_HOST=localhost
-FULCRUM_DB_PORT=5432
-FULCRUM_DB_USER=fulcrum
-FULCRUM_DB_PASSWORD=your_secure_password
-FULCRUM_DB_NAME=fulcrum_db
-FULCRUM_DB_SSL_MODE=disable
+# Main Database (for application data)
+FULCRUM_DB_DSN=host=localhost user=fulcrum password=your_secure_password dbname=fulcrum_db port=5432 sslmode=disable
 FULCRUM_DB_LOG_LEVEL=warn
 FULCRUM_DB_LOG_FORMAT=text
+
+# Metrics Database (for metrics and monitoring data)
+FULCRUM_METRIC_DB_DSN=host=localhost user=fulcrum password=your_secure_password dbname=fulcrum_metrics_db port=5432 sslmode=disable
+FULCRUM_METRIC_DB_LOG_LEVEL=warn
+FULCRUM_METRIC_DB_LOG_FORMAT=text
 
 # Server Configuration
 FULCRUM_PORT=3000

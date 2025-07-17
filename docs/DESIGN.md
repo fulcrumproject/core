@@ -692,7 +692,8 @@ graph TB
             API2[API Instance 2]
         end
         
-        DB1[(PostgreSQL Primary)]
+        PrimaryDB1[(PostgreSQL Primary<br/>Core Application Data)]
+        MetricsDB1[(PostgreSQL/InfluxDB<br/>Metrics & Events)]
     end
     
     %% Region 2
@@ -704,7 +705,8 @@ graph TB
             API4[API Instance 4]
         end
         
-        DB2[(PostgreSQL Replica)]
+        PrimaryDB2[(PostgreSQL Replica<br/>Core Application Data)]
+        MetricsDB2[(PostgreSQL/InfluxDB<br/>Metrics & Events)]
     end
     
     %% Agents
@@ -716,7 +718,19 @@ graph TB
     Internet --> LB1 & LB2
     LB1 --> API1 & API2
     LB2 --> API3 & API4
-    API1 & API2 --> DB1
-    API3 & API4 --> DB2
-    DB1 -.Replication.-> DB2
+    
+    %% Core data connections
+    API1 & API2 --> PrimaryDB1
+    API3 & API4 -.Reads.-> PrimaryDB2
+    API3 & API4 -.Writes.-> PrimaryDB1
+    
+    %% Metrics data connections
+    API1 & API2 --> MetricsDB1
+    API3 & API4 --> MetricsDB2
+    
+    %% Replication
+    PrimaryDB1 -.Replication.-> PrimaryDB2
+    MetricsDB1 -.Replication.-> MetricsDB2
+    
     Agent1 & Agent2 & Agent3 --> Internet
+```
