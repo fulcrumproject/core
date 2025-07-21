@@ -78,11 +78,19 @@ func (h *MetricTypeHandler) Routes() func(r chi.Router) {
 // Adapter functions that convert request structs to commander method calls
 
 func (h *MetricTypeHandler) Create(ctx context.Context, req *CreateMetricTypeReq) (*domain.MetricType, error) {
-	return h.commander.Create(ctx, req.Name, req.EntityType)
+	params := domain.CreateMetricTypeParams{
+		Name:       req.Name,
+		EntityType: req.EntityType,
+	}
+	return h.commander.Create(ctx, params)
 }
 
 func (h *MetricTypeHandler) Update(ctx context.Context, id properties.UUID, req *UpdateMetricTypeReq) (*domain.MetricType, error) {
-	return h.commander.Update(ctx, id, req.Name)
+	params := domain.UpdateMetricTypeParams{
+		ID:   id,
+		Name: req.Name,
+	}
+	return h.commander.Update(ctx, params)
 }
 
 // MetricTypeRes represents the response body for metric type operations

@@ -97,25 +97,21 @@ type Service struct {
 
 // NewService creates a new Service without validation
 func NewService(
-	consumerID properties.UUID,
-	groupID properties.UUID,
-	providerID properties.UUID,
-	agentID properties.UUID,
-	serviceTypeID properties.UUID,
-	name string,
-	properties *properties.JSON,
+	agent *Agent,
+	group *ServiceGroup,
+	params CreateServiceParams,
 ) *Service {
 	target := ServiceCreated
 	return &Service{
-		ConsumerID:       consumerID,
-		GroupID:          groupID,
-		ProviderID:       providerID,
-		AgentID:          agentID,
-		ServiceTypeID:    serviceTypeID,
-		Name:             name,
+		ConsumerID:       group.ConsumerID,
+		GroupID:          group.ID,
+		ProviderID:       agent.ProviderID,
+		AgentID:          agent.ID,
+		ServiceTypeID:    params.ServiceTypeID,
+		Name:             params.Name,
 		CurrentStatus:    ServiceCreating,
 		TargetStatus:     &target,
-		TargetProperties: properties,
+		TargetProperties: &params.Properties,
 	}
 }
 
@@ -241,16 +237,16 @@ func (Service) TableName() string {
 // ServiceCommander defines the interface for service command operations
 type ServiceCommander interface {
 	// Create handles service creation and creates a job for the agent
-	Create(ctx context.Context, agentID properties.UUID, serviceTypeID properties.UUID, groupID properties.UUID, name string, properties properties.JSON) (*Service, error)
+	Create(ctx context.Context, params CreateServiceParams) (*Service, error)
 
 	// CreateWithTags handles service creation using agent discovery by tags
-	CreateWithTags(ctx context.Context, serviceTypeID properties.UUID, groupID properties.UUID, name string, properties properties.JSON, serviceTags []string) (*Service, error)
+	CreateWithTags(ctx context.Context, params CreateServiceWithTagsParams) (*Service, error)
 
 	// Update handles service updates and creates a job for the agent
-	Update(ctx context.Context, id properties.UUID, name *string, props *properties.JSON) (*Service, error)
+	Update(ctx context.Context, params UpdateServiceParams) (*Service, error)
 
 	// Transition transitions a service to a new status
-	Transition(ctx context.Context, id properties.UUID, target ServiceStatus) (*Service, error)
+	Transition(ctx context.Context, params TransitionServiceParams) (*Service, error)
 
 	// Retry retries a failed service operation
 	Retry(ctx context.Context, id properties.UUID) (*Service, error)
@@ -273,96 +269,101 @@ func NewServiceCommander(
 	}
 }
 
+type CreateServiceParams struct {
+	AgentID       properties.UUID `json:"agentId"`
+	ServiceTypeID properties.UUID `json:"serviceTypeId"`
+	GroupID       properties.UUID `json:"groupId"`
+	Name          string          `json:"name"`
+	Properties    properties.JSON `json:"targetProperties"`
+}
+
+type CreateServiceWithTagsParams struct {
+	CreateServiceParams
+	ServiceTags []string `json:"agentTags,omitempty"`
+}
+
+type UpdateServiceParams struct {
+	ID         properties.UUID  `json:"id"`
+	Name       *string          `json:"name,omitempty"`
+	Properties *properties.JSON `json:"properties,omitempty"`
+}
+
+type TransitionServiceParams struct {
+	ID     properties.UUID `json:"id"`
+	Target ServiceStatus   `json:"target"`
+}
+
 func (s *serviceCommander) Create(
 	ctx context.Context,
-	agentID properties.UUID,
-	serviceTypeID properties.UUID,
-	groupID properties.UUID,
-	name string,
-	properties properties.JSON,
+	params CreateServiceParams,
 ) (*Service, error) {
-	agent, err := s.store.AgentRepo().Get(ctx, agentID)
+	agent, err := s.store.AgentRepo().Get(ctx, params.AgentID)
 	if err != nil {
-		return nil, NewInvalidInputErrorf("agent with ID %s does not exist", agentID)
+		return nil, NewInvalidInputErrorf("agent with ID %s does not exist", params.AgentID)
 	}
 
-	return CreateServiceWithAgent(ctx, s.store, agent, serviceTypeID, groupID, name, properties)
+	return CreateServiceWithAgent(ctx, s.store, agent, params)
 }
 
 func (s *serviceCommander) CreateWithTags(
 	ctx context.Context,
-	serviceTypeID properties.UUID,
-	groupID properties.UUID,
-	name string,
-	properties properties.JSON,
-	serviceTags []string,
+	params CreateServiceWithTagsParams,
 ) (*Service, error) {
-	return CreateServiceWithTags(ctx, s.store, serviceTypeID, groupID, name, properties, serviceTags)
+	return CreateServiceWithTags(ctx, s.store, params)
 }
 
 func CreateServiceWithTags(
 	ctx context.Context,
 	store Store,
-	serviceTypeID properties.UUID,
-	groupID properties.UUID,
-	name string,
-	properties properties.JSON,
-	serviceTags []string,
+	params CreateServiceWithTagsParams,
 ) (*Service, error) {
-	agents, err := store.AgentRepo().FindByServiceTypeAndTags(ctx, serviceTypeID, serviceTags)
+	agents, err := store.AgentRepo().FindByServiceTypeAndTags(ctx, params.ServiceTypeID, params.ServiceTags)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(agents) == 0 {
-		return nil, NewInvalidInputErrorf("no agent found for service type %s with tags %v", serviceTypeID, serviceTags)
+		return nil, NewInvalidInputErrorf("no agent found for service type %s with tags %v", params.ServiceTypeID, params.ServiceTags)
 	}
 
 	agent := agents[0]
-	return CreateServiceWithAgent(ctx, store, agent, serviceTypeID, groupID, name, properties)
+	return CreateServiceWithAgent(ctx, store, agent, params.CreateServiceParams)
 }
 
 func CreateServiceWithAgent(
 	ctx context.Context,
 	store Store,
 	agent *Agent,
-	serviceTypeID properties.UUID,
-	groupID properties.UUID,
-	name string,
-	properties properties.JSON,
+	params CreateServiceParams,
 ) (*Service, error) {
-	group, err := store.ServiceGroupRepo().Get(ctx, groupID)
+	group, err := store.ServiceGroupRepo().Get(ctx, params.GroupID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Validate properties against schema
-	validatedProperties, err := validatePropertiesAgainstSchema(ctx, store, properties, serviceTypeID)
+	validatedProperties, err := validatePropertiesAgainstSchema(ctx, store, params.Properties, params.ServiceTypeID)
 	if err != nil {
 		return nil, err
 	}
-	properties = validatedProperties
+	params.Properties = validatedProperties
 
 	// Check if the agent's type supports the requested service type
 	supported := false
 	for _, agentServiceType := range agent.AgentType.ServiceTypes {
-		if agentServiceType.ID == serviceTypeID {
+		if agentServiceType.ID == params.ServiceTypeID {
 			supported = true
 			break
 		}
 	}
 	if !supported {
-		return nil, NewInvalidInputErrorf("agent type %s does not support service type %s", agent.AgentType.Name, serviceTypeID)
+		return nil, NewInvalidInputErrorf("agent type %s does not support service type %s", agent.AgentType.Name, params.ServiceTypeID)
 	}
 
 	svc := NewService(
-		group.ConsumerID,
-		groupID,
-		agent.ProviderID,
-		agent.ID,
-		serviceTypeID,
-		name,
-		&properties,
+		agent,
+		group,
+		params,
 	)
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
@@ -398,31 +399,31 @@ func CreateServiceWithAgent(
 	return svc, nil
 }
 
-func (s *serviceCommander) Update(ctx context.Context, id properties.UUID, name *string, props *properties.JSON) (*Service, error) {
-	return UpdateService(ctx, s.store, id, name, props)
+func (s *serviceCommander) Update(ctx context.Context, params UpdateServiceParams) (*Service, error) {
+	return UpdateService(ctx, s.store, params)
 }
 
-func UpdateService(ctx context.Context, store Store, id properties.UUID, name *string, props *properties.JSON) (*Service, error) {
+func UpdateService(ctx context.Context, store Store, params UpdateServiceParams) (*Service, error) {
 	// Find it
-	svc, err := store.ServiceRepo().Get(ctx, id)
+	svc, err := store.ServiceRepo().Get(ctx, params.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Validate properties against schema if provided
-	if props != nil {
-		validatedProperties, err := validatePropertiesAgainstSchema(ctx, store, *props, svc.ServiceTypeID)
+	if params.Properties != nil {
+		validatedProperties, err := validatePropertiesAgainstSchema(ctx, store, *params.Properties, svc.ServiceTypeID)
 		if err != nil {
 			return nil, err
 		}
-		props = &validatedProperties
+		params.Properties = &validatedProperties
 	}
 
 	// Event copy
 	originalSvc := *svc
 
 	// Update
-	updateSvc, action, err := svc.Update(name, props)
+	updateSvc, action, err := svc.Update(params.Name, params.Properties)
 	if err != nil {
 		return nil, err
 	}
@@ -495,13 +496,13 @@ func validatePropertiesAgainstSchema(ctx context.Context, store Store, props pro
 	return properties.JSON(propertiesWithDefaults), nil
 }
 
-func (s *serviceCommander) Transition(ctx context.Context, id properties.UUID, target ServiceStatus) (*Service, error) {
-	return TransitionService(ctx, s.store, id, target)
+func (s *serviceCommander) Transition(ctx context.Context, params TransitionServiceParams) (*Service, error) {
+	return TransitionService(ctx, s.store, params)
 }
 
-func TransitionService(ctx context.Context, store Store, id properties.UUID, target ServiceStatus) (*Service, error) {
+func TransitionService(ctx context.Context, store Store, params TransitionServiceParams) (*Service, error) {
 	// Find it
-	svc, err := store.ServiceRepo().Get(ctx, id)
+	svc, err := store.ServiceRepo().Get(ctx, params.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -510,7 +511,7 @@ func TransitionService(ctx context.Context, store Store, id properties.UUID, tar
 	originalSvc := *svc
 
 	// Transition
-	action, err := svc.Transition(target)
+	action, err := svc.Transition(params.Target)
 	if err != nil {
 		return nil, err
 	}
@@ -636,7 +637,7 @@ func (s *serviceCommander) FailTimeoutServicesAndJobs(ctx context.Context, timeo
 }
 
 // HandleJobComplete updates the service status when a job completes successfully
-func (s *Service) HandleJobComplete(resources *properties.JSON, externalID *string) error {
+func (s *Service) HandleJobComplete(params CompleteJobParams) error {
 	if s.TargetStatus == nil {
 		return InvalidInputError{Err: errors.New("cannot complete a job on service that is not in transition")}
 	}
@@ -647,11 +648,11 @@ func (s *Service) HandleJobComplete(resources *properties.JSON, externalID *stri
 	s.ErrorMessage = nil
 	s.RetryCount = 0
 
-	if resources != nil {
-		s.Resources = resources
+	if params.Resources != nil {
+		s.Resources = params.Resources
 	}
-	if externalID != nil {
-		s.ExternalID = externalID
+	if params.ExternalID != nil {
+		s.ExternalID = params.ExternalID
 	}
 	if s.TargetProperties != nil {
 		s.CurrentProperties = s.TargetProperties

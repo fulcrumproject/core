@@ -182,7 +182,12 @@ func TestEventSubscription_AcquireLease(t *testing.T) {
 	duration := time.Hour
 
 	beforeTime := time.Now()
-	subscription.AcquireLease(instanceID, duration)
+	params := LeaseParams{
+		SubscriberID: "test-subscriber",
+		InstanceID:   instanceID,
+		Duration:     duration,
+	}
+	subscription.AcquireLease(params)
 	afterTime := time.Now()
 
 	assert.Equal(t, instanceID, *subscription.LeaseOwnerInstanceID)
@@ -196,7 +201,12 @@ func TestEventSubscription_ReleaseLease(t *testing.T) {
 	subscription := NewEventSubscription("test-subscriber")
 
 	// First acquire a lease
-	subscription.AcquireLease("instance-1", time.Hour)
+	params := LeaseParams{
+		SubscriberID: "test-subscriber",
+		InstanceID:   "instance-1",
+		Duration:     time.Hour,
+	}
+	subscription.AcquireLease(params)
 	assert.NotNil(t, subscription.LeaseOwnerInstanceID)
 	assert.NotNil(t, subscription.LeaseAcquiredAt)
 	assert.NotNil(t, subscription.LeaseExpiresAt)

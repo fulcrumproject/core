@@ -43,10 +43,10 @@ type MetricType struct {
 }
 
 // NewMetricType creates a new metric type without validation
-func NewMetricType(name string, entityType MetricEntityType) *MetricType {
+func NewMetricType(params CreateMetricTypeParams) *MetricType {
 	return &MetricType{
-		Name:       name,
-		EntityType: entityType,
+		Name:       params.Name,
+		EntityType: params.EntityType,
 	}
 }
 
@@ -76,13 +76,23 @@ func (m *MetricType) Update(name *string) {
 // MetricTypeCommander defines the interface for metric type command operations
 type MetricTypeCommander interface {
 	// Create creates a new metric-type
-	Create(ctx context.Context, name string, kind MetricEntityType) (*MetricType, error)
+	Create(ctx context.Context, params CreateMetricTypeParams) (*MetricType, error)
 
 	// Update updates a metric-type
-	Update(ctx context.Context, id properties.UUID, name *string) (*MetricType, error)
+	Update(ctx context.Context, params UpdateMetricTypeParams) (*MetricType, error)
 
 	// Delete removes a metric-type by ID after checking for dependencies
 	Delete(ctx context.Context, id properties.UUID) error
+}
+
+type CreateMetricTypeParams struct {
+	Name       string           `json:"name"`
+	EntityType MetricEntityType `json:"entityType"`
+}
+
+type UpdateMetricTypeParams struct {
+	ID   properties.UUID `json:"id"`
+	Name *string         `json:"name"`
 }
 
 // metricTypeCommander is the concrete implementation of MetricTypeCommander
@@ -105,13 +115,12 @@ func NewMetricTypeCommander(
 // Create creates a new metric-type
 func (s *metricTypeCommander) Create(
 	ctx context.Context,
-	name string,
-	kind MetricEntityType,
+	params CreateMetricTypeParams,
 ) (*MetricType, error) {
 	// Create and validate
 	var metricType *MetricType
 	err := s.store.Atomic(ctx, func(store Store) error {
-		metricType = NewMetricType(name, kind)
+		metricType = NewMetricType(params)
 		if err := metricType.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -139,11 +148,10 @@ func (s *metricTypeCommander) Create(
 
 // Update updates a metric-type
 func (s *metricTypeCommander) Update(ctx context.Context,
-	id properties.UUID,
-	name *string,
+	params UpdateMetricTypeParams,
 ) (*MetricType, error) {
 	// Find it
-	metricType, err := s.store.MetricTypeRepo().Get(ctx, id)
+	metricType, err := s.store.MetricTypeRepo().Get(ctx, params.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +160,7 @@ func (s *metricTypeCommander) Update(ctx context.Context,
 	beforeMetricType := *metricType
 
 	// Update and validate
-	metricType.Update(name)
+	metricType.Update(params.Name)
 	if err := metricType.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}

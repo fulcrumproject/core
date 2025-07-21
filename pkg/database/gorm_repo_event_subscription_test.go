@@ -23,7 +23,12 @@ func createTestEventSubscription(t *testing.T, subscriberID string) *domain.Even
 func createTestEventSubscriptionWithLease(t *testing.T, subscriberID, instanceID string, duration time.Duration) *domain.EventSubscription {
 	t.Helper()
 	subscription := createTestEventSubscription(t, subscriberID)
-	subscription.AcquireLease(instanceID, duration)
+	params := domain.LeaseParams{
+		SubscriberID: subscriberID,
+		InstanceID:   instanceID,
+		Duration:     duration,
+	}
+	subscription.AcquireLease(params)
 	return subscription
 }
 
@@ -280,7 +285,12 @@ func TestEventSubscriptionRepository(t *testing.T) {
 			// Acquire lease
 			instanceID := "test-instance"
 			duration := time.Hour
-			subscription.AcquireLease(instanceID, duration)
+			params := domain.LeaseParams{
+				SubscriberID: subscriberID,
+				InstanceID:   instanceID,
+				Duration:     duration,
+			}
+			subscription.AcquireLease(params)
 			require.NoError(t, repo.Save(ctx, subscription))
 
 			// Verify lease was acquired

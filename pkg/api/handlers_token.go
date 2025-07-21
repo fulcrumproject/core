@@ -121,11 +121,22 @@ func (h *TokenHandler) Routes() func(r chi.Router) {
 // Adapter functions that convert request structs to commander method calls
 
 func (h *TokenHandler) Create(ctx context.Context, req *CreateTokenReq) (*domain.Token, error) {
-	return h.commander.Create(ctx, req.Name, req.Role, req.ExpireAt, req.ScopeID)
+	params := domain.CreateTokenParams{
+		Name:     req.Name,
+		Role:     req.Role,
+		ExpireAt: req.ExpireAt,
+		ScopeID:  req.ScopeID,
+	}
+	return h.commander.Create(ctx, params)
 }
 
 func (h *TokenHandler) Update(ctx context.Context, id properties.UUID, req *UpdateTokenReq) (*domain.Token, error) {
-	return h.commander.Update(ctx, id, req.Name, req.ExpireAt)
+	params := domain.UpdateTokenParams{
+		ID:       id,
+		Name:     req.Name,
+		ExpireAt: req.ExpireAt,
+	}
+	return h.commander.Update(ctx, params)
 }
 
 // TokenRes represents the response body for token operations

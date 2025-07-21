@@ -155,11 +155,14 @@ func (h *EventHandler) Lease(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Try to acquire or renew the lease
+	params := domain.LeaseParams{
+		SubscriberID: req.SubscriberID,
+		InstanceID:   req.InstanceID,
+		Duration:     time.Duration(leaseDurationSeconds) * time.Second,
+	}
 	subscription, err := h.eventSubscriptionCommander.AcquireLease(
 		ctx,
-		req.SubscriberID,
-		req.InstanceID,
-		time.Duration(leaseDurationSeconds)*time.Second,
+		params,
 	)
 	if err != nil {
 		// Check if it's a conflict error (lease held by another instance)
@@ -237,11 +240,14 @@ func (h *EventHandler) Acknowledge(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Acknowledge the events by updating progress with lease validation
+	params := domain.AcknowledgeEventsParams{
+		SubscriberID:               req.SubscriberID,
+		InstanceID:                 req.InstanceID,
+		LastEventSequenceProcessed: req.LastEventSequenceProcessed,
+	}
 	subscription, err := h.eventSubscriptionCommander.AcknowledgeEvents(
 		ctx,
-		req.SubscriberID,
-		req.InstanceID,
-		req.LastEventSequenceProcessed,
+		params,
 	)
 	if err != nil {
 		// Check if it's a conflict error (lease not held by this instance)
