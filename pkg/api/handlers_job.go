@@ -121,11 +121,20 @@ func (h *JobHandler) Pending(w http.ResponseWriter, r *http.Request) {
 
 // Adapter functions for standard handlers
 func (h *JobHandler) Complete(ctx context.Context, id properties.UUID, req *CompleteJobReq) error {
-	return h.commander.Complete(ctx, id, req.Resources, req.ExternalID)
+	params := domain.CompleteJobParams{
+		JobID:      id,
+		Resources:  req.Resources,
+		ExternalID: req.ExternalID,
+	}
+	return h.commander.Complete(ctx, params)
 }
 
 func (h *JobHandler) Fail(ctx context.Context, id properties.UUID, req *FailJobReq) error {
-	return h.commander.Fail(ctx, id, req.ErrorMessage)
+	params := domain.FailJobParams{
+		JobID:        id,
+		ErrorMessage: req.ErrorMessage,
+	}
+	return h.commander.Fail(ctx, params)
 }
 
 // JobRes represents the response for a job

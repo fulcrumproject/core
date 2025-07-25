@@ -79,11 +79,20 @@ func (h *ParticipantHandler) Routes() func(r chi.Router) {
 // Adapter functions that convert request structs to commander method calls
 
 func (h *ParticipantHandler) Create(ctx context.Context, req *CreateParticipantReq) (*domain.Participant, error) {
-	return h.commander.Create(ctx, req.Name, req.Status)
+	params := domain.CreateParticipantParams{
+		Name:   req.Name,
+		Status: req.Status,
+	}
+	return h.commander.Create(ctx, params)
 }
 
 func (h *ParticipantHandler) Update(ctx context.Context, id properties.UUID, req *UpdateParticipantReq) (*domain.Participant, error) {
-	return h.commander.Update(ctx, id, req.Name, req.Status)
+	params := domain.UpdateParticipantParams{
+		ID:     id,
+		Name:   req.Name,
+		Status: req.Status,
+	}
+	return h.commander.Update(ctx, params)
 }
 
 // ParticipantRes represents the response body for participant operations

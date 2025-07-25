@@ -147,14 +147,14 @@ func TestEventHandleLease(t *testing.T) {
 			},
 			mockSubscriptionSetup: func(cmd *mockEventSubscriptionCommander) {
 				leaseExpiresAt := time.Now().Add(5 * time.Minute)
-				cmd.acquireLeaseFunc = func(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*domain.EventSubscription, error) {
+				cmd.acquireLeaseFunc = func(ctx context.Context, params domain.LeaseParams) (*domain.EventSubscription, error) {
 					return &domain.EventSubscription{
 						BaseEntity: domain.BaseEntity{
 							ID: uuid.New(),
 						},
-						SubscriberID:               subscriberID,
+						SubscriberID:               params.SubscriberID,
 						LastEventSequenceProcessed: 100,
-						LeaseOwnerInstanceID:       &instanceID,
+						LeaseOwnerInstanceID:       &params.InstanceID,
 						LeaseExpiresAt:             &leaseExpiresAt,
 						IsActive:                   true,
 					}, nil
@@ -175,7 +175,7 @@ func TestEventHandleLease(t *testing.T) {
 				// No setup needed for this test
 			},
 			mockSubscriptionSetup: func(cmd *mockEventSubscriptionCommander) {
-				cmd.acquireLeaseFunc = func(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*domain.EventSubscription, error) {
+				cmd.acquireLeaseFunc = func(ctx context.Context, params domain.LeaseParams) (*domain.EventSubscription, error) {
 					return nil, domain.NewInvalidInputErrorf("lease is already held by instance instance-2")
 				}
 			},
@@ -328,7 +328,7 @@ func TestEventHandleAcknowledge(t *testing.T) {
 					SubscriberID:               "test-subscriber",
 					LastEventSequenceProcessed: 100,
 				}
-				cmd.acknowledgeEventsFunc = func(ctx context.Context, subscriberID string, instanceID string, lastEventSequenceProcessed int64) (*domain.EventSubscription, error) {
+				cmd.acknowledgeEventsFunc = func(ctx context.Context, params domain.AcknowledgeEventsParams) (*domain.EventSubscription, error) {
 					return subscription, nil
 				}
 			},
@@ -343,8 +343,8 @@ func TestEventHandleAcknowledge(t *testing.T) {
 				"lastEventSequenceProcessed": 100
 			}`,
 			setupMock: func(cmd *mockEventSubscriptionCommander) {
-				cmd.acknowledgeEventsFunc = func(ctx context.Context, subscriberID string, instanceID string, lastEventSequenceProcessed int64) (*domain.EventSubscription, error) {
-					return nil, domain.NewInvalidInputErrorf("no active lease found for subscriber %s", subscriberID)
+				cmd.acknowledgeEventsFunc = func(ctx context.Context, params domain.AcknowledgeEventsParams) (*domain.EventSubscription, error) {
+					return nil, domain.NewInvalidInputErrorf("no active lease found for subscriber %s", params.SubscriberID)
 				}
 			},
 			expectedStatus: 409,
@@ -358,8 +358,8 @@ func TestEventHandleAcknowledge(t *testing.T) {
 				"lastEventSequenceProcessed": 100
 			}`,
 			setupMock: func(cmd *mockEventSubscriptionCommander) {
-				cmd.acknowledgeEventsFunc = func(ctx context.Context, subscriberID string, instanceID string, lastEventSequenceProcessed int64) (*domain.EventSubscription, error) {
-					return nil, domain.NewInvalidInputErrorf("lease is not owned by instance %s", instanceID)
+				cmd.acknowledgeEventsFunc = func(ctx context.Context, params domain.AcknowledgeEventsParams) (*domain.EventSubscription, error) {
+					return nil, domain.NewInvalidInputErrorf("lease is not owned by instance %s", params.InstanceID)
 				}
 			},
 			expectedStatus: 409,
@@ -373,8 +373,8 @@ func TestEventHandleAcknowledge(t *testing.T) {
 				"lastEventSequenceProcessed": 50
 			}`,
 			setupMock: func(cmd *mockEventSubscriptionCommander) {
-				cmd.acknowledgeEventsFunc = func(ctx context.Context, subscriberID string, instanceID string, lastEventSequenceProcessed int64) (*domain.EventSubscription, error) {
-					return nil, domain.NewInvalidInputErrorf("cannot acknowledge sequence %d: must be greater than current sequence %d", lastEventSequenceProcessed, 100)
+				cmd.acknowledgeEventsFunc = func(ctx context.Context, params domain.AcknowledgeEventsParams) (*domain.EventSubscription, error) {
+					return nil, domain.NewInvalidInputErrorf("cannot acknowledge sequence %d: must be greater than current sequence %d", params.LastEventSequenceProcessed, 100)
 				}
 			},
 			expectedStatus: 409,

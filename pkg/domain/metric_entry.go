@@ -107,10 +107,26 @@ func (p *MetricEntry) Validate() error {
 // MetricEntryCommander defines the interface for metric entry command operations
 type MetricEntryCommander interface {
 	// Create creates a new metric entry
-	Create(ctx context.Context, typeName string, agentID properties.UUID, serviceID properties.UUID, resourceID string, value float64) (*MetricEntry, error)
+	Create(ctx context.Context, params CreateMetricEntryParams) (*MetricEntry, error)
 
 	// CreateWithExternalID creates a new metric entry using service's external ID
-	CreateWithExternalID(ctx context.Context, typeName string, agentID properties.UUID, externalID string, resourceID string, value float64) (*MetricEntry, error)
+	CreateWithExternalID(ctx context.Context, params CreateMetricEntryWithExternalIDParams) (*MetricEntry, error)
+}
+
+type CreateMetricEntryParams struct {
+	TypeName   string          `json:"typeName"`
+	AgentID    properties.UUID `json:"agentId"`
+	ServiceID  properties.UUID `json:"serviceId"`
+	ResourceID string          `json:"resourceId"`
+	Value      float64         `json:"value"`
+}
+
+type CreateMetricEntryWithExternalIDParams struct {
+	TypeName   string          `json:"typeName"`
+	AgentID    properties.UUID `json:"agentId"`
+	ExternalID string          `json:"externalId"`
+	ResourceID string          `json:"resourceId"`
+	Value      float64         `json:"value"`
 }
 
 // metricEntryCommander is the concrete implementation of MetricEntryCommander
@@ -132,29 +148,25 @@ func NewMetricEntryCommander(
 
 func (s *metricEntryCommander) CreateWithExternalID(
 	ctx context.Context,
-	typeName string,
-	agentID properties.UUID,
-	externalID string,
-	resourceID string,
-	value float64,
+	params CreateMetricEntryWithExternalIDParams,
 ) (*MetricEntry, error) {
 	// 1. Validate agent exists
-	ok, err := s.store.AgentRepo().Exists(ctx, agentID)
+	ok, err := s.store.AgentRepo().Exists(ctx, params.AgentID)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
-		return nil, NewInvalidInputErrorf("invalid agent ID %s", agentID)
+		return nil, NewInvalidInputErrorf("invalid agent ID %s", params.AgentID)
 	}
 
 	// 2. Find service by external ID
-	svc, err := s.store.ServiceRepo().FindByExternalID(ctx, agentID, externalID)
+	svc, err := s.store.ServiceRepo().FindByExternalID(ctx, params.AgentID, params.ExternalID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 3. Validate type compatibility
-	metricType, err := s.store.MetricTypeRepo().FindByName(ctx, typeName)
+	metricType, err := s.store.MetricTypeRepo().FindByName(ctx, params.TypeName)
 	if err != nil {
 		return nil, err
 	}
@@ -172,11 +184,11 @@ func (s *metricEntryCommander) CreateWithExternalID(
 	metricEntry := NewMetricEntry(
 		svc.ConsumerID,
 		svc.ProviderID,
-		agentID,
+		params.AgentID,
 		svc.ID,
-		resourceID,
+		params.ResourceID,
 		metricType.ID,
-		value,
+		params.Value,
 	)
 
 	if err := metricEntry.Validate(); err != nil {
@@ -193,29 +205,25 @@ func (s *metricEntryCommander) CreateWithExternalID(
 
 func (s *metricEntryCommander) Create(
 	ctx context.Context,
-	typeName string,
-	agentID properties.UUID,
-	serviceID properties.UUID,
-	resourceID string,
-	value float64,
+	params CreateMetricEntryParams,
 ) (*MetricEntry, error) {
 	// 1. Validate agent exists
-	ok, err := s.store.AgentRepo().Exists(ctx, agentID)
+	ok, err := s.store.AgentRepo().Exists(ctx, params.AgentID)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
-		return nil, NewInvalidInputErrorf("invalid agent ID %s", agentID)
+		return nil, NewInvalidInputErrorf("invalid agent ID %s", params.AgentID)
 	}
 
 	// 2. Find service
-	svc, err := s.store.ServiceRepo().Get(ctx, serviceID)
+	svc, err := s.store.ServiceRepo().Get(ctx, params.ServiceID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 3. Validate type compatibility
-	metricType, err := s.store.MetricTypeRepo().FindByName(ctx, typeName)
+	metricType, err := s.store.MetricTypeRepo().FindByName(ctx, params.TypeName)
 	if err != nil {
 		return nil, err
 	}
@@ -233,11 +241,11 @@ func (s *metricEntryCommander) Create(
 	metricEntry := NewMetricEntry(
 		svc.ConsumerID,
 		svc.ProviderID,
-		agentID,
+		params.AgentID,
 		svc.ID,
-		resourceID,
+		params.ResourceID,
 		metricType.ID,
-		value,
+		params.Value,
 	)
 
 	if err := metricEntry.Validate(); err != nil {

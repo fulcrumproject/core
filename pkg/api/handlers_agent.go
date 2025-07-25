@@ -102,18 +102,34 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 
 // Adapter functions that convert request structs to commander method calls
 func (h *AgentHandler) Create(ctx context.Context, req *CreateAgentReq) (*domain.Agent, error) {
-	return h.commander.Create(ctx, req.Name, req.ProviderID, req.AgentTypeID, req.Tags)
+	params := domain.CreateAgentParams{
+		Name:        req.Name,
+		ProviderID:  req.ProviderID,
+		AgentTypeID: req.AgentTypeID,
+		Tags:        req.Tags,
+	}
+	return h.commander.Create(ctx, params)
 }
 
 // Adapter functions that convert request structs to commander method calls
 func (h *AgentHandler) Update(ctx context.Context, id properties.UUID, req *UpdateAgentReq) (*domain.Agent, error) {
-	return h.commander.Update(ctx, id, req.Name, req.Status, req.Tags)
+	params := domain.UpdateAgentParams{
+		ID:     id,
+		Name:   req.Name,
+		Status: req.Status,
+		Tags:   req.Tags,
+	}
+	return h.commander.Update(ctx, params)
 }
 
 // Adapter functions that convert request structs to commander method calls
 func (h *AgentHandler) UpdateStatusMe(ctx context.Context, req *UpdateAgentStatusReq) (*domain.Agent, error) {
 	agentID := auth.MustGetIdentity(ctx).Scope.AgentID
-	return h.commander.UpdateStatus(ctx, *agentID, req.Status)
+	params := domain.UpdateAgentStatusParams{
+		ID:     *agentID,
+		Status: req.Status,
+	}
+	return h.commander.UpdateStatus(ctx, params)
 }
 
 // GetMe handles GET /agents/me

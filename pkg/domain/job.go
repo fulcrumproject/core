@@ -189,10 +189,21 @@ type JobCommander interface {
 	Claim(ctx context.Context, jobID properties.UUID) error
 
 	// Complete marks a job as completed
-	Complete(ctx context.Context, jobID properties.UUID, resources *properties.JSON, externalID *string) error
+	Complete(ctx context.Context, params CompleteJobParams) error
 
 	// Fail marks a job as failed
-	Fail(ctx context.Context, jobID properties.UUID, errorMessage string) error
+	Fail(ctx context.Context, params FailJobParams) error
+}
+
+type CompleteJobParams struct {
+	JobID      properties.UUID  `json:"jobId"`
+	Resources  *properties.JSON `json:"resources"`
+	ExternalID *string          `json:"externalId"`
+}
+
+type FailJobParams struct {
+	JobID        properties.UUID `json:"jobId"`
+	ErrorMessage string          `json:"errorMessage"`
 }
 
 // jobCommander is the concrete implementation of JobCommander
@@ -222,8 +233,8 @@ func (s *jobCommander) Claim(ctx context.Context, jobID properties.UUID) error {
 	return s.store.JobRepo().Save(ctx, job)
 }
 
-func (s *jobCommander) Complete(ctx context.Context, jobID properties.UUID, resources *properties.JSON, externalID *string) error {
-	job, err := s.store.JobRepo().Get(ctx, jobID)
+func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) error {
+	job, err := s.store.JobRepo().Get(ctx, params.JobID)
 	if err != nil {
 		return err
 	}
@@ -248,7 +259,7 @@ func (s *jobCommander) Complete(ctx context.Context, jobID properties.UUID, reso
 		}
 
 		// Coordinate with service
-		if err := svc.HandleJobComplete(resources, externalID); err != nil {
+		if err := svc.HandleJobComplete(params); err != nil {
 			return InvalidInputError{Err: err}
 		}
 		if err := svc.Validate(); err != nil {
@@ -268,8 +279,8 @@ func (s *jobCommander) Complete(ctx context.Context, jobID properties.UUID, reso
 	})
 }
 
-func (s *jobCommander) Fail(ctx context.Context, jobID properties.UUID, errorMessage string) error {
-	job, err := s.store.JobRepo().Get(ctx, jobID)
+func (s *jobCommander) Fail(ctx context.Context, params FailJobParams) error {
+	job, err := s.store.JobRepo().Get(ctx, params.JobID)
 	if err != nil {
 		return err
 	}
@@ -282,7 +293,7 @@ func (s *jobCommander) Fail(ctx context.Context, jobID properties.UUID, errorMes
 	originalSvc := *svc
 
 	return s.store.Atomic(ctx, func(store Store) error {
-		if err := job.Fail(errorMessage); err != nil {
+		if err := job.Fail(params.ErrorMessage); err != nil {
 			return InvalidInputError{Err: err}
 		}
 
@@ -291,7 +302,7 @@ func (s *jobCommander) Fail(ctx context.Context, jobID properties.UUID, errorMes
 		}
 
 		// Coordinate with service
-		svc.HandleJobFailure(errorMessage, job.Action)
+		svc.HandleJobFailure(params.ErrorMessage, job.Action)
 		if err := svc.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}

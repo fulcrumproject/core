@@ -38,10 +38,10 @@ func (sg *ServiceGroup) Validate() error {
 }
 
 // NewServiceGroup creates a new service group with validation
-func NewServiceGroup(name string, consumerID properties.UUID) *ServiceGroup {
+func NewServiceGroup(params CreateServiceGroupParams) *ServiceGroup {
 	return &ServiceGroup{
-		Name:       name,
-		ConsumerID: consumerID,
+		Name:       params.Name,
+		ConsumerID: params.ConsumerID,
 	}
 }
 
@@ -61,10 +61,10 @@ func (ServiceGroup) TableName() string {
 // ServiceGroupCommander defines the interface for service group command operations
 type ServiceGroupCommander interface {
 	// Create creates a new service group
-	Create(ctx context.Context, name string, consumerID properties.UUID) (*ServiceGroup, error)
+	Create(ctx context.Context, params CreateServiceGroupParams) (*ServiceGroup, error)
 
 	// Update updates an existing service group
-	Update(ctx context.Context, id properties.UUID, name *string) (*ServiceGroup, error)
+	Update(ctx context.Context, params UpdateServiceGroupParams) (*ServiceGroup, error)
 
 	// Delete removes a service group by ID after checking for dependencies
 	Delete(ctx context.Context, id properties.UUID) error
@@ -73,6 +73,16 @@ type ServiceGroupCommander interface {
 // serviceGroupCommander is the concrete implementation of ServiceGroupCommander
 type serviceGroupCommander struct {
 	store Store
+}
+
+type CreateServiceGroupParams struct {
+	Name       string          `json:"name"`
+	ConsumerID properties.UUID `json:"consumerId"`
+}
+
+type UpdateServiceGroupParams struct {
+	ID   properties.UUID `json:"id"`
+	Name *string         `json:"name"`
 }
 
 // NewServiceGroupCommander creates a new ServiceGroupService
@@ -84,20 +94,20 @@ func NewServiceGroupCommander(
 	}
 }
 
-func (s *serviceGroupCommander) Create(ctx context.Context, name string, consumerID properties.UUID) (*ServiceGroup, error) {
+func (s *serviceGroupCommander) Create(ctx context.Context, params CreateServiceGroupParams) (*ServiceGroup, error) {
 	// Validate references
-	consumerExists, err := s.store.ParticipantRepo().Exists(ctx, consumerID)
+	consumerExists, err := s.store.ParticipantRepo().Exists(ctx, params.ConsumerID)
 	if err != nil {
 		return nil, err
 	}
 	if !consumerExists {
-		return nil, NewInvalidInputErrorf("consumer with ID %s does not exist", consumerID)
+		return nil, NewInvalidInputErrorf("consumer with ID %s does not exist", params.ConsumerID)
 	}
 
 	// Create and save
 	var sg *ServiceGroup
 	err = s.store.Atomic(ctx, func(store Store) error {
-		sg = NewServiceGroup(name, consumerID)
+		sg = NewServiceGroup(params)
 		if err := sg.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -123,9 +133,9 @@ func (s *serviceGroupCommander) Create(ctx context.Context, name string, consume
 	return sg, nil
 }
 
-func (s *serviceGroupCommander) Update(ctx context.Context, id properties.UUID, name *string) (*ServiceGroup, error) {
+func (s *serviceGroupCommander) Update(ctx context.Context, params UpdateServiceGroupParams) (*ServiceGroup, error) {
 	// Validate references
-	sg, err := s.store.ServiceGroupRepo().Get(ctx, id)
+	sg, err := s.store.ServiceGroupRepo().Get(ctx, params.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +144,7 @@ func (s *serviceGroupCommander) Update(ctx context.Context, id properties.UUID, 
 	beforeSgCopy := *sg
 
 	// Update and validate
-	if err := sg.Update(name); err != nil {
+	if err := sg.Update(params.Name); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 	if err := sg.Validate(); err != nil {

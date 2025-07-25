@@ -142,23 +142,31 @@ func (h *ServiceHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	if body.AgentID != nil {
 		// Direct agent specification
+		params := domain.CreateServiceParams{
+			AgentID:       *body.AgentID,
+			ServiceTypeID: body.ServiceTypeID,
+			GroupID:       body.GroupID,
+			Name:          body.Name,
+			Properties:    body.Properties,
+		}
 		service, err = h.commander.Create(
 			r.Context(),
-			*body.AgentID,
-			body.ServiceTypeID,
-			body.GroupID,
-			body.Name,
-			body.Properties,
+			params,
 		)
 	} else {
 		// Agent discovery using service type and tags
+		params := domain.CreateServiceWithTagsParams{
+			CreateServiceParams: domain.CreateServiceParams{
+				ServiceTypeID: body.ServiceTypeID,
+				GroupID:       body.GroupID,
+				Name:          body.Name,
+				Properties:    body.Properties,
+			},
+			ServiceTags: body.AgentTags,
+		}
 		service, err = h.commander.CreateWithTags(
 			r.Context(),
-			body.ServiceTypeID,
-			body.GroupID,
-			body.Name,
-			body.Properties,
-			body.AgentTags,
+			params,
 		)
 	}
 
@@ -173,21 +181,38 @@ func (h *ServiceHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // Adapter functions for standard handlers
 func (h *ServiceHandler) Update(ctx context.Context, id properties.UUID, req *UpdateServiceReq) (*domain.Service, error) {
-	return h.commander.Update(ctx, id, req.Name, req.Properties)
+	params := domain.UpdateServiceParams{
+		ID:         id,
+		Name:       req.Name,
+		Properties: req.Properties,
+	}
+	return h.commander.Update(ctx, params)
 }
 
 func (h *ServiceHandler) Start(ctx context.Context, id properties.UUID) error {
-	_, err := h.commander.Transition(ctx, id, domain.ServiceStarted)
+	params := domain.TransitionServiceParams{
+		ID:     id,
+		Target: domain.ServiceStarted,
+	}
+	_, err := h.commander.Transition(ctx, params)
 	return err
 }
 
 func (h *ServiceHandler) Stop(ctx context.Context, id properties.UUID) error {
-	_, err := h.commander.Transition(ctx, id, domain.ServiceStopped)
+	params := domain.TransitionServiceParams{
+		ID:     id,
+		Target: domain.ServiceStopped,
+	}
+	_, err := h.commander.Transition(ctx, params)
 	return err
 }
 
 func (h *ServiceHandler) Delete(ctx context.Context, id properties.UUID) error {
-	_, err := h.commander.Transition(ctx, id, domain.ServiceDeleted)
+	params := domain.TransitionServiceParams{
+		ID:     id,
+		Target: domain.ServiceDeleted,
+	}
+	_, err := h.commander.Transition(ctx, params)
 	return err
 }
 

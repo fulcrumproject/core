@@ -116,12 +116,12 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the commander
-				commander.createFunc = func(ctx context.Context, typeName string, agID properties.UUID, svcID properties.UUID, resourceID string, value float64) (*domain.MetricEntry, error) {
-					assert.Equal(t, "cpu", typeName)
-					assert.Equal(t, agentID, agID)
-					assert.Equal(t, serviceID, svcID)
-					assert.Equal(t, "resource-1", resourceID)
-					assert.Equal(t, 123.45, value)
+				commander.createFunc = func(ctx context.Context, params domain.CreateMetricEntryParams) (*domain.MetricEntry, error) {
+					assert.Equal(t, "cpu", params.TypeName)
+					assert.Equal(t, agentID, params.AgentID)
+					assert.Equal(t, serviceID, params.ServiceID)
+					assert.Equal(t, "resource-1", params.ResourceID)
+					assert.Equal(t, 123.45, params.Value)
 
 					return &domain.MetricEntry{
 						ID:         uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
@@ -130,8 +130,8 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 						ConsumerID: consumerID,
 						ProviderID: providerID,
 						TypeID:     typeID,
-						ResourceID: resourceID,
-						Value:      value,
+						ResourceID: params.ResourceID,
+						Value:      params.Value,
 					}, nil
 				}
 			},
@@ -175,12 +175,12 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the commander
-				commander.createWithExternalIDFunc = func(ctx context.Context, typeName string, agID properties.UUID, extID string, resourceID string, value float64) (*domain.MetricEntry, error) {
-					assert.Equal(t, "cpu", typeName)
-					assert.Equal(t, agentID, agID)
-					assert.Equal(t, "service-ext-1", extID)
-					assert.Equal(t, "resource-1", resourceID)
-					assert.Equal(t, 123.45, value)
+				commander.createWithExternalIDFunc = func(ctx context.Context, params domain.CreateMetricEntryWithExternalIDParams) (*domain.MetricEntry, error) {
+					assert.Equal(t, "cpu", params.TypeName)
+					assert.Equal(t, agentID, params.AgentID)
+					assert.Equal(t, "service-ext-1", params.ExternalID)
+					assert.Equal(t, "resource-1", params.ResourceID)
+					assert.Equal(t, 123.45, params.Value)
 
 					return &domain.MetricEntry{
 						ID:         uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
@@ -189,8 +189,8 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 						ConsumerID: consumerID,
 						ProviderID: providerID,
 						TypeID:     typeID,
-						ResourceID: resourceID,
-						Value:      value,
+						ResourceID: params.ResourceID,
+						Value:      params.Value,
 					}, nil
 				}
 			},
@@ -280,7 +280,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the commander to return an error
-				commander.createFunc = func(ctx context.Context, typeName string, agID properties.UUID, svcID properties.UUID, resourceID string, value float64) (*domain.MetricEntry, error) {
+				commander.createFunc = func(ctx context.Context, params domain.CreateMetricEntryParams) (*domain.MetricEntry, error) {
 					return nil, fmt.Errorf("metric creation error")
 				}
 			},

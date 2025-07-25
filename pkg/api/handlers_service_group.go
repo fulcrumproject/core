@@ -81,12 +81,20 @@ func (h *ServiceGroupHandler) Routes() func(r chi.Router) {
 
 // Adapter functions that convert request structs to commander method calls
 func (h *ServiceGroupHandler) Create(ctx context.Context, req *CreateServiceGroupReq) (*domain.ServiceGroup, error) {
-	return h.commander.Create(ctx, req.Name, req.ConsumerID)
+	params := domain.CreateServiceGroupParams{
+		Name:       req.Name,
+		ConsumerID: req.ConsumerID,
+	}
+	return h.commander.Create(ctx, params)
 }
 
 // Adapter functions that convert request structs to commander method calls
 func (h *ServiceGroupHandler) Update(ctx context.Context, id properties.UUID, req *UpdateServiceGroupReq) (*domain.ServiceGroup, error) {
-	return h.commander.Update(ctx, id, req.Name)
+	params := domain.UpdateServiceGroupParams{
+		ID:   id,
+		Name: req.Name,
+	}
+	return h.commander.Update(ctx, params)
 }
 
 // ServiceGroupRes represents the response body for service group operations

@@ -50,10 +50,10 @@ type Participant struct {
 }
 
 // NewParticipant creates a new Participant without validation
-func NewParticipant(name string, status ParticipantStatus) *Participant {
+func NewParticipant(params CreateParticipantParams) *Participant {
 	return &Participant{
-		Name:   name,
-		Status: status,
+		Name:   params.Name,
+		Status: params.Status,
 	}
 }
 
@@ -74,25 +74,36 @@ func (p *Participant) Validate() error {
 }
 
 // Update updates the participant fields if the pointers are non-nil
-func (p *Participant) Update(name *string, status *ParticipantStatus) {
-	if name != nil {
-		p.Name = *name
+func (p *Participant) Update(params UpdateParticipantParams) {
+	if params.Name != nil {
+		p.Name = *params.Name
 	}
-	if status != nil {
-		p.Status = *status
+	if params.Status != nil {
+		p.Status = *params.Status
 	}
 }
 
 // ParticipantCommander defines the interface for participant command operations
 type ParticipantCommander interface {
 	// Create creates a new participant
-	Create(ctx context.Context, name string, status ParticipantStatus) (*Participant, error)
+	Create(ctx context.Context, params CreateParticipantParams) (*Participant, error)
 
 	// Update updates a participant
-	Update(ctx context.Context, id properties.UUID, name *string, status *ParticipantStatus) (*Participant, error)
+	Update(ctx context.Context, params UpdateParticipantParams) (*Participant, error)
 
 	// Delete removes a participant by ID after checking for dependencies
 	Delete(ctx context.Context, id properties.UUID) error
+}
+
+type CreateParticipantParams struct {
+	Name   string            `json:"name"`
+	Status ParticipantStatus `json:"status"`
+}
+
+type UpdateParticipantParams struct {
+	ID     properties.UUID    `json:"id"`
+	Name   *string            `json:"name"`
+	Status *ParticipantStatus `json:"status"`
 }
 
 // participantCommander is the concrete implementation of ParticipantCommander
@@ -111,12 +122,11 @@ func NewParticipantCommander(
 
 func (c *participantCommander) Create(
 	ctx context.Context,
-	name string,
-	status ParticipantStatus,
+	params CreateParticipantParams,
 ) (*Participant, error) {
 	var participant *Participant
 	err := c.store.Atomic(ctx, func(store Store) error {
-		participant = NewParticipant(name, status)
+		participant = NewParticipant(params)
 		if err := participant.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -140,17 +150,15 @@ func (c *participantCommander) Create(
 
 func (c *participantCommander) Update(
 	ctx context.Context,
-	id properties.UUID,
-	name *string,
-	status *ParticipantStatus,
+	params UpdateParticipantParams,
 ) (*Participant, error) {
-	participant, err := c.store.ParticipantRepo().Get(ctx, id)
+	participant, err := c.store.ParticipantRepo().Get(ctx, params.ID)
 	if err != nil {
 		return nil, err
 	}
 	beforeParticipant := *participant
 
-	participant.Update(name, status)
+	participant.Update(params)
 	if err := participant.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}

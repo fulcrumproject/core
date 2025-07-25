@@ -215,7 +215,7 @@ func TestJobHandleCompleteJob(t *testing.T) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
-				commander.completeFunc = func(ctx context.Context, jobID properties.UUID, resources *properties.JSON, externalID *string) error {
+				commander.completeFunc = func(ctx context.Context, params domain.CompleteJobParams) error {
 					return nil
 				}
 			},
@@ -236,7 +236,7 @@ func TestJobHandleCompleteJob(t *testing.T) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
-				commander.completeFunc = func(ctx context.Context, jobID properties.UUID, resources *properties.JSON, externalID *string) error {
+				commander.completeFunc = func(ctx context.Context, params domain.CompleteJobParams) error {
 					return domain.NewInvalidInputErrorf("job already completed")
 				}
 			},
@@ -303,7 +303,7 @@ func TestJobHandleFailJob(t *testing.T) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
-				commander.failFunc = func(ctx context.Context, jobID properties.UUID, errorMessage string) error {
+				commander.failFunc = func(ctx context.Context, params domain.FailJobParams) error {
 					return nil
 				}
 			},
@@ -323,7 +323,7 @@ func TestJobHandleFailJob(t *testing.T) {
 					return &auth.AllwaysMatchObjectScope{}, nil
 				}
 
-				commander.failFunc = func(ctx context.Context, jobID properties.UUID, errorMessage string) error {
+				commander.failFunc = func(ctx context.Context, params domain.FailJobParams) error {
 					return domain.NewInvalidInputErrorf("job already failed")
 				}
 			},

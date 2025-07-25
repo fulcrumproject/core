@@ -78,7 +78,14 @@ func (h *MetricEntryHandler) Create(w http.ResponseWriter, r *http.Request) {
 			render.Render(w, r, ErrDomain(err))
 			return
 		}
-		metricEntry, err = h.commander.Create(r.Context(), p.TypeName, service.AgentID, *p.ServiceID, p.ResourceID, p.Value)
+		params := domain.CreateMetricEntryParams{
+			TypeName:   p.TypeName,
+			AgentID:    service.AgentID,
+			ServiceID:  *p.ServiceID,
+			ResourceID: p.ResourceID,
+			Value:      p.Value,
+		}
+		metricEntry, err = h.commander.Create(r.Context(), params)
 		if err != nil {
 			render.Render(w, r, ErrDomain(err))
 			return
@@ -89,7 +96,14 @@ func (h *MetricEntryHandler) Create(w http.ResponseWriter, r *http.Request) {
 			render.Render(w, r, ErrDomain(err))
 			return
 		}
-		metricEntry, err = h.commander.CreateWithExternalID(r.Context(), p.TypeName, service.AgentID, *p.ExternalID, p.ResourceID, p.Value)
+		params := domain.CreateMetricEntryWithExternalIDParams{
+			TypeName:   p.TypeName,
+			AgentID:    service.AgentID,
+			ExternalID: *p.ExternalID,
+			ResourceID: p.ResourceID,
+			Value:      p.Value,
+		}
+		metricEntry, err = h.commander.CreateWithExternalID(r.Context(), params)
 		if err != nil {
 			render.Render(w, r, ErrDomain(err))
 			return

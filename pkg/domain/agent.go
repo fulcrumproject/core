@@ -67,14 +67,14 @@ type Agent struct {
 }
 
 // NewAgent creates a new agent with proper validation
-func NewAgent(name string, providerID properties.UUID, agentTypeID properties.UUID, tags []string) *Agent {
+func NewAgent(params CreateAgentParams) *Agent {
 	return &Agent{
-		Name:             name,
+		Name:             params.Name,
 		Status:           AgentDisconnected,
 		LastStatusUpdate: time.Now(),
-		ProviderID:       providerID,
-		AgentTypeID:      agentTypeID,
-		Tags:             pq.StringArray(tags),
+		ProviderID:       params.ProviderID,
+		AgentTypeID:      params.AgentTypeID,
+		Tags:             pq.StringArray(params.Tags),
 	}
 }
 
@@ -154,16 +154,35 @@ func (a *Agent) Update(name *string, tags *[]string) bool {
 // AgentCommander defines the interface for agent command operations
 type AgentCommander interface {
 	// Create creates a new agent
-	Create(ctx context.Context, name string, providerID properties.UUID, agentTypeID properties.UUID, tags []string) (*Agent, error)
+	Create(ctx context.Context, params CreateAgentParams) (*Agent, error)
 
 	// Update updates an agent
-	Update(ctx context.Context, id properties.UUID, name *string, status *AgentStatus, tags *[]string) (*Agent, error)
+	Update(ctx context.Context, params UpdateAgentParams) (*Agent, error)
 
 	// Delete removes an agent by ID after checking for dependencies
 	Delete(ctx context.Context, id properties.UUID) error
 
 	// UpdateStatus updates the agent status and the related timestamp
-	UpdateStatus(ctx context.Context, id properties.UUID, status AgentStatus) (*Agent, error)
+	UpdateStatus(ctx context.Context, params UpdateAgentStatusParams) (*Agent, error)
+}
+
+type CreateAgentParams struct {
+	Name        string          `json:"name"`
+	ProviderID  properties.UUID `json:"providerId"`
+	AgentTypeID properties.UUID `json:"agentTypeId"`
+	Tags        []string        `json:"tags"`
+}
+
+type UpdateAgentParams struct {
+	ID     properties.UUID `json:"id"`
+	Name   *string         `json:"name,omitempty"`
+	Status *AgentStatus    `json:"status,omitempty"`
+	Tags   *[]string       `json:"tags,omitempty"`
+}
+
+type UpdateAgentStatusParams struct {
+	ID     properties.UUID `json:"id"`
+	Status AgentStatus     `json:"status"`
 }
 
 // agentCommander is the concrete implementation of AgentCommander
@@ -182,32 +201,29 @@ func NewAgentCommander(
 
 func (s *agentCommander) Create(
 	ctx context.Context,
-	name string,
-	providerID properties.UUID,
-	agentTypeID properties.UUID,
-	tags []string,
+	params CreateAgentParams,
 ) (*Agent, error) {
 	// Validate references
 	// Assuming store.ParticipantRepo().Exists will be available
-	providerExists, err := s.store.ParticipantRepo().Exists(ctx, providerID)
+	providerExists, err := s.store.ParticipantRepo().Exists(ctx, params.ProviderID)
 	if err != nil {
 		return nil, err
 	}
 	if !providerExists {
-		return nil, NewInvalidInputErrorf("provider with ID %s does not exist", providerID)
+		return nil, NewInvalidInputErrorf("provider with ID %s does not exist", params.ProviderID)
 	}
-	agentTypeExists, err := s.store.AgentTypeRepo().Exists(ctx, agentTypeID)
+	agentTypeExists, err := s.store.AgentTypeRepo().Exists(ctx, params.AgentTypeID)
 	if err != nil {
 		return nil, err
 	}
 	if !agentTypeExists {
-		return nil, NewInvalidInputErrorf("agent type with ID %s does not exist", agentTypeID)
+		return nil, NewInvalidInputErrorf("agent type with ID %s does not exist", params.AgentTypeID)
 	}
 
 	// Create and save
 	var agent *Agent
 	err = s.store.Atomic(ctx, func(store Store) error {
-		agent = NewAgent(name, providerID, agentTypeID, tags)
+		agent = NewAgent(params)
 		if err := agent.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -230,23 +246,20 @@ func (s *agentCommander) Create(
 }
 
 func (s *agentCommander) Update(ctx context.Context,
-	id properties.UUID,
-	name *string,
-	status *AgentStatus,
-	tags *[]string,
+	params UpdateAgentParams,
 ) (*Agent, error) {
 	// Find it
-	agent, err := s.store.AgentRepo().Get(ctx, id)
+	agent, err := s.store.AgentRepo().Get(ctx, params.ID)
 	if err != nil {
 		return nil, err
 	}
 	beforeAgent := *agent
 
 	// Update and validate
-	if status != nil {
-		agent.UpdateStatus(*status)
+	if params.Status != nil {
+		agent.UpdateStatus(*params.Status)
 	}
-	agent.Update(name, tags)
+	agent.Update(params.Name, params.Tags)
 	if err := agent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
@@ -307,16 +320,16 @@ func (s *agentCommander) Delete(ctx context.Context, id properties.UUID) error {
 	})
 }
 
-func (s *agentCommander) UpdateStatus(ctx context.Context, id properties.UUID, status AgentStatus) (*Agent, error) {
+func (s *agentCommander) UpdateStatus(ctx context.Context, params UpdateAgentStatusParams) (*Agent, error) {
 	// Find it
-	agent, err := s.store.AgentRepo().Get(ctx, id)
+	agent, err := s.store.AgentRepo().Get(ctx, params.ID)
 	if err != nil {
 		return nil, err
 	}
 	beforeAgent := *agent
 
 	// Update and validate
-	agent.UpdateStatus(status)
+	agent.UpdateStatus(params.Status)
 	if err := agent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}

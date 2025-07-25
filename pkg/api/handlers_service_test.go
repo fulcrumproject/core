@@ -116,9 +116,9 @@ func TestServiceHandleCreate(t *testing.T) {
 			},
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander for successful creation
-				commander.createFunc = func(ctx context.Context, agentID properties.UUID, serviceTypeID properties.UUID, groupID properties.UUID, name string, props properties.JSON) (*domain.Service, error) {
-					assert.Equal(t, "Test Service", name)
-					assert.Equal(t, properties.JSON{"prop": "value"}, props)
+				commander.createFunc = func(ctx context.Context, params domain.CreateServiceParams) (*domain.Service, error) {
+					assert.Equal(t, "Test Service", params.Name)
+					assert.Equal(t, properties.JSON{"prop": "value"}, params.Properties)
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -131,14 +131,14 @@ func TestServiceHandleCreate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:              name,
-						AgentID:           agentID,
-						ServiceTypeID:     serviceTypeID,
-						GroupID:           groupID,
+						Name:              params.Name,
+						AgentID:           params.AgentID,
+						ServiceTypeID:     params.ServiceTypeID,
+						GroupID:           params.GroupID,
 						ConsumerID:        consumerID,
 						ProviderID:        providerID,
 						CurrentStatus:     domain.ServiceCreated,
-						CurrentProperties: &props,
+						CurrentProperties: &params.Properties,
 					}, nil
 				}
 			},
@@ -155,7 +155,7 @@ func TestServiceHandleCreate(t *testing.T) {
 			},
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander to return an error
-				commander.createFunc = func(ctx context.Context, agentID properties.UUID, serviceTypeID properties.UUID, groupID properties.UUID, name string, properties properties.JSON) (*domain.Service, error) {
+				commander.createFunc = func(ctx context.Context, params domain.CreateServiceParams) (*domain.Service, error) {
 					return nil, domain.NewInvalidInputErrorf("invalid input")
 				}
 			},
@@ -228,23 +228,23 @@ func TestServiceHandleUpdate(t *testing.T) {
 			},
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander for successful update
-				commander.updateFunc = func(ctx context.Context, id properties.UUID, name *string, props *properties.JSON) (*domain.Service, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					assert.Equal(t, "Updated Service", *name)
-					assert.Equal(t, properties.JSON{"updated": "value"}, *props)
+				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
+					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), params.ID)
+					assert.Equal(t, "Updated Service", *params.Name)
+					assert.Equal(t, properties.JSON{"updated": "value"}, *params.Properties)
 
 					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
 
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
-							ID:        id,
+							ID:        params.ID,
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
 						Name:              "Updated Service",
 						CurrentStatus:     domain.ServiceStarted,
-						CurrentProperties: props,
+						CurrentProperties: params.Properties,
 					}, nil
 				}
 			},
@@ -259,7 +259,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 			},
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander to return a validation error
-				commander.updateFunc = func(ctx context.Context, id properties.UUID, name *string, properties *properties.JSON) (*domain.Service, error) {
+				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
 					return nil, domain.NewInvalidInputErrorf("validation error")
 				}
 			},
@@ -274,7 +274,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 			},
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander to return not found
-				commander.updateFunc = func(ctx context.Context, id properties.UUID, name *string, properties *properties.JSON) (*domain.Service, error) {
+				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
 					return nil, domain.NewNotFoundErrorf("service not found")
 				}
 			},
@@ -351,15 +351,15 @@ func TestServiceHandleTransition(t *testing.T) {
 			transitionTo: domain.ServiceStarted,
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander for successful transition
-				commander.transitionFunc = func(ctx context.Context, id properties.UUID, status domain.ServiceStatus) (*domain.Service, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					assert.Equal(t, domain.ServiceStarted, status)
+				commander.transitionFunc = func(ctx context.Context, params domain.TransitionServiceParams) (*domain.Service, error) {
+					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), params.ID)
+					assert.Equal(t, domain.ServiceStarted, params.Target)
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
-							ID: id,
+							ID: params.ID,
 						},
 						CurrentStatus: domain.ServiceStarting,
-						TargetStatus:  &status,
+						TargetStatus:  &params.Target,
 					}, nil
 				}
 			},
@@ -371,15 +371,15 @@ func TestServiceHandleTransition(t *testing.T) {
 			transitionTo: domain.ServiceStopped,
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander for successful transition
-				commander.transitionFunc = func(ctx context.Context, id properties.UUID, status domain.ServiceStatus) (*domain.Service, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					assert.Equal(t, domain.ServiceStopped, status)
+				commander.transitionFunc = func(ctx context.Context, params domain.TransitionServiceParams) (*domain.Service, error) {
+					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), params.ID)
+					assert.Equal(t, domain.ServiceStopped, params.Target)
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
-							ID: id,
+							ID: params.ID,
 						},
 						CurrentStatus: domain.ServiceStopping,
-						TargetStatus:  &status,
+						TargetStatus:  &params.Target,
 					}, nil
 				}
 			},
@@ -391,15 +391,14 @@ func TestServiceHandleTransition(t *testing.T) {
 			transitionTo: domain.ServiceDeleted,
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander for successful transition
-				commander.transitionFunc = func(ctx context.Context, id properties.UUID, status domain.ServiceStatus) (*domain.Service, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					assert.Equal(t, domain.ServiceDeleted, status)
+				commander.transitionFunc = func(ctx context.Context, params domain.TransitionServiceParams) (*domain.Service, error) {
+					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), params.ID)
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
-							ID: id,
+							ID: params.ID,
 						},
 						CurrentStatus: domain.ServiceDeleting,
-						TargetStatus:  &status,
+						TargetStatus:  &params.Target,
 					}, nil
 				}
 			},
@@ -411,7 +410,7 @@ func TestServiceHandleTransition(t *testing.T) {
 			transitionTo: domain.ServiceStarted,
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander to return an error for invalid transition
-				commander.transitionFunc = func(ctx context.Context, id properties.UUID, status domain.ServiceStatus) (*domain.Service, error) {
+				commander.transitionFunc = func(ctx context.Context, params domain.TransitionServiceParams) (*domain.Service, error) {
 					return nil, domain.NewInvalidInputErrorf("invalid status transition")
 				}
 			},
@@ -423,7 +422,7 @@ func TestServiceHandleTransition(t *testing.T) {
 			transitionTo: domain.ServiceStarted,
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander to return not found
-				commander.transitionFunc = func(ctx context.Context, id properties.UUID, status domain.ServiceStatus) (*domain.Service, error) {
+				commander.transitionFunc = func(ctx context.Context, params domain.TransitionServiceParams) (*domain.Service, error) {
 					return nil, domain.NewNotFoundErrorf("service not found")
 				}
 			},

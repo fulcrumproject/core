@@ -86,11 +86,11 @@ func (es *EventSubscription) Update(
 }
 
 // AcquireLease sets the lease fields for the subscription
-func (es *EventSubscription) AcquireLease(instanceID string, duration time.Duration) {
+func (es *EventSubscription) AcquireLease(params LeaseParams) {
 	now := time.Now()
-	es.LeaseOwnerInstanceID = &instanceID
+	es.LeaseOwnerInstanceID = &params.InstanceID
 	es.LeaseAcquiredAt = &now
-	expiresAt := now.Add(duration)
+	expiresAt := now.Add(params.Duration)
 	es.LeaseExpiresAt = &expiresAt
 }
 
@@ -117,25 +117,52 @@ func (es *EventSubscription) HasActiveLease() bool {
 // EventSubscriptionCommander defines the interface for event subscription command operations
 type EventSubscriptionCommander interface {
 	// UpdateProgress updates the last event sequence processed
-	UpdateProgress(ctx context.Context, subscriberID string, lastEventSequenceProcessed int64) (*EventSubscription, error)
+	UpdateProgress(ctx context.Context, params UpdateProgressParams) (*EventSubscription, error)
 
 	// AcquireLease attempts to acquire a lease for processing events
-	AcquireLease(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*EventSubscription, error)
+	AcquireLease(ctx context.Context, params LeaseParams) (*EventSubscription, error)
 
 	// RenewLease renews an existing lease
-	RenewLease(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*EventSubscription, error)
+	RenewLease(ctx context.Context, params LeaseParams) (*EventSubscription, error)
 
 	// ReleaseLease releases the lease for the subscription
-	ReleaseLease(ctx context.Context, subscriberID string, instanceID string) (*EventSubscription, error)
+	ReleaseLease(ctx context.Context, params ReleaseLeaseParams) (*EventSubscription, error)
 
 	// AcknowledgeEvents acknowledges processed events by updating progress, but only if the instance holds a valid lease
-	AcknowledgeEvents(ctx context.Context, subscriberID string, instanceID string, lastEventSequenceProcessed int64) (*EventSubscription, error)
+	AcknowledgeEvents(ctx context.Context, params AcknowledgeEventsParams) (*EventSubscription, error)
 
 	// SetActive sets the active status of the subscription
-	SetActive(ctx context.Context, subscriberID string, isActive bool) (*EventSubscription, error)
+	SetActive(ctx context.Context, params SetActiveParams) (*EventSubscription, error)
 
 	// Delete removes an event subscription
 	Delete(ctx context.Context, subscriberID string) error
+}
+
+type UpdateProgressParams struct {
+	SubscriberID               string
+	LastEventSequenceProcessed int64
+}
+
+type LeaseParams struct {
+	SubscriberID string
+	InstanceID   string
+	Duration     time.Duration
+}
+
+type ReleaseLeaseParams struct {
+	SubscriberID string
+	InstanceID   string
+}
+
+type AcknowledgeEventsParams struct {
+	SubscriberID               string
+	InstanceID                 string
+	LastEventSequenceProcessed int64
+}
+
+type SetActiveParams struct {
+	SubscriberID string
+	IsActive     bool
 }
 
 // eventSubscriptionCommander is the concrete implementation of EventSubscriptionCommander
@@ -152,15 +179,14 @@ func NewEventSubscriptionCommander(store Store) EventSubscriptionCommander {
 
 func (c *eventSubscriptionCommander) UpdateProgress(
 	ctx context.Context,
-	subscriberID string,
-	lastEventSequenceProcessed int64,
+	params UpdateProgressParams,
 ) (*EventSubscription, error) {
-	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, subscriberID)
+	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, params.SubscriberID)
 	if err != nil {
 		return nil, err
 	}
 
-	subscription.Update(&lastEventSequenceProcessed, nil, nil, nil, nil)
+	subscription.Update(&params.LastEventSequenceProcessed, nil, nil, nil, nil)
 	if err := subscription.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
@@ -173,19 +199,17 @@ func (c *eventSubscriptionCommander) UpdateProgress(
 
 func (c *eventSubscriptionCommander) AcquireLease(
 	ctx context.Context,
-	subscriberID string,
-	instanceID string,
-	duration time.Duration,
+	params LeaseParams,
 ) (*EventSubscription, error) {
 	// First try to find existing subscription
-	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, subscriberID)
+	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, params.SubscriberID)
 	if err != nil {
 		var notFoundErr NotFoundError
 		if !errors.As(err, &notFoundErr) {
 			return nil, err
 		}
 		// Create new subscription if not found
-		subscription = NewEventSubscription(subscriberID)
+		subscription = NewEventSubscription(params.SubscriberID)
 		if err := subscription.Validate(); err != nil {
 			return nil, InvalidInputError{Err: err}
 		}
@@ -195,11 +219,11 @@ func (c *eventSubscriptionCommander) AcquireLease(
 	}
 
 	// Check if lease can be acquired
-	if subscription.HasActiveLease() && subscription.LeaseOwnerInstanceID != nil && *subscription.LeaseOwnerInstanceID != instanceID {
+	if subscription.HasActiveLease() && subscription.LeaseOwnerInstanceID != nil && *subscription.LeaseOwnerInstanceID != params.InstanceID {
 		return nil, NewInvalidInputErrorf("lease is already held by instance %s", *subscription.LeaseOwnerInstanceID)
 	}
 
-	subscription.AcquireLease(instanceID, duration)
+	subscription.AcquireLease(params)
 	if err := subscription.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
@@ -212,21 +236,19 @@ func (c *eventSubscriptionCommander) AcquireLease(
 
 func (c *eventSubscriptionCommander) RenewLease(
 	ctx context.Context,
-	subscriberID string,
-	instanceID string,
-	duration time.Duration,
+	params LeaseParams,
 ) (*EventSubscription, error) {
-	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, subscriberID)
+	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, params.SubscriberID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Check if the instance owns the lease
-	if subscription.LeaseOwnerInstanceID == nil || *subscription.LeaseOwnerInstanceID != instanceID {
-		return nil, NewInvalidInputErrorf("lease is not owned by instance %s", instanceID)
+	if subscription.LeaseOwnerInstanceID == nil || *subscription.LeaseOwnerInstanceID != params.InstanceID {
+		return nil, NewInvalidInputErrorf("lease is not owned by instance %s", params.InstanceID)
 	}
 
-	subscription.AcquireLease(instanceID, duration)
+	subscription.AcquireLease(params)
 	if err := subscription.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
@@ -239,17 +261,16 @@ func (c *eventSubscriptionCommander) RenewLease(
 
 func (c *eventSubscriptionCommander) ReleaseLease(
 	ctx context.Context,
-	subscriberID string,
-	instanceID string,
+	params ReleaseLeaseParams,
 ) (*EventSubscription, error) {
-	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, subscriberID)
+	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, params.SubscriberID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Check if the instance owns the lease
-	if subscription.LeaseOwnerInstanceID == nil || *subscription.LeaseOwnerInstanceID != instanceID {
-		return nil, NewInvalidInputErrorf("lease is not owned by instance %s", instanceID)
+	if subscription.LeaseOwnerInstanceID == nil || *subscription.LeaseOwnerInstanceID != params.InstanceID {
+		return nil, NewInvalidInputErrorf("lease is not owned by instance %s", params.InstanceID)
 	}
 
 	subscription.ReleaseLease()
@@ -265,30 +286,28 @@ func (c *eventSubscriptionCommander) ReleaseLease(
 
 func (c *eventSubscriptionCommander) AcknowledgeEvents(
 	ctx context.Context,
-	subscriberID string,
-	instanceID string,
-	lastEventSequenceProcessed int64,
+	params AcknowledgeEventsParams,
 ) (*EventSubscription, error) {
-	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, subscriberID)
+	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, params.SubscriberID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Check if the instance owns a valid lease
 	if !subscription.HasActiveLease() {
-		return nil, NewInvalidInputErrorf("no active lease found for subscriber %s", subscriberID)
+		return nil, NewInvalidInputErrorf("no active lease found for subscriber %s", params.SubscriberID)
 	}
-	if subscription.LeaseOwnerInstanceID == nil || *subscription.LeaseOwnerInstanceID != instanceID {
-		return nil, NewInvalidInputErrorf("lease is not owned by instance %s", instanceID)
+	if subscription.LeaseOwnerInstanceID == nil || *subscription.LeaseOwnerInstanceID != params.InstanceID {
+		return nil, NewInvalidInputErrorf("lease is not owned by instance %s", params.InstanceID)
 	}
 
 	// Only update if the new sequence is greater than current (prevent regression)
-	if lastEventSequenceProcessed <= subscription.LastEventSequenceProcessed {
+	if params.LastEventSequenceProcessed <= subscription.LastEventSequenceProcessed {
 		return nil, NewInvalidInputErrorf("cannot acknowledge sequence %d: must be greater than current sequence %d",
-			lastEventSequenceProcessed, subscription.LastEventSequenceProcessed)
+			params.LastEventSequenceProcessed, subscription.LastEventSequenceProcessed)
 	}
 
-	subscription.Update(&lastEventSequenceProcessed, nil, nil, nil, nil)
+	subscription.Update(&params.LastEventSequenceProcessed, nil, nil, nil, nil)
 	if err := subscription.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
@@ -301,15 +320,14 @@ func (c *eventSubscriptionCommander) AcknowledgeEvents(
 
 func (c *eventSubscriptionCommander) SetActive(
 	ctx context.Context,
-	subscriberID string,
-	isActive bool,
+	params SetActiveParams,
 ) (*EventSubscription, error) {
-	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, subscriberID)
+	subscription, err := c.store.EventSubscriptionRepo().FindBySubscriberID(ctx, params.SubscriberID)
 	if err != nil {
 		return nil, err
 	}
 
-	subscription.Update(nil, nil, nil, nil, &isActive)
+	subscription.Update(nil, nil, nil, nil, &params.IsActive)
 	if err := subscription.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}

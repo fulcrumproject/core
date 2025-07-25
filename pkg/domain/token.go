@@ -40,45 +40,42 @@ type Token struct {
 func NewToken(
 	ctx context.Context,
 	store Store,
-	name string,
-	role auth.Role,
-	expireAt *time.Time,
-	scopeID *properties.UUID,
+	params CreateTokenParams,
 ) (*Token, error) {
 	// If expireAt is nil, set it to 24 hours from now
-	if expireAt == nil {
+	if params.ExpireAt == nil {
 		defaultExpireAt := time.Now().Add(24 * time.Hour)
-		expireAt = &defaultExpireAt
+		params.ExpireAt = &defaultExpireAt
 	}
 
 	// Create token with basic fields
 	token := &Token{
-		Name:     name,
-		Role:     role,
-		ExpireAt: *expireAt,
+		Name:     params.Name,
+		Role:     params.Role,
+		ExpireAt: *params.ExpireAt,
 	}
 
 	// Set scope IDs based on role
-	if scopeID != nil {
-		switch role {
+	if params.ScopeID != nil {
+		switch params.Role {
 		case auth.RoleParticipant: // New Role (assuming it's defined, will be formally added in auth.go update)
 			// Validate participant exists and set ID
 			// Assuming store.ParticipantRepo().Exists(ctx, *scopeID) will be available
-			exists, err := store.ParticipantRepo().Exists(ctx, *scopeID)
+			exists, err := store.ParticipantRepo().Exists(ctx, *params.ScopeID)
 			if err != nil {
 				return nil, err
 			}
 			if !exists {
-				return nil, NewInvalidInputErrorf("invalid participant ID: %v", scopeID)
+				return nil, NewInvalidInputErrorf("invalid participant ID: %v", params.ScopeID)
 			}
-			token.ParticipantID = scopeID
+			token.ParticipantID = params.ScopeID
 		case auth.RoleAgent:
 			// Validate agent exists, set agent ID, and copy the participant ID from the agent
-			agent, err := store.AgentRepo().Get(ctx, *scopeID)
+			agent, err := store.AgentRepo().Get(ctx, *params.ScopeID)
 			if err != nil {
 				return nil, NewInvalidInputErrorf("invalid agent ID: %v", err)
 			}
-			token.AgentID = scopeID
+			token.AgentID = params.ScopeID
 			token.ParticipantID = &agent.ProviderID
 		}
 	}
@@ -179,12 +176,12 @@ func HashTokenValue(value string) string {
 }
 
 // Update updates the token properties
-func (t *Token) Update(name *string, expireAt *time.Time) error {
-	if name != nil {
-		t.Name = *name
+func (t *Token) Update(params UpdateTokenParams) error {
+	if params.Name != nil {
+		t.Name = *params.Name
 	}
-	if expireAt != nil {
-		t.ExpireAt = *expireAt
+	if params.ExpireAt != nil {
+		t.ExpireAt = *params.ExpireAt
 	}
 	return t.Validate()
 }
@@ -192,16 +189,29 @@ func (t *Token) Update(name *string, expireAt *time.Time) error {
 // TokenCommander defines the interface for token command operations
 type TokenCommander interface {
 	// Create creates a new token
-	Create(ctx context.Context, name string, role auth.Role, expireAt *time.Time, scopeID *properties.UUID) (*Token, error)
+	Create(ctx context.Context, params CreateTokenParams) (*Token, error)
 
 	// Update updates a token
-	Update(ctx context.Context, id properties.UUID, name *string, expireAt *time.Time) (*Token, error)
+	Update(ctx context.Context, params UpdateTokenParams) (*Token, error)
 
 	// Delete removes a token by ID
 	Delete(ctx context.Context, id properties.UUID) error
 
 	// Regenerate regenerates the token value
 	Regenerate(ctx context.Context, id properties.UUID) (*Token, error)
+}
+
+type CreateTokenParams struct {
+	Name     string           `json:"name"`
+	Role     auth.Role        `json:"role"`
+	ExpireAt *time.Time       `json:"expireAt"`
+	ScopeID  *properties.UUID `json:"scopeId"`
+}
+
+type UpdateTokenParams struct {
+	ID       properties.UUID `json:"id"`
+	Name     *string         `json:"name"`
+	ExpireAt *time.Time      `json:"expireAt"`
 }
 
 // tokenCommander is the concrete implementation of TokenCommander
@@ -220,22 +230,19 @@ func NewTokenCommander(
 
 func (s *tokenCommander) Create(
 	ctx context.Context,
-	name string,
-	role auth.Role,
-	expireAt *time.Time,
-	scopeID *properties.UUID,
+	params CreateTokenParams,
 ) (*Token, error) {
 	// Validate permissions
 	id := auth.MustGetIdentity(ctx)
-	if !id.HasRole(auth.RoleAdmin) && role != id.Role {
-		return nil, NewInvalidInputErrorf("role %s not allowed", role)
+	if !id.HasRole(auth.RoleAdmin) && params.Role != id.Role {
+		return nil, NewInvalidInputErrorf("role %s not allowed", params.Role)
 	}
 
 	// Create, save and event
 	var token *Token
 	err := s.store.Atomic(ctx, func(store Store) error {
 		var err error
-		token, err = NewToken(ctx, store, name, role, expireAt, scopeID)
+		token, err = NewToken(ctx, store, params)
 		if err != nil {
 			return err
 		}
@@ -259,12 +266,10 @@ func (s *tokenCommander) Create(
 }
 
 func (s *tokenCommander) Update(ctx context.Context,
-	id properties.UUID,
-	name *string,
-	expireAt *time.Time,
+	params UpdateTokenParams,
 ) (*Token, error) {
 	// Validate token exists
-	token, err := s.store.TokenRepo().Get(ctx, id)
+	token, err := s.store.TokenRepo().Get(ctx, params.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +279,7 @@ func (s *tokenCommander) Update(ctx context.Context,
 
 	// Update, save and event
 	err = s.store.Atomic(ctx, func(store Store) error {
-		if err := token.Update(name, expireAt); err != nil {
+		if err := token.Update(params); err != nil {
 			return err
 		}
 		if err := store.TokenRepo().Save(ctx, token); err != nil {
