@@ -9,9 +9,7 @@ env:
 
 on:
   push:
-    branches: [dev, main, "release/*"]
-  pull_request:
-    branches: [dev]
+    branches: [main]
 
 jobs:
   test:
@@ -47,12 +45,6 @@ jobs:
         run: |
           go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
           go tool cover -func=coverage.out
-
-      - name: Upload coverage report to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.out
-          fail_ci_if_error: false
 
       - name: Generate HTML coverage report
         run: go tool cover -html=coverage.out -o coverage.html
