@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/helpers"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -263,4 +265,143 @@ func TestAgent_RegisterMetadata(t *testing.T) {
 	agent.RegisterMetadata(&newerName)
 
 	assert.Equal(t, newerName, agent.Name)
+}
+
+func TestNewAgent(t *testing.T) {
+	validID := uuid.New()
+	agentTypeID := uuid.New()
+	tags := []string{"tag1", "tag2"}
+
+	tests := []struct {
+		name   string
+		params CreateAgentParams
+	}{
+		{
+			name: "Agent without configuration",
+			params: CreateAgentParams{
+				Name:        "test-agent",
+				ProviderID:  validID,
+				AgentTypeID: agentTypeID,
+				Tags:        tags,
+			},
+		},
+		{
+			name: "Agent with configuration",
+			params: CreateAgentParams{
+				Name:        "test-agent-with-config",
+				ProviderID:  validID,
+				AgentTypeID: agentTypeID,
+				Tags:        tags,
+				Configuration: &properties.JSON{
+					"timeout":     30,
+					"retries":     3,
+					"environment": "production",
+				},
+			},
+		},
+		{
+			name: "Agent with empty configuration",
+			params: CreateAgentParams{
+				Name:          "test-agent-empty-config",
+				ProviderID:    validID,
+				AgentTypeID:   agentTypeID,
+				Tags:          tags,
+				Configuration: &properties.JSON{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			agent := NewAgent(tt.params)
+
+			assert.Equal(t, tt.params.Name, agent.Name)
+			assert.Equal(t, AgentDisconnected, agent.Status)
+			assert.Equal(t, tt.params.ProviderID, agent.ProviderID)
+			assert.Equal(t, tt.params.AgentTypeID, agent.AgentTypeID)
+			assert.Equal(t, tt.params.Tags, []string(agent.Tags))
+			assert.Equal(t, tt.params.Configuration, agent.Configuration)
+			assert.False(t, agent.LastStatusUpdate.IsZero())
+		})
+	}
+}
+
+func TestAgent_Update(t *testing.T) {
+	agent := &Agent{
+		Name: "original-name",
+		Tags: []string{"tag1", "tag2"},
+		Configuration: &properties.JSON{
+			"timeout": 30,
+		},
+	}
+
+	tests := []struct {
+		name          string
+		updateName    *string
+		updateTags    *[]string
+		updateConfig  *properties.JSON
+		expectUpdated bool
+	}{
+		{
+			name:          "Update name only",
+			updateName:    helpers.StringPtr("new-name"),
+			expectUpdated: true,
+		},
+		{
+			name:          "Update tags only",
+			updateTags:    &[]string{"new-tag1", "new-tag2"},
+			expectUpdated: true,
+		},
+		{
+			name: "Update configuration only",
+			updateConfig: &properties.JSON{
+				"timeout":     60,
+				"retries":     5,
+				"environment": "staging",
+			},
+			expectUpdated: true,
+		},
+		{
+			name:       "Update all fields",
+			updateName: helpers.StringPtr("updated-name"),
+			updateTags: &[]string{"updated-tag"},
+			updateConfig: &properties.JSON{
+				"timeout": 120,
+			},
+			expectUpdated: true,
+		},
+		{
+			name:          "Update with nil configuration",
+			updateConfig:  &properties.JSON{},
+			expectUpdated: true,
+		},
+		{
+			name:          "No updates",
+			expectUpdated: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset agent to initial state
+			agent.Name = "original-name"
+			agent.Tags = []string{"tag1", "tag2"}
+			agent.Configuration = &properties.JSON{
+				"timeout": 30,
+			}
+
+			updated := agent.Update(tt.updateName, tt.updateTags, tt.updateConfig)
+			assert.Equal(t, tt.expectUpdated, updated)
+
+			if tt.updateName != nil {
+				assert.Equal(t, *tt.updateName, agent.Name)
+			}
+			if tt.updateTags != nil {
+				assert.Equal(t, *tt.updateTags, []string(agent.Tags))
+			}
+			if tt.updateConfig != nil {
+				assert.Equal(t, tt.updateConfig, agent.Configuration)
+			}
+		})
+	}
 }

@@ -25,10 +25,33 @@ Authorization: Bearer {{adminToken}}
     "name": "Test Agent",
     "providerId": "{{providerId}}",
     "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
-    "tags": ["test-agent-{{$timestamp}}", "high-performance", "ssd-storage"]
+    "tags": ["test-agent-{{$timestamp}}", "high-performance", "ssd-storage"],
+    "configuration": {
+        "timeout": 30,
+        "retries": 3,
+        "environment": "development",
+        "features": {
+            "monitoring": true,
+            "logging": false
+        }
+    }
 }
 
 @agentId = {{createAgent.response.body.$.id}}
+
+### Create another agent without configuration (optional field)
+# @name createAgentNoConfig
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Test Agent No Config",
+    "providerId": "{{providerId}}",
+    "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
+    "tags": ["minimal-agent", "test"]
+}
+
+@agentIdNoConfig = {{createAgentNoConfig.response.body.$.id}}
 
 ### Create a new agent token
 # @name createToken
@@ -83,7 +106,17 @@ Authorization: Bearer {{adminToken}}
 
 {
     "name": "Test Agent Updated",
-    "status": "Disconnected"
+    "status": "Disconnected",
+    "tags": ["updated-agent", "high-performance"],
+    "configuration": {
+        "timeout": 60,
+        "retries": 5,
+        "environment": "production",
+        "features": {
+            "monitoring": true,
+            "logging": true
+        }
+    }
 }
 
 ### Create a new token for the agent

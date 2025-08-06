@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -50,8 +51,83 @@ func TestAgentRepository(t *testing.T) {
 			assert.Equal(t, agent.Status, found.Status)
 			assert.Equal(t, agent.ProviderID, found.ProviderID)
 			assert.Equal(t, agent.AgentTypeID, found.AgentTypeID)
+			assert.Equal(t, agent.Configuration, found.Configuration)
 			assert.NotNil(t, found.Provider)
 			assert.NotNil(t, found.AgentType)
+		})
+
+		t.Run("success with configuration", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
+
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+
+			config := &properties.JSON{
+				"timeout":     30,
+				"retries":     3,
+				"environment": "test",
+				"features": map[string]interface{}{
+					"monitoring": true,
+					"logging":    false,
+				},
+			}
+
+			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), []string{"tag1"}, config)
+
+			// Execute
+			err := agentRepo.Create(ctx, agent)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotEmpty(t, agent.ID)
+
+			// Verify in database
+			found, err := agentRepo.Get(ctx, agent.ID)
+			require.NoError(t, err)
+			assert.Equal(t, agent.Name, found.Name)
+			assert.Equal(t, agent.Status, found.Status)
+			assert.Equal(t, agent.ProviderID, found.ProviderID)
+			assert.Equal(t, agent.AgentTypeID, found.AgentTypeID)
+			require.NotNil(t, found.Configuration)
+
+			// Verify specific configuration values (JSON numbers are stored as strings)
+			assert.Equal(t, "30", string((*found.Configuration)["timeout"].(json.Number)))
+			assert.Equal(t, "3", string((*found.Configuration)["retries"].(json.Number)))
+			assert.Equal(t, "test", (*found.Configuration)["environment"])
+
+			features, ok := (*found.Configuration)["features"].(map[string]interface{})
+			require.True(t, ok)
+			assert.Equal(t, true, features["monitoring"])
+			assert.Equal(t, false, features["logging"])
+		})
+
+		t.Run("success with nil configuration", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
+
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+
+			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), []string{"tag1"}, nil)
+
+			// Execute
+			err := agentRepo.Create(ctx, agent)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotEmpty(t, agent.ID)
+
+			// Verify in database
+			found, err := agentRepo.Get(ctx, agent.ID)
+			require.NoError(t, err)
+			assert.Nil(t, found.Configuration)
 		})
 	})
 
@@ -218,6 +294,87 @@ func TestAgentRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, "Updated Agent", updated.Name)
 			assert.Equal(t, domain.AgentConnected, updated.Status)
+		})
+
+		t.Run("success updating configuration", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
+
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+
+			initialConfig := &properties.JSON{
+				"timeout": 30,
+				"retries": 3,
+			}
+
+			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), []string{"tag1"}, initialConfig)
+			require.NoError(t, agentRepo.Create(ctx, agent))
+
+			// Read
+			agent, err := agentRepo.Get(ctx, agent.ID)
+			require.NoError(t, err)
+
+			// Update agent configuration
+			updatedConfig := &properties.JSON{
+				"timeout":     60,
+				"retries":     5,
+				"environment": "production",
+			}
+			agent.Configuration = updatedConfig
+
+			// Execute
+			err = agentRepo.Save(ctx, agent)
+
+			// Assert
+			require.NoError(t, err)
+
+			// Verify in database
+			updated, err := agentRepo.Get(ctx, agent.ID)
+			require.NoError(t, err)
+			require.NotNil(t, updated.Configuration)
+			assert.Equal(t, "60", string((*updated.Configuration)["timeout"].(json.Number)))
+			assert.Equal(t, "5", string((*updated.Configuration)["retries"].(json.Number)))
+			assert.Equal(t, "production", (*updated.Configuration)["environment"])
+		})
+
+		t.Run("success updating configuration to nil", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
+
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+
+			initialConfig := &properties.JSON{
+				"timeout": 30,
+			}
+
+			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), []string{"tag1"}, initialConfig)
+			require.NoError(t, agentRepo.Create(ctx, agent))
+
+			// Read
+			agent, err := agentRepo.Get(ctx, agent.ID)
+			require.NoError(t, err)
+
+			// Update agent configuration to nil
+			agent.Configuration = nil
+
+			// Execute
+			err = agentRepo.Save(ctx, agent)
+
+			// Assert
+			require.NoError(t, err)
+
+			// Verify in database
+			updated, err := agentRepo.Get(ctx, agent.ID)
+			require.NoError(t, err)
+			assert.Nil(t, updated.Configuration)
 		})
 	})
 

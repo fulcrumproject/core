@@ -41,6 +41,10 @@ func TestHandleGetMe(t *testing.T) {
 						LastStatusUpdate: createdAt,
 						ProviderID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 						AgentTypeID:      uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+						Configuration: &properties.JSON{
+							"timeout": 60,
+							"debug":   true,
+						},
 					}, nil
 				}
 			},
@@ -117,6 +121,10 @@ func TestAgentToResponse(t *testing.T) {
 		ProviderID:  uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 		AgentTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 		Tags:        []string{"tag1", "tag2"},
+		Configuration: &properties.JSON{
+			"timeout": 30,
+			"retries": 3,
+		},
 	}
 
 	// Convert to response
@@ -129,6 +137,42 @@ func TestAgentToResponse(t *testing.T) {
 	assert.Equal(t, agent.ProviderID, response.ProviderID)
 	assert.Equal(t, agent.AgentTypeID, response.AgentTypeID)
 	assert.Equal(t, []string{"tag1", "tag2"}, response.Tags)
+	assert.Equal(t, agent.Configuration, response.Configuration)
+	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)
+	assert.Equal(t, JSONUTCTime(updatedAt), response.UpdatedAt)
+}
+
+// TestAgentToResponse_NilConfiguration tests the agentToResponse function with nil configuration
+func TestAgentToResponse_NilConfiguration(t *testing.T) {
+	// Create test agent with nil configuration
+	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	agent := &domain.Agent{
+		BaseEntity: domain.BaseEntity{
+			ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+			CreatedAt: createdAt,
+			UpdatedAt: updatedAt,
+		},
+		Name:          "TestAgent",
+		Status:        domain.AgentConnected,
+		ProviderID:    uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+		AgentTypeID:   uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+		Tags:          []string{"tag1", "tag2"},
+		Configuration: nil,
+	}
+
+	// Convert to response
+	response := AgentToRes(agent)
+
+	// Verify response
+	assert.Equal(t, agent.ID, response.ID)
+	assert.Equal(t, agent.Name, response.Name)
+	assert.Equal(t, agent.Status, response.Status)
+	assert.Equal(t, agent.ProviderID, response.ProviderID)
+	assert.Equal(t, agent.AgentTypeID, response.AgentTypeID)
+	assert.Equal(t, []string{"tag1", "tag2"}, response.Tags)
+	assert.Nil(t, response.Configuration)
 	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(updatedAt), response.UpdatedAt)
 }

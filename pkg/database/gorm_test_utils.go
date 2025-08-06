@@ -53,6 +53,11 @@ func createTestAgentWithStatusUpdate(t *testing.T, participantID, agentTypeID pr
 
 func createTestAgentWithStatusUpdateAndTags(t *testing.T, participantID, agentTypeID properties.UUID, status domain.AgentStatus, lastUpdate time.Time, tags []string) *domain.Agent {
 	t.Helper()
+	return createTestAgentWithConfig(t, participantID, agentTypeID, status, lastUpdate, tags, nil)
+}
+
+func createTestAgentWithConfig(t *testing.T, participantID, agentTypeID properties.UUID, status domain.AgentStatus, lastUpdate time.Time, tags []string, configuration *properties.JSON) *domain.Agent {
+	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Agent{
 		Name:             fmt.Sprintf("Test Agent %s", randomSuffix),
@@ -61,6 +66,7 @@ func createTestAgentWithStatusUpdateAndTags(t *testing.T, participantID, agentTy
 		AgentTypeID:      agentTypeID,
 		LastStatusUpdate: lastUpdate,
 		Tags:             tags,
+		Configuration:    configuration,
 	}
 }
 

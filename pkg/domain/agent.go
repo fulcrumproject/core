@@ -59,6 +59,9 @@ type Agent struct {
 	// Tags representing capabilities or certifications of this agent
 	Tags pq.StringArray `json:"tags" gorm:"type:text[]"`
 
+	// Configuration stores instance-specific configuration parameters as JSON
+	Configuration *properties.JSON `json:"configuration,omitempty" gorm:"type:jsonb"`
+
 	// Relationships
 	AgentTypeID properties.UUID `json:"agentTypeId" gorm:"not null"`
 	AgentType   *AgentType      `json:"agentType,omitempty" gorm:"foreignKey:AgentTypeID"`
@@ -75,6 +78,7 @@ func NewAgent(params CreateAgentParams) *Agent {
 		ProviderID:       params.ProviderID,
 		AgentTypeID:      params.AgentTypeID,
 		Tags:             pq.StringArray(params.Tags),
+		Configuration:    params.Configuration,
 	}
 }
 
@@ -135,7 +139,7 @@ func (a *Agent) RegisterMetadata(name *string) {
 }
 
 // Update updates the agent's fields
-func (a *Agent) Update(name *string, tags *[]string) bool {
+func (a *Agent) Update(name *string, tags *[]string, configuration *properties.JSON) bool {
 	updated := false
 
 	if name != nil {
@@ -145,6 +149,11 @@ func (a *Agent) Update(name *string, tags *[]string) bool {
 
 	if tags != nil {
 		a.Tags = pq.StringArray(*tags)
+		updated = true
+	}
+
+	if configuration != nil {
+		a.Configuration = configuration
 		updated = true
 	}
 
@@ -167,17 +176,19 @@ type AgentCommander interface {
 }
 
 type CreateAgentParams struct {
-	Name        string          `json:"name"`
-	ProviderID  properties.UUID `json:"providerId"`
-	AgentTypeID properties.UUID `json:"agentTypeId"`
-	Tags        []string        `json:"tags"`
+	Name          string           `json:"name"`
+	ProviderID    properties.UUID  `json:"providerId"`
+	AgentTypeID   properties.UUID  `json:"agentTypeId"`
+	Tags          []string         `json:"tags"`
+	Configuration *properties.JSON `json:"configuration,omitempty"`
 }
 
 type UpdateAgentParams struct {
-	ID     properties.UUID `json:"id"`
-	Name   *string         `json:"name,omitempty"`
-	Status *AgentStatus    `json:"status,omitempty"`
-	Tags   *[]string       `json:"tags,omitempty"`
+	ID            properties.UUID  `json:"id"`
+	Name          *string          `json:"name,omitempty"`
+	Status        *AgentStatus     `json:"status,omitempty"`
+	Tags          *[]string        `json:"tags,omitempty"`
+	Configuration *properties.JSON `json:"configuration,omitempty"`
 }
 
 type UpdateAgentStatusParams struct {
@@ -259,7 +270,7 @@ func (s *agentCommander) Update(ctx context.Context,
 	if params.Status != nil {
 		agent.UpdateStatus(*params.Status)
 	}
-	agent.Update(params.Name, params.Tags)
+	agent.Update(params.Name, params.Tags, params.Configuration)
 	if err := agent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}

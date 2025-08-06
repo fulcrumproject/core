@@ -22,7 +22,16 @@ Authorization: Bearer {{adminToken}}
     "name": "VM Agent",
     "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
     "providerId": "{{providerId}}",
-    "tags": ["gpu-{{$timestamp}}", "high-memory", "ssd-storage"]
+    "tags": ["gpu-{{$timestamp}}", "high-memory", "ssd-storage"],
+    "configuration": {
+        "timeout": 45,
+        "retries": 2,
+        "environment": "test",
+        "proxmox": {
+            "node": "pve-01",
+            "storage": "local-lvm"
+        }
+    }
 }
 
 @agentId = {{createAgent.response.body.$.id}}

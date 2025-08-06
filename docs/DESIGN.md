@@ -70,6 +70,7 @@ Agents are software components installed on Cloud Service Participants that act 
 - Handle local resource allocation and optimization
 - Implement participant-specific operations and API interactions
 - Maintain secure communications with the Fulcrum Core through token-based authentication
+- Store and utilize instance-specific configuration parameters for customized behavior
 - Poll for jobs from the job queue and process them
 - Update job status upon completion or failure
 
@@ -157,6 +158,7 @@ classDiagram
             status : enum[New|Connected|Disconnected|Error|Disabled]
             lastStatusUpdate : datetime
             tags : string[]
+            configuration : json
             createdAt : datetime
             updatedAt : datetime
         }
@@ -305,8 +307,16 @@ classDiagram
    - Uses secure token-based authentication (via Token entity)
    - Tracks last status update timestamp
    - Contains tags for capabilities and specializations
+   - Stores instance-specific configuration parameters as JSON data
    - Processes jobs from the job queue to perform service operations
    - Selected for service provisioning based on service type and tag matching
+   
+   **Configuration Field:**
+   - Optional JSON field that stores agent-specific configuration parameters
+   - Allows agents to maintain instance-specific settings (timeouts, retries, environment variables, etc.)
+   - Can be set during agent creation and updated via the REST API
+   - Enables flexible agent behavior customization without code changes
+   - Examples: connection timeouts, retry policies, environment-specific settings, feature flags
 
 3. **Service**
    - Cloud resource managed by an agent

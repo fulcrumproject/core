@@ -191,25 +191,57 @@ components:
       type: string
       enum: [New, Connected, Disconnected, Error, Disabled]
 
-    AgentReq:
+    CreateAgentReq:
       type: object
       required:
         - name
-        - status
-        - participantId
+        - providerId
         - agentTypeId
+      properties:
+        name:
+          type: string
+          example: "aws-agent-01"
+        providerId:
+          $ref: "#/components/schemas/properties.UUID"
+          description: "The participant ID that owns this agent"
+        agentTypeId:
+          $ref: "#/components/schemas/properties.UUID"
+          description: "The agent type ID"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["gpu", "high-memory", "ssd"]
+          description: "Tags representing capabilities or certifications of this agent"
+        configuration:
+          $ref: "#/components/schemas/JSONObject"
+          description: "Agent-specific configuration parameters"
+          example:
+            timeout: 30
+            retries: 3
+            environment: "production"
+
+    UpdateAgentReq:
+      type: object
       properties:
         name:
           type: string
           example: "aws-agent-01"
         status:
           $ref: "#/components/schemas/AgentStatus"
-        properties:
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["gpu", "high-memory", "ssd"]
+          description: "Tags representing capabilities or certifications of this agent"
+        configuration:
           $ref: "#/components/schemas/JSONObject"
-        participantId:
-          $ref: "#/components/schemas/properties.UUID"
-        agentTypeId:
-          $ref: "#/components/schemas/properties.UUID"
+          description: "Agent-specific configuration parameters"
+          example:
+            timeout: 60
+            retries: 5
+            environment: "staging"
 
     AgentRes:
       type: object
@@ -230,6 +262,13 @@ components:
           items:
             type: string
           example: ["gpu", "high-memory", "ssd"]
+        configuration:
+          $ref: "#/components/schemas/JSONObject"
+          description: "Agent-specific configuration parameters"
+          example:
+            timeout: 30
+            retries: 3
+            environment: "production"
         participant:
           $ref: "#/components/schemas/ParticipantRes"
         agentType:
@@ -1252,7 +1291,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AgentReq"
+              $ref: "#/components/schemas/CreateAgentReq"
       responses:
         "201":
           description: Agent created successfully
@@ -1316,7 +1355,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AgentReq"
+              $ref: "#/components/schemas/UpdateAgentReq"
       responses:
         "200":
           description: Agent updated successfully
