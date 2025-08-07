@@ -183,6 +183,18 @@ func (j *Job) Retry() error {
 	return nil
 }
 
+// Unsupported marks a job as failed due to unsupported operation
+func (j *Job) Unsupported(errorMessage string) error {
+	if j.Status != JobProcessing {
+		return fmt.Errorf("cannot mark as unsupported a job not in processing status")
+	}
+	j.Status = JobFailed
+	j.ErrorMessage = errorMessage
+	now := time.Now()
+	j.CompletedAt = &now
+	return nil
+}
+
 // JobCommander defines the interface for job command operations
 type JobCommander interface {
 	// Claim claims a job for an agent
@@ -193,6 +205,9 @@ type JobCommander interface {
 
 	// Fail marks a job as failed
 	Fail(ctx context.Context, params FailJobParams) error
+
+	// Unsupported marks a job as failed due to unsupported operation
+	Unsupported(ctx context.Context, params UnsupportedJobParams) error
 }
 
 type CompleteJobParams struct {
@@ -202,6 +217,11 @@ type CompleteJobParams struct {
 }
 
 type FailJobParams struct {
+	JobID        properties.UUID `json:"jobId"`
+	ErrorMessage string          `json:"errorMessage"`
+}
+
+type UnsupportedJobParams struct {
 	JobID        properties.UUID `json:"jobId"`
 	ErrorMessage string          `json:"errorMessage"`
 }
@@ -317,6 +337,49 @@ func (s *jobCommander) Fail(ctx context.Context, params FailJobParams) error {
 			return err
 		}
 		return err
+	})
+}
+
+func (s *jobCommander) Unsupported(ctx context.Context, params UnsupportedJobParams) error {
+	job, err := s.store.JobRepo().Get(ctx, params.JobID)
+	if err != nil {
+		return err
+	}
+
+	svc, err := s.store.ServiceRepo().Get(ctx, job.ServiceID)
+	if err != nil {
+		return err
+	}
+
+	originalSvc := *svc
+
+	return s.store.Atomic(ctx, func(store Store) error {
+		if err := job.Unsupported(params.ErrorMessage); err != nil {
+			return InvalidInputError{Err: err}
+		}
+
+		if err := store.JobRepo().Save(ctx, job); err != nil {
+			return err
+		}
+
+		// Roll back service state
+		svc.HandleJobUnsupported(params.ErrorMessage, job.Action)
+		if err := svc.Validate(); err != nil {
+			return InvalidInputError{Err: err}
+		}
+		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+			return err
+		}
+
+		// Create audit event
+		eventEntry, err := NewEvent(EventTypeServiceTransitioned, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
+		if err != nil {
+			return err
+		}
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
+			return err
+		}
+		return nil
 	})
 }
 

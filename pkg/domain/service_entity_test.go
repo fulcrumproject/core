@@ -507,3 +507,56 @@ func TestServiceUpdateNextStatusAndAction(t *testing.T) {
 		})
 	}
 }
+
+func TestService_HandleJobUnsupported(t *testing.T) {
+	tests := []struct {
+		name                string
+		initialTargetStatus *ServiceStatus
+		initialTargetProps  *properties.JSON
+		errorMessage        string
+		action              ServiceAction
+	}{
+		{
+			name:                "Handle unsupported with target status and properties",
+			initialTargetStatus: func() *ServiceStatus { s := ServiceStarted; return &s }(),
+			initialTargetProps:  &properties.JSON{"key": "value"},
+			errorMessage:        "Operation not supported by this agent",
+			action:              ServiceActionStart,
+		},
+		{
+			name:                "Handle unsupported with only target status",
+			initialTargetStatus: func() *ServiceStatus { s := ServiceStopped; return &s }(),
+			initialTargetProps:  nil,
+			errorMessage:        "Hot update not supported",
+			action:              ServiceActionHotUpdate,
+		},
+		{
+			name:                "Handle unsupported with no target state",
+			initialTargetStatus: nil,
+			initialTargetProps:  nil,
+			errorMessage:        "Delete operation not supported",
+			action:              ServiceActionDelete,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := &Service{
+				TargetStatus:     tt.initialTargetStatus,
+				TargetProperties: tt.initialTargetProps,
+			}
+
+			service.HandleJobUnsupported(tt.errorMessage, tt.action)
+
+			// Verify rollback behavior
+			assert.Nil(t, service.TargetStatus, "TargetStatus should be cleared")
+			assert.Nil(t, service.TargetProperties, "TargetProperties should be cleared")
+
+			// Verify error information is set
+			assert.NotNil(t, service.ErrorMessage, "ErrorMessage should be set")
+			assert.Equal(t, tt.errorMessage, *service.ErrorMessage)
+			assert.NotNil(t, service.FailedAction, "FailedAction should be set")
+			assert.Equal(t, tt.action, *service.FailedAction)
+		})
+	}
+}

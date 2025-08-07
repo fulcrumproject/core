@@ -668,6 +668,19 @@ func (s *Service) HandleJobFailure(errorMessage string, action ServiceAction) {
 	s.FailedAction = &action
 }
 
+// HandleJobUnsupported cancels the pending operation and keeps the service in its current stable state when a job is unsupported
+func (s *Service) HandleJobUnsupported(errorMessage string, action ServiceAction) {
+	// Cancel the pending operation, keeping the service in its current stable state
+	s.TargetStatus = nil
+
+	// Discard target properties, keep current properties
+	s.TargetProperties = nil
+
+	// Set error information
+	s.ErrorMessage = &errorMessage
+	s.FailedAction = &action
+}
+
 // ServiceRepository defines the interface for the Service repository
 type ServiceRepository interface {
 	ServiceQuerier

@@ -284,6 +284,10 @@ classDiagram
     - Hot/cold updating services
     - Deleting services
     
+    Jobs can fail in two ways:
+    - Regular failure: Service keeps target state, may retry
+    - Unsupported operation: Service rolls back, no retry
+    
     Each job transitions service status appropriately"
     
 ```
@@ -352,6 +356,7 @@ classDiagram
    - Prioritizes operations for execution order
    - Tracks execution timing through claimedAt and completedAt
    - Records error details for failed operations
+   - Supports unsupported operation handling with service state rollback
 
 8. **Token**
    - Provides secure authentication mechanism for system access
@@ -535,8 +540,10 @@ stateDiagram-v2
     Pending --> Processing: Agent Claims Job
     Processing --> Completed: Operation Successful
     Processing --> Failed: Operation Error
+    Processing --> Failed: Unsupported Operation (with rollback)
     Completed --> [*]
     Failed --> Pending: Auto-retry (timeout/error)
+    Failed --> [*]: Unsupported (no retry)
 ```
 
 The job queue system manages the complete lifecycle of service operations from creation to completion. The following diagram illustrates the job management flow:
@@ -582,6 +589,14 @@ sequenceDiagram
         API->>API: Update job status to Failed and record error
         API->>API: Update service with error info
         API-->>Agent: Confirm job failed
+    
+    %% Unsupported Operation Path
+    else Unsupported Operation
+        Agent->>Agent: Detect unsupported operation
+        Agent->>API: Mark as unsupported (POST /jobs/{id}/unsupported)
+        API->>API: Update job status to Failed and record error
+        API->>API: Roll back service state (clear target status/properties)
+        API-->>Agent: Confirm job marked as unsupported
     end
 
 ```
@@ -618,11 +633,21 @@ The job management process follows these steps:
    - The service status is updated to reflect the error
    - Jobs may be automatically retried based on error type and configured policies
 
-6. **Job Maintenance**:
+6. **Job Unsupported Operation Handling**:
+   - If an agent encounters an operation it cannot support, it calls `/api/v1/jobs/{id}/unsupported` with error details
+   - The job status changes to "Failed" (same as regular failure)
+   - The service state is **rolled back** to its previous stable state:
+     - `TargetStatus` is cleared (service remains at `CurrentStatus`)
+     - `TargetProperties` are discarded (service keeps `CurrentProperties`)
+     - `ErrorMessage` and `FailedAction` are set for tracking
+   - Unlike regular failures, unsupported operations are not automatically retried
+   - This provides a graceful degradation mechanism when agents lack capabilities for specific operations
+
+7. **Job Maintenance**:
    - Background workers periodically:
      - Release stuck jobs (processing too long)
      - Clean up old completed jobs after retention period
-     - Handle retry logic for failed jobs
+     - Handle retry logic for failed jobs (excluding unsupported operations)
      - Monitor queue health and performance metrics
 
 ### Event Consumption API
