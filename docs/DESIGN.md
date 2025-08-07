@@ -169,13 +169,8 @@ classDiagram
             id : properties.UUID
             externalId : string
             name : string
-            currentStatus : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]
-            targetStatus : enum[Creating,Created,Starting,Started,Stopping,Stopped,HotUpdating,ColdUpdating,Deleting,Deleted]
-            errorMessage : string
-            failedAction : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
-            retryCount : int
-            currentProperties : json
-            targetProperties : json
+            status : enum[New,Started,Stopped,Deleted]
+            properties : json
             resources : json
             consumerParticipantID : properties.UUID
             createdAt : datetime
@@ -192,10 +187,13 @@ classDiagram
 
         class Job {
             id : properties.UUID
-            action : enum[ServiceCreate,ServiceStart,ServiceStop,ServiceHotUpdate,ServiceColdUpdate,ServiceDelete]
-            status : enum[Pending,Processing,Completed,Failed]
+            providerId : properties.UUID
+            consumerId : properties.UUID
             agentId : properties.UUID
             serviceId : properties.UUID
+            action : enum[Create,Start,Stop,Update,Delete]
+            params : json
+            status : enum[Pending,Processing,Completed,Failed,Unsupported]
             priority : int
             errorMessage : string
             claimedAt : datetime
@@ -260,10 +258,10 @@ classDiagram
         }
     }
 
-    note for Service "Service has a sophisticated status management system with:
-    - Current and target statuss
-    - Error handling
-    - Support for hot and cold updates"
+    note for Service "Service has a simplified status management system:
+    - Single status field (New, Started, Stopped, Deleted)
+    - Properties field for configuration
+    - Jobs handle status transitions"
 
     note for ServiceType "Service types include:
     - VM
@@ -281,12 +279,14 @@ classDiagram
     perform on services including:
     - Creating services
     - Starting/stopping services
-    - Hot/cold updating services
+    - Updating services
     - Deleting services
     
+    Jobs include provider/consumer context and parameters.
+    
     Jobs can fail in two ways:
-    - Regular failure: Service keeps target state, may retry
-    - Unsupported operation: Service rolls back, no retry
+    - Regular failure: May retry based on configuration
+    - Unsupported operation: No retry, graceful degradation
     
     Each job transitions service status appropriately"
     
@@ -324,16 +324,16 @@ classDiagram
 
 3. **Service**
    - Cloud resource managed by an agent
-   - Sophisticated status management with current and target statuss
-   - Status transitions: Creating → Created → Starting → Started → Stopping → Stopped → Deleting → Deleted
-   - Supports both hot updates (while running) and cold updates (while stopped)
-   - Tracks failed operations with error messages and retry counts
-   - Manages configuration changes through current and target properties
+   - Simplified status management with single status field
+   - Status transitions: New → Stopped → Started → Stopped → Deleted
+   - Supports updates while running (hot update) or stopped (cold update)
+   - Error handling and retry logic managed through Job entities
+   - Stores service configuration in a single properties field
    - Stores service-specific resource configuration
    - Can be linked to a consumer participant via ConsumerParticipantID (optional)
 
    Properties:
-   - Properties: properties.JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger status transitions (hot or cold update depending on current status).
+   - Properties: properties.JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger job creation for update operations.
 
 4. **AgentType**
    - Defines the type classification for agents
@@ -351,12 +351,14 @@ classDiagram
 
 7. **Job**
    - Represents a discrete operation to be performed by an agent
-   - Action types match service transitions: Create, Start, Stop, HotUpdate, ColdUpdate, Delete
-   - Lifecycle statuss: Pending → Processing → Completed/Failed
+   - Action types: Create, Start, Stop, Update, Delete
+   - Lifecycle statuss: Pending → Processing → Completed/Failed/Unsupported
    - Prioritizes operations for execution order
    - Tracks execution timing through claimedAt and completedAt
    - Records error details for failed operations
-   - Supports unsupported operation handling with service state rollback
+   - Includes provider and consumer participant context
+   - Contains parameters for the operation in params field
+   - Supports unsupported operation handling with graceful degradation
 
 8. **Token**
    - Provides secure authentication mechanism for system access
@@ -434,19 +436,13 @@ The following diagram illustrates the various statuss a service can transition t
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Creating: create operation
-    Creating --> Created: creation complete
-    Created --> Starting: start operation
-    Starting --> Started: operation complete
-    Started --> Stopping: stop operation
-    Started --> HotUpdating: hot update operation
-    HotUpdating --> Started: update complete
-    Stopped --> Starting: start operation
-    Stopped --> Deleting: delete operation
-    Stopped --> ColdUpdating: cold update operation
-    Stopping --> Stopped: operation complete
-    ColdUpdating --> Stopped: update complete
-    Deleting --> Deleted: operation complete
+    [*] --> New: service created
+    New --> Stopped: create operation complete
+    Stopped --> Started: start operation
+    Started --> Stopped: stop operation
+    Started --> Started: update operation (hot update)
+    Stopped --> Stopped: update operation (cold update)
+    Stopped --> Deleted: delete operation
 ```
 
 #### Service Property Schema Validation
@@ -540,10 +536,11 @@ stateDiagram-v2
     Pending --> Processing: Agent Claims Job
     Processing --> Completed: Operation Successful
     Processing --> Failed: Operation Error
-    Processing --> Failed: Unsupported Operation (with rollback)
+    Processing --> Unsupported: Unsupported Operation
     Completed --> [*]
-    Failed --> Pending: Auto-retry (timeout/error)
-    Failed --> [*]: Unsupported (no retry)
+    Failed --> Pending: Auto-retry (configurable)
+    Failed --> [*]: Max retries reached
+    Unsupported --> [*]: No retry
 ```
 
 The job queue system manages the complete lifecycle of service operations from creation to completion. The following diagram illustrates the job management flow:
@@ -618,14 +615,14 @@ The job management process follows these steps:
 3. **Job Processing**:
    - The agent performs the requested operation on the cloud participant
    - The agent maintains a secure connection with the job queue using token-based authentication
-   - During processing, the service status reflects the operation (Creating, Starting, Stopping, HotUpdating, ColdUpdating, Deleting)
+   - The service status remains stable during processing (job handles the transition logic)
 
 4. **Job Completion**:
    - On successful completion, the agent calls `/api/v1/jobs/{id}/complete` with result data
    - The job status changes to "Completed"
    - A timestamp is recorded in the `completedAt` field
-   - The service status is updated accordingly (Created, Started, Stopped, Deleted)
-   - For property updates, the `currentProperties` are set to match the `targetProperties` upon successful completion
+   - The service status is updated accordingly (Started, Stopped, Deleted)
+   - For property updates, the service `properties` field is updated with the new configuration
 
 5. **Job Failure Handling**:
    - If an operation fails, the agent calls `/api/v1/jobs/{id}/fail` with error details
@@ -635,11 +632,9 @@ The job management process follows these steps:
 
 6. **Job Unsupported Operation Handling**:
    - If an agent encounters an operation it cannot support, it calls `/api/v1/jobs/{id}/unsupported` with error details
-   - The job status changes to "Failed" (same as regular failure)
-   - The service state is **rolled back** to its previous stable state:
-     - `TargetStatus` is cleared (service remains at `CurrentStatus`)
-     - `TargetProperties` are discarded (service keeps `CurrentProperties`)
-     - `ErrorMessage` and `FailedAction` are set for tracking
+   - The job status changes to "Unsupported" (distinct from regular failure)
+   - The service maintains its current state without changes
+   - Error details are recorded in the job for tracking and debugging
    - Unlike regular failures, unsupported operations are not automatically retried
    - This provides a graceful degradation mechanism when agents lack capabilities for specific operations
 

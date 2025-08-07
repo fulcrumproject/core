@@ -361,7 +361,7 @@ func CreateServiceWithAgent(
 			return err
 		}
 
-		job := NewJob(svc, ServiceActionCreate, 1)
+		job := NewJob(svc, ServiceActionCreate, &params.Properties, 1)
 		if err := job.Validate(); err != nil {
 			return err
 		}

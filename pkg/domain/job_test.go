@@ -31,16 +31,7 @@ func TestServiceAction_Validate(t *testing.T) {
 			action:  ServiceActionStop,
 			wantErr: false,
 		},
-		{
-			name:    "Valid ServiceActionHotUpdate",
-			action:  ServiceActionHotUpdate,
-			wantErr: false,
-		},
-		{
-			name:    "Valid ServiceActionColdUpdate",
-			action:  ServiceActionColdUpdate,
-			wantErr: false,
-		},
+
 		{
 			name:    "Valid ServiceActionDelete",
 			action:  ServiceActionDelete,
@@ -95,18 +86,7 @@ func TestParseServiceAction(t *testing.T) {
 			want:    ServiceActionStop,
 			wantErr: false,
 		},
-		{
-			name:    "Parse ServiceActionHotUpdate",
-			input:   string(ServiceActionHotUpdate),
-			want:    ServiceActionHotUpdate,
-			wantErr: false,
-		},
-		{
-			name:    "Parse ServiceActionColdUpdate",
-			input:   string(ServiceActionColdUpdate),
-			want:    ServiceActionColdUpdate,
-			wantErr: false,
-		},
+
 		{
 			name:    "Parse ServiceActionDelete",
 			input:   string(ServiceActionDelete),
@@ -363,7 +343,7 @@ func TestNewJob(t *testing.T) {
 	action := ServiceActionCreate
 	priority := 5
 
-	job := NewJob(service, action, priority)
+	job := NewJob(service, action, nil, priority)
 
 	assert.Equal(t, consumerID, job.ConsumerID)
 	assert.Equal(t, providerID, job.ProviderID)
@@ -426,7 +406,7 @@ func TestJob_Unsupported(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, JobFailed, job.Status)
+				assert.Equal(t, JobUnsupported, job.Status)
 				assert.Equal(t, tt.errorMessage, job.ErrorMessage)
 				assert.NotNil(t, job.CompletedAt)
 			}
@@ -461,7 +441,6 @@ func TestJobCommander_Unsupported(t *testing.T) {
 		// Create mocks
 		store := NewMockStore(t)
 		jobRepo := NewMockJobRepository(t)
-		serviceRepo := NewMockServiceRepository(t)
 
 		// Create test data
 		jobID := uuid.New()
@@ -475,9 +454,8 @@ func TestJobCommander_Unsupported(t *testing.T) {
 
 		// Setup mocks
 		store.On("JobRepo").Return(jobRepo)
-		store.On("ServiceRepo").Return(serviceRepo)
+		store.On("Atomic", mock.Anything, mock.AnythingOfType("func(domain.Store) error")).Return(assert.AnError)
 		jobRepo.On("Get", mock.Anything, jobID).Return(job, nil)
-		serviceRepo.On("Get", mock.Anything, serviceID).Return(nil, assert.AnError)
 
 		// Create commander and execute test
 		commander := NewJobCommander(store)

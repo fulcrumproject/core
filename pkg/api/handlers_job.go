@@ -163,6 +163,7 @@ type JobRes struct {
 	AgentID      properties.UUID      `json:"agentId"`
 	ServiceID    properties.UUID      `json:"serviceId"`
 	Action       domain.ServiceAction `json:"action"`
+	Params       *properties.JSON     `json:"params,omitempty"`
 	Status       domain.JobStatus     `json:"status"`
 	Priority     int                  `json:"priority"`
 	ErrorMessage string               `json:"errorMessage,omitempty"`
@@ -182,6 +183,7 @@ func JobToRes(job *domain.Job) *JobRes {
 		ConsumerID:   job.ConsumerID,
 		ServiceID:    job.ServiceID,
 		Action:       job.Action,
+		Params:       job.Params,
 		Status:       job.Status,
 		Priority:     job.Priority,
 		ErrorMessage: job.ErrorMessage,

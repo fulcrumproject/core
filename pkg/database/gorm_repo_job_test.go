@@ -71,7 +71,7 @@ func TestJobRepository(t *testing.T) {
 	require.NoError(t, serviceRepo.Create(context.Background(), service))
 
 	t.Run("Create", func(t *testing.T) {
-		job := domain.NewJob(service, domain.ServiceActionCreate, 1)
+		job := domain.NewJob(service, domain.ServiceActionCreate, nil, 1)
 
 		// Use the existing err variable
 		err := repo.Create(context.Background(), job)
@@ -83,7 +83,7 @@ func TestJobRepository(t *testing.T) {
 
 	t.Run("Get", func(t *testing.T) {
 		// Create a job
-		job := domain.NewJob(service, domain.ServiceActionCreate, 1)
+		job := domain.NewJob(service, domain.ServiceActionCreate, nil, 1)
 		err := repo.Create(context.Background(), job)
 		require.NoError(t, err)
 
@@ -111,7 +111,7 @@ func TestJobRepository(t *testing.T) {
 
 	t.Run("Save", func(t *testing.T) {
 		// Create a job
-		job := domain.NewJob(service, domain.ServiceActionCreate, 1)
+		job := domain.NewJob(service, domain.ServiceActionCreate, nil, 1)
 		err := repo.Create(context.Background(), job)
 		require.NoError(t, err)
 
@@ -131,7 +131,7 @@ func TestJobRepository(t *testing.T) {
 
 	t.Run("Delete", func(t *testing.T) {
 		// Create a job
-		job := domain.NewJob(service, domain.ServiceActionCreate, 1)
+		job := domain.NewJob(service, domain.ServiceActionCreate, nil, 1)
 		err := repo.Create(context.Background(), job)
 		require.NoError(t, err)
 
@@ -149,9 +149,9 @@ func TestJobRepository(t *testing.T) {
 	t.Run("List", func(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
 			// Create multiple jobs
-			job1 := domain.NewJob(service, domain.ServiceActionCreate, 1)
-			job2 := domain.NewJob(service, domain.ServiceActionColdUpdate, 2)
-			job3 := domain.NewJob(service, domain.ServiceActionDelete, 3)
+			job1 := domain.NewJob(service, domain.ServiceActionCreate, nil, 1)
+			job2 := domain.NewJob(service, domain.ServiceActionUpdate, nil, 2)
+			job3 := domain.NewJob(service, domain.ServiceActionDelete, nil, 3)
 
 			jobs := []*domain.Job{job1, job2, job3}
 			for _, job := range jobs {
@@ -244,13 +244,13 @@ func TestJobRepository(t *testing.T) {
 		require.NoError(t, serviceRepo.Create(context.Background(), service2))
 
 		// Create multiple pending jobs for the first service (same service group)
-		job1 := domain.NewJob(service, domain.ServiceActionCreate, 1)
-		job2 := domain.NewJob(service, domain.ServiceActionHotUpdate, 2)
-		job3 := domain.NewJob(service, domain.ServiceActionDelete, 3)
+		job1 := domain.NewJob(service, domain.ServiceActionCreate, nil, 1)
+		job2 := domain.NewJob(service, domain.ServiceActionUpdate, nil, 2)
+		job3 := domain.NewJob(service, domain.ServiceActionDelete, nil, 3)
 
 		// Create multiple pending jobs for the second service (different service group)
-		job4 := domain.NewJob(service2, domain.ServiceActionStart, 1)
-		job5 := domain.NewJob(service2, domain.ServiceActionStop, 4)
+		job4 := domain.NewJob(service2, domain.ServiceActionStart, nil, 1)
+		job5 := domain.NewJob(service2, domain.ServiceActionStop, nil, 4)
 
 		pendingJobs := []*domain.Job{job1, job2, job3, job4, job5}
 		for _, job := range pendingJobs {
@@ -259,7 +259,7 @@ func TestJobRepository(t *testing.T) {
 		}
 
 		// Create a processing job for the first service group (should exclude this group from results)
-		processingJob := domain.NewJob(service, domain.ServiceActionCreate, 4)
+		processingJob := domain.NewJob(service, domain.ServiceActionCreate, nil, 4)
 		processingJob.Status = domain.JobProcessing
 		err := repo.Create(context.Background(), processingJob)
 		require.NoError(t, err)
@@ -286,7 +286,7 @@ func TestJobRepository(t *testing.T) {
 		assert.Len(t, limitedJobs, 1, "Should respect the limit")
 
 		// Now let's test the reverse scenario - create a processing job in the second service group
-		processingJob2 := domain.NewJob(service2, domain.ServiceActionStart, 5)
+		processingJob2 := domain.NewJob(service2, domain.ServiceActionStart, nil, 5)
 		processingJob2.Status = domain.JobProcessing
 		err = repo.Create(context.Background(), processingJob2)
 		require.NoError(t, err)
@@ -302,7 +302,7 @@ func TestJobRepository(t *testing.T) {
 		now := time.Now()
 		oldTime := now.Add(-2 * time.Hour) // 2 hours ago
 
-		oldJob := domain.NewJob(service, domain.ServiceActionCreate, 1)
+		oldJob := domain.NewJob(service, domain.ServiceActionCreate, nil, 1)
 		oldJob.Status = domain.JobProcessing
 		// Set BaseEntity.CreatedAt directly since it's normally set during Insert
 		oldJob.BaseEntity = domain.BaseEntity{
@@ -312,7 +312,7 @@ func TestJobRepository(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create a job in processing status with a recent created_at time (will use current time)
-		newJob := domain.NewJob(service, domain.ServiceActionStart, 2)
+		newJob := domain.NewJob(service, domain.ServiceActionStart, nil, 2)
 		require.NoError(t, err)
 		newJob.Status = domain.JobProcessing
 		newJob.ClaimedAt = &now // use current time for claimed time
@@ -337,25 +337,25 @@ func TestJobRepository(t *testing.T) {
 		now := time.Now()
 
 		// Create jobs with completion times at different intervals
-		oldCompletedJob := domain.NewJob(service, domain.ServiceActionStop, 1)
+		oldCompletedJob := domain.NewJob(service, domain.ServiceActionStop, nil, 1)
 		oldCompletedJob.Status = domain.JobCompleted
 		oldCompletedTime := now.Add(-48 * time.Hour) // 2 days ago
 		oldCompletedJob.CompletedAt = &oldCompletedTime
 		require.NoError(t, repo.Create(context.Background(), oldCompletedJob))
 
-		oldFailedJob := domain.NewJob(service, domain.ServiceActionStart, 1)
+		oldFailedJob := domain.NewJob(service, domain.ServiceActionStart, nil, 1)
 		oldFailedJob.Status = domain.JobFailed
 		oldFailedTime := now.Add(-36 * time.Hour) // 1.5 days ago
 		oldFailedJob.CompletedAt = &oldFailedTime
 		require.NoError(t, repo.Create(context.Background(), oldFailedJob))
 
-		recentCompletedJob := domain.NewJob(service, domain.ServiceActionHotUpdate, 1)
+		recentCompletedJob := domain.NewJob(service, domain.ServiceActionUpdate, nil, 1)
 		recentCompletedJob.Status = domain.JobCompleted
 		recentCompletedTime := now.Add(-12 * time.Hour) // 12 hours ago
 		recentCompletedJob.CompletedAt = &recentCompletedTime
 		require.NoError(t, repo.Create(context.Background(), recentCompletedJob))
 
-		pendingJob := domain.NewJob(service, domain.ServiceActionHotUpdate, 1)
+		pendingJob := domain.NewJob(service, domain.ServiceActionUpdate, nil, 1)
 		pendingJob.Status = domain.JobPending
 		require.NoError(t, repo.Create(context.Background(), pendingJob))
 
@@ -387,10 +387,14 @@ func TestJobRepository(t *testing.T) {
 
 	t.Run("GetActiveJobForService", func(t *testing.T) {
 		t.Run("success - returns pending job with highest priority", func(t *testing.T) {
+			// Create a fresh service for this test
+			testService := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, consumer.ID)
+			require.NoError(t, serviceRepo.Create(context.Background(), testService))
+
 			// Create multiple pending jobs with different priorities
-			job1 := domain.NewJob(service, domain.ServiceActionCreate, 1)
-			job2 := domain.NewJob(service, domain.ServiceActionStart, 3) // Higher priority
-			job3 := domain.NewJob(service, domain.ServiceActionStop, 2)
+			job1 := domain.NewJob(testService, domain.ServiceActionCreate, nil, 1)
+			job2 := domain.NewJob(testService, domain.ServiceActionStart, nil, 3) // Higher priority
+			job3 := domain.NewJob(testService, domain.ServiceActionStop, nil, 2)
 
 			jobs := []*domain.Job{job1, job2, job3}
 			for _, job := range jobs {
@@ -399,7 +403,7 @@ func TestJobRepository(t *testing.T) {
 			}
 
 			// Get active job
-			activeJob, err := repo.GetActiveJobForService(context.Background(), service.ID)
+			activeJob, err := repo.GetActiveJobForService(context.Background(), testService.ID)
 			require.NoError(t, err)
 			assert.NotNil(t, activeJob)
 			assert.Equal(t, job2.ID, activeJob.ID, "Should return job with highest priority")
@@ -412,36 +416,66 @@ func TestJobRepository(t *testing.T) {
 		})
 
 		t.Run("success - returns processing job over pending", func(t *testing.T) {
+			// Create a fresh service for this test
+			testService := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, consumer.ID)
+			require.NoError(t, serviceRepo.Create(context.Background(), testService))
+
 			// Create a processing job and a pending job with higher priority
-			pendingJob := domain.NewJob(service, domain.ServiceActionCreate, 5) // Higher priority
-			processingJob := domain.NewJob(service, domain.ServiceActionStart, 2)
+			pendingJob := domain.NewJob(testService, domain.ServiceActionCreate, nil, 5) // Higher priority
+			processingJob := domain.NewJob(testService, domain.ServiceActionStart, nil, 2)
 			processingJob.Status = domain.JobProcessing
 
 			require.NoError(t, repo.Create(context.Background(), pendingJob))
 			require.NoError(t, repo.Create(context.Background(), processingJob))
 
 			// Get active job - should return processing job even if pending has higher priority
-			activeJob, err := repo.GetActiveJobForService(context.Background(), service.ID)
+			activeJob, err := repo.GetActiveJobForService(context.Background(), testService.ID)
 			require.NoError(t, err)
 			assert.NotNil(t, activeJob)
 			// Should return processing job since it's also considered active
 			assert.Contains(t, []properties.UUID{pendingJob.ID, processingJob.ID}, activeJob.ID)
 		})
 
-		t.Run("success - returns nil when no active jobs", func(t *testing.T) {
+		t.Run("success - returns failed job when only failed jobs exist", func(t *testing.T) {
+			// Create a fresh service for this test
+			testService := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, consumer.ID)
+			require.NoError(t, serviceRepo.Create(context.Background(), testService))
+
 			// Create only completed and failed jobs
-			completedJob := domain.NewJob(service, domain.ServiceActionCreate, 1)
+			completedJob := domain.NewJob(testService, domain.ServiceActionCreate, nil, 1)
 			completedJob.Status = domain.JobCompleted
-			failedJob := domain.NewJob(service, domain.ServiceActionStart, 2)
+			failedJob := domain.NewJob(testService, domain.ServiceActionStart, nil, 2)
 			failedJob.Status = domain.JobFailed
 
 			require.NoError(t, repo.Create(context.Background(), completedJob))
 			require.NoError(t, repo.Create(context.Background(), failedJob))
 
-			// Get active job
-			activeJob, err := repo.GetActiveJobForService(context.Background(), service.ID)
+			// Get active job - should return the failed job since failed jobs are considered active
+			activeJob, err := repo.GetActiveJobForService(context.Background(), testService.ID)
 			require.NoError(t, err)
-			assert.Nil(t, activeJob, "Should return nil when no active jobs exist")
+			assert.NotNil(t, activeJob, "Should return failed job since failed jobs are active")
+			assert.Equal(t, failedJob.ID, activeJob.ID)
+			assert.Equal(t, domain.JobFailed, activeJob.Status)
+		})
+
+		t.Run("success - returns nil when only completed jobs exist", func(t *testing.T) {
+			// Create a fresh service for this test
+			testService := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, consumer.ID)
+			require.NoError(t, serviceRepo.Create(context.Background(), testService))
+
+			// Create only completed jobs
+			completedJob1 := domain.NewJob(testService, domain.ServiceActionCreate, nil, 1)
+			completedJob1.Status = domain.JobCompleted
+			completedJob2 := domain.NewJob(testService, domain.ServiceActionStart, nil, 2)
+			completedJob2.Status = domain.JobCompleted
+
+			require.NoError(t, repo.Create(context.Background(), completedJob1))
+			require.NoError(t, repo.Create(context.Background(), completedJob2))
+
+			// Get active job - should return nil since completed jobs are not active
+			activeJob, err := repo.GetActiveJobForService(context.Background(), testService.ID)
+			require.NoError(t, err)
+			assert.Nil(t, activeJob, "Should return nil when only completed jobs exist")
 		})
 
 		t.Run("success - returns nil for non-existent service", func(t *testing.T) {
@@ -455,29 +489,28 @@ func TestJobRepository(t *testing.T) {
 
 	t.Run("GetLastJobForService", func(t *testing.T) {
 		t.Run("success - returns most recent job", func(t *testing.T) {
-			// Create multiple jobs at different times
-			oldTime := time.Now().Add(-2 * time.Hour)
-			recentTime := time.Now().Add(-1 * time.Hour)
+			// Create a fresh service for this test
+			testService := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, consumer.ID)
+			require.NoError(t, serviceRepo.Create(context.Background(), testService))
 
-			// Create first job (older)
-			oldJob := domain.NewJob(service, domain.ServiceActionCreate, 1)
-			oldJob.BaseEntity = domain.BaseEntity{CreatedAt: oldTime}
-			require.NoError(t, repo.Create(context.Background(), oldJob))
+			// Create multiple jobs sequentially (GORM will set CreatedAt automatically)
+			firstJob := domain.NewJob(testService, domain.ServiceActionCreate, nil, 1)
+			require.NoError(t, repo.Create(context.Background(), firstJob))
 
-			// Create second job (more recent)
-			recentJob := domain.NewJob(service, domain.ServiceActionStart, 2)
-			recentJob.BaseEntity = domain.BaseEntity{CreatedAt: recentTime}
-			require.NoError(t, repo.Create(context.Background(), recentJob))
+			// Small delay to ensure different timestamps
+			time.Sleep(10 * time.Millisecond)
+
+			secondJob := domain.NewJob(testService, domain.ServiceActionStart, nil, 2)
+			require.NoError(t, repo.Create(context.Background(), secondJob))
 
 			// Get last job
-			lastJob, err := repo.GetLastJobForService(context.Background(), service.ID)
+			lastJob, err := repo.GetLastJobForService(context.Background(), testService.ID)
 			require.NoError(t, err)
 			assert.NotNil(t, lastJob)
 
-			// Should return the most recent job (recentJob or a job created after it)
-			// Since the database might set its own CreatedAt, we check that it's one of our jobs
-			assert.Contains(t, []properties.UUID{oldJob.ID, recentJob.ID}, lastJob.ID)
-			assert.Equal(t, service.ID, lastJob.ServiceID)
+			// Should return the most recent job (secondJob)
+			assert.Equal(t, secondJob.ID, lastJob.ID)
+			assert.Equal(t, testService.ID, lastJob.ServiceID)
 
 			// Verify relationships are loaded
 			assert.NotNil(t, lastJob.Agent)
@@ -485,21 +518,25 @@ func TestJobRepository(t *testing.T) {
 		})
 
 		t.Run("success - returns job regardless of status", func(t *testing.T) {
+			// Create a fresh service for this test
+			testService := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, consumer.ID)
+			require.NoError(t, serviceRepo.Create(context.Background(), testService))
+
 			// Create jobs with different statuses
-			pendingJob := domain.NewJob(service, domain.ServiceActionCreate, 1)
+			pendingJob := domain.NewJob(testService, domain.ServiceActionCreate, nil, 1)
 			pendingJob.Status = domain.JobPending
 
-			completedJob := domain.NewJob(service, domain.ServiceActionStart, 2)
+			completedJob := domain.NewJob(testService, domain.ServiceActionStart, nil, 2)
 			completedJob.Status = domain.JobCompleted
 
 			require.NoError(t, repo.Create(context.Background(), pendingJob))
 			require.NoError(t, repo.Create(context.Background(), completedJob))
 
 			// Get last job - should return most recent regardless of status
-			lastJob, err := repo.GetLastJobForService(context.Background(), service.ID)
+			lastJob, err := repo.GetLastJobForService(context.Background(), testService.ID)
 			require.NoError(t, err)
 			assert.NotNil(t, lastJob)
-			assert.Equal(t, service.ID, lastJob.ServiceID)
+			assert.Equal(t, testService.ID, lastJob.ServiceID)
 		})
 
 		t.Run("success - returns nil for non-existent service", func(t *testing.T) {
@@ -511,30 +548,20 @@ func TestJobRepository(t *testing.T) {
 		})
 
 		t.Run("success - returns single job when only one exists", func(t *testing.T) {
-			// Create a service without any existing jobs from previous tests
-			service3 := &domain.Service{
-				Name:          "Test Service 3",
-				Status:        domain.ServiceStarted,
-				Properties:    &(properties.JSON{"key": "value3"}),
-				Resources:     &(properties.JSON{"cpu": 3}),
-				AgentID:       agent.ID,
-				ServiceTypeID: serviceType.ID,
-				GroupID:       serviceGroup.ID,
-				ConsumerID:    consumer.ID,
-				ProviderID:    provider.ID,
-			}
-			require.NoError(t, serviceRepo.Create(context.Background(), service3))
+			// Create a fresh service for this test
+			testService := createTestService(t, serviceType.ID, serviceGroup.ID, agent.ID, provider.ID, consumer.ID)
+			require.NoError(t, serviceRepo.Create(context.Background(), testService))
 
 			// Create a single job
-			singleJob := domain.NewJob(service3, domain.ServiceActionCreate, 1)
+			singleJob := domain.NewJob(testService, domain.ServiceActionCreate, nil, 1)
 			require.NoError(t, repo.Create(context.Background(), singleJob))
 
 			// Get last job
-			lastJob, err := repo.GetLastJobForService(context.Background(), service3.ID)
+			lastJob, err := repo.GetLastJobForService(context.Background(), testService.ID)
 			require.NoError(t, err)
 			assert.NotNil(t, lastJob)
 			assert.Equal(t, singleJob.ID, lastJob.ID)
-			assert.Equal(t, service3.ID, lastJob.ServiceID)
+			assert.Equal(t, testService.ID, lastJob.ServiceID)
 		})
 	})
 
@@ -543,7 +570,7 @@ func TestJobRepository(t *testing.T) {
 			ctx := context.Background()
 
 			// Create a new job with known IDs
-			job := domain.NewJob(service, domain.ServiceActionCreate, 1)
+			job := domain.NewJob(service, domain.ServiceActionCreate, nil, 1)
 
 			// The job should have provider, agent, and consumer IDs from the service
 			require.NotNil(t, service.ProviderID)

@@ -7357,6 +7357,142 @@ func (_c *MockJobRepository_Get_Call) RunAndReturn(run func(ctx context.Context,
 	return _c
 }
 
+// GetActiveJobForService provides a mock function for the type MockJobRepository
+func (_mock *MockJobRepository) GetActiveJobForService(ctx context.Context, serviceID properties.UUID) (*Job, error) {
+	ret := _mock.Called(ctx, serviceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetActiveJobForService")
+	}
+
+	var r0 *Job
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*Job, error)); ok {
+		return returnFunc(ctx, serviceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *Job); ok {
+		r0 = returnFunc(ctx, serviceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Job)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockJobRepository_GetActiveJobForService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetActiveJobForService'
+type MockJobRepository_GetActiveJobForService_Call struct {
+	*mock.Call
+}
+
+// GetActiveJobForService is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceID properties.UUID
+func (_e *MockJobRepository_Expecter) GetActiveJobForService(ctx interface{}, serviceID interface{}) *MockJobRepository_GetActiveJobForService_Call {
+	return &MockJobRepository_GetActiveJobForService_Call{Call: _e.mock.On("GetActiveJobForService", ctx, serviceID)}
+}
+
+func (_c *MockJobRepository_GetActiveJobForService_Call) Run(run func(ctx context.Context, serviceID properties.UUID)) *MockJobRepository_GetActiveJobForService_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockJobRepository_GetActiveJobForService_Call) Return(job *Job, err error) *MockJobRepository_GetActiveJobForService_Call {
+	_c.Call.Return(job, err)
+	return _c
+}
+
+func (_c *MockJobRepository_GetActiveJobForService_Call) RunAndReturn(run func(ctx context.Context, serviceID properties.UUID) (*Job, error)) *MockJobRepository_GetActiveJobForService_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetLastJobForService provides a mock function for the type MockJobRepository
+func (_mock *MockJobRepository) GetLastJobForService(ctx context.Context, serviceID properties.UUID) (*Job, error) {
+	ret := _mock.Called(ctx, serviceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetLastJobForService")
+	}
+
+	var r0 *Job
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*Job, error)); ok {
+		return returnFunc(ctx, serviceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *Job); ok {
+		r0 = returnFunc(ctx, serviceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Job)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockJobRepository_GetLastJobForService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLastJobForService'
+type MockJobRepository_GetLastJobForService_Call struct {
+	*mock.Call
+}
+
+// GetLastJobForService is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceID properties.UUID
+func (_e *MockJobRepository_Expecter) GetLastJobForService(ctx interface{}, serviceID interface{}) *MockJobRepository_GetLastJobForService_Call {
+	return &MockJobRepository_GetLastJobForService_Call{Call: _e.mock.On("GetLastJobForService", ctx, serviceID)}
+}
+
+func (_c *MockJobRepository_GetLastJobForService_Call) Run(run func(ctx context.Context, serviceID properties.UUID)) *MockJobRepository_GetLastJobForService_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockJobRepository_GetLastJobForService_Call) Return(job *Job, err error) *MockJobRepository_GetLastJobForService_Call {
+	_c.Call.Return(job, err)
+	return _c
+}
+
+func (_c *MockJobRepository_GetLastJobForService_Call) RunAndReturn(run func(ctx context.Context, serviceID properties.UUID) (*Job, error)) *MockJobRepository_GetLastJobForService_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetPendingJobsForAgent provides a mock function for the type MockJobRepository
 func (_mock *MockJobRepository) GetPendingJobsForAgent(ctx context.Context, agentID properties.UUID, limit int) ([]*Job, error) {
 	ret := _mock.Called(ctx, agentID, limit)
@@ -7915,6 +8051,142 @@ func (_c *MockJobQuerier_Get_Call) Return(job *Job, err error) *MockJobQuerier_G
 }
 
 func (_c *MockJobQuerier_Get_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*Job, error)) *MockJobQuerier_Get_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetActiveJobForService provides a mock function for the type MockJobQuerier
+func (_mock *MockJobQuerier) GetActiveJobForService(ctx context.Context, serviceID properties.UUID) (*Job, error) {
+	ret := _mock.Called(ctx, serviceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetActiveJobForService")
+	}
+
+	var r0 *Job
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*Job, error)); ok {
+		return returnFunc(ctx, serviceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *Job); ok {
+		r0 = returnFunc(ctx, serviceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Job)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockJobQuerier_GetActiveJobForService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetActiveJobForService'
+type MockJobQuerier_GetActiveJobForService_Call struct {
+	*mock.Call
+}
+
+// GetActiveJobForService is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceID properties.UUID
+func (_e *MockJobQuerier_Expecter) GetActiveJobForService(ctx interface{}, serviceID interface{}) *MockJobQuerier_GetActiveJobForService_Call {
+	return &MockJobQuerier_GetActiveJobForService_Call{Call: _e.mock.On("GetActiveJobForService", ctx, serviceID)}
+}
+
+func (_c *MockJobQuerier_GetActiveJobForService_Call) Run(run func(ctx context.Context, serviceID properties.UUID)) *MockJobQuerier_GetActiveJobForService_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockJobQuerier_GetActiveJobForService_Call) Return(job *Job, err error) *MockJobQuerier_GetActiveJobForService_Call {
+	_c.Call.Return(job, err)
+	return _c
+}
+
+func (_c *MockJobQuerier_GetActiveJobForService_Call) RunAndReturn(run func(ctx context.Context, serviceID properties.UUID) (*Job, error)) *MockJobQuerier_GetActiveJobForService_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetLastJobForService provides a mock function for the type MockJobQuerier
+func (_mock *MockJobQuerier) GetLastJobForService(ctx context.Context, serviceID properties.UUID) (*Job, error) {
+	ret := _mock.Called(ctx, serviceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetLastJobForService")
+	}
+
+	var r0 *Job
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*Job, error)); ok {
+		return returnFunc(ctx, serviceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *Job); ok {
+		r0 = returnFunc(ctx, serviceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Job)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockJobQuerier_GetLastJobForService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLastJobForService'
+type MockJobQuerier_GetLastJobForService_Call struct {
+	*mock.Call
+}
+
+// GetLastJobForService is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceID properties.UUID
+func (_e *MockJobQuerier_Expecter) GetLastJobForService(ctx interface{}, serviceID interface{}) *MockJobQuerier_GetLastJobForService_Call {
+	return &MockJobQuerier_GetLastJobForService_Call{Call: _e.mock.On("GetLastJobForService", ctx, serviceID)}
+}
+
+func (_c *MockJobQuerier_GetLastJobForService_Call) Run(run func(ctx context.Context, serviceID properties.UUID)) *MockJobQuerier_GetLastJobForService_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockJobQuerier_GetLastJobForService_Call) Return(job *Job, err error) *MockJobQuerier_GetLastJobForService_Call {
+	_c.Call.Return(job, err)
+	return _c
+}
+
+func (_c *MockJobQuerier_GetLastJobForService_Call) RunAndReturn(run func(ctx context.Context, serviceID properties.UUID) (*Job, error)) *MockJobQuerier_GetLastJobForService_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -12040,6 +12312,74 @@ func (_c *MockServiceCommander_CreateWithTags_Call) RunAndReturn(run func(ctx co
 	return _c
 }
 
+// DoAction provides a mock function for the type MockServiceCommander
+func (_mock *MockServiceCommander) DoAction(ctx context.Context, params DoServiceActionParams) (*Service, error) {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DoAction")
+	}
+
+	var r0 *Service
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, DoServiceActionParams) (*Service, error)); ok {
+		return returnFunc(ctx, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, DoServiceActionParams) *Service); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Service)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, DoServiceActionParams) error); ok {
+		r1 = returnFunc(ctx, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServiceCommander_DoAction_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DoAction'
+type MockServiceCommander_DoAction_Call struct {
+	*mock.Call
+}
+
+// DoAction is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params DoServiceActionParams
+func (_e *MockServiceCommander_Expecter) DoAction(ctx interface{}, params interface{}) *MockServiceCommander_DoAction_Call {
+	return &MockServiceCommander_DoAction_Call{Call: _e.mock.On("DoAction", ctx, params)}
+}
+
+func (_c *MockServiceCommander_DoAction_Call) Run(run func(ctx context.Context, params DoServiceActionParams)) *MockServiceCommander_DoAction_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 DoServiceActionParams
+		if args[1] != nil {
+			arg1 = args[1].(DoServiceActionParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServiceCommander_DoAction_Call) Return(service *Service, err error) *MockServiceCommander_DoAction_Call {
+	_c.Call.Return(service, err)
+	return _c
+}
+
+func (_c *MockServiceCommander_DoAction_Call) RunAndReturn(run func(ctx context.Context, params DoServiceActionParams) (*Service, error)) *MockServiceCommander_DoAction_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FailTimeoutServicesAndJobs provides a mock function for the type MockServiceCommander
 func (_mock *MockServiceCommander) FailTimeoutServicesAndJobs(ctx context.Context, timeout time.Duration) (int, error) {
 	ret := _mock.Called(ctx, timeout)
@@ -12170,74 +12510,6 @@ func (_c *MockServiceCommander_Retry_Call) Return(service *Service, err error) *
 }
 
 func (_c *MockServiceCommander_Retry_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*Service, error)) *MockServiceCommander_Retry_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Transition provides a mock function for the type MockServiceCommander
-func (_mock *MockServiceCommander) Transition(ctx context.Context, params TransitionServiceParams) (*Service, error) {
-	ret := _mock.Called(ctx, params)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Transition")
-	}
-
-	var r0 *Service
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, TransitionServiceParams) (*Service, error)); ok {
-		return returnFunc(ctx, params)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, TransitionServiceParams) *Service); ok {
-		r0 = returnFunc(ctx, params)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*Service)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, TransitionServiceParams) error); ok {
-		r1 = returnFunc(ctx, params)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockServiceCommander_Transition_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Transition'
-type MockServiceCommander_Transition_Call struct {
-	*mock.Call
-}
-
-// Transition is a helper method to define mock.On call
-//   - ctx context.Context
-//   - params TransitionServiceParams
-func (_e *MockServiceCommander_Expecter) Transition(ctx interface{}, params interface{}) *MockServiceCommander_Transition_Call {
-	return &MockServiceCommander_Transition_Call{Call: _e.mock.On("Transition", ctx, params)}
-}
-
-func (_c *MockServiceCommander_Transition_Call) Run(run func(ctx context.Context, params TransitionServiceParams)) *MockServiceCommander_Transition_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 TransitionServiceParams
-		if args[1] != nil {
-			arg1 = args[1].(TransitionServiceParams)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockServiceCommander_Transition_Call) Return(service *Service, err error) *MockServiceCommander_Transition_Call {
-	_c.Call.Return(service, err)
-	return _c
-}
-
-func (_c *MockServiceCommander_Transition_Call) RunAndReturn(run func(ctx context.Context, params TransitionServiceParams) (*Service, error)) *MockServiceCommander_Transition_Call {
 	_c.Call.Return(run)
 	return _c
 }

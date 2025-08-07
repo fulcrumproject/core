@@ -169,6 +169,8 @@ var _ domain.JobQuerier = (*mockJobQuerier)(nil)
 type mockJobQuerier struct {
 	BaseMockQuerier[domain.Job]
 	getPendingJobsForAgentFunc func(ctx context.Context, agentID properties.UUID, limit int) ([]*domain.Job, error)
+	getActiveJobForServiceFunc func(ctx context.Context, serviceID properties.UUID) (*domain.Job, error)
+	getLastJobForServiceFunc   func(ctx context.Context, serviceID properties.UUID) (*domain.Job, error)
 	getTimeOutJobsFunc         func(ctx context.Context, timeout time.Duration) ([]*domain.Job, error)
 }
 
@@ -177,6 +179,20 @@ func (m *mockJobQuerier) GetPendingJobsForAgent(ctx context.Context, agentID pro
 		return m.getPendingJobsForAgentFunc(ctx, agentID, limit)
 	}
 	return []*domain.Job{}, nil
+}
+
+func (m *mockJobQuerier) GetActiveJobForService(ctx context.Context, serviceID properties.UUID) (*domain.Job, error) {
+	if m.getActiveJobForServiceFunc != nil {
+		return m.getActiveJobForServiceFunc(ctx, serviceID)
+	}
+	return nil, nil
+}
+
+func (m *mockJobQuerier) GetLastJobForService(ctx context.Context, serviceID properties.UUID) (*domain.Job, error) {
+	if m.getLastJobForServiceFunc != nil {
+		return m.getLastJobForServiceFunc(ctx, serviceID)
+	}
+	return nil, nil
 }
 
 // GetTimeOutJobs returns a list of timed out jobs
