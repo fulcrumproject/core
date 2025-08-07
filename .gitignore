@@ -1,18 +1,18 @@
-# Debug e IDE
+# Debug and IDE
 __debug**
 .vscode/
 .idea/
 *.swp
 
-# File di sistema
+# System files
 .DS_Store
 /tmp
 
-# Ambiente
+# Environment
 .env
 .env.local
 
-# Build e dipendenze
+# Build and dependencies
 node_modules/
 vendor/
 *.exe
@@ -20,16 +20,16 @@ vendor/
 *.so
 *.dylib
 
-# Test e coverage
+# Test and coverage
 *.test
 *.out
 coverage.*
 coverage/
 
-# File temporanei
-.roorules
+# AI files
+.*rules
 
-# Directory specifiche del progetto
+# Project-specific directories
 features/
 fulcrum
 generated-client/
