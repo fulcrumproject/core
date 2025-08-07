@@ -83,15 +83,15 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, pro
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Service{
-		Name:              fmt.Sprintf("Test Service %s", randomSuffix),
-		ServiceTypeID:     serviceTypeID,
-		GroupID:           serviceGroupID,
-		CurrentStatus:     domain.ServiceStarted,
-		ProviderID:        providerParticipantID,
-		ConsumerID:        consumerParticipantID,
-		AgentID:           agentID,
-		CurrentProperties: &(properties.JSON{}),
-		Resources:         &(properties.JSON{}),
+		Name:          fmt.Sprintf("Test Service %s", randomSuffix),
+		ServiceTypeID: serviceTypeID,
+		GroupID:       serviceGroupID,
+		Status:        domain.ServiceStarted,
+		ProviderID:    providerParticipantID,
+		ConsumerID:    consumerParticipantID,
+		AgentID:       agentID,
+		Properties:    &(properties.JSON{}),
+		Resources:     &(properties.JSON{}),
 	}
 }
 

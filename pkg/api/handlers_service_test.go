@@ -131,14 +131,14 @@ func TestServiceHandleCreate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:              params.Name,
-						AgentID:           params.AgentID,
-						ServiceTypeID:     params.ServiceTypeID,
-						GroupID:           params.GroupID,
-						ConsumerID:        consumerID,
-						ProviderID:        providerID,
-						CurrentStatus:     domain.ServiceCreated,
-						CurrentProperties: &params.Properties,
+						Name:          params.Name,
+						AgentID:       params.AgentID,
+						ServiceTypeID: params.ServiceTypeID,
+						GroupID:       params.GroupID,
+						ConsumerID:    consumerID,
+						ProviderID:    providerID,
+						Status:        domain.ServiceCreated,
+						Properties:    &params.Properties,
 					}, nil
 				}
 			},
@@ -242,9 +242,9 @@ func TestServiceHandleUpdate(t *testing.T) {
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:              "Updated Service",
-						CurrentStatus:     domain.ServiceStarted,
-						CurrentProperties: params.Properties,
+						Name:       "Updated Service",
+						Status:     domain.ServiceStarted,
+						Properties: params.Properties,
 					}, nil
 				}
 			},
@@ -358,8 +358,8 @@ func TestServiceHandleTransition(t *testing.T) {
 						BaseEntity: domain.BaseEntity{
 							ID: params.ID,
 						},
-						CurrentStatus: domain.ServiceStarting,
-						TargetStatus:  &params.Target,
+						Status:       domain.ServiceStarting,
+						TargetStatus: &params.Target,
 					}, nil
 				}
 			},
@@ -378,8 +378,8 @@ func TestServiceHandleTransition(t *testing.T) {
 						BaseEntity: domain.BaseEntity{
 							ID: params.ID,
 						},
-						CurrentStatus: domain.ServiceStopping,
-						TargetStatus:  &params.Target,
+						Status:       domain.ServiceStopping,
+						TargetStatus: &params.Target,
 					}, nil
 				}
 			},
@@ -397,8 +397,8 @@ func TestServiceHandleTransition(t *testing.T) {
 						BaseEntity: domain.BaseEntity{
 							ID: params.ID,
 						},
-						CurrentStatus: domain.ServiceDeleting,
-						TargetStatus:  &params.Target,
+						Status:       domain.ServiceDeleting,
+						TargetStatus: &params.Target,
 					}, nil
 				}
 			},
@@ -497,8 +497,8 @@ func TestServiceHandleRetry(t *testing.T) {
 						BaseEntity: domain.BaseEntity{
 							ID: id,
 						},
-						CurrentStatus: domain.ServiceCreated,
-						RetryCount:    1,
+						Status:     domain.ServiceCreated,
+						RetryCount: 1,
 					}, nil
 				}
 			},
@@ -589,21 +589,21 @@ func TestServiceToResponse(t *testing.T) {
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},
-		Name:              "Test Service",
-		AgentID:           agentID,
-		ServiceTypeID:     serviceTypeID,
-		GroupID:           groupID,
-		ConsumerID:        consumerID,
-		ProviderID:        providerID,
-		ExternalID:        &externalID,
-		CurrentStatus:     domain.ServiceCreated,
-		TargetStatus:      &targetStatus,
-		FailedAction:      &failedAction,
-		ErrorMessage:      &errorMessage,
-		RetryCount:        2,
-		CurrentProperties: &props,
-		TargetProperties:  &props,
-		Resources:         &resources,
+		Name:             "Test Service",
+		AgentID:          agentID,
+		ServiceTypeID:    serviceTypeID,
+		GroupID:          groupID,
+		ConsumerID:       consumerID,
+		ProviderID:       providerID,
+		ExternalID:       &externalID,
+		Status:           domain.ServiceCreated,
+		TargetStatus:     &targetStatus,
+		FailedAction:     &failedAction,
+		ErrorMessage:     &errorMessage,
+		RetryCount:       2,
+		Properties:       &props,
+		TargetProperties: &props,
+		Resources:        &resources,
 	}
 
 	// Convert to response

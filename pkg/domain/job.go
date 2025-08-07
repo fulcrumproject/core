@@ -10,50 +10,15 @@ import (
 	"github.com/google/uuid"
 )
 
-// ServiceAction represents the type of operation a job performs
-type ServiceAction string
-
-const (
-	ServiceActionCreate     ServiceAction = "ServiceCreate"
-	ServiceActionStart      ServiceAction = "ServiceStart"
-	ServiceActionStop       ServiceAction = "ServiceStop"
-	ServiceActionHotUpdate  ServiceAction = "ServiceHotUpdate"
-	ServiceActionColdUpdate ServiceAction = "ServiceColdUpdate"
-	ServiceActionDelete     ServiceAction = "ServiceDelete"
-)
-
-// ParseServiceAction parses a string into a JobType
-func ParseServiceAction(s string) (ServiceAction, error) {
-	jobType := ServiceAction(s)
-	if err := jobType.Validate(); err != nil {
-		return "", err
-	}
-	return jobType, nil
-}
-
-// Validate checks if the job type is valid
-func (t ServiceAction) Validate() error {
-	switch t {
-	case
-		ServiceActionCreate,
-		ServiceActionStart,
-		ServiceActionStop,
-		ServiceActionHotUpdate,
-		ServiceActionColdUpdate,
-		ServiceActionDelete:
-		return nil
-	}
-	return fmt.Errorf("invalid job type: %s", t)
-}
-
 // JobStatus represents the current status of a job
 type JobStatus string
 
 const (
-	JobPending    JobStatus = "Pending"
-	JobProcessing JobStatus = "Processing"
-	JobCompleted  JobStatus = "Completed"
-	JobFailed     JobStatus = "Failed"
+	JobPending     JobStatus = "Pending"
+	JobProcessing  JobStatus = "Processing"
+	JobCompleted   JobStatus = "Completed"
+	JobFailed      JobStatus = "Failed"
+	JobUnsupported JobStatus = "Unsupported"
 )
 
 // Validate checks if the service status is valid
@@ -63,7 +28,8 @@ func (s JobStatus) Validate() error {
 		JobPending,
 		JobProcessing,
 		JobCompleted,
-		JobFailed:
+		JobFailed,
+		JobUnsupported:
 		return nil
 	default:
 		return fmt.Errorf("invalid job status: %s", s)
@@ -83,8 +49,9 @@ func ParseJobStatus(s string) (JobStatus, error) {
 type Job struct {
 	BaseEntity
 
-	Action   ServiceAction `gorm:"type:varchar(50);not null"`
-	Priority int           `gorm:"not null;default:1"`
+	Action   ServiceAction    `gorm:"type:varchar(50);not null"`
+	Params   *properties.JSON `gorm:"type:jsonb"`
+	Priority int              `gorm:"not null;default:1"`
 
 	// Status management
 	Status       JobStatus  `gorm:"type:varchar(20);not null"`
@@ -129,7 +96,7 @@ func (j *Job) Validate() error {
 }
 
 // NewJob creates a new job instance with the provided parameters
-func NewJob(svc *Service, action ServiceAction, priority int) *Job {
+func NewJob(svc *Service, action ServiceAction, params *properties.JSON, priority int) *Job {
 	return &Job{
 		ConsumerID: svc.ConsumerID,
 		ProviderID: svc.ProviderID,
@@ -137,6 +104,7 @@ func NewJob(svc *Service, action ServiceAction, priority int) *Job {
 		ServiceID:  svc.ID,
 		Status:     JobPending,
 		Action:     action,
+		Params:     params,
 		Priority:   priority,
 	}
 }
@@ -173,22 +141,12 @@ func (j *Job) Fail(errorMessage string) error {
 	return nil
 }
 
-// Retry increments retry count and updates status
-func (j *Job) Retry() error {
-	if j.Status != JobFailed {
-		return fmt.Errorf("cannot retry a job not in failed status")
-	}
-	j.Status = JobPending
-	j.ErrorMessage = ""
-	return nil
-}
-
 // Unsupported marks a job as failed due to unsupported operation
 func (j *Job) Unsupported(errorMessage string) error {
 	if j.Status != JobProcessing {
 		return fmt.Errorf("cannot mark as unsupported a job not in processing status")
 	}
-	j.Status = JobFailed
+	j.Status = JobUnsupported
 	j.ErrorMessage = errorMessage
 	now := time.Now()
 	j.CompletedAt = &now
@@ -245,11 +203,9 @@ func (s *jobCommander) Claim(ctx context.Context, jobID properties.UUID) error {
 	if err != nil {
 		return err
 	}
-
 	if err := job.Claim(); err != nil {
 		return InvalidInputError{Err: err}
 	}
-
 	return s.store.JobRepo().Save(ctx, job)
 }
 
@@ -258,19 +214,14 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 	if err != nil {
 		return err
 	}
-
 	svc, err := s.store.ServiceRepo().Get(ctx, job.ServiceID)
 	if err != nil {
 		return err
 	}
-
-	if svc.TargetStatus == nil {
-		return InvalidInputError{Err: errors.New("cannot complete a job on service that is not in transition")}
-	}
-
 	originalSvc := *svc
 
 	return s.store.Atomic(ctx, func(store Store) error {
+		// Update job
 		if err := job.Complete(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -278,8 +229,8 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 			return err
 		}
 
-		// Coordinate with service
-		if err := svc.HandleJobComplete(params); err != nil {
+		// Update service
+		if err := svc.HandleJobComplete(job.Action, job.Params, params.Resources, params.ExternalID); err != nil {
 			return InvalidInputError{Err: err}
 		}
 		if err := svc.Validate(); err != nil {
@@ -288,6 +239,8 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
 		}
+
+		// Create event for the updated service
 		eventEntry, err := NewEvent(EventTypeServiceTransitioned, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
 		if err != nil {
 			return err
@@ -305,35 +258,11 @@ func (s *jobCommander) Fail(ctx context.Context, params FailJobParams) error {
 		return err
 	}
 
-	svc, err := s.store.ServiceRepo().Get(ctx, job.ServiceID)
-	if err != nil {
-		return err
-	}
-
-	originalSvc := *svc
-
 	return s.store.Atomic(ctx, func(store Store) error {
 		if err := job.Fail(params.ErrorMessage); err != nil {
 			return InvalidInputError{Err: err}
 		}
-
 		if err := store.JobRepo().Save(ctx, job); err != nil {
-			return err
-		}
-
-		// Coordinate with service
-		svc.HandleJobFailure(params.ErrorMessage, job.Action)
-		if err := svc.Validate(); err != nil {
-			return InvalidInputError{Err: err}
-		}
-		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
-			return err
-		}
-		eventEntry, err := NewEvent(EventTypeServiceTransitioned, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
-		if err != nil {
-			return err
-		}
-		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return err
@@ -346,37 +275,11 @@ func (s *jobCommander) Unsupported(ctx context.Context, params UnsupportedJobPar
 		return err
 	}
 
-	svc, err := s.store.ServiceRepo().Get(ctx, job.ServiceID)
-	if err != nil {
-		return err
-	}
-
-	originalSvc := *svc
-
 	return s.store.Atomic(ctx, func(store Store) error {
 		if err := job.Unsupported(params.ErrorMessage); err != nil {
 			return InvalidInputError{Err: err}
 		}
-
 		if err := store.JobRepo().Save(ctx, job); err != nil {
-			return err
-		}
-
-		// Roll back service state
-		svc.HandleJobUnsupported(params.ErrorMessage, job.Action)
-		if err := svc.Validate(); err != nil {
-			return InvalidInputError{Err: err}
-		}
-		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
-			return err
-		}
-
-		// Create audit event
-		eventEntry, err := NewEvent(EventTypeServiceTransitioned, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
-		if err != nil {
-			return err
-		}
-		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return nil
@@ -396,6 +299,12 @@ type JobQuerier interface {
 
 	// GetPendingJobsForAgent retrieves pending jobs targeted for a specific agent
 	GetPendingJobsForAgent(ctx context.Context, agentID properties.UUID, limit int) ([]*Job, error)
+
+	// GetPendingJobForService retrieves a pending job for a specific service
+	GetActiveJobForService(ctx context.Context, serviceID properties.UUID) (*Job, error)
+
+	// GetLastJobForService retrieves the last job for a specific service
+	GetLastJobForService(ctx context.Context, serviceID properties.UUID) (*Job, error)
 
 	// GetTimeOutJobs retrieves jobs that have been processing for too long and returns them
 	GetTimeOutJobs(ctx context.Context, olderThan time.Duration) ([]*Job, error)

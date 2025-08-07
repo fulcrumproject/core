@@ -170,7 +170,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Valid service",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
+				Status:        ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -183,7 +183,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Empty name",
 			service: &Service{
 				Name:          "",
-				CurrentStatus: ServiceCreated,
+				Status:        ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -197,7 +197,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Invalid current status",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentStatus: "InvalidStatus",
+				Status:        "InvalidStatus",
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -211,7 +211,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Invalid target status",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
+				Status:        ServiceCreated,
 				TargetStatus:  (*ServiceStatus)(stringPtr("InvalidStatus")),
 				GroupID:       validID,
 				AgentID:       validID,
@@ -226,7 +226,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Valid target status",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
+				Status:        ServiceCreated,
 				TargetStatus:  &createdStatus,
 				GroupID:       validID,
 				AgentID:       validID,
@@ -240,7 +240,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Nil group ID",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
+				Status:        ServiceCreated,
 				GroupID:       uuid.Nil,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -254,7 +254,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Nil agent ID",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
+				Status:        ServiceCreated,
 				GroupID:       validID,
 				AgentID:       uuid.Nil,
 				ServiceTypeID: validID,
@@ -268,7 +268,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Nil service type ID",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
+				Status:        ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: uuid.Nil,
@@ -281,15 +281,15 @@ func TestService_Validate(t *testing.T) {
 		{
 			name: "With properties",
 			service: &Service{
-				Name:              "Web Server",
-				CurrentStatus:     ServiceCreated,
-				GroupID:           validID,
-				AgentID:           validID,
-				ServiceTypeID:     validID,
-				ProviderID:        validID,
-				ConsumerID:        validID,
-				CurrentProperties: &properties.JSON{"port": 8080},
-				TargetProperties:  &properties.JSON{"port": 8888},
+				Name:             "Web Server",
+				Status:           ServiceCreated,
+				GroupID:          validID,
+				AgentID:          validID,
+				ServiceTypeID:    validID,
+				ProviderID:       validID,
+				ConsumerID:       validID,
+				Properties:       &properties.JSON{"port": 8080},
+				TargetProperties: &properties.JSON{"port": 8888},
 			},
 			wantErr: false,
 		},
@@ -297,7 +297,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With external ID",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
+				Status:        ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -311,7 +311,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With resources",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
+				Status:        ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -325,7 +325,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With error message",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
+				Status:        ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -339,7 +339,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With failed action",
 			service: &Service{
 				Name:          "Web Server",
-				CurrentStatus: ServiceCreated,
+				Status:        ServiceCreated,
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -437,7 +437,7 @@ func TestServiceNextStatusAndAction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			status, action, err := serviceNextStatusAndAction(tt.currentStatus, tt.targetStatus)
+			status, action, err := serviceNextStatus(tt.currentStatus, tt.targetStatus)
 
 			if tt.wantErr {
 				assert.Error(t, err)

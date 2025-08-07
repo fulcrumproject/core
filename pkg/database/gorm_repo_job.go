@@ -108,6 +108,46 @@ func (r *GormJobRepository) DeleteOldCompletedJobs(ctx context.Context, olderTha
 	return int(result.RowsAffected), nil
 }
 
+// GetActiveJobForService retrieves a pending or processing job for a specific service
+// Returns the job with highest priority if multiple exist
+func (r *GormJobRepository) GetActiveJobForService(ctx context.Context, serviceID properties.UUID) (*domain.Job, error) {
+	var job domain.Job
+	err := r.db.WithContext(ctx).
+		Preload("Agent").
+		Preload("Service").
+		Where("service_id = ? AND status IN ?", serviceID, []domain.JobStatus{domain.JobPending, domain.JobProcessing}).
+		Order("priority DESC, created_at ASC").
+		First(&job).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &job, nil
+}
+
+// GetLastJobForService retrieves the most recent job for a specific service
+// Ordered by created_at descending to get the latest job
+func (r *GormJobRepository) GetLastJobForService(ctx context.Context, serviceID properties.UUID) (*domain.Job, error) {
+	var job domain.Job
+	err := r.db.WithContext(ctx).
+		Preload("Agent").
+		Preload("Service").
+		Where("service_id = ?", serviceID).
+		Order("created_at DESC").
+		First(&job).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &job, nil
+}
+
 func (r *GormJobRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 	return r.AuthScopeByFields(ctx, id, "null", "provider_id", "agent_id", "consumer_id")
 }

@@ -55,15 +55,15 @@ func TestServiceRepository(t *testing.T) {
 
 	t.Run("Create", func(t *testing.T) {
 		service := &domain.Service{
-			Name:              "Test Service",
-			CurrentStatus:     domain.ServiceStarted,
-			CurrentProperties: &(properties.JSON{"key": "value"}),
-			Resources:         &(properties.JSON{"cpu": "1"}),
-			AgentID:           agent.ID,
-			ProviderID:        provider.ID, // Set ProviderID to the created provider's ID
-			ConsumerID:        consumer.ID, // Set ConsumerID to the created consumer's ID
-			ServiceTypeID:     serviceType.ID,
-			GroupID:           serviceGroup.ID,
+			Name:          "Test Service",
+			Status:        domain.ServiceStarted,
+			Properties:    &(properties.JSON{"key": "value"}),
+			Resources:     &(properties.JSON{"cpu": "1"}),
+			AgentID:       agent.ID,
+			ProviderID:    provider.ID, // Set ProviderID to the created provider's ID
+			ConsumerID:    consumer.ID, // Set ConsumerID to the created consumer's ID
+			ServiceTypeID: serviceType.ID,
+			GroupID:       serviceGroup.ID,
 		}
 
 		err := repo.Create(context.Background(), service)
@@ -76,15 +76,15 @@ func TestServiceRepository(t *testing.T) {
 	t.Run("Get", func(t *testing.T) {
 		// Create a service
 		service := &domain.Service{
-			Name:              "Test Service",
-			CurrentStatus:     domain.ServiceStarted,
-			CurrentProperties: &(properties.JSON{"key": "value"}),
-			Resources:         &(properties.JSON{"cpu": "1"}),
-			AgentID:           agent.ID,
-			ProviderID:        provider.ID, // Set ProviderID
-			ConsumerID:        consumer.ID, // Set ConsumerID
-			ServiceTypeID:     serviceType.ID,
-			GroupID:           serviceGroup.ID,
+			Name:          "Test Service",
+			Status:        domain.ServiceStarted,
+			Properties:    &(properties.JSON{"key": "value"}),
+			Resources:     &(properties.JSON{"cpu": "1"}),
+			AgentID:       agent.ID,
+			ProviderID:    provider.ID, // Set ProviderID
+			ConsumerID:    consumer.ID, // Set ConsumerID
+			ServiceTypeID: serviceType.ID,
+			GroupID:       serviceGroup.ID,
 		}
 		err := repo.Create(context.Background(), service)
 		require.NoError(t, err)
@@ -94,8 +94,8 @@ func TestServiceRepository(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, service.ID, found.ID)
 		assert.Equal(t, service.Name, found.Name)
-		assert.Equal(t, service.CurrentStatus, found.CurrentStatus)
-		assert.Equal(t, service.CurrentProperties, found.CurrentProperties)
+		assert.Equal(t, service.Status, found.Status)
+		assert.Equal(t, service.Properties, found.Properties)
 		assert.Equal(t, &(properties.JSON{"cpu": "1"}), found.Resources)
 		assert.Equal(t, service.AgentID, found.AgentID)
 		assert.Equal(t, service.ServiceTypeID, found.ServiceTypeID)
@@ -117,23 +117,23 @@ func TestServiceRepository(t *testing.T) {
 	t.Run("Save", func(t *testing.T) {
 		// Create a service
 		service := &domain.Service{
-			Name:              "Test Service",
-			CurrentStatus:     domain.ServiceStarted,
-			CurrentProperties: &(properties.JSON{"key": "value"}),
-			Resources:         &(properties.JSON{"cpu": "1"}),
-			AgentID:           agent.ID,
-			ProviderID:        provider.ID, // Set ProviderID
-			ConsumerID:        consumer.ID, // Set ConsumerID
-			ServiceTypeID:     serviceType.ID,
-			GroupID:           serviceGroup.ID,
+			Name:          "Test Service",
+			Status:        domain.ServiceStarted,
+			Properties:    &(properties.JSON{"key": "value"}),
+			Resources:     &(properties.JSON{"cpu": "1"}),
+			AgentID:       agent.ID,
+			ProviderID:    provider.ID, // Set ProviderID
+			ConsumerID:    consumer.ID, // Set ConsumerID
+			ServiceTypeID: serviceType.ID,
+			GroupID:       serviceGroup.ID,
 		}
 		err := repo.Create(context.Background(), service)
 		require.NoError(t, err)
 
 		// Update the service
 		service.Name = "Updated Service"
-		service.CurrentStatus = domain.ServiceStarted
-		service.CurrentProperties = &(properties.JSON{"key": "value"})
+		service.Status = domain.ServiceStarted
+		service.Properties = &(properties.JSON{"key": "value"})
 		service.Resources = &(properties.JSON{"cpu": "2"})
 
 		err = repo.Save(context.Background(), service)
@@ -143,8 +143,8 @@ func TestServiceRepository(t *testing.T) {
 		found, err := repo.Get(context.Background(), service.ID)
 		require.NoError(t, err)
 		assert.Equal(t, "Updated Service", found.Name)
-		assert.Equal(t, domain.ServiceStarted, found.CurrentStatus)
-		assert.Equal(t, &(properties.JSON{"key": "value"}), found.CurrentProperties)
+		assert.Equal(t, domain.ServiceStarted, found.Status)
+		assert.Equal(t, &(properties.JSON{"key": "value"}), found.Properties)
 		assert.Equal(t, &(properties.JSON{"cpu": "2"}), found.Resources)
 	})
 
@@ -152,7 +152,7 @@ func TestServiceRepository(t *testing.T) {
 		// Create a service
 		service := &domain.Service{
 			Name:          "Test Service",
-			CurrentStatus: domain.ServiceStarted,
+			Status:        domain.ServiceStarted,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID, // Set ProviderID
 			ConsumerID:    consumer.ID, // Set ConsumerID
@@ -177,9 +177,9 @@ func TestServiceRepository(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
 			// Create multiple services
 			services := []*domain.Service{
-				{Name: "Service A", CurrentStatus: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-				{Name: "Service B", CurrentStatus: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
-				{Name: "Service C", CurrentStatus: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service A", Status: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service B", Status: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
+				{Name: "Service C", Status: domain.ServiceStarted, AgentID: agent.ID, ProviderID: provider.ID, ConsumerID: consumer.ID, ServiceTypeID: serviceType.ID, GroupID: serviceGroup.ID},
 			}
 			for _, service := range services {
 				err := repo.Create(context.Background(), service)
@@ -224,7 +224,7 @@ func TestServiceRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 1)
 			for _, item := range result.Items {
-				assert.Equal(t, domain.ServiceStarted, item.CurrentStatus)
+				assert.Equal(t, domain.ServiceStarted, item.Status)
 			}
 		})
 
@@ -251,7 +251,7 @@ func TestServiceRepository(t *testing.T) {
 			for i := 0; i < 5; i++ {
 				service := &domain.Service{
 					Name:          "Paginated Service",
-					CurrentStatus: domain.ServiceStarted,
+					Status:        domain.ServiceStarted,
 					ProviderID:    provider.ID, // Set ProviderID
 					ConsumerID:    consumer.ID, // Set ConsumerID
 					AgentID:       agent.ID,
@@ -289,7 +289,7 @@ func TestServiceRepository(t *testing.T) {
 		// Create a service in the group
 		service := &domain.Service{
 			Name:          "Group Test Service",
-			CurrentStatus: domain.ServiceStarted,
+			Status:        domain.ServiceStarted,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID, // Set ProviderID
 			ConsumerID:    consumer.ID, // Set ConsumerID
@@ -314,7 +314,7 @@ func TestServiceRepository(t *testing.T) {
 		// Create a service for the agent
 		service := &domain.Service{
 			Name:          "Agent Test Service",
-			CurrentStatus: domain.ServiceStarted,
+			Status:        domain.ServiceStarted,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID,
 			ConsumerID:    consumer.ID,
@@ -341,7 +341,7 @@ func TestServiceRepository(t *testing.T) {
 		externalID := "ext-123456"
 		service := &domain.Service{
 			Name:          "External ID Test Service",
-			CurrentStatus: domain.ServiceStarted,
+			Status:        domain.ServiceStarted,
 			ExternalID:    &externalID,
 			AgentID:       agent.ID,
 			ProviderID:    provider.ID,
