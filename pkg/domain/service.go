@@ -433,16 +433,13 @@ func (s *serviceCommander) Update(ctx context.Context, params UpdateServiceParam
 			}
 
 			// If pending job exists, fail it
-			job, err := store.JobRepo().GetActiveJobForService(ctx, svc.ID)
+			err = checkHasNotActiveJob(ctx, s.store, svc)
 			if err != nil {
 				return err
 			}
-			if job != nil {
-				return NewInvalidInputErrorf("cannot update service %s while there is an active job %s", svc.ID, job.ID)
-			}
 
 			// Create new job
-			job = NewJob(svc, ServiceActionUpdate, params.Properties, 1)
+			job := NewJob(svc, ServiceActionUpdate, params.Properties, 1)
 			if err := job.Validate(); err != nil {
 				return err
 			}
@@ -505,12 +502,9 @@ func (s *serviceCommander) DoAction(ctx context.Context, params DoServiceActionP
 	}
 
 	// If pending job exists, fail it
-	job, err := s.store.JobRepo().GetActiveJobForService(ctx, svc.ID)
+	err = checkHasNotActiveJob(ctx, s.store, svc)
 	if err != nil {
 		return nil, err
-	}
-	if job != nil {
-		return nil, NewInvalidInputErrorf("cannot update service %s while there is an active job %s", svc.ID, job.ID)
 	}
 
 	// Create the new job
@@ -530,6 +524,7 @@ func (s *serviceCommander) DoAction(ctx context.Context, params DoServiceActionP
 
 	return svc, nil
 }
+
 func (s *serviceCommander) Retry(ctx context.Context, id properties.UUID) (*Service, error) {
 	// Check if the service exists
 	svc, err := s.store.ServiceRepo().Get(ctx, id)
@@ -562,6 +557,17 @@ func (s *serviceCommander) Retry(ctx context.Context, id properties.UUID) (*Serv
 	}
 
 	return svc, nil
+}
+
+func checkHasNotActiveJob(ctx context.Context, store Store, svc *Service) error {
+	job, err := store.JobRepo().GetLastJobForService(ctx, svc.ID)
+	if err != nil {
+		return err
+	}
+	if job != nil && job.IsActive() {
+		return NewInvalidInputErrorf("cannot update service %s while there is an active job %s", svc.ID, job.ID)
+	}
+	return nil
 }
 
 func (s *serviceCommander) FailTimeoutServicesAndJobs(ctx context.Context, timeout time.Duration) (int, error) {

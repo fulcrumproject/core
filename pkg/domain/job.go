@@ -153,6 +153,11 @@ func (j *Job) Unsupported(errorMessage string) error {
 	return nil
 }
 
+// IsActive checks if the job is active
+func (j *Job) IsActive() bool {
+	return j.Status == JobProcessing || j.Status == JobPending || j.Status == JobFailed
+}
+
 // JobCommander defines the interface for job command operations
 type JobCommander interface {
 	// Claim claims a job for an agent
@@ -299,9 +304,6 @@ type JobQuerier interface {
 
 	// GetPendingJobsForAgent retrieves pending jobs targeted for a specific agent
 	GetPendingJobsForAgent(ctx context.Context, agentID properties.UUID, limit int) ([]*Job, error)
-
-	// GetPendingJobForService retrieves a pending job for a specific service
-	GetActiveJobForService(ctx context.Context, serviceID properties.UUID) (*Job, error)
 
 	// GetLastJobForService retrieves the last job for a specific service
 	GetLastJobForService(ctx context.Context, serviceID properties.UUID) (*Job, error)
