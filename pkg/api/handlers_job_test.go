@@ -456,6 +456,7 @@ func TestJobHandlerRoutes(t *testing.T) {
 		case method == "POST" && route == "/{id}/claim":
 		case method == "POST" && route == "/{id}/complete":
 		case method == "POST" && route == "/{id}/fail":
+		case method == "POST" && route == "/{id}/unsupported":
 		default:
 			return fmt.Errorf("unexpected route: %s %s", method, route)
 		}
@@ -464,4 +465,67 @@ func TestJobHandlerRoutes(t *testing.T) {
 
 	err := chi.Walk(r, walkFunc)
 	assert.NoError(t, err)
+}
+
+// TestJobHandlerUnsupported tests the Unsupported method
+func TestJobHandlerUnsupported(t *testing.T) {
+	testCases := []struct {
+		name      string
+		jobID     properties.UUID
+		request   *UnsupportedJobReq
+		mockSetup func(commander *mockJobCommander)
+		wantError bool
+	}{
+		{
+			name:  "Success",
+			jobID: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+			request: &UnsupportedJobReq{
+				ErrorMessage: "Operation not supported by this agent",
+			},
+			mockSetup: func(commander *mockJobCommander) {
+				commander.unsupportedFunc = func(ctx context.Context, params domain.UnsupportedJobParams) error {
+					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), params.JobID)
+					assert.Equal(t, "Operation not supported by this agent", params.ErrorMessage)
+					return nil
+				}
+			},
+			wantError: false,
+		},
+		{
+			name:  "Commander Error",
+			jobID: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+			request: &UnsupportedJobReq{
+				ErrorMessage: "Operation not supported",
+			},
+			mockSetup: func(commander *mockJobCommander) {
+				commander.unsupportedFunc = func(ctx context.Context, params domain.UnsupportedJobParams) error {
+					return fmt.Errorf("job not found")
+				}
+			},
+			wantError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup mocks
+			querier := &mockJobQuerier{}
+			commander := &mockJobCommander{}
+			authz := &MockAuthorizer{ShouldSucceed: true}
+			tc.mockSetup(commander)
+
+			// Create the handler
+			handler := NewJobHandler(querier, commander, authz)
+
+			// Execute the method directly
+			err := handler.Unsupported(context.Background(), tc.jobID, tc.request)
+
+			// Assert results
+			if tc.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

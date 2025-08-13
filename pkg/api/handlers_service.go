@@ -190,29 +190,29 @@ func (h *ServiceHandler) Update(ctx context.Context, id properties.UUID, req *Up
 }
 
 func (h *ServiceHandler) Start(ctx context.Context, id properties.UUID) error {
-	params := domain.TransitionServiceParams{
+	params := domain.DoServiceActionParams{
 		ID:     id,
-		Target: domain.ServiceStarted,
+		Action: domain.ServiceActionStart,
 	}
-	_, err := h.commander.Transition(ctx, params)
+	_, err := h.commander.DoAction(ctx, params)
 	return err
 }
 
 func (h *ServiceHandler) Stop(ctx context.Context, id properties.UUID) error {
-	params := domain.TransitionServiceParams{
+	params := domain.DoServiceActionParams{
 		ID:     id,
-		Target: domain.ServiceStopped,
+		Action: domain.ServiceActionStop,
 	}
-	_, err := h.commander.Transition(ctx, params)
+	_, err := h.commander.DoAction(ctx, params)
 	return err
 }
 
 func (h *ServiceHandler) Delete(ctx context.Context, id properties.UUID) error {
-	params := domain.TransitionServiceParams{
+	params := domain.DoServiceActionParams{
 		ID:     id,
-		Target: domain.ServiceDeleted,
+		Action: domain.ServiceActionDelete,
 	}
-	_, err := h.commander.Transition(ctx, params)
+	_, err := h.commander.DoAction(ctx, params)
 	return err
 }
 
@@ -223,47 +223,37 @@ func (h *ServiceHandler) Retry(ctx context.Context, id properties.UUID) error {
 
 // ServiceRes represents the response body for service operations
 type ServiceRes struct {
-	ID                properties.UUID       `json:"id"`
-	ProviderID        properties.UUID       `json:"providerId"`
-	ConsumerID        properties.UUID       `json:"consumerId"`
-	AgentID           properties.UUID       `json:"agentId"`
-	ServiceTypeID     properties.UUID       `json:"serviceTypeId"`
-	GroupID           properties.UUID       `json:"groupId"`
-	ExternalID        *string               `json:"externalId,omitempty"`
-	Name              string                `json:"name"`
-	CurrentStatus     domain.ServiceStatus  `json:"currentStatus"`
-	TargetStatus      *domain.ServiceStatus `json:"targetStatus,omitempty"`
-	FailedAction      *domain.ServiceAction `json:"failedAction,omitempty"`
-	ErrorMessage      *string               `json:"errorMessage,omitempty"`
-	RetryCount        int                   `json:"retryCount,omitempty"`
-	CurrentProperties *properties.JSON      `json:"currentProperties,omitempty"`
-	TargetProperties  *properties.JSON      `json:"targetProperties,omitempty"`
-	Resources         *properties.JSON      `json:"resources,omitempty"`
-	CreatedAt         JSONUTCTime           `json:"createdAt"`
-	UpdatedAt         JSONUTCTime           `json:"updatedAt"`
+	ID            properties.UUID      `json:"id"`
+	ProviderID    properties.UUID      `json:"providerId"`
+	ConsumerID    properties.UUID      `json:"consumerId"`
+	AgentID       properties.UUID      `json:"agentId"`
+	ServiceTypeID properties.UUID      `json:"serviceTypeId"`
+	GroupID       properties.UUID      `json:"groupId"`
+	ExternalID    *string              `json:"externalId,omitempty"`
+	Name          string               `json:"name"`
+	Status        domain.ServiceStatus `json:"status"`
+	Properties    *properties.JSON     `json:"properties,omitempty"`
+	Resources     *properties.JSON     `json:"resources,omitempty"`
+	CreatedAt     JSONUTCTime          `json:"createdAt"`
+	UpdatedAt     JSONUTCTime          `json:"updatedAt"`
 }
 
 // ServiceToRes converts a domain.Service to a ServiceResponse
 func ServiceToRes(s *domain.Service) *ServiceRes {
 	resp := &ServiceRes{
-		ID:                s.ID,
-		ProviderID:        s.ProviderID,
-		ConsumerID:        s.ConsumerID,
-		AgentID:           s.AgentID,
-		ServiceTypeID:     s.ServiceTypeID,
-		GroupID:           s.GroupID,
-		ExternalID:        s.ExternalID,
-		Name:              s.Name,
-		CurrentStatus:     s.CurrentStatus,
-		TargetStatus:      s.TargetStatus,
-		FailedAction:      s.FailedAction,
-		ErrorMessage:      s.ErrorMessage,
-		RetryCount:        s.RetryCount,
-		CurrentProperties: s.CurrentProperties,
-		TargetProperties:  s.TargetProperties,
-		Resources:         s.Resources,
-		CreatedAt:         JSONUTCTime(s.CreatedAt),
-		UpdatedAt:         JSONUTCTime(s.UpdatedAt),
+		ID:            s.ID,
+		ProviderID:    s.ProviderID,
+		ConsumerID:    s.ConsumerID,
+		AgentID:       s.AgentID,
+		ServiceTypeID: s.ServiceTypeID,
+		GroupID:       s.GroupID,
+		ExternalID:    s.ExternalID,
+		Name:          s.Name,
+		Status:        s.Status,
+		Properties:    s.Properties,
+		Resources:     s.Resources,
+		CreatedAt:     JSONUTCTime(s.CreatedAt),
+		UpdatedAt:     JSONUTCTime(s.UpdatedAt),
 	}
 	return resp
 }

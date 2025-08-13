@@ -158,8 +158,8 @@ func (r *GormEventRepository) getServiceStatusAtTime(ctx context.Context, servic
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			// No transition events found before this time, assume service was in Created state
-			return domain.ServiceCreated, nil
+			// No transition events found before this time, assume service was in New state
+			return domain.ServiceNew, nil
 		}
 		return "", fmt.Errorf("failed to query service status: %w", result.Error)
 	}
@@ -221,9 +221,6 @@ func (r *GormEventRepository) extractServiceStatusFromEvent(event *domain.Event)
 func (r *GormEventRepository) isRunningStatus(status domain.ServiceStatus) bool {
 	switch status {
 	case domain.ServiceStarted:
-		return true
-	case domain.ServiceHotUpdating:
-		// Service is still considered running during hot updates
 		return true
 	default:
 		return false

@@ -108,6 +108,7 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/jobs/pending
 Authorization: Bearer {{agentToken}}
 
+### Get a job by ID
 @jobId = {{pendingJobs.response.body.$.[0].id}}
 
 ### Get a job by ID
@@ -146,6 +147,7 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/jobs/pending
 Authorization: Bearer {{agentToken}}
 
+### Get a job by ID
 @failJobId = {{pendingJobs2.response.body.$.[0].id}}
 
 ### Claim the job for failure testing
@@ -162,4 +164,75 @@ Authorization: Bearer {{agentToken}}
 
 ### Check the failed job status
 GET {{baseUrl}}/jobs/{{failJobId}}
+Authorization: Bearer {{adminToken}}
+
+### Retry Service Operation
+POST {{baseUrl}}/services/{{serviceId}}/retry
+Authorization: Bearer {{adminToken}}
+
+### Get pending jobs for agent
+# @name pendingJobs
+GET {{baseUrl}}/jobs/pending
+Authorization: Bearer {{agentToken}}
+
+### Get a job by ID
+@jobId = {{pendingJobs.response.body.$.[0].id}}
+
+### Get a job by ID
+GET {{baseUrl}}/jobs/{{jobId}}
+Authorization: Bearer {{adminToken}}
+
+### Claim a job
+POST {{baseUrl}}/jobs/{{jobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete a job
+POST {{baseUrl}}/jobs/{{jobId}}/complete
+Authorization: Bearer {{agentToken}}
+
+{
+    "resources": {
+        "status": "success",
+        "details": {
+            "duration": "10s",
+            "output": "Service started successfully after retry"
+        }
+    },
+    "externalId": "{{$guid}}"
+}
+
+### Get Service
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+### Start the created service to trigger job creation
+POST {{baseUrl}}/services/{{serviceId}}/stop
+Authorization: Bearer {{adminToken}}
+
+### Get pending jobs for agent
+# @name pendingJobs2
+GET {{baseUrl}}/jobs/pending
+Authorization: Bearer {{agentToken}}
+
+### Get a job by ID
+@unsupportedJobId = {{pendingJobs2.response.body.$.[0].id}}
+
+### Claim the job for failure testing
+POST {{baseUrl}}/jobs/{{unsupportedJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Fail a job
+POST {{baseUrl}}/jobs/{{unsupportedJobId}}/unsupported
+Authorization: Bearer {{agentToken}}
+
+{
+    "errorMessage": "Operation not supported"
+}
+
+### Check the failed job status
+GET {{baseUrl}}/jobs/{{unsupportedJobId}}
+Authorization: Bearer {{adminToken}}
+
+### Get Service
+GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}

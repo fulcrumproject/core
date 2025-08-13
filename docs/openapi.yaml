@@ -322,19 +322,7 @@ components:
     # Service schemas
     ServiceStatus:
       type: string
-      enum:
-        [
-          Creating,
-          Created,
-          Starting,
-          Started,
-          Stopping,
-          Stopped,
-          HotUpdating,
-          ColdUpdating,
-          Deleting,
-          Deleted,
-        ]
+      enum: [New, Started, Stopped, Deleted]
 
     ServiceReq:
       type: object
@@ -370,44 +358,25 @@ components:
         name:
           type: string
           example: "web-server-01"
-        currentStatus:
+        status:
           $ref: "#/components/schemas/ServiceStatus"
-        targetStatus:
-          $ref: "#/components/schemas/ServiceStatus"
-        currentProperties:
+        properties:
           $ref: "#/components/schemas/JSONObject"
-        targetProperties:
-          $ref: "#/components/schemas/JSONObject"
-        failedAction:
-          $ref: "#/components/schemas/ServiceAction"
-        errorMessage:
-          type: string
-          example: "Failed to start service: insufficient resources"
-        retryCount:
-          type: integer
-          example: 0
         resources:
           $ref: "#/components/schemas/JSONObject"
         externalId:
           type: string
+          nullable: true
+        providerId:
+          $ref: "#/components/schemas/properties.UUID"
+        consumerId:
+          $ref: "#/components/schemas/properties.UUID"
         agentId:
           $ref: "#/components/schemas/properties.UUID"
         serviceTypeId:
           $ref: "#/components/schemas/properties.UUID"
         groupId:
           $ref: "#/components/schemas/properties.UUID"
-        providerId:
-          $ref: "#/components/schemas/properties.UUID"
-        consumerId:
-          $ref: "#/components/schemas/properties.UUID"
-        agent:
-          $ref: "#/components/schemas/AgentRes"
-        serviceType:
-          $ref: "#/components/schemas/ServiceTypeRes"
-        group:
-          $ref: "#/components/schemas/ServiceGroupRes"
-        consumerParticipant:
-          $ref: "#/components/schemas/ParticipantRes"
         createdAt:
           type: string
           format: date-time
@@ -476,62 +445,60 @@ components:
     # Action types
     ServiceAction:
       type: string
-      enum:
-        [
-          ServiceCreate,
-          ServiceStart,
-          ServiceStop,
-          ServiceHotUpdate,
-          ServiceColdUpdate,
-          ServiceDelete,
-        ]
+      enum: [Create, Start, Stop, Update, Delete]
 
     # Job schemas
     # Using the same ServiceAction enum for job actions
 
     JobStatus:
       type: string
-      enum: [Pending, Processing, Completed, Failed]
+      enum: [Pending, Processing, Completed, Failed, Unsupported]
 
     JobRes:
       type: object
       properties:
         id:
           $ref: "#/components/schemas/properties.UUID"
-        action:
-          $ref: "#/components/schemas/ServiceAction" # Use the common ServiceAction enum
-        status:
-          $ref: "#/components/schemas/JobStatus"
+        providerId:
+          $ref: "#/components/schemas/properties.UUID"
+          description: "ID of the participant that provides the service"
+        consumerId:
+          $ref: "#/components/schemas/properties.UUID"
+          description: "ID of the participant that consumes the service"
         agentId:
           $ref: "#/components/schemas/properties.UUID"
         serviceId:
           $ref: "#/components/schemas/properties.UUID"
+        action:
+          $ref: "#/components/schemas/ServiceAction" # Use the common ServiceAction enum
+        params:
+          $ref: "#/components/schemas/JSONObject"
+          description: "Parameters for the job action"
+        status:
+          $ref: "#/components/schemas/JobStatus"
         priority:
           type: integer
           example: 1
-        requestData:
-          $ref: "#/components/schemas/JSONObject"
-        resultData:
-          $ref: "#/components/schemas/JSONObject"
         errorMessage:
           type: string
           example: "Failed to create VM: insufficient resources"
         claimedAt:
           type: string
           format: date-time
+          nullable: true
         completedAt:
           type: string
           format: date-time
+          nullable: true
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-        agent:
-          $ref: "#/components/schemas/AgentRes"
         service:
           $ref: "#/components/schemas/ServiceRes"
+          description: "Associated service details (optional)"
 
     CompleteJobReq:
       type: object
@@ -549,6 +516,16 @@ components:
         errorMessage:
           type: string
           example: "Failed to create VM: insufficient resources"
+
+    UnsupportedJobReq:
+      type: object
+      required:
+        - errorMessage
+      properties:
+        errorMessage:
+          type: string
+          description: Error message describing why the operation is not supported
+          example: "Hot updates are not supported by this agent version"
 
     # Metric schemas
     MetricEntityType:
@@ -2270,6 +2247,59 @@ paths:
           description: Job marked as failed successfully
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+
+  /jobs/{id}/unsupported:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/properties.UUID"
+    post:
+      summary: Mark a job as unsupported
+      tags:
+        - Jobs
+      description: |
+        Marks a job as failed due to an unsupported operation and rolls back the service state.
+        Unlike regular failures, this clears the service's target status and properties,
+        rolling back to the previous stable state. Unsupported operations are not retried.
+      security:
+        - BearerAuth: []
+      x-auth-roles:
+        - agent: Can mark jobs assigned to the agent as unsupported
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnsupportedJobReq"
+      responses:
+        "204":
+          description: Job marked as unsupported successfully and service state rolled back
+        "400":
+          description: Invalid request (job not in processing state, missing error message, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "403":
+          description: Forbidden - insufficient permissions
           content:
             application/json:
               schema:

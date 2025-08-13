@@ -24,6 +24,10 @@ type FailJobReq struct {
 	ErrorMessage string `json:"errorMessage"`
 }
 
+type UnsupportedJobReq struct {
+	ErrorMessage string `json:"errorMessage"`
+}
+
 // JobHandler handles HTTP requests for jobs
 type JobHandler struct {
 	querier   domain.JobQuerier
@@ -84,6 +88,12 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 				middlewares.DecodeBody[FailJobReq](),
 				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionFail, h.authz, h.querier.AuthScope),
 			).Post("/{id}/fail", Command(h.Fail))
+
+			r.With(
+				middlewares.MustHaveRoles(auth.RoleAgent),
+				middlewares.DecodeBody[UnsupportedJobReq](),
+				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionFail, h.authz, h.querier.AuthScope),
+			).Post("/{id}/unsupported", Command(h.Unsupported))
 		})
 	}
 }
@@ -137,6 +147,14 @@ func (h *JobHandler) Fail(ctx context.Context, id properties.UUID, req *FailJobR
 	return h.commander.Fail(ctx, params)
 }
 
+func (h *JobHandler) Unsupported(ctx context.Context, id properties.UUID, req *UnsupportedJobReq) error {
+	params := domain.UnsupportedJobParams{
+		JobID:        id,
+		ErrorMessage: req.ErrorMessage,
+	}
+	return h.commander.Unsupported(ctx, params)
+}
+
 // JobRes represents the response for a job
 type JobRes struct {
 	ID           properties.UUID      `json:"id"`
@@ -145,6 +163,7 @@ type JobRes struct {
 	AgentID      properties.UUID      `json:"agentId"`
 	ServiceID    properties.UUID      `json:"serviceId"`
 	Action       domain.ServiceAction `json:"action"`
+	Params       *properties.JSON     `json:"params,omitempty"`
 	Status       domain.JobStatus     `json:"status"`
 	Priority     int                  `json:"priority"`
 	ErrorMessage string               `json:"errorMessage,omitempty"`
@@ -164,6 +183,7 @@ func JobToRes(job *domain.Job) *JobRes {
 		ConsumerID:   job.ConsumerID,
 		ServiceID:    job.ServiceID,
 		Action:       job.Action,
+		Params:       job.Params,
 		Status:       job.Status,
 		Priority:     job.Priority,
 		ErrorMessage: job.ErrorMessage,

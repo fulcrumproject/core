@@ -41,8 +41,8 @@ func (_m *MockAgentCommander) EXPECT() *MockAgentCommander_Expecter {
 }
 
 // Create provides a mock function for the type MockAgentCommander
-func (_mock *MockAgentCommander) Create(ctx context.Context, name string, providerID properties.UUID, agentTypeID properties.UUID, tags []string) (*Agent, error) {
-	ret := _mock.Called(ctx, name, providerID, agentTypeID, tags)
+func (_mock *MockAgentCommander) Create(ctx context.Context, params CreateAgentParams) (*Agent, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -50,18 +50,18 @@ func (_mock *MockAgentCommander) Create(ctx context.Context, name string, provid
 
 	var r0 *Agent
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, properties.UUID, properties.UUID, []string) (*Agent, error)); ok {
-		return returnFunc(ctx, name, providerID, agentTypeID, tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateAgentParams) (*Agent, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, properties.UUID, properties.UUID, []string) *Agent); ok {
-		r0 = returnFunc(ctx, name, providerID, agentTypeID, tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateAgentParams) *Agent); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Agent)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, properties.UUID, properties.UUID, []string) error); ok {
-		r1 = returnFunc(ctx, name, providerID, agentTypeID, tags)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateAgentParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -75,42 +75,24 @@ type MockAgentCommander_Create_Call struct {
 
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
-//   - name string
-//   - providerID properties.UUID
-//   - agentTypeID properties.UUID
-//   - tags []string
-func (_e *MockAgentCommander_Expecter) Create(ctx interface{}, name interface{}, providerID interface{}, agentTypeID interface{}, tags interface{}) *MockAgentCommander_Create_Call {
-	return &MockAgentCommander_Create_Call{Call: _e.mock.On("Create", ctx, name, providerID, agentTypeID, tags)}
+//   - params CreateAgentParams
+func (_e *MockAgentCommander_Expecter) Create(ctx interface{}, params interface{}) *MockAgentCommander_Create_Call {
+	return &MockAgentCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
 }
 
-func (_c *MockAgentCommander_Create_Call) Run(run func(ctx context.Context, name string, providerID properties.UUID, agentTypeID properties.UUID, tags []string)) *MockAgentCommander_Create_Call {
+func (_c *MockAgentCommander_Create_Call) Run(run func(ctx context.Context, params CreateAgentParams)) *MockAgentCommander_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 CreateAgentParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 properties.UUID
-		if args[2] != nil {
-			arg2 = args[2].(properties.UUID)
-		}
-		var arg3 properties.UUID
-		if args[3] != nil {
-			arg3 = args[3].(properties.UUID)
-		}
-		var arg4 []string
-		if args[4] != nil {
-			arg4 = args[4].([]string)
+			arg1 = args[1].(CreateAgentParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
-			arg4,
 		)
 	})
 	return _c
@@ -121,7 +103,7 @@ func (_c *MockAgentCommander_Create_Call) Return(agent *Agent, err error) *MockA
 	return _c
 }
 
-func (_c *MockAgentCommander_Create_Call) RunAndReturn(run func(ctx context.Context, name string, providerID properties.UUID, agentTypeID properties.UUID, tags []string) (*Agent, error)) *MockAgentCommander_Create_Call {
+func (_c *MockAgentCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateAgentParams) (*Agent, error)) *MockAgentCommander_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -184,8 +166,8 @@ func (_c *MockAgentCommander_Delete_Call) RunAndReturn(run func(ctx context.Cont
 }
 
 // Update provides a mock function for the type MockAgentCommander
-func (_mock *MockAgentCommander) Update(ctx context.Context, id properties.UUID, name *string, status *AgentStatus, tags *[]string) (*Agent, error) {
-	ret := _mock.Called(ctx, id, name, status, tags)
+func (_mock *MockAgentCommander) Update(ctx context.Context, params UpdateAgentParams) (*Agent, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -193,18 +175,18 @@ func (_mock *MockAgentCommander) Update(ctx context.Context, id properties.UUID,
 
 	var r0 *Agent
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string, *AgentStatus, *[]string) (*Agent, error)); ok {
-		return returnFunc(ctx, id, name, status, tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateAgentParams) (*Agent, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string, *AgentStatus, *[]string) *Agent); ok {
-		r0 = returnFunc(ctx, id, name, status, tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateAgentParams) *Agent); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Agent)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, *string, *AgentStatus, *[]string) error); ok {
-		r1 = returnFunc(ctx, id, name, status, tags)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateAgentParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -218,42 +200,24 @@ type MockAgentCommander_Update_Call struct {
 
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
-//   - id properties.UUID
-//   - name *string
-//   - status *AgentStatus
-//   - tags *[]string
-func (_e *MockAgentCommander_Expecter) Update(ctx interface{}, id interface{}, name interface{}, status interface{}, tags interface{}) *MockAgentCommander_Update_Call {
-	return &MockAgentCommander_Update_Call{Call: _e.mock.On("Update", ctx, id, name, status, tags)}
+//   - params UpdateAgentParams
+func (_e *MockAgentCommander_Expecter) Update(ctx interface{}, params interface{}) *MockAgentCommander_Update_Call {
+	return &MockAgentCommander_Update_Call{Call: _e.mock.On("Update", ctx, params)}
 }
 
-func (_c *MockAgentCommander_Update_Call) Run(run func(ctx context.Context, id properties.UUID, name *string, status *AgentStatus, tags *[]string)) *MockAgentCommander_Update_Call {
+func (_c *MockAgentCommander_Update_Call) Run(run func(ctx context.Context, params UpdateAgentParams)) *MockAgentCommander_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 UpdateAgentParams
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 *string
-		if args[2] != nil {
-			arg2 = args[2].(*string)
-		}
-		var arg3 *AgentStatus
-		if args[3] != nil {
-			arg3 = args[3].(*AgentStatus)
-		}
-		var arg4 *[]string
-		if args[4] != nil {
-			arg4 = args[4].(*[]string)
+			arg1 = args[1].(UpdateAgentParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
-			arg4,
 		)
 	})
 	return _c
@@ -264,14 +228,14 @@ func (_c *MockAgentCommander_Update_Call) Return(agent *Agent, err error) *MockA
 	return _c
 }
 
-func (_c *MockAgentCommander_Update_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, name *string, status *AgentStatus, tags *[]string) (*Agent, error)) *MockAgentCommander_Update_Call {
+func (_c *MockAgentCommander_Update_Call) RunAndReturn(run func(ctx context.Context, params UpdateAgentParams) (*Agent, error)) *MockAgentCommander_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateStatus provides a mock function for the type MockAgentCommander
-func (_mock *MockAgentCommander) UpdateStatus(ctx context.Context, id properties.UUID, status AgentStatus) (*Agent, error) {
-	ret := _mock.Called(ctx, id, status)
+func (_mock *MockAgentCommander) UpdateStatus(ctx context.Context, params UpdateAgentStatusParams) (*Agent, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateStatus")
@@ -279,18 +243,18 @@ func (_mock *MockAgentCommander) UpdateStatus(ctx context.Context, id properties
 
 	var r0 *Agent
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, AgentStatus) (*Agent, error)); ok {
-		return returnFunc(ctx, id, status)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateAgentStatusParams) (*Agent, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, AgentStatus) *Agent); ok {
-		r0 = returnFunc(ctx, id, status)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateAgentStatusParams) *Agent); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Agent)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, AgentStatus) error); ok {
-		r1 = returnFunc(ctx, id, status)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateAgentStatusParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -304,30 +268,24 @@ type MockAgentCommander_UpdateStatus_Call struct {
 
 // UpdateStatus is a helper method to define mock.On call
 //   - ctx context.Context
-//   - id properties.UUID
-//   - status AgentStatus
-func (_e *MockAgentCommander_Expecter) UpdateStatus(ctx interface{}, id interface{}, status interface{}) *MockAgentCommander_UpdateStatus_Call {
-	return &MockAgentCommander_UpdateStatus_Call{Call: _e.mock.On("UpdateStatus", ctx, id, status)}
+//   - params UpdateAgentStatusParams
+func (_e *MockAgentCommander_Expecter) UpdateStatus(ctx interface{}, params interface{}) *MockAgentCommander_UpdateStatus_Call {
+	return &MockAgentCommander_UpdateStatus_Call{Call: _e.mock.On("UpdateStatus", ctx, params)}
 }
 
-func (_c *MockAgentCommander_UpdateStatus_Call) Run(run func(ctx context.Context, id properties.UUID, status AgentStatus)) *MockAgentCommander_UpdateStatus_Call {
+func (_c *MockAgentCommander_UpdateStatus_Call) Run(run func(ctx context.Context, params UpdateAgentStatusParams)) *MockAgentCommander_UpdateStatus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 UpdateAgentStatusParams
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 AgentStatus
-		if args[2] != nil {
-			arg2 = args[2].(AgentStatus)
+			arg1 = args[1].(UpdateAgentStatusParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -338,7 +296,7 @@ func (_c *MockAgentCommander_UpdateStatus_Call) Return(agent *Agent, err error) 
 	return _c
 }
 
-func (_c *MockAgentCommander_UpdateStatus_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, status AgentStatus) (*Agent, error)) *MockAgentCommander_UpdateStatus_Call {
+func (_c *MockAgentCommander_UpdateStatus_Call) RunAndReturn(run func(ctx context.Context, params UpdateAgentStatusParams) (*Agent, error)) *MockAgentCommander_UpdateStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -4694,8 +4652,8 @@ func (_m *MockEventSubscriptionCommander) EXPECT() *MockEventSubscriptionCommand
 }
 
 // AcknowledgeEvents provides a mock function for the type MockEventSubscriptionCommander
-func (_mock *MockEventSubscriptionCommander) AcknowledgeEvents(ctx context.Context, subscriberID string, instanceID string, lastEventSequenceProcessed int64) (*EventSubscription, error) {
-	ret := _mock.Called(ctx, subscriberID, instanceID, lastEventSequenceProcessed)
+func (_mock *MockEventSubscriptionCommander) AcknowledgeEvents(ctx context.Context, params AcknowledgeEventsParams) (*EventSubscription, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AcknowledgeEvents")
@@ -4703,18 +4661,18 @@ func (_mock *MockEventSubscriptionCommander) AcknowledgeEvents(ctx context.Conte
 
 	var r0 *EventSubscription
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, int64) (*EventSubscription, error)); ok {
-		return returnFunc(ctx, subscriberID, instanceID, lastEventSequenceProcessed)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AcknowledgeEventsParams) (*EventSubscription, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, int64) *EventSubscription); ok {
-		r0 = returnFunc(ctx, subscriberID, instanceID, lastEventSequenceProcessed)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AcknowledgeEventsParams) *EventSubscription); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*EventSubscription)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, int64) error); ok {
-		r1 = returnFunc(ctx, subscriberID, instanceID, lastEventSequenceProcessed)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, AcknowledgeEventsParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -4728,36 +4686,24 @@ type MockEventSubscriptionCommander_AcknowledgeEvents_Call struct {
 
 // AcknowledgeEvents is a helper method to define mock.On call
 //   - ctx context.Context
-//   - subscriberID string
-//   - instanceID string
-//   - lastEventSequenceProcessed int64
-func (_e *MockEventSubscriptionCommander_Expecter) AcknowledgeEvents(ctx interface{}, subscriberID interface{}, instanceID interface{}, lastEventSequenceProcessed interface{}) *MockEventSubscriptionCommander_AcknowledgeEvents_Call {
-	return &MockEventSubscriptionCommander_AcknowledgeEvents_Call{Call: _e.mock.On("AcknowledgeEvents", ctx, subscriberID, instanceID, lastEventSequenceProcessed)}
+//   - params AcknowledgeEventsParams
+func (_e *MockEventSubscriptionCommander_Expecter) AcknowledgeEvents(ctx interface{}, params interface{}) *MockEventSubscriptionCommander_AcknowledgeEvents_Call {
+	return &MockEventSubscriptionCommander_AcknowledgeEvents_Call{Call: _e.mock.On("AcknowledgeEvents", ctx, params)}
 }
 
-func (_c *MockEventSubscriptionCommander_AcknowledgeEvents_Call) Run(run func(ctx context.Context, subscriberID string, instanceID string, lastEventSequenceProcessed int64)) *MockEventSubscriptionCommander_AcknowledgeEvents_Call {
+func (_c *MockEventSubscriptionCommander_AcknowledgeEvents_Call) Run(run func(ctx context.Context, params AcknowledgeEventsParams)) *MockEventSubscriptionCommander_AcknowledgeEvents_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 AcknowledgeEventsParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		var arg3 int64
-		if args[3] != nil {
-			arg3 = args[3].(int64)
+			arg1 = args[1].(AcknowledgeEventsParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -4768,14 +4714,14 @@ func (_c *MockEventSubscriptionCommander_AcknowledgeEvents_Call) Return(eventSub
 	return _c
 }
 
-func (_c *MockEventSubscriptionCommander_AcknowledgeEvents_Call) RunAndReturn(run func(ctx context.Context, subscriberID string, instanceID string, lastEventSequenceProcessed int64) (*EventSubscription, error)) *MockEventSubscriptionCommander_AcknowledgeEvents_Call {
+func (_c *MockEventSubscriptionCommander_AcknowledgeEvents_Call) RunAndReturn(run func(ctx context.Context, params AcknowledgeEventsParams) (*EventSubscription, error)) *MockEventSubscriptionCommander_AcknowledgeEvents_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // AcquireLease provides a mock function for the type MockEventSubscriptionCommander
-func (_mock *MockEventSubscriptionCommander) AcquireLease(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*EventSubscription, error) {
-	ret := _mock.Called(ctx, subscriberID, instanceID, duration)
+func (_mock *MockEventSubscriptionCommander) AcquireLease(ctx context.Context, params LeaseParams) (*EventSubscription, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AcquireLease")
@@ -4783,18 +4729,18 @@ func (_mock *MockEventSubscriptionCommander) AcquireLease(ctx context.Context, s
 
 	var r0 *EventSubscription
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, time.Duration) (*EventSubscription, error)); ok {
-		return returnFunc(ctx, subscriberID, instanceID, duration)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, LeaseParams) (*EventSubscription, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, time.Duration) *EventSubscription); ok {
-		r0 = returnFunc(ctx, subscriberID, instanceID, duration)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, LeaseParams) *EventSubscription); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*EventSubscription)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, time.Duration) error); ok {
-		r1 = returnFunc(ctx, subscriberID, instanceID, duration)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, LeaseParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -4808,36 +4754,24 @@ type MockEventSubscriptionCommander_AcquireLease_Call struct {
 
 // AcquireLease is a helper method to define mock.On call
 //   - ctx context.Context
-//   - subscriberID string
-//   - instanceID string
-//   - duration time.Duration
-func (_e *MockEventSubscriptionCommander_Expecter) AcquireLease(ctx interface{}, subscriberID interface{}, instanceID interface{}, duration interface{}) *MockEventSubscriptionCommander_AcquireLease_Call {
-	return &MockEventSubscriptionCommander_AcquireLease_Call{Call: _e.mock.On("AcquireLease", ctx, subscriberID, instanceID, duration)}
+//   - params LeaseParams
+func (_e *MockEventSubscriptionCommander_Expecter) AcquireLease(ctx interface{}, params interface{}) *MockEventSubscriptionCommander_AcquireLease_Call {
+	return &MockEventSubscriptionCommander_AcquireLease_Call{Call: _e.mock.On("AcquireLease", ctx, params)}
 }
 
-func (_c *MockEventSubscriptionCommander_AcquireLease_Call) Run(run func(ctx context.Context, subscriberID string, instanceID string, duration time.Duration)) *MockEventSubscriptionCommander_AcquireLease_Call {
+func (_c *MockEventSubscriptionCommander_AcquireLease_Call) Run(run func(ctx context.Context, params LeaseParams)) *MockEventSubscriptionCommander_AcquireLease_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 LeaseParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		var arg3 time.Duration
-		if args[3] != nil {
-			arg3 = args[3].(time.Duration)
+			arg1 = args[1].(LeaseParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -4848,7 +4782,7 @@ func (_c *MockEventSubscriptionCommander_AcquireLease_Call) Return(eventSubscrip
 	return _c
 }
 
-func (_c *MockEventSubscriptionCommander_AcquireLease_Call) RunAndReturn(run func(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*EventSubscription, error)) *MockEventSubscriptionCommander_AcquireLease_Call {
+func (_c *MockEventSubscriptionCommander_AcquireLease_Call) RunAndReturn(run func(ctx context.Context, params LeaseParams) (*EventSubscription, error)) *MockEventSubscriptionCommander_AcquireLease_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -4911,8 +4845,8 @@ func (_c *MockEventSubscriptionCommander_Delete_Call) RunAndReturn(run func(ctx 
 }
 
 // ReleaseLease provides a mock function for the type MockEventSubscriptionCommander
-func (_mock *MockEventSubscriptionCommander) ReleaseLease(ctx context.Context, subscriberID string, instanceID string) (*EventSubscription, error) {
-	ret := _mock.Called(ctx, subscriberID, instanceID)
+func (_mock *MockEventSubscriptionCommander) ReleaseLease(ctx context.Context, params ReleaseLeaseParams) (*EventSubscription, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ReleaseLease")
@@ -4920,18 +4854,18 @@ func (_mock *MockEventSubscriptionCommander) ReleaseLease(ctx context.Context, s
 
 	var r0 *EventSubscription
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*EventSubscription, error)); ok {
-		return returnFunc(ctx, subscriberID, instanceID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ReleaseLeaseParams) (*EventSubscription, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *EventSubscription); ok {
-		r0 = returnFunc(ctx, subscriberID, instanceID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ReleaseLeaseParams) *EventSubscription); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*EventSubscription)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, subscriberID, instanceID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, ReleaseLeaseParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -4945,30 +4879,24 @@ type MockEventSubscriptionCommander_ReleaseLease_Call struct {
 
 // ReleaseLease is a helper method to define mock.On call
 //   - ctx context.Context
-//   - subscriberID string
-//   - instanceID string
-func (_e *MockEventSubscriptionCommander_Expecter) ReleaseLease(ctx interface{}, subscriberID interface{}, instanceID interface{}) *MockEventSubscriptionCommander_ReleaseLease_Call {
-	return &MockEventSubscriptionCommander_ReleaseLease_Call{Call: _e.mock.On("ReleaseLease", ctx, subscriberID, instanceID)}
+//   - params ReleaseLeaseParams
+func (_e *MockEventSubscriptionCommander_Expecter) ReleaseLease(ctx interface{}, params interface{}) *MockEventSubscriptionCommander_ReleaseLease_Call {
+	return &MockEventSubscriptionCommander_ReleaseLease_Call{Call: _e.mock.On("ReleaseLease", ctx, params)}
 }
 
-func (_c *MockEventSubscriptionCommander_ReleaseLease_Call) Run(run func(ctx context.Context, subscriberID string, instanceID string)) *MockEventSubscriptionCommander_ReleaseLease_Call {
+func (_c *MockEventSubscriptionCommander_ReleaseLease_Call) Run(run func(ctx context.Context, params ReleaseLeaseParams)) *MockEventSubscriptionCommander_ReleaseLease_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 ReleaseLeaseParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
+			arg1 = args[1].(ReleaseLeaseParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -4979,14 +4907,14 @@ func (_c *MockEventSubscriptionCommander_ReleaseLease_Call) Return(eventSubscrip
 	return _c
 }
 
-func (_c *MockEventSubscriptionCommander_ReleaseLease_Call) RunAndReturn(run func(ctx context.Context, subscriberID string, instanceID string) (*EventSubscription, error)) *MockEventSubscriptionCommander_ReleaseLease_Call {
+func (_c *MockEventSubscriptionCommander_ReleaseLease_Call) RunAndReturn(run func(ctx context.Context, params ReleaseLeaseParams) (*EventSubscription, error)) *MockEventSubscriptionCommander_ReleaseLease_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // RenewLease provides a mock function for the type MockEventSubscriptionCommander
-func (_mock *MockEventSubscriptionCommander) RenewLease(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*EventSubscription, error) {
-	ret := _mock.Called(ctx, subscriberID, instanceID, duration)
+func (_mock *MockEventSubscriptionCommander) RenewLease(ctx context.Context, params LeaseParams) (*EventSubscription, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RenewLease")
@@ -4994,18 +4922,18 @@ func (_mock *MockEventSubscriptionCommander) RenewLease(ctx context.Context, sub
 
 	var r0 *EventSubscription
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, time.Duration) (*EventSubscription, error)); ok {
-		return returnFunc(ctx, subscriberID, instanceID, duration)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, LeaseParams) (*EventSubscription, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, time.Duration) *EventSubscription); ok {
-		r0 = returnFunc(ctx, subscriberID, instanceID, duration)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, LeaseParams) *EventSubscription); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*EventSubscription)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, time.Duration) error); ok {
-		r1 = returnFunc(ctx, subscriberID, instanceID, duration)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, LeaseParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -5019,36 +4947,24 @@ type MockEventSubscriptionCommander_RenewLease_Call struct {
 
 // RenewLease is a helper method to define mock.On call
 //   - ctx context.Context
-//   - subscriberID string
-//   - instanceID string
-//   - duration time.Duration
-func (_e *MockEventSubscriptionCommander_Expecter) RenewLease(ctx interface{}, subscriberID interface{}, instanceID interface{}, duration interface{}) *MockEventSubscriptionCommander_RenewLease_Call {
-	return &MockEventSubscriptionCommander_RenewLease_Call{Call: _e.mock.On("RenewLease", ctx, subscriberID, instanceID, duration)}
+//   - params LeaseParams
+func (_e *MockEventSubscriptionCommander_Expecter) RenewLease(ctx interface{}, params interface{}) *MockEventSubscriptionCommander_RenewLease_Call {
+	return &MockEventSubscriptionCommander_RenewLease_Call{Call: _e.mock.On("RenewLease", ctx, params)}
 }
 
-func (_c *MockEventSubscriptionCommander_RenewLease_Call) Run(run func(ctx context.Context, subscriberID string, instanceID string, duration time.Duration)) *MockEventSubscriptionCommander_RenewLease_Call {
+func (_c *MockEventSubscriptionCommander_RenewLease_Call) Run(run func(ctx context.Context, params LeaseParams)) *MockEventSubscriptionCommander_RenewLease_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 LeaseParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		var arg3 time.Duration
-		if args[3] != nil {
-			arg3 = args[3].(time.Duration)
+			arg1 = args[1].(LeaseParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -5059,14 +4975,14 @@ func (_c *MockEventSubscriptionCommander_RenewLease_Call) Return(eventSubscripti
 	return _c
 }
 
-func (_c *MockEventSubscriptionCommander_RenewLease_Call) RunAndReturn(run func(ctx context.Context, subscriberID string, instanceID string, duration time.Duration) (*EventSubscription, error)) *MockEventSubscriptionCommander_RenewLease_Call {
+func (_c *MockEventSubscriptionCommander_RenewLease_Call) RunAndReturn(run func(ctx context.Context, params LeaseParams) (*EventSubscription, error)) *MockEventSubscriptionCommander_RenewLease_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SetActive provides a mock function for the type MockEventSubscriptionCommander
-func (_mock *MockEventSubscriptionCommander) SetActive(ctx context.Context, subscriberID string, isActive bool) (*EventSubscription, error) {
-	ret := _mock.Called(ctx, subscriberID, isActive)
+func (_mock *MockEventSubscriptionCommander) SetActive(ctx context.Context, params SetActiveParams) (*EventSubscription, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SetActive")
@@ -5074,18 +4990,18 @@ func (_mock *MockEventSubscriptionCommander) SetActive(ctx context.Context, subs
 
 	var r0 *EventSubscription
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, bool) (*EventSubscription, error)); ok {
-		return returnFunc(ctx, subscriberID, isActive)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, SetActiveParams) (*EventSubscription, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, bool) *EventSubscription); ok {
-		r0 = returnFunc(ctx, subscriberID, isActive)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, SetActiveParams) *EventSubscription); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*EventSubscription)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, bool) error); ok {
-		r1 = returnFunc(ctx, subscriberID, isActive)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, SetActiveParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -5099,30 +5015,24 @@ type MockEventSubscriptionCommander_SetActive_Call struct {
 
 // SetActive is a helper method to define mock.On call
 //   - ctx context.Context
-//   - subscriberID string
-//   - isActive bool
-func (_e *MockEventSubscriptionCommander_Expecter) SetActive(ctx interface{}, subscriberID interface{}, isActive interface{}) *MockEventSubscriptionCommander_SetActive_Call {
-	return &MockEventSubscriptionCommander_SetActive_Call{Call: _e.mock.On("SetActive", ctx, subscriberID, isActive)}
+//   - params SetActiveParams
+func (_e *MockEventSubscriptionCommander_Expecter) SetActive(ctx interface{}, params interface{}) *MockEventSubscriptionCommander_SetActive_Call {
+	return &MockEventSubscriptionCommander_SetActive_Call{Call: _e.mock.On("SetActive", ctx, params)}
 }
 
-func (_c *MockEventSubscriptionCommander_SetActive_Call) Run(run func(ctx context.Context, subscriberID string, isActive bool)) *MockEventSubscriptionCommander_SetActive_Call {
+func (_c *MockEventSubscriptionCommander_SetActive_Call) Run(run func(ctx context.Context, params SetActiveParams)) *MockEventSubscriptionCommander_SetActive_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 SetActiveParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 bool
-		if args[2] != nil {
-			arg2 = args[2].(bool)
+			arg1 = args[1].(SetActiveParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -5133,14 +5043,14 @@ func (_c *MockEventSubscriptionCommander_SetActive_Call) Return(eventSubscriptio
 	return _c
 }
 
-func (_c *MockEventSubscriptionCommander_SetActive_Call) RunAndReturn(run func(ctx context.Context, subscriberID string, isActive bool) (*EventSubscription, error)) *MockEventSubscriptionCommander_SetActive_Call {
+func (_c *MockEventSubscriptionCommander_SetActive_Call) RunAndReturn(run func(ctx context.Context, params SetActiveParams) (*EventSubscription, error)) *MockEventSubscriptionCommander_SetActive_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateProgress provides a mock function for the type MockEventSubscriptionCommander
-func (_mock *MockEventSubscriptionCommander) UpdateProgress(ctx context.Context, subscriberID string, lastEventSequenceProcessed int64) (*EventSubscription, error) {
-	ret := _mock.Called(ctx, subscriberID, lastEventSequenceProcessed)
+func (_mock *MockEventSubscriptionCommander) UpdateProgress(ctx context.Context, params UpdateProgressParams) (*EventSubscription, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateProgress")
@@ -5148,18 +5058,18 @@ func (_mock *MockEventSubscriptionCommander) UpdateProgress(ctx context.Context,
 
 	var r0 *EventSubscription
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int64) (*EventSubscription, error)); ok {
-		return returnFunc(ctx, subscriberID, lastEventSequenceProcessed)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateProgressParams) (*EventSubscription, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int64) *EventSubscription); ok {
-		r0 = returnFunc(ctx, subscriberID, lastEventSequenceProcessed)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateProgressParams) *EventSubscription); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*EventSubscription)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int64) error); ok {
-		r1 = returnFunc(ctx, subscriberID, lastEventSequenceProcessed)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateProgressParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -5173,30 +5083,24 @@ type MockEventSubscriptionCommander_UpdateProgress_Call struct {
 
 // UpdateProgress is a helper method to define mock.On call
 //   - ctx context.Context
-//   - subscriberID string
-//   - lastEventSequenceProcessed int64
-func (_e *MockEventSubscriptionCommander_Expecter) UpdateProgress(ctx interface{}, subscriberID interface{}, lastEventSequenceProcessed interface{}) *MockEventSubscriptionCommander_UpdateProgress_Call {
-	return &MockEventSubscriptionCommander_UpdateProgress_Call{Call: _e.mock.On("UpdateProgress", ctx, subscriberID, lastEventSequenceProcessed)}
+//   - params UpdateProgressParams
+func (_e *MockEventSubscriptionCommander_Expecter) UpdateProgress(ctx interface{}, params interface{}) *MockEventSubscriptionCommander_UpdateProgress_Call {
+	return &MockEventSubscriptionCommander_UpdateProgress_Call{Call: _e.mock.On("UpdateProgress", ctx, params)}
 }
 
-func (_c *MockEventSubscriptionCommander_UpdateProgress_Call) Run(run func(ctx context.Context, subscriberID string, lastEventSequenceProcessed int64)) *MockEventSubscriptionCommander_UpdateProgress_Call {
+func (_c *MockEventSubscriptionCommander_UpdateProgress_Call) Run(run func(ctx context.Context, params UpdateProgressParams)) *MockEventSubscriptionCommander_UpdateProgress_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 UpdateProgressParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 int64
-		if args[2] != nil {
-			arg2 = args[2].(int64)
+			arg1 = args[1].(UpdateProgressParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -5207,7 +5111,7 @@ func (_c *MockEventSubscriptionCommander_UpdateProgress_Call) Return(eventSubscr
 	return _c
 }
 
-func (_c *MockEventSubscriptionCommander_UpdateProgress_Call) RunAndReturn(run func(ctx context.Context, subscriberID string, lastEventSequenceProcessed int64) (*EventSubscription, error)) *MockEventSubscriptionCommander_UpdateProgress_Call {
+func (_c *MockEventSubscriptionCommander_UpdateProgress_Call) RunAndReturn(run func(ctx context.Context, params UpdateProgressParams) (*EventSubscription, error)) *MockEventSubscriptionCommander_UpdateProgress_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6814,16 +6718,16 @@ func (_c *MockJobCommander_Claim_Call) RunAndReturn(run func(ctx context.Context
 }
 
 // Complete provides a mock function for the type MockJobCommander
-func (_mock *MockJobCommander) Complete(ctx context.Context, jobID properties.UUID, resources *properties.JSON, externalID *string) error {
-	ret := _mock.Called(ctx, jobID, resources, externalID)
+func (_mock *MockJobCommander) Complete(ctx context.Context, params CompleteJobParams) error {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Complete")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *properties.JSON, *string) error); ok {
-		r0 = returnFunc(ctx, jobID, resources, externalID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CompleteJobParams) error); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -6837,36 +6741,24 @@ type MockJobCommander_Complete_Call struct {
 
 // Complete is a helper method to define mock.On call
 //   - ctx context.Context
-//   - jobID properties.UUID
-//   - resources *properties.JSON
-//   - externalID *string
-func (_e *MockJobCommander_Expecter) Complete(ctx interface{}, jobID interface{}, resources interface{}, externalID interface{}) *MockJobCommander_Complete_Call {
-	return &MockJobCommander_Complete_Call{Call: _e.mock.On("Complete", ctx, jobID, resources, externalID)}
+//   - params CompleteJobParams
+func (_e *MockJobCommander_Expecter) Complete(ctx interface{}, params interface{}) *MockJobCommander_Complete_Call {
+	return &MockJobCommander_Complete_Call{Call: _e.mock.On("Complete", ctx, params)}
 }
 
-func (_c *MockJobCommander_Complete_Call) Run(run func(ctx context.Context, jobID properties.UUID, resources *properties.JSON, externalID *string)) *MockJobCommander_Complete_Call {
+func (_c *MockJobCommander_Complete_Call) Run(run func(ctx context.Context, params CompleteJobParams)) *MockJobCommander_Complete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 CompleteJobParams
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 *properties.JSON
-		if args[2] != nil {
-			arg2 = args[2].(*properties.JSON)
-		}
-		var arg3 *string
-		if args[3] != nil {
-			arg3 = args[3].(*string)
+			arg1 = args[1].(CompleteJobParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -6877,22 +6769,22 @@ func (_c *MockJobCommander_Complete_Call) Return(err error) *MockJobCommander_Co
 	return _c
 }
 
-func (_c *MockJobCommander_Complete_Call) RunAndReturn(run func(ctx context.Context, jobID properties.UUID, resources *properties.JSON, externalID *string) error) *MockJobCommander_Complete_Call {
+func (_c *MockJobCommander_Complete_Call) RunAndReturn(run func(ctx context.Context, params CompleteJobParams) error) *MockJobCommander_Complete_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Fail provides a mock function for the type MockJobCommander
-func (_mock *MockJobCommander) Fail(ctx context.Context, jobID properties.UUID, errorMessage string) error {
-	ret := _mock.Called(ctx, jobID, errorMessage)
+func (_mock *MockJobCommander) Fail(ctx context.Context, params FailJobParams) error {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Fail")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) error); ok {
-		r0 = returnFunc(ctx, jobID, errorMessage)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, FailJobParams) error); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -6906,30 +6798,24 @@ type MockJobCommander_Fail_Call struct {
 
 // Fail is a helper method to define mock.On call
 //   - ctx context.Context
-//   - jobID properties.UUID
-//   - errorMessage string
-func (_e *MockJobCommander_Expecter) Fail(ctx interface{}, jobID interface{}, errorMessage interface{}) *MockJobCommander_Fail_Call {
-	return &MockJobCommander_Fail_Call{Call: _e.mock.On("Fail", ctx, jobID, errorMessage)}
+//   - params FailJobParams
+func (_e *MockJobCommander_Expecter) Fail(ctx interface{}, params interface{}) *MockJobCommander_Fail_Call {
+	return &MockJobCommander_Fail_Call{Call: _e.mock.On("Fail", ctx, params)}
 }
 
-func (_c *MockJobCommander_Fail_Call) Run(run func(ctx context.Context, jobID properties.UUID, errorMessage string)) *MockJobCommander_Fail_Call {
+func (_c *MockJobCommander_Fail_Call) Run(run func(ctx context.Context, params FailJobParams)) *MockJobCommander_Fail_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 FailJobParams
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
+			arg1 = args[1].(FailJobParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -6940,7 +6826,64 @@ func (_c *MockJobCommander_Fail_Call) Return(err error) *MockJobCommander_Fail_C
 	return _c
 }
 
-func (_c *MockJobCommander_Fail_Call) RunAndReturn(run func(ctx context.Context, jobID properties.UUID, errorMessage string) error) *MockJobCommander_Fail_Call {
+func (_c *MockJobCommander_Fail_Call) RunAndReturn(run func(ctx context.Context, params FailJobParams) error) *MockJobCommander_Fail_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Unsupported provides a mock function for the type MockJobCommander
+func (_mock *MockJobCommander) Unsupported(ctx context.Context, params UnsupportedJobParams) error {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Unsupported")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UnsupportedJobParams) error); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockJobCommander_Unsupported_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Unsupported'
+type MockJobCommander_Unsupported_Call struct {
+	*mock.Call
+}
+
+// Unsupported is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params UnsupportedJobParams
+func (_e *MockJobCommander_Expecter) Unsupported(ctx interface{}, params interface{}) *MockJobCommander_Unsupported_Call {
+	return &MockJobCommander_Unsupported_Call{Call: _e.mock.On("Unsupported", ctx, params)}
+}
+
+func (_c *MockJobCommander_Unsupported_Call) Run(run func(ctx context.Context, params UnsupportedJobParams)) *MockJobCommander_Unsupported_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 UnsupportedJobParams
+		if args[1] != nil {
+			arg1 = args[1].(UnsupportedJobParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockJobCommander_Unsupported_Call) Return(err error) *MockJobCommander_Unsupported_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockJobCommander_Unsupported_Call) RunAndReturn(run func(ctx context.Context, params UnsupportedJobParams) error) *MockJobCommander_Unsupported_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -7410,6 +7353,74 @@ func (_c *MockJobRepository_Get_Call) Return(job *Job, err error) *MockJobReposi
 }
 
 func (_c *MockJobRepository_Get_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*Job, error)) *MockJobRepository_Get_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetLastJobForService provides a mock function for the type MockJobRepository
+func (_mock *MockJobRepository) GetLastJobForService(ctx context.Context, serviceID properties.UUID) (*Job, error) {
+	ret := _mock.Called(ctx, serviceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetLastJobForService")
+	}
+
+	var r0 *Job
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*Job, error)); ok {
+		return returnFunc(ctx, serviceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *Job); ok {
+		r0 = returnFunc(ctx, serviceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Job)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockJobRepository_GetLastJobForService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLastJobForService'
+type MockJobRepository_GetLastJobForService_Call struct {
+	*mock.Call
+}
+
+// GetLastJobForService is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceID properties.UUID
+func (_e *MockJobRepository_Expecter) GetLastJobForService(ctx interface{}, serviceID interface{}) *MockJobRepository_GetLastJobForService_Call {
+	return &MockJobRepository_GetLastJobForService_Call{Call: _e.mock.On("GetLastJobForService", ctx, serviceID)}
+}
+
+func (_c *MockJobRepository_GetLastJobForService_Call) Run(run func(ctx context.Context, serviceID properties.UUID)) *MockJobRepository_GetLastJobForService_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockJobRepository_GetLastJobForService_Call) Return(job *Job, err error) *MockJobRepository_GetLastJobForService_Call {
+	_c.Call.Return(job, err)
+	return _c
+}
+
+func (_c *MockJobRepository_GetLastJobForService_Call) RunAndReturn(run func(ctx context.Context, serviceID properties.UUID) (*Job, error)) *MockJobRepository_GetLastJobForService_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -7976,6 +7987,74 @@ func (_c *MockJobQuerier_Get_Call) RunAndReturn(run func(ctx context.Context, id
 	return _c
 }
 
+// GetLastJobForService provides a mock function for the type MockJobQuerier
+func (_mock *MockJobQuerier) GetLastJobForService(ctx context.Context, serviceID properties.UUID) (*Job, error) {
+	ret := _mock.Called(ctx, serviceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetLastJobForService")
+	}
+
+	var r0 *Job
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*Job, error)); ok {
+		return returnFunc(ctx, serviceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *Job); ok {
+		r0 = returnFunc(ctx, serviceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Job)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockJobQuerier_GetLastJobForService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLastJobForService'
+type MockJobQuerier_GetLastJobForService_Call struct {
+	*mock.Call
+}
+
+// GetLastJobForService is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceID properties.UUID
+func (_e *MockJobQuerier_Expecter) GetLastJobForService(ctx interface{}, serviceID interface{}) *MockJobQuerier_GetLastJobForService_Call {
+	return &MockJobQuerier_GetLastJobForService_Call{Call: _e.mock.On("GetLastJobForService", ctx, serviceID)}
+}
+
+func (_c *MockJobQuerier_GetLastJobForService_Call) Run(run func(ctx context.Context, serviceID properties.UUID)) *MockJobQuerier_GetLastJobForService_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockJobQuerier_GetLastJobForService_Call) Return(job *Job, err error) *MockJobQuerier_GetLastJobForService_Call {
+	_c.Call.Return(job, err)
+	return _c
+}
+
+func (_c *MockJobQuerier_GetLastJobForService_Call) RunAndReturn(run func(ctx context.Context, serviceID properties.UUID) (*Job, error)) *MockJobQuerier_GetLastJobForService_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetPendingJobsForAgent provides a mock function for the type MockJobQuerier
 func (_mock *MockJobQuerier) GetPendingJobsForAgent(ctx context.Context, agentID properties.UUID, limit int) ([]*Job, error) {
 	ret := _mock.Called(ctx, agentID, limit)
@@ -8220,8 +8299,8 @@ func (_m *MockMetricEntryCommander) EXPECT() *MockMetricEntryCommander_Expecter 
 }
 
 // Create provides a mock function for the type MockMetricEntryCommander
-func (_mock *MockMetricEntryCommander) Create(ctx context.Context, typeName string, agentID properties.UUID, serviceID properties.UUID, resourceID string, value float64) (*MetricEntry, error) {
-	ret := _mock.Called(ctx, typeName, agentID, serviceID, resourceID, value)
+func (_mock *MockMetricEntryCommander) Create(ctx context.Context, params CreateMetricEntryParams) (*MetricEntry, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -8229,18 +8308,18 @@ func (_mock *MockMetricEntryCommander) Create(ctx context.Context, typeName stri
 
 	var r0 *MetricEntry
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, properties.UUID, properties.UUID, string, float64) (*MetricEntry, error)); ok {
-		return returnFunc(ctx, typeName, agentID, serviceID, resourceID, value)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateMetricEntryParams) (*MetricEntry, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, properties.UUID, properties.UUID, string, float64) *MetricEntry); ok {
-		r0 = returnFunc(ctx, typeName, agentID, serviceID, resourceID, value)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateMetricEntryParams) *MetricEntry); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*MetricEntry)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, properties.UUID, properties.UUID, string, float64) error); ok {
-		r1 = returnFunc(ctx, typeName, agentID, serviceID, resourceID, value)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateMetricEntryParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -8254,48 +8333,24 @@ type MockMetricEntryCommander_Create_Call struct {
 
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
-//   - typeName string
-//   - agentID properties.UUID
-//   - serviceID properties.UUID
-//   - resourceID string
-//   - value float64
-func (_e *MockMetricEntryCommander_Expecter) Create(ctx interface{}, typeName interface{}, agentID interface{}, serviceID interface{}, resourceID interface{}, value interface{}) *MockMetricEntryCommander_Create_Call {
-	return &MockMetricEntryCommander_Create_Call{Call: _e.mock.On("Create", ctx, typeName, agentID, serviceID, resourceID, value)}
+//   - params CreateMetricEntryParams
+func (_e *MockMetricEntryCommander_Expecter) Create(ctx interface{}, params interface{}) *MockMetricEntryCommander_Create_Call {
+	return &MockMetricEntryCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
 }
 
-func (_c *MockMetricEntryCommander_Create_Call) Run(run func(ctx context.Context, typeName string, agentID properties.UUID, serviceID properties.UUID, resourceID string, value float64)) *MockMetricEntryCommander_Create_Call {
+func (_c *MockMetricEntryCommander_Create_Call) Run(run func(ctx context.Context, params CreateMetricEntryParams)) *MockMetricEntryCommander_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 CreateMetricEntryParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 properties.UUID
-		if args[2] != nil {
-			arg2 = args[2].(properties.UUID)
-		}
-		var arg3 properties.UUID
-		if args[3] != nil {
-			arg3 = args[3].(properties.UUID)
-		}
-		var arg4 string
-		if args[4] != nil {
-			arg4 = args[4].(string)
-		}
-		var arg5 float64
-		if args[5] != nil {
-			arg5 = args[5].(float64)
+			arg1 = args[1].(CreateMetricEntryParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
-			arg4,
-			arg5,
 		)
 	})
 	return _c
@@ -8306,14 +8361,14 @@ func (_c *MockMetricEntryCommander_Create_Call) Return(metricEntry *MetricEntry,
 	return _c
 }
 
-func (_c *MockMetricEntryCommander_Create_Call) RunAndReturn(run func(ctx context.Context, typeName string, agentID properties.UUID, serviceID properties.UUID, resourceID string, value float64) (*MetricEntry, error)) *MockMetricEntryCommander_Create_Call {
+func (_c *MockMetricEntryCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateMetricEntryParams) (*MetricEntry, error)) *MockMetricEntryCommander_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // CreateWithExternalID provides a mock function for the type MockMetricEntryCommander
-func (_mock *MockMetricEntryCommander) CreateWithExternalID(ctx context.Context, typeName string, agentID properties.UUID, externalID string, resourceID string, value float64) (*MetricEntry, error) {
-	ret := _mock.Called(ctx, typeName, agentID, externalID, resourceID, value)
+func (_mock *MockMetricEntryCommander) CreateWithExternalID(ctx context.Context, params CreateMetricEntryWithExternalIDParams) (*MetricEntry, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateWithExternalID")
@@ -8321,18 +8376,18 @@ func (_mock *MockMetricEntryCommander) CreateWithExternalID(ctx context.Context,
 
 	var r0 *MetricEntry
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, properties.UUID, string, string, float64) (*MetricEntry, error)); ok {
-		return returnFunc(ctx, typeName, agentID, externalID, resourceID, value)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateMetricEntryWithExternalIDParams) (*MetricEntry, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, properties.UUID, string, string, float64) *MetricEntry); ok {
-		r0 = returnFunc(ctx, typeName, agentID, externalID, resourceID, value)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateMetricEntryWithExternalIDParams) *MetricEntry); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*MetricEntry)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, properties.UUID, string, string, float64) error); ok {
-		r1 = returnFunc(ctx, typeName, agentID, externalID, resourceID, value)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateMetricEntryWithExternalIDParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -8346,48 +8401,24 @@ type MockMetricEntryCommander_CreateWithExternalID_Call struct {
 
 // CreateWithExternalID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - typeName string
-//   - agentID properties.UUID
-//   - externalID string
-//   - resourceID string
-//   - value float64
-func (_e *MockMetricEntryCommander_Expecter) CreateWithExternalID(ctx interface{}, typeName interface{}, agentID interface{}, externalID interface{}, resourceID interface{}, value interface{}) *MockMetricEntryCommander_CreateWithExternalID_Call {
-	return &MockMetricEntryCommander_CreateWithExternalID_Call{Call: _e.mock.On("CreateWithExternalID", ctx, typeName, agentID, externalID, resourceID, value)}
+//   - params CreateMetricEntryWithExternalIDParams
+func (_e *MockMetricEntryCommander_Expecter) CreateWithExternalID(ctx interface{}, params interface{}) *MockMetricEntryCommander_CreateWithExternalID_Call {
+	return &MockMetricEntryCommander_CreateWithExternalID_Call{Call: _e.mock.On("CreateWithExternalID", ctx, params)}
 }
 
-func (_c *MockMetricEntryCommander_CreateWithExternalID_Call) Run(run func(ctx context.Context, typeName string, agentID properties.UUID, externalID string, resourceID string, value float64)) *MockMetricEntryCommander_CreateWithExternalID_Call {
+func (_c *MockMetricEntryCommander_CreateWithExternalID_Call) Run(run func(ctx context.Context, params CreateMetricEntryWithExternalIDParams)) *MockMetricEntryCommander_CreateWithExternalID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 CreateMetricEntryWithExternalIDParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 properties.UUID
-		if args[2] != nil {
-			arg2 = args[2].(properties.UUID)
-		}
-		var arg3 string
-		if args[3] != nil {
-			arg3 = args[3].(string)
-		}
-		var arg4 string
-		if args[4] != nil {
-			arg4 = args[4].(string)
-		}
-		var arg5 float64
-		if args[5] != nil {
-			arg5 = args[5].(float64)
+			arg1 = args[1].(CreateMetricEntryWithExternalIDParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
-			arg4,
-			arg5,
 		)
 	})
 	return _c
@@ -8398,7 +8429,7 @@ func (_c *MockMetricEntryCommander_CreateWithExternalID_Call) Return(metricEntry
 	return _c
 }
 
-func (_c *MockMetricEntryCommander_CreateWithExternalID_Call) RunAndReturn(run func(ctx context.Context, typeName string, agentID properties.UUID, externalID string, resourceID string, value float64) (*MetricEntry, error)) *MockMetricEntryCommander_CreateWithExternalID_Call {
+func (_c *MockMetricEntryCommander_CreateWithExternalID_Call) RunAndReturn(run func(ctx context.Context, params CreateMetricEntryWithExternalIDParams) (*MetricEntry, error)) *MockMetricEntryCommander_CreateWithExternalID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -9640,8 +9671,8 @@ func (_m *MockMetricTypeCommander) EXPECT() *MockMetricTypeCommander_Expecter {
 }
 
 // Create provides a mock function for the type MockMetricTypeCommander
-func (_mock *MockMetricTypeCommander) Create(ctx context.Context, name string, kind MetricEntityType) (*MetricType, error) {
-	ret := _mock.Called(ctx, name, kind)
+func (_mock *MockMetricTypeCommander) Create(ctx context.Context, params CreateMetricTypeParams) (*MetricType, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -9649,18 +9680,18 @@ func (_mock *MockMetricTypeCommander) Create(ctx context.Context, name string, k
 
 	var r0 *MetricType
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, MetricEntityType) (*MetricType, error)); ok {
-		return returnFunc(ctx, name, kind)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateMetricTypeParams) (*MetricType, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, MetricEntityType) *MetricType); ok {
-		r0 = returnFunc(ctx, name, kind)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateMetricTypeParams) *MetricType); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*MetricType)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, MetricEntityType) error); ok {
-		r1 = returnFunc(ctx, name, kind)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateMetricTypeParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -9674,30 +9705,24 @@ type MockMetricTypeCommander_Create_Call struct {
 
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
-//   - name string
-//   - kind MetricEntityType
-func (_e *MockMetricTypeCommander_Expecter) Create(ctx interface{}, name interface{}, kind interface{}) *MockMetricTypeCommander_Create_Call {
-	return &MockMetricTypeCommander_Create_Call{Call: _e.mock.On("Create", ctx, name, kind)}
+//   - params CreateMetricTypeParams
+func (_e *MockMetricTypeCommander_Expecter) Create(ctx interface{}, params interface{}) *MockMetricTypeCommander_Create_Call {
+	return &MockMetricTypeCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
 }
 
-func (_c *MockMetricTypeCommander_Create_Call) Run(run func(ctx context.Context, name string, kind MetricEntityType)) *MockMetricTypeCommander_Create_Call {
+func (_c *MockMetricTypeCommander_Create_Call) Run(run func(ctx context.Context, params CreateMetricTypeParams)) *MockMetricTypeCommander_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 CreateMetricTypeParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 MetricEntityType
-		if args[2] != nil {
-			arg2 = args[2].(MetricEntityType)
+			arg1 = args[1].(CreateMetricTypeParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -9708,7 +9733,7 @@ func (_c *MockMetricTypeCommander_Create_Call) Return(metricType *MetricType, er
 	return _c
 }
 
-func (_c *MockMetricTypeCommander_Create_Call) RunAndReturn(run func(ctx context.Context, name string, kind MetricEntityType) (*MetricType, error)) *MockMetricTypeCommander_Create_Call {
+func (_c *MockMetricTypeCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateMetricTypeParams) (*MetricType, error)) *MockMetricTypeCommander_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -9771,8 +9796,8 @@ func (_c *MockMetricTypeCommander_Delete_Call) RunAndReturn(run func(ctx context
 }
 
 // Update provides a mock function for the type MockMetricTypeCommander
-func (_mock *MockMetricTypeCommander) Update(ctx context.Context, id properties.UUID, name *string) (*MetricType, error) {
-	ret := _mock.Called(ctx, id, name)
+func (_mock *MockMetricTypeCommander) Update(ctx context.Context, params UpdateMetricTypeParams) (*MetricType, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -9780,18 +9805,18 @@ func (_mock *MockMetricTypeCommander) Update(ctx context.Context, id properties.
 
 	var r0 *MetricType
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string) (*MetricType, error)); ok {
-		return returnFunc(ctx, id, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateMetricTypeParams) (*MetricType, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string) *MetricType); ok {
-		r0 = returnFunc(ctx, id, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateMetricTypeParams) *MetricType); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*MetricType)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, *string) error); ok {
-		r1 = returnFunc(ctx, id, name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateMetricTypeParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -9805,30 +9830,24 @@ type MockMetricTypeCommander_Update_Call struct {
 
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
-//   - id properties.UUID
-//   - name *string
-func (_e *MockMetricTypeCommander_Expecter) Update(ctx interface{}, id interface{}, name interface{}) *MockMetricTypeCommander_Update_Call {
-	return &MockMetricTypeCommander_Update_Call{Call: _e.mock.On("Update", ctx, id, name)}
+//   - params UpdateMetricTypeParams
+func (_e *MockMetricTypeCommander_Expecter) Update(ctx interface{}, params interface{}) *MockMetricTypeCommander_Update_Call {
+	return &MockMetricTypeCommander_Update_Call{Call: _e.mock.On("Update", ctx, params)}
 }
 
-func (_c *MockMetricTypeCommander_Update_Call) Run(run func(ctx context.Context, id properties.UUID, name *string)) *MockMetricTypeCommander_Update_Call {
+func (_c *MockMetricTypeCommander_Update_Call) Run(run func(ctx context.Context, params UpdateMetricTypeParams)) *MockMetricTypeCommander_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 UpdateMetricTypeParams
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 *string
-		if args[2] != nil {
-			arg2 = args[2].(*string)
+			arg1 = args[1].(UpdateMetricTypeParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -9839,7 +9858,7 @@ func (_c *MockMetricTypeCommander_Update_Call) Return(metricType *MetricType, er
 	return _c
 }
 
-func (_c *MockMetricTypeCommander_Update_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, name *string) (*MetricType, error)) *MockMetricTypeCommander_Update_Call {
+func (_c *MockMetricTypeCommander_Update_Call) RunAndReturn(run func(ctx context.Context, params UpdateMetricTypeParams) (*MetricType, error)) *MockMetricTypeCommander_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -10905,8 +10924,8 @@ func (_m *MockParticipantCommander) EXPECT() *MockParticipantCommander_Expecter 
 }
 
 // Create provides a mock function for the type MockParticipantCommander
-func (_mock *MockParticipantCommander) Create(ctx context.Context, name string, status ParticipantStatus) (*Participant, error) {
-	ret := _mock.Called(ctx, name, status)
+func (_mock *MockParticipantCommander) Create(ctx context.Context, params CreateParticipantParams) (*Participant, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -10914,18 +10933,18 @@ func (_mock *MockParticipantCommander) Create(ctx context.Context, name string, 
 
 	var r0 *Participant
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, ParticipantStatus) (*Participant, error)); ok {
-		return returnFunc(ctx, name, status)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateParticipantParams) (*Participant, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, ParticipantStatus) *Participant); ok {
-		r0 = returnFunc(ctx, name, status)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateParticipantParams) *Participant); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Participant)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, ParticipantStatus) error); ok {
-		r1 = returnFunc(ctx, name, status)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateParticipantParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -10939,30 +10958,24 @@ type MockParticipantCommander_Create_Call struct {
 
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
-//   - name string
-//   - status ParticipantStatus
-func (_e *MockParticipantCommander_Expecter) Create(ctx interface{}, name interface{}, status interface{}) *MockParticipantCommander_Create_Call {
-	return &MockParticipantCommander_Create_Call{Call: _e.mock.On("Create", ctx, name, status)}
+//   - params CreateParticipantParams
+func (_e *MockParticipantCommander_Expecter) Create(ctx interface{}, params interface{}) *MockParticipantCommander_Create_Call {
+	return &MockParticipantCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
 }
 
-func (_c *MockParticipantCommander_Create_Call) Run(run func(ctx context.Context, name string, status ParticipantStatus)) *MockParticipantCommander_Create_Call {
+func (_c *MockParticipantCommander_Create_Call) Run(run func(ctx context.Context, params CreateParticipantParams)) *MockParticipantCommander_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 CreateParticipantParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 ParticipantStatus
-		if args[2] != nil {
-			arg2 = args[2].(ParticipantStatus)
+			arg1 = args[1].(CreateParticipantParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -10973,7 +10986,7 @@ func (_c *MockParticipantCommander_Create_Call) Return(participant *Participant,
 	return _c
 }
 
-func (_c *MockParticipantCommander_Create_Call) RunAndReturn(run func(ctx context.Context, name string, status ParticipantStatus) (*Participant, error)) *MockParticipantCommander_Create_Call {
+func (_c *MockParticipantCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateParticipantParams) (*Participant, error)) *MockParticipantCommander_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -11036,8 +11049,8 @@ func (_c *MockParticipantCommander_Delete_Call) RunAndReturn(run func(ctx contex
 }
 
 // Update provides a mock function for the type MockParticipantCommander
-func (_mock *MockParticipantCommander) Update(ctx context.Context, id properties.UUID, name *string, status *ParticipantStatus) (*Participant, error) {
-	ret := _mock.Called(ctx, id, name, status)
+func (_mock *MockParticipantCommander) Update(ctx context.Context, params UpdateParticipantParams) (*Participant, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -11045,18 +11058,18 @@ func (_mock *MockParticipantCommander) Update(ctx context.Context, id properties
 
 	var r0 *Participant
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string, *ParticipantStatus) (*Participant, error)); ok {
-		return returnFunc(ctx, id, name, status)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateParticipantParams) (*Participant, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string, *ParticipantStatus) *Participant); ok {
-		r0 = returnFunc(ctx, id, name, status)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateParticipantParams) *Participant); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Participant)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, *string, *ParticipantStatus) error); ok {
-		r1 = returnFunc(ctx, id, name, status)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateParticipantParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -11070,36 +11083,24 @@ type MockParticipantCommander_Update_Call struct {
 
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
-//   - id properties.UUID
-//   - name *string
-//   - status *ParticipantStatus
-func (_e *MockParticipantCommander_Expecter) Update(ctx interface{}, id interface{}, name interface{}, status interface{}) *MockParticipantCommander_Update_Call {
-	return &MockParticipantCommander_Update_Call{Call: _e.mock.On("Update", ctx, id, name, status)}
+//   - params UpdateParticipantParams
+func (_e *MockParticipantCommander_Expecter) Update(ctx interface{}, params interface{}) *MockParticipantCommander_Update_Call {
+	return &MockParticipantCommander_Update_Call{Call: _e.mock.On("Update", ctx, params)}
 }
 
-func (_c *MockParticipantCommander_Update_Call) Run(run func(ctx context.Context, id properties.UUID, name *string, status *ParticipantStatus)) *MockParticipantCommander_Update_Call {
+func (_c *MockParticipantCommander_Update_Call) Run(run func(ctx context.Context, params UpdateParticipantParams)) *MockParticipantCommander_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 UpdateParticipantParams
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 *string
-		if args[2] != nil {
-			arg2 = args[2].(*string)
-		}
-		var arg3 *ParticipantStatus
-		if args[3] != nil {
-			arg3 = args[3].(*ParticipantStatus)
+			arg1 = args[1].(UpdateParticipantParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -11110,7 +11111,7 @@ func (_c *MockParticipantCommander_Update_Call) Return(participant *Participant,
 	return _c
 }
 
-func (_c *MockParticipantCommander_Update_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, name *string, status *ParticipantStatus) (*Participant, error)) *MockParticipantCommander_Update_Call {
+func (_c *MockParticipantCommander_Update_Call) RunAndReturn(run func(ctx context.Context, params UpdateParticipantParams) (*Participant, error)) *MockParticipantCommander_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -12040,8 +12041,8 @@ func (_m *MockServiceCommander) EXPECT() *MockServiceCommander_Expecter {
 }
 
 // Create provides a mock function for the type MockServiceCommander
-func (_mock *MockServiceCommander) Create(ctx context.Context, agentID properties.UUID, serviceTypeID properties.UUID, groupID properties.UUID, name string, properties1 properties.JSON) (*Service, error) {
-	ret := _mock.Called(ctx, agentID, serviceTypeID, groupID, name, properties1)
+func (_mock *MockServiceCommander) Create(ctx context.Context, params CreateServiceParams) (*Service, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -12049,18 +12050,18 @@ func (_mock *MockServiceCommander) Create(ctx context.Context, agentID propertie
 
 	var r0 *Service
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, properties.UUID, properties.UUID, string, properties.JSON) (*Service, error)); ok {
-		return returnFunc(ctx, agentID, serviceTypeID, groupID, name, properties1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateServiceParams) (*Service, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, properties.UUID, properties.UUID, string, properties.JSON) *Service); ok {
-		r0 = returnFunc(ctx, agentID, serviceTypeID, groupID, name, properties1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateServiceParams) *Service); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Service)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, properties.UUID, properties.UUID, string, properties.JSON) error); ok {
-		r1 = returnFunc(ctx, agentID, serviceTypeID, groupID, name, properties1)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateServiceParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -12074,48 +12075,24 @@ type MockServiceCommander_Create_Call struct {
 
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
-//   - agentID properties.UUID
-//   - serviceTypeID properties.UUID
-//   - groupID properties.UUID
-//   - name string
-//   - properties1 properties.JSON
-func (_e *MockServiceCommander_Expecter) Create(ctx interface{}, agentID interface{}, serviceTypeID interface{}, groupID interface{}, name interface{}, properties1 interface{}) *MockServiceCommander_Create_Call {
-	return &MockServiceCommander_Create_Call{Call: _e.mock.On("Create", ctx, agentID, serviceTypeID, groupID, name, properties1)}
+//   - params CreateServiceParams
+func (_e *MockServiceCommander_Expecter) Create(ctx interface{}, params interface{}) *MockServiceCommander_Create_Call {
+	return &MockServiceCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
 }
 
-func (_c *MockServiceCommander_Create_Call) Run(run func(ctx context.Context, agentID properties.UUID, serviceTypeID properties.UUID, groupID properties.UUID, name string, properties1 properties.JSON)) *MockServiceCommander_Create_Call {
+func (_c *MockServiceCommander_Create_Call) Run(run func(ctx context.Context, params CreateServiceParams)) *MockServiceCommander_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 CreateServiceParams
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 properties.UUID
-		if args[2] != nil {
-			arg2 = args[2].(properties.UUID)
-		}
-		var arg3 properties.UUID
-		if args[3] != nil {
-			arg3 = args[3].(properties.UUID)
-		}
-		var arg4 string
-		if args[4] != nil {
-			arg4 = args[4].(string)
-		}
-		var arg5 properties.JSON
-		if args[5] != nil {
-			arg5 = args[5].(properties.JSON)
+			arg1 = args[1].(CreateServiceParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
-			arg4,
-			arg5,
 		)
 	})
 	return _c
@@ -12126,14 +12103,14 @@ func (_c *MockServiceCommander_Create_Call) Return(service *Service, err error) 
 	return _c
 }
 
-func (_c *MockServiceCommander_Create_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID, serviceTypeID properties.UUID, groupID properties.UUID, name string, properties1 properties.JSON) (*Service, error)) *MockServiceCommander_Create_Call {
+func (_c *MockServiceCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateServiceParams) (*Service, error)) *MockServiceCommander_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // CreateWithTags provides a mock function for the type MockServiceCommander
-func (_mock *MockServiceCommander) CreateWithTags(ctx context.Context, serviceTypeID properties.UUID, groupID properties.UUID, name string, properties1 properties.JSON, serviceTags []string) (*Service, error) {
-	ret := _mock.Called(ctx, serviceTypeID, groupID, name, properties1, serviceTags)
+func (_mock *MockServiceCommander) CreateWithTags(ctx context.Context, params CreateServiceWithTagsParams) (*Service, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateWithTags")
@@ -12141,18 +12118,18 @@ func (_mock *MockServiceCommander) CreateWithTags(ctx context.Context, serviceTy
 
 	var r0 *Service
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, properties.UUID, string, properties.JSON, []string) (*Service, error)); ok {
-		return returnFunc(ctx, serviceTypeID, groupID, name, properties1, serviceTags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateServiceWithTagsParams) (*Service, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, properties.UUID, string, properties.JSON, []string) *Service); ok {
-		r0 = returnFunc(ctx, serviceTypeID, groupID, name, properties1, serviceTags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateServiceWithTagsParams) *Service); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Service)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, properties.UUID, string, properties.JSON, []string) error); ok {
-		r1 = returnFunc(ctx, serviceTypeID, groupID, name, properties1, serviceTags)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateServiceWithTagsParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -12166,48 +12143,24 @@ type MockServiceCommander_CreateWithTags_Call struct {
 
 // CreateWithTags is a helper method to define mock.On call
 //   - ctx context.Context
-//   - serviceTypeID properties.UUID
-//   - groupID properties.UUID
-//   - name string
-//   - properties1 properties.JSON
-//   - serviceTags []string
-func (_e *MockServiceCommander_Expecter) CreateWithTags(ctx interface{}, serviceTypeID interface{}, groupID interface{}, name interface{}, properties1 interface{}, serviceTags interface{}) *MockServiceCommander_CreateWithTags_Call {
-	return &MockServiceCommander_CreateWithTags_Call{Call: _e.mock.On("CreateWithTags", ctx, serviceTypeID, groupID, name, properties1, serviceTags)}
+//   - params CreateServiceWithTagsParams
+func (_e *MockServiceCommander_Expecter) CreateWithTags(ctx interface{}, params interface{}) *MockServiceCommander_CreateWithTags_Call {
+	return &MockServiceCommander_CreateWithTags_Call{Call: _e.mock.On("CreateWithTags", ctx, params)}
 }
 
-func (_c *MockServiceCommander_CreateWithTags_Call) Run(run func(ctx context.Context, serviceTypeID properties.UUID, groupID properties.UUID, name string, properties1 properties.JSON, serviceTags []string)) *MockServiceCommander_CreateWithTags_Call {
+func (_c *MockServiceCommander_CreateWithTags_Call) Run(run func(ctx context.Context, params CreateServiceWithTagsParams)) *MockServiceCommander_CreateWithTags_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 CreateServiceWithTagsParams
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 properties.UUID
-		if args[2] != nil {
-			arg2 = args[2].(properties.UUID)
-		}
-		var arg3 string
-		if args[3] != nil {
-			arg3 = args[3].(string)
-		}
-		var arg4 properties.JSON
-		if args[4] != nil {
-			arg4 = args[4].(properties.JSON)
-		}
-		var arg5 []string
-		if args[5] != nil {
-			arg5 = args[5].([]string)
+			arg1 = args[1].(CreateServiceWithTagsParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
-			arg4,
-			arg5,
 		)
 	})
 	return _c
@@ -12218,7 +12171,75 @@ func (_c *MockServiceCommander_CreateWithTags_Call) Return(service *Service, err
 	return _c
 }
 
-func (_c *MockServiceCommander_CreateWithTags_Call) RunAndReturn(run func(ctx context.Context, serviceTypeID properties.UUID, groupID properties.UUID, name string, properties1 properties.JSON, serviceTags []string) (*Service, error)) *MockServiceCommander_CreateWithTags_Call {
+func (_c *MockServiceCommander_CreateWithTags_Call) RunAndReturn(run func(ctx context.Context, params CreateServiceWithTagsParams) (*Service, error)) *MockServiceCommander_CreateWithTags_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DoAction provides a mock function for the type MockServiceCommander
+func (_mock *MockServiceCommander) DoAction(ctx context.Context, params DoServiceActionParams) (*Service, error) {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DoAction")
+	}
+
+	var r0 *Service
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, DoServiceActionParams) (*Service, error)); ok {
+		return returnFunc(ctx, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, DoServiceActionParams) *Service); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Service)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, DoServiceActionParams) error); ok {
+		r1 = returnFunc(ctx, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServiceCommander_DoAction_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DoAction'
+type MockServiceCommander_DoAction_Call struct {
+	*mock.Call
+}
+
+// DoAction is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params DoServiceActionParams
+func (_e *MockServiceCommander_Expecter) DoAction(ctx interface{}, params interface{}) *MockServiceCommander_DoAction_Call {
+	return &MockServiceCommander_DoAction_Call{Call: _e.mock.On("DoAction", ctx, params)}
+}
+
+func (_c *MockServiceCommander_DoAction_Call) Run(run func(ctx context.Context, params DoServiceActionParams)) *MockServiceCommander_DoAction_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 DoServiceActionParams
+		if args[1] != nil {
+			arg1 = args[1].(DoServiceActionParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServiceCommander_DoAction_Call) Return(service *Service, err error) *MockServiceCommander_DoAction_Call {
+	_c.Call.Return(service, err)
+	return _c
+}
+
+func (_c *MockServiceCommander_DoAction_Call) RunAndReturn(run func(ctx context.Context, params DoServiceActionParams) (*Service, error)) *MockServiceCommander_DoAction_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -12357,83 +12378,9 @@ func (_c *MockServiceCommander_Retry_Call) RunAndReturn(run func(ctx context.Con
 	return _c
 }
 
-// Transition provides a mock function for the type MockServiceCommander
-func (_mock *MockServiceCommander) Transition(ctx context.Context, id properties.UUID, target ServiceStatus) (*Service, error) {
-	ret := _mock.Called(ctx, id, target)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Transition")
-	}
-
-	var r0 *Service
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, ServiceStatus) (*Service, error)); ok {
-		return returnFunc(ctx, id, target)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, ServiceStatus) *Service); ok {
-		r0 = returnFunc(ctx, id, target)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*Service)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, ServiceStatus) error); ok {
-		r1 = returnFunc(ctx, id, target)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockServiceCommander_Transition_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Transition'
-type MockServiceCommander_Transition_Call struct {
-	*mock.Call
-}
-
-// Transition is a helper method to define mock.On call
-//   - ctx context.Context
-//   - id properties.UUID
-//   - target ServiceStatus
-func (_e *MockServiceCommander_Expecter) Transition(ctx interface{}, id interface{}, target interface{}) *MockServiceCommander_Transition_Call {
-	return &MockServiceCommander_Transition_Call{Call: _e.mock.On("Transition", ctx, id, target)}
-}
-
-func (_c *MockServiceCommander_Transition_Call) Run(run func(ctx context.Context, id properties.UUID, target ServiceStatus)) *MockServiceCommander_Transition_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 properties.UUID
-		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 ServiceStatus
-		if args[2] != nil {
-			arg2 = args[2].(ServiceStatus)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *MockServiceCommander_Transition_Call) Return(service *Service, err error) *MockServiceCommander_Transition_Call {
-	_c.Call.Return(service, err)
-	return _c
-}
-
-func (_c *MockServiceCommander_Transition_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, target ServiceStatus) (*Service, error)) *MockServiceCommander_Transition_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // Update provides a mock function for the type MockServiceCommander
-func (_mock *MockServiceCommander) Update(ctx context.Context, id properties.UUID, name *string, props *properties.JSON) (*Service, error) {
-	ret := _mock.Called(ctx, id, name, props)
+func (_mock *MockServiceCommander) Update(ctx context.Context, params UpdateServiceParams) (*Service, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -12441,18 +12388,18 @@ func (_mock *MockServiceCommander) Update(ctx context.Context, id properties.UUI
 
 	var r0 *Service
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string, *properties.JSON) (*Service, error)); ok {
-		return returnFunc(ctx, id, name, props)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateServiceParams) (*Service, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string, *properties.JSON) *Service); ok {
-		r0 = returnFunc(ctx, id, name, props)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateServiceParams) *Service); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Service)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, *string, *properties.JSON) error); ok {
-		r1 = returnFunc(ctx, id, name, props)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateServiceParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -12466,36 +12413,24 @@ type MockServiceCommander_Update_Call struct {
 
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
-//   - id properties.UUID
-//   - name *string
-//   - props *properties.JSON
-func (_e *MockServiceCommander_Expecter) Update(ctx interface{}, id interface{}, name interface{}, props interface{}) *MockServiceCommander_Update_Call {
-	return &MockServiceCommander_Update_Call{Call: _e.mock.On("Update", ctx, id, name, props)}
+//   - params UpdateServiceParams
+func (_e *MockServiceCommander_Expecter) Update(ctx interface{}, params interface{}) *MockServiceCommander_Update_Call {
+	return &MockServiceCommander_Update_Call{Call: _e.mock.On("Update", ctx, params)}
 }
 
-func (_c *MockServiceCommander_Update_Call) Run(run func(ctx context.Context, id properties.UUID, name *string, props *properties.JSON)) *MockServiceCommander_Update_Call {
+func (_c *MockServiceCommander_Update_Call) Run(run func(ctx context.Context, params UpdateServiceParams)) *MockServiceCommander_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 UpdateServiceParams
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 *string
-		if args[2] != nil {
-			arg2 = args[2].(*string)
-		}
-		var arg3 *properties.JSON
-		if args[3] != nil {
-			arg3 = args[3].(*properties.JSON)
+			arg1 = args[1].(UpdateServiceParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -12506,7 +12441,7 @@ func (_c *MockServiceCommander_Update_Call) Return(service *Service, err error) 
 	return _c
 }
 
-func (_c *MockServiceCommander_Update_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, name *string, props *properties.JSON) (*Service, error)) *MockServiceCommander_Update_Call {
+func (_c *MockServiceCommander_Update_Call) RunAndReturn(run func(ctx context.Context, params UpdateServiceParams) (*Service, error)) *MockServiceCommander_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -13848,8 +13783,8 @@ func (_m *MockServiceGroupCommander) EXPECT() *MockServiceGroupCommander_Expecte
 }
 
 // Create provides a mock function for the type MockServiceGroupCommander
-func (_mock *MockServiceGroupCommander) Create(ctx context.Context, name string, consumerID properties.UUID) (*ServiceGroup, error) {
-	ret := _mock.Called(ctx, name, consumerID)
+func (_mock *MockServiceGroupCommander) Create(ctx context.Context, params CreateServiceGroupParams) (*ServiceGroup, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -13857,18 +13792,18 @@ func (_mock *MockServiceGroupCommander) Create(ctx context.Context, name string,
 
 	var r0 *ServiceGroup
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, properties.UUID) (*ServiceGroup, error)); ok {
-		return returnFunc(ctx, name, consumerID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateServiceGroupParams) (*ServiceGroup, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, properties.UUID) *ServiceGroup); ok {
-		r0 = returnFunc(ctx, name, consumerID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateServiceGroupParams) *ServiceGroup); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ServiceGroup)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, properties.UUID) error); ok {
-		r1 = returnFunc(ctx, name, consumerID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateServiceGroupParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -13882,30 +13817,24 @@ type MockServiceGroupCommander_Create_Call struct {
 
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
-//   - name string
-//   - consumerID properties.UUID
-func (_e *MockServiceGroupCommander_Expecter) Create(ctx interface{}, name interface{}, consumerID interface{}) *MockServiceGroupCommander_Create_Call {
-	return &MockServiceGroupCommander_Create_Call{Call: _e.mock.On("Create", ctx, name, consumerID)}
+//   - params CreateServiceGroupParams
+func (_e *MockServiceGroupCommander_Expecter) Create(ctx interface{}, params interface{}) *MockServiceGroupCommander_Create_Call {
+	return &MockServiceGroupCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
 }
 
-func (_c *MockServiceGroupCommander_Create_Call) Run(run func(ctx context.Context, name string, consumerID properties.UUID)) *MockServiceGroupCommander_Create_Call {
+func (_c *MockServiceGroupCommander_Create_Call) Run(run func(ctx context.Context, params CreateServiceGroupParams)) *MockServiceGroupCommander_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 CreateServiceGroupParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 properties.UUID
-		if args[2] != nil {
-			arg2 = args[2].(properties.UUID)
+			arg1 = args[1].(CreateServiceGroupParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -13916,7 +13845,7 @@ func (_c *MockServiceGroupCommander_Create_Call) Return(serviceGroup *ServiceGro
 	return _c
 }
 
-func (_c *MockServiceGroupCommander_Create_Call) RunAndReturn(run func(ctx context.Context, name string, consumerID properties.UUID) (*ServiceGroup, error)) *MockServiceGroupCommander_Create_Call {
+func (_c *MockServiceGroupCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateServiceGroupParams) (*ServiceGroup, error)) *MockServiceGroupCommander_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -13979,8 +13908,8 @@ func (_c *MockServiceGroupCommander_Delete_Call) RunAndReturn(run func(ctx conte
 }
 
 // Update provides a mock function for the type MockServiceGroupCommander
-func (_mock *MockServiceGroupCommander) Update(ctx context.Context, id properties.UUID, name *string) (*ServiceGroup, error) {
-	ret := _mock.Called(ctx, id, name)
+func (_mock *MockServiceGroupCommander) Update(ctx context.Context, params UpdateServiceGroupParams) (*ServiceGroup, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -13988,18 +13917,18 @@ func (_mock *MockServiceGroupCommander) Update(ctx context.Context, id propertie
 
 	var r0 *ServiceGroup
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string) (*ServiceGroup, error)); ok {
-		return returnFunc(ctx, id, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateServiceGroupParams) (*ServiceGroup, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string) *ServiceGroup); ok {
-		r0 = returnFunc(ctx, id, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateServiceGroupParams) *ServiceGroup); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ServiceGroup)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, *string) error); ok {
-		r1 = returnFunc(ctx, id, name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateServiceGroupParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -14013,30 +13942,24 @@ type MockServiceGroupCommander_Update_Call struct {
 
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
-//   - id properties.UUID
-//   - name *string
-func (_e *MockServiceGroupCommander_Expecter) Update(ctx interface{}, id interface{}, name interface{}) *MockServiceGroupCommander_Update_Call {
-	return &MockServiceGroupCommander_Update_Call{Call: _e.mock.On("Update", ctx, id, name)}
+//   - params UpdateServiceGroupParams
+func (_e *MockServiceGroupCommander_Expecter) Update(ctx interface{}, params interface{}) *MockServiceGroupCommander_Update_Call {
+	return &MockServiceGroupCommander_Update_Call{Call: _e.mock.On("Update", ctx, params)}
 }
 
-func (_c *MockServiceGroupCommander_Update_Call) Run(run func(ctx context.Context, id properties.UUID, name *string)) *MockServiceGroupCommander_Update_Call {
+func (_c *MockServiceGroupCommander_Update_Call) Run(run func(ctx context.Context, params UpdateServiceGroupParams)) *MockServiceGroupCommander_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 UpdateServiceGroupParams
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 *string
-		if args[2] != nil {
-			arg2 = args[2].(*string)
+			arg1 = args[1].(UpdateServiceGroupParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -14047,7 +13970,7 @@ func (_c *MockServiceGroupCommander_Update_Call) Return(serviceGroup *ServiceGro
 	return _c
 }
 
-func (_c *MockServiceGroupCommander_Update_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, name *string) (*ServiceGroup, error)) *MockServiceGroupCommander_Update_Call {
+func (_c *MockServiceGroupCommander_Update_Call) RunAndReturn(run func(ctx context.Context, params UpdateServiceGroupParams) (*ServiceGroup, error)) *MockServiceGroupCommander_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -16160,52 +16083,6 @@ func (_c *MockStore_JobRepo_Call) RunAndReturn(run func() JobRepository) *MockSt
 	return _c
 }
 
-// MetricEntryRepo provides a mock function for the type MockStore
-func (_mock *MockStore) MetricEntryRepo() MetricEntryRepository {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for MetricEntryRepo")
-	}
-
-	var r0 MetricEntryRepository
-	if returnFunc, ok := ret.Get(0).(func() MetricEntryRepository); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(MetricEntryRepository)
-		}
-	}
-	return r0
-}
-
-// MockStore_MetricEntryRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MetricEntryRepo'
-type MockStore_MetricEntryRepo_Call struct {
-	*mock.Call
-}
-
-// MetricEntryRepo is a helper method to define mock.On call
-func (_e *MockStore_Expecter) MetricEntryRepo() *MockStore_MetricEntryRepo_Call {
-	return &MockStore_MetricEntryRepo_Call{Call: _e.mock.On("MetricEntryRepo")}
-}
-
-func (_c *MockStore_MetricEntryRepo_Call) Run(run func()) *MockStore_MetricEntryRepo_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *MockStore_MetricEntryRepo_Call) Return(metricEntryRepository MetricEntryRepository) *MockStore_MetricEntryRepo_Call {
-	_c.Call.Return(metricEntryRepository)
-	return _c
-}
-
-func (_c *MockStore_MetricEntryRepo_Call) RunAndReturn(run func() MetricEntryRepository) *MockStore_MetricEntryRepo_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // MetricTypeRepo provides a mock function for the type MockStore
 func (_mock *MockStore) MetricTypeRepo() MetricTypeRepository {
 	ret := _mock.Called()
@@ -16510,8 +16387,8 @@ func (_m *MockTokenCommander) EXPECT() *MockTokenCommander_Expecter {
 }
 
 // Create provides a mock function for the type MockTokenCommander
-func (_mock *MockTokenCommander) Create(ctx context.Context, name string, role auth.Role, expireAt *time.Time, scopeID *properties.UUID) (*Token, error) {
-	ret := _mock.Called(ctx, name, role, expireAt, scopeID)
+func (_mock *MockTokenCommander) Create(ctx context.Context, params CreateTokenParams) (*Token, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -16519,18 +16396,18 @@ func (_mock *MockTokenCommander) Create(ctx context.Context, name string, role a
 
 	var r0 *Token
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, auth.Role, *time.Time, *properties.UUID) (*Token, error)); ok {
-		return returnFunc(ctx, name, role, expireAt, scopeID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateTokenParams) (*Token, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, auth.Role, *time.Time, *properties.UUID) *Token); ok {
-		r0 = returnFunc(ctx, name, role, expireAt, scopeID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateTokenParams) *Token); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Token)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, auth.Role, *time.Time, *properties.UUID) error); ok {
-		r1 = returnFunc(ctx, name, role, expireAt, scopeID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateTokenParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -16544,42 +16421,24 @@ type MockTokenCommander_Create_Call struct {
 
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
-//   - name string
-//   - role auth.Role
-//   - expireAt *time.Time
-//   - scopeID *properties.UUID
-func (_e *MockTokenCommander_Expecter) Create(ctx interface{}, name interface{}, role interface{}, expireAt interface{}, scopeID interface{}) *MockTokenCommander_Create_Call {
-	return &MockTokenCommander_Create_Call{Call: _e.mock.On("Create", ctx, name, role, expireAt, scopeID)}
+//   - params CreateTokenParams
+func (_e *MockTokenCommander_Expecter) Create(ctx interface{}, params interface{}) *MockTokenCommander_Create_Call {
+	return &MockTokenCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
 }
 
-func (_c *MockTokenCommander_Create_Call) Run(run func(ctx context.Context, name string, role auth.Role, expireAt *time.Time, scopeID *properties.UUID)) *MockTokenCommander_Create_Call {
+func (_c *MockTokenCommander_Create_Call) Run(run func(ctx context.Context, params CreateTokenParams)) *MockTokenCommander_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 CreateTokenParams
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 auth.Role
-		if args[2] != nil {
-			arg2 = args[2].(auth.Role)
-		}
-		var arg3 *time.Time
-		if args[3] != nil {
-			arg3 = args[3].(*time.Time)
-		}
-		var arg4 *properties.UUID
-		if args[4] != nil {
-			arg4 = args[4].(*properties.UUID)
+			arg1 = args[1].(CreateTokenParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
-			arg4,
 		)
 	})
 	return _c
@@ -16590,7 +16449,7 @@ func (_c *MockTokenCommander_Create_Call) Return(token *Token, err error) *MockT
 	return _c
 }
 
-func (_c *MockTokenCommander_Create_Call) RunAndReturn(run func(ctx context.Context, name string, role auth.Role, expireAt *time.Time, scopeID *properties.UUID) (*Token, error)) *MockTokenCommander_Create_Call {
+func (_c *MockTokenCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateTokenParams) (*Token, error)) *MockTokenCommander_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -16721,8 +16580,8 @@ func (_c *MockTokenCommander_Regenerate_Call) RunAndReturn(run func(ctx context.
 }
 
 // Update provides a mock function for the type MockTokenCommander
-func (_mock *MockTokenCommander) Update(ctx context.Context, id properties.UUID, name *string, expireAt *time.Time) (*Token, error) {
-	ret := _mock.Called(ctx, id, name, expireAt)
+func (_mock *MockTokenCommander) Update(ctx context.Context, params UpdateTokenParams) (*Token, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -16730,18 +16589,18 @@ func (_mock *MockTokenCommander) Update(ctx context.Context, id properties.UUID,
 
 	var r0 *Token
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string, *time.Time) (*Token, error)); ok {
-		return returnFunc(ctx, id, name, expireAt)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateTokenParams) (*Token, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, *string, *time.Time) *Token); ok {
-		r0 = returnFunc(ctx, id, name, expireAt)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateTokenParams) *Token); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Token)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, *string, *time.Time) error); ok {
-		r1 = returnFunc(ctx, id, name, expireAt)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateTokenParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -16755,36 +16614,24 @@ type MockTokenCommander_Update_Call struct {
 
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
-//   - id properties.UUID
-//   - name *string
-//   - expireAt *time.Time
-func (_e *MockTokenCommander_Expecter) Update(ctx interface{}, id interface{}, name interface{}, expireAt interface{}) *MockTokenCommander_Update_Call {
-	return &MockTokenCommander_Update_Call{Call: _e.mock.On("Update", ctx, id, name, expireAt)}
+//   - params UpdateTokenParams
+func (_e *MockTokenCommander_Expecter) Update(ctx interface{}, params interface{}) *MockTokenCommander_Update_Call {
+	return &MockTokenCommander_Update_Call{Call: _e.mock.On("Update", ctx, params)}
 }
 
-func (_c *MockTokenCommander_Update_Call) Run(run func(ctx context.Context, id properties.UUID, name *string, expireAt *time.Time)) *MockTokenCommander_Update_Call {
+func (_c *MockTokenCommander_Update_Call) Run(run func(ctx context.Context, params UpdateTokenParams)) *MockTokenCommander_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 UpdateTokenParams
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		var arg2 *string
-		if args[2] != nil {
-			arg2 = args[2].(*string)
-		}
-		var arg3 *time.Time
-		if args[3] != nil {
-			arg3 = args[3].(*time.Time)
+			arg1 = args[1].(UpdateTokenParams)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -16795,7 +16642,7 @@ func (_c *MockTokenCommander_Update_Call) Return(token *Token, err error) *MockT
 	return _c
 }
 
-func (_c *MockTokenCommander_Update_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, name *string, expireAt *time.Time) (*Token, error)) *MockTokenCommander_Update_Call {
+func (_c *MockTokenCommander_Update_Call) RunAndReturn(run func(ctx context.Context, params UpdateTokenParams) (*Token, error)) *MockTokenCommander_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
