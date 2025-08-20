@@ -45,6 +45,19 @@ func Seed(db *gorm.DB) error {
 					{Type: schema.ValidatorEnum, Value: []any{512, 1024, 2048, 4096, 8192, 16384, 32768, 65536}},
 				},
 			},
+			"disk": schema.PropertyDefinition{
+				Type:     schema.TypeInteger,
+				Label:    "Disk (GB)",
+				Required: true,
+				Validators: []schema.ValidatorDefinition{
+					{Type: schema.ValidatorEnum, Value: []any{8, 16, 32, 64, 128, 256, 512, 1024}},
+				},
+			},
+			"image": schema.PropertyDefinition{
+				Type:     schema.TypeString,
+				Label:    "Image",
+				Required: true,
+			},
 		}
 
 		vmServiceType = domain.ServiceType{
