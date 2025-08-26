@@ -386,15 +386,19 @@ func CreateServiceWithAgent(
 }
 
 func (s *serviceCommander) Update(ctx context.Context, params UpdateServiceParams) (*Service, error) {
+	return UpdateService(ctx, s.store, params)
+}
+
+func UpdateService(ctx context.Context, store Store, params UpdateServiceParams) (*Service, error) {
 	// Find it
-	svc, err := s.store.ServiceRepo().Get(ctx, params.ID)
+	svc, err := store.ServiceRepo().Get(ctx, params.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Validate properties against schema if provided
 	if params.Properties != nil {
-		validatedProperties, err := validatePropertiesAgainstSchema(ctx, s.store, *params.Properties, svc.ServiceTypeID)
+		validatedProperties, err := validatePropertiesAgainstSchema(ctx, store, *params.Properties, svc.ServiceTypeID)
 		if err != nil {
 			return nil, err
 		}
@@ -412,9 +416,9 @@ func (s *serviceCommander) Update(ctx context.Context, params UpdateServiceParam
 	}
 
 	// Save, event and create job
-	err = s.store.Atomic(ctx, func(store Store) error {
+	err = store.Atomic(ctx, func(store Store) error {
 		if update {
-			if err := s.store.ServiceRepo().Save(ctx, svc); err != nil {
+			if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 				return err
 			}
 			eventEntry, err := NewEvent(EventTypeServiceUpdated, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
@@ -432,7 +436,7 @@ func (s *serviceCommander) Update(ctx context.Context, params UpdateServiceParam
 			}
 
 			// If pending job exists, fail it
-			err = checkHasNotActiveJob(ctx, s.store, svc)
+			err = checkHasNotActiveJob(ctx, store, svc)
 			if err != nil {
 				return err
 			}
@@ -489,8 +493,12 @@ func validatePropertiesAgainstSchema(ctx context.Context, store Store, props pro
 }
 
 func (s *serviceCommander) DoAction(ctx context.Context, params DoServiceActionParams) (*Service, error) {
+	return DoServiceAction(ctx, s.store, params)
+}
+
+func DoServiceAction(ctx context.Context, store Store, params DoServiceActionParams) (*Service, error) {
 	// Find it
-	svc, err := s.store.ServiceRepo().Get(ctx, params.ID)
+	svc, err := store.ServiceRepo().Get(ctx, params.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -501,13 +509,13 @@ func (s *serviceCommander) DoAction(ctx context.Context, params DoServiceActionP
 	}
 
 	// If pending job exists, fail it
-	err = checkHasNotActiveJob(ctx, s.store, svc)
+	err = checkHasNotActiveJob(ctx, store, svc)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create the new job
-	err = s.store.Atomic(ctx, func(store Store) error {
+	err = store.Atomic(ctx, func(store Store) error {
 		job := NewJob(svc, params.Action, nil, 1)
 		if err := job.Validate(); err != nil {
 			return err
@@ -525,14 +533,18 @@ func (s *serviceCommander) DoAction(ctx context.Context, params DoServiceActionP
 }
 
 func (s *serviceCommander) Retry(ctx context.Context, id properties.UUID) (*Service, error) {
+	return RetryService(ctx, s.store, id)
+}
+
+func RetryService(ctx context.Context, store Store, id properties.UUID) (*Service, error) {
 	// Check if the service exists
-	svc, err := s.store.ServiceRepo().Get(ctx, id)
+	svc, err := store.ServiceRepo().Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get last job and check if it's failed
-	job, err := s.store.JobRepo().GetLastJobForService(ctx, svc.ID)
+	job, err := store.JobRepo().GetLastJobForService(ctx, svc.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -541,7 +553,7 @@ func (s *serviceCommander) Retry(ctx context.Context, id properties.UUID) (*Serv
 	}
 
 	// Create the new job as a copy of the failed one
-	err = s.store.Atomic(ctx, func(store Store) error {
+	err = store.Atomic(ctx, func(store Store) error {
 		job := NewJob(svc, job.Action, job.Params, 1)
 		if err := job.Validate(); err != nil {
 			return err
