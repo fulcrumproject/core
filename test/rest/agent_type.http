@@ -1,16 +1,45 @@
-### Test Agent Type API
+### Agent Type CRUD Operations
+### This file tests CRUD operations for agent types
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
-@adminToken = admin-test-token
+@adminToken = change-me
+@participantToken = participant-test-token
 
-### List all agent types
-# @name listAgentTypes
+### Get all agent types
 GET {{baseUrl}}/agent-types
 Authorization: Bearer {{adminToken}}
 
-@agentTypeId = {{listAgentTypes.response.body.items[0].id}}
+### Create a new agent type
+# @name createAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
-### Get an agent type by ID
-GET {{baseUrl}}/agent-types/{{agentTypeId}}
+{
+    "name": "Test Agent Type"
+}
+
+@createdAgentTypeId = {{createAgentType.response.body.id}}
+
+### Get the created agent type
+GET {{baseUrl}}/agent-types/{{createdAgentTypeId}}
+Authorization: Bearer {{adminToken}}
+
+### Update the agent type (PATCH)
+# @name updateAgentType
+PATCH {{baseUrl}}/agent-types/{{createdAgentTypeId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Updated Test Agent Type"
+}
+
+### Get the updated agent type
+GET {{baseUrl}}/agent-types/{{createdAgentTypeId}}
+Authorization: Bearer {{adminToken}}
+
+### Delete the agent type
+DELETE {{baseUrl}}/agent-types/{{createdAgentTypeId}}
 Authorization: Bearer {{adminToken}}

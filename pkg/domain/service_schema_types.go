@@ -1,4 +1,4 @@
-package schema
+package domain
 
 import (
 	"database/sql/driver"
@@ -8,13 +8,13 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// CustomSchema represents the root schema structure
-type CustomSchema map[string]PropertyDefinition
+// ServiceSchema represents the root schema structure
+type ServiceSchema map[string]ServicePropertyDefinition
 
 // Scan implements the sql.Scanner interface
-func (cs *CustomSchema) Scan(value any) error {
+func (cs *ServiceSchema) Scan(value any) error {
 	if value == nil {
-		*cs = make(CustomSchema)
+		*cs = make(ServiceSchema)
 		return nil
 	}
 
@@ -27,7 +27,7 @@ func (cs *CustomSchema) Scan(value any) error {
 }
 
 // Value implements the driver.Valuer interface
-func (cs CustomSchema) Value() (driver.Value, error) {
+func (cs ServiceSchema) Value() (driver.Value, error) {
 	if cs == nil {
 		return nil, nil
 	}
@@ -35,23 +35,23 @@ func (cs CustomSchema) Value() (driver.Value, error) {
 }
 
 // GormDataType returns the GORM data type for CustomSchema
-func (cs CustomSchema) GormDataType() string {
+func (cs ServiceSchema) GormDataType() string {
 	return "jsonb"
 }
 
 // MarshalJSON implements custom properties.JSON marshaling for CustomSchema
-func (cs CustomSchema) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]PropertyDefinition(cs))
+func (cs ServiceSchema) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]ServicePropertyDefinition(cs))
 }
 
 // UnmarshalJSON implements custom properties.JSON unmarshaling for CustomSchema
-func (cs *CustomSchema) UnmarshalJSON(data []byte) error {
+func (cs *ServiceSchema) UnmarshalJSON(data []byte) error {
 	var rawSchema map[string]any
 	if err := json.Unmarshal(data, &rawSchema); err != nil {
 		return err
 	}
 
-	*cs = make(CustomSchema)
+	*cs = make(ServiceSchema)
 	for propName, propDefRaw := range rawSchema {
 		if propDefMap, ok := propDefRaw.(map[string]any); ok {
 			propDef, err := parsePropertyDefinition(propDefMap)
@@ -66,7 +66,7 @@ func (cs *CustomSchema) UnmarshalJSON(data []byte) error {
 }
 
 // Validate checks if the CustomSchema is valid using go-playground/validator
-func (cs CustomSchema) Validate() error {
+func (cs ServiceSchema) Validate() error {
 	validate := validator.New()
 
 	for propName, propDef := range cs {
@@ -80,39 +80,26 @@ func (cs CustomSchema) Validate() error {
 	return nil
 }
 
-// PropertyDefinition defines a single property in the schema
-type PropertyDefinition struct {
-	Type       string                        `json:"type" validate:"required,oneof=string integer number boolean object array"`
-	Label      string                        `json:"label,omitempty"`
-	Required   bool                          `json:"required,omitempty"`
-	Default    any                           `json:"default,omitempty"`
-	Validators []ValidatorDefinition         `json:"validators,omitempty" validate:"dive"`
-	Properties map[string]PropertyDefinition `json:"properties,omitempty" validate:"dive"`
-	Items      *PropertyDefinition           `json:"items,omitempty"`
+// ServicePropertyDefinition defines a single property in the schema
+type ServicePropertyDefinition struct {
+	Type       string                               `json:"type" validate:"required,oneof=string integer number boolean object array serviceReference"`
+	Label      string                               `json:"label,omitempty"`
+	Required   bool                                 `json:"required,omitempty"`
+	Default    any                                  `json:"default,omitempty"`
+	Validators []ServicePropertyValidatorDefinition `json:"validators,omitempty" validate:"dive"`
+	Properties map[string]ServicePropertyDefinition `json:"properties,omitempty" validate:"dive"`
+	Items      *ServicePropertyDefinition           `json:"items,omitempty"`
 }
 
-// ValidatorDefinition defines a validation rule
-type ValidatorDefinition struct {
-	Type  string `json:"type" validate:"required,oneof=minLength maxLength pattern enum min max minItems maxItems uniqueItems"`
+// ServicePropertyValidatorDefinition defines a validation rule
+type ServicePropertyValidatorDefinition struct {
+	Type  string `json:"type" validate:"required,oneof=minLength maxLength pattern enum min max minItems maxItems uniqueItems sameOrigin"`
 	Value any    `json:"value" validate:"required"`
 }
 
-// ValidationError represents a validation error with path context
-type ValidationError struct {
-	Path    string `json:"path"`
-	Message string `json:"message"`
-}
-
-func (e ValidationError) Error() string {
-	if e.Path == "" {
-		return e.Message
-	}
-	return fmt.Sprintf("%s: %s", e.Path, e.Message)
-}
-
 // parsePropertyDefinition is a helper function to parse a property definition recursively
-func parsePropertyDefinition(propDefMap map[string]any) (PropertyDefinition, error) {
-	propDef := PropertyDefinition{}
+func parsePropertyDefinition(propDefMap map[string]any) (ServicePropertyDefinition, error) {
+	propDef := ServicePropertyDefinition{}
 
 	// Parse type
 	if typeVal, exists := propDefMap["type"]; exists {
@@ -147,7 +134,7 @@ func parsePropertyDefinition(propDefMap map[string]any) (PropertyDefinition, err
 		if validatorsSlice, ok := validatorsVal.([]any); ok {
 			for _, validatorRaw := range validatorsSlice {
 				if validatorMap, ok := validatorRaw.(map[string]any); ok {
-					validator := ValidatorDefinition{}
+					validator := ServicePropertyValidatorDefinition{}
 					if typeVal, exists := validatorMap["type"]; exists {
 						if typeStr, ok := typeVal.(string); ok {
 							validator.Type = typeStr
@@ -165,7 +152,7 @@ func parsePropertyDefinition(propDefMap map[string]any) (PropertyDefinition, err
 	// Parse nested properties for objects (recursive)
 	if propertiesVal, exists := propDefMap["properties"]; exists {
 		if propertiesMap, ok := propertiesVal.(map[string]any); ok {
-			propDef.Properties = make(map[string]PropertyDefinition)
+			propDef.Properties = make(map[string]ServicePropertyDefinition)
 			for nestedPropName, nestedPropDefRaw := range propertiesMap {
 				if nestedPropDefMap, ok := nestedPropDefRaw.(map[string]any); ok {
 					nestedPropDef, err := parsePropertyDefinition(nestedPropDefMap)

@@ -57,6 +57,15 @@ func (r *GormServiceRepository) CountByAgent(ctx context.Context, agentID proper
 	return count, nil
 }
 
+func (r *GormServiceRepository) CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error) {
+	var count int64
+	result := r.db.WithContext(ctx).Model(&domain.Service{}).Where("service_type_id = ?", serviceTypeID).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}
+
 // FindByExternalID retrieves a service by its external ID and agent ID
 func (r *GormServiceRepository) FindByExternalID(ctx context.Context, agentID properties.UUID, externalID string) (*domain.Service, error) {
 	var service domain.Service

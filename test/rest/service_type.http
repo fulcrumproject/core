@@ -2,27 +2,170 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
-@adminToken = admin-test-token
+@adminToken = change-me
 
 ### List all service types
 # @name listServiceTypes
 GET {{baseUrl}}/service-types
 Authorization: Bearer {{adminToken}}
 
+### Store the first service type ID
 @serviceTypeId = {{listServiceTypes.response.body.items[0].id}}
 
 ### Get a service type by ID
 GET {{baseUrl}}/service-types/{{serviceTypeId}}
 Authorization: Bearer {{adminToken}}
 
-### Validate service properties before creation
-# @name validateServiceProperties
-POST {{baseUrl}}/service-types/0195c3c8-69e5-7806-9598-8523c01ea54f/validate
+### Create a new service type
+# @name createServiceType
+POST {{baseUrl}}/service-types
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
 {
-    "properties": {
-        "cpu": 4,
-        "memory": 5112
+    "name": "VM Instance Test",
+    "propertySchema": {
+        "cpu": {
+            "type": "integer",
+            "label": "CPU Cores",
+            "required": true,
+            "validators": [
+                {
+                    "type": "min",
+                    "value": 1
+                },
+                {
+                    "type": "max", 
+                    "value": 32
+                }
+            ]
+        },
+        "memory": {
+            "type": "integer",
+            "label": "Memory (MB)",
+            "required": true,
+            "validators": [
+                {
+                    "type": "min",
+                    "value": 512
+                }
+            ]
+        },
+        "environment": {
+            "type": "string",
+            "label": "Environment",
+            "default": "development",
+            "validators": [
+                {
+                    "type": "enum",
+                    "value": ["development", "staging", "production"]
+                }
+            ]
+        }
     }
 }
+
+@createdServiceTypeId = {{createServiceType.response.body.id}}
+
+### Get the created service type
+GET {{baseUrl}}/service-types/{{createdServiceTypeId}}
+Authorization: Bearer {{adminToken}}
+
+### Update the service type (PATCH)
+# @name updateServiceType
+PATCH {{baseUrl}}/service-types/{{createdServiceTypeId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Updated VM Instance",
+    "propertySchema": {
+        "cpu": {
+            "type": "integer",
+            "label": "CPU Cores",
+            "required": true,
+            "validators": [
+                {
+                    "type": "min",
+                    "value": 1
+                },
+                {
+                    "type": "max", 
+                    "value": 64
+                }
+            ]
+        },
+        "memory": {
+            "type": "integer",
+            "label": "Memory (MB)",
+            "required": true,
+            "validators": [
+                {
+                    "type": "min",
+                    "value": 1024
+                }
+            ]
+        },
+        "environment": {
+            "type": "string",
+            "label": "Environment",
+            "default": "staging",
+            "validators": [
+                {
+                    "type": "enum",
+                    "value": ["development", "staging", "production"]
+                }
+            ]
+        },
+        "storage": {
+            "type": "integer",
+            "label": "Storage (GB)",
+            "default": 20,
+            "validators": [
+                {
+                    "type": "min",
+                    "value": 10
+                }
+            ]
+        }
+    }
+}
+
+### Get the updated service type to verify changes
+GET {{baseUrl}}/service-types/{{createdServiceTypeId}}
+Authorization: Bearer {{adminToken}}
+
+### Validate service properties using the created service type
+# @name validateServiceProperties
+POST {{baseUrl}}/service-types/{{createdServiceTypeId}}/validate
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "groupId": "550e8400-e29b-41d4-a716-446655440000",
+    "properties": {
+        "cpu": 4,
+        "memory": 8192,
+        "environment": "production",
+        "storage": 50
+    }
+}
+
+### Validate with invalid properties (should return validation errors)
+# @name validateInvalidProperties
+POST {{baseUrl}}/service-types/{{createdServiceTypeId}}/validate
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "groupId": "550e8400-e29b-41d4-a716-446655440000",
+    "properties": {
+        "cpu": 0,
+        "memory": 256,
+        "environment": "invalid_env"
+    }
+}
+
+### Delete the service type
+DELETE {{baseUrl}}/service-types/{{createdServiceTypeId}}
+Authorization: Bearer {{adminToken}}

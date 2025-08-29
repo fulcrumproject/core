@@ -117,6 +117,22 @@ func WithServiceGroup(t *ServiceGroup) EventOption {
 	}
 }
 
+// WithServiceType sets the entity ID for the event
+func WithServiceType(t *ServiceType) EventOption {
+	return func(e *Event) error {
+		e.EntityID = &t.ID
+		return nil
+	}
+}
+
+// WithAgentType sets the entity ID for the event
+func WithAgentType(t *AgentType) EventOption {
+	return func(e *Event) error {
+		e.EntityID = &t.ID
+		return nil
+	}
+}
+
 // WithInitiatorCtx sets the event from a context
 func WithInitiatorCtx(ctx context.Context) EventOption {
 	return func(e *Event) error {

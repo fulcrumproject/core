@@ -1,4 +1,4 @@
-package schema
+package domain
 
 import (
 	"testing"
@@ -10,32 +10,32 @@ import (
 func TestPropertyDefinition_Validation(t *testing.T) {
 	tests := []struct {
 		name        string
-		propDef     PropertyDefinition
+		propDef     ServicePropertyDefinition
 		expectError bool
 		errorMsg    string
 	}{
 		{
 			name: "valid string property",
-			propDef: PropertyDefinition{
-				Type:  TypeString,
+			propDef: ServicePropertyDefinition{
+				Type:  SchemaTypeString,
 				Label: "Name",
 			},
 			expectError: false,
 		},
 		{
 			name: "valid integer property with validators",
-			propDef: PropertyDefinition{
-				Type: TypeInteger,
-				Validators: []ValidatorDefinition{
-					{Type: ValidatorMin, Value: 1},
-					{Type: ValidatorMax, Value: 100},
+			propDef: ServicePropertyDefinition{
+				Type: SchemaTypeInteger,
+				Validators: []ServicePropertyValidatorDefinition{
+					{Type: SchemaValidatorMin, Value: 1},
+					{Type: SchemaValidatorMax, Value: 100},
 				},
 			},
 			expectError: false,
 		},
 		{
 			name: "invalid type",
-			propDef: PropertyDefinition{
+			propDef: ServicePropertyDefinition{
 				Type: "invalid_type",
 			},
 			expectError: true,
@@ -43,7 +43,7 @@ func TestPropertyDefinition_Validation(t *testing.T) {
 		},
 		{
 			name: "missing type",
-			propDef: PropertyDefinition{
+			propDef: ServicePropertyDefinition{
 				Label: "Test",
 			},
 			expectError: true,
@@ -51,9 +51,9 @@ func TestPropertyDefinition_Validation(t *testing.T) {
 		},
 		{
 			name: "invalid validator type",
-			propDef: PropertyDefinition{
-				Type: TypeString,
-				Validators: []ValidatorDefinition{
+			propDef: ServicePropertyDefinition{
+				Type: SchemaTypeString,
+				Validators: []ServicePropertyValidatorDefinition{
 					{Type: "invalid_validator", Value: "test"},
 				},
 			},
@@ -62,10 +62,10 @@ func TestPropertyDefinition_Validation(t *testing.T) {
 		},
 		{
 			name: "validator missing value",
-			propDef: PropertyDefinition{
-				Type: TypeString,
-				Validators: []ValidatorDefinition{
-					{Type: ValidatorMinLength},
+			propDef: ServicePropertyDefinition{
+				Type: SchemaTypeString,
+				Validators: []ServicePropertyValidatorDefinition{
+					{Type: SchemaValidatorMinLength},
 				},
 			},
 			expectError: true,
@@ -73,20 +73,20 @@ func TestPropertyDefinition_Validation(t *testing.T) {
 		},
 		{
 			name: "valid object with nested properties",
-			propDef: PropertyDefinition{
-				Type: TypeObject,
-				Properties: map[string]PropertyDefinition{
-					"name": {Type: TypeString},
-					"age":  {Type: TypeInteger},
+			propDef: ServicePropertyDefinition{
+				Type: SchemaTypeObject,
+				Properties: map[string]ServicePropertyDefinition{
+					"name": {Type: SchemaTypeString},
+					"age":  {Type: SchemaTypeInteger},
 				},
 			},
 			expectError: false,
 		},
 		{
 			name: "invalid nested property",
-			propDef: PropertyDefinition{
-				Type: TypeObject,
-				Properties: map[string]PropertyDefinition{
+			propDef: ServicePropertyDefinition{
+				Type: SchemaTypeObject,
+				Properties: map[string]ServicePropertyDefinition{
 					"invalid": {Type: "bad_type"},
 				},
 			},
@@ -95,19 +95,19 @@ func TestPropertyDefinition_Validation(t *testing.T) {
 		},
 		{
 			name: "valid array with items",
-			propDef: PropertyDefinition{
-				Type: TypeArray,
-				Items: &PropertyDefinition{
-					Type: TypeString,
+			propDef: ServicePropertyDefinition{
+				Type: SchemaTypeArray,
+				Items: &ServicePropertyDefinition{
+					Type: SchemaTypeString,
 				},
 			},
 			expectError: false,
 		},
 		{
 			name: "invalid array items",
-			propDef: PropertyDefinition{
-				Type: TypeArray,
-				Items: &PropertyDefinition{
+			propDef: ServicePropertyDefinition{
+				Type: SchemaTypeArray,
+				Items: &ServicePropertyDefinition{
 					Type: "invalid_type",
 				},
 			},
@@ -118,7 +118,7 @@ func TestPropertyDefinition_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			schema := CustomSchema{
+			schema := ServiceSchema{
 				"test_prop": tt.propDef,
 			}
 
@@ -139,28 +139,28 @@ func TestPropertyDefinition_Validation(t *testing.T) {
 func TestValidatorDefinition_Validation(t *testing.T) {
 	tests := []struct {
 		name        string
-		validator   ValidatorDefinition
+		validator   ServicePropertyValidatorDefinition
 		expectError bool
 	}{
 		{
 			name: "valid minLength validator",
-			validator: ValidatorDefinition{
-				Type:  ValidatorMinLength,
+			validator: ServicePropertyValidatorDefinition{
+				Type:  SchemaValidatorMinLength,
 				Value: 5,
 			},
 			expectError: false,
 		},
 		{
 			name: "valid enum validator",
-			validator: ValidatorDefinition{
-				Type:  ValidatorEnum,
+			validator: ServicePropertyValidatorDefinition{
+				Type:  SchemaValidatorEnum,
 				Value: []string{"option1", "option2"},
 			},
 			expectError: false,
 		},
 		{
 			name: "invalid validator type",
-			validator: ValidatorDefinition{
+			validator: ServicePropertyValidatorDefinition{
 				Type:  "invalid",
 				Value: 5,
 			},
@@ -168,15 +168,15 @@ func TestValidatorDefinition_Validation(t *testing.T) {
 		},
 		{
 			name: "missing type",
-			validator: ValidatorDefinition{
+			validator: ServicePropertyValidatorDefinition{
 				Value: 5,
 			},
 			expectError: true,
 		},
 		{
 			name: "missing value",
-			validator: ValidatorDefinition{
-				Type: ValidatorMinLength,
+			validator: ServicePropertyValidatorDefinition{
+				Type: SchemaValidatorMinLength,
 			},
 			expectError: true,
 		},
@@ -184,12 +184,12 @@ func TestValidatorDefinition_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			propDef := PropertyDefinition{
-				Type:       TypeString,
-				Validators: []ValidatorDefinition{tt.validator},
+			propDef := ServicePropertyDefinition{
+				Type:       SchemaTypeString,
+				Validators: []ServicePropertyValidatorDefinition{tt.validator},
 			}
 
-			schema := CustomSchema{
+			schema := ServiceSchema{
 				"test_prop": propDef,
 			}
 
@@ -205,38 +205,38 @@ func TestValidatorDefinition_Validation(t *testing.T) {
 }
 
 func TestCustomSchema_JSONSerialization(t *testing.T) {
-	schema := CustomSchema{
-		"name": PropertyDefinition{
-			Type:     TypeString,
+	schema := ServiceSchema{
+		"name": ServicePropertyDefinition{
+			Type:     SchemaTypeString,
 			Label:    "Full Name",
 			Required: true,
-			Validators: []ValidatorDefinition{
-				{Type: ValidatorMinLength, Value: 2},
-				{Type: ValidatorMaxLength, Value: 50},
+			Validators: []ServicePropertyValidatorDefinition{
+				{Type: SchemaValidatorMinLength, Value: 2},
+				{Type: SchemaValidatorMaxLength, Value: 50},
 			},
 		},
-		"age": PropertyDefinition{
-			Type:    TypeInteger,
+		"age": ServicePropertyDefinition{
+			Type:    SchemaTypeInteger,
 			Default: 0,
-			Validators: []ValidatorDefinition{
-				{Type: ValidatorMin, Value: 0},
-				{Type: ValidatorMax, Value: 120},
+			Validators: []ServicePropertyValidatorDefinition{
+				{Type: SchemaValidatorMin, Value: 0},
+				{Type: SchemaValidatorMax, Value: 120},
 			},
 		},
-		"config": PropertyDefinition{
-			Type: TypeObject,
-			Properties: map[string]PropertyDefinition{
-				"theme": {Type: TypeString},
+		"config": ServicePropertyDefinition{
+			Type: SchemaTypeObject,
+			Properties: map[string]ServicePropertyDefinition{
+				"theme": {Type: SchemaTypeString},
 				"notifications": {
-					Type:    TypeBoolean,
+					Type:    SchemaTypeBoolean,
 					Default: true,
 				},
 			},
 		},
-		"tags": PropertyDefinition{
-			Type: TypeArray,
-			Items: &PropertyDefinition{
-				Type: TypeString,
+		"tags": ServicePropertyDefinition{
+			Type: SchemaTypeArray,
+			Items: &ServicePropertyDefinition{
+				Type: SchemaTypeString,
 			},
 		},
 	}
@@ -247,32 +247,32 @@ func TestCustomSchema_JSONSerialization(t *testing.T) {
 	assert.NotEmpty(t, jsonData)
 
 	// Test unmarshaling
-	var unmarshaled CustomSchema
+	var unmarshaled ServiceSchema
 	err = unmarshaled.UnmarshalJSON(jsonData)
 	require.NoError(t, err)
 
 	// Verify the unmarshaled schema
-	assert.Equal(t, TypeString, unmarshaled["name"].Type)
+	assert.Equal(t, SchemaTypeString, unmarshaled["name"].Type)
 	assert.Equal(t, "Full Name", unmarshaled["name"].Label)
 	assert.True(t, unmarshaled["name"].Required)
 	assert.Len(t, unmarshaled["name"].Validators, 2)
 
-	assert.Equal(t, TypeInteger, unmarshaled["age"].Type)
+	assert.Equal(t, SchemaTypeInteger, unmarshaled["age"].Type)
 	assert.Equal(t, float64(0), unmarshaled["age"].Default) // properties.JSON unmarshaling converts numbers to float64
 
-	assert.Equal(t, TypeObject, unmarshaled["config"].Type)
+	assert.Equal(t, SchemaTypeObject, unmarshaled["config"].Type)
 	assert.Len(t, unmarshaled["config"].Properties, 2)
-	assert.Equal(t, TypeString, unmarshaled["config"].Properties["theme"].Type)
+	assert.Equal(t, SchemaTypeString, unmarshaled["config"].Properties["theme"].Type)
 
-	assert.Equal(t, TypeArray, unmarshaled["tags"].Type)
+	assert.Equal(t, SchemaTypeArray, unmarshaled["tags"].Type)
 	assert.NotNil(t, unmarshaled["tags"].Items)
-	assert.Equal(t, TypeString, unmarshaled["tags"].Items.Type)
+	assert.Equal(t, SchemaTypeString, unmarshaled["tags"].Items.Type)
 }
 
 func TestCustomSchema_DatabaseSerialization(t *testing.T) {
-	schema := CustomSchema{
-		"test": PropertyDefinition{
-			Type:  TypeString,
+	schema := ServiceSchema{
+		"test": ServicePropertyDefinition{
+			Type:  SchemaTypeString,
 			Label: "Test Field",
 		},
 	}
@@ -283,46 +283,50 @@ func TestCustomSchema_DatabaseSerialization(t *testing.T) {
 	assert.NotNil(t, value)
 
 	// Test Scan() method (for database retrieval)
-	var scanned CustomSchema
+	var scanned ServiceSchema
 	err = scanned.Scan(value)
 	require.NoError(t, err)
 
-	assert.Equal(t, TypeString, scanned["test"].Type)
+	assert.Equal(t, SchemaTypeString, scanned["test"].Type)
 	assert.Equal(t, "Test Field", scanned["test"].Label)
 }
 
 func TestCustomSchema_GormDataType(t *testing.T) {
-	schema := CustomSchema{}
+	schema := ServiceSchema{}
 	dataType := schema.GormDataType()
 	assert.Equal(t, "jsonb", dataType)
 }
 
-func TestValidationError_Error(t *testing.T) {
+func TestValidationErrorDetail_Fields(t *testing.T) {
 	tests := []struct {
-		name     string
-		err      ValidationError
-		expected string
+		name            string
+		err             ValidationErrorDetail
+		expectedPath    string
+		expectedMessage string
 	}{
 		{
 			name: "error with path",
-			err: ValidationError{
+			err: ValidationErrorDetail{
 				Path:    "user.name",
 				Message: "field is required",
 			},
-			expected: "user.name: field is required",
+			expectedPath:    "user.name",
+			expectedMessage: "field is required",
 		},
 		{
 			name: "error without path",
-			err: ValidationError{
+			err: ValidationErrorDetail{
 				Message: "validation failed",
 			},
-			expected: "validation failed",
+			expectedPath:    "",
+			expectedMessage: "validation failed",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.err.Error())
+			assert.Equal(t, tt.expectedPath, tt.err.Path)
+			assert.Equal(t, tt.expectedMessage, tt.err.Message)
 		})
 	}
 }
@@ -343,7 +347,7 @@ func TestParsePropertyDefinition_EdgeCases(t *testing.T) {
 		{
 			name: "nested property parsing error",
 			input: map[string]any{
-				"type": TypeObject,
+				"type": SchemaTypeObject,
 				"properties": map[string]any{
 					"invalid": map[string]any{
 						"type": 123, // Invalid type
@@ -355,7 +359,7 @@ func TestParsePropertyDefinition_EdgeCases(t *testing.T) {
 		{
 			name: "array items parsing error",
 			input: map[string]any{
-				"type": TypeArray,
+				"type": SchemaTypeArray,
 				"items": map[string]any{
 					"type": 123, // Invalid type
 				},
@@ -365,16 +369,16 @@ func TestParsePropertyDefinition_EdgeCases(t *testing.T) {
 		{
 			name: "valid complex structure",
 			input: map[string]any{
-				"type":     TypeObject,
+				"type":     SchemaTypeObject,
 				"label":    "Complex Object",
 				"required": true,
 				"default":  map[string]any{"key": "value"},
 				"properties": map[string]any{
 					"nested": map[string]any{
-						"type": TypeString,
+						"type": SchemaTypeString,
 						"validators": []any{
 							map[string]any{
-								"type":  ValidatorMinLength,
+								"type":  SchemaValidatorMinLength,
 								"value": 5,
 							},
 						},

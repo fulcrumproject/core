@@ -2,7 +2,7 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
-@adminToken = admin-test-token
+@adminToken = change-me
 
 ### List all events
 GET {{baseUrl}}/events

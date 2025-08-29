@@ -55,6 +55,9 @@ var Rules = []auth.AuthorizationRule{
 
 	// AgentType permissions
 	{Object: ObjectTypeAgentType, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+	{Object: ObjectTypeAgentType, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeAgentType, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeAgentType, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
 
 	// Service permissions
 	{Object: ObjectTypeService, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
@@ -66,6 +69,9 @@ var Rules = []auth.AuthorizationRule{
 
 	// ServiceType permissions
 	{Object: ObjectTypeServiceType, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+	{Object: ObjectTypeServiceType, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeServiceType, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeServiceType, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
 
 	// ServiceGroup permissions
 	{Object: ObjectTypeServiceGroup, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},

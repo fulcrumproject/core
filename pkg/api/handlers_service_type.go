@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -10,23 +11,25 @@ import (
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
-	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
 type ServiceTypeHandler struct {
-	querier domain.ServiceTypeQuerier
-	authz   auth.Authorizer
+	querier   domain.ServiceTypeQuerier
+	commander domain.ServiceTypeCommander
+	authz     auth.Authorizer
 }
 
 func NewServiceTypeHandler(
 	querier domain.ServiceTypeQuerier,
+	commander domain.ServiceTypeCommander,
 	authz auth.Authorizer,
 ) *ServiceTypeHandler {
 	return &ServiceTypeHandler{
-		querier: querier,
-		authz:   authz,
+		querier:   querier,
+		commander: commander,
+		authz:     authz,
 	}
 }
 
@@ -38,6 +41,12 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 			middlewares.AuthzSimple(authz.ObjectTypeServiceType, authz.ActionRead, h.authz),
 		).Get("/", List(h.querier, ServiceTypeToRes))
 
+		// Create endpoint - admin only
+		r.With(
+			middlewares.DecodeBody[CreateServiceTypeReq](),
+			middlewares.AuthzSimple(authz.ObjectTypeServiceType, authz.ActionCreate, h.authz),
+		).Post("/", Create(h.Create, ServiceTypeToRes))
+
 		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
 			r.Use(middlewares.ID)
@@ -47,6 +56,17 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 				middlewares.AuthzFromID(authz.ObjectTypeServiceType, authz.ActionRead, h.authz, h.querier.AuthScope),
 			).Get("/{id}", Get(h.querier.Get, ServiceTypeToRes))
 
+			// Update endpoint - admin only
+			r.With(
+				middlewares.DecodeBody[UpdateServiceTypeReq](),
+				middlewares.AuthzFromID(authz.ObjectTypeServiceType, authz.ActionUpdate, h.authz, h.querier.AuthScope),
+			).Patch("/{id}", Update(h.Update, ServiceTypeToRes))
+
+			// Delete endpoint - admin only
+			r.With(
+				middlewares.AuthzFromID(authz.ObjectTypeServiceType, authz.ActionDelete, h.authz, h.querier.AuthScope),
+			).Delete("/{id}", Delete(h.querier, h.commander.Delete))
+
 			// Validate endpoint - authorize using service type's scope
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeServiceType, authz.ActionRead, h.authz, h.querier.AuthScope),
@@ -55,13 +75,25 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 	}
 }
 
+// CreateServiceTypeReq represents the request body for creating service types
+type CreateServiceTypeReq struct {
+	Name           string                `json:"name"`
+	PropertySchema *domain.ServiceSchema `json:"propertySchema,omitempty"`
+}
+
+// UpdateServiceTypeReq represents the request body for updating service types
+type UpdateServiceTypeReq struct {
+	Name           *string               `json:"name"`
+	PropertySchema *domain.ServiceSchema `json:"propertySchema,omitempty"`
+}
+
 // ServiceTypeRes represents the response body for service type operations
 type ServiceTypeRes struct {
-	ID             properties.UUID      `json:"id"`
-	Name           string               `json:"name"`
-	PropertySchema *schema.CustomSchema `json:"propertySchema,omitempty"`
-	CreatedAt      JSONUTCTime          `json:"createdAt"`
-	UpdatedAt      JSONUTCTime          `json:"updatedAt"`
+	ID             properties.UUID       `json:"id"`
+	Name           string                `json:"name"`
+	PropertySchema *domain.ServiceSchema `json:"propertySchema,omitempty"`
+	CreatedAt      JSONUTCTime           `json:"createdAt"`
+	UpdatedAt      JSONUTCTime           `json:"updatedAt"`
 }
 
 // ServiceTypeToRes converts a domain.ServiceType to a ServiceTypeResponse
@@ -77,13 +109,14 @@ func ServiceTypeToRes(st *domain.ServiceType) *ServiceTypeRes {
 
 // ValidateReq represents the request body for property validation
 type ValidateReq struct {
-	Properties map[string]any `json:"properties"`
+	GroupID    properties.UUID `json:"groupId"`
+	Properties map[string]any  `json:"properties"`
 }
 
 // ValidateRes represents the response body for property validation
 type ValidateRes struct {
-	Valid  bool                     `json:"valid"`
-	Errors []schema.ValidationError `json:"errors,omitempty"`
+	Valid  bool                           `json:"valid"`
+	Errors []domain.ValidationErrorDetail `json:"errors,omitempty"`
 }
 
 func (h *ServiceTypeHandler) Validate(w http.ResponseWriter, r *http.Request) {
@@ -110,12 +143,49 @@ func (h *ServiceTypeHandler) Validate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate properties against schema
-	validationErrors := schema.Validate(req.Properties, *serviceType.PropertySchema)
+	params := &domain.ServicePropertyValidationParams{
+		ServiceTypeID: serviceType.ID,
+		GroupID:       req.GroupID,
+		Properties:    req.Properties,
+	}
+	_, err = h.commander.ValidateServiceProperties(r.Context(), params)
 
-	response := ValidateRes{
-		Valid:  len(validationErrors) == 0,
-		Errors: validationErrors,
+	if err != nil {
+		validationErrors, ok := err.(domain.ValidationError)
+		if !ok {
+			render.Render(w, r, ErrDomain(err))
+			return
+		}
+		response := ValidateRes{
+			Valid:  false,
+			Errors: validationErrors.Errors,
+		}
+		render.JSON(w, r, response)
+		return
 	}
 
+	response := ValidateRes{
+		Valid:  true,
+		Errors: []domain.ValidationErrorDetail{},
+	}
 	render.JSON(w, r, response)
+}
+
+// Adapter functions that convert request structs to commander method calls
+
+func (h *ServiceTypeHandler) Create(ctx context.Context, req *CreateServiceTypeReq) (*domain.ServiceType, error) {
+	params := domain.CreateServiceTypeParams{
+		Name:           req.Name,
+		PropertySchema: req.PropertySchema,
+	}
+	return h.commander.Create(ctx, params)
+}
+
+func (h *ServiceTypeHandler) Update(ctx context.Context, id properties.UUID, req *UpdateServiceTypeReq) (*domain.ServiceType, error) {
+	params := domain.UpdateServiceTypeParams{
+		ID:             id,
+		Name:           req.Name,
+		PropertySchema: req.PropertySchema,
+	}
+	return h.commander.Update(ctx, params)
 }

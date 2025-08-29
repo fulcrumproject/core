@@ -307,11 +307,11 @@ components:
         name:
           type: string
           example: "Participant VM Agent"
-        serviceTypes:
+        serviceTypeIds:
           type: array
           items:
-            $ref: "#/components/schemas/ServiceTypeRes"
-          description: "Service types that this agent type can provide"
+            $ref: "#/components/schemas/properties.UUID"
+          description: "IDs of service types that this agent type can provide"
         createdAt:
           type: string
           format: date-time
@@ -412,6 +412,73 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    CreateServiceTypeReq:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the service type
+          example: "VM Instance"
+          minLength: 1
+        propertySchema:
+          $ref: "#/components/schemas/PropertySchema"
+          description: Optional property schema defining the structure and validation rules for service properties
+
+    UpdateServiceTypeReq:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated name of the service type
+          example: "Updated VM Instance"
+          minLength: 1
+        propertySchema:
+          $ref: "#/components/schemas/PropertySchema"
+          description: Updated property schema defining the structure and validation rules for service properties
+
+    # Agent Type schemas
+    CreateAgentTypeReq:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the agent type
+          example: "VM Agent"
+          minLength: 1
+        serviceTypeIds:
+          type: array
+          description: Optional list of service type IDs that this agent type can manage
+          items:
+            $ref: "#/components/schemas/properties.UUID"
+          example:
+            [
+              "550e8400-e29b-41d4-a716-446655440000",
+              "550e8400-e29b-41d4-a716-446655440001",
+            ]
+
+    UpdateAgentTypeReq:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated name of the agent type
+          example: "Updated VM Agent"
+          minLength: 1
+        serviceTypeIds:
+          type: array
+          description: Updated list of service type IDs that this agent type can manage
+          items:
+            $ref: "#/components/schemas/properties.UUID"
+          example:
+            [
+              "550e8400-e29b-41d4-a716-446655440000",
+              "550e8400-e29b-41d4-a716-446655440002",
+            ]
 
     # Service Group schemas
     ServiceGroupReq:
@@ -736,7 +803,7 @@ components:
       properties:
         type:
           type: string
-          enum: [string, integer, number, boolean, object, array]
+          enum: [string, integer, number, boolean, object, array, reference]
           description: The data type of the property
         label:
           type: string
@@ -780,6 +847,8 @@ components:
               minItems,
               maxItems,
               uniqueItems,
+              sameOrigin,
+              serviceType,
             ]
           description: Type of validator
         value:
@@ -1470,6 +1539,51 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/AgentTypeRes"
+    post:
+      summary: Create an agent type
+      tags:
+        - Agents
+      description: Creates a new agent type with optional service types
+      x-auth-permissions:
+        - role: admin
+          permission: all agent types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAgentTypeReq"
+      responses:
+        "201":
+          description: Agent type created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTypeRes"
+        "400":
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
+          description: Agent type with same name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
 
   /agent-types/{id}:
     parameters:
@@ -1499,6 +1613,92 @@ paths:
                 $ref: "#/components/schemas/AgentTypeRes"
         "404":
           description: Agent type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+    patch:
+      summary: Update an agent type
+      tags:
+        - Agents
+      description: Partially updates an agent type (PATCH semantics)
+      x-auth-permissions:
+        - role: admin
+          permission: all agent types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAgentTypeReq"
+      responses:
+        "200":
+          description: Agent type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTypeRes"
+        "400":
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
+          description: Agent type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
+          description: Agent type with same name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+    delete:
+      summary: Delete an agent type
+      tags:
+        - Agents
+      description: Deletes an agent type if no agents depend on it
+      x-auth-permissions:
+        - role: admin
+          permission: all agent types
+      responses:
+        "204":
+          description: Agent type deleted successfully
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
+          description: Agent type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
+          description: Cannot delete agent type with dependent agents
           content:
             application/json:
               schema:
@@ -1816,6 +2016,46 @@ paths:
                         items:
                           $ref: "#/components/schemas/ServiceTypeRes"
 
+    post:
+      summary: Create a service type
+      tags:
+        - Services
+      description: Creates a new service type with optional property schema
+      x-auth-permissions:
+        - role: admin
+          permission: all service types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServiceTypeReq"
+      responses:
+        "201":
+          description: Service type created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceTypeRes"
+        "400":
+          description: Invalid request body or validation errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "403":
+          description: Insufficient permissions (admin required)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
+          description: Service type with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+
   /service-types/{id}:
     parameters:
       - name: id
@@ -1844,6 +2084,82 @@ paths:
                 $ref: "#/components/schemas/ServiceTypeRes"
         "404":
           description: Service type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+
+    patch:
+      summary: Update a service type
+      tags:
+        - Services
+      description: Partially updates a service type (PATCH semantics)
+      x-auth-permissions:
+        - role: admin
+          permission: all service types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateServiceTypeReq"
+      responses:
+        "200":
+          description: Service type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceTypeRes"
+        "400":
+          description: Invalid request body or validation errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "403":
+          description: Insufficient permissions (admin required)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
+          description: Service type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
+          description: Service type name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+
+    delete:
+      summary: Delete a service type
+      tags:
+        - Services
+      description: Deletes a service type if no services depend on it
+      x-auth-permissions:
+        - role: admin
+          permission: all service types
+      responses:
+        "204":
+          description: Service type deleted successfully
+        "403":
+          description: Insufficient permissions (admin required)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
+          description: Service type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
+          description: Cannot delete service type with dependent services
           content:
             application/json:
               schema:

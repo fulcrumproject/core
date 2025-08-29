@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 )
@@ -330,4 +331,260 @@ func (m *mockTokenCommander) Regenerate(ctx context.Context, id properties.UUID)
 		return m.regenerateFunc(ctx, id)
 	}
 	return nil, fmt.Errorf("regenerate not mocked")
+}
+
+// createMockServiceTypeCommander creates a ServiceTypeCommander with a mock store
+func createMockServiceTypeCommander() domain.ServiceTypeCommander {
+	// Create a simple mock store for testing
+	mockStore := newMockStoreForServiceType()
+	return domain.NewServiceTypeCommander(mockStore)
+}
+
+// mockStoreForServiceType is a minimal mock store for ServiceTypeCommander
+type mockStoreForServiceType struct {
+	serviceTypeRepo domain.ServiceTypeRepository
+	serviceRepo     domain.ServiceRepository
+	eventRepo       domain.EventRepository
+}
+
+func newMockStoreForServiceType() *mockStoreForServiceType {
+	return &mockStoreForServiceType{
+		serviceTypeRepo: &mockServiceTypeRepository{},
+		serviceRepo:     &mockServiceRepository{},
+		eventRepo:       &mockEventRepository{},
+	}
+}
+
+func (m *mockStoreForServiceType) Atomic(ctx context.Context, fn func(domain.Store) error) error {
+	return fn(m)
+}
+
+// Required Store interface methods (minimal implementation)
+func (m *mockStoreForServiceType) AgentTypeRepo() domain.AgentTypeRepository { return nil }
+func (m *mockStoreForServiceType) AgentRepo() domain.AgentRepository         { return nil }
+func (m *mockStoreForServiceType) TokenRepo() domain.TokenRepository         { return nil }
+func (m *mockStoreForServiceType) ServiceTypeRepo() domain.ServiceTypeRepository {
+	return m.serviceTypeRepo
+}
+func (m *mockStoreForServiceType) ServiceGroupRepo() domain.ServiceGroupRepository { return nil }
+func (m *mockStoreForServiceType) ServiceRepo() domain.ServiceRepository           { return m.serviceRepo }
+func (m *mockStoreForServiceType) JobRepo() domain.JobRepository                   { return nil }
+func (m *mockStoreForServiceType) EventRepo() domain.EventRepository               { return m.eventRepo }
+func (m *mockStoreForServiceType) EventSubscriptionRepo() domain.EventSubscriptionRepository {
+	return nil
+}
+func (m *mockStoreForServiceType) MetricTypeRepo() domain.MetricTypeRepository   { return nil }
+func (m *mockStoreForServiceType) ParticipantRepo() domain.ParticipantRepository { return nil }
+func (m *mockStoreForServiceType) MetricEntryRepo() domain.MetricEntryRepository { return nil }
+
+// Mock repository implementations for ServiceTypeCommander testing
+type mockServiceTypeRepository struct{}
+
+func (m *mockServiceTypeRepository) Get(ctx context.Context, id properties.UUID) (*domain.ServiceType, error) {
+	return &domain.ServiceType{Name: "Test Service Type"}, nil
+}
+func (m *mockServiceTypeRepository) Create(ctx context.Context, entity *domain.ServiceType) error {
+	return nil
+}
+func (m *mockServiceTypeRepository) Save(ctx context.Context, entity *domain.ServiceType) error {
+	return nil
+}
+func (m *mockServiceTypeRepository) Delete(ctx context.Context, id properties.UUID) error {
+	return nil
+}
+func (m *mockServiceTypeRepository) List(ctx context.Context, scope *auth.IdentityScope, req *domain.PageReq) (*domain.PageRes[domain.ServiceType], error) {
+	return nil, nil
+}
+func (m *mockServiceTypeRepository) Count(ctx context.Context) (int64, error) {
+	return 0, nil
+}
+func (m *mockServiceTypeRepository) Exists(ctx context.Context, id properties.UUID) (bool, error) {
+	return false, nil
+}
+func (m *mockServiceTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	return &auth.AllwaysMatchObjectScope{}, nil
+}
+
+type mockServiceRepository struct{}
+
+func (m *mockServiceRepository) CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error) {
+	return 0, nil
+}
+func (m *mockServiceRepository) Get(ctx context.Context, id properties.UUID) (*domain.Service, error) {
+	return nil, nil
+}
+func (m *mockServiceRepository) Create(ctx context.Context, entity *domain.Service) error {
+	return nil
+}
+func (m *mockServiceRepository) Save(ctx context.Context, entity *domain.Service) error {
+	return nil
+}
+func (m *mockServiceRepository) Delete(ctx context.Context, id properties.UUID) error {
+	return nil
+}
+func (m *mockServiceRepository) List(ctx context.Context, scope *auth.IdentityScope, req *domain.PageReq) (*domain.PageRes[domain.Service], error) {
+	return nil, nil
+}
+func (m *mockServiceRepository) Count(ctx context.Context) (int64, error) {
+	return 0, nil
+}
+func (m *mockServiceRepository) Exists(ctx context.Context, id properties.UUID) (bool, error) {
+	return false, nil
+}
+func (m *mockServiceRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	return &auth.AllwaysMatchObjectScope{}, nil
+}
+func (m *mockServiceRepository) FindByExternalID(ctx context.Context, agentID properties.UUID, externalID string) (*domain.Service, error) {
+	return nil, nil
+}
+func (m *mockServiceRepository) CountByGroup(ctx context.Context, groupID properties.UUID) (int64, error) {
+	return 0, nil
+}
+func (m *mockServiceRepository) CountByAgent(ctx context.Context, agentID properties.UUID) (int64, error) {
+	return 0, nil
+}
+
+type mockEventRepository struct{}
+
+func (m *mockEventRepository) Create(ctx context.Context, entry *domain.Event) error {
+	return nil
+}
+func (m *mockEventRepository) Get(ctx context.Context, id properties.UUID) (*domain.Event, error) {
+	return nil, nil
+}
+func (m *mockEventRepository) Save(ctx context.Context, entity *domain.Event) error {
+	return nil
+}
+func (m *mockEventRepository) Delete(ctx context.Context, id properties.UUID) error {
+	return nil
+}
+func (m *mockEventRepository) List(ctx context.Context, scope *auth.IdentityScope, req *domain.PageReq) (*domain.PageRes[domain.Event], error) {
+	return nil, nil
+}
+func (m *mockEventRepository) Count(ctx context.Context) (int64, error) {
+	return 0, nil
+}
+func (m *mockEventRepository) Exists(ctx context.Context, id properties.UUID) (bool, error) {
+	return false, nil
+}
+func (m *mockEventRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	return &auth.AllwaysMatchObjectScope{}, nil
+}
+func (m *mockEventRepository) ListFromSequence(ctx context.Context, fromSequenceNumber int64, limit int) ([]*domain.Event, error) {
+	return nil, nil
+}
+func (m *mockEventRepository) ServiceUptime(ctx context.Context, serviceID properties.UUID, start time.Time, end time.Time) (uint64, uint64, error) {
+	return 0, 0, nil
+}
+
+// createMockAgentTypeCommander creates an AgentTypeCommander with a mock store
+func createMockAgentTypeCommander() domain.AgentTypeCommander {
+	// Create a simple mock store for testing
+	mockStore := newMockStoreForAgentType()
+	return domain.NewAgentTypeCommander(mockStore)
+}
+
+// mockStoreForAgentType is a minimal mock store for AgentTypeCommander
+type mockStoreForAgentType struct {
+	agentTypeRepo domain.AgentTypeRepository
+	agentRepo     domain.AgentRepository
+	eventRepo     domain.EventRepository
+}
+
+func newMockStoreForAgentType() *mockStoreForAgentType {
+	return &mockStoreForAgentType{
+		agentTypeRepo: &mockAgentTypeRepository{},
+		agentRepo:     &mockAgentRepository{},
+		eventRepo:     &mockEventRepository{},
+	}
+}
+
+func (m *mockStoreForAgentType) Atomic(ctx context.Context, fn func(domain.Store) error) error {
+	return fn(m)
+}
+
+// Required Store interface methods (minimal implementation)
+func (m *mockStoreForAgentType) AgentTypeRepo() domain.AgentTypeRepository       { return m.agentTypeRepo }
+func (m *mockStoreForAgentType) AgentRepo() domain.AgentRepository               { return m.agentRepo }
+func (m *mockStoreForAgentType) TokenRepo() domain.TokenRepository               { return nil }
+func (m *mockStoreForAgentType) ServiceTypeRepo() domain.ServiceTypeRepository   { return nil }
+func (m *mockStoreForAgentType) ServiceGroupRepo() domain.ServiceGroupRepository { return nil }
+func (m *mockStoreForAgentType) ServiceRepo() domain.ServiceRepository           { return nil }
+func (m *mockStoreForAgentType) JobRepo() domain.JobRepository                   { return nil }
+func (m *mockStoreForAgentType) EventRepo() domain.EventRepository               { return m.eventRepo }
+func (m *mockStoreForAgentType) EventSubscriptionRepo() domain.EventSubscriptionRepository {
+	return nil
+}
+func (m *mockStoreForAgentType) MetricTypeRepo() domain.MetricTypeRepository   { return nil }
+func (m *mockStoreForAgentType) ParticipantRepo() domain.ParticipantRepository { return nil }
+func (m *mockStoreForAgentType) MetricEntryRepo() domain.MetricEntryRepository { return nil }
+
+// Mock repository implementations for AgentTypeCommander testing
+type mockAgentTypeRepository struct{}
+
+func (m *mockAgentTypeRepository) Get(ctx context.Context, id properties.UUID) (*domain.AgentType, error) {
+	return &domain.AgentType{Name: "Test Agent Type"}, nil
+}
+func (m *mockAgentTypeRepository) Create(ctx context.Context, entity *domain.AgentType) error {
+	return nil
+}
+func (m *mockAgentTypeRepository) Save(ctx context.Context, entity *domain.AgentType) error {
+	return nil
+}
+func (m *mockAgentTypeRepository) Delete(ctx context.Context, id properties.UUID) error {
+	return nil
+}
+func (m *mockAgentTypeRepository) List(ctx context.Context, scope *auth.IdentityScope, req *domain.PageReq) (*domain.PageRes[domain.AgentType], error) {
+	return nil, nil
+}
+func (m *mockAgentTypeRepository) Count(ctx context.Context) (int64, error) {
+	return 0, nil
+}
+func (m *mockAgentTypeRepository) Exists(ctx context.Context, id properties.UUID) (bool, error) {
+	return false, nil
+}
+func (m *mockAgentTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	return &auth.AllwaysMatchObjectScope{}, nil
+}
+
+type mockAgentRepository struct{}
+
+func (m *mockAgentRepository) CountByAgentType(ctx context.Context, agentTypeID properties.UUID) (int64, error) {
+	return 0, nil
+}
+func (m *mockAgentRepository) Get(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
+	return nil, nil
+}
+func (m *mockAgentRepository) Create(ctx context.Context, entity *domain.Agent) error {
+	return nil
+}
+func (m *mockAgentRepository) Save(ctx context.Context, entity *domain.Agent) error {
+	return nil
+}
+func (m *mockAgentRepository) Delete(ctx context.Context, id properties.UUID) error {
+	return nil
+}
+func (m *mockAgentRepository) List(ctx context.Context, scope *auth.IdentityScope, req *domain.PageReq) (*domain.PageRes[domain.Agent], error) {
+	return nil, nil
+}
+func (m *mockAgentRepository) Count(ctx context.Context) (int64, error) {
+	return 0, nil
+}
+func (m *mockAgentRepository) Exists(ctx context.Context, id properties.UUID) (bool, error) {
+	return false, nil
+}
+func (m *mockAgentRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	return &auth.AllwaysMatchObjectScope{}, nil
+}
+func (m *mockAgentRepository) CountByProvider(ctx context.Context, providerID properties.UUID) (int64, error) {
+	return 0, nil
+}
+func (m *mockAgentRepository) FindByServiceTypeAndTags(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*domain.Agent, error) {
+	return nil, nil
+}
+func (m *mockAgentRepository) UpdateStatus(ctx context.Context, agentID properties.UUID, status domain.AgentStatus) error {
+	return nil
+}
+func (m *mockAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Context, inactiveDuration time.Duration) (int64, error) {
+	return 0, nil
 }

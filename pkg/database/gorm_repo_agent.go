@@ -51,6 +51,15 @@ func (r *GormAgentRepository) CountByProvider(ctx context.Context, providerID pr
 	return count, nil
 }
 
+func (r *GormAgentRepository) CountByAgentType(ctx context.Context, agentTypeID properties.UUID) (int64, error) {
+	var count int64
+	result := r.db.WithContext(ctx).Model(&domain.Agent{}).Where("agent_type_id = ?", agentTypeID).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}
+
 func (r *GormAgentRepository) FindByServiceTypeAndTags(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*domain.Agent, error) {
 	var agents []*domain.Agent
 

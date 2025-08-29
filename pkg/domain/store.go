@@ -20,3 +20,19 @@ type Store interface {
 	MetricTypeRepo() MetricTypeRepository
 	ParticipantRepo() ParticipantRepository
 }
+
+// ReadOnlyStore provides data access to all repositories and supports transactions.
+type ReadOnlyStore interface {
+	// Queriers
+	AgentTypeQuerier() AgentTypeQuerier
+	AgentQuerier() AgentQuerier
+	TokenQuerier() TokenQuerier
+	ServiceTypeQuerier() ServiceTypeQuerier
+	ServiceGroupQuerier() ServiceGroupQuerier
+	ServiceQuerier() ServiceQuerier
+	JobQuerier() JobQuerier
+	EventQuerier() EventQuerier
+	EventSubscriptionQuerier() EventSubscriptionQuerier
+	MetricTypeQuerier() MetricTypeQuerier
+	ParticipantQuerier() ParticipantQuerier
+}

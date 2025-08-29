@@ -380,6 +380,9 @@ type AgentQuerier interface {
 	// CountByProvider returns the number of agents for a specific provider
 	CountByProvider(ctx context.Context, providerID properties.UUID) (int64, error)
 
+	// CountByAgentType returns the number of agents for a specific agent type
+	CountByAgentType(ctx context.Context, agentTypeID properties.UUID) (int64, error)
+
 	// FindByServiceTypeAndTags finds agents that support a service type and have all required tags
 	FindByServiceTypeAndTags(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*Agent, error)
 }

@@ -12733,6 +12733,72 @@ func (_c *MockServiceRepository_CountByGroup_Call) RunAndReturn(run func(ctx con
 	return _c
 }
 
+// CountByServiceType provides a mock function for the type MockServiceRepository
+func (_mock *MockServiceRepository) CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, serviceTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByServiceType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, serviceTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, serviceTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServiceRepository_CountByServiceType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByServiceType'
+type MockServiceRepository_CountByServiceType_Call struct {
+	*mock.Call
+}
+
+// CountByServiceType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceTypeID properties.UUID
+func (_e *MockServiceRepository_Expecter) CountByServiceType(ctx interface{}, serviceTypeID interface{}) *MockServiceRepository_CountByServiceType_Call {
+	return &MockServiceRepository_CountByServiceType_Call{Call: _e.mock.On("CountByServiceType", ctx, serviceTypeID)}
+}
+
+func (_c *MockServiceRepository_CountByServiceType_Call) Run(run func(ctx context.Context, serviceTypeID properties.UUID)) *MockServiceRepository_CountByServiceType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServiceRepository_CountByServiceType_Call) Return(n int64, err error) *MockServiceRepository_CountByServiceType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockServiceRepository_CountByServiceType_Call) RunAndReturn(run func(ctx context.Context, serviceTypeID properties.UUID) (int64, error)) *MockServiceRepository_CountByServiceType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function for the type MockServiceRepository
 func (_mock *MockServiceRepository) Create(ctx context.Context, entity *Service) error {
 	ret := _mock.Called(ctx, entity)
@@ -13469,6 +13535,72 @@ func (_c *MockServiceQuerier_CountByGroup_Call) Return(n int64, err error) *Mock
 }
 
 func (_c *MockServiceQuerier_CountByGroup_Call) RunAndReturn(run func(ctx context.Context, groupID properties.UUID) (int64, error)) *MockServiceQuerier_CountByGroup_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountByServiceType provides a mock function for the type MockServiceQuerier
+func (_mock *MockServiceQuerier) CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, serviceTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByServiceType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, serviceTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, serviceTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServiceQuerier_CountByServiceType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByServiceType'
+type MockServiceQuerier_CountByServiceType_Call struct {
+	*mock.Call
+}
+
+// CountByServiceType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceTypeID properties.UUID
+func (_e *MockServiceQuerier_Expecter) CountByServiceType(ctx interface{}, serviceTypeID interface{}) *MockServiceQuerier_CountByServiceType_Call {
+	return &MockServiceQuerier_CountByServiceType_Call{Call: _e.mock.On("CountByServiceType", ctx, serviceTypeID)}
+}
+
+func (_c *MockServiceQuerier_CountByServiceType_Call) Run(run func(ctx context.Context, serviceTypeID properties.UUID)) *MockServiceQuerier_CountByServiceType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServiceQuerier_CountByServiceType_Call) Return(n int64, err error) *MockServiceQuerier_CountByServiceType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockServiceQuerier_CountByServiceType_Call) RunAndReturn(run func(ctx context.Context, serviceTypeID properties.UUID) (int64, error)) *MockServiceQuerier_CountByServiceType_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -15769,6 +15901,294 @@ func (_c *MockServiceTypeQuerier_List_Call) RunAndReturn(run func(ctx context.Co
 	return _c
 }
 
+// NewMockServiceTypeCommander creates a new instance of MockServiceTypeCommander. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockServiceTypeCommander(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockServiceTypeCommander {
+	mock := &MockServiceTypeCommander{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockServiceTypeCommander is an autogenerated mock type for the ServiceTypeCommander type
+type MockServiceTypeCommander struct {
+	mock.Mock
+}
+
+type MockServiceTypeCommander_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockServiceTypeCommander) EXPECT() *MockServiceTypeCommander_Expecter {
+	return &MockServiceTypeCommander_Expecter{mock: &_m.Mock}
+}
+
+// Create provides a mock function for the type MockServiceTypeCommander
+func (_mock *MockServiceTypeCommander) Create(ctx context.Context, params CreateServiceTypeParams) (*ServiceType, error) {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 *ServiceType
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateServiceTypeParams) (*ServiceType, error)); ok {
+		return returnFunc(ctx, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateServiceTypeParams) *ServiceType); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*ServiceType)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateServiceTypeParams) error); ok {
+		r1 = returnFunc(ctx, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServiceTypeCommander_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockServiceTypeCommander_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params CreateServiceTypeParams
+func (_e *MockServiceTypeCommander_Expecter) Create(ctx interface{}, params interface{}) *MockServiceTypeCommander_Create_Call {
+	return &MockServiceTypeCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
+}
+
+func (_c *MockServiceTypeCommander_Create_Call) Run(run func(ctx context.Context, params CreateServiceTypeParams)) *MockServiceTypeCommander_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 CreateServiceTypeParams
+		if args[1] != nil {
+			arg1 = args[1].(CreateServiceTypeParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServiceTypeCommander_Create_Call) Return(serviceType *ServiceType, err error) *MockServiceTypeCommander_Create_Call {
+	_c.Call.Return(serviceType, err)
+	return _c
+}
+
+func (_c *MockServiceTypeCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateServiceTypeParams) (*ServiceType, error)) *MockServiceTypeCommander_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockServiceTypeCommander
+func (_mock *MockServiceTypeCommander) Delete(ctx context.Context, id properties.UUID) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockServiceTypeCommander_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockServiceTypeCommander_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockServiceTypeCommander_Expecter) Delete(ctx interface{}, id interface{}) *MockServiceTypeCommander_Delete_Call {
+	return &MockServiceTypeCommander_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
+}
+
+func (_c *MockServiceTypeCommander_Delete_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServiceTypeCommander_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServiceTypeCommander_Delete_Call) Return(err error) *MockServiceTypeCommander_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockServiceTypeCommander_Delete_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockServiceTypeCommander_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type MockServiceTypeCommander
+func (_mock *MockServiceTypeCommander) Update(ctx context.Context, params UpdateServiceTypeParams) (*ServiceType, error) {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 *ServiceType
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateServiceTypeParams) (*ServiceType, error)); ok {
+		return returnFunc(ctx, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateServiceTypeParams) *ServiceType); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*ServiceType)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateServiceTypeParams) error); ok {
+		r1 = returnFunc(ctx, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServiceTypeCommander_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockServiceTypeCommander_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params UpdateServiceTypeParams
+func (_e *MockServiceTypeCommander_Expecter) Update(ctx interface{}, params interface{}) *MockServiceTypeCommander_Update_Call {
+	return &MockServiceTypeCommander_Update_Call{Call: _e.mock.On("Update", ctx, params)}
+}
+
+func (_c *MockServiceTypeCommander_Update_Call) Run(run func(ctx context.Context, params UpdateServiceTypeParams)) *MockServiceTypeCommander_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 UpdateServiceTypeParams
+		if args[1] != nil {
+			arg1 = args[1].(UpdateServiceTypeParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServiceTypeCommander_Update_Call) Return(serviceType *ServiceType, err error) *MockServiceTypeCommander_Update_Call {
+	_c.Call.Return(serviceType, err)
+	return _c
+}
+
+func (_c *MockServiceTypeCommander_Update_Call) RunAndReturn(run func(ctx context.Context, params UpdateServiceTypeParams) (*ServiceType, error)) *MockServiceTypeCommander_Update_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ValidateServiceProperties provides a mock function for the type MockServiceTypeCommander
+func (_mock *MockServiceTypeCommander) ValidateServiceProperties(ctx context.Context, params *ServicePropertyValidationParams) (map[string]any, error) {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateServiceProperties")
+	}
+
+	var r0 map[string]any
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *ServicePropertyValidationParams) (map[string]any, error)); ok {
+		return returnFunc(ctx, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *ServicePropertyValidationParams) map[string]any); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]any)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *ServicePropertyValidationParams) error); ok {
+		r1 = returnFunc(ctx, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServiceTypeCommander_ValidateServiceProperties_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateServiceProperties'
+type MockServiceTypeCommander_ValidateServiceProperties_Call struct {
+	*mock.Call
+}
+
+// ValidateServiceProperties is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params *ServicePropertyValidationParams
+func (_e *MockServiceTypeCommander_Expecter) ValidateServiceProperties(ctx interface{}, params interface{}) *MockServiceTypeCommander_ValidateServiceProperties_Call {
+	return &MockServiceTypeCommander_ValidateServiceProperties_Call{Call: _e.mock.On("ValidateServiceProperties", ctx, params)}
+}
+
+func (_c *MockServiceTypeCommander_ValidateServiceProperties_Call) Run(run func(ctx context.Context, params *ServicePropertyValidationParams)) *MockServiceTypeCommander_ValidateServiceProperties_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *ServicePropertyValidationParams
+		if args[1] != nil {
+			arg1 = args[1].(*ServicePropertyValidationParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServiceTypeCommander_ValidateServiceProperties_Call) Return(stringToV map[string]any, err error) *MockServiceTypeCommander_ValidateServiceProperties_Call {
+	_c.Call.Return(stringToV, err)
+	return _c
+}
+
+func (_c *MockServiceTypeCommander_ValidateServiceProperties_Call) RunAndReturn(run func(ctx context.Context, params *ServicePropertyValidationParams) (map[string]any, error)) *MockServiceTypeCommander_ValidateServiceProperties_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockStore creates a new instance of MockStore. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockStore(t interface {
@@ -16355,6 +16775,539 @@ func (_c *MockStore_TokenRepo_Call) Return(tokenRepository TokenRepository) *Moc
 }
 
 func (_c *MockStore_TokenRepo_Call) RunAndReturn(run func() TokenRepository) *MockStore_TokenRepo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockReadOnlyStore creates a new instance of MockReadOnlyStore. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockReadOnlyStore(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockReadOnlyStore {
+	mock := &MockReadOnlyStore{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockReadOnlyStore is an autogenerated mock type for the ReadOnlyStore type
+type MockReadOnlyStore struct {
+	mock.Mock
+}
+
+type MockReadOnlyStore_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockReadOnlyStore) EXPECT() *MockReadOnlyStore_Expecter {
+	return &MockReadOnlyStore_Expecter{mock: &_m.Mock}
+}
+
+// AgentQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) AgentQuerier() AgentQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for AgentQuerier")
+	}
+
+	var r0 AgentQuerier
+	if returnFunc, ok := ret.Get(0).(func() AgentQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(AgentQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_AgentQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AgentQuerier'
+type MockReadOnlyStore_AgentQuerier_Call struct {
+	*mock.Call
+}
+
+// AgentQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) AgentQuerier() *MockReadOnlyStore_AgentQuerier_Call {
+	return &MockReadOnlyStore_AgentQuerier_Call{Call: _e.mock.On("AgentQuerier")}
+}
+
+func (_c *MockReadOnlyStore_AgentQuerier_Call) Run(run func()) *MockReadOnlyStore_AgentQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_AgentQuerier_Call) Return(agentQuerier AgentQuerier) *MockReadOnlyStore_AgentQuerier_Call {
+	_c.Call.Return(agentQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_AgentQuerier_Call) RunAndReturn(run func() AgentQuerier) *MockReadOnlyStore_AgentQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// AgentTypeQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) AgentTypeQuerier() AgentTypeQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for AgentTypeQuerier")
+	}
+
+	var r0 AgentTypeQuerier
+	if returnFunc, ok := ret.Get(0).(func() AgentTypeQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(AgentTypeQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_AgentTypeQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AgentTypeQuerier'
+type MockReadOnlyStore_AgentTypeQuerier_Call struct {
+	*mock.Call
+}
+
+// AgentTypeQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) AgentTypeQuerier() *MockReadOnlyStore_AgentTypeQuerier_Call {
+	return &MockReadOnlyStore_AgentTypeQuerier_Call{Call: _e.mock.On("AgentTypeQuerier")}
+}
+
+func (_c *MockReadOnlyStore_AgentTypeQuerier_Call) Run(run func()) *MockReadOnlyStore_AgentTypeQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_AgentTypeQuerier_Call) Return(agentTypeQuerier AgentTypeQuerier) *MockReadOnlyStore_AgentTypeQuerier_Call {
+	_c.Call.Return(agentTypeQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_AgentTypeQuerier_Call) RunAndReturn(run func() AgentTypeQuerier) *MockReadOnlyStore_AgentTypeQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// EventQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) EventQuerier() EventQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for EventQuerier")
+	}
+
+	var r0 EventQuerier
+	if returnFunc, ok := ret.Get(0).(func() EventQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(EventQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_EventQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EventQuerier'
+type MockReadOnlyStore_EventQuerier_Call struct {
+	*mock.Call
+}
+
+// EventQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) EventQuerier() *MockReadOnlyStore_EventQuerier_Call {
+	return &MockReadOnlyStore_EventQuerier_Call{Call: _e.mock.On("EventQuerier")}
+}
+
+func (_c *MockReadOnlyStore_EventQuerier_Call) Run(run func()) *MockReadOnlyStore_EventQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_EventQuerier_Call) Return(eventQuerier EventQuerier) *MockReadOnlyStore_EventQuerier_Call {
+	_c.Call.Return(eventQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_EventQuerier_Call) RunAndReturn(run func() EventQuerier) *MockReadOnlyStore_EventQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// EventSubscriptionQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) EventSubscriptionQuerier() EventSubscriptionQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for EventSubscriptionQuerier")
+	}
+
+	var r0 EventSubscriptionQuerier
+	if returnFunc, ok := ret.Get(0).(func() EventSubscriptionQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(EventSubscriptionQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_EventSubscriptionQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EventSubscriptionQuerier'
+type MockReadOnlyStore_EventSubscriptionQuerier_Call struct {
+	*mock.Call
+}
+
+// EventSubscriptionQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) EventSubscriptionQuerier() *MockReadOnlyStore_EventSubscriptionQuerier_Call {
+	return &MockReadOnlyStore_EventSubscriptionQuerier_Call{Call: _e.mock.On("EventSubscriptionQuerier")}
+}
+
+func (_c *MockReadOnlyStore_EventSubscriptionQuerier_Call) Run(run func()) *MockReadOnlyStore_EventSubscriptionQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_EventSubscriptionQuerier_Call) Return(eventSubscriptionQuerier EventSubscriptionQuerier) *MockReadOnlyStore_EventSubscriptionQuerier_Call {
+	_c.Call.Return(eventSubscriptionQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_EventSubscriptionQuerier_Call) RunAndReturn(run func() EventSubscriptionQuerier) *MockReadOnlyStore_EventSubscriptionQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// JobQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) JobQuerier() JobQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for JobQuerier")
+	}
+
+	var r0 JobQuerier
+	if returnFunc, ok := ret.Get(0).(func() JobQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(JobQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_JobQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'JobQuerier'
+type MockReadOnlyStore_JobQuerier_Call struct {
+	*mock.Call
+}
+
+// JobQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) JobQuerier() *MockReadOnlyStore_JobQuerier_Call {
+	return &MockReadOnlyStore_JobQuerier_Call{Call: _e.mock.On("JobQuerier")}
+}
+
+func (_c *MockReadOnlyStore_JobQuerier_Call) Run(run func()) *MockReadOnlyStore_JobQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_JobQuerier_Call) Return(jobQuerier JobQuerier) *MockReadOnlyStore_JobQuerier_Call {
+	_c.Call.Return(jobQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_JobQuerier_Call) RunAndReturn(run func() JobQuerier) *MockReadOnlyStore_JobQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// MetricTypeQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) MetricTypeQuerier() MetricTypeQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for MetricTypeQuerier")
+	}
+
+	var r0 MetricTypeQuerier
+	if returnFunc, ok := ret.Get(0).(func() MetricTypeQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(MetricTypeQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_MetricTypeQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MetricTypeQuerier'
+type MockReadOnlyStore_MetricTypeQuerier_Call struct {
+	*mock.Call
+}
+
+// MetricTypeQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) MetricTypeQuerier() *MockReadOnlyStore_MetricTypeQuerier_Call {
+	return &MockReadOnlyStore_MetricTypeQuerier_Call{Call: _e.mock.On("MetricTypeQuerier")}
+}
+
+func (_c *MockReadOnlyStore_MetricTypeQuerier_Call) Run(run func()) *MockReadOnlyStore_MetricTypeQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_MetricTypeQuerier_Call) Return(metricTypeQuerier MetricTypeQuerier) *MockReadOnlyStore_MetricTypeQuerier_Call {
+	_c.Call.Return(metricTypeQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_MetricTypeQuerier_Call) RunAndReturn(run func() MetricTypeQuerier) *MockReadOnlyStore_MetricTypeQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ParticipantQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) ParticipantQuerier() ParticipantQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ParticipantQuerier")
+	}
+
+	var r0 ParticipantQuerier
+	if returnFunc, ok := ret.Get(0).(func() ParticipantQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(ParticipantQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_ParticipantQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ParticipantQuerier'
+type MockReadOnlyStore_ParticipantQuerier_Call struct {
+	*mock.Call
+}
+
+// ParticipantQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) ParticipantQuerier() *MockReadOnlyStore_ParticipantQuerier_Call {
+	return &MockReadOnlyStore_ParticipantQuerier_Call{Call: _e.mock.On("ParticipantQuerier")}
+}
+
+func (_c *MockReadOnlyStore_ParticipantQuerier_Call) Run(run func()) *MockReadOnlyStore_ParticipantQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ParticipantQuerier_Call) Return(participantQuerier ParticipantQuerier) *MockReadOnlyStore_ParticipantQuerier_Call {
+	_c.Call.Return(participantQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ParticipantQuerier_Call) RunAndReturn(run func() ParticipantQuerier) *MockReadOnlyStore_ParticipantQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ServiceGroupQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) ServiceGroupQuerier() ServiceGroupQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServiceGroupQuerier")
+	}
+
+	var r0 ServiceGroupQuerier
+	if returnFunc, ok := ret.Get(0).(func() ServiceGroupQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(ServiceGroupQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_ServiceGroupQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServiceGroupQuerier'
+type MockReadOnlyStore_ServiceGroupQuerier_Call struct {
+	*mock.Call
+}
+
+// ServiceGroupQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) ServiceGroupQuerier() *MockReadOnlyStore_ServiceGroupQuerier_Call {
+	return &MockReadOnlyStore_ServiceGroupQuerier_Call{Call: _e.mock.On("ServiceGroupQuerier")}
+}
+
+func (_c *MockReadOnlyStore_ServiceGroupQuerier_Call) Run(run func()) *MockReadOnlyStore_ServiceGroupQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServiceGroupQuerier_Call) Return(serviceGroupQuerier ServiceGroupQuerier) *MockReadOnlyStore_ServiceGroupQuerier_Call {
+	_c.Call.Return(serviceGroupQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServiceGroupQuerier_Call) RunAndReturn(run func() ServiceGroupQuerier) *MockReadOnlyStore_ServiceGroupQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ServiceQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) ServiceQuerier() ServiceQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServiceQuerier")
+	}
+
+	var r0 ServiceQuerier
+	if returnFunc, ok := ret.Get(0).(func() ServiceQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(ServiceQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_ServiceQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServiceQuerier'
+type MockReadOnlyStore_ServiceQuerier_Call struct {
+	*mock.Call
+}
+
+// ServiceQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) ServiceQuerier() *MockReadOnlyStore_ServiceQuerier_Call {
+	return &MockReadOnlyStore_ServiceQuerier_Call{Call: _e.mock.On("ServiceQuerier")}
+}
+
+func (_c *MockReadOnlyStore_ServiceQuerier_Call) Run(run func()) *MockReadOnlyStore_ServiceQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServiceQuerier_Call) Return(serviceQuerier ServiceQuerier) *MockReadOnlyStore_ServiceQuerier_Call {
+	_c.Call.Return(serviceQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServiceQuerier_Call) RunAndReturn(run func() ServiceQuerier) *MockReadOnlyStore_ServiceQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ServiceTypeQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) ServiceTypeQuerier() ServiceTypeQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServiceTypeQuerier")
+	}
+
+	var r0 ServiceTypeQuerier
+	if returnFunc, ok := ret.Get(0).(func() ServiceTypeQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(ServiceTypeQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_ServiceTypeQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServiceTypeQuerier'
+type MockReadOnlyStore_ServiceTypeQuerier_Call struct {
+	*mock.Call
+}
+
+// ServiceTypeQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) ServiceTypeQuerier() *MockReadOnlyStore_ServiceTypeQuerier_Call {
+	return &MockReadOnlyStore_ServiceTypeQuerier_Call{Call: _e.mock.On("ServiceTypeQuerier")}
+}
+
+func (_c *MockReadOnlyStore_ServiceTypeQuerier_Call) Run(run func()) *MockReadOnlyStore_ServiceTypeQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServiceTypeQuerier_Call) Return(serviceTypeQuerier ServiceTypeQuerier) *MockReadOnlyStore_ServiceTypeQuerier_Call {
+	_c.Call.Return(serviceTypeQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServiceTypeQuerier_Call) RunAndReturn(run func() ServiceTypeQuerier) *MockReadOnlyStore_ServiceTypeQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// TokenQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) TokenQuerier() TokenQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for TokenQuerier")
+	}
+
+	var r0 TokenQuerier
+	if returnFunc, ok := ret.Get(0).(func() TokenQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(TokenQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_TokenQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'TokenQuerier'
+type MockReadOnlyStore_TokenQuerier_Call struct {
+	*mock.Call
+}
+
+// TokenQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) TokenQuerier() *MockReadOnlyStore_TokenQuerier_Call {
+	return &MockReadOnlyStore_TokenQuerier_Call{Call: _e.mock.On("TokenQuerier")}
+}
+
+func (_c *MockReadOnlyStore_TokenQuerier_Call) Run(run func()) *MockReadOnlyStore_TokenQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_TokenQuerier_Call) Return(tokenQuerier TokenQuerier) *MockReadOnlyStore_TokenQuerier_Call {
+	_c.Call.Return(tokenQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_TokenQuerier_Call) RunAndReturn(run func() TokenQuerier) *MockReadOnlyStore_TokenQuerier_Call {
 	_c.Call.Return(run)
 	return _c
 }

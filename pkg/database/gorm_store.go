@@ -117,3 +117,59 @@ func (s *GormStore) MetricTypeRepo() domain.MetricTypeRepository {
 	}
 	return s.metricTypeRepo
 }
+
+// GormReadOnlyStore implements the domain.ReadOnlyStore interface using GORM
+type GormReadOnlyStore struct {
+	db *gorm.DB
+}
+
+// Check if GormReadOnlyStore implements the domain.ReadOnlyStore interface
+var _ domain.ReadOnlyStore = (*GormReadOnlyStore)(nil)
+
+func NewGormReadOnlyStore(db *gorm.DB) *GormReadOnlyStore {
+	return &GormReadOnlyStore{db: db}
+}
+
+func (s *GormReadOnlyStore) AgentTypeQuerier() domain.AgentTypeQuerier {
+	return NewAgentTypeRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) AgentQuerier() domain.AgentQuerier {
+	return NewAgentRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) TokenQuerier() domain.TokenQuerier {
+	return NewTokenRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) ServiceTypeQuerier() domain.ServiceTypeQuerier {
+	return NewServiceTypeRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) EventQuerier() domain.EventQuerier {
+	return NewEventRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) EventSubscriptionQuerier() domain.EventSubscriptionQuerier {
+	return NewEventSubscriptionRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) MetricTypeQuerier() domain.MetricTypeQuerier {
+	return NewMetricTypeRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) ParticipantQuerier() domain.ParticipantQuerier {
+	return NewParticipantRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) ServiceGroupQuerier() domain.ServiceGroupQuerier {
+	return NewServiceGroupRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) ServiceQuerier() domain.ServiceQuerier {
+	return NewServiceRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) JobQuerier() domain.JobQuerier {
+	return NewJobRepository(s.db)
+}

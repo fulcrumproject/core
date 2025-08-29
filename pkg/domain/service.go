@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
-	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
 )
 
@@ -328,7 +327,12 @@ func CreateServiceWithAgent(
 	}
 
 	// Validate properties against schema
-	validatedProperties, err := validatePropertiesAgainstSchema(ctx, store, params.Properties, params.ServiceTypeID)
+	validationParams := &ServicePropertyValidationParams{
+		ServiceTypeID: params.ServiceTypeID,
+		GroupID:       params.GroupID,
+		Properties:    params.Properties,
+	}
+	validatedProperties, err := ValidateServiceProperties(ctx, store, validationParams)
 	if err != nil {
 		return nil, err
 	}
@@ -398,11 +402,18 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 
 	// Validate properties against schema if provided
 	if params.Properties != nil {
-		validatedProperties, err := validatePropertiesAgainstSchema(ctx, store, *params.Properties, svc.ServiceTypeID)
+		// Validate properties against schema
+		validationParams := &ServicePropertyValidationParams{
+			ServiceTypeID: svc.ServiceTypeID,
+			GroupID:       svc.GroupID,
+			Properties:    *params.Properties,
+		}
+		validatedProperties, err := ValidateServiceProperties(ctx, store, validationParams)
 		if err != nil {
 			return nil, err
 		}
-		params.Properties = &validatedProperties
+		convertedProperties := properties.JSON(validatedProperties)
+		params.Properties = &convertedProperties
 	}
 
 	// Update, if needed
@@ -457,39 +468,6 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 	}
 
 	return svc, nil
-}
-
-// validatePropertiesAgainstSchema validates properties against a service type's schema
-func validatePropertiesAgainstSchema(ctx context.Context, store Store, props properties.JSON, serviceTypeID properties.UUID) (properties.JSON, error) {
-	// Fetch the service type to get its schema
-	serviceType, err := store.ServiceTypeRepo().Get(ctx, serviceTypeID)
-	if err != nil {
-		return nil, err
-	}
-
-	// If no schema, return properties as-is
-	if serviceType.PropertySchema == nil {
-		return props, nil
-	}
-
-	// Validate properties against schema
-	propertiesMap := map[string]any(props)
-	propertiesWithDefaults, validationErrors := schema.ValidateWithDefaults(propertiesMap, *serviceType.PropertySchema)
-
-	if len(validationErrors) > 0 {
-		// Convert schema validation errors to domain validation error details
-		var errorDetails []ValidationErrorDetail
-		for _, err := range validationErrors {
-			errorDetails = append(errorDetails, ValidationErrorDetail{
-				Path:    err.Path,
-				Message: err.Message,
-			})
-		}
-		return nil, NewValidationError(errorDetails)
-	}
-
-	// Return properties with defaults applied
-	return properties.JSON(propertiesWithDefaults), nil
 }
 
 func (s *serviceCommander) DoAction(ctx context.Context, params DoServiceActionParams) (*Service, error) {
@@ -622,4 +600,7 @@ type ServiceQuerier interface {
 
 	// CountByAgent returns the number of services handled by a specific agent
 	CountByAgent(ctx context.Context, agentID properties.UUID) (int64, error)
+
+	// CountByServiceType returns the number of services of a specific type
+	CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error)
 }

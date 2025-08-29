@@ -237,6 +237,81 @@ Ensure all items are unique:
 }
 ```
 
+### Reference Validators (for type "reference")
+
+#### serviceType
+Validates that a referenced service is of a specific service type or one of multiple allowed types:
+
+Single service type:
+```json
+{
+  "database_service": {
+    "type": "reference",
+    "label": "Database Service",
+    "required": true,
+    "validators": [
+      { "type": "serviceType", "value": "MySQL" }
+    ]
+  }
+}
+```
+
+Multiple allowed service types:
+```json
+{
+  "storage_service": {
+    "type": "reference", 
+    "label": "Storage Service",
+    "required": true,
+    "validators": [
+      { "type": "serviceType", "value": ["MySQL", "PostgreSQL", "MongoDB"] }
+    ]
+  }
+}
+```
+
+#### sameOrigin
+Validates that a referenced service belongs to the same consumer or service group:
+
+Same consumer constraint:
+```json
+{
+  "related_service": {
+    "type": "reference",
+    "validators": [
+      { "type": "sameOrigin", "value": "consumer" }
+    ]
+  }
+}
+```
+
+Same service group constraint:
+```json
+{
+  "dependent_service": {
+    "type": "reference", 
+    "validators": [
+      { "type": "sameOrigin", "value": "group" }
+    ]
+  }
+}
+```
+
+Combined validators example:
+```json
+{
+  "backend_service": {
+    "type": "reference",
+    "label": "Backend API Service", 
+    "required": true,
+    "validators": [
+      { "type": "serviceType", "value": ["NodeJS-API", "Python-API"] },
+      { "type": "sameOrigin", "value": "consumer" }
+    ]
+  }
+}
+```
+
 ## Complete Example
 
 Here's a comprehensive example for a VM service type:
@@ -407,6 +482,15 @@ The validation system provides detailed error messages with path information:
 - `"array length {actual} is less than minimum {min}"` - Array too short
 - `"array length {actual} exceeds maximum {max}"` - Array too long
 - `"array contains duplicate items"` - Duplicate items when uniqueItems is true
+
+### Reference Type Error Messages
+
+- `"invalid service ID format"` - Invalid UUID format for service reference
+- `"referenced service does not exist"` - Referenced service not found in database
+- `"referenced service must belong to the same consumer"` - Consumer constraint violation
+- `"referenced service must belong to the same service group"` - Group constraint violation
+- `"referenced service is not of the allowed service type"` - Service type constraint violation  
+- `"serviceType validator value must be a string or array of strings"` - Invalid validator configuration
 
 ## Migration and Updates
 

@@ -1,11 +1,13 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -15,11 +17,13 @@ import (
 // TestNewServiceTypeHandler tests the constructor
 func TestNewServiceTypeHandler(t *testing.T) {
 	querier := &mockServiceTypeQuerier{}
+	commander := createMockServiceTypeCommander()
 	authz := &MockAuthorizer{ShouldSucceed: true}
 
-	handler := NewServiceTypeHandler(querier, authz)
+	handler := NewServiceTypeHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
 	assert.Equal(t, querier, handler.querier)
+	assert.Equal(t, commander, handler.commander)
 	assert.Equal(t, authz, handler.authz)
 }
 
@@ -27,10 +31,11 @@ func TestNewServiceTypeHandler(t *testing.T) {
 func TestServiceTypeHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := &mockServiceTypeQuerier{}
+	commander := createMockServiceTypeCommander()
 	authz := &MockAuthorizer{ShouldSucceed: true}
 
 	// Create the handler
-	handler := NewServiceTypeHandler(querier, authz)
+	handler := NewServiceTypeHandler(querier, commander, authz)
 
 	// Execute
 	routeFunc := handler.Routes()
@@ -45,7 +50,10 @@ func TestServiceTypeHandlerRoutes(t *testing.T) {
 		// Check expected routes exist
 		switch {
 		case method == "GET" && route == "/":
+		case method == "POST" && route == "/":
 		case method == "GET" && route == "/{id}":
+		case method == "PATCH" && route == "/{id}":
+		case method == "DELETE" && route == "/{id}":
 		case method == "POST" && route == "/{id}/validate":
 		default:
 			return fmt.Errorf("unexpected route: %s %s", method, route)
@@ -80,4 +88,45 @@ func TestServiceTypeToResponse(t *testing.T) {
 	assert.Equal(t, serviceType.Name, response.Name)
 	assert.Equal(t, JSONUTCTime(serviceType.CreatedAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(serviceType.UpdatedAt), response.UpdatedAt)
+}
+
+// TestServiceTypeHandlerCreate tests the Create adapter function
+func TestServiceTypeHandlerCreate(t *testing.T) {
+	commander := createMockServiceTypeCommander()
+	handler := &ServiceTypeHandler{commander: commander}
+
+	req := &CreateServiceTypeReq{
+		Name: "Test Service Type",
+	}
+
+	ctx := auth.WithIdentity(context.Background(), &auth.Identity{
+		ID:   uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+		Name: "test-admin",
+		Role: auth.RoleAdmin,
+	})
+	result, err := handler.Create(ctx, req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+}
+
+// TestServiceTypeHandlerUpdate tests the Update adapter function
+func TestServiceTypeHandlerUpdate(t *testing.T) {
+	commander := createMockServiceTypeCommander()
+	handler := &ServiceTypeHandler{commander: commander}
+
+	name := "Updated Service Type"
+	req := &UpdateServiceTypeReq{
+		Name: &name,
+	}
+
+	ctx := auth.WithIdentity(context.Background(), &auth.Identity{
+		ID:   uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+		Name: "test-admin",
+		Role: auth.RoleAdmin,
+	})
+	result, err := handler.Update(ctx, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
 }

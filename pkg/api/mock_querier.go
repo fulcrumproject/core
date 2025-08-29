@@ -115,6 +115,11 @@ func (m *mockAgentQuerier) CountByProvider(ctx context.Context, participantID pr
 	return 0, nil
 }
 
+// CountByAgentType is required by the AgentQuerier interface
+func (m *mockAgentQuerier) CountByAgentType(ctx context.Context, agentTypeID properties.UUID) (int64, error) {
+	return 0, nil
+}
+
 func (m *mockAgentQuerier) FindByServiceTypeAndTags(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*domain.Agent, error) {
 	if m.findByServiceTypeAndTagsFunc != nil {
 		return m.findByServiceTypeAndTagsFunc(ctx, serviceTypeID, tags)
@@ -279,6 +284,10 @@ func (m *mockServiceQuerier) CountByAgent(ctx context.Context, agentID propertie
 	if m.countByAgentFunc != nil {
 		return m.countByAgentFunc(ctx, agentID)
 	}
+	return 0, nil
+}
+
+func (m *mockServiceQuerier) CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error) {
 	return 0, nil
 }
 

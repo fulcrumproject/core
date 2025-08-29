@@ -70,8 +70,10 @@ func main() {
 
 	// Initialize commanders
 	serviceCmd := domain.NewServiceCommander(store)
+	serviceTypeCmd := domain.NewServiceTypeCommander(store)
 	serviceGroupCmd := domain.NewServiceGroupCommander(store)
 	participantCmd := domain.NewParticipantCommander(store)
+	agentTypeCmd := domain.NewAgentTypeCommander(store)
 	jobCmd := domain.NewJobCommander(store)
 	metricEntryCmd := domain.NewMetricEntryCommander(store, metricEntryRepo)
 	metricTypeCmd := domain.NewMetricTypeCommander(store, metricEntryRepo)
@@ -111,8 +113,8 @@ func main() {
 	athz := auth.NewRuleBasedAuthorizer(authz.Rules)
 
 	// Initialize handlers
-	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo(), athz)
-	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), athz)
+	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz)
+	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz)
 	participantHandler := api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz)
 	agentHandler := api.NewAgentHandler(store.AgentRepo(), agentCmd, athz)
 	serviceGroupHandler := api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz)

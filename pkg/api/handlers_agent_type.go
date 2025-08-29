@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
@@ -10,17 +12,20 @@ import (
 )
 
 type AgentTypeHandler struct {
-	querier domain.AgentTypeQuerier
-	authz   auth.Authorizer
+	querier   domain.AgentTypeQuerier
+	commander domain.AgentTypeCommander
+	authz     auth.Authorizer
 }
 
 func NewAgentTypeHandler(
 	querier domain.AgentTypeQuerier,
+	commander domain.AgentTypeCommander,
 	authz auth.Authorizer,
 ) *AgentTypeHandler {
 	return &AgentTypeHandler{
-		querier: querier,
-		authz:   authz,
+		querier:   querier,
+		commander: commander,
+		authz:     authz,
 	}
 }
 
@@ -32,6 +37,12 @@ func (h *AgentTypeHandler) Routes() func(r chi.Router) {
 			middlewares.AuthzSimple(authz.ObjectTypeAgentType, authz.ActionRead, h.authz),
 		).Get("/", List(h.querier, AgentTypeToRes))
 
+		// Create endpoint - admin only
+		r.With(
+			middlewares.DecodeBody[CreateAgentTypeReq](),
+			middlewares.AuthzSimple(authz.ObjectTypeAgentType, authz.ActionCreate, h.authz),
+		).Post("/", Create(h.Create, AgentTypeToRes))
+
 		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
 			r.Use(middlewares.ID)
@@ -40,30 +51,72 @@ func (h *AgentTypeHandler) Routes() func(r chi.Router) {
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgentType, authz.ActionRead, h.authz, h.querier.AuthScope),
 			).Get("/{id}", Get(h.querier.Get, AgentTypeToRes))
+
+			// Update endpoint - admin only
+			r.With(
+				middlewares.DecodeBody[UpdateAgentTypeReq](),
+				middlewares.AuthzFromID(authz.ObjectTypeAgentType, authz.ActionUpdate, h.authz, h.querier.AuthScope),
+			).Patch("/{id}", Update(h.Update, AgentTypeToRes))
+
+			// Delete endpoint - admin only
+			r.With(
+				middlewares.AuthzFromID(authz.ObjectTypeAgentType, authz.ActionDelete, h.authz, h.querier.AuthScope),
+			).Delete("/{id}", Delete(h.querier, h.commander.Delete))
 		})
 	}
 }
 
+// CreateAgentTypeReq represents the request body for creating agent types
+type CreateAgentTypeReq struct {
+	Name           string            `json:"name"`
+	ServiceTypeIds []properties.UUID `json:"serviceTypeIds,omitempty"`
+}
+
+// UpdateAgentTypeReq represents the request body for updating agent types
+type UpdateAgentTypeReq struct {
+	Name           *string            `json:"name"`
+	ServiceTypeIds *[]properties.UUID `json:"serviceTypeIds,omitempty"`
+}
+
 // AgentTypeRes represents the response body for agent type operations
 type AgentTypeRes struct {
-	ID           properties.UUID   `json:"id"`
-	Name         string            `json:"name"`
-	CreatedAt    JSONUTCTime       `json:"createdAt"`
-	UpdatedAt    JSONUTCTime       `json:"updatedAt"`
-	ServiceTypes []*ServiceTypeRes `json:"serviceTypes"`
+	ID             properties.UUID   `json:"id"`
+	Name           string            `json:"name"`
+	CreatedAt      JSONUTCTime       `json:"createdAt"`
+	UpdatedAt      JSONUTCTime       `json:"updatedAt"`
+	ServiceTypeIds []properties.UUID `json:"serviceTypeIds"`
 }
 
 // AgentTypeToRes converts a domain.AgentType to an AgentTypeResponse
 func AgentTypeToRes(at *domain.AgentType) *AgentTypeRes {
 	response := &AgentTypeRes{
-		ID:           at.ID,
-		Name:         at.Name,
-		CreatedAt:    JSONUTCTime(at.CreatedAt),
-		UpdatedAt:    JSONUTCTime(at.UpdatedAt),
-		ServiceTypes: make([]*ServiceTypeRes, 0),
+		ID:             at.ID,
+		Name:           at.Name,
+		CreatedAt:      JSONUTCTime(at.CreatedAt),
+		UpdatedAt:      JSONUTCTime(at.UpdatedAt),
+		ServiceTypeIds: make([]properties.UUID, 0),
 	}
 	for _, st := range at.ServiceTypes {
-		response.ServiceTypes = append(response.ServiceTypes, ServiceTypeToRes(&st))
+		response.ServiceTypeIds = append(response.ServiceTypeIds, st.ID)
 	}
 	return response
+}
+
+// Adapter functions that convert request structs to commander method calls
+
+func (h *AgentTypeHandler) Create(ctx context.Context, req *CreateAgentTypeReq) (*domain.AgentType, error) {
+	params := domain.CreateAgentTypeParams{
+		Name:           req.Name,
+		ServiceTypeIds: req.ServiceTypeIds,
+	}
+	return h.commander.Create(ctx, params)
+}
+
+func (h *AgentTypeHandler) Update(ctx context.Context, id properties.UUID, req *UpdateAgentTypeReq) (*domain.AgentType, error) {
+	params := domain.UpdateAgentTypeParams{
+		ID:             id,
+		Name:           req.Name,
+		ServiceTypeIds: req.ServiceTypeIds,
+	}
+	return h.commander.Update(ctx, params)
 }
