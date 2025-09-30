@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -400,13 +401,16 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 		return nil, err
 	}
 
-	// Validate properties against schema if provided
+	// Merge and validate properties if provided
 	if params.Properties != nil {
-		// Validate properties against schema
+		// Merge partial properties with existing properties
+		mergedProperties := mergeServiceProperties(svc.Properties, *params.Properties)
+
+		// Validate merged properties against schema
 		validationParams := &ServicePropertyValidationParams{
 			ServiceTypeID: svc.ServiceTypeID,
 			GroupID:       svc.GroupID,
-			Properties:    *params.Properties,
+			Properties:    mergedProperties,
 		}
 		validatedProperties, err := ValidateServiceProperties(ctx, store, validationParams)
 		if err != nil {
@@ -603,4 +607,55 @@ type ServiceQuerier interface {
 
 	// CountByServiceType returns the number of services of a specific type
 	CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error)
+}
+
+// mergeServiceProperties merges partial properties with existing properties
+func mergeServiceProperties(existing *properties.JSON, partial properties.JSON) properties.JSON {
+	// Start with existing properties
+	merged := make(map[string]any)
+	if existing != nil {
+		maps.Copy(merged, *existing)
+	}
+
+	// Overlay partial properties with deep merge for objects
+	for k, v := range partial {
+		if existingObj, exists := merged[k].(map[string]any); exists {
+			if partialObj, ok := v.(map[string]any); ok {
+				// Deep merge nested objects
+				merged[k] = mergeNestedObjects(existingObj, partialObj)
+			} else {
+				// Replace with new value
+				merged[k] = v
+			}
+		} else {
+			// New key or non-object value
+			merged[k] = v
+		}
+	}
+
+	return properties.JSON(merged)
+}
+
+// mergeNestedObjects performs deep merge of nested objects
+func mergeNestedObjects(existing, partial map[string]any) map[string]any {
+	result := make(map[string]any)
+
+	// Copy existing values
+	maps.Copy(result, existing)
+
+	// Overlay partial values
+	for k, v := range partial {
+		if existingObj, exists := result[k].(map[string]any); exists {
+			if partialObj, ok := v.(map[string]any); ok {
+				// Recursively merge nested objects
+				result[k] = mergeNestedObjects(existingObj, partialObj)
+			} else {
+				result[k] = v
+			}
+		} else {
+			result[k] = v
+		}
+	}
+
+	return result
 }
