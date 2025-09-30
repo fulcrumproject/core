@@ -219,6 +219,332 @@ Fulcrum Core's API is documented using the OpenAPI 3.0 specification. The specif
 
 An online version of the API documentation will be available soon.
 
+### API Usage Examples
+
+The Fulcrum Core API provides a comprehensive RESTful interface for managing cloud infrastructure. All API endpoints require authentication using bearer tokens.
+
+#### Authentication
+
+Fulcrum supports two authentication methods:
+
+1. **Token-based Authentication**: Use API tokens for programmatic access
+2. **OAuth/Keycloak**: Use OAuth2 flows for user authentication
+
+```bash
+# Using token authentication
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  https://api.fulcrum.example.com/api/v1/participants
+```
+
+#### Working with Participants
+
+Participants represent cloud service providers or consumers in the Fulcrum ecosystem.
+
+**Create a Participant:**
+
+```bash
+curl -X POST https://api.fulcrum.example.com/api/v1/participants \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Cloud Provider",
+    "type": "provider",
+    "description": "Enterprise cloud services provider"
+  }'
+```
+
+**List Participants:**
+
+```bash
+curl https://api.fulcrum.example.com/api/v1/participants?page=1&pageSize=20 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Get a Specific Participant:**
+
+```bash
+curl https://api.fulcrum.example.com/api/v1/participants/{participant_id} \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### Managing Agents
+
+Agents are deployed on cloud providers to manage services and collect metrics.
+
+**Register an Agent:**
+
+```bash
+curl -X POST https://api.fulcrum.example.com/api/v1/agents \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "agent-01",
+    "agent_type_id": "550e8400-e29b-41d4-a716-446655440000",
+    "participant_id": "650e8400-e29b-41d4-a716-446655440000",
+    "host": "agent-01.example.com",
+    "port": 8080,
+    "properties": {
+      "region": "us-east-1",
+      "availability_zone": "us-east-1a"
+    }
+  }'
+```
+
+**Agent Health Check:**
+
+Agents automatically send heartbeats. If an agent doesn't send a heartbeat within the configured timeout period, it's automatically marked as disconnected.
+
+```bash
+# Agent sends heartbeat
+curl -X POST https://api.fulcrum.example.com/api/v1/agents/{agent_id}/heartbeat \
+  -H "Authorization: Bearer YOUR_AGENT_TOKEN"
+```
+
+#### Service Management
+
+Services represent cloud resources (VMs, containers, Kubernetes clusters, etc.) managed by agents.
+
+**Create a Service:**
+
+```bash
+curl -X POST https://api.fulcrum.example.com/api/v1/services \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "web-server-01",
+    "service_type_id": "750e8400-e29b-41d4-a716-446655440000",
+    "agent_id": "850e8400-e29b-41d4-a716-446655440000",
+    "properties": {
+      "cpu": "4",
+      "memory": "16GB",
+      "disk": "100GB"
+    }
+  }'
+```
+
+**Update Service Status:**
+
+```bash
+curl -X PATCH https://api.fulcrum.example.com/api/v1/services/{service_id} \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "running"
+  }'
+```
+
+**List Services with Filters:**
+
+```bash
+# Filter by agent
+curl "https://api.fulcrum.example.com/api/v1/services?agent_id={agent_id}" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Filter by service type
+curl "https://api.fulcrum.example.com/api/v1/services?service_type_id={type_id}" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Filter by status
+curl "https://api.fulcrum.example.com/api/v1/services?status=running" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### Job Queue Management
+
+Jobs represent asynchronous operations that agents need to perform.
+
+**Create a Job:**
+
+```bash
+curl -X POST https://api.fulcrum.example.com/api/v1/jobs \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "service_id": "950e8400-e29b-41d4-a716-446655440000",
+    "type": "provision",
+    "properties": {
+      "action": "create_vm",
+      "parameters": {
+        "image": "ubuntu-22.04",
+        "flavor": "m1.medium"
+      }
+    }
+  }'
+```
+
+**Agent Polls for Jobs:**
+
+```bash
+curl "https://api.fulcrum.example.com/api/v1/jobs?agent_id={agent_id}&status=pending" \
+  -H "Authorization: Bearer YOUR_AGENT_TOKEN"
+```
+
+**Update Job Status:**
+
+```bash
+curl -X PATCH https://api.fulcrum.example.com/api/v1/jobs/{job_id} \
+  -H "Authorization: Bearer YOUR_AGENT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "completed",
+    "result": {
+      "success": true,
+      "vm_id": "i-1234567890abcdef"
+    }
+  }'
+```
+
+#### Metrics Collection
+
+Collect and query metrics from agents and services.
+
+**Submit Metrics:**
+
+```bash
+curl -X POST https://api.fulcrum.example.com/api/v1/metric-entries \
+  -H "Authorization: Bearer YOUR_AGENT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "metric_type_id": "a50e8400-e29b-41d4-a716-446655440000",
+    "service_id": "b50e8400-e29b-41d4-a716-446655440000",
+    "value": 85.5,
+    "timestamp": "2025-09-30T10:30:00Z"
+  }'
+```
+
+**Query Metrics:**
+
+```bash
+# Get metrics for a specific service
+curl "https://api.fulcrum.example.com/api/v1/metric-entries?service_id={service_id}&from=2025-09-01T00:00:00Z&to=2025-09-30T23:59:59Z" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### Event Subscriptions
+
+Subscribe to events for real-time notifications about system changes.
+
+**Create Event Subscription:**
+
+```bash
+curl -X POST https://api.fulcrum.example.com/api/v1/events/subscriptions \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "webhook_url": "https://your-app.example.com/webhooks/fulcrum",
+    "event_types": ["service.created", "service.updated", "job.completed"],
+    "filters": {
+      "participant_id": "c50e8400-e29b-41d4-a716-446655440000"
+    }
+  }'
+```
+
+### SDK and Client Libraries
+
+While Fulcrum Core provides a REST API, you can also build client libraries in your preferred programming language. Here's an example in Go:
+
+```go
+package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "net/http"
+)
+
+type FulcrumClient struct {
+    BaseURL string
+    Token   string
+    Client  *http.Client
+}
+
+func NewFulcrumClient(baseURL, token string) *FulcrumClient {
+    return &FulcrumClient{
+        BaseURL: baseURL,
+        Token:   token,
+        Client:  &http.Client{},
+    }
+}
+
+func (c *FulcrumClient) CreateParticipant(name, ptype, description string) error {
+    data := map[string]string{
+        "name":        name,
+        "type":        ptype,
+        "description": description,
+    }
+    
+    jsonData, _ := json.Marshal(data)
+    req, _ := http.NewRequest("POST", c.BaseURL+"/api/v1/participants", bytes.NewBuffer(jsonData))
+    req.Header.Set("Authorization", "Bearer "+c.Token)
+    req.Header.Set("Content-Type", "application/json")
+    
+    resp, err := c.Client.Do(req)
+    if err != nil {
+        return err
+    }
+    defer resp.Body.Close()
+    
+    if resp.StatusCode != http.StatusCreated {
+        return fmt.Errorf("failed to create participant: %d", resp.StatusCode)
+    }
+    
+    return nil
+}
+
+func main() {
+    client := NewFulcrumClient("https://api.fulcrum.example.com", "YOUR_TOKEN")
+    err := client.CreateParticipant("My Provider", "provider", "My cloud provider")
+    if err != nil {
+        fmt.Println("Error:", err)
+    }
+}
+```
+
+### Python Example
+
+```python
+import requests
+import json
+
+class FulcrumClient:
+    def __init__(self, base_url, token):
+        self.base_url = base_url
+        self.token = token
+        self.headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
+    
+    def create_participant(self, name, ptype, description):
+        url = f"{self.base_url}/api/v1/participants"
+        data = {
+            "name": name,
+            "type": ptype,
+            "description": description
+        }
+        response = requests.post(url, headers=self.headers, json=data)
+        response.raise_for_status()
+        return response.json()
+    
+    def list_services(self, agent_id=None, status=None):
+        url = f"{self.base_url}/api/v1/services"
+        params = {}
+        if agent_id:
+            params['agent_id'] = agent_id
+        if status:
+            params['status'] = status
+        
+        response = requests.get(url, headers=self.headers, params=params)
+        response.raise_for_status()
+        return response.json()
+
+# Usage
+client = FulcrumClient('https://api.fulcrum.example.com', 'YOUR_TOKEN')
+participant = client.create_participant('My Provider', 'provider', 'Description')
+services = client.list_services(status='running')
+```
+
 ## Project Structure
 
 ```
