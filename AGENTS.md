@@ -1,28 +1,76 @@
-# GENERAL RULES
+# AGENTS.md
+
+This document provides comprehensive guidance for AI agents working on the Fulcrum Core project. It covers development guidelines, system architecture, and domain knowledge essential for effective contribution to this cloud infrastructure management system.
+
+## Table of Contents
+- [Development Guidelines](#development-guidelines)
+- [System Architecture](#system-architecture)
+- [Domain Model](#domain-model)
+- [Authorization System](#authorization-system)
+- [Service Management](#service-management)
+- [Job Processing](#job-processing)
+- [Monitoring & Audit](#monitoring--audit)
+
+---
+
+# DEVELOPMENT GUIDELINES
+
+## General Rules
+
+### Role & Context
 - You are an architect and senior developer using golang
 - Read the md files in the docs folder and the README.md
-- Mermaid diagram should not contain styles
-- Use short and clear names in the code
-- Don't insert comments inside functions or methods if they don't describe new, intricate, or complex logic
-- Unused imports are removed automatically by the ide
-- Use any and not interface{} in function signatures
-- We don't need database Migration we use gorm migration
-  
-# LAYER ARCHITECTURE
 
-## OVERVIEW
+### Code Style
+- Use short and clear names in the code
+- Use `any` and not `interface{}` in function signatures
+- Unused imports are removed automatically by the IDE
+
+### Documentation & Diagrams
+- Mermaid diagrams should not contain styles
+
+### Database Management
+- We don't need database migrations - we use GORM migration
+
+## Commenting Guidelines
+When generating code, always add comments that **explain why, not what**. Focus on rationale, assumptions, and trade-offs rather than repeating the code.
+
+* **Implementation**: clarify tricky logic or unusual design choices.
+  ```ts
+  // Using a loop instead of users.length to skip soft-deleted users
+  ```
+* **Documentation**: describe APIs, parameters, return values, errors.
+  ```go
+  // GetActiveUsers retrieves all enabled users from the database.
+  // Returns an error if the database query fails.
+  func GetActiveUsers(ctx context.Context) ([]User, error)
+  ```
+* **Contextual**: note assumptions, dependencies, or performance/security concerns.
+  ```go
+  // Requires cache pre-loaded; DB fallback is too slow
+  ```
+
+**Checklist**: accurate, up to date, clear, explains magic numbers/flags, understandable by newcomers.
+**Do**: explain intent, document APIs, keep comments current.
+**Don't**: restate code, leave outdated notes, use vague language.
+
+---
+
+# SYSTEM ARCHITECTURE
+
+## Overview
 This system follows a clean architecture approach with clearly defined layers (API, Domain, Database) that maintain strict dependency rules. Dependencies point inward toward the domain layer, which contains business logic independent of external frameworks.
 
-## KEY DESIGN PRINCIPLES
+## Key Design Principles
 - Separation of Concerns: Each layer has a specific responsibility
 - Dependency Inversion: Dependencies point inward toward the domain core
 - Interface Segregation: Small, focused interfaces for different concerns
 - Single Responsibility: Each component has one reason to change
 - Clean Boundaries: Layers communicate through well-defined interfaces
 
-## LAYER STRUCTURE
+## Layer Structure
 
-### API LAYER
+### API Layer
 - Handles HTTP requests through RESTful endpoints
 - Converts between JSON/HTTP and domain objects
 - Implements authentication and authorization through middleware chain
@@ -30,7 +78,7 @@ This system follows a clean architecture approach with clearly defined layers (A
 - Uses handlers organized by domain entity
 - No direct database access; works through domain interfaces
 
-#### MIDDLEWARE ARCHITECTURE
+#### Middleware Architecture
 - Auth middleware validates tokens and adds identity to context
 - Authorization uses AuthzFromExtractor base pattern with specialized extractors:
   - AuthzSimple: No resource scope needed
@@ -40,34 +88,34 @@ This system follows a clean architecture approach with clearly defined layers (A
 - ID middleware extracts and validates UUIDs from URL paths
 - RequireAgentIdentity ensures agent-specific authentication
 
-#### HANDLER PATTERNS
+#### Handler Patterns
 - Routes use middleware chains for cross-cutting concerns
 - Request types implement AuthTargetScopeProvider interface
 - Handler methods focus on pure business logic
 - Authentication/authorization handled entirely by middleware
 - Use MustGetBody[T] and MustGetID for type-safe context access
 
-### DOMAIN LAYER
+### Domain Layer
 - Contains core business logic and entities with behavior
 - Defines repository interfaces for data access
 - Implements domain services through Commanders
 - Uses value objects for domain concepts
 - Has no external dependencies
 
-### TRANSACTION MANAGEMENT
+### Transaction Management
 - Store interface provides Atomic method
 - Commands use Store.Atomic for transaction boundaries
 - Multiple repository operations execute within single transaction
 - Ensures data consistency, audit trail, and proper error handling
 
-### DATABASE LAYER
+### Database Layer
 - Implements repository interfaces defined in domain
 - Uses Command-Query separation pattern
 - Handles database operations and transaction management
 - Maps between domain entities and database models
 - Optimizes database queries and performance
 
-## PACKAGE STRUCTURE
+## Package Structure
 ```
 /
 ├── cmd/             # Application entry points
@@ -80,19 +128,19 @@ This system follows a clean architecture approach with clearly defined layers (A
 └── test/            # Test files
 ```
 
-## REPOSITORY PATTERN
+## Repository Pattern
 - EntityRepository interfaces handle write operations
 - EntityQuerier interfaces handle read-only operations
 - Repositories embed querriers (CQRS-inspired)
 - Store interface manages repositories and transactions
 
-## COMMAND PATTERN
+## Command Pattern
 - Commander interfaces define complex operations
 - Commands handle validation, entity creation, and business logic
 - Use Store.Atomic to manage transaction boundaries
 - Create audit entries within transaction boundaries
 
-## TESTING STRATEGIES
+## Testing Strategies
 - Unit tests for domain entities and business rules
 - Repository tests with database test helpers
 - Handler tests focus on business logic with simulated middleware context
@@ -100,18 +148,22 @@ This system follows a clean architecture approach with clearly defined layers (A
 - Integration tests verify complete request flow with middleware chain
 - End-to-end tests across layers
 
-### HANDLER TEST PATTERNS
+### Handler Test Patterns
 - Simulate middleware context: decoded bodies, extracted IDs, auth identity
 - Test pure business logic without authorization concerns
 - Use MustGetBody[T] and MustGetID with mocked context values
 - Focus on domain errors and validation scenarios
 
-# SYSTEM OVERVIEW
+---
 
-## PURPOSE
+# DOMAIN MODEL
+
+## System Overview
+
+### Purpose
 Fulcrum Core is a comprehensive cloud infrastructure management system designed to orchestrate and monitor distributed cloud resources across multiple participants. It serves as a centralized control plane for managing cloud service participants, their deployed agents, and the various services these agents provision and maintain.
 
-## KEY CAPABILITIES
+### Key Capabilities
 - Manage multiple cloud service participants through a unified interface
 - Track and control agents deployed across different cloud environments
 - Provision and monitor various service types (VMs, containers, Kubernetes clusters, etc.)
@@ -120,9 +172,7 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 - Maintain a comprehensive audit trail of all system operations
 - Coordinate service operations with agents through a robust job queue system
 
-# DOMAIN MODEL
-
-## CORE ENTITIES
+## Core Entities
 
 ### Participant
 - Represents an entity that can act as both a service provider and consumer
@@ -179,7 +229,7 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 - Categorizes events by type
 - Stores detailed event information in properties
 
-## ENTITY RELATIONSHIPS
+## Entity Relationships
 - Participant has many Agents (when acting as provider)
 - Agent belongs to one Participant and one AgentType
 - Agent handles many Services and processes many Jobs
@@ -189,23 +239,27 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 - Jobs are related to specific Agents and Services
 - AgentType can provide various ServiceTypes (many-to-many)
 
-# AUTHORIZATION RULES
+---
 
-## ROLES
+# AUTHORIZATION SYSTEM
+
+## Roles
 - **fulcrum_admin**: System administrator with unrestricted access
 - **participant**: Participant administrator with access to participant-specific resources
 - **agent**: Agent role with access to jobs assigned to it
 
-## KEY AUTHORIZATION PATTERNS
+## Key Authorization Patterns
 - fulcrum_admin generally has full access to all resources
 - participant can manage its own participant and related agents/services
 - agent can only claim and update jobs assigned to it
 - Resources are scoped to specific participants or agents
 - Participants can act as both providers (hosting agents/services) and consumers (consuming services)
 
-# SERVICE STATE MANAGEMENT
+---
 
-## STATE TRANSITIONS
+# SERVICE MANAGEMENT
+
+## State Transitions
 - Creating → Created: Service is initially created
 - Created → Starting: Service begins startup
 - Starting → Started: Service is fully running
@@ -218,20 +272,22 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 - Stopped → Deleting: Service begins deletion
 - Deleting → Deleted: Service is fully removed
 
-## PROPERTIES VS ATTRIBUTES
+## Properties vs Attributes
 - Properties: JSON data representing service configuration that can be updated (triggers state transitions)
 - Attributes: Static metadata about the service set during creation (used for selection, identification, and filtering)
 
-# JOB MANAGEMENT
+---
 
-## JOB STATES
+# JOB PROCESSING
+
+## Job States
 - Pending: Job created and waiting for an agent to claim it
 - Processing: Job claimed by an agent and in progress
 - Completed: Job successfully finished
 - Failed: Job encountered an error
 - Failed jobs may auto-retry after timeout
 
-## JOB PROCESSING FLOW
+## Job Processing Flow
 1. Service operation requested (create/start/stop/update/delete)
 2. Job created in Pending state
 3. Agent polls for pending jobs
@@ -240,15 +296,17 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 6. Agent updates job to Completed or Failed
 7. Service state updated based on job outcome
 
-# METRICS AND AUDIT
+---
 
-## METRICS SUBSYSTEM
+# MONITORING & AUDIT
+
+## Metrics Subsystem
 - Collects performance data from agents and services
 - Tracks resource utilization and health status
 - Different metric types for different entity types (Agent, Service, Resource)
 - Used for monitoring and reporting
 
-## AUDIT SUBSYSTEM
+## Audit Subsystem
 - Records all system operations for accountability
 - Created automatically by the backend (not a user action)
 - Includes authority type, ID, operation type, and properties
