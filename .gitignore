@@ -30,6 +30,6 @@ coverage/
 .*rules
 
 # Project-specific directories
-features/
+specs/
 fulcrum
 generated-client/
