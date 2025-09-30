@@ -1814,7 +1814,20 @@ paths:
       summary: Update a service
       tags:
         - Services
-      description: Updates an existing service
+      description: |
+        Updates an existing service using PATCH semantics. Only provided fields are updated.
+        Properties are merged with existing properties for partial updates.
+
+        **Property Merging Behavior:**
+        - Only provided properties are updated
+        - Existing properties not included in the request remain unchanged
+        - Nested objects are deep merged (existing nested properties are preserved)
+        - Properties are validated against the complete merged result
+
+        **Examples:**
+        - To update only the service name: `{"name": "new-name"}`
+        - To update specific database config: `{"properties": {"database": {"port": 3306}}}`
+        - To add new API config: `{"properties": {"api": {"version": "v2"}}}`
       x-auth-permissions:
         - role: admin
           permission: always
@@ -1831,19 +1844,13 @@ paths:
               properties:
                 name:
                   type: string
+                  description: "Service name. Only provided if updating the name."
                   example: "web-server-01"
-                status:
-                  $ref: "#/components/schemas/ServiceStatus"
                 properties:
                   $ref: "#/components/schemas/JSONObject"
-                resources:
-                  $ref: "#/components/schemas/JSONObject"
-                agentId:
-                  $ref: "#/components/schemas/properties.UUID"
-                serviceTypeId:
-                  $ref: "#/components/schemas/properties.UUID"
-                groupId:
-                  $ref: "#/components/schemas/properties.UUID"
+                  description: |
+                    Service properties. These are merged with existing properties.
+                    Only provided properties are updated. Nested objects are deep merged.
       responses:
         "200":
           description: Service updated successfully
