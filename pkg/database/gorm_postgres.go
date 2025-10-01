@@ -6,8 +6,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/fulcrumproject/core/gormlock"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/gormlock"
 	"github.com/fulcrumproject/utils/gormpg"
 )
 

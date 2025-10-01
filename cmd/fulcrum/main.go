@@ -19,13 +19,13 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"gorm.io/gorm"
 
-	"github.com/fulcrumproject/core/gormlock"
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/config"
 	"github.com/fulcrumproject/core/pkg/database"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/gormlock"
 	"github.com/fulcrumproject/core/pkg/health"
 	"github.com/fulcrumproject/core/pkg/keycloak"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -225,7 +225,7 @@ func main() {
 	if server != nil {
 		serverCtx, serverStopCtx := context.WithCancel(context.Background())
 		go func() {
-			shutdownCtx, _ := context.WithTimeout(serverCtx, 30*time.Second) // TODO: Make timeout configurable
+			shutdownCtx, shutdownStopCtx := context.WithTimeout(serverCtx, cfg.ShutdownTimeout)
 			go func() {
 				<-shutdownCtx.Done()
 				if shutdownCtx.Err() == context.DeadlineExceeded {
@@ -238,6 +238,7 @@ func main() {
 				slog.Error("Failed to shutdown server", "error", err)
 			}
 			serverStopCtx()
+			shutdownStopCtx()
 		}()
 		<-serverCtx.Done()
 		slog.Debug("HTTP Server shutdown completed")
@@ -246,7 +247,7 @@ func main() {
 	if healthServer != nil {
 		serverCtx, serverStopCtx := context.WithCancel(context.Background())
 		go func() {
-			shutdownCtx, _ := context.WithTimeout(serverCtx, cfg.ShutdownTimeout)
+			shutdownCtx, shutdownStopCtx := context.WithTimeout(serverCtx, cfg.ShutdownTimeout)
 			go func() {
 				<-shutdownCtx.Done()
 				if shutdownCtx.Err() == context.DeadlineExceeded {
@@ -259,6 +260,7 @@ func main() {
 				slog.Error("Failed to shutdown health server", "error", err)
 			}
 			serverStopCtx()
+			shutdownStopCtx()
 		}()
 		<-serverCtx.Done()
 		slog.Debug("HEALTH Server shutdown completed")
