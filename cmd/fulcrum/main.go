@@ -74,17 +74,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	lockerDb, err := database.NewLockerConnection(&cfg.LockerDBConfig)
+	lockerDb, err := database.NewLockerConnection(&cfg.SchedulerLockerDBConfig)
 	if err != nil {
-		slog.Error("Failed to connect to locker database", "error", err)
+		slog.Error("Failed to connect to scheduler locker database", "error", err)
 		os.Exit(1)
 	}
 
 	locker, err := gormlock.NewGormLocker(
 		lockerDb,
-		cfg.WorkerConfig.WorkerName,
-		gormlock.WithCleanInterval(cfg.WorkerConfig.WorkerCleanInterval),
-		gormlock.WithTTL(cfg.WorkerConfig.WorkerTTL),
+		cfg.SchedulerLockerConfig.Name,
+		gormlock.WithCleanInterval(cfg.SchedulerLockerConfig.CleanInterval),
+		gormlock.WithTTL(cfg.SchedulerLockerConfig.TTL),
 	)
 	if err != nil {
 		slog.Error("Failed to create locker", "error", err)

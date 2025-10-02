@@ -15,28 +15,28 @@ const (
 
 // Fulcrum configuration
 type Config struct {
-	Port             uint            `json:"port" env:"PORT" validate:"required,min=1,max=65535"`
-	ShutdownTimeout  time.Duration   `json:"shutdownTimeout" env:"SHUTDOWN_TIMEOUT"`
-	WorkerConfig     WorkerConfig    `json:"worker" validate:"required"`
-	HealthPort       uint            `json:"healthPort" env:"HEALTH_PORT" validate:"required,min=1,max=65535"`
-	Authenticators   []string        `json:"authenticators" env:"AUTHENTICATORS" validate:"omitempty,dive,oneof=oauth token"`
-	JobConfig        JobConfig       `json:"job" validate:"required"`
-	AgentConfig      AgentConfig     `json:"agent" validate:"required"`
-	LogConfig        logging.Conf    `json:"log" validate:"required"`
-	DBConfig         gormpg.Conf     `json:"db" env:"DB" validate:"required"`
-	MetricDBConfig   gormpg.Conf     `json:"metricDb" env:"METRIC_DB" validate:"required"`
-	LockerDBConfig   gormpg.Conf     `json:"lockerDb" env:"LOCKER_DB" validate:"required"`
-	OAuthConfig      keycloak.Config `json:"oauth" validate:"required"`
-	ApiServer        bool            `json:"apiServer" env:"API_SERVER" validate:"boolean"`
-	JobMaintenance   bool            `json:"jobMaintenance" env:"JOB_MAINTENANCE" validate:"boolean"`
-	AgentMaintenance bool            `json:"agentMaintenance" env:"AGENT_MAINTENANCE" validate:"boolean"`
+	Port                    uint                  `json:"port" env:"PORT" validate:"required,min=1,max=65535"`
+	ShutdownTimeout         time.Duration         `json:"shutdownTimeout" env:"SHUTDOWN_TIMEOUT"`
+	SchedulerLockerConfig   SchedulerLockerConfig `json:"schedulerLocker" validate:"required"`
+	SchedulerLockerDBConfig gormpg.Conf           `json:"schedulerLockerDb" env:"SCHEDULER_LOCKER_DB" validate:"required"`
+	HealthPort              uint                  `json:"healthPort" env:"HEALTH_PORT" validate:"required,min=1,max=65535"`
+	Authenticators          []string              `json:"authenticators" env:"AUTHENTICATORS" validate:"omitempty,dive,oneof=oauth token"`
+	JobConfig               JobConfig             `json:"job" validate:"required"`
+	AgentConfig             AgentConfig           `json:"agent" validate:"required"`
+	LogConfig               logging.Conf          `json:"log" validate:"required"`
+	DBConfig                gormpg.Conf           `json:"db" env:"DB" validate:"required"`
+	MetricDBConfig          gormpg.Conf           `json:"metricDb" env:"METRIC_DB" validate:"required"`
+	OAuthConfig             keycloak.Config       `json:"oauth" validate:"required"`
+	ApiServer               bool                  `json:"apiServer" env:"API_SERVER" validate:"boolean"`
+	JobMaintenance          bool                  `json:"jobMaintenance" env:"JOB_MAINTENANCE" validate:"boolean"`
+	AgentMaintenance        bool                  `json:"agentMaintenance" env:"AGENT_MAINTENANCE" validate:"boolean"`
 }
 
-// FUlcrum worker configuration
-type WorkerConfig struct {
-	WorkerName          string        `json:"workerName" env:"WORKER_NAME"`
-	WorkerCleanInterval time.Duration `json:"workerCleanInterval" env:"WORKER_CLEAN_INTERVAL"`
-	WorkerTTL           time.Duration `json:"workerTTL" env:"WORKER_TTL"`
+// Fulcrum scheduler locker configuration
+type SchedulerLockerConfig struct {
+	Name          string        `json:"name" env:"SCHEDULER_LOCKER_NAME"`
+	CleanInterval time.Duration `json:"cleanInterval" env:"SCHEDULER_LOCKER_CLEAN_INTERVAL"`
+	TTL           time.Duration `json:"ttl" env:"SCHEDULER_LOCKER_TTL"`
 }
 
 // Fulcrum Agent configuration
@@ -54,10 +54,15 @@ type JobConfig struct {
 var Default = Config{
 	Port:            8080,
 	ShutdownTimeout: 30 * time.Second,
-	WorkerConfig: WorkerConfig{
-		WorkerName:          "fulcrum-worker",
-		WorkerCleanInterval: 30 * time.Minute,
-		WorkerTTL:           72 * time.Hour,
+	SchedulerLockerConfig: SchedulerLockerConfig{
+		Name:          "fulcrum-scheduler",
+		CleanInterval: 30 * time.Minute,
+		TTL:           72 * time.Hour,
+	},
+	SchedulerLockerDBConfig: gormpg.Conf{
+		DSN:       "host=localhost user=fulcrum password=fulcrum_password dbname=fulcrum_db port=5432 sslmode=disable",
+		LogLevel:  slog.LevelWarn,
+		LogFormat: "text",
 	},
 	HealthPort:     8081,
 	Authenticators: []string{"token"},

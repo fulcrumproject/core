@@ -1,0 +1,8 @@
+# Files to ignore for Cursor AI
+# Add patterns here that you want Cursor to ignore
+# By default, Cursor respects .gitignore, but you can override by NOT listing things here
+
+# Example: if you want me to access .env files, don't add them here
+# or explicitly negate the gitignore rule:
+!.env.example
+
