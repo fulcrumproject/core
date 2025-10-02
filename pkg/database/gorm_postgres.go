@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/gormlock"
 	"github.com/fulcrumproject/utils/gormpg"
 )
 
@@ -19,6 +20,10 @@ func NewConnection(config *gormpg.Conf) (*gorm.DB, error) {
 
 func NewMetricConnection(config *gormpg.Conf) (*gorm.DB, error) {
 	return connection(config, autoMigrateMetric)
+}
+
+func NewLockerConnection(config *gormpg.Conf) (*gorm.DB, error) {
+	return connection(config, autoMigrateLocker)
 }
 
 func connection(config *gormpg.Conf, fn migrateFn) (*gorm.DB, error) {
@@ -63,5 +68,11 @@ func autoMigrate(db *gorm.DB) error {
 func autoMigrateMetric(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&domain.MetricEntry{},
+	)
+}
+
+func autoMigrateLocker(db *gorm.DB) error {
+	return db.AutoMigrate(
+		&gormlock.CronJobLock{},
 	)
 }

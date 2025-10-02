@@ -7,12 +7,17 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"github.com/go-co-op/gocron/v2"
+	"gorm.io/gorm"
 
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/auth"
@@ -20,6 +25,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/config"
 	"github.com/fulcrumproject/core/pkg/database"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/gormlock"
 	"github.com/fulcrumproject/core/pkg/health"
 	"github.com/fulcrumproject/core/pkg/keycloak"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -46,6 +52,10 @@ func main() {
 	logger := logging.NewLogger(&cfg.LogConfig)
 	slog.SetDefault(logger)
 
+	slog.Debug("API_SERVER", "value", cfg.ApiServer)
+	slog.Debug("JOB_MAINTENANCE", "value", cfg.JobMaintenance)
+	slog.Debug("AGENT_MAINTENANCE", "value", cfg.AgentMaintenance)
+
 	// Initialize database
 	db, err := database.NewConnection(&cfg.DBConfig)
 	if err != nil {
@@ -61,6 +71,23 @@ func main() {
 	metricDb, err := database.NewMetricConnection(&cfg.MetricDBConfig)
 	if err != nil {
 		slog.Error("Failed to connect to metric database", "error", err)
+		os.Exit(1)
+	}
+
+	lockerDb, err := database.NewLockerConnection(&cfg.SchedulerLockerDBConfig)
+	if err != nil {
+		slog.Error("Failed to connect to scheduler locker database", "error", err)
+		os.Exit(1)
+	}
+
+	locker, err := gormlock.NewGormLocker(
+		lockerDb,
+		cfg.SchedulerLockerConfig.Name,
+		gormlock.WithCleanInterval(cfg.SchedulerLockerConfig.CleanInterval),
+		gormlock.WithTTL(cfg.SchedulerLockerConfig.TTL),
+	)
+	if err != nil {
+		slog.Error("Failed to create locker", "error", err)
 		os.Exit(1)
 	}
 
@@ -126,6 +153,138 @@ func main() {
 	eventHandler := api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz)
 	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz)
 
+	serverError := make(chan error, 1)
+
+	var server *http.Server
+	var healthServer *http.Server
+	if cfg.ApiServer {
+		server = BuildHttpServer(&cfg, ath, agentTypeHandler, serviceTypeHandler, participantHandler, agentHandler, serviceGroupHandler, serviceHandler, metricTypeHandler, metricEntryHandler, eventHandler, jobHandler, tokenHandler, logger)
+		// Start main API server
+		go func() {
+			slog.Info("Server starting", "port", cfg.Port)
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				slog.Error("Failed to start server", "error", err)
+				serverError <- err
+			}
+		}()
+
+		// Start health server in a goroutine
+		healthServer = buildHealthServer(&cfg, db, authenticators)
+		go func() {
+			slog.Info("Health server starting", "port", cfg.HealthPort)
+			if err := healthServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				slog.Error("Failed to start health server", "error", err)
+				serverError <- err
+			}
+		}()
+	}
+
+	var wg sync.WaitGroup
+
+	scheduler, err := gocron.NewScheduler(gocron.WithDistributedLocker(locker))
+	if err != nil {
+		slog.Error("Failed to create scheduler", "error", err)
+		serverError <- err
+	}
+
+	if cfg.JobMaintenance {
+		task := JobMaintenanceTask(&cfg.JobConfig, store, serviceCmd, &wg)
+		err := ScheduleWork(task, &scheduler, cfg.JobConfig.Maintenance, "job_maintenance")
+		if err != nil {
+			slog.Error("Failed to schedule work", "error", err)
+			serverError <- err
+		}
+	}
+
+	if cfg.AgentMaintenance {
+		task := DisconnectUnhealthyAgentsTask(&cfg.AgentConfig, store, &wg)
+		err := ScheduleWork(task, &scheduler, cfg.AgentConfig.HealthTimeout, "agent_maintenance")
+		if err != nil {
+			slog.Error("Failed to schedule work", "error", err)
+			serverError <- err
+		}
+	}
+
+	if cfg.JobMaintenance || cfg.AgentMaintenance {
+		go func() {
+			scheduler.Start()
+		}()
+	}
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case err := <-serverError:
+		slog.Error("Server error", "error", err)
+		os.Exit(1)
+	case <-stop:
+		slog.Info("Shutting down server...")
+	}
+
+	if server != nil {
+		serverCtx, serverStopCtx := context.WithCancel(context.Background())
+		go func() {
+			shutdownCtx, shutdownStopCtx := context.WithTimeout(serverCtx, cfg.ShutdownTimeout)
+			go func() {
+				<-shutdownCtx.Done()
+				if shutdownCtx.Err() == context.DeadlineExceeded {
+					slog.Error("Server shutdown timed out")
+				}
+			}()
+			slog.Debug("HTTP Server shutdown started")
+			err := server.Shutdown(shutdownCtx)
+			if err != nil {
+				slog.Error("Failed to shutdown server", "error", err)
+			}
+			serverStopCtx()
+			shutdownStopCtx()
+		}()
+		<-serverCtx.Done()
+		slog.Debug("HTTP Server shutdown completed")
+	}
+
+	if healthServer != nil {
+		serverCtx, serverStopCtx := context.WithCancel(context.Background())
+		go func() {
+			shutdownCtx, shutdownStopCtx := context.WithTimeout(serverCtx, cfg.ShutdownTimeout)
+			go func() {
+				<-shutdownCtx.Done()
+				if shutdownCtx.Err() == context.DeadlineExceeded {
+					slog.Error("Health Server shutdown timed out")
+				}
+			}()
+			slog.Debug("HEALTH Server shutdown started")
+			err := healthServer.Shutdown(shutdownCtx)
+			if err != nil {
+				slog.Error("Failed to shutdown health server", "error", err)
+			}
+			serverStopCtx()
+			shutdownStopCtx()
+		}()
+		<-serverCtx.Done()
+		slog.Debug("HEALTH Server shutdown completed")
+	}
+
+	wg.Wait()
+}
+
+func BuildHttpServer(
+	cfg *config.Config,
+	ath auth.Authenticator,
+	agentTypeHandler *api.AgentTypeHandler,
+	serviceTypeHandler *api.ServiceTypeHandler,
+	participantHandler *api.ParticipantHandler,
+	agentHandler *api.AgentHandler,
+	serviceGroupHandler *api.ServiceGroupHandler,
+	serviceHandler *api.ServiceHandler,
+	metricTypeHandler *api.MetricTypeHandler,
+	metricEntryHandler *api.MetricEntryHandler,
+	eventHandler *api.EventHandler,
+	jobHandler *api.JobHandler,
+	tokenHandler *api.TokenHandler,
+	logger *slog.Logger,
+) *http.Server {
 	// Initialize router
 	r := chi.NewRouter()
 
@@ -156,12 +315,13 @@ func main() {
 		r.Route("/tokens", tokenHandler.Routes())
 	})
 
-	// Setup background job maintenance worker
-	go JobMaintenanceTask(&cfg.JobConfig, store, serviceCmd)
+	return &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
+		Handler: r,
+	}
+}
 
-	// Setup background worker to mark inactive agents as disconnected
-	go DisconnectUnhealthyAgentsTask(&cfg.AgentConfig, store)
-
+func buildHealthServer(cfg *config.Config, db *gorm.DB, authenticators []auth.Authenticator) *http.Server {
 	// Initialize health checker and handlers
 	healthDeps := &health.PrimaryDependencies{
 		DB:             db,
@@ -181,60 +341,84 @@ func main() {
 	healthRouter.Get("/healthz", healthHandler.HealthHandler)
 	healthRouter.Get("/ready", healthHandler.ReadinessHandler)
 
-	// Start health server in a goroutine
-	go func() {
-		slog.Info("Health server starting", "port", cfg.HealthPort)
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.HealthPort), healthRouter); err != nil {
-			slog.Error("Failed to start health server", "error", err)
-			os.Exit(1)
-		}
-	}()
-
-	// Start main API server
-	slog.Info("Server starting", "port", cfg.Port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), r); err != nil {
-		slog.Error("Failed to start server", "error", err)
-		os.Exit(1)
+	return &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.HealthPort),
+		Handler: healthRouter,
 	}
 }
 
-// TODO move to proper worker
-func DisconnectUnhealthyAgentsTask(cfg *config.AgentConfig, store domain.Store) {
-	ticker := time.NewTicker(cfg.HealthTimeout)
-	for range ticker.C {
-		ctx := context.Background()
-		slog.Info("Checking agents health")
-		disconnectedCount, err := store.AgentRepo().MarkInactiveAgentsAsDisconnected(ctx, cfg.HealthTimeout)
-		if err != nil {
-			slog.Error("Error marking inactive agents as disconnected", "error", err)
-		} else if disconnectedCount > 0 {
-			slog.Info("Marked inactive agents as disconnected", "count", disconnectedCount)
-		}
-	}
+func DisconnectUnhealthyAgentsTask(cfg *config.AgentConfig, store domain.Store, wg *sync.WaitGroup) gocron.Task {
+	task := gocron.NewTask(
+		func(cfg *config.AgentConfig, store domain.Store, wg *sync.WaitGroup) {
+			wg.Add(1)
+			defer wg.Done()
+			ctx := context.Background()
+
+			slog.Info("Checking agents health")
+			disconnectedCount, err := store.AgentRepo().MarkInactiveAgentsAsDisconnected(ctx, cfg.HealthTimeout)
+			if err != nil {
+				slog.Error("Error marking inactive agents as disconnected", "error", err)
+			} else if disconnectedCount > 0 {
+				slog.Info("Marked inactive agents as disconnected", "count", disconnectedCount)
+			}
+		},
+		cfg,
+		store,
+		wg,
+	)
+
+	return task
 }
 
-// TODO move to proper worker
-func JobMaintenanceTask(cfg *config.JobConfig, store domain.Store, serviceCmd domain.ServiceCommander) {
-	ticker := time.NewTicker(cfg.Maintenance)
-	for range ticker.C {
-		ctx := context.Background()
+func ScheduleWork(task gocron.Task, scheduler *gocron.Scheduler, duration time.Duration, job_name string) error {
 
-		// Fail timeout jobs an services
-		slog.Info("Checking timeout jobs")
-		failedCount, err := serviceCmd.FailTimeoutServicesAndJobs(ctx, cfg.Timeout)
-		if err != nil {
-			slog.Error("Failed to timeout jobs and services", "error", err)
-		} else {
-			slog.Info("Timeout jobs processed", "failed_count", failedCount)
-		}
+	j, err := (*scheduler).NewJob(
+		gocron.DurationJob(duration),
+		task,
+		gocron.WithName(job_name),
+		gocron.WithSingletonMode(gocron.LimitModeReschedule),
+	)
 
-		// Delete completed/failed old jobs
-		slog.Info("Deleting old jobs")
-		deletedCount, err := store.JobRepo().DeleteOldCompletedJobs(ctx, cfg.Retention)
-		if err != nil {
-			slog.Error("Failed to delete old jobs", "error", err)
-		} else {
-			slog.Info("Old jobs deleted", "count", deletedCount)
-		}
+	if err != nil {
+		slog.Error("Failed to create job", "error", err)
+		return err
 	}
+
+	slog.Info("Job ID", "id", j.ID())
+
+	return nil
+}
+
+func JobMaintenanceTask(cfg *config.JobConfig, store domain.Store, serviceCmd domain.ServiceCommander, wg *sync.WaitGroup) gocron.Task {
+	task := gocron.NewTask(
+		func(cfg *config.JobConfig, store domain.Store, serviceCmd domain.ServiceCommander, wg *sync.WaitGroup) {
+			wg.Add(1)
+			defer wg.Done()
+			ctx := context.Background()
+
+			// Fail timeout jobs an services
+			slog.Info("Checking timeout jobs")
+			failedCount, err := serviceCmd.FailTimeoutServicesAndJobs(ctx, cfg.Timeout)
+			if err != nil {
+				slog.Error("Failed to timeout jobs and services", "error", err)
+			} else {
+				slog.Info("Timeout jobs processed", "failed_count", failedCount)
+			}
+
+			// Delete completed/failed old jobs
+			slog.Info("Deleting old jobs")
+			deletedCount, err := store.JobRepo().DeleteOldCompletedJobs(ctx, cfg.Retention)
+			if err != nil {
+				slog.Error("Failed to delete old jobs", "error", err)
+			} else {
+				slog.Info("Old jobs deleted", "count", deletedCount)
+			}
+		},
+		cfg,
+		store,
+		serviceCmd,
+		wg,
+	)
+
+	return task
 }

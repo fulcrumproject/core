@@ -62,9 +62,23 @@ FULCRUM_METRIC_DB_DSN=host=localhost user=fulcrum password=your_secure_password 
 FULCRUM_METRIC_DB_LOG_LEVEL=warn
 FULCRUM_METRIC_DB_LOG_FORMAT=text
 
+# Locker Database (for distributed maintenance jobs)
+FULCRUM_LOCKER_DB_DSN="host=localhost user=fulcrum password=fulcrum_password dbname=fulcrum_db port=5432 sslmode=disable"
+FULCRUM_LOCKER_DB_LOG_LEVEL=warn
+FULCRUM_LOCKER_DB_LOG_FORMAT=text
+
 # Server Configuration
 FULCRUM_PORT=3000
 FULCRUM_HEALTH_PORT=3001
+FULCRUM_SHUTDOWN_TIMEOUT=30s
+FULCRUM_API_SERVER=true
+FULCRUM_JOB_MAINTENANCE=false
+FULCRUM_AGENT_MAINTENANCE=false
+
+# Worker Configuration
+FULCRUM_WORKER_NAME=worker_name
+FULCRUM_WORKER_CLEAN_INTERVAL=12h
+FULCRUM_WORKER_TTL=30d
 
 # Authentication Configuration
 # Comma-separated list of enabled authenticators (e.g., "token", "oauth", "token,oauth")
