@@ -195,6 +195,8 @@ YOU MUST follow this debugging framework for ANY technical issue:
 - This project is NOT in production yet
 - Breaking changes are acceptable and often preferred for better design
 - Do NOT implement backward compatibility unless explicitly requested
+- We do NOT need migrations, release plans, retrocompatibility, deprecation notices, or other production-related overhead
+- Focus on building the right solution, not on managing transitions from old solutions
 
 ### Design Principles
 
@@ -210,6 +212,7 @@ YOU MUST follow this debugging framework for ANY technical issue:
 - YOU MUST NEVER throw away or rewrite implementations without EXPLICIT permission. If you're considering this, YOU MUST STOP and ask first
 - YOU MUST get explicit approval before implementing ANY backward compatibility
 - Fix broken things immediately when you find them. Don't ask permission to fix bugs
+- NEVER estimate task duration or effort. Provide implementation plans with clear phases, but no time estimates
 
 ### Specification Structure
 
@@ -266,15 +269,31 @@ specs/YYYY-MM-DD-#issue-feature-name/
 
 **Purpose**: Break down implementation into discrete, actionable tasks.
 
-**Contents**:
-- **Implementation phases**: (e.g., Phase 1: Domain Model, Phase 2: API, Phase 3: Tests)
-- **Tasks within each phase**: Checkboxes for tracking progress
-- **Files to change**: Specific file paths for each task
-- **Code specifications**: Exact structs, functions, signatures needed
-- **Test requirements**: What tests to write for each task
-- **Testing checklist**: Unit, integration, E2E coverage
-- **Success criteria**: How to verify each phase is complete
-- **Migration steps**: If updating existing code/data
+**Contents** (in this order):
+
+1. **Overview**: Brief introduction to the implementation plan
+2. **Implementation Phases**: Numbered phases (e.g., Phase 1: Domain Model, Phase 2: API, Phase 3-5: Testing)
+   - **Tasks within each phase**: Checkboxes for tracking progress
+   - **Files to change**: Specific file paths for each task
+   - **Code specifications**: Exact structs, functions, signatures needed
+   - **Test requirements**: What tests to write (TDD approach - tests integrated within phases)
+   - **Success criteria**: How to verify each phase is complete
+3. **Testing Checklist**: Summary of all testing requirements across phases (unit, integration, database)
+4. **Overall Success Criteria**: How to verify the complete implementation
+   - **Verification Steps**: Specific commands to run and validate
+5. **Implementation Order**: Explicit sequence stating which phases build on which
+6. **Reference Section**: Examples, data flows, comparison tables, error messages
+
+**What NOT to Include** (per Project Status rules):
+- ❌ Time estimates or effort estimates (e.g., "2-3 days", "4 hours")
+- ❌ Migration plans or migration steps
+- ❌ Backward compatibility sections
+- ❌ Deprecation strategies or notices
+- ❌ Release plans or rollback procedures
+- ❌ Retrocompatibility discussions
+
+**Testing Approach**:
+Tests are written within each phase following TDD principles, then summarized in the Testing Checklist section for easy tracking. Tests should be integrated throughout implementation, not just at the end.
 
 **Style**: Step-by-step action items. Should be possible to implement by following the plan sequentially. Think of this as the "build instructions."
 
