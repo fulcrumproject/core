@@ -539,9 +539,12 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 - Stopped → Deleting: Service begins deletion
 - Deleting → Deleted: Service is fully removed
 
-#### Properties vs Attributes
-- Properties: JSON data representing service configuration that can be updated (triggers state transitions)
-- Attributes: Static metadata about the service set during creation (used for selection, identification, and filtering)
+#### Properties vs Attributes vs Resources
+- **Properties**: Service configuration with source control and updatability constraints
+  - `source`: Who can set/update (`input` = users, `agent` = agents)
+  - `updatable`: When it can be updated (`always`, `never`, `statuses` with `updatableIn` array)
+- **Attributes**: Static metadata set during creation (for selection/filtering)
+- **Resources**: Runtime metrics and technical infrastructure info
 
 ### Job Processing
 
@@ -558,8 +561,33 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 3. Agent polls for pending jobs
 4. Agent claims job (transitions to Processing)
 5. Agent performs the operation
-6. Agent updates job to Completed or Failed
-7. Service state updated based on job outcome
+6. Agent updates job to Completed or Failed (optionally including agent properties)
+7. Service state and properties updated based on job outcome
+
+#### Agent Property Updates
+
+Agents can update service properties when completing a job by including a `properties` field in the completion request. This allows agents to report discovered values like IP addresses, instance IDs, and other infrastructure details.
+
+**When to Use `properties` vs `resources`:**
+- **`properties`**: Configuration values that are part of the service schema
+  - Validated against the ServiceType's property schema
+  - Subject to source and updatability constraints
+  - Become part of the service's configuration
+  - Examples: ipAddress, port, instanceId, hostname
+  - Use when: The value is defined in the service type's property schema with `source: "agent"`
+
+- **`resources`**: Technical infrastructure information
+  - Not validated against property schema
+  - Can be any arbitrary JSON structure
+  - Used for monitoring and resource tracking
+  - Examples: CPU usage, memory allocation, disk I/O stats
+  - Use when: Reporting runtime metrics or technical details not in the schema
+
+**Property Validation:**
+- Agents can only update properties with `source: "agent"`
+- Properties validated against schema, source, and updatability constraints
+- Validation errors return HTTP 400 and roll back the entire job completion
+- See `docs/SERVICE_TYPE_SCHEMA.md` for detailed examples and error messages
 
 ### Monitoring & Audit
 
