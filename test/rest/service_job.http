@@ -300,10 +300,11 @@ Authorization: Bearer {{agentToken}}
 
 @stopJobIdForImmutableTest = {{pendingStopJobsForImmutableTest.response.body.$[0].id}}
 
-### Claim and complete the Stop job
+### Claim the Stop job
 POST {{baseUrl}}/jobs/{{stopJobIdForImmutableTest}}/claim
 Authorization: Bearer {{agentToken}}
 
+### Complete the Stop job
 POST {{baseUrl}}/jobs/{{stopJobIdForImmutableTest}}/complete
 Authorization: Bearer {{agentToken}}
 Content-Type: application/json
@@ -342,6 +343,25 @@ Content-Type: application/json
         "status": "running"
     }
 }
+
+### ✅ Now complete the Start job successfully (without updating internalIp)
+POST {{baseUrl}}/jobs/{{startJobIdForImmutableTest}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "resources": {
+        "status": "running",
+        "details": {
+            "duration": "3s",
+            "output": "VM started successfully"
+        }
+    }
+}
+
+### Get service (verify status is Started)
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
 
 ###############################################################################
 ### PART 6: STATE-CONDITIONAL UPDATE TEST WHILE STARTED
