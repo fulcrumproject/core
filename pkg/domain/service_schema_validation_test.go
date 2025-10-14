@@ -921,3 +921,327 @@ func TestValidate_ComplexExample(t *testing.T) {
 	_, errors = validateServicePropertiesHelper(invalidData, schema)
 	require.GreaterOrEqual(t, len(errors), 5, "Expected at least 5 errors for invalid complex data, got: %v", errors)
 }
+
+// TestValidatePropertyUpdatability tests the ValidatePropertyUpdatability function
+func TestValidatePropertyUpdatability(t *testing.T) {
+	tests := []struct {
+		name          string
+		propertyName  string
+		currentStatus string
+		propDef       ServicePropertyDefinition
+		expectErr     bool
+		errMsg        string
+	}{
+		{
+			name:          "Never mode always returns error",
+			propertyName:  "hostname",
+			currentStatus: "Started",
+			propDef: ServicePropertyDefinition{
+				Type:      "string",
+				Updatable: "never",
+			},
+			expectErr: true,
+			errMsg:    "cannot be updated (updatable: never)",
+		},
+		{
+			name:          "Always mode always returns nil",
+			propertyName:  "tags",
+			currentStatus: "Started",
+			propDef: ServicePropertyDefinition{
+				Type:      "object",
+				Updatable: "always",
+			},
+			expectErr: false,
+		},
+		{
+			name:          "Default mode (empty) is always",
+			propertyName:  "description",
+			currentStatus: "Started",
+			propDef: ServicePropertyDefinition{
+				Type:      "string",
+				Updatable: "",
+			},
+			expectErr: false,
+		},
+		{
+			name:          "Statuses mode allows updates in allowed status",
+			propertyName:  "cpu",
+			currentStatus: "Stopped",
+			propDef: ServicePropertyDefinition{
+				Type:        "integer",
+				Updatable:   "statuses",
+				UpdatableIn: []string{"Stopped"},
+			},
+			expectErr: false,
+		},
+		{
+			name:          "Statuses mode rejects updates in disallowed status",
+			propertyName:  "cpu",
+			currentStatus: "Started",
+			propDef: ServicePropertyDefinition{
+				Type:        "integer",
+				Updatable:   "statuses",
+				UpdatableIn: []string{"Stopped"},
+			},
+			expectErr: true,
+			errMsg:    "cannot be updated in status 'Started'",
+		},
+		{
+			name:          "Statuses mode with multiple allowed statuses - allowed",
+			propertyName:  "memory",
+			currentStatus: "Created",
+			propDef: ServicePropertyDefinition{
+				Type:        "integer",
+				Updatable:   "statuses",
+				UpdatableIn: []string{"Stopped", "Created"},
+			},
+			expectErr: false,
+		},
+		{
+			name:          "Statuses mode with multiple allowed statuses - disallowed",
+			propertyName:  "memory",
+			currentStatus: "Started",
+			propDef: ServicePropertyDefinition{
+				Type:        "integer",
+				Updatable:   "statuses",
+				UpdatableIn: []string{"Stopped", "Created"},
+			},
+			expectErr: true,
+			errMsg:    "cannot be updated in status 'Started'",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidatePropertyUpdatability(tt.propertyName, tt.currentStatus, tt.propDef)
+			if tt.expectErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// TestValidatePropertiesUpdate tests the ValidatePropertiesUpdate function
+func TestValidatePropertiesUpdate(t *testing.T) {
+	schema := &ServiceSchema{
+		"hostname": ServicePropertyDefinition{
+			Type:      "string",
+			Source:    "input",
+			Updatable: "never",
+		},
+		"cpu": ServicePropertyDefinition{
+			Type:        "integer",
+			Source:      "input",
+			Updatable:   "statuses",
+			UpdatableIn: []string{"Stopped"},
+		},
+		"tags": ServicePropertyDefinition{
+			Type:      "object",
+			Source:    "input",
+			Updatable: "always",
+		},
+		"internalIp": ServicePropertyDefinition{
+			Type:      "string",
+			Source:    "agent",
+			Updatable: "always",
+		},
+		"status": ServicePropertyDefinition{
+			Type:      "string",
+			Source:    "agent",
+			Updatable: "never",
+		},
+	}
+
+	tests := []struct {
+		name          string
+		updates       map[string]any
+		currentStatus string
+		schema        *ServiceSchema
+		updateSource  string
+		expectErr     bool
+		errMsg        string
+	}{
+		{
+			name:          "Empty updates are valid",
+			updates:       map[string]any{},
+			currentStatus: "Started",
+			schema:        schema,
+			updateSource:  "user",
+			expectErr:     false,
+		},
+		{
+			name:          "Nil updates are valid",
+			updates:       nil,
+			currentStatus: "Started",
+			schema:        schema,
+			updateSource:  "user",
+			expectErr:     false,
+		},
+		{
+			name: "User can update input source properties",
+			updates: map[string]any{
+				"tags": map[string]any{"env": "prod"},
+			},
+			currentStatus: "Started",
+			schema:        schema,
+			updateSource:  "user",
+			expectErr:     false,
+		},
+		{
+			name: "User cannot update agent source properties",
+			updates: map[string]any{
+				"internalIp": "10.0.0.1",
+			},
+			currentStatus: "Started",
+			schema:        schema,
+			updateSource:  "user",
+			expectErr:     true,
+			errMsg:        "cannot be updated by user (source: agent)",
+		},
+		{
+			name: "Agent can update agent source properties",
+			updates: map[string]any{
+				"internalIp": "10.0.0.1",
+			},
+			currentStatus: "Started",
+			schema:        schema,
+			updateSource:  "agent",
+			expectErr:     false,
+		},
+		{
+			name: "Agent cannot update input source properties",
+			updates: map[string]any{
+				"tags": map[string]any{"env": "prod"},
+			},
+			currentStatus: "Started",
+			schema:        schema,
+			updateSource:  "agent",
+			expectErr:     true,
+			errMsg:        "cannot be updated by agent (source: input)",
+		},
+		{
+			name: "Unknown property returns error",
+			updates: map[string]any{
+				"unknownProp": "value",
+			},
+			currentStatus: "Started",
+			schema:        schema,
+			updateSource:  "user",
+			expectErr:     true,
+			errMsg:        "unknown property: unknownProp",
+		},
+		{
+			name: "Respects updatability rules - never",
+			updates: map[string]any{
+				"hostname": "newhost",
+			},
+			currentStatus: "Started",
+			schema:        schema,
+			updateSource:  "user",
+			expectErr:     true,
+			errMsg:        "cannot be updated (updatable: never)",
+		},
+		{
+			name: "Respects updatability rules - statuses allowed",
+			updates: map[string]any{
+				"cpu": 4,
+			},
+			currentStatus: "Stopped",
+			schema:        schema,
+			updateSource:  "user",
+			expectErr:     false,
+		},
+		{
+			name: "Respects updatability rules - statuses disallowed",
+			updates: map[string]any{
+				"cpu": 4,
+			},
+			currentStatus: "Started",
+			schema:        schema,
+			updateSource:  "user",
+			expectErr:     true,
+			errMsg:        "cannot be updated in status 'Started'",
+		},
+		{
+			name: "Nil schema allows all updates",
+			updates: map[string]any{
+				"anything": "value",
+			},
+			currentStatus: "Started",
+			schema:        nil,
+			updateSource:  "user",
+			expectErr:     false,
+		},
+		{
+			name: "Default source is input",
+			updates: map[string]any{
+				"implicitInput": "value",
+			},
+			currentStatus: "Started",
+			schema: &ServiceSchema{
+				"implicitInput": ServicePropertyDefinition{
+					Type:      "string",
+					Updatable: "always",
+					// Source not set, defaults to "input"
+				},
+			},
+			updateSource: "user",
+			expectErr:    false,
+		},
+		{
+			name: "Default source is input - agent cannot update",
+			updates: map[string]any{
+				"implicitInput": "value",
+			},
+			currentStatus: "Started",
+			schema: &ServiceSchema{
+				"implicitInput": ServicePropertyDefinition{
+					Type:      "string",
+					Updatable: "always",
+					// Source not set, defaults to "input"
+				},
+			},
+			updateSource: "agent",
+			expectErr:    true,
+			errMsg:       "cannot be updated by agent (source: input)",
+		},
+		{
+			name: "Multiple properties - all valid",
+			updates: map[string]any{
+				"tags": map[string]any{"env": "prod"},
+				"cpu":  4,
+			},
+			currentStatus: "Stopped",
+			schema:        schema,
+			updateSource:  "user",
+			expectErr:     false,
+		},
+		{
+			name: "Multiple properties - one invalid",
+			updates: map[string]any{
+				"tags":     map[string]any{"env": "prod"},
+				"hostname": "newhost",
+			},
+			currentStatus: "Stopped",
+			schema:        schema,
+			updateSource:  "user",
+			expectErr:     true,
+			errMsg:        "cannot be updated (updatable: never)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidatePropertiesUpdate(tt.updates, tt.currentStatus, tt.schema, tt.updateSource)
+			if tt.expectErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

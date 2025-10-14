@@ -743,3 +743,75 @@ func validateServicePropertyServiceType(ctx *ServicePropertyValidationCtx, stand
 
 	return nil
 }
+
+// ValidatePropertyUpdatability checks if a property can be updated based on its updatability rules
+func ValidatePropertyUpdatability(propertyName string, currentStatus string, propDef ServicePropertyDefinition) error {
+	// Default to "always" if updatable field is not set
+	updatable := propDef.Updatable
+	if updatable == "" {
+		updatable = "always"
+	}
+
+	switch updatable {
+	case "always":
+		return nil
+	case "never":
+		return fmt.Errorf("property '%s' cannot be updated (updatable: never)", propertyName)
+	case "statuses":
+		if slices.Contains(propDef.UpdatableIn, currentStatus) {
+			return nil
+		}
+		return fmt.Errorf("property '%s' cannot be updated in status '%s' (allowed statuses: %v)", propertyName, currentStatus, propDef.UpdatableIn)
+	default:
+		// This should not happen if schema validation is working correctly
+		return fmt.Errorf("property '%s' has invalid updatable value: %s", propertyName, updatable)
+	}
+}
+
+// ValidatePropertiesUpdate validates that properties being updated match their source and updatability rules
+func ValidatePropertiesUpdate(updates map[string]any, currentStatus string, schema *ServiceSchema, updateSource string) error {
+	// Empty updates are valid
+	if len(updates) == 0 {
+		return nil
+	}
+
+	// Schema is optional
+	if schema == nil {
+		return nil
+	}
+
+	// Validate each property in updates
+	for propName := range updates {
+		propDef, exists := (*schema)[propName]
+		if !exists {
+			return fmt.Errorf("unknown property: %s", propName)
+		}
+
+		// Default source is "input" if not set
+		propSource := propDef.Source
+		if propSource == "" {
+			propSource = "input"
+		}
+
+		// Validate source matches update source
+		switch updateSource {
+		case "user":
+			if propSource != "input" {
+				return fmt.Errorf("property '%s' cannot be updated by user (source: %s)", propName, propSource)
+			}
+		case "agent":
+			if propSource != "agent" {
+				return fmt.Errorf("property '%s' cannot be updated by agent (source: %s)", propName, propSource)
+			}
+		default:
+			return fmt.Errorf("invalid update source: %s", updateSource)
+		}
+
+		// Validate updatability
+		if err := ValidatePropertyUpdatability(propName, currentStatus, propDef); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
