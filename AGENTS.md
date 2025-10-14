@@ -224,13 +224,14 @@ YOU MUST follow this debugging framework for ANY technical issue:
 
 ### Specification Structure
 
-All feature specifications follow a 3-file structure stored in the `specs/` directory:
+All feature specifications follow a 4-file structure stored in the `specs/` directory:
 
 ```
 specs/YYYY-MM-DD-#issue-feature-name/
   ├── 01-problem.md
   ├── 02-solution.md
-  └── 03-implementation.md
+  ├── 03-implementation.md
+  └── 04-merge.md
 ```
 
 #### 01-problem.md
@@ -305,6 +306,24 @@ Tests are written within each phase following TDD principles, then summarized in
 
 **Style**: Step-by-step action items. Should be possible to implement by following the plan sequentially. Think of this as the "build instructions."
 
+#### 04-merge.md
+
+**Purpose**: Concise summary of the completed work for merge/PR.
+
+**Contents**:
+- **Problem**: What was broken or missing (brief)
+- **Solution**: What was implemented with key design decisions
+- **Implementation**: Highlights by layer (domain, API, database, tests, documentation)
+- **Key Decisions**: Important technical choices made
+- **Testing**: What was tested and how
+- **Files Changed**: Organized by category
+- **Breaking Changes**: List if any, otherwise state "None"
+- **Related Issues**: Reference issue numbers
+
+**Style**: Direct and factual. No fluff, no citations to other spec files. Written for someone reviewing the PR who wants to understand what was done and why.
+
+**Key Rule**: Keep it concise. If you're writing more than ~100 lines, you're probably being too verbose.
+
 #### Working with Specs
 
 **When starting a new feature:**
@@ -327,10 +346,23 @@ Tests are written within each phase following TDD principles, then summarized in
   4. Mark all tasks in that phase as done in 03-implementation.md (change `- [ ]` to `- [x]`)
 - If you discover the solution needs changes, update 02-solution.md first, then 03-implementation.md
 
+**After completing implementation:**
+1. **Write 04-merge.md** - Create a concise merge message:
+   - Problem: What was broken/missing
+   - Solution: What was added/changed (key design decisions)
+   - Implementation: Highlights by layer (domain, API, database, tests, docs)
+   - Testing: What was tested
+   - Files changed: Organized by category
+   - Breaking changes (if any)
+   - Related issues
+2. **Keep it concise** - No fluff, no citations to other spec files, just the facts
+3. This serves as both the PR description and project documentation
+
 **When reviewing existing specs:**
 - Does 01-problem.md contain any solutions? If yes, move them to 02-solution.md
 - Does 02-solution.md lead with the chosen solution? Alternatives should be secondary
 - Does 03-implementation.md have enough detail to implement without guessing?
+- Does 04-merge.md provide a clear, comprehensive summary for the merge/PR?
 
 ---
 
