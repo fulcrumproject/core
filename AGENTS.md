@@ -138,6 +138,7 @@ FOR EVERY NEW FEATURE OR BUGFIX, YOU MUST follow Test Driven Development:
 - YOU MUST commit frequently throughout the development process, even if your high-level tasks are not yet done
 - NEVER SKIP, EVADE OR DISABLE A PRE-COMMIT HOOK
 - NEVER use `git add -A` unless you've just done a `git status` - Don't add random test files to the repo
+- The `specs/` directory is NOT tracked in git. NEVER commit changes to specification files
 
 ### Database Management
 
