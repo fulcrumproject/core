@@ -76,7 +76,52 @@ func (cs ServiceSchema) Validate() error {
 		if err := validate.Struct(propDef); err != nil {
 			return fmt.Errorf("property %s: %w", propName, err)
 		}
+
+		// Validate property-specific rules
+		if err := validatePropertyDefinition(propName, propDef); err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+// validatePropertyDefinition validates property-specific rules including source and updatability
+func validatePropertyDefinition(propName string, propDef ServicePropertyDefinition) error {
+	// Validate source field
+	if propDef.Source != "" {
+		if propDef.Source != "input" && propDef.Source != "agent" {
+			return fmt.Errorf("property %s: source must be 'input' or 'agent', got '%s'", propName, propDef.Source)
+		}
+	}
+
+	// Validate updatable field
+	if propDef.Updatable != "" {
+		if propDef.Updatable != "always" && propDef.Updatable != "never" && propDef.Updatable != "statuses" {
+			return fmt.Errorf("property %s: updatable must be 'always', 'never', or 'statuses', got '%s'", propName, propDef.Updatable)
+		}
+
+		// If updatable is "statuses", updatableIn must be provided and not empty
+		if propDef.Updatable == "statuses" {
+			if len(propDef.UpdatableIn) == 0 {
+				return fmt.Errorf("property %s: updatableIn must be provided and not empty when updatable is 'statuses'", propName)
+			}
+		}
+	}
+
+	// Recursively validate nested properties
+	for nestedPropName, nestedPropDef := range propDef.Properties {
+		if err := validatePropertyDefinition(fmt.Sprintf("%s.%s", propName, nestedPropName), nestedPropDef); err != nil {
+			return err
+		}
+	}
+
+	// Validate items for arrays
+	if propDef.Items != nil {
+		if err := validatePropertyDefinition(fmt.Sprintf("%s[]", propName), *propDef.Items); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -89,6 +134,11 @@ type ServicePropertyDefinition struct {
 	Validators []ServicePropertyValidatorDefinition `json:"validators,omitempty" validate:"dive"`
 	Properties map[string]ServicePropertyDefinition `json:"properties,omitempty" validate:"dive"`
 	Items      *ServicePropertyDefinition           `json:"items,omitempty"`
+
+	// Property source and updatability control
+	Source      string   `json:"source,omitempty"`      // "input", "agent"
+	Updatable   string   `json:"updatable,omitempty"`   // "always", "never", "statuses"
+	UpdatableIn []string `json:"updatableIn,omitempty"` // For "statuses" mode
 }
 
 // ServicePropertyValidatorDefinition defines a validation rule
@@ -173,6 +223,31 @@ func parsePropertyDefinition(propDefMap map[string]any) (ServicePropertyDefiniti
 				return propDef, fmt.Errorf("array items: %w", err)
 			}
 			propDef.Items = &itemsDef
+		}
+	}
+
+	// Parse source
+	if sourceVal, exists := propDefMap["source"]; exists {
+		if sourceStr, ok := sourceVal.(string); ok {
+			propDef.Source = sourceStr
+		}
+	}
+
+	// Parse updatable
+	if updatableVal, exists := propDefMap["updatable"]; exists {
+		if updatableStr, ok := updatableVal.(string); ok {
+			propDef.Updatable = updatableStr
+		}
+	}
+
+	// Parse updatableIn
+	if updatableInVal, exists := propDefMap["updatableIn"]; exists {
+		if updatableInSlice, ok := updatableInVal.([]any); ok {
+			for _, item := range updatableInSlice {
+				if itemStr, ok := item.(string); ok {
+					propDef.UpdatableIn = append(propDef.UpdatableIn, itemStr)
+				}
+			}
 		}
 	}
 
