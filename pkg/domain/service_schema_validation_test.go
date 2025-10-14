@@ -1024,8 +1024,8 @@ func TestValidatePropertyUpdatability(t *testing.T) {
 	}
 }
 
-// TestValidatePropertiesUpdate tests the ValidatePropertiesUpdate function
-func TestValidatePropertiesUpdate(t *testing.T) {
+// TestValidatePropertiesForUpdate tests the ValidatePropertiesForUpdate function
+func TestValidatePropertiesForUpdate(t *testing.T) {
 	schema := &ServiceSchema{
 		"hostname": ServicePropertyDefinition{
 			Type:      "string",
@@ -1235,7 +1235,170 @@ func TestValidatePropertiesUpdate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidatePropertiesUpdate(tt.updates, tt.currentStatus, tt.schema, tt.updateSource)
+			err := ValidatePropertiesForUpdate(tt.updates, tt.currentStatus, tt.schema, tt.updateSource)
+			if tt.expectErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// TestValidatePropertiesForCreation tests the ValidatePropertiesForCreation function
+func TestValidatePropertiesForCreation(t *testing.T) {
+	schema := &ServiceSchema{
+		"hostname": ServicePropertyDefinition{
+			Type:      "string",
+			Source:    "input",
+			Updatable: "never",
+		},
+		"cpu": ServicePropertyDefinition{
+			Type:        "integer",
+			Source:      "input",
+			Updatable:   "statuses",
+			UpdatableIn: []string{"Stopped"},
+		},
+		"instanceId": ServicePropertyDefinition{
+			Type:      "string",
+			Source:    "agent",
+			Updatable: "never",
+		},
+	}
+
+	tests := []struct {
+		name       string
+		properties map[string]any
+		schema     *ServiceSchema
+		source     string
+		expectErr  bool
+		errMsg     string
+	}{
+		{
+			name:       "Empty properties are valid",
+			properties: map[string]any{},
+			schema:     schema,
+			source:     "user",
+			expectErr:  false,
+		},
+		{
+			name:       "Nil properties are valid",
+			properties: nil,
+			schema:     schema,
+			source:     "user",
+			expectErr:  false,
+		},
+		{
+			name: "User can set input source properties",
+			properties: map[string]any{
+				"hostname": "myhost",
+				"cpu":      4,
+			},
+			schema:    schema,
+			source:    "user",
+			expectErr: false,
+		},
+		{
+			name: "User can set state-conditional properties during creation",
+			properties: map[string]any{
+				"cpu": 4,
+			},
+			schema:    schema,
+			source:    "user",
+			expectErr: false,
+		},
+		{
+			name: "User can set immutable properties during creation",
+			properties: map[string]any{
+				"hostname": "myhost",
+			},
+			schema:    schema,
+			source:    "user",
+			expectErr: false,
+		},
+		{
+			name: "User cannot set agent source properties",
+			properties: map[string]any{
+				"instanceId": "i-abc123",
+			},
+			schema:    schema,
+			source:    "user",
+			expectErr: true,
+			errMsg:    "cannot be set by user (source: agent)",
+		},
+		{
+			name: "Agent can set agent source properties",
+			properties: map[string]any{
+				"instanceId": "i-abc123",
+			},
+			schema:    schema,
+			source:    "agent",
+			expectErr: false,
+		},
+		{
+			name: "Agent cannot set input source properties",
+			properties: map[string]any{
+				"hostname": "myhost",
+			},
+			schema:    schema,
+			source:    "agent",
+			expectErr: true,
+			errMsg:    "cannot be set by agent (source: input)",
+		},
+		{
+			name: "Unknown property returns error",
+			properties: map[string]any{
+				"unknownProp": "value",
+			},
+			schema:    schema,
+			source:    "user",
+			expectErr: true,
+			errMsg:    "unknown property: unknownProp",
+		},
+		{
+			name: "Nil schema allows all properties",
+			properties: map[string]any{
+				"anything": "value",
+			},
+			schema:    nil,
+			source:    "user",
+			expectErr: false,
+		},
+		{
+			name: "Default source is input",
+			properties: map[string]any{
+				"implicitInput": "value",
+			},
+			schema: &ServiceSchema{
+				"implicitInput": ServicePropertyDefinition{
+					Type: "string",
+					// Source not set, defaults to "input"
+				},
+			},
+			source:    "user",
+			expectErr: false,
+		},
+		{
+			name: "Default source is input - agent cannot set",
+			properties: map[string]any{
+				"implicitInput": "value",
+			},
+			schema: &ServiceSchema{
+				"implicitInput": ServicePropertyDefinition{
+					Type: "string",
+					// Source not set, defaults to "input"
+				},
+			},
+			source:    "agent",
+			expectErr: true,
+			errMsg:    "cannot be set by agent (source: input)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidatePropertiesForCreation(tt.properties, tt.schema, tt.source)
 			if tt.expectErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errMsg)

@@ -768,8 +768,53 @@ func ValidatePropertyUpdatability(propertyName string, currentStatus string, pro
 	}
 }
 
-// ValidatePropertiesUpdate validates that properties being updated match their source and updatability rules
-func ValidatePropertiesUpdate(updates map[string]any, currentStatus string, schema *ServiceSchema, updateSource string) error {
+// ValidatePropertiesForCreation validates properties during service creation
+// Only checks source - updatability doesn't apply to initial values
+func ValidatePropertiesForCreation(properties map[string]any, schema *ServiceSchema, source string) error {
+	// Empty properties are valid
+	if len(properties) == 0 {
+		return nil
+	}
+
+	// Schema is optional
+	if schema == nil {
+		return nil
+	}
+
+	// Validate each property
+	for propName := range properties {
+		propDef, exists := (*schema)[propName]
+		if !exists {
+			return fmt.Errorf("unknown property: %s", propName)
+		}
+
+		// Default source is "input" if not set
+		propSource := propDef.Source
+		if propSource == "" {
+			propSource = "input"
+		}
+
+		// Validate source matches
+		switch source {
+		case "user":
+			if propSource != "input" {
+				return fmt.Errorf("property '%s' cannot be set by user (source: %s)", propName, propSource)
+			}
+		case "agent":
+			if propSource != "agent" {
+				return fmt.Errorf("property '%s' cannot be set by agent (source: %s)", propName, propSource)
+			}
+		default:
+			return fmt.Errorf("invalid source: %s", source)
+		}
+	}
+
+	return nil
+}
+
+// ValidatePropertiesForUpdate validates properties during service update
+// Checks both source AND updatability
+func ValidatePropertiesForUpdate(updates map[string]any, currentStatus string, schema *ServiceSchema, updateSource string) error {
 	// Empty updates are valid
 	if len(updates) == 0 {
 		return nil

@@ -205,7 +205,7 @@ func (s *Service) ApplyAgentPropertyUpdates(
 	}
 
 	// Validate that agent can only update agent-source properties
-	if err := ValidatePropertiesUpdate(
+	if err := ValidatePropertiesForUpdate(
 		updates,
 		string(s.Status),
 		serviceType.PropertySchema,
@@ -364,8 +364,8 @@ func CreateServiceWithAgent(
 		return nil, err
 	}
 
-	// Validate property source (user cannot set agent-source properties)
-	if err := ValidatePropertiesUpdate(params.Properties, string(ServiceNew), serviceType.PropertySchema, "user"); err != nil {
+	// Validate property source (user cannot set agent-source properties during creation)
+	if err := ValidatePropertiesForCreation(params.Properties, serviceType.PropertySchema, "user"); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
@@ -452,7 +452,7 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 		}
 
 		// Validate property source and updatability
-		if err := ValidatePropertiesUpdate(*params.Properties, string(svc.Status), serviceType.PropertySchema, "user"); err != nil {
+		if err := ValidatePropertiesForUpdate(*params.Properties, string(svc.Status), serviceType.PropertySchema, "user"); err != nil {
 			return nil, InvalidInputError{Err: err}
 		}
 
