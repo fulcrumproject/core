@@ -75,7 +75,7 @@ Content-Type: application/json
             "type": "string",
             "label": "Internal IP",
             "source": "agent",
-            "updatable": "always"
+            "updatable": "never"
         }
     }
 }

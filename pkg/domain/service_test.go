@@ -762,6 +762,41 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 				"agent_prop": "value",
 			},
 		},
+		{
+			name:              "Immutable agent properties can be set during creation (ServiceNew)",
+			initialProperties: nil,
+			updates:           map[string]any{"immutable_agent": "10.0.0.1"},
+			serviceStatus:     ServiceNew,
+			schema: &ServiceSchema{
+				"immutable_agent": ServicePropertyDefinition{
+					Type:      "string",
+					Source:    "agent",
+					Updatable: "never",
+				},
+			},
+			expectError: false,
+			expectedProperties: &properties.JSON{
+				"immutable_agent": "10.0.0.1",
+			},
+		},
+		{
+			name:              "State-conditional agent properties can be set during creation (ServiceNew)",
+			initialProperties: nil,
+			updates:           map[string]any{"state_dep": "value"},
+			serviceStatus:     ServiceNew,
+			schema: &ServiceSchema{
+				"state_dep": ServicePropertyDefinition{
+					Type:        "string",
+					Source:      "agent",
+					Updatable:   "statuses",
+					UpdatableIn: []string{"Stopped"},
+				},
+			},
+			expectError: false,
+			expectedProperties: &properties.JSON{
+				"state_dep": "value",
+			},
+		},
 	}
 
 	for _, tt := range tests {

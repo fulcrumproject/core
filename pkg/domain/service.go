@@ -204,13 +204,17 @@ func (s *Service) ApplyAgentPropertyUpdates(
 		return nil
 	}
 
-	// Validate that agent can only update agent-source properties
-	if err := ValidatePropertiesForUpdate(
-		updates,
-		string(s.Status),
-		serviceType.PropertySchema,
-		"agent",
-	); err != nil {
+	// Validate based on whether this is initial creation or an update
+	var err error
+	if s.Status == ServiceNew {
+		// During creation: only validate source (updatability doesn't apply to initial values)
+		err = ValidatePropertiesForCreation(updates, serviceType.PropertySchema, "agent")
+	} else {
+		// During updates: validate both source and updatability
+		err = ValidatePropertiesForUpdate(updates, string(s.Status), serviceType.PropertySchema, "agent")
+	}
+
+	if err != nil {
 		return fmt.Errorf("invalid agent property updates: %w", err)
 	}
 
