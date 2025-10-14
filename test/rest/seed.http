@@ -5,7 +5,7 @@
 @baseUrl = http://localhost:3000/api/v1
 @adminToken = change-me
 
-### 1. Create VM Service Type
+### 1. Create VM Service Type (with property source and updatability)
 # @name createVMServiceType
 POST {{baseUrl}}/service-types
 Authorization: Bearer {{adminToken}}
@@ -14,9 +14,42 @@ Content-Type: application/json
 {
     "name": "vm",
     "propertySchema": {
+        "instanceName": {
+            "type": "string",
+            "label": "Instance Name",
+            "source": "input",
+            "updatable": "always",
+            "required": true,
+            "validators": [
+                {
+                    "type": "minLength",
+                    "value": 3
+                },
+                {
+                    "type": "maxLength",
+                    "value": 50
+                }
+            ]
+        },
+        "region": {
+            "type": "string",
+            "label": "Cloud Region",
+            "source": "input",
+            "updatable": "never",
+            "required": true,
+            "validators": [
+                {
+                    "type": "enum",
+                    "value": ["us-east-1", "us-west-2", "eu-west-1"]
+                }
+            ]
+        },
         "cpu": {
             "type": "integer",
             "label": "CPU Cores",
+            "source": "input",
+            "updatable": "statuses",
+            "updatableIn": ["Stopped"],
             "required": true,
             "validators": [
                 {
@@ -27,30 +60,66 @@ Content-Type: application/json
         },
         "memory": {
             "type": "integer",
-            "label": "Memory (MB)",
+            "label": "Memory (GB)",
+            "source": "input",
+            "updatable": "statuses",
+            "updatableIn": ["Stopped"],
             "required": true,
             "validators": [
                 {
                     "type": "enum",
-                    "value": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
+                    "value": [1, 2, 4, 8, 16, 32, 64]
                 }
             ]
         },
-        "disk": {
+        "diskSize": {
             "type": "integer",
-            "label": "Disk (GB)",
+            "label": "Disk Size (GB)",
+            "source": "input",
+            "updatable": "statuses",
+            "updatableIn": ["Stopped"],
             "required": true,
             "validators": [
                 {
-                    "type": "enum",
-                    "value": [8, 16, 32, 64, 128, 256, 512, 1024]
+                    "type": "min",
+                    "value": 10
+                },
+                {
+                    "type": "max",
+                    "value": 1000
                 }
             ]
         },
-        "image": {
+        "imageId": {
             "type": "string",
-            "label": "Image",
+            "label": "VM Image ID",
+            "source": "input",
+            "updatable": "never",
             "required": true
+        },
+        "instanceId": {
+            "type": "string",
+            "label": "Cloud Instance ID",
+            "source": "agent",
+            "updatable": "never"
+        },
+        "ipAddress": {
+            "type": "string",
+            "label": "IP Address",
+            "source": "agent",
+            "updatable": "never"
+        },
+        "privateIpAddress": {
+            "type": "string",
+            "label": "Private IP Address",
+            "source": "agent",
+            "updatable": "never"
+        },
+        "hostname": {
+            "type": "string",
+            "label": "Hostname",
+            "source": "agent",
+            "updatable": "never"
         }
     }
 }
@@ -230,14 +299,16 @@ Content-Type: application/json
 {
     "groupId": "550e8400-e29b-41d4-a716-446655440000",
     "properties": {
+        "instanceName": "my-vm-01",
+        "region": "us-east-1",
         "cpu": 4,
-        "memory": 8192,
-        "disk": 128,
-        "image": "ubuntu:20.04"
+        "memory": 8,
+        "diskSize": 100,
+        "imageId": "ami-ubuntu-20.04"
     }
 }
 
-### Test VM service properties validation with invalid data (should fail)
+### Test VM service properties validation with invalid data (should fail - cpu not in enum)
 POST {{baseUrl}}/service-types/{{createVMServiceType.response.body.id}}/validate
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -245,9 +316,24 @@ Content-Type: application/json
 {
     "groupId": "550e8400-e29b-41d4-a716-446655440000",
     "properties": {
+        "instanceName": "my-vm-01",
+        "region": "us-east-1",
         "cpu": 3,
-        "memory": 3000,
-        "disk": 5
+        "memory": 8,
+        "diskSize": 100,
+        "imageId": "ami-ubuntu-20.04"
+    }
+}
+
+### Test VM property update validation - should fail (trying to update immutable region)
+POST {{baseUrl}}/service-types/{{createVMServiceType.response.body.id}}/validate
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "groupId": "550e8400-e29b-41d4-a716-446655440000",
+    "properties": {
+        "region": "us-west-2"
     }
 }
 
