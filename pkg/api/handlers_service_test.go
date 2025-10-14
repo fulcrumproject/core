@@ -560,6 +560,210 @@ func TestServiceHandleRetry(t *testing.T) {
 	}
 }
 
+// TestServicePropertyValidation tests property validation in service operations
+func TestServicePropertyValidation(t *testing.T) {
+	testCases := []struct {
+		name           string
+		operation      string // "create" or "update"
+		serviceID      string // only for update
+		request        any
+		mockSetup      func(commander *mockServiceCommander)
+		expectedStatus int
+		checkError     func(t *testing.T, errorText string)
+	}{
+		{
+			name:      "UpdateWithMutableProperty",
+			operation: "update",
+			serviceID: "550e8400-e29b-41d4-a716-446655440000",
+			request: UpdateServiceReq{
+				Properties: helpers.JSONPtr(properties.JSON{"instanceName": "new-name"}),
+			},
+			mockSetup: func(commander *mockServiceCommander) {
+				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
+					return &domain.Service{
+						BaseEntity: domain.BaseEntity{
+							ID: params.ID,
+						},
+						Properties: params.Properties,
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:      "UpdateWithImmutableProperty",
+			operation: "update",
+			serviceID: "550e8400-e29b-41d4-a716-446655440000",
+			request: UpdateServiceReq{
+				Properties: helpers.JSONPtr(properties.JSON{"uuid": "new-uuid"}),
+			},
+			mockSetup: func(commander *mockServiceCommander) {
+				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
+					return nil, domain.NewInvalidInputErrorf("property 'uuid' cannot be updated (updatable: never)")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkError: func(t *testing.T, errorText string) {
+				assert.Contains(t, errorText, "uuid")
+				assert.Contains(t, errorText, "cannot be updated")
+				assert.Contains(t, errorText, "never")
+			},
+		},
+		{
+			name:      "UpdateWithWrongStateProperty",
+			operation: "update",
+			serviceID: "550e8400-e29b-41d4-a716-446655440000",
+			request: UpdateServiceReq{
+				Properties: helpers.JSONPtr(properties.JSON{"diskSize": 500}),
+			},
+			mockSetup: func(commander *mockServiceCommander) {
+				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
+					return nil, domain.NewInvalidInputErrorf("property 'diskSize' cannot be updated in status 'Started' (allowed statuses: [Stopped])")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkError: func(t *testing.T, errorText string) {
+				assert.Contains(t, errorText, "diskSize")
+				assert.Contains(t, errorText, "cannot be updated in status")
+				assert.Contains(t, errorText, "Stopped")
+			},
+		},
+		{
+			name:      "UpdateWithAgentProperty",
+			operation: "update",
+			serviceID: "550e8400-e29b-41d4-a716-446655440000",
+			request: UpdateServiceReq{
+				Properties: helpers.JSONPtr(properties.JSON{"ipAddress": "192.168.1.100"}),
+			},
+			mockSetup: func(commander *mockServiceCommander) {
+				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
+					return nil, domain.NewInvalidInputErrorf("property 'ipAddress' cannot be updated by user (source: agent)")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkError: func(t *testing.T, errorText string) {
+				assert.Contains(t, errorText, "ipAddress")
+				assert.Contains(t, errorText, "cannot be updated by user")
+				assert.Contains(t, errorText, "source: agent")
+			},
+		},
+		{
+			name:      "CreateWithAgentProperty",
+			operation: "create",
+			request: CreateServiceReq{
+				Name:          "Test Service",
+				AgentID:       &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
+				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+				Properties:    properties.JSON{"ipAddress": "192.168.1.100"},
+			},
+			mockSetup: func(commander *mockServiceCommander) {
+				commander.createFunc = func(ctx context.Context, params domain.CreateServiceParams) (*domain.Service, error) {
+					return nil, domain.NewInvalidInputErrorf("property 'ipAddress' cannot be updated by user (source: agent)")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkError: func(t *testing.T, errorText string) {
+				assert.Contains(t, errorText, "ipAddress")
+				assert.Contains(t, errorText, "cannot be updated by user")
+				assert.Contains(t, errorText, "source: agent")
+			},
+		},
+		{
+			name:      "CreateWithMutableProperties",
+			operation: "create",
+			request: CreateServiceReq{
+				Name:          "Test Service",
+				AgentID:       &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
+				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+				Properties:    properties.JSON{"instanceName": "my-instance"},
+			},
+			mockSetup: func(commander *mockServiceCommander) {
+				commander.createFunc = func(ctx context.Context, params domain.CreateServiceParams) (*domain.Service, error) {
+					return &domain.Service{
+						BaseEntity: domain.BaseEntity{
+							ID: uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
+						},
+						Properties: &params.Properties,
+					}, nil
+				}
+			},
+			expectedStatus: http.StatusCreated,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup mocks
+			serviceQuerier := &mockServiceQuerier{}
+			agentQuerier := &mockAgentQuerier{}
+			serviceGroupQuerier := &mockServiceGroupQuerier{}
+			commander := &mockServiceCommander{}
+			authz := &MockAuthorizer{ShouldSucceed: true}
+			tc.mockSetup(commander)
+
+			// Create the handler
+			handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
+
+			var req *http.Request
+			var middlewareHandler http.Handler
+
+			if tc.operation == "update" {
+				// Create update request
+				updateReq := tc.request.(UpdateServiceReq)
+				bodyBytes, err := json.Marshal(updateReq)
+				require.NoError(t, err)
+				req = httptest.NewRequest("PATCH", "/services/"+tc.serviceID, bytes.NewReader(bodyBytes))
+				req.Header.Set("Content-Type", "application/json")
+
+				// Set up chi router context for URL parameters
+				rctx := chi.NewRouteContext()
+				rctx.URLParams.Add("id", tc.serviceID)
+				req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+				// Add auth identity
+				authIdentity := NewMockAuthAdmin()
+				req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
+
+				// Setup middleware chain
+				middlewareHandler = middlewares.DecodeBody[UpdateServiceReq]()(middlewares.ID(Update(handler.Update, ServiceToRes)))
+			} else {
+				// Create create request
+				createReq := tc.request.(CreateServiceReq)
+				bodyBytes, err := json.Marshal(createReq)
+				require.NoError(t, err)
+				req = httptest.NewRequest("POST", "/services", bytes.NewReader(bodyBytes))
+				req.Header.Set("Content-Type", "application/json")
+
+				// Add auth identity
+				authIdentity := NewMockAuthAdmin()
+				req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
+
+				// Setup middleware chain
+				middlewareHandler = middlewares.DecodeBody[CreateServiceReq]()(http.HandlerFunc(handler.Create))
+			}
+
+			// Execute request
+			w := httptest.NewRecorder()
+			middlewareHandler.ServeHTTP(w, req)
+
+			// Assert status code
+			assert.Equal(t, tc.expectedStatus, w.Code)
+
+			// Check error message if expected
+			if tc.checkError != nil {
+				var response map[string]any
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				require.NoError(t, err)
+				errorText, ok := response["error"].(string)
+				require.True(t, ok, "Error message should be present")
+				tc.checkError(t, errorText)
+			}
+		})
+	}
+}
+
 // TestServiceToResponse tests the serviceToResponse function
 func TestServiceToResponse(t *testing.T) {
 	// Create a domain.Service
