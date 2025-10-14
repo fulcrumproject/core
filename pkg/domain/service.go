@@ -327,6 +327,17 @@ func CreateServiceWithAgent(
 		return nil, err
 	}
 
+	// Load ServiceType to get property schema
+	serviceType, err := store.ServiceTypeRepo().Get(ctx, params.ServiceTypeID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate property source (user cannot set agent-source properties)
+	if err := ValidatePropertiesUpdate(params.Properties, string(ServiceNew), serviceType.PropertySchema, "user"); err != nil {
+		return nil, InvalidInputError{Err: err}
+	}
+
 	// Validate properties against schema
 	validationParams := &ServicePropertyValidationParams{
 		ServiceTypeID: params.ServiceTypeID,
@@ -403,6 +414,17 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 
 	// Merge and validate properties if provided
 	if params.Properties != nil {
+		// Load ServiceType to get property schema
+		serviceType, err := store.ServiceTypeRepo().Get(ctx, svc.ServiceTypeID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Validate property source and updatability
+		if err := ValidatePropertiesUpdate(*params.Properties, string(svc.Status), serviceType.PropertySchema, "user"); err != nil {
+			return nil, InvalidInputError{Err: err}
+		}
+
 		// Merge partial properties with existing properties
 		mergedProperties := mergeServiceProperties(svc.Properties, *params.Properties)
 
