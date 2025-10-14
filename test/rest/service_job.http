@@ -283,10 +283,71 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 5: STATE-CONDITIONAL UPDATE TEST WHILE STARTED
+### PART 5: AGENT IMMUTABLE PROPERTY UPDATE TEST
 ###############################################################################
 
-### ❌ TEST 3: Try to update state-conditional property while Started (should fail with 400)
+### ❌ TEST: Try to update immutable agent property during job completion (should fail with 400)
+### Stop and restart to create another Start job where agent tries to update internalIp
+
+### Stop service to create a new job
+POST {{baseUrl}}/services/{{serviceId}}/stop
+Authorization: Bearer {{adminToken}}
+
+### Get pending jobs
+# @name pendingStopJobsForImmutableTest
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@stopJobIdForImmutableTest = {{pendingStopJobsForImmutableTest.response.body.$[0].id}}
+
+### Claim and complete the Stop job
+POST {{baseUrl}}/jobs/{{stopJobIdForImmutableTest}}/claim
+Authorization: Bearer {{agentToken}}
+
+POST {{baseUrl}}/jobs/{{stopJobIdForImmutableTest}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "resources": {
+        "status": "stopped"
+    }
+}
+
+### Start service again
+POST {{baseUrl}}/services/{{serviceId}}/start
+Authorization: Bearer {{adminToken}}
+
+### Get pending Start job
+# @name pendingStartJobsForImmutableTest
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@startJobIdForImmutableTest = {{pendingStartJobsForImmutableTest.response.body.$[0].id}}
+
+### Claim the Start job
+POST {{baseUrl}}/jobs/{{startJobIdForImmutableTest}}/claim
+Authorization: Bearer {{agentToken}}
+
+### ❌ Try to complete with updated internalIp (should fail - property is immutable)
+POST {{baseUrl}}/jobs/{{startJobIdForImmutableTest}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "properties": {
+        "internalIp": "192.168.99.99"
+    },
+    "resources": {
+        "status": "running"
+    }
+}
+
+###############################################################################
+### PART 6: STATE-CONDITIONAL UPDATE TEST WHILE STARTED
+###############################################################################
+
+### ❌ TEST 4: Try to update state-conditional property while Started (should fail with 400)
 PATCH {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -298,7 +359,7 @@ Content-Type: application/json
 }
 
 ###############################################################################
-### PART 6: STOP SERVICE
+### PART 7: STOP SERVICE
 ###############################################################################
 
 ### Stop service (creates Stop job)
@@ -336,10 +397,10 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 7: SUCCESSFUL STATE-CONDITIONAL UPDATE WHILE STOPPED
+### PART 8: SUCCESSFUL STATE-CONDITIONAL UPDATE WHILE STOPPED
 ###############################################################################
 
-### ✅ TEST 4: Update state-conditional properties while Stopped (should succeed)
+### ✅ TEST 5: Update state-conditional properties while Stopped (should succeed)
 PATCH {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -386,7 +447,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 8: RESTART WITH UPDATED PROPERTIES
+### PART 9: RESTART WITH UPDATED PROPERTIES
 ###############################################################################
 
 ### Start service again with updated properties (creates Start job)
@@ -427,7 +488,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 9: JOB FAILURE TESTING
+### PART 10: JOB FAILURE TESTING
 ###############################################################################
 
 ### Stop service for failure test
