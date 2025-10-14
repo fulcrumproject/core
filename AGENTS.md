@@ -60,6 +60,13 @@ When asked to do something, just do it - including obvious follow-up actions nee
 
 - Mermaid diagrams should not contain styles
 
+### Maintaining AGENTS.md
+
+- This file is for **AI agents** (like you) working on the codebase, NOT for software agents (that provision cloud resources)
+- Keep updates **concise** - this is a guidelines document, not detailed API documentation
+- Provide high-level overviews and reference detailed docs (e.g., `docs/SERVICE_TYPE_SCHEMA.md`, `docs/openapi.yaml`)
+- If an update adds more than ~20 lines, consider if the detail belongs in `docs/` instead
+
 ### Naming Conventions
 
 - Names MUST tell what code does, not how it's implemented or its history
