@@ -1,0 +1,493 @@
+### Complete Job Lifecycle with Property Source & Updatability Testing
+### This file demonstrates the full service lifecycle including:
+### - Agent-set properties during job completion
+### - Immutable property validation
+### - State-conditional property updates
+### - Source-based property access control
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+###############################################################################
+### PART 1: SETUP
+###############################################################################
+
+### Create VM Service Type with property source/updatability rules
+# @name createVMServiceType
+POST {{baseUrl}}/service-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "vm {{$guid}}",
+    "propertySchema": {
+        "cpu": {
+            "type": "integer",
+            "label": "CPU Cores",
+            "source": "input",
+            "updatable": "statuses",
+            "updatableIn": ["Stopped"],
+            "required": true,
+            "validators": [
+                {
+                    "type": "enum",
+                    "value": [1, 2, 4, 8, 16, 32]
+                }
+            ]
+        },
+        "memory": {
+            "type": "integer",
+            "label": "Memory (MB)",
+            "source": "input",
+            "updatable": "statuses",
+            "updatableIn": ["Stopped"],
+            "required": true,
+            "validators": [
+                {
+                    "type": "enum",
+                    "value": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
+                }
+            ]
+        },
+        "disk": {
+            "type": "integer",
+            "label": "Disk (GB)",
+            "source": "input",
+            "updatable": "statuses",
+            "updatableIn": ["Stopped"],
+            "required": true,
+            "validators": [
+                {
+                    "type": "enum",
+                    "value": [8, 16, 32, 64, 128, 256, 512, 1024]
+                }
+            ]
+        },
+        "image": {
+            "type": "string",
+            "label": "Image",
+            "source": "input",
+            "updatable": "never",
+            "required": true
+        },
+        "internalIp": {
+            "type": "string",
+            "label": "Internal IP",
+            "source": "agent",
+            "updatable": "always"
+        }
+    }
+}
+
+### Create Agent Type
+# @name createAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "vm-agent {{$guid}}",
+    "serviceTypeIds": [
+        "{{createVMServiceType.response.body.id}}"
+    ]
+}
+
+### Create Provider
+# @name createProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test Provider {{$guid}}",
+    "status": "Enabled",
+    "attributes": {
+        "type": ["test"]
+    }
+}
+
+### Create Agent
+# @name createAgent
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test Agent {{$guid}}",
+    "agentTypeId": "{{createAgentType.response.body.id}}",
+    "providerId": "{{createProvider.response.body.id}}",
+    "tags": ["test-agent", "property-testing"]
+}
+
+@agentId = {{createAgent.response.body.id}}
+
+### Create Agent Token
+# @name createAgentToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test Agent Token",
+    "role": "agent",
+    "expireAt": "{{$datetime iso8601 1 y}}",
+    "scopeId": "{{agentId}}"
+}
+
+@agentToken = {{createAgentToken.response.body.value}}
+
+### Create Consumer
+# @name createConsumer
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test Consumer {{$guid}}",
+    "status": "Enabled"
+}
+
+### Create Service Group
+# @name createServiceGroup
+POST {{baseUrl}}/service-groups
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test Service Group {{$guid}}",
+    "consumerId": "{{createConsumer.response.body.id}}"
+}
+
+###############################################################################
+### PART 2: SERVICE CREATION & INITIAL JOB
+###############################################################################
+
+### Create VM Service (user sets input properties, agent will set internalIp)
+# @name createService
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test VM {{$guid}}",
+    "properties": {
+        "cpu": 4,
+        "memory": 8192,
+        "disk": 128,
+        "image": "ubuntu:20.04"
+    },
+    "agentId": "{{agentId}}",
+    "serviceTypeId": "{{createVMServiceType.response.body.id}}",
+    "groupId": "{{createServiceGroup.response.body.id}}"
+}
+
+@serviceId = {{createService.response.body.id}}
+
+### Get pending jobs (should have a Create job)
+# @name pendingCreateJobs
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@createJobId = {{pendingCreateJobs.response.body.$[0].id}}
+
+### Claim the Create job
+POST {{baseUrl}}/jobs/{{createJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete the Create job - agent sets internalIp property
+POST {{baseUrl}}/jobs/{{createJobId}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "properties": {
+        "internalIp": "10.{{$randomInt 0 255}}.{{$randomInt 0 255}}.{{$randomInt 0 255}}"
+    },
+    "externalId": "vm-{{$guid}}",
+    "resources": {
+        "status": "success",
+        "details": {
+            "duration": "5s",
+            "output": "VM created successfully"
+        }
+    }
+}
+
+### Get service (verify internalIp is now set by agent)
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### PART 3: PROPERTY UPDATE VALIDATION TESTS (Expected Failures)
+###############################################################################
+
+### ❌ TEST 1: Try to update immutable property (should fail with 400)
+PATCH {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "properties": {
+        "image": "ubuntu:22.04"
+    }
+}
+
+### ❌ TEST 2: Try to update agent-source property as user (should fail with 400)
+PATCH {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "properties": {
+        "internalIp": "192.168.1.1"
+    }
+}
+
+###############################################################################
+### PART 4: START SERVICE
+###############################################################################
+
+### Start service (creates Start job)
+POST {{baseUrl}}/services/{{serviceId}}/start
+Authorization: Bearer {{adminToken}}
+
+### Get pending jobs (should have a Start job)
+# @name pendingStartJobs
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@startJobId = {{pendingStartJobs.response.body.$[0].id}}
+
+### Claim the Start job
+POST {{baseUrl}}/jobs/{{startJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete the Start job
+POST {{baseUrl}}/jobs/{{startJobId}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "resources": {
+        "status": "running",
+        "details": {
+            "duration": "3s",
+            "output": "VM started successfully"
+        }
+    }
+}
+
+### Get service (verify status is Started)
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### PART 5: STATE-CONDITIONAL UPDATE TEST WHILE STARTED
+###############################################################################
+
+### ❌ TEST 3: Try to update state-conditional property while Started (should fail with 400)
+PATCH {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "properties": {
+        "cpu": 8
+    }
+}
+
+###############################################################################
+### PART 6: STOP SERVICE
+###############################################################################
+
+### Stop service (creates Stop job)
+POST {{baseUrl}}/services/{{serviceId}}/stop
+Authorization: Bearer {{adminToken}}
+
+### Get pending jobs (should have a Stop job)
+# @name pendingStopJobs
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@stopJobId = {{pendingStopJobs.response.body.$[0].id}}
+
+### Claim the Stop job
+POST {{baseUrl}}/jobs/{{stopJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete the Stop job
+POST {{baseUrl}}/jobs/{{stopJobId}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "resources": {
+        "status": "stopped",
+        "details": {
+            "duration": "2s",
+            "output": "VM stopped successfully"
+        }
+    }
+}
+
+### Get service (verify status is Stopped)
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### PART 7: SUCCESSFUL STATE-CONDITIONAL UPDATE WHILE STOPPED
+###############################################################################
+
+### ✅ TEST 4: Update state-conditional properties while Stopped (should succeed)
+PATCH {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "properties": {
+        "cpu": 8,
+        "memory": 16384,
+        "disk": 256
+    }
+}
+
+### Get pending jobs (should have a ColdUpdate job)
+# @name pendingUpdateJobs
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@updateJobId = {{pendingUpdateJobs.response.body.$[0].id}}
+
+### Claim the ColdUpdate job
+POST {{baseUrl}}/jobs/{{updateJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete the ColdUpdate job
+POST {{baseUrl}}/jobs/{{updateJobId}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "resources": {
+        "status": "stopped",
+        "details": {
+            "duration": "3s",
+            "output": "VM reconfigured with new CPU/memory/disk settings",
+            "cpu": 8,
+            "memory": 16384,
+            "disk": 256
+        }
+    }
+}
+
+### Get service (verify properties were updated after job completion)
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### PART 8: RESTART WITH UPDATED PROPERTIES
+###############################################################################
+
+### Start service again with updated properties (creates Start job)
+POST {{baseUrl}}/services/{{serviceId}}/start
+Authorization: Bearer {{adminToken}}
+
+### Get pending jobs (should have a Start job with new properties)
+# @name pendingRestartJobs
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@restartJobId = {{pendingRestartJobs.response.body.$[0].id}}
+
+### Claim the Start job
+POST {{baseUrl}}/jobs/{{restartJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete the Start job
+POST {{baseUrl}}/jobs/{{restartJobId}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "resources": {
+        "status": "running",
+        "details": {
+            "duration": "4s",
+            "output": "VM restarted with updated configuration",
+            "cpu": 8,
+            "memory": 16384,
+            "disk": 256
+        }
+    }
+}
+
+### Get service (verify Started with updated properties)
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### PART 9: JOB FAILURE TESTING
+###############################################################################
+
+### Stop service for failure test
+POST {{baseUrl}}/services/{{serviceId}}/stop
+Authorization: Bearer {{adminToken}}
+
+### Get pending jobs
+# @name pendingFailJobs
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@failJobId = {{pendingFailJobs.response.body.$[0].id}}
+
+### Claim the job
+POST {{baseUrl}}/jobs/{{failJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Fail the job with error
+POST {{baseUrl}}/jobs/{{failJobId}}/fail
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "errorMessage": "Simulated failure: resource unavailable"
+}
+
+### Get the failed job status
+GET {{baseUrl}}/jobs/{{failJobId}}
+Authorization: Bearer {{adminToken}}
+
+### Retry the failed operation
+POST {{baseUrl}}/services/{{serviceId}}/retry
+Authorization: Bearer {{adminToken}}
+
+### Get pending jobs for retry
+# @name pendingRetryJobs
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@retryJobId = {{pendingRetryJobs.response.body.$[0].id}}
+
+### Claim the retry job
+POST {{baseUrl}}/jobs/{{retryJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete the retry job successfully
+POST {{baseUrl}}/jobs/{{retryJobId}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "resources": {
+        "status": "stopped",
+        "details": {
+            "duration": "2s",
+            "output": "VM stopped successfully after retry"
+        }
+    }
+}
+
+### Get service (verify successful retry)
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
