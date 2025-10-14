@@ -591,3 +591,208 @@ func TestServiceUpdate_IntegrationFlow(t *testing.T) {
 	// Verify that the merge adds new properties
 	assert.Equal(t, "v2", merged["api"].(map[string]any)["version"])
 }
+
+// TestApplyAgentPropertyUpdates tests the ApplyAgentPropertyUpdates method
+func TestApplyAgentPropertyUpdates(t *testing.T) {
+	tests := []struct {
+		name               string
+		initialProperties  *properties.JSON
+		updates            map[string]any
+		serviceStatus      ServiceStatus
+		schema             *ServiceSchema
+		expectError        bool
+		errorContains      string
+		expectedProperties *properties.JSON
+	}{
+		{
+			name:              "Valid agent properties are applied",
+			initialProperties: &properties.JSON{"user_prop": "value1"},
+			updates:           map[string]any{"agent_prop": "192.168.1.1"},
+			serviceStatus:     ServiceStarted,
+			schema: &ServiceSchema{
+				"user_prop": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "input",
+				},
+				"agent_prop": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "agent",
+				},
+			},
+			expectError: false,
+			expectedProperties: &properties.JSON{
+				"user_prop":  "value1",
+				"agent_prop": "192.168.1.1",
+			},
+		},
+		{
+			name:              "Non-agent properties return error",
+			initialProperties: &properties.JSON{"user_prop": "value1"},
+			updates:           map[string]any{"user_prop": "newvalue"},
+			serviceStatus:     ServiceStarted,
+			schema: &ServiceSchema{
+				"user_prop": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "input",
+				},
+			},
+			expectError:   true,
+			errorContains: "cannot be updated by agent",
+		},
+		{
+			name:              "Properties validated against updatability - never",
+			initialProperties: &properties.JSON{},
+			updates:           map[string]any{"immutable_agent": "value"},
+			serviceStatus:     ServiceStarted,
+			schema: &ServiceSchema{
+				"immutable_agent": ServicePropertyDefinition{
+					Type:      "string",
+					Source:    "agent",
+					Updatable: "never",
+				},
+			},
+			expectError:   true,
+			errorContains: "cannot be updated (updatable: never)",
+		},
+		{
+			name:              "Properties validated against updatability - statuses allowed",
+			initialProperties: &properties.JSON{},
+			updates:           map[string]any{"state_dep": "value"},
+			serviceStatus:     ServiceStopped,
+			schema: &ServiceSchema{
+				"state_dep": ServicePropertyDefinition{
+					Type:        "string",
+					Source:      "agent",
+					Updatable:   "statuses",
+					UpdatableIn: []string{"Stopped"},
+				},
+			},
+			expectError: false,
+			expectedProperties: &properties.JSON{
+				"state_dep": "value",
+			},
+		},
+		{
+			name:              "Properties validated against updatability - statuses disallowed",
+			initialProperties: &properties.JSON{},
+			updates:           map[string]any{"state_dep": "value"},
+			serviceStatus:     ServiceStarted,
+			schema: &ServiceSchema{
+				"state_dep": ServicePropertyDefinition{
+					Type:        "string",
+					Source:      "agent",
+					Updatable:   "statuses",
+					UpdatableIn: []string{"Stopped"},
+				},
+			},
+			expectError:   true,
+			errorContains: "cannot be updated in status 'Started'",
+		},
+		{
+			name:              "Empty properties are no-op",
+			initialProperties: &properties.JSON{"existing": "value"},
+			updates:           map[string]any{},
+			serviceStatus:     ServiceStarted,
+			schema: &ServiceSchema{
+				"existing": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "input",
+				},
+			},
+			expectError: false,
+			expectedProperties: &properties.JSON{
+				"existing": "value",
+			},
+		},
+		{
+			name:              "Nil properties are no-op",
+			initialProperties: &properties.JSON{"existing": "value"},
+			updates:           nil,
+			serviceStatus:     ServiceStarted,
+			schema: &ServiceSchema{
+				"existing": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "input",
+				},
+			},
+			expectError: false,
+			expectedProperties: &properties.JSON{
+				"existing": "value",
+			},
+		},
+		{
+			name:              "Properties merged into existing properties",
+			initialProperties: &properties.JSON{"existing": "value1", "agent_prop": "old"},
+			updates:           map[string]any{"agent_prop": "new", "agent_prop2": "value2"},
+			serviceStatus:     ServiceStarted,
+			schema: &ServiceSchema{
+				"existing": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "input",
+				},
+				"agent_prop": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "agent",
+				},
+				"agent_prop2": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "agent",
+				},
+			},
+			expectError: false,
+			expectedProperties: &properties.JSON{
+				"existing":    "value1",
+				"agent_prop":  "new",
+				"agent_prop2": "value2",
+			},
+		},
+		{
+			name:              "Initialize properties if nil",
+			initialProperties: nil,
+			updates:           map[string]any{"agent_prop": "value"},
+			serviceStatus:     ServiceStarted,
+			schema: &ServiceSchema{
+				"agent_prop": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "agent",
+				},
+			},
+			expectError: false,
+			expectedProperties: &properties.JSON{
+				"agent_prop": "value",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create service with initial properties
+			service := &Service{
+				Name:       "test-service",
+				Status:     tt.serviceStatus,
+				Properties: tt.initialProperties,
+			}
+
+			// Create service type with schema
+			serviceType := &ServiceType{
+				Name:           "test-type",
+				PropertySchema: tt.schema,
+			}
+
+			// Apply agent property updates
+			err := service.ApplyAgentPropertyUpdates(serviceType, tt.updates)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+				if tt.expectedProperties != nil {
+					assert.Equal(t, tt.expectedProperties, service.Properties)
+				}
+			}
+		})
+	}
+}

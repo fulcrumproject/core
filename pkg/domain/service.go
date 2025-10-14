@@ -195,6 +195,37 @@ func (s *Service) Update(name *string, properties *properties.JSON) (update bool
 	return update, action, nil
 }
 
+// ApplyAgentPropertyUpdates applies property updates from an agent
+func (s *Service) ApplyAgentPropertyUpdates(
+	serviceType *ServiceType,
+	updates map[string]any,
+) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	// Validate that agent can only update agent-source properties
+	if err := ValidatePropertiesUpdate(
+		updates,
+		string(s.Status),
+		serviceType.PropertySchema,
+		"agent",
+	); err != nil {
+		return fmt.Errorf("invalid agent property updates: %w", err)
+	}
+
+	// Apply updates
+	if s.Properties == nil {
+		props := make(properties.JSON)
+		s.Properties = &props
+	}
+	for k, v := range updates {
+		(*s.Properties)[k] = v
+	}
+
+	return nil
+}
+
 // Validate a service
 func (s *Service) Validate() error {
 	if s.Name == "" {
