@@ -312,11 +312,11 @@ Tests are written within each phase following TDD principles, then summarized in
 - Read 01-problem.md to understand the problem deeply
 - Read 02-solution.md to understand what you're building and why
 - Follow 03-implementation.md step-by-step for execution
-- Check off tasks as you complete them
 - After completing each phase:
   1. Give your partner the chance to run tests manually
   2. Wait for approval
   3. Commit the changes
+  4. Mark all tasks in that phase as done in 03-implementation.md (change `- [ ]` to `- [x]`)
 - If you discover the solution needs changes, update 02-solution.md first, then 03-implementation.md
 
 **When reviewing existing specs:**
