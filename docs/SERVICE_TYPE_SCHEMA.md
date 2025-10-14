@@ -417,9 +417,12 @@ Property cannot be updated after initial creation (immutable).
 ```
 
 **Behavior:**
-- Can only be set during service creation (or first job completion for agent properties)
+- Can be set during initial service creation
+- Cannot be changed after initial creation
 - Any attempt to update returns a validation error
 - Suitable for identifiers and immutable configuration
+
+**Note:** For agent-source properties, "initial creation" means the first job completion (typically the Create job). Agents can set immutable properties during this first job, but cannot update them in subsequent jobs.
 
 #### statuses
 Property can only be updated when service is in specific statuses. Requires `updatableIn` array.

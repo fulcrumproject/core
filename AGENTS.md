@@ -591,8 +591,9 @@ Agents can update service properties when completing a job by including a `prope
   - Use when: Reporting runtime metrics or technical details not in the schema
 
 **Property Validation:**
-- Agents can only update properties with `source: "agent"`
-- Properties validated against schema, source, and updatability constraints
+- Agents can only set/update properties with `source: "agent"`
+- During initial service creation (ServiceNew status): Only source is validated (agents can set immutable properties)
+- During subsequent updates: Both source and updatability constraints are validated
 - Validation errors return HTTP 400 and roll back the entire job completion
 - See `docs/SERVICE_TYPE_SCHEMA.md` for detailed examples and error messages
 
