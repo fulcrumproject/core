@@ -519,7 +519,13 @@ components:
 
     JobStatus:
       type: string
-      enum: [Pending, Processing, Completed, Failed, Unsupported]
+      enum: [Pending, Processing, Completed, Failed]
+      description: |
+        Job status transitions:
+        - Pending: Job created and waiting for agent to claim
+        - Processing: Job claimed by agent and in progress
+        - Completed: Job successfully finished
+        - Failed: Job encountered an error (error message drives service state transition via regexp)
 
     JobRes:
       type: object
@@ -592,17 +598,10 @@ components:
       properties:
         errorMessage:
           type: string
+          description: |
+            Error message describing the failure. This message is matched against
+            lifecycle transition regexps to determine the next service state.
           example: "Failed to create VM: insufficient resources"
-
-    UnsupportedJobReq:
-      type: object
-      required:
-        - errorMessage
-      properties:
-        errorMessage:
-          type: string
-          description: Error message describing why the operation is not supported
-          example: "Hot updates are not supported by this agent version"
 
     # Metric schemas
     MetricEntityType:
@@ -2605,59 +2604,6 @@ paths:
           description: Job marked as failed successfully
         "401":
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorRes"
-        "404":
-          description: Job not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorRes"
-
-  /jobs/{id}/unsupported:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          $ref: "#/components/schemas/properties.UUID"
-    post:
-      summary: Mark a job as unsupported
-      tags:
-        - Jobs
-      description: |
-        Marks a job as failed due to an unsupported operation and rolls back the service state.
-        Unlike regular failures, this clears the service's target status and properties,
-        rolling back to the previous stable state. Unsupported operations are not retried.
-      security:
-        - BearerAuth: []
-      x-auth-roles:
-        - agent: Can mark jobs assigned to the agent as unsupported
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UnsupportedJobReq"
-      responses:
-        "204":
-          description: Job marked as unsupported successfully and service state rolled back
-        "400":
-          description: Invalid request (job not in processing state, missing error message, etc.)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorRes"
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorRes"
-        "403":
-          description: Forbidden - insufficient permissions
           content:
             application/json:
               schema:

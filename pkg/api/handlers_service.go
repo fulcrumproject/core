@@ -188,7 +188,7 @@ func (h *ServiceHandler) Update(ctx context.Context, id properties.UUID, req *Up
 	params := domain.UpdateServiceParams{
 		ID:         id,
 		Name:       req.Name,
-		Properties:  req.Properties,
+		Properties: req.Properties,
 	}
 	return h.commander.Update(ctx, params)
 }
