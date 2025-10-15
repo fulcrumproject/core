@@ -28,8 +28,9 @@ coverage/
 
 # AI files
 .*rules
+.cursor/rules/
+specs/
 
 # Project-specific directories
-specs/
 fulcrum
 generated-client/
