@@ -96,13 +96,23 @@ Content-Type: application/json
             {
                 "name": "start",
                 "transitions": [
-                    {"from": "Stopped", "to": "Started"}
+                    {"from": "Stopped", "to": "Started"},
+                    {"from": "Stopped", "to": "Stopped", "onError": true}
                 ]
             },
             {
                 "name": "stop",
                 "transitions": [
-                    {"from": "Started", "to": "Stopped"}
+                    {"from": "Started", "to": "Stopped"},
+                    {"from": "Started", "to": "Started", "onError": true}
+                ]
+            },
+            {
+                "name": "update",
+                "requestSchemaType": "properties",
+                "transitions": [
+                    {"from": "Stopped", "to": "Stopped"},
+                    {"from": "Started", "to": "Started"}
                 ]
             },
             {
