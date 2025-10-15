@@ -27,8 +27,7 @@ coverage.*
 coverage/
 
 # AI files
-.*rules
-.cursor/rules/
+.cursor/
 specs/
 
 # Project-specific directories
