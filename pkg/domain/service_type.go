@@ -2,11 +2,8 @@ package domain
 
 import (
 	"context"
-	"database/sql/driver"
-	"encoding/json"
 	"fmt"
 	"regexp"
-	"slices"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 )
@@ -16,59 +13,6 @@ const (
 	EventTypeServiceTypeUpdated EventType = "service_type.updated"
 	EventTypeServiceTypeDeleted EventType = "service_type.deleted"
 )
-
-// LifecycleSchema defines the state machine for a service type
-type LifecycleSchema struct {
-	States         []LifecycleState  `json:"states"`
-	Actions        []LifecycleAction `json:"actions"`
-	InitialState   string            `json:"initialState"`
-	TerminalStates []string          `json:"terminalStates"`
-	RunningStates  []string          `json:"runningStates,omitempty"`
-}
-
-// IsRunningStatus checks if a given status is considered a "running" state for uptime calculation
-func (ls *LifecycleSchema) IsRunningStatus(status string) bool {
-	return slices.Contains(ls.RunningStates, status)
-}
-
-// Scan implements the sql.Scanner interface
-func (ls *LifecycleSchema) Scan(value any) error {
-	if value == nil {
-		return nil
-	}
-
-	bytes, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("failed to unmarshal LifecycleSchema value: %v", value)
-	}
-
-	return json.Unmarshal(bytes, ls)
-}
-
-// Value implements the driver.Valuer interface
-func (ls LifecycleSchema) Value() (driver.Value, error) {
-	return json.Marshal(ls)
-}
-
-// LifecycleState represents a state in the service lifecycle
-type LifecycleState struct {
-	Name string `json:"name"`
-}
-
-// LifecycleAction represents an action that can be performed on a service
-type LifecycleAction struct {
-	Name              string                `json:"name"`
-	RequestSchemaType string                `json:"requestSchemaType,omitempty"`
-	Transitions       []LifecycleTransition `json:"transitions"`
-}
-
-// LifecycleTransition represents a state transition triggered by an action
-type LifecycleTransition struct {
-	From          string `json:"from"`
-	To            string `json:"to"`
-	OnError       bool   `json:"onError,omitempty"`
-	OnErrorRegexp string `json:"onErrorRegexp,omitempty"`
-}
 
 // ServiceType represents a type of service that can be provided
 type ServiceType struct {

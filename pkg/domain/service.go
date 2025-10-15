@@ -67,7 +67,7 @@ func NewService(
 // HandleJobComplete handles the completion of a job
 func (s *Service) HandleJobComplete(lifecycle *LifecycleSchema, action string, errorCode *string, params *properties.JSON, resources *properties.JSON, externalID *string) error {
 	// Update status using lifecycle schema
-	nextStatus, err := ResolveNextState(lifecycle, s.Status, action, errorCode)
+	nextStatus, err := lifecycle.ResolveNextState(s.Status, action, errorCode)
 	if err != nil {
 		return err
 	}
@@ -426,7 +426,7 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 		if action {
 			// Check if the service is in a valid state to be updated with a job
 			if serviceType.LifecycleSchema != nil {
-				if err := ValidateActionAllowed(serviceType.LifecycleSchema, svc.Status, "update"); err != nil {
+				if err := serviceType.LifecycleSchema.ValidateActionAllowed(svc.Status, "update"); err != nil {
 					return InvalidInputError{Err: err}
 				}
 			}
@@ -474,7 +474,7 @@ func DoServiceAction(ctx context.Context, store Store, params DoServiceActionPar
 
 	// Check if the service is in a valid state to perform this action
 	if serviceType.LifecycleSchema != nil {
-		if err := ValidateActionAllowed(serviceType.LifecycleSchema, svc.Status, params.Action); err != nil {
+		if err := serviceType.LifecycleSchema.ValidateActionAllowed(svc.Status, params.Action); err != nil {
 			return nil, InvalidInputError{Err: err}
 		}
 	}

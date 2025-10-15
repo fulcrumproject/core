@@ -29,7 +29,7 @@ func TestResolveNextState_SuccessTransition(t *testing.T) {
 		InitialState: "New",
 	}
 
-	nextState, err := ResolveNextState(lifecycle, "New", "create", nil)
+	nextState, err := lifecycle.ResolveNextState("New", "create", nil)
 	if err != nil {
 		t.Errorf("ResolveNextState() error = %v", err)
 	}
@@ -37,7 +37,7 @@ func TestResolveNextState_SuccessTransition(t *testing.T) {
 		t.Errorf("expected next state 'Running', got '%s'", nextState)
 	}
 
-	nextState, err = ResolveNextState(lifecycle, "Running", "stop", nil)
+	nextState, err = lifecycle.ResolveNextState("Running", "stop", nil)
 	if err != nil {
 		t.Errorf("ResolveNextState() error = %v", err)
 	}
@@ -69,7 +69,7 @@ func TestResolveNextState_ErrorTransitionWithRegexp(t *testing.T) {
 
 	// Test network error matches specific regexp
 	errorCode := "NETWORK_TIMEOUT"
-	nextState, err := ResolveNextState(lifecycle, "New", "create", &errorCode)
+	nextState, err := lifecycle.ResolveNextState("New", "create", &errorCode)
 	if err != nil {
 		t.Errorf("ResolveNextState() error = %v", err)
 	}
@@ -99,7 +99,7 @@ func TestResolveNextState_ErrorTransitionWithoutRegexp(t *testing.T) {
 
 	// Test any error code matches transition without regexp
 	errorCode := "ANY_ERROR"
-	nextState, err := ResolveNextState(lifecycle, "New", "create", &errorCode)
+	nextState, err := lifecycle.ResolveNextState("New", "create", &errorCode)
 	if err != nil {
 		t.Errorf("ResolveNextState() error = %v", err)
 	}
@@ -127,7 +127,7 @@ func TestResolveNextState_ErrorNoMatchingTransition(t *testing.T) {
 
 	// No error transition defined
 	errorCode := "SOME_ERROR"
-	_, err := ResolveNextState(lifecycle, "New", "create", &errorCode)
+	_, err := lifecycle.ResolveNextState("New", "create", &errorCode)
 	if err == nil {
 		t.Error("ResolveNextState() should fail when no error transition exists")
 	}
@@ -154,7 +154,7 @@ func TestResolveNextState_ActionNotFound(t *testing.T) {
 		InitialState: "New",
 	}
 
-	_, err := ResolveNextState(lifecycle, "New", "nonexistent", nil)
+	_, err := lifecycle.ResolveNextState("New", "nonexistent", nil)
 	if err == nil {
 		t.Error("ResolveNextState() should fail for nonexistent action")
 	}
@@ -181,7 +181,7 @@ func TestResolveNextState_InvalidCurrentState(t *testing.T) {
 		InitialState: "New",
 	}
 
-	_, err := ResolveNextState(lifecycle, "Stopped", "create", nil)
+	_, err := lifecycle.ResolveNextState("Stopped", "create", nil)
 	if err == nil {
 		t.Error("ResolveNextState() should fail when current state has no valid transition")
 	}
@@ -214,7 +214,7 @@ func TestResolveNextState_MultipleErrorTransitionsFirstMatchWins(t *testing.T) {
 
 	// Network error should match first specific regexp
 	errorCode := "NETWORK_TIMEOUT"
-	nextState, err := ResolveNextState(lifecycle, "New", "create", &errorCode)
+	nextState, err := lifecycle.ResolveNextState("New", "create", &errorCode)
 	if err != nil {
 		t.Errorf("ResolveNextState() error = %v", err)
 	}
@@ -224,22 +224,12 @@ func TestResolveNextState_MultipleErrorTransitionsFirstMatchWins(t *testing.T) {
 
 	// Non-network error should fall through to catch-all
 	errorCode = "DISK_FULL"
-	nextState, err = ResolveNextState(lifecycle, "New", "create", &errorCode)
+	nextState, err = lifecycle.ResolveNextState("New", "create", &errorCode)
 	if err != nil {
 		t.Errorf("ResolveNextState() error = %v", err)
 	}
 	if nextState != "Failed" {
 		t.Errorf("expected 'Failed', got '%s'", nextState)
-	}
-}
-
-func TestResolveNextState_NilLifecycle(t *testing.T) {
-	_, err := ResolveNextState(nil, "New", "create", nil)
-	if err == nil {
-		t.Error("ResolveNextState() should fail for nil lifecycle")
-	}
-	if err.Error() != "lifecycle schema is nil" {
-		t.Errorf("unexpected error message: %v", err)
 	}
 }
 
@@ -267,12 +257,12 @@ func TestValidateActionAllowed_ActionAllowed(t *testing.T) {
 		InitialState: "New",
 	}
 
-	err := ValidateActionAllowed(lifecycle, "New", "create")
+	err := lifecycle.ValidateActionAllowed("New", "create")
 	if err != nil {
 		t.Errorf("ValidateActionAllowed() should not fail: %v", err)
 	}
 
-	err = ValidateActionAllowed(lifecycle, "Running", "stop")
+	err = lifecycle.ValidateActionAllowed("Running", "stop")
 	if err != nil {
 		t.Errorf("ValidateActionAllowed() should not fail: %v", err)
 	}
@@ -296,7 +286,7 @@ func TestValidateActionAllowed_ActionNotAllowed(t *testing.T) {
 		InitialState: "New",
 	}
 
-	err := ValidateActionAllowed(lifecycle, "New", "stop")
+	err := lifecycle.ValidateActionAllowed("New", "stop")
 	if err == nil {
 		t.Error("ValidateActionAllowed() should fail for action not allowed from state")
 	}
@@ -323,22 +313,12 @@ func TestValidateActionAllowed_ActionNotFound(t *testing.T) {
 		InitialState: "New",
 	}
 
-	err := ValidateActionAllowed(lifecycle, "New", "nonexistent")
+	err := lifecycle.ValidateActionAllowed("New", "nonexistent")
 	if err == nil {
 		t.Error("ValidateActionAllowed() should fail for nonexistent action")
 	}
 	expectedMsg := "action \"nonexistent\" not found in lifecycle schema"
 	if err.Error() != expectedMsg {
-		t.Errorf("unexpected error message: %v", err)
-	}
-}
-
-func TestValidateActionAllowed_NilLifecycle(t *testing.T) {
-	err := ValidateActionAllowed(nil, "New", "create")
-	if err == nil {
-		t.Error("ValidateActionAllowed() should fail for nil lifecycle")
-	}
-	if err.Error() != "lifecycle schema is nil" {
 		t.Errorf("unexpected error message: %v", err)
 	}
 }
@@ -363,11 +343,11 @@ func TestIsTerminalState_True(t *testing.T) {
 		TerminalStates: []string{"Deleted", "Failed"},
 	}
 
-	if !IsTerminalState(lifecycle, "Deleted") {
+	if !lifecycle.IsTerminalState("Deleted") {
 		t.Error("IsTerminalState() should return true for 'Deleted'")
 	}
 
-	if !IsTerminalState(lifecycle, "Failed") {
+	if !lifecycle.IsTerminalState("Failed") {
 		t.Error("IsTerminalState() should return true for 'Failed'")
 	}
 }
@@ -391,18 +371,12 @@ func TestIsTerminalState_False(t *testing.T) {
 		TerminalStates: []string{"Deleted"},
 	}
 
-	if IsTerminalState(lifecycle, "New") {
+	if lifecycle.IsTerminalState("New") {
 		t.Error("IsTerminalState() should return false for 'New'")
 	}
 
-	if IsTerminalState(lifecycle, "Running") {
+	if lifecycle.IsTerminalState("Running") {
 		t.Error("IsTerminalState() should return false for 'Running'")
-	}
-}
-
-func TestIsTerminalState_NilLifecycle(t *testing.T) {
-	if IsTerminalState(nil, "Deleted") {
-		t.Error("IsTerminalState() should return false for nil lifecycle")
 	}
 }
 
@@ -424,8 +398,7 @@ func TestIsTerminalState_EmptyTerminalStates(t *testing.T) {
 		TerminalStates: []string{},
 	}
 
-	if IsTerminalState(lifecycle, "New") {
+	if lifecycle.IsTerminalState("New") {
 		t.Error("IsTerminalState() should return false when terminal states list is empty")
 	}
 }
-
