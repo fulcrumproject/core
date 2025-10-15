@@ -623,4 +623,3 @@ func TestServiceType_Validate_WithInvalidLifecycle(t *testing.T) {
 		t.Error("Validate() should fail for service type with invalid lifecycle")
 	}
 }
-

@@ -45,9 +45,9 @@ type LifecycleTransition struct {
 // ServiceType represents a type of service that can be provided
 type ServiceType struct {
 	BaseEntity
-	Name             string           `json:"name" gorm:"not null;unique"`
-	PropertySchema   *ServiceSchema   `json:"propertySchema,omitempty" gorm:"type:jsonb"`
-	LifecycleSchema  *LifecycleSchema `json:"lifecycleSchema,omitempty" gorm:"type:jsonb"`
+	Name            string           `json:"name" gorm:"not null;unique"`
+	PropertySchema  *ServiceSchema   `json:"propertySchema,omitempty" gorm:"type:jsonb"`
+	LifecycleSchema *LifecycleSchema `json:"lifecycleSchema,omitempty" gorm:"type:jsonb"`
 }
 
 // NewServiceType creates a new service type without validation
