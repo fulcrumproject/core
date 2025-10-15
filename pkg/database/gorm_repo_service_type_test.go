@@ -39,6 +39,119 @@ func TestServiceTypeRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, serviceType.Name, found.Name)
 		})
+
+		t.Run("success - with property schema including source and updatable", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup - ServiceType with property schema containing new fields
+			serviceType := createTestServiceType(t)
+			schema := &domain.ServiceSchema{
+				"instanceName": domain.ServicePropertyDefinition{
+					Type:      "string",
+					Label:     "Instance Name",
+					Required:  true,
+					Source:    "input",
+					Updatable: "always",
+				},
+				"ipAddress": domain.ServicePropertyDefinition{
+					Type:      "string",
+					Label:     "IP Address",
+					Source:    "agent",
+					Updatable: "never",
+				},
+				"diskSize": domain.ServicePropertyDefinition{
+					Type:        "integer",
+					Label:       "Disk Size (GB)",
+					Source:      "input",
+					Updatable:   "statuses",
+					UpdatableIn: []string{"Stopped"},
+				},
+			}
+			serviceType.PropertySchema = schema
+
+			// Execute
+			err := repo.Create(ctx, serviceType)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotEmpty(t, serviceType.ID)
+
+			// Verify property schema persisted correctly
+			found, err := repo.Get(ctx, serviceType.ID)
+			require.NoError(t, err)
+			require.NotNil(t, found.PropertySchema)
+
+			// Verify instanceName property
+			instanceName := (*found.PropertySchema)["instanceName"]
+			assert.Equal(t, "string", instanceName.Type)
+			assert.Equal(t, "input", instanceName.Source)
+			assert.Equal(t, "always", instanceName.Updatable)
+			assert.Empty(t, instanceName.UpdatableIn)
+
+			// Verify ipAddress property
+			ipAddress := (*found.PropertySchema)["ipAddress"]
+			assert.Equal(t, "string", ipAddress.Type)
+			assert.Equal(t, "agent", ipAddress.Source)
+			assert.Equal(t, "never", ipAddress.Updatable)
+
+			// Verify diskSize property
+			diskSize := (*found.PropertySchema)["diskSize"]
+			assert.Equal(t, "integer", diskSize.Type)
+			assert.Equal(t, "input", diskSize.Source)
+			assert.Equal(t, "statuses", diskSize.Updatable)
+			assert.Equal(t, []string{"Stopped"}, diskSize.UpdatableIn)
+		})
+
+		t.Run("success - with nested property schema", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup - ServiceType with nested property schema
+			serviceType := createTestServiceType(t)
+			schema := &domain.ServiceSchema{
+				"config": domain.ServicePropertyDefinition{
+					Type:  "object",
+					Label: "Configuration",
+					Properties: map[string]domain.ServicePropertyDefinition{
+						"name": {
+							Type:      "string",
+							Source:    "input",
+							Updatable: "always",
+						},
+						"port": {
+							Type:      "integer",
+							Source:    "agent",
+							Updatable: "never",
+						},
+					},
+					Source:    "input",
+					Updatable: "always",
+				},
+			}
+			serviceType.PropertySchema = schema
+
+			// Execute
+			err := repo.Create(ctx, serviceType)
+
+			// Assert
+			require.NoError(t, err)
+
+			// Verify nested properties persisted correctly
+			found, err := repo.Get(ctx, serviceType.ID)
+			require.NoError(t, err)
+
+			config := (*found.PropertySchema)["config"]
+			assert.Equal(t, "object", config.Type)
+			assert.Equal(t, "input", config.Source)
+			assert.Equal(t, "always", config.Updatable)
+
+			assert.Equal(t, "string", config.Properties["name"].Type)
+			assert.Equal(t, "input", config.Properties["name"].Source)
+			assert.Equal(t, "always", config.Properties["name"].Updatable)
+
+			assert.Equal(t, "integer", config.Properties["port"].Type)
+			assert.Equal(t, "agent", config.Properties["port"].Source)
+			assert.Equal(t, "never", config.Properties["port"].Updatable)
+		})
 	})
 
 	t.Run("Get", func(t *testing.T) {
@@ -219,6 +332,80 @@ func TestServiceTypeRepository(t *testing.T) {
 			scope, err := repo.AuthScope(ctx, serviceType.ID)
 			require.NoError(t, err)
 			assert.Equal(t, &auth.AllwaysMatchObjectScope{}, scope, "Should return empty auth scope for service types")
+		})
+	})
+
+	t.Run("PropertySchemaFieldCombinations", func(t *testing.T) {
+		t.Run("success - source field variations", func(t *testing.T) {
+			ctx := context.Background()
+
+			testCases := []struct {
+				name           string
+				source         string
+				expectedSource string
+			}{
+				{"input source", "input", "input"},
+				{"agent source", "agent", "agent"},
+				{"empty source", "", ""}, // Empty preserved for defaults
+			}
+
+			for _, tc := range testCases {
+				t.Run(tc.name, func(t *testing.T) {
+					st := createTestServiceType(t)
+					st.PropertySchema = &domain.ServiceSchema{
+						"testProp": domain.ServicePropertyDefinition{
+							Type:   "string",
+							Source: tc.source,
+						},
+					}
+					require.NoError(t, repo.Create(ctx, st))
+
+					found, err := repo.Get(ctx, st.ID)
+					require.NoError(t, err)
+					assert.Equal(t, tc.expectedSource, (*found.PropertySchema)["testProp"].Source)
+				})
+			}
+		})
+
+		t.Run("success - updatable field variations", func(t *testing.T) {
+			ctx := context.Background()
+
+			testCases := []struct {
+				name              string
+				updatable         string
+				updatableIn       []string
+				expectedUpdatable string
+				expectedIn        []string
+			}{
+				{"always updatable", "always", nil, "always", nil},
+				{"never updatable", "never", nil, "never", nil},
+				{"statuses updatable", "statuses", []string{"Stopped"}, "statuses", []string{"Stopped"}},
+				{"statuses with multiple", "statuses", []string{"Stopped", "Started"}, "statuses", []string{"Stopped", "Started"}},
+				{"empty updatable", "", nil, "", nil}, // Empty preserved for defaults
+			}
+
+			for _, tc := range testCases {
+				t.Run(tc.name, func(t *testing.T) {
+					st := createTestServiceType(t)
+					st.PropertySchema = &domain.ServiceSchema{
+						"testProp": domain.ServicePropertyDefinition{
+							Type:        "string",
+							Updatable:   tc.updatable,
+							UpdatableIn: tc.updatableIn,
+						},
+					}
+					require.NoError(t, repo.Create(ctx, st))
+
+					found, err := repo.Get(ctx, st.ID)
+					require.NoError(t, err)
+					assert.Equal(t, tc.expectedUpdatable, (*found.PropertySchema)["testProp"].Updatable)
+					if tc.expectedIn != nil {
+						assert.Equal(t, tc.expectedIn, (*found.PropertySchema)["testProp"].UpdatableIn)
+					} else {
+						assert.Empty(t, (*found.PropertySchema)["testProp"].UpdatableIn)
+					}
+				})
+			}
 		})
 	})
 }

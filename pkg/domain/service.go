@@ -195,6 +195,41 @@ func (s *Service) Update(name *string, properties *properties.JSON) (update bool
 	return update, action, nil
 }
 
+// ApplyAgentPropertyUpdates applies property updates from an agent
+func (s *Service) ApplyAgentPropertyUpdates(
+	serviceType *ServiceType,
+	updates map[string]any,
+) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	// Validate based on whether this is initial creation or an update
+	var err error
+	if s.Status == ServiceNew {
+		// During creation: only validate source (updatability doesn't apply to initial values)
+		err = ValidatePropertiesForCreation(updates, serviceType.PropertySchema, "agent")
+	} else {
+		// During updates: validate both source and updatability
+		err = ValidatePropertiesForUpdate(updates, string(s.Status), serviceType.PropertySchema, "agent")
+	}
+
+	if err != nil {
+		return fmt.Errorf("invalid agent property updates: %w", err)
+	}
+
+	// Apply updates
+	if s.Properties == nil {
+		props := make(properties.JSON)
+		s.Properties = &props
+	}
+	for k, v := range updates {
+		(*s.Properties)[k] = v
+	}
+
+	return nil
+}
+
 // Validate a service
 func (s *Service) Validate() error {
 	if s.Name == "" {
@@ -327,6 +362,17 @@ func CreateServiceWithAgent(
 		return nil, err
 	}
 
+	// Load ServiceType to get property schema
+	serviceType, err := store.ServiceTypeRepo().Get(ctx, params.ServiceTypeID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate property source (user cannot set agent-source properties during creation)
+	if err := ValidatePropertiesForCreation(params.Properties, serviceType.PropertySchema, "user"); err != nil {
+		return nil, InvalidInputError{Err: err}
+	}
+
 	// Validate properties against schema
 	validationParams := &ServicePropertyValidationParams{
 		ServiceTypeID: params.ServiceTypeID,
@@ -403,6 +449,17 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 
 	// Merge and validate properties if provided
 	if params.Properties != nil {
+		// Load ServiceType to get property schema
+		serviceType, err := store.ServiceTypeRepo().Get(ctx, svc.ServiceTypeID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Validate property source and updatability
+		if err := ValidatePropertiesForUpdate(*params.Properties, string(svc.Status), serviceType.PropertySchema, "user"); err != nil {
+			return nil, InvalidInputError{Err: err}
+		}
+
 		// Merge partial properties with existing properties
 		mergedProperties := mergeServiceProperties(svc.Properties, *params.Properties)
 

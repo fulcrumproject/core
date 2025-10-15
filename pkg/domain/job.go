@@ -177,6 +177,7 @@ type CompleteJobParams struct {
 	JobID      properties.UUID  `json:"jobId"`
 	Resources  *properties.JSON `json:"resources"`
 	ExternalID *string          `json:"externalId"`
+	Properties map[string]any   `json:"properties,omitempty"`
 }
 
 type FailJobParams struct {
@@ -225,6 +226,12 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 	}
 	originalSvc := *svc
 
+	// Load ServiceType for property validation
+	serviceType, err := s.store.ServiceTypeRepo().Get(ctx, svc.ServiceTypeID)
+	if err != nil {
+		return err
+	}
+
 	return s.store.Atomic(ctx, func(store Store) error {
 		// Update job
 		if err := job.Complete(); err != nil {
@@ -232,6 +239,13 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 		}
 		if err := store.JobRepo().Save(ctx, job); err != nil {
 			return err
+		}
+
+		// Apply agent property updates if provided
+		if len(params.Properties) > 0 {
+			if err := svc.ApplyAgentPropertyUpdates(serviceType, params.Properties); err != nil {
+				return InvalidInputError{Err: err}
+			}
 		}
 
 		// Update service

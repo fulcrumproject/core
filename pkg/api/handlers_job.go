@@ -18,6 +18,7 @@ import (
 type CompleteJobReq struct {
 	Resources  *properties.JSON `json:"resources"`
 	ExternalID *string          `json:"externalID"`
+	Properties *properties.JSON `json:"properties,omitempty"`
 }
 
 type FailJobReq struct {
@@ -131,10 +132,17 @@ func (h *JobHandler) Pending(w http.ResponseWriter, r *http.Request) {
 
 // Adapter functions for standard handlers
 func (h *JobHandler) Complete(ctx context.Context, id properties.UUID, req *CompleteJobReq) error {
+	// Convert properties from JSON to map if provided
+	var properties map[string]any
+	if req.Properties != nil {
+		properties = *req.Properties
+	}
+
 	params := domain.CompleteJobParams{
 		JobID:      id,
 		Resources:  req.Resources,
 		ExternalID: req.ExternalID,
+		Properties: properties,
 	}
 	return h.commander.Complete(ctx, params)
 }

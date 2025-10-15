@@ -312,15 +312,281 @@ Combined validators example:
 }
 ```
 
-## Complete Example
+## Property Source
 
-Here's a comprehensive example for a VM service type:
+The `source` field controls who can set and update a property value. This enables proper separation between user-provided configuration and agent-discovered information.
 
+### Source Values
+
+#### input (default)
+Properties set by users through the API. These represent the desired configuration.
+
+```json
+{
+  "instanceName": {
+    "type": "string",
+    "label": "Instance Name",
+    "source": "input",
+    "required": true
+  }
+}
+```
+
+**Behavior:**
+- Users can set this property when creating a service
+- Users can update this property (subject to updatability rules)
+- Agents cannot modify this property
+- If `source` is omitted, "input" is the default
+
+#### agent
+Properties set by agents after provisioning resources. These represent actual provisioned values.
+
+```json
+{
+  "ipAddress": {
+    "type": "string",
+    "label": "Assigned IP Address",
+    "source": "agent"
+  }
+}
+```
+
+**Behavior:**
+- Users cannot set or update this property
+- Agents can set this property when completing a job
+- Agents can update this property (subject to updatability rules)
+- Typically used for discovered values like IP addresses, ports, UUIDs
+
+### Source Usage Patterns
+
+**Configuration vs Discovery**
+```json
+{
+  "diskSize": {
+    "type": "integer",
+    "label": "Disk Size (GB)",
+    "source": "input",
+    "required": true
+  },
+  "actualDiskPath": {
+    "type": "string",
+    "label": "Disk Path",
+    "source": "agent"
+  }
+}
+```
+
+User specifies `diskSize`, agent reports back `actualDiskPath` after provisioning.
+
+## Property Updatability
+
+The `updatable` field controls when and if a property can be modified after initial creation. This prevents accidental changes to immutable infrastructure or ensures changes only happen in safe states.
+
+### Updatable Values
+
+#### always (default)
+Property can be updated at any time in any service status.
+
+```json
+{
+  "description": {
+    "type": "string",
+    "label": "Description",
+    "updatable": "always"
+  }
+}
+```
+
+**Behavior:**
+- Can be updated in any service state
+- Suitable for metadata and non-critical settings
+- If `updatable` is omitted, "always" is the default
+
+#### never
+Property cannot be updated after initial creation (immutable).
+
+```json
+{
+  "uuid": {
+    "type": "string",
+    "label": "Instance UUID",
+    "source": "agent",
+    "updatable": "never"
+  }
+}
+```
+
+**Behavior:**
+- Can be set during initial service creation
+- Cannot be changed after initial creation
+- Any attempt to update returns a validation error
+- Suitable for identifiers and immutable configuration
+
+**Note:** For agent-source properties, "initial creation" means the first job completion (typically the Create job). Agents can set immutable properties during this first job, but cannot update them in subsequent jobs.
+
+#### statuses
+Property can only be updated when service is in specific statuses. Requires `updatableIn` array.
+
+```json
+{
+  "diskSize": {
+    "type": "integer",
+    "label": "Disk Size (GB)",
+    "source": "input",
+    "updatable": "statuses",
+    "updatableIn": ["Stopped"]
+  }
+}
+```
+
+**Behavior:**
+- Can only be updated when service status is in the `updatableIn` list
+- Updates attempted in other statuses return validation errors
+- Suitable for properties requiring service to be in a safe state
+
+### Updatability Patterns
+
+**Immutable Identifiers**
+```json
+{
+  "instanceId": {
+    "type": "string",
+    "label": "Cloud Instance ID",
+    "source": "agent",
+    "updatable": "never"
+  }
+}
+```
+
+**State-Conditional Updates**
 ```json
 {
   "cpu": {
     "type": "integer",
     "label": "CPU Cores",
+    "source": "input",
+    "updatable": "statuses",
+    "updatableIn": ["Stopped"],
+    "validators": [
+      { "type": "enum", "value": [1, 2, 4, 8] }
+    ]
+  },
+  "memory": {
+    "type": "integer",
+    "label": "Memory (GB)",
+    "source": "input",
+    "updatable": "statuses",
+    "updatableIn": ["Stopped"],
+    "validators": [
+      { "type": "enum", "value": [1, 2, 4, 8, 16] }
+    ]
+  }
+}
+```
+
+**Hot-Updatable Configuration**
+```json
+{
+  "maxConnections": {
+    "type": "integer",
+    "label": "Max Connections",
+    "source": "input",
+    "updatable": "statuses",
+    "updatableIn": ["Started", "Stopped"]
+  }
+}
+```
+
+### Combined Source and Updatability
+
+**User Configuration (Mutable)**
+```json
+{
+  "environment": {
+    "type": "string",
+    "label": "Environment",
+    "source": "input",
+    "updatable": "always",
+    "validators": [
+      { "type": "enum", "value": ["dev", "staging", "prod"] }
+    ]
+  }
+}
+```
+
+**User Configuration (Immutable After Creation)**
+```json
+{
+  "region": {
+    "type": "string",
+    "label": "Cloud Region",
+    "source": "input",
+    "updatable": "never",
+    "required": true
+  }
+}
+```
+
+**Agent-Discovered (Immutable)**
+```json
+{
+  "ipAddress": {
+    "type": "string",
+    "label": "IP Address",
+    "source": "agent",
+    "updatable": "never"
+  }
+}
+```
+
+**Agent-Discovered (Mutable)**
+```json
+{
+  "healthStatus": {
+    "type": "string",
+    "label": "Health Status",
+    "source": "agent",
+    "updatable": "always"
+  }
+}
+```
+
+## Complete Examples
+
+### VM Service Type with Mixed Sources
+
+Here's a comprehensive example for a VM service type with user configuration and agent-discovered properties:
+
+```json
+{
+  "instanceName": {
+    "type": "string",
+    "label": "Instance Name",
+    "source": "input",
+    "updatable": "always",
+    "required": true,
+    "validators": [
+      { "type": "minLength", "value": 3 },
+      { "type": "maxLength", "value": 50 },
+      { "type": "pattern", "value": "^[a-zA-Z0-9-]+$" }
+    ]
+  },
+  "region": {
+    "type": "string",
+    "label": "Cloud Region",
+    "source": "input",
+    "updatable": "never",
+    "required": true,
+    "validators": [
+      { "type": "enum", "value": ["us-east-1", "us-west-2", "eu-west-1"] }
+    ]
+  },
+  "cpu": {
+    "type": "integer",
+    "label": "CPU Cores",
+    "source": "input",
+    "updatable": "statuses",
+    "updatableIn": ["Stopped"],
     "required": true,
     "validators": [
       { "type": "enum", "value": [1, 2, 4, 8, 16, 32] }
@@ -328,63 +594,130 @@ Here's a comprehensive example for a VM service type:
   },
   "memory": {
     "type": "integer",
-    "label": "Memory (MB)",
+    "label": "Memory (GB)",
+    "source": "input",
+    "updatable": "statuses",
+    "updatableIn": ["Stopped"],
     "required": true,
     "validators": [
-      { "type": "enum", "value": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536] }
+      { "type": "enum", "value": [1, 2, 4, 8, 16, 32, 64] }
     ]
   },
-  "image_name": {
-    "type": "string",
-    "label": "Container Image",
+  "diskSize": {
+    "type": "integer",
+    "label": "Disk Size (GB)",
+    "source": "input",
+    "updatable": "statuses",
+    "updatableIn": ["Stopped"],
     "required": true,
     "validators": [
-      { "type": "minLength", "value": 5 },
-      { "type": "pattern", "value": "^[a-z0-9-]+$" }
+      { "type": "min", "value": 10 },
+      { "type": "max", "value": 1000 }
     ]
   },
-  "environment": {
+  "imageId": {
     "type": "string",
-    "label": "Environment",
-    "validators": [
-      { "type": "enum", "value": ["development", "staging", "production"] }
-    ]
+    "label": "VM Image ID",
+    "source": "input",
+    "updatable": "never",
+    "required": true
   },
-  "enable_monitoring": {
-    "type": "boolean",
-    "label": "Enable Monitoring",
-    "default": true
+  "instanceId": {
+    "type": "string",
+    "label": "Cloud Instance ID",
+    "source": "agent",
+    "updatable": "never"
   },
-  "metadata": {
+  "ipAddress": {
+    "type": "string",
+    "label": "IP Address",
+    "source": "agent",
+    "updatable": "never"
+  },
+  "privateIpAddress": {
+    "type": "string",
+    "label": "Private IP Address",
+    "source": "agent",
+    "updatable": "never"
+  },
+  "hostname": {
+    "type": "string",
+    "label": "Hostname",
+    "source": "agent",
+    "updatable": "never"
+  },
+  "tags": {
     "type": "object",
-    "label": "Service Metadata",
+    "label": "Resource Tags",
+    "source": "input",
+    "updatable": "always",
     "properties": {
-      "owner": {
+      "environment": {
         "type": "string",
-        "label": "Owner",
-        "required": true
+        "validators": [
+          { "type": "enum", "value": ["dev", "staging", "prod"] }
+        ]
       },
-      "version": {
-        "type": "number",
-        "label": "Version",
-        "default": 1.0
+      "owner": {
+        "type": "string"
       }
     }
+  }
+}
+```
+
+### Disk Service Type
+
+Example for a managed disk with state-conditional resizing:
+
+```json
+{
+  "name": {
+    "type": "string",
+    "label": "Disk Name",
+    "source": "input",
+    "updatable": "always",
+    "required": true
   },
-  "ports": {
-    "type": "array",
-    "label": "Port Configuration",
-    "items": {
-      "type": "integer",
-      "validators": [
-        { "type": "min", "value": 1 },
-        { "type": "max", "value": 65535 }
-      ]
-    },
+  "sizeGb": {
+    "type": "integer",
+    "label": "Size (GB)",
+    "source": "input",
+    "updatable": "statuses",
+    "updatableIn": ["Stopped"],
+    "required": true,
     "validators": [
-      { "type": "minItems", "value": 1 },
-      { "type": "maxItems", "value": 10 }
+      { "type": "min", "value": 10 },
+      { "type": "max", "value": 16384 }
     ]
+  },
+  "type": {
+    "type": "string",
+    "label": "Disk Type",
+    "source": "input",
+    "updatable": "never",
+    "required": true,
+    "validators": [
+      { "type": "enum", "value": ["ssd", "hdd", "nvme"] }
+    ]
+  },
+  "diskId": {
+    "type": "string",
+    "label": "Cloud Disk ID",
+    "source": "agent",
+    "updatable": "never"
+  },
+  "actualSizeGb": {
+    "type": "integer",
+    "label": "Actual Size (GB)",
+    "source": "agent",
+    "updatable": "always"
+  },
+  "devicePath": {
+    "type": "string",
+    "label": "Device Path",
+    "source": "agent",
+    "updatable": "never"
   }
 }
 ```
@@ -491,6 +824,13 @@ The validation system provides detailed error messages with path information:
 - `"referenced service must belong to the same service group"` - Group constraint violation
 - `"referenced service is not of the allowed service type"` - Service type constraint violation  
 - `"serviceType validator value must be a string or array of strings"` - Invalid validator configuration
+
+### Property Source and Updatability Error Messages
+
+- `"property 'propertyName' cannot be updated by user (source: agent)"` - User attempted to update an agent-source property
+- `"property 'propertyName' cannot be updated by agent (source: input)"` - Agent attempted to update a user-input property  
+- `"property 'propertyName' cannot be updated (updatable: never)"` - Attempted to update an immutable property
+- `"property 'propertyName' cannot be updated in status 'StatusName' (allowed statuses: [Status1, Status2])"` - Attempted to update a property in a disallowed status
 
 ## Migration and Updates
 

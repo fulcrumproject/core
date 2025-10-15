@@ -242,6 +242,78 @@ func TestJobHandleCompleteJob(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name: "SuccessWithProperties",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: `{
+				"resources": {"cpu": 2, "memory": 4},
+				"externalID": "ext-123",
+				"properties": {"ipAddress": "192.168.1.100", "port": 8080}
+			}`,
+			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
+				// Return a successful auth
+				authz.ShouldSucceed = true
+
+				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+					return &auth.AllwaysMatchObjectScope{}, nil
+				}
+
+				commander.completeFunc = func(ctx context.Context, params domain.CompleteJobParams) error {
+					// Verify properties were passed correctly
+					assert.NotNil(t, params.Properties)
+					assert.Equal(t, "192.168.1.100", params.Properties["ipAddress"])
+					assert.Equal(t, float64(8080), params.Properties["port"])
+					return nil
+				}
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "PropertyValidationError",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: `{
+				"resources": {"cpu": 2, "memory": 4},
+				"externalID": "ext-123",
+				"properties": {"instanceName": "new-name"}
+			}`,
+			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
+				// Return a successful auth
+				authz.ShouldSucceed = true
+
+				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+					return &auth.AllwaysMatchObjectScope{}, nil
+				}
+
+				commander.completeFunc = func(ctx context.Context, params domain.CompleteJobParams) error {
+					// Simulate validation error for user-source property
+					return domain.NewInvalidInputErrorf("property 'instanceName' cannot be updated by agent (source: input)")
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "SuccessWithoutProperties",
+			id:   "550e8400-e29b-41d4-a716-446655440000",
+			requestBody: `{
+				"resources": {"cpu": 2, "memory": 4},
+				"externalID": "ext-123"
+			}`,
+			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
+				// Return a successful auth
+				authz.ShouldSucceed = true
+
+				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+					return &auth.AllwaysMatchObjectScope{}, nil
+				}
+
+				commander.completeFunc = func(ctx context.Context, params domain.CompleteJobParams) error {
+					// Verify properties is nil/empty when not provided
+					assert.Nil(t, params.Properties)
+					return nil
+				}
+			},
+			expectedStatus: http.StatusNoContent,
+		},
 	}
 
 	for _, tc := range testCases {
