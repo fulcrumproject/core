@@ -269,17 +269,7 @@ func TestGormEventRepository_Uptime(t *testing.T) {
 
 	t.Run("No events - service never existed", func(t *testing.T) {
 		serviceID := properties.UUID(uuid.New())
-		service := &domain.Service{
-			Name:          "TestService",
-			Status:        "Started",
-			ServiceTypeID: serviceType.ID,
-			AgentID:       properties.UUID(uuid.New()),
-			GroupID:       properties.UUID(uuid.New()),
-			ProviderID:    properties.UUID(uuid.New()),
-			ConsumerID:    properties.UUID(uuid.New()),
-		}
-		service.ID = serviceID
-		require.NoError(t, serviceRepo.Save(context.Background(), service))
+		createTestServiceForUptime(t, serviceRepo, serviceType.ID, serviceID)
 
 		uptimeSeconds, downtimeSeconds, err := repo.ServiceUptime(context.Background(), serviceID, start, end)
 		require.NoError(t, err)
@@ -289,17 +279,7 @@ func TestGormEventRepository_Uptime(t *testing.T) {
 
 	t.Run("Service running entire period", func(t *testing.T) {
 		serviceID := properties.UUID(uuid.New())
-		service := &domain.Service{
-			Name:          "TestService",
-			Status:        "Started",
-			ServiceTypeID: serviceType.ID,
-			AgentID:       properties.UUID(uuid.New()),
-			GroupID:       properties.UUID(uuid.New()),
-			ProviderID:    properties.UUID(uuid.New()),
-			ConsumerID:    properties.UUID(uuid.New()),
-		}
-		service.ID = serviceID
-		require.NoError(t, serviceRepo.Save(context.Background(), service))
+		createTestServiceForUptime(t, serviceRepo, serviceType.ID, serviceID)
 
 		// Create a service transition event before the start time showing service was started
 		createTestServiceEvent(t, repo, serviceID, "Started", baseTime.Add(-30*time.Minute))
@@ -312,17 +292,7 @@ func TestGormEventRepository_Uptime(t *testing.T) {
 
 	t.Run("Service stopped entire period", func(t *testing.T) {
 		serviceID := properties.UUID(uuid.New())
-		service := &domain.Service{
-			Name:          "TestService",
-			Status:        "Started",
-			ServiceTypeID: serviceType.ID,
-			AgentID:       properties.UUID(uuid.New()),
-			GroupID:       properties.UUID(uuid.New()),
-			ProviderID:    properties.UUID(uuid.New()),
-			ConsumerID:    properties.UUID(uuid.New()),
-		}
-		service.ID = serviceID
-		require.NoError(t, serviceRepo.Save(context.Background(), service))
+		createTestServiceForUptime(t, serviceRepo, serviceType.ID, serviceID)
 
 		// Create a service transition event before the start time showing service was stopped
 		createTestServiceEvent(t, repo, serviceID, "Stopped", baseTime.Add(-30*time.Minute))
@@ -335,17 +305,7 @@ func TestGormEventRepository_Uptime(t *testing.T) {
 
 	t.Run("Service started during period", func(t *testing.T) {
 		serviceID := properties.UUID(uuid.New())
-		service := &domain.Service{
-			Name:          "TestService",
-			Status:        "Started",
-			ServiceTypeID: serviceType.ID,
-			AgentID:       properties.UUID(uuid.New()),
-			GroupID:       properties.UUID(uuid.New()),
-			ProviderID:    properties.UUID(uuid.New()),
-			ConsumerID:    properties.UUID(uuid.New()),
-		}
-		service.ID = serviceID
-		require.NoError(t, serviceRepo.Save(context.Background(), service))
+		createTestServiceForUptime(t, serviceRepo, serviceType.ID, serviceID)
 
 		// Service starts 20 minutes into the period
 		createTestServiceEvent(t, repo, serviceID, "Started", start.Add(20*time.Minute))
@@ -370,6 +330,8 @@ func TestGormEventRepository_Uptime_2(t *testing.T) {
 	repo := NewEventRepository(testDB.DB)
 	serviceTypeRepo := NewServiceTypeRepository(testDB.DB)
 	serviceRepo := NewServiceRepository(testDB.DB)
+	serviceType := createTestServiceType(t)
+	require.NoError(t, serviceTypeRepo.Create(context.Background(), serviceType))
 
 	// Test time range
 	baseTime := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -378,21 +340,7 @@ func TestGormEventRepository_Uptime_2(t *testing.T) {
 
 	t.Run("Service starts and stops during period", func(t *testing.T) {
 		serviceID := properties.UUID(uuid.New())
-		// Create service type and service
-		serviceType := createTestServiceType(t)
-		require.NoError(t, serviceTypeRepo.Create(context.Background(), serviceType))
-
-		service := &domain.Service{
-			Name:          "TestService",
-			Status:        "Started",
-			ServiceTypeID: serviceType.ID,
-			AgentID:       properties.UUID(uuid.New()),
-			GroupID:       properties.UUID(uuid.New()),
-			ProviderID:    properties.UUID(uuid.New()),
-			ConsumerID:    properties.UUID(uuid.New()),
-		}
-		service.ID = serviceID
-		require.NoError(t, serviceRepo.Save(context.Background(), service))
+		createTestServiceForUptime(t, serviceRepo, serviceType.ID, serviceID)
 
 		// Service starts 15 minutes into the period
 		createTestServiceEvent(t, repo, serviceID, "Started", start.Add(15*time.Minute))
@@ -409,6 +357,22 @@ func TestGormEventRepository_Uptime_2(t *testing.T) {
 		assert.Equal(t, uint64(1800), uptimeSeconds)
 		assert.Equal(t, uint64(1800), downtimeSeconds)
 	})
+}
+
+// createTestServiceForUptime creates a test service with a specific ID for uptime testing
+func createTestServiceForUptime(t *testing.T, serviceRepo *GormServiceRepository, serviceTypeID properties.UUID, serviceID properties.UUID) {
+	t.Helper()
+	service := &domain.Service{
+		Name:          "TestService",
+		Status:        "Started",
+		ServiceTypeID: serviceTypeID,
+		AgentID:       properties.UUID(uuid.New()),
+		GroupID:       properties.UUID(uuid.New()),
+		ProviderID:    properties.UUID(uuid.New()),
+		ConsumerID:    properties.UUID(uuid.New()),
+	}
+	service.ID = serviceID
+	require.NoError(t, serviceRepo.Save(context.Background(), service))
 }
 
 func createTestServiceEvent(t *testing.T, repo *GormEventRepository, serviceID properties.UUID, newStatus string, createdAt time.Time) {
