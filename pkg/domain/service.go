@@ -424,6 +424,13 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 			}
 		}
 		if action {
+			// Check if service is in a terminal state
+			if serviceType.LifecycleSchema != nil {
+				if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
+					return NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
+				}
+			}
+
 			// Check if the service is in a valid state to be updated with a job
 			if serviceType.LifecycleSchema != nil {
 				if err := serviceType.LifecycleSchema.ValidateActionAllowed(svc.Status, "update"); err != nil {
@@ -470,6 +477,13 @@ func DoServiceAction(ctx context.Context, store Store, params DoServiceActionPar
 	serviceType, err := store.ServiceTypeRepo().Get(ctx, svc.ServiceTypeID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if service is in a terminal state
+	if serviceType.LifecycleSchema != nil {
+		if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
+			return nil, NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
+		}
 	}
 
 	// Check if the service is in a valid state to perform this action
