@@ -406,6 +406,8 @@ components:
           example: "VM"
         propertySchema:
           $ref: "#/components/schemas/PropertySchema"
+        lifecycleSchema:
+          $ref: "#/components/schemas/LifecycleSchema"
         createdAt:
           type: string
           format: date-time
@@ -426,6 +428,9 @@ components:
         propertySchema:
           $ref: "#/components/schemas/PropertySchema"
           description: Optional property schema defining the structure and validation rules for service properties
+        lifecycleSchema:
+          $ref: "#/components/schemas/LifecycleSchema"
+          description: Optional lifecycle schema defining states, actions, and transitions for services of this type
 
     UpdateServiceTypeReq:
       type: object
@@ -438,6 +443,9 @@ components:
         propertySchema:
           $ref: "#/components/schemas/PropertySchema"
           description: Updated property schema defining the structure and validation rules for service properties
+        lifecycleSchema:
+          $ref: "#/components/schemas/LifecycleSchema"
+          description: Updated lifecycle schema defining states, actions, and transitions for services of this type
 
     # Agent Type schemas
     CreateAgentTypeReq:
@@ -919,6 +927,109 @@ components:
           message: "property 'region' cannot be updated (updatable: never)"
         - path: "diskSize"
           message: "property 'diskSize' cannot be updated in status 'Started' (allowed statuses: [Stopped])"
+
+    # Lifecycle Schema
+    LifecycleSchema:
+      type: object
+      description: |
+        Schema-driven lifecycle definition for service state management. Each ServiceType can define
+        its own custom lifecycle with states, actions, and transitions.
+      required:
+        - states
+        - actions
+        - initialState
+      properties:
+        states:
+          type: array
+          description: List of possible service states
+          items:
+            $ref: "#/components/schemas/LifecycleState"
+          example:
+            - name: "New"
+            - name: "Stopped"
+            - name: "Started"
+            - name: "Deleted"
+        actions:
+          type: array
+          description: List of available actions that can be performed on services
+          items:
+            $ref: "#/components/schemas/LifecycleAction"
+        initialState:
+          type: string
+          description: Initial state for new services
+          example: "New"
+        terminalStates:
+          type: array
+          description: States where no further actions can be performed
+          items:
+            type: string
+          example: ["Deleted"]
+        runningStates:
+          type: array
+          description: States considered "running" for uptime calculation
+          items:
+            type: string
+          example: ["Started"]
+
+    LifecycleState:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Unique name for this state
+          example: "Started"
+
+    LifecycleAction:
+      type: object
+      required:
+        - name
+        - transitions
+      properties:
+        name:
+          type: string
+          description: Name of the action (e.g., start, stop, restart)
+          example: "start"
+        requestSchemaType:
+          type: string
+          enum: [properties]
+          description: |
+            Type of request body expected for this action:
+            - properties: Action accepts service properties in request body
+            - (none): Action requires no request body
+          example: "properties"
+        transitions:
+          type: array
+          description: State transitions for this action
+          items:
+            $ref: "#/components/schemas/LifecycleTransition"
+
+    LifecycleTransition:
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          type: string
+          description: Source state for this transition
+          example: "Stopped"
+        to:
+          type: string
+          description: Destination state for this transition
+          example: "Started"
+        onError:
+          type: boolean
+          description: Whether this transition applies to error cases
+          default: false
+        onErrorRegexp:
+          type: string
+          description: |
+            Regular expression to match error messages. When a job fails, the error message
+            is matched against this regexp to determine which error transition to use.
+            If not specified, matches any error.
+          example: "quota.*exceeded"
 
   responses:
     BadRequest:
@@ -1928,18 +2039,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
 
-  /services/{id}/start:
+  /services/{id}/{action}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
           $ref: "#/components/schemas/properties.UUID"
+      - name: action
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The lifecycle action to perform (e.g., start, stop, restart). Available actions are defined in the service type's lifecycle schema.
+        example: "start"
     post:
-      summary: Start a service
+      summary: Perform a lifecycle action on a service
       tags:
         - Services
-      description: Starts a service by ID
+      description: |
+        Performs a generic lifecycle action on a service. The action name is specified in the URL path
+        and must be defined in the service type's lifecycle schema. 
+        
+        Common actions include: start, stop, restart, pause, resume, etc.
+        
+        Note: Use DELETE /services/{id} for delete actions and PATCH /services/{id} for update actions.
       x-auth-permissions:
         - role: admin
           permission: always
@@ -1947,38 +2071,31 @@ paths:
           permission: services where it is the consumer participant
         - role: agent
           permission: not authorized
+      requestBody:
+        required: false
+        description: Optional properties for actions that require additional parameters (based on lifecycle schema requestSchemaType)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                properties:
+                  type: object
+                  additionalProperties: true
+                  description: Action-specific properties
       responses:
-        "204":
-          description: Service start operation initiated successfully
-        "404":
-          description: Service not found
+        "200":
+          description: Service action initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceRes"
+        "400":
+          description: Invalid action or service state does not allow this action
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
-
-  /services/{id}/stop:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          $ref: "#/components/schemas/properties.UUID"
-    post:
-      summary: Stop a service
-      tags:
-        - Services
-      description: Stops a service by ID
-      x-auth-permissions:
-        - role: admin
-          permission: always
-        - role: participant
-          permission: services where it is the consumer participant
-        - role: agent
-          permission: not authorized
-      responses:
-        "204":
-          description: Service stop operation initiated successfully
         "404":
           description: Service not found
           content:
