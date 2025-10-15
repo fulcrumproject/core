@@ -14,11 +14,10 @@ import (
 type JobStatus string
 
 const (
-	JobPending     JobStatus = "Pending"
-	JobProcessing  JobStatus = "Processing"
-	JobCompleted   JobStatus = "Completed"
-	JobFailed      JobStatus = "Failed"
-	JobUnsupported JobStatus = "Unsupported"
+	JobPending    JobStatus = "Pending"
+	JobProcessing JobStatus = "Processing"
+	JobCompleted  JobStatus = "Completed"
+	JobFailed     JobStatus = "Failed"
 )
 
 // Validate checks if the service status is valid
@@ -28,8 +27,7 @@ func (s JobStatus) Validate() error {
 		JobPending,
 		JobProcessing,
 		JobCompleted,
-		JobFailed,
-		JobUnsupported:
+		JobFailed:
 		return nil
 	default:
 		return fmt.Errorf("invalid job status: %s", s)
@@ -141,18 +139,6 @@ func (j *Job) Fail(errorMessage string) error {
 	return nil
 }
 
-// Unsupported marks a job as failed due to unsupported operation
-func (j *Job) Unsupported(errorMessage string) error {
-	if j.Status != JobProcessing {
-		return fmt.Errorf("cannot mark as unsupported a job not in processing status")
-	}
-	j.Status = JobUnsupported
-	j.ErrorMessage = errorMessage
-	now := time.Now()
-	j.CompletedAt = &now
-	return nil
-}
-
 // IsActive checks if the job is active
 func (j *Job) IsActive() bool {
 	return j.Status == JobProcessing || j.Status == JobPending || j.Status == JobFailed
@@ -168,9 +154,6 @@ type JobCommander interface {
 
 	// Fail marks a job as failed
 	Fail(ctx context.Context, params FailJobParams) error
-
-	// Unsupported marks a job as failed due to unsupported operation
-	Unsupported(ctx context.Context, params UnsupportedJobParams) error
 }
 
 type CompleteJobParams struct {
@@ -181,11 +164,6 @@ type CompleteJobParams struct {
 }
 
 type FailJobParams struct {
-	JobID        properties.UUID `json:"jobId"`
-	ErrorMessage string          `json:"errorMessage"`
-}
-
-type UnsupportedJobParams struct {
 	JobID        properties.UUID `json:"jobId"`
 	ErrorMessage string          `json:"errorMessage"`
 }
@@ -276,29 +254,45 @@ func (s *jobCommander) Fail(ctx context.Context, params FailJobParams) error {
 	if err != nil {
 		return err
 	}
+	svc, err := s.store.ServiceRepo().Get(ctx, job.ServiceID)
+	if err != nil {
+		return err
+	}
+	originalSvc := *svc
+
+	// Load ServiceType to get lifecycle schema
+	serviceType, err := s.store.ServiceTypeRepo().Get(ctx, svc.ServiceTypeID)
+	if err != nil {
+		return err
+	}
 
 	return s.store.Atomic(ctx, func(store Store) error {
+		// Update job
 		if err := job.Fail(params.ErrorMessage); err != nil {
 			return InvalidInputError{Err: err}
 		}
 		if err := store.JobRepo().Save(ctx, job); err != nil {
 			return err
 		}
-		return err
-	})
-}
 
-func (s *jobCommander) Unsupported(ctx context.Context, params UnsupportedJobParams) error {
-	job, err := s.store.JobRepo().Get(ctx, params.JobID)
-	if err != nil {
-		return err
-	}
-
-	return s.store.Atomic(ctx, func(store Store) error {
-		if err := job.Unsupported(params.ErrorMessage); err != nil {
+		// Update service state using error message for transition logic (regexp matching)
+		errorCode := &params.ErrorMessage
+		if err := svc.HandleJobComplete(serviceType.LifecycleSchema, job.Action, errorCode, job.Params, nil, nil); err != nil {
 			return InvalidInputError{Err: err}
 		}
-		if err := store.JobRepo().Save(ctx, job); err != nil {
+		if err := svc.Validate(); err != nil {
+			return InvalidInputError{Err: err}
+		}
+		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+			return err
+		}
+
+		// Create event for the updated service
+		eventEntry, err := NewEvent(EventTypeServiceTransitioned, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
+		if err != nil {
+			return err
+		}
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 		return nil

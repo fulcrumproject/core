@@ -7183,63 +7183,6 @@ func (_c *MockJobCommander_Fail_Call) RunAndReturn(run func(ctx context.Context,
 	return _c
 }
 
-// Unsupported provides a mock function for the type MockJobCommander
-func (_mock *MockJobCommander) Unsupported(ctx context.Context, params UnsupportedJobParams) error {
-	ret := _mock.Called(ctx, params)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Unsupported")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, UnsupportedJobParams) error); ok {
-		r0 = returnFunc(ctx, params)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockJobCommander_Unsupported_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Unsupported'
-type MockJobCommander_Unsupported_Call struct {
-	*mock.Call
-}
-
-// Unsupported is a helper method to define mock.On call
-//   - ctx context.Context
-//   - params UnsupportedJobParams
-func (_e *MockJobCommander_Expecter) Unsupported(ctx interface{}, params interface{}) *MockJobCommander_Unsupported_Call {
-	return &MockJobCommander_Unsupported_Call{Call: _e.mock.On("Unsupported", ctx, params)}
-}
-
-func (_c *MockJobCommander_Unsupported_Call) Run(run func(ctx context.Context, params UnsupportedJobParams)) *MockJobCommander_Unsupported_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 UnsupportedJobParams
-		if args[1] != nil {
-			arg1 = args[1].(UnsupportedJobParams)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockJobCommander_Unsupported_Call) Return(err error) *MockJobCommander_Unsupported_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockJobCommander_Unsupported_Call) RunAndReturn(run func(ctx context.Context, params UnsupportedJobParams) error) *MockJobCommander_Unsupported_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // NewMockJobRepository creates a new instance of MockJobRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockJobRepository(t interface {
