@@ -165,21 +165,21 @@ func (h *JobHandler) Unsupported(ctx context.Context, id properties.UUID, req *U
 
 // JobRes represents the response for a job
 type JobRes struct {
-	ID           properties.UUID      `json:"id"`
-	ProviderID   properties.UUID      `json:"providerId"`
-	ConsumerID   properties.UUID      `json:"consumerId"`
-	AgentID      properties.UUID      `json:"agentId"`
-	ServiceID    properties.UUID      `json:"serviceId"`
-	Action       domain.ServiceAction `json:"action"`
-	Params       *properties.JSON     `json:"params,omitempty"`
-	Status       domain.JobStatus     `json:"status"`
-	Priority     int                  `json:"priority"`
-	ErrorMessage string               `json:"errorMessage,omitempty"`
-	ClaimedAt    *JSONUTCTime         `json:"claimedAt,omitempty"`
-	CompletedAt  *JSONUTCTime         `json:"completedAt,omitempty"`
-	CreatedAt    JSONUTCTime          `json:"createdAt"`
-	UpdatedAt    JSONUTCTime          `json:"updatedAt"`
-	Service      *ServiceRes          `json:"service,omitempty"`
+	ID           properties.UUID  `json:"id"`
+	ProviderID   properties.UUID  `json:"providerId"`
+	ConsumerID   properties.UUID  `json:"consumerId"`
+	AgentID      properties.UUID  `json:"agentId"`
+	ServiceID    properties.UUID  `json:"serviceId"`
+	Action       string           `json:"action"`
+	Params       *properties.JSON `json:"params,omitempty"`
+	Status       domain.JobStatus `json:"status"`
+	Priority     int              `json:"priority"`
+	ErrorMessage string           `json:"errorMessage,omitempty"`
+	ClaimedAt    *JSONUTCTime     `json:"claimedAt,omitempty"`
+	CompletedAt  *JSONUTCTime     `json:"completedAt,omitempty"`
+	CreatedAt    JSONUTCTime      `json:"createdAt"`
+	UpdatedAt    JSONUTCTime      `json:"updatedAt"`
+	Service      *ServiceRes      `json:"service,omitempty"`
 }
 
 // JobToRes converts a job entity to a response

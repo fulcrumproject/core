@@ -51,7 +51,7 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 							ConsumerID: uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
 							AgentID:    agentID,
 							ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
-							Action:     domain.ServiceActionCreate,
+							Action:     "create",
 							Status:     domain.JobPending,
 							Priority:   1,
 						},
@@ -65,7 +65,7 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 							ConsumerID: uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
 							AgentID:    agentID,
 							ServiceID:  uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
-							Action:     domain.ServiceActionDelete,
+							Action:     "delete",
 							Status:     domain.JobPending,
 							Priority:   2,
 						},
@@ -455,7 +455,7 @@ func TestJobToResponse(t *testing.T) {
 		ConsumerID:   uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
 		AgentID:      uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
 		ServiceID:    uuid.MustParse("950e8400-e29b-41d4-a716-446655440000"),
-		Action:       domain.ServiceActionCreate,
+		Action:       "create",
 		Status:       domain.JobProcessing,
 		Priority:     1,
 		ClaimedAt:    &claimedAt,
@@ -471,7 +471,7 @@ func TestJobToResponse(t *testing.T) {
 	assert.Equal(t, "750e8400-e29b-41d4-a716-446655440000", response.ConsumerID.String())
 	assert.Equal(t, "850e8400-e29b-41d4-a716-446655440000", response.AgentID.String())
 	assert.Equal(t, "950e8400-e29b-41d4-a716-446655440000", response.ServiceID.String())
-	assert.Equal(t, domain.ServiceActionCreate, response.Action)
+	assert.Equal(t, "create", response.Action)
 	assert.Equal(t, domain.JobProcessing, response.Status)
 	assert.Equal(t, 1, response.Priority)
 	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)

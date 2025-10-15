@@ -192,7 +192,7 @@ func (h *ServiceHandler) Update(ctx context.Context, id properties.UUID, req *Up
 func (h *ServiceHandler) Start(ctx context.Context, id properties.UUID) error {
 	params := domain.DoServiceActionParams{
 		ID:     id,
-		Action: domain.ServiceActionStart,
+		Action: "start",
 	}
 	_, err := h.commander.DoAction(ctx, params)
 	return err
@@ -201,7 +201,7 @@ func (h *ServiceHandler) Start(ctx context.Context, id properties.UUID) error {
 func (h *ServiceHandler) Stop(ctx context.Context, id properties.UUID) error {
 	params := domain.DoServiceActionParams{
 		ID:     id,
-		Action: domain.ServiceActionStop,
+		Action: "stop",
 	}
 	_, err := h.commander.DoAction(ctx, params)
 	return err
@@ -210,7 +210,7 @@ func (h *ServiceHandler) Stop(ctx context.Context, id properties.UUID) error {
 func (h *ServiceHandler) Delete(ctx context.Context, id properties.UUID) error {
 	params := domain.DoServiceActionParams{
 		ID:     id,
-		Action: domain.ServiceActionDelete,
+		Action: "delete",
 	}
 	_, err := h.commander.DoAction(ctx, params)
 	return err
@@ -223,19 +223,19 @@ func (h *ServiceHandler) Retry(ctx context.Context, id properties.UUID) error {
 
 // ServiceRes represents the response body for service operations
 type ServiceRes struct {
-	ID            properties.UUID      `json:"id"`
-	ProviderID    properties.UUID      `json:"providerId"`
-	ConsumerID    properties.UUID      `json:"consumerId"`
-	AgentID       properties.UUID      `json:"agentId"`
-	ServiceTypeID properties.UUID      `json:"serviceTypeId"`
-	GroupID       properties.UUID      `json:"groupId"`
-	ExternalID    *string              `json:"externalId,omitempty"`
-	Name          string               `json:"name"`
-	Status        domain.ServiceStatus `json:"status"`
-	Properties    *properties.JSON     `json:"properties,omitempty"`
-	Resources     *properties.JSON     `json:"resources,omitempty"`
-	CreatedAt     JSONUTCTime          `json:"createdAt"`
-	UpdatedAt     JSONUTCTime          `json:"updatedAt"`
+	ID            properties.UUID  `json:"id"`
+	ProviderID    properties.UUID  `json:"providerId"`
+	ConsumerID    properties.UUID  `json:"consumerId"`
+	AgentID       properties.UUID  `json:"agentId"`
+	ServiceTypeID properties.UUID  `json:"serviceTypeId"`
+	GroupID       properties.UUID  `json:"groupId"`
+	ExternalID    *string          `json:"externalId,omitempty"`
+	Name          string           `json:"name"`
+	Status        string           `json:"status"`
+	Properties    *properties.JSON `json:"properties,omitempty"`
+	Resources     *properties.JSON `json:"resources,omitempty"`
+	CreatedAt     JSONUTCTime      `json:"createdAt"`
+	UpdatedAt     JSONUTCTime      `json:"updatedAt"`
 }
 
 // ServiceToRes converts a domain.Service to a ServiceResponse

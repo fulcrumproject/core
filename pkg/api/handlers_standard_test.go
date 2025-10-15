@@ -1286,7 +1286,7 @@ func TestStandardHandlersIntegration(t *testing.T) {
 	})
 
 	// Test Delete
-	t.Run("Delete", func(t *testing.T) {
+	t.Run("delete", func(t *testing.T) {
 		req := httptest.NewRequest("DELETE", "/test/"+testID.String(), nil)
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("id", testID.String())

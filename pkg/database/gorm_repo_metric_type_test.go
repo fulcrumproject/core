@@ -18,7 +18,7 @@ func TestMetricTypeRepository(t *testing.T) {
 	defer testDB.Cleanup(t)
 	repo := NewMetricTypeRepository(testDB.DB)
 
-	t.Run("Create", func(t *testing.T) {
+	t.Run("create", func(t *testing.T) {
 		metricType := &domain.MetricType{
 			Name:       "CPU Usage",
 			EntityType: domain.MetricEntityTypeService,
@@ -103,7 +103,7 @@ func TestMetricTypeRepository(t *testing.T) {
 		assert.Equal(t, domain.MetricEntityTypeResource, found.EntityType)
 	})
 
-	t.Run("Delete", func(t *testing.T) {
+	t.Run("delete", func(t *testing.T) {
 		// Create a metric type
 		metricType := &domain.MetricType{
 			Name:       "Disk Usage",

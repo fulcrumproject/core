@@ -137,7 +137,7 @@ func TestServiceHandleCreate(t *testing.T) {
 						GroupID:       params.GroupID,
 						ConsumerID:    consumerID,
 						ProviderID:    providerID,
-						Status:        domain.ServiceNew,
+						Status:        "New",
 						Properties:    &params.Properties,
 					}, nil
 				}
@@ -243,7 +243,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 							UpdatedAt: updatedAt,
 						},
 						Name:       "Updated Service",
-						Status:     domain.ServiceStarted,
+						Status:     "Started",
 						Properties: params.Properties,
 					}, nil
 				}
@@ -341,24 +341,24 @@ func TestServiceHandleTransition(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		transitionTo   domain.ServiceStatus
+		transitionTo   string
 		mockSetup      func(commander *mockServiceCommander)
 		expectedStatus int
 	}{
 		{
 			name:         "SuccessfulStart",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
-			transitionTo: domain.ServiceStarted,
+			transitionTo: "Started",
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander for successful transition
 				commander.doActionFunc = func(ctx context.Context, params domain.DoServiceActionParams) (*domain.Service, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), params.ID)
-					assert.Equal(t, domain.ServiceActionStart, params.Action)
+					assert.Equal(t, "start", params.Action)
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
 							ID: params.ID,
 						},
-						Status: domain.ServiceStarted,
+						Status: "Started",
 					}, nil
 				}
 			},
@@ -367,17 +367,17 @@ func TestServiceHandleTransition(t *testing.T) {
 		{
 			name:         "SuccessfulStop",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
-			transitionTo: domain.ServiceStopped,
+			transitionTo: "Stopped",
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander for successful transition
 				commander.doActionFunc = func(ctx context.Context, params domain.DoServiceActionParams) (*domain.Service, error) {
 					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), params.ID)
-					assert.Equal(t, domain.ServiceActionStop, params.Action)
+					assert.Equal(t, "stop", params.Action)
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
 							ID: params.ID,
 						},
-						Status: domain.ServiceStopped,
+						Status: "Stopped",
 					}, nil
 				}
 			},
@@ -386,7 +386,7 @@ func TestServiceHandleTransition(t *testing.T) {
 		{
 			name:         "SuccessfulDelete",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
-			transitionTo: domain.ServiceDeleted,
+			transitionTo: "Deleted",
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander for successful transition
 				commander.doActionFunc = func(ctx context.Context, params domain.DoServiceActionParams) (*domain.Service, error) {
@@ -395,7 +395,7 @@ func TestServiceHandleTransition(t *testing.T) {
 						BaseEntity: domain.BaseEntity{
 							ID: params.ID,
 						},
-						Status: domain.ServiceDeleted,
+						Status: "Deleted",
 					}, nil
 				}
 			},
@@ -404,7 +404,7 @@ func TestServiceHandleTransition(t *testing.T) {
 		{
 			name:         "InvalidStatusTransition",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
-			transitionTo: domain.ServiceStarted,
+			transitionTo: "Started",
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander to return an error for invalid transition
 				commander.doActionFunc = func(ctx context.Context, params domain.DoServiceActionParams) (*domain.Service, error) {
@@ -416,7 +416,7 @@ func TestServiceHandleTransition(t *testing.T) {
 		{
 			name:         "ServiceNotFound",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
-			transitionTo: domain.ServiceStarted,
+			transitionTo: "Started",
 			mockSetup: func(commander *mockServiceCommander) {
 				// Setup the commander to return not found
 				commander.doActionFunc = func(ctx context.Context, params domain.DoServiceActionParams) (*domain.Service, error) {
@@ -456,11 +456,11 @@ func TestServiceHandleTransition(t *testing.T) {
 			w := httptest.NewRecorder()
 			middlewareHandler := middlewares.ID(CommandWithoutBody(func(ctx context.Context, id properties.UUID) error {
 				switch tc.transitionTo {
-				case domain.ServiceStarted:
+				case "Started":
 					return handler.Start(ctx, id)
-				case domain.ServiceStopped:
+				case "Stopped":
 					return handler.Stop(ctx, id)
-				case domain.ServiceDeleted:
+				case "Deleted":
 					return handler.Delete(ctx, id)
 				default:
 					return fmt.Errorf("unsupported transition: %v", tc.transitionTo)
@@ -494,7 +494,7 @@ func TestServiceHandleRetry(t *testing.T) {
 						BaseEntity: domain.BaseEntity{
 							ID: id,
 						},
-						Status: domain.ServiceNew,
+						Status: "New",
 					}, nil
 				}
 			},
@@ -793,7 +793,7 @@ func TestServiceToResponse(t *testing.T) {
 		ConsumerID:    consumerID,
 		ProviderID:    providerID,
 		ExternalID:    &externalID,
-		Status:        domain.ServiceNew,
+		Status:        "New",
 		Properties:    &props,
 		Resources:     &resources,
 	}
@@ -810,7 +810,7 @@ func TestServiceToResponse(t *testing.T) {
 	assert.Equal(t, consumerID, response.ConsumerID)
 	assert.Equal(t, providerID, response.ProviderID)
 	assert.Equal(t, externalID, *response.ExternalID)
-	assert.Equal(t, domain.ServiceNew, response.Status)
+	assert.Equal(t, "New", response.Status)
 	assert.Equal(t, props, *response.Properties)
 	assert.Equal(t, resources, *response.Resources)
 	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)

@@ -24,7 +24,7 @@ func TestAgentRepository(t *testing.T) {
 	participantRepo := NewParticipantRepository(tdb.DB)
 	agentTypeRepo := NewAgentTypeRepository(tdb.DB)
 
-	t.Run("Create", func(t *testing.T) {
+	t.Run("create", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 
@@ -378,7 +378,7 @@ func TestAgentRepository(t *testing.T) {
 		})
 	})
 
-	t.Run("Delete", func(t *testing.T) {
+	t.Run("delete", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 

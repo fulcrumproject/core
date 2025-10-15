@@ -16,7 +16,7 @@ type GormJobRepository struct {
 }
 
 var applyJobFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"action":    ParserInFilterFieldApplier("jobs.action", domain.ParseServiceAction),
+	"action":    StringInFilterFieldApplier("jobs.action"),
 	"status":    ParserInFilterFieldApplier("jobs.status", domain.ParseJobStatus),
 	"agentId":   ParserInFilterFieldApplier("jobs.agent_id", properties.ParseUUID),
 	"serviceId": ParserInFilterFieldApplier("jobs.service_id", properties.ParseUUID),

@@ -86,7 +86,7 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, pro
 		Name:          fmt.Sprintf("Test Service %s", randomSuffix),
 		ServiceTypeID: serviceTypeID,
 		GroupID:       serviceGroupID,
-		Status:        domain.ServiceStarted,
+		Status:        "Started",
 		ProviderID:    providerParticipantID,
 		ConsumerID:    consumerParticipantID,
 		AgentID:       agentID,

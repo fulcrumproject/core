@@ -49,7 +49,7 @@ func ParseJobStatus(s string) (JobStatus, error) {
 type Job struct {
 	BaseEntity
 
-	Action   ServiceAction    `gorm:"type:varchar(50);not null"`
+	Action   string           `gorm:"type:varchar(50);not null"`
 	Params   *properties.JSON `gorm:"type:jsonb"`
 	Priority int              `gorm:"not null;default:1"`
 
@@ -77,8 +77,8 @@ func (Job) TableName() string {
 
 // Validate ensures all Job fields are valid
 func (j *Job) Validate() error {
-	if err := j.Action.Validate(); err != nil {
-		return fmt.Errorf("invalid action: %w", err)
+	if j.Action == "" {
+		return fmt.Errorf("action cannot be empty")
 	}
 	if err := j.Status.Validate(); err != nil {
 		return fmt.Errorf("invalid status: %w", err)
@@ -96,7 +96,7 @@ func (j *Job) Validate() error {
 }
 
 // NewJob creates a new job instance with the provided parameters
-func NewJob(svc *Service, action ServiceAction, params *properties.JSON, priority int) *Job {
+func NewJob(svc *Service, action string, params *properties.JSON, priority int) *Job {
 	return &Job{
 		ConsumerID: svc.ConsumerID,
 		ProviderID: svc.ProviderID,
@@ -249,7 +249,7 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 		}
 
 		// Update service
-		if err := svc.HandleJobComplete(job.Action, job.Params, params.Resources, params.ExternalID); err != nil {
+		if err := svc.HandleJobComplete(serviceType.LifecycleSchema, job.Action, nil, job.Params, params.Resources, params.ExternalID); err != nil {
 			return InvalidInputError{Err: err}
 		}
 		if err := svc.Validate(); err != nil {

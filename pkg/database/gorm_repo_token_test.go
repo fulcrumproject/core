@@ -33,7 +33,7 @@ func TestTokenRepository(t *testing.T) {
 	agent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentConnected)
 	require.NoError(t, agentRepo.Create(context.Background(), agent))
 
-	t.Run("Create", func(t *testing.T) {
+	t.Run("create", func(t *testing.T) {
 		t.Run("success - admin token", func(t *testing.T) {
 			ctx := context.Background()
 
@@ -242,7 +242,7 @@ func TestTokenRepository(t *testing.T) {
 		})
 	})
 
-	t.Run("Delete", func(t *testing.T) {
+	t.Run("delete", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 

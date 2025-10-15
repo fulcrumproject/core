@@ -19,105 +19,12 @@ const (
 	EventTypeServiceRetried      EventType = "service.retried"
 )
 
-// ServiceStatus represents the possible statuss of a service
-type ServiceStatus string
-
-const (
-	ServiceNew     ServiceStatus = "New"
-	ServiceStarted ServiceStatus = "Started"
-	ServiceStopped ServiceStatus = "Stopped"
-	ServiceDeleted ServiceStatus = "Deleted"
-)
-
-// ParseServiceStatus parses a string into a ServiceStatus
-func ParseServiceStatus(s string) (ServiceStatus, error) {
-	status := ServiceStatus(s)
-	if err := status.Validate(); err != nil {
-		return "", err
-	}
-	return status, nil
-}
-
-// Validate checks if the service status is valid
-func (s ServiceStatus) Validate() error {
-	switch s {
-	case
-		ServiceNew,
-		ServiceStopped,
-		ServiceStarted,
-		ServiceDeleted:
-		return nil
-	default:
-		return fmt.Errorf("invalid service status: %s", s)
-	}
-}
-
-// ServiceAction represents the type of operation a job performs
-type ServiceAction string
-
-const (
-	ServiceActionCreate ServiceAction = "Create"
-	ServiceActionStart  ServiceAction = "Start"
-	ServiceActionStop   ServiceAction = "Stop"
-	ServiceActionUpdate ServiceAction = "Update"
-	ServiceActionDelete ServiceAction = "Delete"
-)
-
-// ParseServiceAction parses a string into a JobType
-func ParseServiceAction(s string) (ServiceAction, error) {
-	jobType := ServiceAction(s)
-	if err := jobType.Validate(); err != nil {
-		return "", err
-	}
-	return jobType, nil
-}
-
-// Validate checks if the job type is valid
-func (t ServiceAction) Validate() error {
-	switch t {
-	case
-		ServiceActionCreate,
-		ServiceActionStart,
-		ServiceActionStop,
-		ServiceActionUpdate,
-		ServiceActionDelete:
-		return nil
-	}
-	return fmt.Errorf("invalid job type: %s", t)
-}
-
-// currentStatusActionNextStatus maps the current status to the next status for a given action
-// it'll be included in the service type schema
-var currentStatusActionNextStatus = map[ServiceStatus]map[ServiceAction]ServiceStatus{
-	ServiceNew: {
-		ServiceActionCreate: ServiceStopped,
-	},
-	ServiceStopped: {
-		ServiceActionStart:  ServiceStarted,
-		ServiceActionUpdate: ServiceStopped,
-		ServiceActionDelete: ServiceDeleted,
-	},
-	ServiceStarted: {
-		ServiceActionStop:   ServiceStopped,
-		ServiceActionUpdate: ServiceStarted,
-	},
-}
-
-// serviceNextStatus determines the intermediate status and action for a service transition
-func serviceNextStatus(curr ServiceStatus, action ServiceAction) (ServiceStatus, error) {
-	next, ok := currentStatusActionNextStatus[curr][action]
-	if !ok {
-		return "", fmt.Errorf("invalid action %s on service with status %s", action, curr)
-	}
-	return next, nil
-}
-
 // Service represents a service instance managed by an agent
 type Service struct {
 	BaseEntity
 
 	Name       string           `json:"name" gorm:"not null"`
-	Status     ServiceStatus    `json:"status" gorm:"not null"`
+	Status     string           `json:"status" gorm:"not null"`
 	Properties *properties.JSON `json:"properties,omitempty" gorm:"type:jsonb"`
 
 	// To store an external ID for the agent's use to facilitate metric reporting
@@ -143,6 +50,7 @@ func NewService(
 	agent *Agent,
 	group *ServiceGroup,
 	params CreateServiceParams,
+	initialStatus string,
 ) *Service {
 	return &Service{
 		ConsumerID:    group.ConsumerID,
@@ -151,15 +59,15 @@ func NewService(
 		AgentID:       agent.ID,
 		ServiceTypeID: params.ServiceTypeID,
 		Name:          params.Name,
-		Status:        ServiceNew,
+		Status:        initialStatus,
 		Properties:    &params.Properties,
 	}
 }
 
 // HandleJobComplete handles the completion of a job
-func (s *Service) HandleJobComplete(action ServiceAction, params *properties.JSON, resources *properties.JSON, externalID *string) error {
-	// Update status
-	nextStatus, err := serviceNextStatus(s.Status, action)
+func (s *Service) HandleJobComplete(lifecycle *LifecycleSchema, action string, errorCode *string, params *properties.JSON, resources *properties.JSON, externalID *string) error {
+	// Update status using lifecycle schema
+	nextStatus, err := ResolveNextState(lifecycle, s.Status, action, errorCode)
 	if err != nil {
 		return err
 	}
@@ -174,7 +82,7 @@ func (s *Service) HandleJobComplete(action ServiceAction, params *properties.JSO
 	}
 
 	// Update properties if the action is an update
-	if action == ServiceActionUpdate {
+	if action == "update" {
 		s.Properties = params
 	}
 
@@ -206,12 +114,19 @@ func (s *Service) ApplyAgentPropertyUpdates(
 
 	// Validate based on whether this is initial creation or an update
 	var err error
-	if s.Status == ServiceNew {
+	// Determine if this is the initial state
+	initialState := "New" // Default for backward compatibility
+	if serviceType.LifecycleSchema != nil {
+		initialState = serviceType.LifecycleSchema.InitialState
+	}
+	isInitialState := s.Status == initialState
+
+	if isInitialState {
 		// During creation: only validate source (updatability doesn't apply to initial values)
 		err = ValidatePropertiesForCreation(updates, serviceType.PropertySchema, "agent")
 	} else {
 		// During updates: validate both source and updatability
-		err = ValidatePropertiesForUpdate(updates, string(s.Status), serviceType.PropertySchema, "agent")
+		err = ValidatePropertiesForUpdate(updates, s.Status, serviceType.PropertySchema, "agent")
 	}
 
 	if err != nil {
@@ -235,8 +150,8 @@ func (s *Service) Validate() error {
 	if s.Name == "" {
 		return errors.New("service name cannot be empty")
 	}
-	if err := s.Status.Validate(); err != nil {
-		return err
+	if s.Status == "" {
+		return errors.New("service status cannot be empty")
 	}
 	if s.GroupID == uuid.Nil {
 		return errors.New("service group ID cannot be nil")
@@ -311,7 +226,7 @@ type UpdateServiceParams struct {
 
 type DoServiceActionParams struct {
 	ID     properties.UUID `json:"id"`
-	Action ServiceAction   `json:"action"`
+	Action string          `json:"action"`
 }
 
 func (s *serviceCommander) Create(
@@ -397,10 +312,17 @@ func CreateServiceWithAgent(
 		return nil, NewInvalidInputErrorf("agent type %s does not support service type %s", agent.AgentType.Name, params.ServiceTypeID)
 	}
 
+	// Get initial state from lifecycle schema
+	initialState := "New" // Default if no lifecycle schema
+	if serviceType.LifecycleSchema != nil {
+		initialState = serviceType.LifecycleSchema.InitialState
+	}
+
 	svc := NewService(
 		agent,
 		group,
 		params,
+		initialState,
 	)
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
@@ -411,7 +333,7 @@ func CreateServiceWithAgent(
 			return err
 		}
 
-		job := NewJob(svc, ServiceActionCreate, &params.Properties, 1)
+		job := NewJob(svc, "create", &params.Properties, 1)
 		if err := job.Validate(); err != nil {
 			return err
 		}
@@ -447,16 +369,16 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 		return nil, err
 	}
 
+	// Load ServiceType to get property schema and lifecycle
+	serviceType, err := store.ServiceTypeRepo().Get(ctx, svc.ServiceTypeID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Merge and validate properties if provided
 	if params.Properties != nil {
-		// Load ServiceType to get property schema
-		serviceType, err := store.ServiceTypeRepo().Get(ctx, svc.ServiceTypeID)
-		if err != nil {
-			return nil, err
-		}
-
 		// Validate property source and updatability
-		if err := ValidatePropertiesForUpdate(*params.Properties, string(svc.Status), serviceType.PropertySchema, "user"); err != nil {
+		if err := ValidatePropertiesForUpdate(*params.Properties, svc.Status, serviceType.PropertySchema, "user"); err != nil {
 			return nil, InvalidInputError{Err: err}
 		}
 
@@ -503,8 +425,10 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 		}
 		if action {
 			// Check if the service is in a valid state to be updated with a job
-			if _, err := serviceNextStatus(svc.Status, ServiceActionUpdate); err != nil {
-				return err
+			if serviceType.LifecycleSchema != nil {
+				if err := ValidateActionAllowed(serviceType.LifecycleSchema, svc.Status, "update"); err != nil {
+					return InvalidInputError{Err: err}
+				}
 			}
 
 			// If pending job exists, fail it
@@ -514,7 +438,7 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 			}
 
 			// Create new job
-			job := NewJob(svc, ServiceActionUpdate, params.Properties, 1)
+			job := NewJob(svc, "update", params.Properties, 1)
 			if err := job.Validate(); err != nil {
 				return err
 			}
@@ -542,9 +466,17 @@ func DoServiceAction(ctx context.Context, store Store, params DoServiceActionPar
 		return nil, err
 	}
 
-	// Check if the service is in a valid state to be updated with a job
-	if _, err := serviceNextStatus(svc.Status, params.Action); err != nil {
+	// Load ServiceType to get lifecycle schema
+	serviceType, err := store.ServiceTypeRepo().Get(ctx, svc.ServiceTypeID)
+	if err != nil {
 		return nil, err
+	}
+
+	// Check if the service is in a valid state to perform this action
+	if serviceType.LifecycleSchema != nil {
+		if err := ValidateActionAllowed(serviceType.LifecycleSchema, svc.Status, params.Action); err != nil {
+			return nil, InvalidInputError{Err: err}
+		}
 	}
 
 	// If pending job exists, fail it

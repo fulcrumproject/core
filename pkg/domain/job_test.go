@@ -9,114 +9,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestServiceAction_Validate(t *testing.T) {
-	tests := []struct {
-		name       string
-		action     ServiceAction
-		wantErr    bool
-		errMessage string
-	}{
-		{
-			name:    "Valid ServiceActionCreate",
-			action:  ServiceActionCreate,
-			wantErr: false,
-		},
-		{
-			name:    "Valid ServiceActionStart",
-			action:  ServiceActionStart,
-			wantErr: false,
-		},
-		{
-			name:    "Valid ServiceActionStop",
-			action:  ServiceActionStop,
-			wantErr: false,
-		},
-
-		{
-			name:    "Valid ServiceActionDelete",
-			action:  ServiceActionDelete,
-			wantErr: false,
-		},
-		{
-			name:       "Invalid action",
-			action:     "InvalidAction",
-			wantErr:    true,
-			errMessage: "invalid job type",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.action.Validate()
-			if tt.wantErr {
-				assert.Error(t, err)
-				if tt.errMessage != "" {
-					assert.Contains(t, err.Error(), tt.errMessage)
-				}
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestParseServiceAction(t *testing.T) {
-	tests := []struct {
-		name       string
-		input      string
-		want       ServiceAction
-		wantErr    bool
-		errMessage string
-	}{
-		{
-			name:    "Parse ServiceActionCreate",
-			input:   string(ServiceActionCreate),
-			want:    ServiceActionCreate,
-			wantErr: false,
-		},
-		{
-			name:    "Parse ServiceActionStart",
-			input:   string(ServiceActionStart),
-			want:    ServiceActionStart,
-			wantErr: false,
-		},
-		{
-			name:    "Parse ServiceActionStop",
-			input:   string(ServiceActionStop),
-			want:    ServiceActionStop,
-			wantErr: false,
-		},
-
-		{
-			name:    "Parse ServiceActionDelete",
-			input:   string(ServiceActionDelete),
-			want:    ServiceActionDelete,
-			wantErr: false,
-		},
-		{
-			name:       "Parse invalid action",
-			input:      "InvalidAction",
-			wantErr:    true,
-			errMessage: "invalid job type",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseServiceAction(tt.input)
-			if tt.wantErr {
-				assert.Error(t, err)
-				if tt.errMessage != "" {
-					assert.Contains(t, err.Error(), tt.errMessage)
-				}
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.want, got)
-			}
-		})
-	}
-}
-
 func TestJobStatus_Validate(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -240,7 +132,7 @@ func TestJob_Validate(t *testing.T) {
 		{
 			name: "Valid job",
 			job: &Job{
-				Action:    ServiceActionCreate,
+				Action:    "create",
 				Status:    JobPending,
 				Priority:  1,
 				AgentID:   validID,
@@ -249,21 +141,21 @@ func TestJob_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Invalid action",
+			name: "Empty action",
 			job: &Job{
-				Action:    "InvalidAction",
+				Action:    "",
 				Status:    JobPending,
 				Priority:  1,
 				AgentID:   validID,
 				ServiceID: validID,
 			},
 			wantErr:    true,
-			errMessage: "invalid action",
+			errMessage: "action cannot be empty",
 		},
 		{
 			name: "Invalid status",
 			job: &Job{
-				Action:    ServiceActionCreate,
+				Action:    "create",
 				Status:    "InvalidStatus",
 				Priority:  1,
 				AgentID:   validID,
@@ -275,7 +167,7 @@ func TestJob_Validate(t *testing.T) {
 		{
 			name: "Invalid priority",
 			job: &Job{
-				Action:    ServiceActionCreate,
+				Action:    "create",
 				Status:    JobPending,
 				Priority:  0,
 				AgentID:   validID,
@@ -287,7 +179,7 @@ func TestJob_Validate(t *testing.T) {
 		{
 			name: "Empty agent ID",
 			job: &Job{
-				Action:    ServiceActionCreate,
+				Action:    "create",
 				Status:    JobPending,
 				Priority:  1,
 				AgentID:   uuid.Nil,
@@ -299,7 +191,7 @@ func TestJob_Validate(t *testing.T) {
 		{
 			name: "Empty service ID",
 			job: &Job{
-				Action:    ServiceActionCreate,
+				Action:    "create",
 				Status:    JobPending,
 				Priority:  1,
 				AgentID:   validID,
@@ -340,7 +232,7 @@ func TestNewJob(t *testing.T) {
 		ConsumerID: consumerID,
 	}
 
-	action := ServiceActionCreate
+	action := "create"
 	priority := 5
 
 	job := NewJob(service, action, nil, priority)
