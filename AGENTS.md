@@ -14,6 +14,37 @@ This document contains project-specific guidelines and technical context for wor
 
 ---
 
+## Code Standards
+
+### Go Language
+
+- Use short and clear names in the code
+- Use `any` and not `interface{}` in function signatures
+- Unused imports are removed automatically by the IDE
+
+### API Conventions
+
+- JSON field names use camelCase (e.g., `providerId`, `serviceType`, `externalID`)
+
+### Documentation
+
+- Mermaid diagrams should not contain styles
+- All code files MUST start with a brief 2-line comment explaining what the file does
+
+### Maintaining AGENTS.md
+
+- This file is for **AI agents** working on the codebase
+- Keep updates **concise** - this is a guidelines document, not detailed API documentation
+- Provide high-level overviews and reference detailed docs
+
+---
+
+## Database Management
+
+- We don't need database migrations - we use GORM migration
+
+---
+
 ## System Architecture
 
 ### Overview
