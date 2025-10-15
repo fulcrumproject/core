@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 )
@@ -13,18 +14,48 @@ const (
 	EventTypeServiceTypeDeleted EventType = "service_type.deleted"
 )
 
+// LifecycleSchema defines the state machine for a service type
+type LifecycleSchema struct {
+	States         []LifecycleState  `json:"states"`
+	Actions        []LifecycleAction `json:"actions"`
+	InitialState   string            `json:"initialState"`
+	TerminalStates []string          `json:"terminalStates"`
+}
+
+// LifecycleState represents a state in the service lifecycle
+type LifecycleState struct {
+	Name string `json:"name"`
+}
+
+// LifecycleAction represents an action that can be performed on a service
+type LifecycleAction struct {
+	Name              string                `json:"name"`
+	RequestSchemaType string                `json:"requestSchemaType,omitempty"`
+	Transitions       []LifecycleTransition `json:"transitions"`
+}
+
+// LifecycleTransition represents a state transition triggered by an action
+type LifecycleTransition struct {
+	From          string `json:"from"`
+	To            string `json:"to"`
+	OnError       bool   `json:"onError,omitempty"`
+	OnErrorRegexp string `json:"onErrorRegexp,omitempty"`
+}
+
 // ServiceType represents a type of service that can be provided
 type ServiceType struct {
 	BaseEntity
-	Name           string         `json:"name" gorm:"not null;unique"`
-	PropertySchema *ServiceSchema `json:"propertySchema,omitempty" gorm:"type:jsonb"`
+	Name             string           `json:"name" gorm:"not null;unique"`
+	PropertySchema   *ServiceSchema   `json:"propertySchema,omitempty" gorm:"type:jsonb"`
+	LifecycleSchema  *LifecycleSchema `json:"lifecycleSchema,omitempty" gorm:"type:jsonb"`
 }
 
 // NewServiceType creates a new service type without validation
 func NewServiceType(params CreateServiceTypeParams) *ServiceType {
 	return &ServiceType{
-		Name:           params.Name,
-		PropertySchema: params.PropertySchema,
+		Name:            params.Name,
+		PropertySchema:  params.PropertySchema,
+		LifecycleSchema: params.LifecycleSchema,
 	}
 }
 
@@ -38,6 +69,92 @@ func (st *ServiceType) Validate() error {
 	if st.Name == "" {
 		return fmt.Errorf("service type name cannot be empty")
 	}
+	if st.LifecycleSchema != nil {
+		if err := st.ValidateLifecycle(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ValidateLifecycle validates the lifecycle schema structure and rules
+func (st *ServiceType) ValidateLifecycle() error {
+	if st.LifecycleSchema == nil {
+		return nil
+	}
+
+	lc := st.LifecycleSchema
+
+	// Validate we have at least one state
+	if len(lc.States) == 0 {
+		return fmt.Errorf("lifecycle must have at least one state")
+	}
+
+	// Build a set of valid state names for quick lookup
+	stateNames := make(map[string]bool)
+	for _, state := range lc.States {
+		if state.Name == "" {
+			return fmt.Errorf("lifecycle state name cannot be empty")
+		}
+		if stateNames[state.Name] {
+			return fmt.Errorf("duplicate lifecycle state name: %s", state.Name)
+		}
+		stateNames[state.Name] = true
+	}
+
+	// Validate initial state exists
+	if lc.InitialState == "" {
+		return fmt.Errorf("lifecycle must have an initial state")
+	}
+	if !stateNames[lc.InitialState] {
+		return fmt.Errorf("lifecycle initial state %q does not exist in states list", lc.InitialState)
+	}
+
+	// Validate terminal states exist
+	for _, terminalState := range lc.TerminalStates {
+		if !stateNames[terminalState] {
+			return fmt.Errorf("lifecycle terminal state %q does not exist in states list", terminalState)
+		}
+	}
+
+	// Validate actions
+	if len(lc.Actions) == 0 {
+		return fmt.Errorf("lifecycle must have at least one action")
+	}
+
+	actionNames := make(map[string]bool)
+	for _, action := range lc.Actions {
+		if action.Name == "" {
+			return fmt.Errorf("lifecycle action name cannot be empty")
+		}
+		if actionNames[action.Name] {
+			return fmt.Errorf("duplicate lifecycle action name: %s", action.Name)
+		}
+		actionNames[action.Name] = true
+
+		// Validate action has at least one transition
+		if len(action.Transitions) == 0 {
+			return fmt.Errorf("lifecycle action %q must have at least one transition", action.Name)
+		}
+
+		// Validate transitions
+		for _, transition := range action.Transitions {
+			if !stateNames[transition.From] {
+				return fmt.Errorf("lifecycle action %q transition references invalid from state %q", action.Name, transition.From)
+			}
+			if !stateNames[transition.To] {
+				return fmt.Errorf("lifecycle action %q transition references invalid to state %q", action.Name, transition.To)
+			}
+
+			// Validate error regexp if provided
+			if transition.OnErrorRegexp != "" {
+				if _, err := regexp.Compile(transition.OnErrorRegexp); err != nil {
+					return fmt.Errorf("lifecycle action %q transition has invalid error regexp %q: %w", action.Name, transition.OnErrorRegexp, err)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -48,6 +165,9 @@ func (st *ServiceType) Update(params UpdateServiceTypeParams) {
 	}
 	if params.PropertySchema != nil {
 		st.PropertySchema = params.PropertySchema
+	}
+	if params.LifecycleSchema != nil {
+		st.LifecycleSchema = params.LifecycleSchema
 	}
 }
 
@@ -85,14 +205,16 @@ type ServicePropertyValidationParams struct {
 }
 
 type CreateServiceTypeParams struct {
-	Name           string         `json:"name"`
-	PropertySchema *ServiceSchema `json:"propertySchema,omitempty"`
+	Name            string           `json:"name"`
+	PropertySchema  *ServiceSchema   `json:"propertySchema,omitempty"`
+	LifecycleSchema *LifecycleSchema `json:"lifecycleSchema,omitempty"`
 }
 
 type UpdateServiceTypeParams struct {
-	ID             properties.UUID `json:"id"`
-	Name           *string         `json:"name"`
-	PropertySchema *ServiceSchema  `json:"propertySchema,omitempty"`
+	ID              properties.UUID  `json:"id"`
+	Name            *string          `json:"name"`
+	PropertySchema  *ServiceSchema   `json:"propertySchema,omitempty"`
+	LifecycleSchema *LifecycleSchema `json:"lifecycleSchema,omitempty"`
 }
 
 // serviceTypeCommander is the concrete implementation of ServiceTypeCommander
