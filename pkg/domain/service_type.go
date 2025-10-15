@@ -20,6 +20,21 @@ type LifecycleSchema struct {
 	Actions        []LifecycleAction `json:"actions"`
 	InitialState   string            `json:"initialState"`
 	TerminalStates []string          `json:"terminalStates"`
+	RunningStates  []string          `json:"runningStates,omitempty"`
+}
+
+// IsRunningStatus checks if a given status is considered a "running" state for uptime calculation
+func (ls *LifecycleSchema) IsRunningStatus(status string) bool {
+	if ls == nil {
+		return false
+	}
+
+	for _, runningState := range ls.RunningStates {
+		if runningState == status {
+			return true
+		}
+	}
+	return false
 }
 
 // LifecycleState represents a state in the service lifecycle
@@ -114,6 +129,13 @@ func (st *ServiceType) ValidateLifecycle() error {
 	for _, terminalState := range lc.TerminalStates {
 		if !stateNames[terminalState] {
 			return fmt.Errorf("lifecycle terminal state %q does not exist in states list", terminalState)
+		}
+	}
+
+	// Validate running states exist
+	for _, runningState := range lc.RunningStates {
+		if !stateNames[runningState] {
+			return fmt.Errorf("lifecycle running state %q does not exist in states list", runningState)
 		}
 	}
 
