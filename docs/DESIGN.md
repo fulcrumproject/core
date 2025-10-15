@@ -20,7 +20,7 @@ This document provides a high-level overview of the Fulcrum Core system design. 
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): Detailed description of the system's layered architecture, package structure, and implementation patterns
 - [AUTHORIZATION.md](AUTHORIZATION.md): Comprehensive authorization rules and role-based permissions
-- [SERVICE_TYPE_SCHEMA.md](SERVICE_TYPE_SCHEMA.md): Service property schema validation syntax and usage guide
+- [SERVICE_TYPE.md](SERVICE_TYPE.md): ServiceType documentation including property schema validation and lifecycle schema
 - [openapi.yaml](openapi.yaml): Complete API specification in OpenAPI format
 
 ## Context
@@ -463,7 +463,7 @@ stateDiagram-v2
 - Error-driven transitions with regexp matching
 - Multi-step actions with intermediate states
 
-See [SERVICE_TYPE_SCHEMA.md](SERVICE_TYPE_SCHEMA.md) for comprehensive lifecycle schema documentation and examples.
+See [SERVICE_TYPE.md](SERVICE_TYPE.md) for comprehensive lifecycle schema documentation and examples.
 
 #### Service Property Schema Validation
 
@@ -519,7 +519,7 @@ The system provides a dedicated validation endpoint for testing property schemas
 - **Response**: Returns validation status and detailed error messages
 - **Use Cases**: Frontend validation, schema testing, development workflows
 
-For detailed schema syntax and examples, see [SERVICE_TYPE_SCHEMA.md](SERVICE_TYPE_SCHEMA.md).
+For detailed schema syntax and examples, see [SERVICE_TYPE.md](SERVICE_TYPE.md).
 
 #### Agent Authentication Flow
 

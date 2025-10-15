@@ -1,14 +1,25 @@
-# ServiceType Property Schema Documentation
+# ServiceType Documentation
 
 ## Overview
 
-The ServiceType Property Schema is a flexible properties.JSON-based validation system that allows administrators to define custom validation rules for service properties. This schema ensures data integrity and consistency for service configurations while providing dynamic validation without requiring application recompilation.
+This document provides comprehensive documentation for ServiceType schemas in Fulcrum Core. ServiceTypes define both the configuration structure (Property Schema) and lifecycle behavior (Lifecycle Schema) for services.
 
-## Schema Structure
+- **Property Schema**: A flexible JSON-based validation system that defines custom validation rules for service properties, ensuring data integrity and consistency for service configurations
+- **Lifecycle Schema**: A schema-driven system that defines custom service lifecycles with states, actions, and transitions, enabling different service types to have completely different lifecycles
+
+Both schemas are optional and can be defined independently or together to create rich, validated service definitions without requiring application recompilation.
+
+## Property Schema
+
+### Overview
+
+The Property Schema is a flexible JSON-based validation system that allows administrators to define custom validation rules for service properties. This schema ensures data integrity and consistency for service configurations while providing dynamic validation without requiring application recompilation.
+
+### Schema Structure
 
 Each ServiceType can have an optional `propertySchema` field that defines validation rules for service properties. The schema is a properties.JSON object where each key represents a property name, and its value defines the validation rules for that property.
 
-### Basic Property Definition
+#### Basic Property Definition
 
 ```json
 {
@@ -24,11 +35,11 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
 }
 ```
 
-## Property Types
+### Property Types
 
-### Primitive Types
+#### Primitive Types
 
-#### String
+##### String
 ```json
 {
   "name": {
@@ -39,7 +50,7 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
 }
 ```
 
-#### Integer
+##### Integer
 ```json
 {
   "cpu": {
@@ -50,7 +61,7 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
 }
 ```
 
-#### Number (Float)
+##### Number (Float)
 ```json
 {
   "price": {
@@ -61,7 +72,7 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
 }
 ```
 
-#### Boolean
+##### Boolean
 ```json
 {
   "enabled": {
@@ -72,9 +83,9 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
 }
 ```
 
-### Complex Types
+#### Complex Types
 
-#### Object
+##### Object
 For nested object properties, use the `properties` field to define the schema for nested fields:
 
 ```json
@@ -104,7 +115,7 @@ For nested object properties, use the `properties` field to define the schema fo
 }
 ```
 
-#### Array
+##### Array
 For array properties, use the `items` field to define the schema for array elements:
 
 ```json
@@ -127,13 +138,13 @@ For array properties, use the `items` field to define the schema for array eleme
 }
 ```
 
-## Validators
+### Validators
 
 Validators provide additional constraints beyond basic type checking. Each validator is an object with a `type` and `value` field.
 
-### String Validators
+#### String Validators
 
-#### minLength
+##### minLength
 Minimum string length:
 ```json
 {
@@ -143,7 +154,7 @@ Minimum string length:
 }
 ```
 
-#### maxLength
+##### maxLength
 Maximum string length:
 ```json
 {
@@ -153,7 +164,7 @@ Maximum string length:
 }
 ```
 
-#### pattern
+##### pattern
 Regular expression pattern:
 ```json
 {
@@ -163,7 +174,7 @@ Regular expression pattern:
 }
 ```
 
-#### enum
+##### enum
 Allowed values from a predefined list:
 ```json
 {
@@ -173,9 +184,9 @@ Allowed values from a predefined list:
 }
 ```
 
-### Numeric Validators (Integer/Number)
+#### Numeric Validators (Integer/Number)
 
-#### min
+##### min
 Minimum value:
 ```json
 {
@@ -185,7 +196,7 @@ Minimum value:
 }
 ```
 
-#### max
+##### max
 Maximum value:
 ```json
 {
@@ -195,7 +206,7 @@ Maximum value:
 }
 ```
 
-#### enum
+##### enum
 Allowed values from a predefined list:
 ```json
 {
@@ -205,9 +216,9 @@ Allowed values from a predefined list:
 }
 ```
 
-### Array Validators
+#### Array Validators
 
-#### minItems
+##### minItems
 Minimum number of items:
 ```json
 {
@@ -217,7 +228,7 @@ Minimum number of items:
 }
 ```
 
-#### maxItems
+##### maxItems
 Maximum number of items:
 ```json
 {
@@ -227,7 +238,7 @@ Maximum number of items:
 }
 ```
 
-#### uniqueItems
+##### uniqueItems
 Ensure all items are unique:
 ```json
 {
@@ -237,9 +248,9 @@ Ensure all items are unique:
 }
 ```
 
-### Reference Validators (for type "reference")
+#### Reference Validators (for type "reference")
 
-#### serviceType
+##### serviceType
 Validates that a referenced service is of a specific service type or one of multiple allowed types:
 
 Single service type:
@@ -270,7 +281,7 @@ Multiple allowed service types:
 }
 ```
 
-#### sameOrigin
+##### sameOrigin
 Validates that a referenced service belongs to the same consumer or service group:
 
 Same consumer constraint:
@@ -312,13 +323,13 @@ Combined validators example:
 }
 ```
 
-## Property Source
+### Property Source
 
 The `source` field controls who can set and update a property value. This enables proper separation between user-provided configuration and agent-discovered information.
 
-### Source Values
+#### Source Values
 
-#### input (default)
+##### input (default)
 Properties set by users through the API. These represent the desired configuration.
 
 ```json
@@ -338,7 +349,7 @@ Properties set by users through the API. These represent the desired configurati
 - Agents cannot modify this property
 - If `source` is omitted, "input" is the default
 
-#### agent
+##### agent
 Properties set by agents after provisioning resources. These represent actual provisioned values.
 
 ```json
@@ -357,7 +368,7 @@ Properties set by agents after provisioning resources. These represent actual pr
 - Agents can update this property (subject to updatability rules)
 - Typically used for discovered values like IP addresses, ports, UUIDs
 
-### Source Usage Patterns
+#### Source Usage Patterns
 
 **Configuration vs Discovery**
 ```json
@@ -378,13 +389,13 @@ Properties set by agents after provisioning resources. These represent actual pr
 
 User specifies `diskSize`, agent reports back `actualDiskPath` after provisioning.
 
-## Property Updatability
+### Property Updatability
 
 The `updatable` field controls when and if a property can be modified after initial creation. This prevents accidental changes to immutable infrastructure or ensures changes only happen in safe states.
 
-### Updatable Values
+#### Updatable Values
 
-#### always (default)
+##### always (default)
 Property can be updated at any time in any service status.
 
 ```json
@@ -402,7 +413,7 @@ Property can be updated at any time in any service status.
 - Suitable for metadata and non-critical settings
 - If `updatable` is omitted, "always" is the default
 
-#### never
+##### never
 Property cannot be updated after initial creation (immutable).
 
 ```json
@@ -424,7 +435,7 @@ Property cannot be updated after initial creation (immutable).
 
 **Note:** For agent-source properties, "initial creation" means the first job completion (typically the Create job). Agents can set immutable properties during this first job, but cannot update them in subsequent jobs.
 
-#### statuses
+##### statuses
 Property can only be updated when service is in specific statuses. Requires `updatableIn` array.
 
 ```json
@@ -444,7 +455,7 @@ Property can only be updated when service is in specific statuses. Requires `upd
 - Updates attempted in other statuses return validation errors
 - Suitable for properties requiring service to be in a safe state
 
-### Updatability Patterns
+#### Updatability Patterns
 
 **Immutable Identifiers**
 ```json
@@ -551,9 +562,9 @@ Property can only be updated when service is in specific statuses. Requires `upd
 }
 ```
 
-## Complete Examples
+### Complete Examples
 
-### VM Service Type with Mixed Sources
+#### VM Service Type with Mixed Sources
 
 Here's a comprehensive example for a VM service type with user configuration and agent-discovered properties:
 
@@ -722,9 +733,9 @@ Example for a managed disk with state-conditional resizing:
 }
 ```
 
-## API Usage
+### API Usage
 
-### Retrieving ServiceType with Schema
+#### Retrieving ServiceType with Schema
 
 ```http
 GET /api/v1/service-types/{id}
@@ -748,7 +759,7 @@ Response includes the `propertySchema` field:
 }
 ```
 
-### Validating Properties
+#### Validating Properties
 
 ```http
 POST /api/v1/service-types/{id}/validate
@@ -789,7 +800,7 @@ Or with validation errors:
 }
 ```
 
-## Best Practices
+### Best Practices
 
 1. **Start Simple**: Begin with basic type validation and add validators as needed
 2. **Use Descriptive Labels**: Provide clear, human-readable labels for all properties
@@ -799,7 +810,7 @@ Or with validation errors:
 6. **Nested Validation**: Leverage object and array types for complex configurations
 7. **Error Handling**: Always check validation results before processing service properties
 
-## Error Messages
+### Error Messages
 
 The validation system provides detailed error messages with path information:
 
@@ -832,7 +843,7 @@ The validation system provides detailed error messages with path information:
 - `"property 'propertyName' cannot be updated (updatable: never)"` - Attempted to update an immutable property
 - `"property 'propertyName' cannot be updated in status 'StatusName' (allowed statuses: [Status1, Status2])"` - Attempted to update a property in a disallowed status
 
-## Migration and Updates
+### Migration and Updates
 
 When updating property schemas:
 
@@ -843,13 +854,13 @@ When updating property schemas:
 
 ---
 
-# ServiceType Lifecycle Schema Documentation
+## Lifecycle Schema
 
-## Overview
+### Overview
 
 The ServiceType Lifecycle Schema is a flexible schema-driven system that allows administrators to define custom service lifecycles with states, actions, and transitions. This enables different service types to have completely different lifecycles without requiring application code changes.
 
-## Why Lifecycle Schemas?
+### Why Lifecycle Schemas?
 
 Traditional hardcoded state machines are inflexible and require code changes to support new service types. Lifecycle schemas solve this by:
 
@@ -859,7 +870,7 @@ Traditional hardcoded state machines are inflexible and require code changes to 
 - **Expressiveness**: Support complex workflows with error handling
 - **Maintainability**: Lifecycle logic is declarative JSON, not imperative code
 
-## Lifecycle Schema Structure
+### Lifecycle Schema Structure
 
 Each ServiceType can have an optional `lifecycleSchema` field that defines the service lifecycle:
 
@@ -875,15 +886,15 @@ Each ServiceType can have an optional `lifecycleSchema` field that defines the s
 
 ### Schema Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `states` | Array of LifecycleState | Yes | List of all possible states |
-| `actions` | Array of LifecycleAction | Yes | List of actions that can be performed |
-| `initialState` | String | Yes | Starting state for new services |
-| `terminalStates` | Array of String | No | States where no further actions allowed |
-| `runningStates` | Array of String | No | States considered "running" for uptime calculation |
+| Field            | Type                     | Required | Description                                        |
+| ---------------- | ------------------------ | -------- | -------------------------------------------------- |
+| `states`         | Array of LifecycleState  | Yes      | List of all possible states                        |
+| `actions`        | Array of LifecycleAction | Yes      | List of actions that can be performed              |
+| `initialState`   | String                   | Yes      | Starting state for new services                    |
+| `terminalStates` | Array of String          | No       | States where no further actions allowed            |
+| `runningStates`  | Array of String          | No       | States considered "running" for uptime calculation |
 
-## States
+### States
 
 States represent the possible conditions of a service. Each state has a name:
 
@@ -900,7 +911,7 @@ States represent the possible conditions of a service. Each state has a name:
 - `Failed` - Service encountered an error
 - `Deleted` - Service has been removed
 
-## Actions
+### Actions
 
 Actions define operations that can be performed on a service. Each action has:
 
@@ -912,22 +923,22 @@ Actions define operations that can be performed on a service. Each action has:
 }
 ```
 
-### Action Fields
+#### Action Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | String | Yes | Name of the action (e.g., "start", "stop") |
-| `requestSchemaType` | String | No | Type of request body: "properties" or omit for no body |
-| `transitions` | Array of LifecycleTransition | Yes | State transitions for this action |
+| Field               | Type                         | Required | Description                                            |
+| ------------------- | ---------------------------- | -------- | ------------------------------------------------------ |
+| `name`              | String                       | Yes      | Name of the action (e.g., "start", "stop")             |
+| `requestSchemaType` | String                       | No       | Type of request body: "properties" or omit for no body |
+| `transitions`       | Array of LifecycleTransition | Yes      | State transitions for this action                      |
 
-### Request Schema Type
+#### Request Schema Type
 
 The `requestSchemaType` field determines what kind of request body the action accepts:
 
 - **Omitted or empty**: Action requires no request body (e.g., start, stop, restart)
 - **`"properties"`**: Action accepts service properties in request body (e.g., create, update)
 
-## Transitions
+### Transitions
 
 Transitions define how services move from one state to another when an action is performed:
 
@@ -939,16 +950,16 @@ Transitions define how services move from one state to another when an action is
 }
 ```
 
-### Transition Fields
+#### Transition Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `from` | String | Yes | Source state |
-| `to` | String | Yes | Destination state |
-| `onError` | Boolean | No | Whether this is an error transition (default: false) |
-| `onErrorRegexp` | String | No | Regex pattern to match error messages |
+| Field           | Type    | Required | Description                                          |
+| --------------- | ------- | -------- | ---------------------------------------------------- |
+| `from`          | String  | Yes      | Source state                                         |
+| `to`            | String  | Yes      | Destination state                                    |
+| `onError`       | Boolean | No       | Whether this is an error transition (default: false) |
+| `onErrorRegexp` | String  | No       | Regex pattern to match error messages                |
 
-### Success vs Error Transitions
+#### Success vs Error Transitions
 
 Each action can have two types of transitions:
 
@@ -962,7 +973,7 @@ Each action can have two types of transitions:
 - Error message is matched against `onErrorRegexp` to select which transition to use
 - If no regexp is specified, matches any error
 
-### Error Regexp Matching
+#### Error Regexp Matching
 
 When a job fails, the system uses the error message to determine the next state:
 
@@ -1000,7 +1011,7 @@ This configuration:
 - Error with "quota exceeded" message: `Stopped → QuotaExceeded`
 - Any other error: `Stopped → Failed`
 
-## Terminal States
+### Terminal States
 
 Terminal states are end states where no further actions can be performed:
 
@@ -1015,7 +1026,7 @@ Services in terminal states:
 - Attempts to perform actions return an error
 - Represent final, irreversible states
 
-## Running States
+### Running States
 
 Running states are used for uptime calculation and monitoring:
 
@@ -1032,9 +1043,9 @@ Services in running states are considered:
 
 If `runningStates` is empty or not specified, services are never considered "running" for uptime purposes.
 
-## Complete Examples
+### Complete Examples
 
-### Example 1: Simple VM Lifecycle
+#### Example 1: Simple VM Lifecycle
 
 A basic VM lifecycle with start/stop operations:
 
@@ -1088,7 +1099,7 @@ A basic VM lifecycle with start/stop operations:
 }
 ```
 
-### Example 2: Advanced Lifecycle with Error Handling
+#### Example 2: Advanced Lifecycle with Error Handling
 
 A more complex lifecycle with intermediate states and error handling:
 
@@ -1153,7 +1164,7 @@ A more complex lifecycle with intermediate states and error handling:
 }
 ```
 
-### Example 3: Database Lifecycle with Maintenance States
+#### Example 3: Database Lifecycle with Maintenance States
 
 A database service with backup and maintenance operations:
 
@@ -1214,9 +1225,9 @@ A database service with backup and maintenance operations:
 }
 ```
 
-## API Usage
+### API Usage
 
-### Creating a ServiceType with Lifecycle
+#### Creating a ServiceType with Lifecycle
 
 ```http
 POST /api/v1/service-types
@@ -1254,7 +1265,7 @@ Content-Type: application/json
 }
 ```
 
-### Performing Lifecycle Actions
+#### Performing Lifecycle Actions
 
 Use the generic action endpoint to perform any lifecycle action:
 
@@ -1294,7 +1305,7 @@ Content-Type: application/json
 }
 ```
 
-## Validation and Constraints
+### Validation and Constraints
 
 The system enforces the following lifecycle rules:
 
@@ -1307,7 +1318,7 @@ The system enforces the following lifecycle rules:
 7. **Terminal State Block**: No actions can be performed on services in terminal states
 8. **Unique Transitions**: Each (action, from-state) pair should have only one success transition
 
-## Best Practices
+### Best Practices
 
 1. **Start Simple**: Begin with basic states (New, Stopped, Started, Deleted) and add complexity as needed
 2. **Meaningful State Names**: Use clear, descriptive state names that reflect the service condition
@@ -1320,9 +1331,9 @@ The system enforces the following lifecycle rules:
 9. **Idempotent Actions**: Design actions to be safely retryable from the same state
 10. **Documentation**: Document the lifecycle flow for each service type
 
-## Common Patterns
+### Common Patterns
 
-### Pattern 1: Immediate vs Progressive Actions
+#### Pattern 1: Immediate vs Progressive Actions
 
 **Immediate** (single-step):
 ```json
@@ -1347,7 +1358,7 @@ The system enforces the following lifecycle rules:
 
 Progressive is better for long-running operations where you want to track progress.
 
-### Pattern 2: Restart as Compound Action
+#### Pattern 2: Restart as Compound Action
 
 Restart can be modeled as a compound action that stops then starts:
 
@@ -1362,7 +1373,7 @@ Restart can be modeled as a compound action that stops then starts:
 }
 ```
 
-### Pattern 3: Graceful Degradation
+#### Pattern 3: Graceful Degradation
 
 Allow operations to proceed despite non-critical errors:
 
@@ -1378,7 +1389,7 @@ Allow operations to proceed despite non-critical errors:
 }
 ```
 
-### Pattern 4: Recovery Actions
+#### Pattern 4: Recovery Actions
 
 Provide actions to recover from failed states:
 
@@ -1391,7 +1402,7 @@ Provide actions to recover from failed states:
 }
 ```
 
-## Lifecycle vs Property Schema Interaction
+### Lifecycle vs Property Schema Interaction
 
 Lifecycle schemas work together with property schemas:
 
