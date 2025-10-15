@@ -74,18 +74,15 @@ func TestServiceHandlerRoutes(t *testing.T) {
 		case method == "PATCH" && route == "/{id}":
 			// Check for decode body and authorization middlewares
 			assert.GreaterOrEqual(t, len(middlewares), 2, "Update route should have body decoder and authorization middlewares")
-		case method == "POST" && route == "/{id}/start":
-			// Check for authorization middleware
-			assert.GreaterOrEqual(t, len(middlewares), 1, "Start route should have authorization middleware")
-		case method == "POST" && route == "/{id}/stop":
-			// Check for authorization middleware
-			assert.GreaterOrEqual(t, len(middlewares), 1, "Stop route should have authorization middleware")
 		case method == "DELETE" && route == "/{id}":
 			// Check for authorization middleware
 			assert.GreaterOrEqual(t, len(middlewares), 1, "Delete route should have authorization middleware")
 		case method == "POST" && route == "/{id}/retry":
 			// Check for authorization middleware
 			assert.GreaterOrEqual(t, len(middlewares), 1, "Retry route should have authorization middleware")
+		case method == "POST" && route == "/{id}/{action}":
+			// Generic action route - check for action name middleware and authorization
+			assert.GreaterOrEqual(t, len(middlewares), 2, "Generic action route should have action name middleware and authorization middleware")
 		default:
 			return fmt.Errorf("unexpected route: %s %s", method, route)
 		}
@@ -455,13 +452,18 @@ func TestServiceHandleTransition(t *testing.T) {
 			// Execute request with middleware
 			w := httptest.NewRecorder()
 			middlewareHandler := middlewares.ID(CommandWithoutBody(func(ctx context.Context, id properties.UUID) error {
+				// All transitions now use DoAction except delete
 				switch tc.transitionTo {
-				case "Started":
-					return handler.Start(ctx, id)
-				case "Stopped":
-					return handler.Stop(ctx, id)
 				case "Deleted":
 					return handler.Delete(ctx, id)
+				case "Started":
+					params := domain.DoServiceActionParams{ID: id, Action: "start"}
+					_, err := commander.DoAction(ctx, params)
+					return err
+				case "Stopped":
+					params := domain.DoServiceActionParams{ID: id, Action: "stop"}
+					_, err := commander.DoAction(ctx, params)
+					return err
 				default:
 					return fmt.Errorf("unsupported transition: %v", tc.transitionTo)
 				}

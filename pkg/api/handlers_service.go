@@ -116,16 +116,6 @@ func (h *ServiceHandler) Routes() func(r chi.Router) {
 				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionUpdate, h.authz, h.querier.AuthScope),
 			).Patch("/{id}", Update(h.Update, ServiceToRes))
 
-			// Start - authorize from resource ID
-			r.With(
-				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionStart, h.authz, h.querier.AuthScope),
-			).Post("/{id}/start", CommandWithoutBody(h.Start))
-
-			// Stop - authorize from resource ID
-			r.With(
-				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionStop, h.authz, h.querier.AuthScope),
-			).Post("/{id}/stop", CommandWithoutBody(h.Stop))
-
 			// Delete - authorize from resource ID
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionDelete, h.authz, h.querier.AuthScope),
@@ -135,6 +125,13 @@ func (h *ServiceHandler) Routes() func(r chi.Router) {
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionUpdate, h.authz, h.querier.AuthScope),
 			).Post("/{id}/retry", CommandWithoutBody(h.Retry))
+
+			// Generic action - handle any lifecycle action (start, stop, restart, etc.)
+			// Note: "delete" action should use DELETE /{id}, "update" should use PATCH /{id}
+			r.With(
+				middlewares.ActionName,
+				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionUpdate, h.authz, h.querier.AuthScope),
+			).Post("/{id}/{action}", h.GenericAction)
 		})
 	}
 }
@@ -191,27 +188,31 @@ func (h *ServiceHandler) Update(ctx context.Context, id properties.UUID, req *Up
 	params := domain.UpdateServiceParams{
 		ID:         id,
 		Name:       req.Name,
-		Properties: req.Properties,
+		Properties:  req.Properties,
 	}
 	return h.commander.Update(ctx, params)
 }
 
-func (h *ServiceHandler) Start(ctx context.Context, id properties.UUID) error {
-	params := domain.DoServiceActionParams{
-		ID:     id,
-		Action: "start",
-	}
-	_, err := h.commander.DoAction(ctx, params)
-	return err
-}
+// GenericAction handles generic lifecycle actions from the URL path
+// Can optionally accept a ServiceActionRequest body with properties
+func (h *ServiceHandler) GenericAction(w http.ResponseWriter, r *http.Request) {
+	id := middlewares.MustGetID(r.Context())
+	action := middlewares.MustGetActionName(r.Context())
 
-func (h *ServiceHandler) Stop(ctx context.Context, id properties.UUID) error {
+	// For now, all actions go through DoAction
+	// Future: check requestSchemaType in lifecycle and handle properties accordingly
 	params := domain.DoServiceActionParams{
 		ID:     id,
-		Action: "stop",
+		Action: action,
 	}
-	_, err := h.commander.DoAction(ctx, params)
-	return err
+	service, err := h.commander.DoAction(r.Context(), params)
+
+	if err != nil {
+		render.Render(w, r, ErrDomain(err))
+		return
+	}
+
+	render.JSON(w, r, ServiceToRes(service))
 }
 
 func (h *ServiceHandler) Delete(ctx context.Context, id properties.UUID) error {
