@@ -152,6 +152,121 @@ func TestServiceTypeRepository(t *testing.T) {
 			assert.Equal(t, "agent", config.Properties["port"].Source)
 			assert.Equal(t, "never", config.Properties["port"].Updatable)
 		})
+
+		t.Run("success - with lifecycle schema", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup - ServiceType with lifecycle schema
+			serviceType := createTestServiceType(t)
+			lifecycle := &domain.LifecycleSchema{
+				States: []domain.LifecycleState{
+					{Name: "New"},
+					{Name: "Starting"},
+					{Name: "Started"},
+					{Name: "Stopping"},
+					{Name: "Stopped"},
+					{Name: "Failed"},
+					{Name: "Deleted"},
+				},
+				Actions: []domain.LifecycleAction{
+					{
+						Name: "create",
+						Transitions: []domain.LifecycleTransition{
+							{From: "New", To: "Stopped"},
+						},
+					},
+					{
+						Name: "start",
+						Transitions: []domain.LifecycleTransition{
+							{From: "Stopped", To: "Starting"},
+							{From: "Starting", To: "Started"},
+							{From: "Starting", To: "Failed", OnError: true, OnErrorRegexp: "quota.*exceeded"},
+							{From: "Starting", To: "Stopped", OnError: true},
+						},
+					},
+					{
+						Name: "stop",
+						Transitions: []domain.LifecycleTransition{
+							{From: "Started", To: "Stopping"},
+							{From: "Stopping", To: "Stopped"},
+						},
+					},
+					{
+						Name: "delete",
+						Transitions: []domain.LifecycleTransition{
+							{From: "Stopped", To: "Deleted"},
+							{From: "Failed", To: "Deleted"},
+						},
+					},
+				},
+				InitialState:   "New",
+				TerminalStates: []string{"Deleted"},
+				RunningStates:  []string{"Started"},
+			}
+			serviceType.LifecycleSchema = lifecycle
+
+			// Execute
+			err := repo.Create(ctx, serviceType)
+
+			// Assert
+			require.NoError(t, err)
+			assert.NotEmpty(t, serviceType.ID)
+
+			// Verify lifecycle schema persisted correctly
+			found, err := repo.Get(ctx, serviceType.ID)
+			require.NoError(t, err)
+			require.NotNil(t, found.LifecycleSchema)
+
+			// Verify basic lifecycle properties
+			assert.Equal(t, "New", found.LifecycleSchema.InitialState)
+			assert.Equal(t, []string{"Deleted"}, found.LifecycleSchema.TerminalStates)
+			assert.Equal(t, []string{"Started"}, found.LifecycleSchema.RunningStates)
+			assert.Len(t, found.LifecycleSchema.States, 7)
+			assert.Len(t, found.LifecycleSchema.Actions, 4)
+
+			// Verify states
+			stateNames := make([]string, len(found.LifecycleSchema.States))
+			for i, state := range found.LifecycleSchema.States {
+				stateNames[i] = state.Name
+			}
+			assert.Contains(t, stateNames, "New")
+			assert.Contains(t, stateNames, "Started")
+			assert.Contains(t, stateNames, "Stopped")
+			assert.Contains(t, stateNames, "Failed")
+
+			// Verify start action with error transitions
+			var startAction *domain.LifecycleAction
+			for i, action := range found.LifecycleSchema.Actions {
+				if action.Name == "start" {
+					startAction = &found.LifecycleSchema.Actions[i]
+					break
+				}
+			}
+			require.NotNil(t, startAction)
+			assert.Len(t, startAction.Transitions, 4)
+
+			// Verify error transitions
+			errorTransitions := []domain.LifecycleTransition{}
+			for _, transition := range startAction.Transitions {
+				if transition.OnError {
+					errorTransitions = append(errorTransitions, transition)
+				}
+			}
+			assert.Len(t, errorTransitions, 2)
+
+			// Verify error transition with regexp
+			var quotaTransition *domain.LifecycleTransition
+			for i, transition := range errorTransitions {
+				if transition.OnErrorRegexp != "" {
+					quotaTransition = &errorTransitions[i]
+					break
+				}
+			}
+			require.NotNil(t, quotaTransition)
+			assert.Equal(t, "quota.*exceeded", quotaTransition.OnErrorRegexp)
+			assert.Equal(t, "Starting", quotaTransition.From)
+			assert.Equal(t, "Failed", quotaTransition.To)
+		})
 	})
 
 	t.Run("Get", func(t *testing.T) {
