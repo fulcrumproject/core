@@ -77,6 +77,45 @@ Content-Type: application/json
             "source": "agent",
             "updatable": "never"
         }
+    },
+    "lifecycleSchema": {
+        "states": [
+            {"name": "New"},
+            {"name": "Stopped"},
+            {"name": "Started"},
+            {"name": "Deleted"}
+        ],
+        "actions": [
+            {
+                "name": "create",
+                "requestSchemaType": "properties",
+                "transitions": [
+                    {"from": "New", "to": "Stopped"}
+                ]
+            },
+            {
+                "name": "start",
+                "transitions": [
+                    {"from": "Stopped", "to": "Started"}
+                ]
+            },
+            {
+                "name": "stop",
+                "transitions": [
+                    {"from": "Started", "to": "Stopped"}
+                ]
+            },
+            {
+                "name": "delete",
+                "transitions": [
+                    {"from": "Stopped", "to": "Deleted"},
+                    {"from": "Started", "to": "Deleted"}
+                ]
+            }
+        ],
+        "initialState": "New",
+        "terminalStates": ["Deleted"],
+        "runningStates": ["Started"]
     }
 }
 
