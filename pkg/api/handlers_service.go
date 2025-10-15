@@ -60,6 +60,13 @@ type ServiceActionReq struct {
 	Action string `json:"action"`
 }
 
+// ServiceActionRequest represents a generic action request with optional properties
+// Used by the generic action endpoint (POST /services/{id}/actions/{action})
+// Authorization is handled via service ID from URL path (AuthzFromID middleware)
+type ServiceActionRequest struct {
+	Properties *properties.JSON `json:"properties,omitempty"`
+}
+
 // CreateServiceScopeExtractor creates an extractor that gets a combined scope from the request body
 // by retrieving scopes from both ServiceGroup and Agent
 func CreateServiceScopeExtractor(

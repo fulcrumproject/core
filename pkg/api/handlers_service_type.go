@@ -77,33 +77,37 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 
 // CreateServiceTypeReq represents the request body for creating service types
 type CreateServiceTypeReq struct {
-	Name           string                `json:"name"`
-	PropertySchema *domain.ServiceSchema `json:"propertySchema,omitempty"`
+	Name            string                  `json:"name"`
+	PropertySchema  *domain.ServiceSchema   `json:"propertySchema,omitempty"`
+	LifecycleSchema *domain.LifecycleSchema `json:"lifecycleSchema,omitempty"`
 }
 
 // UpdateServiceTypeReq represents the request body for updating service types
 type UpdateServiceTypeReq struct {
-	Name           *string               `json:"name"`
-	PropertySchema *domain.ServiceSchema `json:"propertySchema,omitempty"`
+	Name            *string                 `json:"name"`
+	PropertySchema  *domain.ServiceSchema   `json:"propertySchema,omitempty"`
+	LifecycleSchema *domain.LifecycleSchema `json:"lifecycleSchema,omitempty"`
 }
 
 // ServiceTypeRes represents the response body for service type operations
 type ServiceTypeRes struct {
-	ID             properties.UUID       `json:"id"`
-	Name           string                `json:"name"`
-	PropertySchema *domain.ServiceSchema `json:"propertySchema,omitempty"`
-	CreatedAt      JSONUTCTime           `json:"createdAt"`
-	UpdatedAt      JSONUTCTime           `json:"updatedAt"`
+	ID              properties.UUID         `json:"id"`
+	Name            string                  `json:"name"`
+	PropertySchema  *domain.ServiceSchema   `json:"propertySchema,omitempty"`
+	LifecycleSchema *domain.LifecycleSchema `json:"lifecycleSchema,omitempty"`
+	CreatedAt       JSONUTCTime             `json:"createdAt"`
+	UpdatedAt       JSONUTCTime             `json:"updatedAt"`
 }
 
 // ServiceTypeToRes converts a domain.ServiceType to a ServiceTypeResponse
 func ServiceTypeToRes(st *domain.ServiceType) *ServiceTypeRes {
 	return &ServiceTypeRes{
-		ID:             st.ID,
-		Name:           st.Name,
-		PropertySchema: st.PropertySchema,
-		CreatedAt:      JSONUTCTime(st.CreatedAt),
-		UpdatedAt:      JSONUTCTime(st.UpdatedAt),
+		ID:              st.ID,
+		Name:            st.Name,
+		PropertySchema:  st.PropertySchema,
+		LifecycleSchema: st.LifecycleSchema,
+		CreatedAt:       JSONUTCTime(st.CreatedAt),
+		UpdatedAt:       JSONUTCTime(st.UpdatedAt),
 	}
 }
 
@@ -175,17 +179,19 @@ func (h *ServiceTypeHandler) Validate(w http.ResponseWriter, r *http.Request) {
 
 func (h *ServiceTypeHandler) Create(ctx context.Context, req *CreateServiceTypeReq) (*domain.ServiceType, error) {
 	params := domain.CreateServiceTypeParams{
-		Name:           req.Name,
-		PropertySchema: req.PropertySchema,
+		Name:            req.Name,
+		PropertySchema:  req.PropertySchema,
+		LifecycleSchema: req.LifecycleSchema,
 	}
 	return h.commander.Create(ctx, params)
 }
 
 func (h *ServiceTypeHandler) Update(ctx context.Context, id properties.UUID, req *UpdateServiceTypeReq) (*domain.ServiceType, error) {
 	params := domain.UpdateServiceTypeParams{
-		ID:             id,
-		Name:           req.Name,
-		PropertySchema: req.PropertySchema,
+		ID:              id,
+		Name:            req.Name,
+		PropertySchema:  req.PropertySchema,
+		LifecycleSchema: req.LifecycleSchema,
 	}
 	return h.commander.Update(ctx, params)
 }
