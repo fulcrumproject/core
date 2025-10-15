@@ -2,8 +2,11 @@ package domain
 
 import (
 	"context"
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 )
@@ -25,16 +28,26 @@ type LifecycleSchema struct {
 
 // IsRunningStatus checks if a given status is considered a "running" state for uptime calculation
 func (ls *LifecycleSchema) IsRunningStatus(status string) bool {
-	if ls == nil {
-		return false
+	return slices.Contains(ls.RunningStates, status)
+}
+
+// Scan implements the sql.Scanner interface
+func (ls *LifecycleSchema) Scan(value any) error {
+	if value == nil {
+		return nil
 	}
 
-	for _, runningState := range ls.RunningStates {
-		if runningState == status {
-			return true
-		}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("failed to unmarshal LifecycleSchema value: %v", value)
 	}
-	return false
+
+	return json.Unmarshal(bytes, ls)
+}
+
+// Value implements the driver.Valuer interface
+func (ls LifecycleSchema) Value() (driver.Value, error) {
+	return json.Marshal(ls)
 }
 
 // LifecycleState represents a state in the service lifecycle
