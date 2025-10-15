@@ -840,3 +840,582 @@ When updating property schemas:
 2. **Gradual Migration**: Add new optional properties before making them required
 3. **Validation Testing**: Use the validation endpoint to test schema changes
 4. **Documentation**: Update service documentation when schemas change
+
+---
+
+# ServiceType Lifecycle Schema Documentation
+
+## Overview
+
+The ServiceType Lifecycle Schema is a flexible schema-driven system that allows administrators to define custom service lifecycles with states, actions, and transitions. This enables different service types to have completely different lifecycles without requiring application code changes.
+
+## Why Lifecycle Schemas?
+
+Traditional hardcoded state machines are inflexible and require code changes to support new service types. Lifecycle schemas solve this by:
+
+- **Flexibility**: Each service type can have its own custom lifecycle
+- **Dynamic**: Add new service types with custom lifecycles without recompiling
+- **Consistency**: Enforce valid state transitions at the domain level
+- **Expressiveness**: Support complex workflows with error handling
+- **Maintainability**: Lifecycle logic is declarative JSON, not imperative code
+
+## Lifecycle Schema Structure
+
+Each ServiceType can have an optional `lifecycleSchema` field that defines the service lifecycle:
+
+```json
+{
+  "states": [...],
+  "actions": [...],
+  "initialState": "New",
+  "terminalStates": ["Deleted"],
+  "runningStates": ["Started"]
+}
+```
+
+### Schema Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `states` | Array of LifecycleState | Yes | List of all possible states |
+| `actions` | Array of LifecycleAction | Yes | List of actions that can be performed |
+| `initialState` | String | Yes | Starting state for new services |
+| `terminalStates` | Array of String | No | States where no further actions allowed |
+| `runningStates` | Array of String | No | States considered "running" for uptime calculation |
+
+## States
+
+States represent the possible conditions of a service. Each state has a name:
+
+```json
+{
+  "name": "Started"
+}
+```
+
+**Common State Examples:**
+- `New` - Service just created
+- `Stopped` - Service provisioned but not running
+- `Started` - Service is actively running
+- `Failed` - Service encountered an error
+- `Deleted` - Service has been removed
+
+## Actions
+
+Actions define operations that can be performed on a service. Each action has:
+
+```json
+{
+  "name": "start",
+  "requestSchemaType": "properties",
+  "transitions": [...]
+}
+```
+
+### Action Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | String | Yes | Name of the action (e.g., "start", "stop") |
+| `requestSchemaType` | String | No | Type of request body: "properties" or omit for no body |
+| `transitions` | Array of LifecycleTransition | Yes | State transitions for this action |
+
+### Request Schema Type
+
+The `requestSchemaType` field determines what kind of request body the action accepts:
+
+- **Omitted or empty**: Action requires no request body (e.g., start, stop, restart)
+- **`"properties"`**: Action accepts service properties in request body (e.g., create, update)
+
+## Transitions
+
+Transitions define how services move from one state to another when an action is performed:
+
+```json
+{
+  "from": "Stopped",
+  "to": "Started",
+  "onError": false
+}
+```
+
+### Transition Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `from` | String | Yes | Source state |
+| `to` | String | Yes | Destination state |
+| `onError` | Boolean | No | Whether this is an error transition (default: false) |
+| `onErrorRegexp` | String | No | Regex pattern to match error messages |
+
+### Success vs Error Transitions
+
+Each action can have two types of transitions:
+
+**Success Transitions** (`onError: false` or omitted):
+- Applied when the job completes successfully
+- Only one success transition should exist per (action, from-state) pair
+
+**Error Transitions** (`onError: true`):
+- Applied when the job fails
+- Multiple error transitions can exist per (action, from-state) pair
+- Error message is matched against `onErrorRegexp` to select which transition to use
+- If no regexp is specified, matches any error
+
+### Error Regexp Matching
+
+When a job fails, the system uses the error message to determine the next state:
+
+1. Look for error transitions (`onError: true`) for the current action and state
+2. If a transition has `onErrorRegexp`, check if the error message matches the regexp
+3. Use the first matching transition
+4. If no regexps are specified, use the first error transition (catches all errors)
+
+**Example: Quota-specific error handling:**
+```json
+{
+  "name": "start",
+  "transitions": [
+    {
+      "from": "Stopped",
+      "to": "Started"
+    },
+    {
+      "from": "Stopped",
+      "to": "QuotaExceeded",
+      "onError": true,
+      "onErrorRegexp": "quota.*exceeded"
+    },
+    {
+      "from": "Stopped",
+      "to": "Failed",
+      "onError": true
+    }
+  ]
+}
+```
+
+This configuration:
+- Success: `Stopped → Started`
+- Error with "quota exceeded" message: `Stopped → QuotaExceeded`
+- Any other error: `Stopped → Failed`
+
+## Terminal States
+
+Terminal states are end states where no further actions can be performed:
+
+```json
+{
+  "terminalStates": ["Deleted", "Terminated"]
+}
+```
+
+Services in terminal states:
+- Cannot perform any lifecycle actions
+- Attempts to perform actions return an error
+- Represent final, irreversible states
+
+## Running States
+
+Running states are used for uptime calculation and monitoring:
+
+```json
+{
+  "runningStates": ["Started", "Running", "Active"]
+}
+```
+
+Services in running states are considered:
+- Actively providing their service
+- Counted toward uptime metrics
+- Expected to be operational
+
+If `runningStates` is empty or not specified, services are never considered "running" for uptime purposes.
+
+## Complete Examples
+
+### Example 1: Simple VM Lifecycle
+
+A basic VM lifecycle with start/stop operations:
+
+```json
+{
+  "states": [
+    {"name": "New"},
+    {"name": "Stopped"},
+    {"name": "Started"},
+    {"name": "Deleted"}
+  ],
+  "actions": [
+    {
+      "name": "create",
+      "requestSchemaType": "properties",
+      "transitions": [
+        {"from": "New", "to": "Stopped"}
+      ]
+    },
+    {
+      "name": "start",
+      "transitions": [
+        {"from": "Stopped", "to": "Started"}
+      ]
+    },
+    {
+      "name": "stop",
+      "transitions": [
+        {"from": "Started", "to": "Stopped"}
+      ]
+    },
+    {
+      "name": "update",
+      "requestSchemaType": "properties",
+      "transitions": [
+        {"from": "Stopped", "to": "Stopped"},
+        {"from": "Started", "to": "Started"}
+      ]
+    },
+    {
+      "name": "delete",
+      "transitions": [
+        {"from": "Stopped", "to": "Deleted"},
+        {"from": "Started", "to": "Deleted"}
+      ]
+    }
+  ],
+  "initialState": "New",
+  "terminalStates": ["Deleted"],
+  "runningStates": ["Started"]
+}
+```
+
+### Example 2: Advanced Lifecycle with Error Handling
+
+A more complex lifecycle with intermediate states and error handling:
+
+```json
+{
+  "states": [
+    {"name": "New"},
+    {"name": "Provisioning"},
+    {"name": "Stopped"},
+    {"name": "Starting"},
+    {"name": "Started"},
+    {"name": "Stopping"},
+    {"name": "Failed"},
+    {"name": "Deleted"}
+  ],
+  "actions": [
+    {
+      "name": "create",
+      "requestSchemaType": "properties",
+      "transitions": [
+        {"from": "New", "to": "Provisioning"},
+        {"from": "Provisioning", "to": "Stopped"},
+        {"from": "Provisioning", "to": "Failed", "onError": true, "onErrorRegexp": "quota.*exceeded"},
+        {"from": "Provisioning", "to": "Failed", "onError": true}
+      ]
+    },
+    {
+      "name": "start",
+      "transitions": [
+        {"from": "Stopped", "to": "Starting"},
+        {"from": "Starting", "to": "Started"},
+        {"from": "Starting", "to": "Failed", "onError": true}
+      ]
+    },
+    {
+      "name": "stop",
+      "transitions": [
+        {"from": "Started", "to": "Stopping"},
+        {"from": "Stopping", "to": "Stopped"},
+        {"from": "Stopping", "to": "Failed", "onError": true}
+      ]
+    },
+    {
+      "name": "restart",
+      "transitions": [
+        {"from": "Started", "to": "Stopping"},
+        {"from": "Stopping", "to": "Starting"},
+        {"from": "Starting", "to": "Started"}
+      ]
+    },
+    {
+      "name": "delete",
+      "transitions": [
+        {"from": "Stopped", "to": "Deleted"},
+        {"from": "Failed", "to": "Deleted"}
+      ]
+    }
+  ],
+  "initialState": "New",
+  "terminalStates": ["Deleted"],
+  "runningStates": ["Started"]
+}
+```
+
+### Example 3: Database Lifecycle with Maintenance States
+
+A database service with backup and maintenance operations:
+
+```json
+{
+  "states": [
+    {"name": "New"},
+    {"name": "Stopped"},
+    {"name": "Started"},
+    {"name": "Backup"},
+    {"name": "Maintenance"},
+    {"name": "Deleted"}
+  ],
+  "actions": [
+    {
+      "name": "create",
+      "requestSchemaType": "properties",
+      "transitions": [
+        {"from": "New", "to": "Stopped"}
+      ]
+    },
+    {
+      "name": "start",
+      "transitions": [
+        {"from": "Stopped", "to": "Started"}
+      ]
+    },
+    {
+      "name": "stop",
+      "transitions": [
+        {"from": "Started", "to": "Stopped"}
+      ]
+    },
+    {
+      "name": "backup",
+      "transitions": [
+        {"from": "Started", "to": "Backup"},
+        {"from": "Backup", "to": "Started"}
+      ]
+    },
+    {
+      "name": "maintenance",
+      "transitions": [
+        {"from": "Stopped", "to": "Maintenance"},
+        {"from": "Maintenance", "to": "Stopped"}
+      ]
+    },
+    {
+      "name": "delete",
+      "transitions": [
+        {"from": "Stopped", "to": "Deleted"}
+      ]
+    }
+  ],
+  "initialState": "New",
+  "terminalStates": ["Deleted"],
+  "runningStates": ["Started", "Backup"]
+}
+```
+
+## API Usage
+
+### Creating a ServiceType with Lifecycle
+
+```http
+POST /api/v1/service-types
+Content-Type: application/json
+
+{
+  "name": "VM Instance",
+  "propertySchema": {...},
+  "lifecycleSchema": {
+    "states": [
+      {"name": "New"},
+      {"name": "Stopped"},
+      {"name": "Started"},
+      {"name": "Deleted"}
+    ],
+    "actions": [
+      {
+        "name": "create",
+        "requestSchemaType": "properties",
+        "transitions": [
+          {"from": "New", "to": "Stopped"}
+        ]
+      },
+      {
+        "name": "start",
+        "transitions": [
+          {"from": "Stopped", "to": "Started"}
+        ]
+      }
+    ],
+    "initialState": "New",
+    "terminalStates": ["Deleted"],
+    "runningStates": ["Started"]
+  }
+}
+```
+
+### Performing Lifecycle Actions
+
+Use the generic action endpoint to perform any lifecycle action:
+
+```http
+POST /api/v1/services/{id}/{action}
+Content-Type: application/json
+
+{
+  "properties": {
+    // Optional properties for actions with requestSchemaType: "properties"
+  }
+}
+```
+
+**Examples:**
+
+Start a service (no properties needed):
+```http
+POST /api/v1/services/123e4567-e89b-12d3-a456-426614174000/start
+```
+
+Restart a service (no properties needed):
+```http
+POST /api/v1/services/123e4567-e89b-12d3-a456-426614174000/restart
+```
+
+Backup with parameters (if action has requestSchemaType):
+```http
+POST /api/v1/services/123e4567-e89b-12d3-a456-426614174000/backup
+Content-Type: application/json
+
+{
+  "properties": {
+    "backupName": "daily-backup",
+    "compressionLevel": 9
+  }
+}
+```
+
+## Validation and Constraints
+
+The system enforces the following lifecycle rules:
+
+1. **Valid States**: All state names in transitions must be defined in `states`
+2. **Valid Initial State**: `initialState` must be in the `states` list
+3. **Valid Terminal States**: All `terminalStates` must be in the `states` list
+4. **Valid Running States**: All `runningStates` must be in the `states` list
+5. **Action Availability**: Only actions defined in the lifecycle can be performed
+6. **State Transitions**: Actions can only transition from states defined in their transitions
+7. **Terminal State Block**: No actions can be performed on services in terminal states
+8. **Unique Transitions**: Each (action, from-state) pair should have only one success transition
+
+## Best Practices
+
+1. **Start Simple**: Begin with basic states (New, Stopped, Started, Deleted) and add complexity as needed
+2. **Meaningful State Names**: Use clear, descriptive state names that reflect the service condition
+3. **Error Handling**: Always provide error transitions for states that can fail
+4. **Terminal States**: Mark irreversible end states as terminal
+5. **Running States**: Accurately mark which states should count as "running" for metrics
+6. **Intermediate States**: Use intermediate states (e.g., Starting, Stopping) for long-running operations
+7. **Error Regexps**: Use specific error regexps for known error types, with a catch-all fallback
+8. **Multi-step Actions**: Break complex actions into multiple steps with intermediate states
+9. **Idempotent Actions**: Design actions to be safely retryable from the same state
+10. **Documentation**: Document the lifecycle flow for each service type
+
+## Common Patterns
+
+### Pattern 1: Immediate vs Progressive Actions
+
+**Immediate** (single-step):
+```json
+{
+  "name": "start",
+  "transitions": [
+    {"from": "Stopped", "to": "Started"}
+  ]
+}
+```
+
+**Progressive** (multi-step):
+```json
+{
+  "name": "start",
+  "transitions": [
+    {"from": "Stopped", "to": "Starting"},
+    {"from": "Starting", "to": "Started"}
+  ]
+}
+```
+
+Progressive is better for long-running operations where you want to track progress.
+
+### Pattern 2: Restart as Compound Action
+
+Restart can be modeled as a compound action that stops then starts:
+
+```json
+{
+  "name": "restart",
+  "transitions": [
+    {"from": "Started", "to": "Stopping"},
+    {"from": "Stopping", "to": "Starting"},
+    {"from": "Starting", "to": "Started"}
+  ]
+}
+```
+
+### Pattern 3: Graceful Degradation
+
+Allow operations to proceed despite non-critical errors:
+
+```json
+{
+  "name": "upgrade",
+  "transitions": [
+    {"from": "Started", "to": "Upgrading"},
+    {"from": "Upgrading", "to": "Started"},
+    {"from": "Upgrading", "to": "Started", "onError": true, "onErrorRegexp": "minor.*error"},
+    {"from": "Upgrading", "to": "Failed", "onError": true}
+  ]
+}
+```
+
+### Pattern 4: Recovery Actions
+
+Provide actions to recover from failed states:
+
+```json
+{
+  "name": "recover",
+  "transitions": [
+    {"from": "Failed", "to": "Stopped"}
+  ]
+}
+```
+
+## Lifecycle vs Property Schema Interaction
+
+Lifecycle schemas work together with property schemas:
+
+- **Property Schema**: Defines *what* can be configured (properties, validation)
+- **Lifecycle Schema**: Defines *when* and *how* things can change (actions, transitions)
+
+The `updatable` and `updatableIn` fields in property schemas reference lifecycle states:
+
+```json
+{
+  "propertySchema": {
+    "diskSize": {
+      "type": "integer",
+      "updatable": "statuses",
+      "updatableIn": ["Stopped"]
+    }
+  },
+  "lifecycleSchema": {
+    "states": [
+      {"name": "Stopped"},
+      {"name": "Started"}
+    ]
+  }
+}
+```
+
+This ensures `diskSize` can only be updated when the service is in the `Stopped` state.

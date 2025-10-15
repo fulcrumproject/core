@@ -2060,9 +2060,9 @@ paths:
       description: |
         Performs a generic lifecycle action on a service. The action name is specified in the URL path
         and must be defined in the service type's lifecycle schema. 
-        
+
         Common actions include: start, stop, restart, pause, resume, etc.
-        
+
         Note: Use DELETE /services/{id} for delete actions and PATCH /services/{id} for update actions.
       x-auth-permissions:
         - role: admin
