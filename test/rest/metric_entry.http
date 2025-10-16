@@ -108,14 +108,14 @@ POST {{baseUrl}}/jobs/{{jobId}}/complete
 Authorization: Bearer {{agentToken}}
 
 {
-    "resources": {
+    "agentData": {
         "status": "success",
         "details": {
             "duration": "10s",
             "output": "Service started successfully"
         }
     },
-    "externalId": "{{$guid}}"
+    "agentInstanceId": "{{$guid}}"
 }
 
 ### Get a service by ID
@@ -123,7 +123,7 @@ Authorization: Bearer {{agentToken}}
 GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
-@externalId = {{getService.response.body.$.externalId}}
+@agentInstanceId = {{getService.response.body.$.agentInstanceId}}
 
 ### Create a metric type for testing
 # @name createMetricType
@@ -156,7 +156,7 @@ POST {{baseUrl}}/metric-entries
 Authorization: Bearer {{agentToken}}
 
 {
-    "externalId": "{{externalId}}",
+    "agentInstanceId": "{{agentInstanceId}}",
     "resourceId": "test-resource",
     "value": 78.2, 
     "typeName": "{{metricTypeName}}"
