@@ -261,16 +261,16 @@ var _ domain.ServiceQuerier = (*mockServiceQuerier)(nil)
 // mockServiceQuerier is a custom mock for ServiceQuerier
 type mockServiceQuerier struct {
 	BaseMockQuerier[domain.Service]
-	findByExternalIDFunc func(ctx context.Context, agentID properties.UUID, externalID string) (*domain.Service, error)
-	countByGroupFunc     func(ctx context.Context, groupID properties.UUID) (int64, error)
-	countByAgentFunc     func(ctx context.Context, agentID properties.UUID) (int64, error)
+	findByAgentInstanceIDFunc func(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*domain.Service, error)
+	countByGroupFunc          func(ctx context.Context, groupID properties.UUID) (int64, error)
+	countByAgentFunc          func(ctx context.Context, agentID properties.UUID) (int64, error)
 }
 
-func (m *mockServiceQuerier) FindByExternalID(ctx context.Context, agentID properties.UUID, externalID string) (*domain.Service, error) {
-	if m.findByExternalIDFunc != nil {
-		return m.findByExternalIDFunc(ctx, agentID, externalID)
+func (m *mockServiceQuerier) FindByAgentInstanceID(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*domain.Service, error) {
+	if m.findByAgentInstanceIDFunc != nil {
+		return m.findByAgentInstanceIDFunc(ctx, agentID, agentInstanceID)
 	}
-	return nil, fmt.Errorf("FindByExternalID not mocked")
+	return nil, fmt.Errorf("FindByAgentInstanceID not mocked")
 }
 
 func (m *mockServiceQuerier) CountByGroup(ctx context.Context, groupID properties.UUID) (int64, error) {

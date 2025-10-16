@@ -13274,48 +13274,48 @@ func (_c *MockServiceRepository_Exists_Call) RunAndReturn(run func(ctx context.C
 	return _c
 }
 
-// FindByExternalID provides a mock function for the type MockServiceRepository
-func (_mock *MockServiceRepository) FindByExternalID(ctx context.Context, agentID properties.UUID, externalID string) (*Service, error) {
-	ret := _mock.Called(ctx, agentID, externalID)
+// FindByAgentInstanceID provides a mock function for the type MockServiceRepository
+func (_mock *MockServiceRepository) FindByAgentInstanceID(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*Service, error) {
+	ret := _mock.Called(ctx, agentID, agentInstanceID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for FindByExternalID")
+		panic("no return value specified for FindByAgentInstanceID")
 	}
 
 	var r0 *Service
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) (*Service, error)); ok {
-		return returnFunc(ctx, agentID, externalID)
+		return returnFunc(ctx, agentID, agentInstanceID)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) *Service); ok {
-		r0 = returnFunc(ctx, agentID, externalID)
+		r0 = returnFunc(ctx, agentID, agentInstanceID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Service)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, string) error); ok {
-		r1 = returnFunc(ctx, agentID, externalID)
+		r1 = returnFunc(ctx, agentID, agentInstanceID)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockServiceRepository_FindByExternalID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByExternalID'
-type MockServiceRepository_FindByExternalID_Call struct {
+// MockServiceRepository_FindByAgentInstanceID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByAgentInstanceID'
+type MockServiceRepository_FindByAgentInstanceID_Call struct {
 	*mock.Call
 }
 
-// FindByExternalID is a helper method to define mock.On call
+// FindByAgentInstanceID is a helper method to define mock.On call
 //   - ctx context.Context
 //   - agentID properties.UUID
-//   - externalID string
-func (_e *MockServiceRepository_Expecter) FindByExternalID(ctx interface{}, agentID interface{}, externalID interface{}) *MockServiceRepository_FindByExternalID_Call {
-	return &MockServiceRepository_FindByExternalID_Call{Call: _e.mock.On("FindByExternalID", ctx, agentID, externalID)}
+//   - agentInstanceID string
+func (_e *MockServiceRepository_Expecter) FindByAgentInstanceID(ctx interface{}, agentID interface{}, agentInstanceID interface{}) *MockServiceRepository_FindByAgentInstanceID_Call {
+	return &MockServiceRepository_FindByAgentInstanceID_Call{Call: _e.mock.On("FindByAgentInstanceID", ctx, agentID, agentInstanceID)}
 }
 
-func (_c *MockServiceRepository_FindByExternalID_Call) Run(run func(ctx context.Context, agentID properties.UUID, externalID string)) *MockServiceRepository_FindByExternalID_Call {
+func (_c *MockServiceRepository_FindByAgentInstanceID_Call) Run(run func(ctx context.Context, agentID properties.UUID, agentInstanceID string)) *MockServiceRepository_FindByAgentInstanceID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -13338,12 +13338,12 @@ func (_c *MockServiceRepository_FindByExternalID_Call) Run(run func(ctx context.
 	return _c
 }
 
-func (_c *MockServiceRepository_FindByExternalID_Call) Return(service *Service, err error) *MockServiceRepository_FindByExternalID_Call {
+func (_c *MockServiceRepository_FindByAgentInstanceID_Call) Return(service *Service, err error) *MockServiceRepository_FindByAgentInstanceID_Call {
 	_c.Call.Return(service, err)
 	return _c
 }
 
-func (_c *MockServiceRepository_FindByExternalID_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID, externalID string) (*Service, error)) *MockServiceRepository_FindByExternalID_Call {
+func (_c *MockServiceRepository_FindByAgentInstanceID_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*Service, error)) *MockServiceRepository_FindByAgentInstanceID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -13966,48 +13966,48 @@ func (_c *MockServiceQuerier_Exists_Call) RunAndReturn(run func(ctx context.Cont
 	return _c
 }
 
-// FindByExternalID provides a mock function for the type MockServiceQuerier
-func (_mock *MockServiceQuerier) FindByExternalID(ctx context.Context, agentID properties.UUID, externalID string) (*Service, error) {
-	ret := _mock.Called(ctx, agentID, externalID)
+// FindByAgentInstanceID provides a mock function for the type MockServiceQuerier
+func (_mock *MockServiceQuerier) FindByAgentInstanceID(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*Service, error) {
+	ret := _mock.Called(ctx, agentID, agentInstanceID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for FindByExternalID")
+		panic("no return value specified for FindByAgentInstanceID")
 	}
 
 	var r0 *Service
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) (*Service, error)); ok {
-		return returnFunc(ctx, agentID, externalID)
+		return returnFunc(ctx, agentID, agentInstanceID)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) *Service); ok {
-		r0 = returnFunc(ctx, agentID, externalID)
+		r0 = returnFunc(ctx, agentID, agentInstanceID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Service)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, string) error); ok {
-		r1 = returnFunc(ctx, agentID, externalID)
+		r1 = returnFunc(ctx, agentID, agentInstanceID)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockServiceQuerier_FindByExternalID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByExternalID'
-type MockServiceQuerier_FindByExternalID_Call struct {
+// MockServiceQuerier_FindByAgentInstanceID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByAgentInstanceID'
+type MockServiceQuerier_FindByAgentInstanceID_Call struct {
 	*mock.Call
 }
 
-// FindByExternalID is a helper method to define mock.On call
+// FindByAgentInstanceID is a helper method to define mock.On call
 //   - ctx context.Context
 //   - agentID properties.UUID
-//   - externalID string
-func (_e *MockServiceQuerier_Expecter) FindByExternalID(ctx interface{}, agentID interface{}, externalID interface{}) *MockServiceQuerier_FindByExternalID_Call {
-	return &MockServiceQuerier_FindByExternalID_Call{Call: _e.mock.On("FindByExternalID", ctx, agentID, externalID)}
+//   - agentInstanceID string
+func (_e *MockServiceQuerier_Expecter) FindByAgentInstanceID(ctx interface{}, agentID interface{}, agentInstanceID interface{}) *MockServiceQuerier_FindByAgentInstanceID_Call {
+	return &MockServiceQuerier_FindByAgentInstanceID_Call{Call: _e.mock.On("FindByAgentInstanceID", ctx, agentID, agentInstanceID)}
 }
 
-func (_c *MockServiceQuerier_FindByExternalID_Call) Run(run func(ctx context.Context, agentID properties.UUID, externalID string)) *MockServiceQuerier_FindByExternalID_Call {
+func (_c *MockServiceQuerier_FindByAgentInstanceID_Call) Run(run func(ctx context.Context, agentID properties.UUID, agentInstanceID string)) *MockServiceQuerier_FindByAgentInstanceID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -14030,12 +14030,12 @@ func (_c *MockServiceQuerier_FindByExternalID_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockServiceQuerier_FindByExternalID_Call) Return(service *Service, err error) *MockServiceQuerier_FindByExternalID_Call {
+func (_c *MockServiceQuerier_FindByAgentInstanceID_Call) Return(service *Service, err error) *MockServiceQuerier_FindByAgentInstanceID_Call {
 	_c.Call.Return(service, err)
 	return _c
 }
 
-func (_c *MockServiceQuerier_FindByExternalID_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID, externalID string) (*Service, error)) *MockServiceQuerier_FindByExternalID_Call {
+func (_c *MockServiceQuerier_FindByAgentInstanceID_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*Service, error)) *MockServiceQuerier_FindByAgentInstanceID_Call {
 	_c.Call.Return(run)
 	return _c
 }

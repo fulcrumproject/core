@@ -159,8 +159,8 @@ func (m *mockServiceRepo) CountByGroup(ctx context.Context, groupID properties.U
 	return 0, nil
 }
 
-func (m *mockServiceRepo) FindByExternalID(ctx context.Context, agentID properties.UUID, externalID string) (*Service, error) {
-	return nil, NewNotFoundErrorf("Service with external ID %s not found", externalID)
+func (m *mockServiceRepo) FindByAgentInstanceID(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*Service, error) {
+	return nil, NewNotFoundErrorf("Service with agent instance ID %s not found", agentInstanceID)
 }
 
 func (m *mockServiceRepo) CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error) {

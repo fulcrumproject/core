@@ -122,11 +122,11 @@ type CreateMetricEntryParams struct {
 }
 
 type CreateMetricEntryWithExternalIDParams struct {
-	TypeName   string          `json:"typeName"`
-	AgentID    properties.UUID `json:"agentId"`
-	ExternalID string          `json:"externalId"`
-	ResourceID string          `json:"resourceId"`
-	Value      float64         `json:"value"`
+	TypeName        string          `json:"typeName"`
+	AgentID         properties.UUID `json:"agentId"`
+	AgentInstanceID string          `json:"agentInstanceId"`
+	ResourceID      string          `json:"resourceId"`
+	Value           float64         `json:"value"`
 }
 
 // metricEntryCommander is the concrete implementation of MetricEntryCommander
@@ -159,8 +159,8 @@ func (s *metricEntryCommander) CreateWithExternalID(
 		return nil, NewInvalidInputErrorf("invalid agent ID %s", params.AgentID)
 	}
 
-	// 2. Find service by external ID
-	svc, err := s.store.ServiceRepo().FindByExternalID(ctx, params.AgentID, params.ExternalID)
+	// 2. Find service by agent instance ID
+	svc, err := s.store.ServiceRepo().FindByAgentInstanceID(ctx, params.AgentID, params.AgentInstanceID)
 	if err != nil {
 		return nil, err
 	}

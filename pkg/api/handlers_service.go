@@ -231,37 +231,37 @@ func (h *ServiceHandler) Retry(ctx context.Context, id properties.UUID) error {
 
 // ServiceRes represents the response body for service operations
 type ServiceRes struct {
-	ID            properties.UUID  `json:"id"`
-	ProviderID    properties.UUID  `json:"providerId"`
-	ConsumerID    properties.UUID  `json:"consumerId"`
-	AgentID       properties.UUID  `json:"agentId"`
-	ServiceTypeID properties.UUID  `json:"serviceTypeId"`
-	GroupID       properties.UUID  `json:"groupId"`
-	ExternalID    *string          `json:"externalId,omitempty"`
-	Name          string           `json:"name"`
-	Status        string           `json:"status"`
-	Properties    *properties.JSON `json:"properties,omitempty"`
-	Resources     *properties.JSON `json:"resources,omitempty"`
-	CreatedAt     JSONUTCTime      `json:"createdAt"`
-	UpdatedAt     JSONUTCTime      `json:"updatedAt"`
+	ID              properties.UUID  `json:"id"`
+	ProviderID      properties.UUID  `json:"providerId"`
+	ConsumerID      properties.UUID  `json:"consumerId"`
+	AgentID         properties.UUID  `json:"agentId"`
+	ServiceTypeID   properties.UUID  `json:"serviceTypeId"`
+	GroupID         properties.UUID  `json:"groupId"`
+	AgentInstanceID *string          `json:"agentInstanceId,omitempty"`
+	Name            string           `json:"name"`
+	Status          string           `json:"status"`
+	Properties      *properties.JSON `json:"properties,omitempty"`
+	AgentData       *properties.JSON `json:"agentData,omitempty"`
+	CreatedAt       JSONUTCTime      `json:"createdAt"`
+	UpdatedAt       JSONUTCTime      `json:"updatedAt"`
 }
 
 // ServiceToRes converts a domain.Service to a ServiceResponse
 func ServiceToRes(s *domain.Service) *ServiceRes {
 	resp := &ServiceRes{
-		ID:            s.ID,
-		ProviderID:    s.ProviderID,
-		ConsumerID:    s.ConsumerID,
-		AgentID:       s.AgentID,
-		ServiceTypeID: s.ServiceTypeID,
-		GroupID:       s.GroupID,
-		ExternalID:    s.ExternalID,
-		Name:          s.Name,
-		Status:        s.Status,
-		Properties:    s.Properties,
-		Resources:     s.Resources,
-		CreatedAt:     JSONUTCTime(s.CreatedAt),
-		UpdatedAt:     JSONUTCTime(s.UpdatedAt),
+		ID:              s.ID,
+		ProviderID:      s.ProviderID,
+		ConsumerID:      s.ConsumerID,
+		AgentID:         s.AgentID,
+		ServiceTypeID:   s.ServiceTypeID,
+		GroupID:         s.GroupID,
+		AgentInstanceID: s.AgentInstanceID,
+		Name:            s.Name,
+		Status:          s.Status,
+		Properties:      s.Properties,
+		AgentData:       s.AgentData,
+		CreatedAt:       JSONUTCTime(s.CreatedAt),
+		UpdatedAt:       JSONUTCTime(s.UpdatedAt),
 	}
 	return resp
 }

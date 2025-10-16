@@ -426,7 +426,7 @@ func (m *mockServiceRepository) Exists(ctx context.Context, id properties.UUID) 
 func (m *mockServiceRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 	return &auth.AllwaysMatchObjectScope{}, nil
 }
-func (m *mockServiceRepository) FindByExternalID(ctx context.Context, agentID properties.UUID, externalID string) (*domain.Service, error) {
+func (m *mockServiceRepository) FindByAgentInstanceID(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*domain.Service, error) {
 	return nil, nil
 }
 func (m *mockServiceRepository) CountByGroup(ctx context.Context, groupID properties.UUID) (int64, error) {

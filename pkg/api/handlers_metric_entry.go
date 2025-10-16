@@ -15,15 +15,15 @@ import (
 )
 
 type CreateMetricEntryReq struct {
-	ServiceID    *properties.UUID `json:"serviceId,omitempty"`
-	ExternalID   *string          `json:"externalId,omitempty"`
-	ResourceID   string           `json:"resourceId"`
-	Value        float64          `json:"value"`
-	TypeName     string           `json:"typeName"`
-	MetricTypeID properties.UUID  `json:"metricTypeId"`
-	EntityType   string           `json:"entityType"`
-	EntityID     properties.UUID  `json:"entityId"`
-	Timestamp    time.Time        `json:"timestamp"`
+	ServiceID       *properties.UUID `json:"serviceId,omitempty"`
+	AgentInstanceID *string          `json:"agentInstanceId,omitempty"`
+	ResourceID      string           `json:"resourceId"`
+	Value           float64          `json:"value"`
+	TypeName        string           `json:"typeName"`
+	MetricTypeID    properties.UUID  `json:"metricTypeId"`
+	EntityType      string           `json:"entityType"`
+	EntityID        properties.UUID  `json:"entityId"`
+	Timestamp       time.Time        `json:"timestamp"`
 }
 
 type MetricEntryHandler struct {
@@ -90,18 +90,18 @@ func (h *MetricEntryHandler) Create(w http.ResponseWriter, r *http.Request) {
 			render.Render(w, r, ErrDomain(err))
 			return
 		}
-	} else if p.ExternalID != nil && id.HasRole(auth.RoleAgent) && id.Scope.AgentID != nil {
-		service, err = h.serviceQuerier.FindByExternalID(r.Context(), *id.Scope.AgentID, *p.ExternalID)
+	} else if p.AgentInstanceID != nil && id.HasRole(auth.RoleAgent) && id.Scope.AgentID != nil {
+		service, err = h.serviceQuerier.FindByAgentInstanceID(r.Context(), *id.Scope.AgentID, *p.AgentInstanceID)
 		if err != nil {
 			render.Render(w, r, ErrDomain(err))
 			return
 		}
 		params := domain.CreateMetricEntryWithExternalIDParams{
-			TypeName:   p.TypeName,
-			AgentID:    service.AgentID,
-			ExternalID: *p.ExternalID,
-			ResourceID: p.ResourceID,
-			Value:      p.Value,
+			TypeName:        p.TypeName,
+			AgentID:         service.AgentID,
+			AgentInstanceID: *p.AgentInstanceID,
+			ResourceID:      p.ResourceID,
+			Value:           p.Value,
 		}
 		metricEntry, err = h.commander.CreateWithExternalID(r.Context(), params)
 		if err != nil {
@@ -109,7 +109,7 @@ func (h *MetricEntryHandler) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		render.Render(w, r, ErrInvalidRequest(errors.New("serviceId or agent role and externalId are required")))
+		render.Render(w, r, ErrInvalidRequest(errors.New("serviceId or agent role and agentInstanceId are required")))
 		return
 	}
 

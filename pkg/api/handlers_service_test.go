@@ -788,16 +788,16 @@ func TestServiceToResponse(t *testing.T) {
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},
-		Name:          "Test Service",
-		AgentID:       agentID,
-		ServiceTypeID: serviceTypeID,
-		GroupID:       groupID,
-		ConsumerID:    consumerID,
-		ProviderID:    providerID,
-		ExternalID:    &externalID,
-		Status:        "New",
-		Properties:    &props,
-		Resources:     &resources,
+		Name:            "Test Service",
+		AgentID:         agentID,
+		ServiceTypeID:   serviceTypeID,
+		GroupID:         groupID,
+		ConsumerID:      consumerID,
+		ProviderID:      providerID,
+		AgentInstanceID: &externalID,
+		Status:          "New",
+		Properties:      &props,
+		AgentData:       &resources,
 	}
 
 	// Convert to response
@@ -811,10 +811,10 @@ func TestServiceToResponse(t *testing.T) {
 	assert.Equal(t, groupID, response.GroupID)
 	assert.Equal(t, consumerID, response.ConsumerID)
 	assert.Equal(t, providerID, response.ProviderID)
-	assert.Equal(t, externalID, *response.ExternalID)
+	assert.Equal(t, externalID, *response.AgentInstanceID)
 	assert.Equal(t, "New", response.Status)
 	assert.Equal(t, props, *response.Properties)
-	assert.Equal(t, resources, *response.Resources)
+	assert.Equal(t, resources, *response.AgentData)
 	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(updatedAt), response.UpdatedAt)
 }

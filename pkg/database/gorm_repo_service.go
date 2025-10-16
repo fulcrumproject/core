@@ -66,12 +66,12 @@ func (r *GormServiceRepository) CountByServiceType(ctx context.Context, serviceT
 	return count, nil
 }
 
-// FindByExternalID retrieves a service by its external ID and agent ID
-func (r *GormServiceRepository) FindByExternalID(ctx context.Context, agentID properties.UUID, externalID string) (*domain.Service, error) {
+// FindByAgentInstanceID retrieves a service by its agent instance ID and agent ID
+func (r *GormServiceRepository) FindByAgentInstanceID(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*domain.Service, error) {
 	var service domain.Service
 
 	result := r.db.WithContext(ctx).
-		Where("external_id = ? AND agent_id = ?", externalID, agentID).
+		Where("agent_instance_id = ? AND agent_id = ?", agentInstanceID, agentID).
 		Preload("Agent").
 		Preload("ServiceType").
 		Preload("Group").

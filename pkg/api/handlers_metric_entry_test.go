@@ -138,12 +138,12 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name: "SuccessWithExternalID",
+			name: "SuccessWithAgentInstanceID",
 			requestBody: CreateMetricEntryReq{
-				ExternalID: &[]string{"service-ext-1"}[0],
-				ResourceID: "resource-1",
-				Value:      123.45,
-				TypeName:   "cpu",
+				AgentInstanceID: &[]string{"service-inst-1"}[0],
+				ResourceID:      "resource-1",
+				Value:           123.45,
+				TypeName:        "cpu",
 			},
 			mockSetup: func(serviceQuerier *mockServiceQuerier, commander *mockMetricEntryCommander) {
 				// Use the same agent ID that's in NewMockAuthAgent
@@ -154,9 +154,9 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				typeID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 
 				// Setup the service querier
-				serviceQuerier.findByExternalIDFunc = func(ctx context.Context, aID properties.UUID, extID string) (*domain.Service, error) {
+				serviceQuerier.findByAgentInstanceIDFunc = func(ctx context.Context, aID properties.UUID, instID string) (*domain.Service, error) {
 					assert.Equal(t, agentID, aID)
-					assert.Equal(t, "service-ext-1", extID)
+					assert.Equal(t, "service-inst-1", instID)
 					return &domain.Service{
 						BaseEntity: domain.BaseEntity{
 							ID: serviceID,
@@ -178,7 +178,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				commander.createWithExternalIDFunc = func(ctx context.Context, params domain.CreateMetricEntryWithExternalIDParams) (*domain.MetricEntry, error) {
 					assert.Equal(t, "cpu", params.TypeName)
 					assert.Equal(t, agentID, params.AgentID)
-					assert.Equal(t, "service-ext-1", params.ExternalID)
+					assert.Equal(t, "service-inst-1", params.AgentInstanceID)
 					assert.Equal(t, "resource-1", params.ResourceID)
 					assert.Equal(t, 123.45, params.Value)
 

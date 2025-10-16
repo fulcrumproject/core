@@ -130,7 +130,7 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, pro
 		ConsumerID:    consumerParticipantID,
 		AgentID:       agentID,
 		Properties:    &(properties.JSON{}),
-		Resources:     &(properties.JSON{}),
+		AgentData:     &(properties.JSON{}),
 	}
 }
 
