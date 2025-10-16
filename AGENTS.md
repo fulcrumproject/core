@@ -24,7 +24,7 @@ This document contains project-specific guidelines and technical context for wor
 
 ### API Conventions
 
-- JSON field names use camelCase (e.g., `providerId`, `serviceType`, `externalID`)
+- JSON field names use camelCase (e.g., `providerId`, `serviceType`, `agentInstanceId`)
 
 ### Documentation
 
@@ -311,12 +311,12 @@ State transitions are driven by the lifecycle schema, not hardcoded. Common patt
 
 The actual states and transitions depend on the ServiceType's lifecycle schema.
 
-#### Properties vs Attributes vs Resources
+#### Properties vs Attributes vs AgentData
 - **Properties**: Service configuration with source control and updatability constraints
   - `source`: Who can set/update (`input` = users, `agent` = agents)
   - `updatable`: When it can be updated (`always`, `never`, `statuses` with `updatableIn` array)
 - **Attributes**: Static metadata set during creation (for selection/filtering)
-- **Resources**: Runtime metrics and technical infrastructure info
+- **AgentData**: Agent-owned runtime data and technical infrastructure info
 
 ### Job Processing
 
@@ -344,7 +344,7 @@ The actual states and transitions depend on the ServiceType's lifecycle schema.
 
 Agents can update service properties when completing a job by including a `properties` field in the completion request. This allows agents to report discovered values like IP addresses, instance IDs, and other infrastructure details.
 
-**When to Use `properties` vs `resources`:**
+**When to Use `properties` vs `agentData`:**
 - **`properties`**: Configuration values that are part of the service schema
   - Validated against the ServiceType's property schema
   - Subject to source and updatability constraints
@@ -352,7 +352,7 @@ Agents can update service properties when completing a job by including a `prope
   - Examples: ipAddress, port, instanceId, hostname
   - Use when: The value is defined in the service type's property schema with `source: "agent"`
 
-- **`resources`**: Technical infrastructure information
+- **`agentData`**: Technical infrastructure information
   - Not validated against property schema
   - Can be any arbitrary JSON structure
   - Used for monitoring and resource tracking
