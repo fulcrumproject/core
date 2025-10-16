@@ -64,6 +64,17 @@ func (r *GormEventRepository) AuthScope(ctx context.Context, id properties.UUID)
 // ServiceUptime returns the uptime and downtime in seconds of a service in a given time range
 // It streams service transition events and calculates uptime progressively using a result set
 func (r *GormEventRepository) ServiceUptime(ctx context.Context, serviceID properties.UUID, start time.Time, end time.Time) (uptimeSeconds uint64, downtimeSeconds uint64, err error) {
+	// Load service and its lifecycle schema for uptime calculation
+	var service domain.Service
+	if err := r.db.WithContext(ctx).Where("id = ?", serviceID).First(&service).Error; err != nil {
+		return 0, 0, fmt.Errorf("failed to load service: %w", err)
+	}
+
+	var serviceType domain.ServiceType
+	if err := r.db.WithContext(ctx).Where("id = ?", service.ServiceTypeID).First(&serviceType).Error; err != nil {
+		return 0, 0, fmt.Errorf("failed to load service type: %w", err)
+	}
+
 	// Get initial status at the start of the time range
 	currentStatus, err := r.getServiceStatusAtTime(ctx, serviceID, start)
 	if err != nil {
@@ -106,7 +117,7 @@ func (r *GormEventRepository) ServiceUptime(ctx context.Context, serviceID prope
 		eventTime := event.CreatedAt
 
 		// Add uptime for the period before this event if service was running
-		if r.isRunningStatus(currentStatus) {
+		if serviceType.LifecycleSchema.IsRunningStatus(currentStatus) {
 			totalUptime += eventTime.Sub(currentTime)
 		}
 
@@ -127,14 +138,14 @@ func (r *GormEventRepository) ServiceUptime(ctx context.Context, serviceID prope
 
 	// If no transition events found within the range, check if service was running the entire period
 	if !hasEvents {
-		if r.isRunningStatus(currentStatus) {
+		if serviceType.LifecycleSchema.IsRunningStatus(currentStatus) {
 			return uint64(totalDuration.Seconds()), 0, nil
 		}
 		return 0, uint64(totalDuration.Seconds()), nil
 	}
 
 	// Handle the final period from last event to end time
-	if r.isRunningStatus(currentStatus) {
+	if serviceType.LifecycleSchema.IsRunningStatus(currentStatus) {
 		totalUptime += end.Sub(currentTime)
 	}
 
@@ -147,7 +158,7 @@ func (r *GormEventRepository) ServiceUptime(ctx context.Context, serviceID prope
 
 // getServiceStatusAtTime retrieves the service status at a specific point in time
 // by looking for the most recent transition event before that time
-func (r *GormEventRepository) getServiceStatusAtTime(ctx context.Context, serviceID properties.UUID, timestamp time.Time) (domain.ServiceStatus, error) {
+func (r *GormEventRepository) getServiceStatusAtTime(ctx context.Context, serviceID properties.UUID, timestamp time.Time) (string, error) {
 	var event domain.Event
 	result := r.db.WithContext(ctx).
 		Where("entity_id = ?", serviceID).
@@ -158,8 +169,9 @@ func (r *GormEventRepository) getServiceStatusAtTime(ctx context.Context, servic
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			// No transition events found before this time, assume service was in New state
-			return domain.ServiceNew, nil
+			// No transition events found before this time, return empty string
+			// Caller should determine appropriate initial state
+			return "", nil
 		}
 		return "", fmt.Errorf("failed to query service status: %w", result.Error)
 	}
@@ -174,7 +186,7 @@ func (r *GormEventRepository) getServiceStatusAtTime(ctx context.Context, servic
 }
 
 // extractServiceStatusFromEvent extracts the service status from a service transition event
-func (r *GormEventRepository) extractServiceStatusFromEvent(event *domain.Event) (domain.ServiceStatus, error) {
+func (r *GormEventRepository) extractServiceStatusFromEvent(event *domain.Event) (string, error) {
 	// The event payload contains a diff with the service status change
 	// We need to extract the "after" state of the currentStatus field
 
@@ -204,25 +216,11 @@ func (r *GormEventRepository) extractServiceStatusFromEvent(event *domain.Event)
 		if op, ok := patch["op"].(string); ok && (op == "replace" || op == "add") {
 			if path, ok := patch["path"].(string); ok && path == "/currentStatus" {
 				if value, ok := patch["value"].(string); ok {
-					status := domain.ServiceStatus(value)
-					if err := status.Validate(); err != nil {
-						return "", fmt.Errorf("invalid service status in event: %w", err)
-					}
-					return status, nil
+					return value, nil
 				}
 			}
 		}
 	}
 
 	return "", fmt.Errorf("no currentStatus change found in event diff")
-}
-
-// isRunningStatus determines if a service status represents a "running" state for uptime calculation
-func (r *GormEventRepository) isRunningStatus(status domain.ServiceStatus) bool {
-	switch status {
-	case domain.ServiceStarted:
-		return true
-	default:
-		return false
-	}
 }

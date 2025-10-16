@@ -28,8 +28,6 @@ const (
 	// Special actions
 	ActionUpdateStatus  auth.Action = "update_status"
 	ActionGenerateToken auth.Action = "generate_token"
-	ActionStart         auth.Action = "start"
-	ActionStop          auth.Action = "stop"
 	ActionClaim         auth.Action = "claim"
 	ActionComplete      auth.Action = "complete"
 	ActionFail          auth.Action = "fail"
@@ -63,8 +61,6 @@ var Rules = []auth.AuthorizationRule{
 	{Object: ObjectTypeService, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
 	{Object: ObjectTypeService, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 	{Object: ObjectTypeService, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
-	{Object: ObjectTypeService, Action: ActionStart, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
-	{Object: ObjectTypeService, Action: ActionStop, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 	{Object: ObjectTypeService, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 
 	// ServiceType permissions

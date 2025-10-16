@@ -17,6 +17,45 @@ func createTestServiceType(t *testing.T) *domain.ServiceType {
 
 	return &domain.ServiceType{
 		Name: fmt.Sprintf("Test Service Type %s", randomSuffix),
+		LifecycleSchema: &domain.LifecycleSchema{
+			States: []domain.LifecycleState{
+				{Name: "New"},
+				{Name: "Started"},
+				{Name: "Stopped"},
+				{Name: "Deleted"},
+			},
+			Actions: []domain.LifecycleAction{
+				{
+					Name: "create",
+					Transitions: []domain.LifecycleTransition{
+						{From: "New", To: "New"},
+					},
+				},
+				{
+					Name: "start",
+					Transitions: []domain.LifecycleTransition{
+						{From: "New", To: "Started"},
+						{From: "Stopped", To: "Started"},
+					},
+				},
+				{
+					Name: "stop",
+					Transitions: []domain.LifecycleTransition{
+						{From: "Started", To: "Stopped"},
+					},
+				},
+				{
+					Name: "delete",
+					Transitions: []domain.LifecycleTransition{
+						{From: "New", To: "Deleted"},
+						{From: "Stopped", To: "Deleted"},
+					},
+				},
+			},
+			InitialState:   "New",
+			TerminalStates: []string{"Deleted"},
+			RunningStates:  []string{"Started"},
+		},
 	}
 }
 
@@ -86,7 +125,7 @@ func createTestService(t *testing.T, serviceTypeID, serviceGroupID, agentID, pro
 		Name:          fmt.Sprintf("Test Service %s", randomSuffix),
 		ServiceTypeID: serviceTypeID,
 		GroupID:       serviceGroupID,
-		Status:        domain.ServiceStarted,
+		Status:        "Started",
 		ProviderID:    providerParticipantID,
 		ConsumerID:    consumerParticipantID,
 		AgentID:       agentID,

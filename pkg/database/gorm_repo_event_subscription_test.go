@@ -41,7 +41,7 @@ func TestEventSubscriptionRepository(t *testing.T) {
 	// Create repository instance
 	repo := NewEventSubscriptionRepository(tdb.DB)
 
-	t.Run("Create", func(t *testing.T) {
+	t.Run("create", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 

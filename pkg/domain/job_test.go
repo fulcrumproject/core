@@ -1,121 +1,11 @@
 package domain
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
-
-func TestServiceAction_Validate(t *testing.T) {
-	tests := []struct {
-		name       string
-		action     ServiceAction
-		wantErr    bool
-		errMessage string
-	}{
-		{
-			name:    "Valid ServiceActionCreate",
-			action:  ServiceActionCreate,
-			wantErr: false,
-		},
-		{
-			name:    "Valid ServiceActionStart",
-			action:  ServiceActionStart,
-			wantErr: false,
-		},
-		{
-			name:    "Valid ServiceActionStop",
-			action:  ServiceActionStop,
-			wantErr: false,
-		},
-
-		{
-			name:    "Valid ServiceActionDelete",
-			action:  ServiceActionDelete,
-			wantErr: false,
-		},
-		{
-			name:       "Invalid action",
-			action:     "InvalidAction",
-			wantErr:    true,
-			errMessage: "invalid job type",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.action.Validate()
-			if tt.wantErr {
-				assert.Error(t, err)
-				if tt.errMessage != "" {
-					assert.Contains(t, err.Error(), tt.errMessage)
-				}
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestParseServiceAction(t *testing.T) {
-	tests := []struct {
-		name       string
-		input      string
-		want       ServiceAction
-		wantErr    bool
-		errMessage string
-	}{
-		{
-			name:    "Parse ServiceActionCreate",
-			input:   string(ServiceActionCreate),
-			want:    ServiceActionCreate,
-			wantErr: false,
-		},
-		{
-			name:    "Parse ServiceActionStart",
-			input:   string(ServiceActionStart),
-			want:    ServiceActionStart,
-			wantErr: false,
-		},
-		{
-			name:    "Parse ServiceActionStop",
-			input:   string(ServiceActionStop),
-			want:    ServiceActionStop,
-			wantErr: false,
-		},
-
-		{
-			name:    "Parse ServiceActionDelete",
-			input:   string(ServiceActionDelete),
-			want:    ServiceActionDelete,
-			wantErr: false,
-		},
-		{
-			name:       "Parse invalid action",
-			input:      "InvalidAction",
-			wantErr:    true,
-			errMessage: "invalid job type",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseServiceAction(tt.input)
-			if tt.wantErr {
-				assert.Error(t, err)
-				if tt.errMessage != "" {
-					assert.Contains(t, err.Error(), tt.errMessage)
-				}
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.want, got)
-			}
-		})
-	}
-}
 
 func TestJobStatus_Validate(t *testing.T) {
 	tests := []struct {
@@ -240,7 +130,7 @@ func TestJob_Validate(t *testing.T) {
 		{
 			name: "Valid job",
 			job: &Job{
-				Action:    ServiceActionCreate,
+				Action:    "create",
 				Status:    JobPending,
 				Priority:  1,
 				AgentID:   validID,
@@ -249,21 +139,21 @@ func TestJob_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Invalid action",
+			name: "Empty action",
 			job: &Job{
-				Action:    "InvalidAction",
+				Action:    "",
 				Status:    JobPending,
 				Priority:  1,
 				AgentID:   validID,
 				ServiceID: validID,
 			},
 			wantErr:    true,
-			errMessage: "invalid action",
+			errMessage: "action cannot be empty",
 		},
 		{
 			name: "Invalid status",
 			job: &Job{
-				Action:    ServiceActionCreate,
+				Action:    "create",
 				Status:    "InvalidStatus",
 				Priority:  1,
 				AgentID:   validID,
@@ -275,7 +165,7 @@ func TestJob_Validate(t *testing.T) {
 		{
 			name: "Invalid priority",
 			job: &Job{
-				Action:    ServiceActionCreate,
+				Action:    "create",
 				Status:    JobPending,
 				Priority:  0,
 				AgentID:   validID,
@@ -287,7 +177,7 @@ func TestJob_Validate(t *testing.T) {
 		{
 			name: "Empty agent ID",
 			job: &Job{
-				Action:    ServiceActionCreate,
+				Action:    "create",
 				Status:    JobPending,
 				Priority:  1,
 				AgentID:   uuid.Nil,
@@ -299,7 +189,7 @@ func TestJob_Validate(t *testing.T) {
 		{
 			name: "Empty service ID",
 			job: &Job{
-				Action:    ServiceActionCreate,
+				Action:    "create",
 				Status:    JobPending,
 				Priority:  1,
 				AgentID:   validID,
@@ -340,7 +230,7 @@ func TestNewJob(t *testing.T) {
 		ConsumerID: consumerID,
 	}
 
-	action := ServiceActionCreate
+	action := "create"
 	priority := 5
 
 	job := NewJob(service, action, nil, priority)
@@ -354,119 +244,3 @@ func TestNewJob(t *testing.T) {
 	assert.Equal(t, priority, job.Priority)
 }
 
-func TestJob_Unsupported(t *testing.T) {
-	tests := []struct {
-		name          string
-		initialStatus JobStatus
-		errorMessage  string
-		wantErr       bool
-		errMessage    string
-	}{
-		{
-			name:          "Valid unsupported from processing",
-			initialStatus: JobProcessing,
-			errorMessage:  "Operation not supported by this agent",
-			wantErr:       false,
-		},
-		{
-			name:          "Invalid unsupported from pending",
-			initialStatus: JobPending,
-			errorMessage:  "Operation not supported",
-			wantErr:       true,
-			errMessage:    "cannot mark as unsupported a job not in processing status",
-		},
-		{
-			name:          "Invalid unsupported from completed",
-			initialStatus: JobCompleted,
-			errorMessage:  "Operation not supported",
-			wantErr:       true,
-			errMessage:    "cannot mark as unsupported a job not in processing status",
-		},
-		{
-			name:          "Invalid unsupported from failed",
-			initialStatus: JobFailed,
-			errorMessage:  "Operation not supported",
-			wantErr:       true,
-			errMessage:    "cannot mark as unsupported a job not in processing status",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			job := &Job{
-				Status: tt.initialStatus,
-			}
-
-			err := job.Unsupported(tt.errorMessage)
-
-			if tt.wantErr {
-				assert.Error(t, err)
-				if tt.errMessage != "" {
-					assert.Contains(t, err.Error(), tt.errMessage)
-				}
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, JobUnsupported, job.Status)
-				assert.Equal(t, tt.errorMessage, job.ErrorMessage)
-				assert.NotNil(t, job.CompletedAt)
-			}
-		})
-	}
-}
-
-func TestJobCommander_Unsupported(t *testing.T) {
-	t.Run("Job not found", func(t *testing.T) {
-		// Create mocks
-		store := NewMockStore(t)
-		jobRepo := NewMockJobRepository(t)
-
-		// Setup mocks
-		store.On("JobRepo").Return(jobRepo)
-		jobRepo.On("Get", mock.Anything, mock.Anything).Return(nil, assert.AnError)
-
-		// Create commander and execute test
-		commander := NewJobCommander(store)
-		params := UnsupportedJobParams{
-			JobID:        uuid.New(),
-			ErrorMessage: "Operation not supported",
-		}
-
-		err := commander.Unsupported(context.Background(), params)
-
-		// Assert results
-		assert.Error(t, err)
-	})
-
-	t.Run("Service not found", func(t *testing.T) {
-		// Create mocks
-		store := NewMockStore(t)
-		jobRepo := NewMockJobRepository(t)
-
-		// Create test data
-		jobID := uuid.New()
-		serviceID := uuid.New()
-
-		job := &Job{
-			BaseEntity: BaseEntity{ID: jobID},
-			Status:     JobProcessing,
-			ServiceID:  serviceID,
-		}
-
-		// Setup mocks
-		store.On("JobRepo").Return(jobRepo)
-		store.On("Atomic", mock.Anything, mock.AnythingOfType("func(domain.Store) error")).Return(assert.AnError)
-		jobRepo.On("Get", mock.Anything, jobID).Return(job, nil)
-
-		// Create commander and execute test
-		commander := NewJobCommander(store)
-		params := UnsupportedJobParams{
-			JobID:        jobID,
-			ErrorMessage: "Operation not supported",
-		}
-
-		err := commander.Unsupported(context.Background(), params)
-
-		// Assert results
-		assert.Error(t, err)
-	})
-}

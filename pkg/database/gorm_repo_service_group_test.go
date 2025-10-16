@@ -22,7 +22,7 @@ func TestServiceGroupRepository(t *testing.T) {
 	participant := createTestParticipant(t, domain.ParticipantEnabled)
 	require.NoError(t, participantRepo.Create(context.Background(), participant))
 
-	t.Run("Create", func(t *testing.T) {
+	t.Run("create", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 
@@ -208,7 +208,7 @@ func TestServiceGroupRepository(t *testing.T) {
 		})
 	})
 
-	t.Run("Delete", func(t *testing.T) {
+	t.Run("delete", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()
 

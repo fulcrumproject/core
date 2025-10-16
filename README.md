@@ -17,6 +17,9 @@ Fulcrum is currently under active development. New agents and features are being
     - [Configuration](#configuration)
     - [Running with Docker](#running-with-docker)
     - [Running locally](#running-locally)
+  - [Health Endpoints](#health-endpoints)
+    - [Primary Dependencies Checked](#primary-dependencies-checked)
+    - [Usage Examples](#usage-examples)
   - [Testing](#testing)
   - [API Documentation](#api-documentation)
   - [Project Structure](#project-structure)
@@ -143,54 +146,12 @@ air
 
 ## Health Endpoints
 
-The application provides health and readiness endpoints on a separate port for monitoring and orchestration purposes.
+The application provides health and readiness endpoints on a separate port (default: 8081, configurable via `FULCRUM_HEALTH_PORT`):
 
-### Configuration
+- **`/healthz`** - Health check endpoint (returns HTTP 200 with `{"status": "UP"}` when healthy)
+- **`/ready`** - Readiness check endpoint (returns HTTP 200 with `{"status": "UP"}` when ready)
 
-The health endpoints run on a configurable port (default: 8081):
-
-```bash
-# Health endpoints port
-FULCRUM_HEALTH_PORT=8081
-```
-
-### Endpoints
-
-#### Health Check - `/healthz`
-
-Returns the overall health status of the application and its primary dependencies.
-
-**Success Response (HTTP 200):**
-```json
-{
-  "status": "UP"
-}
-```
-
-**Failure Response (HTTP 503):**
-```json
-{
-  "status": "DOWN"
-}
-```
-
-#### Readiness Check - `/ready`
-
-Returns the readiness status of the application to handle requests.
-
-**Success Response (HTTP 200):**
-```json
-{
-  "status": "UP"
-}
-```
-
-**Failure Response (HTTP 503):**
-```json
-{
-  "status": "DOWN"
-}
-```
+Both endpoints return HTTP 503 with `{"status": "DOWN"}` when unhealthy.
 
 ### Primary Dependencies Checked
 

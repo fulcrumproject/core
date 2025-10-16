@@ -135,10 +135,9 @@ func (m *mockParticipantCommander) Delete(ctx context.Context, id properties.UUI
 
 // mockJobCommander is a custom mock for JobCommander
 type mockJobCommander struct {
-	claimFunc       func(ctx context.Context, jobID properties.UUID) error
-	completeFunc    func(ctx context.Context, params domain.CompleteJobParams) error
-	failFunc        func(ctx context.Context, params domain.FailJobParams) error
-	unsupportedFunc func(ctx context.Context, params domain.UnsupportedJobParams) error
+	claimFunc    func(ctx context.Context, jobID properties.UUID) error
+	completeFunc func(ctx context.Context, params domain.CompleteJobParams) error
+	failFunc     func(ctx context.Context, params domain.FailJobParams) error
 }
 
 func (m *mockJobCommander) Claim(ctx context.Context, jobID properties.UUID) error {
@@ -158,13 +157,6 @@ func (m *mockJobCommander) Complete(ctx context.Context, params domain.CompleteJ
 func (m *mockJobCommander) Fail(ctx context.Context, params domain.FailJobParams) error {
 	if m.failFunc != nil {
 		return m.failFunc(ctx, params)
-	}
-	return nil
-}
-
-func (m *mockJobCommander) Unsupported(ctx context.Context, params domain.UnsupportedJobParams) error {
-	if m.unsupportedFunc != nil {
-		return m.unsupportedFunc(ctx, params)
 	}
 	return nil
 }

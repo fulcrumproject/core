@@ -456,6 +456,72 @@ func (_c *MockAgentRepository_Count_Call) RunAndReturn(run func(ctx context.Cont
 	return _c
 }
 
+// CountByAgentType provides a mock function for the type MockAgentRepository
+func (_mock *MockAgentRepository) CountByAgentType(ctx context.Context, agentTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, agentTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByAgentType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, agentTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, agentTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, agentTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentRepository_CountByAgentType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByAgentType'
+type MockAgentRepository_CountByAgentType_Call struct {
+	*mock.Call
+}
+
+// CountByAgentType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - agentTypeID properties.UUID
+func (_e *MockAgentRepository_Expecter) CountByAgentType(ctx interface{}, agentTypeID interface{}) *MockAgentRepository_CountByAgentType_Call {
+	return &MockAgentRepository_CountByAgentType_Call{Call: _e.mock.On("CountByAgentType", ctx, agentTypeID)}
+}
+
+func (_c *MockAgentRepository_CountByAgentType_Call) Run(run func(ctx context.Context, agentTypeID properties.UUID)) *MockAgentRepository_CountByAgentType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentRepository_CountByAgentType_Call) Return(n int64, err error) *MockAgentRepository_CountByAgentType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentRepository_CountByAgentType_Call) RunAndReturn(run func(ctx context.Context, agentTypeID properties.UUID) (int64, error)) *MockAgentRepository_CountByAgentType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CountByProvider provides a mock function for the type MockAgentRepository
 func (_mock *MockAgentRepository) CountByProvider(ctx context.Context, providerID properties.UUID) (int64, error) {
 	ret := _mock.Called(ctx, providerID)
@@ -1196,6 +1262,72 @@ func (_c *MockAgentQuerier_Count_Call) RunAndReturn(run func(ctx context.Context
 	return _c
 }
 
+// CountByAgentType provides a mock function for the type MockAgentQuerier
+func (_mock *MockAgentQuerier) CountByAgentType(ctx context.Context, agentTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, agentTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByAgentType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, agentTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, agentTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, agentTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentQuerier_CountByAgentType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByAgentType'
+type MockAgentQuerier_CountByAgentType_Call struct {
+	*mock.Call
+}
+
+// CountByAgentType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - agentTypeID properties.UUID
+func (_e *MockAgentQuerier_Expecter) CountByAgentType(ctx interface{}, agentTypeID interface{}) *MockAgentQuerier_CountByAgentType_Call {
+	return &MockAgentQuerier_CountByAgentType_Call{Call: _e.mock.On("CountByAgentType", ctx, agentTypeID)}
+}
+
+func (_c *MockAgentQuerier_CountByAgentType_Call) Run(run func(ctx context.Context, agentTypeID properties.UUID)) *MockAgentQuerier_CountByAgentType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentQuerier_CountByAgentType_Call) Return(n int64, err error) *MockAgentQuerier_CountByAgentType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentQuerier_CountByAgentType_Call) RunAndReturn(run func(ctx context.Context, agentTypeID properties.UUID) (int64, error)) *MockAgentQuerier_CountByAgentType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CountByProvider provides a mock function for the type MockAgentQuerier
 func (_mock *MockAgentQuerier) CountByProvider(ctx context.Context, providerID properties.UUID) (int64, error) {
 	ret := _mock.Called(ctx, providerID)
@@ -1540,6 +1672,226 @@ func (_c *MockAgentQuerier_List_Call) Return(pageRes *PageRes[Agent], err error)
 }
 
 func (_c *MockAgentQuerier_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[Agent], error)) *MockAgentQuerier_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockAgentTypeCommander creates a new instance of MockAgentTypeCommander. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockAgentTypeCommander(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockAgentTypeCommander {
+	mock := &MockAgentTypeCommander{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockAgentTypeCommander is an autogenerated mock type for the AgentTypeCommander type
+type MockAgentTypeCommander struct {
+	mock.Mock
+}
+
+type MockAgentTypeCommander_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockAgentTypeCommander) EXPECT() *MockAgentTypeCommander_Expecter {
+	return &MockAgentTypeCommander_Expecter{mock: &_m.Mock}
+}
+
+// Create provides a mock function for the type MockAgentTypeCommander
+func (_mock *MockAgentTypeCommander) Create(ctx context.Context, params CreateAgentTypeParams) (*AgentType, error) {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 *AgentType
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateAgentTypeParams) (*AgentType, error)); ok {
+		return returnFunc(ctx, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateAgentTypeParams) *AgentType); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*AgentType)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateAgentTypeParams) error); ok {
+		r1 = returnFunc(ctx, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentTypeCommander_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockAgentTypeCommander_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params CreateAgentTypeParams
+func (_e *MockAgentTypeCommander_Expecter) Create(ctx interface{}, params interface{}) *MockAgentTypeCommander_Create_Call {
+	return &MockAgentTypeCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
+}
+
+func (_c *MockAgentTypeCommander_Create_Call) Run(run func(ctx context.Context, params CreateAgentTypeParams)) *MockAgentTypeCommander_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 CreateAgentTypeParams
+		if args[1] != nil {
+			arg1 = args[1].(CreateAgentTypeParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentTypeCommander_Create_Call) Return(agentType *AgentType, err error) *MockAgentTypeCommander_Create_Call {
+	_c.Call.Return(agentType, err)
+	return _c
+}
+
+func (_c *MockAgentTypeCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateAgentTypeParams) (*AgentType, error)) *MockAgentTypeCommander_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockAgentTypeCommander
+func (_mock *MockAgentTypeCommander) Delete(ctx context.Context, id properties.UUID) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockAgentTypeCommander_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockAgentTypeCommander_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockAgentTypeCommander_Expecter) Delete(ctx interface{}, id interface{}) *MockAgentTypeCommander_Delete_Call {
+	return &MockAgentTypeCommander_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
+}
+
+func (_c *MockAgentTypeCommander_Delete_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockAgentTypeCommander_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentTypeCommander_Delete_Call) Return(err error) *MockAgentTypeCommander_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockAgentTypeCommander_Delete_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockAgentTypeCommander_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type MockAgentTypeCommander
+func (_mock *MockAgentTypeCommander) Update(ctx context.Context, params UpdateAgentTypeParams) (*AgentType, error) {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 *AgentType
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateAgentTypeParams) (*AgentType, error)); ok {
+		return returnFunc(ctx, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateAgentTypeParams) *AgentType); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*AgentType)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateAgentTypeParams) error); ok {
+		r1 = returnFunc(ctx, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentTypeCommander_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockAgentTypeCommander_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params UpdateAgentTypeParams
+func (_e *MockAgentTypeCommander_Expecter) Update(ctx interface{}, params interface{}) *MockAgentTypeCommander_Update_Call {
+	return &MockAgentTypeCommander_Update_Call{Call: _e.mock.On("Update", ctx, params)}
+}
+
+func (_c *MockAgentTypeCommander_Update_Call) Run(run func(ctx context.Context, params UpdateAgentTypeParams)) *MockAgentTypeCommander_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 UpdateAgentTypeParams
+		if args[1] != nil {
+			arg1 = args[1].(UpdateAgentTypeParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentTypeCommander_Update_Call) Return(agentType *AgentType, err error) *MockAgentTypeCommander_Update_Call {
+	_c.Call.Return(agentType, err)
+	return _c
+}
+
+func (_c *MockAgentTypeCommander_Update_Call) RunAndReturn(run func(ctx context.Context, params UpdateAgentTypeParams) (*AgentType, error)) *MockAgentTypeCommander_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6827,63 +7179,6 @@ func (_c *MockJobCommander_Fail_Call) Return(err error) *MockJobCommander_Fail_C
 }
 
 func (_c *MockJobCommander_Fail_Call) RunAndReturn(run func(ctx context.Context, params FailJobParams) error) *MockJobCommander_Fail_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Unsupported provides a mock function for the type MockJobCommander
-func (_mock *MockJobCommander) Unsupported(ctx context.Context, params UnsupportedJobParams) error {
-	ret := _mock.Called(ctx, params)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Unsupported")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, UnsupportedJobParams) error); ok {
-		r0 = returnFunc(ctx, params)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockJobCommander_Unsupported_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Unsupported'
-type MockJobCommander_Unsupported_Call struct {
-	*mock.Call
-}
-
-// Unsupported is a helper method to define mock.On call
-//   - ctx context.Context
-//   - params UnsupportedJobParams
-func (_e *MockJobCommander_Expecter) Unsupported(ctx interface{}, params interface{}) *MockJobCommander_Unsupported_Call {
-	return &MockJobCommander_Unsupported_Call{Call: _e.mock.On("Unsupported", ctx, params)}
-}
-
-func (_c *MockJobCommander_Unsupported_Call) Run(run func(ctx context.Context, params UnsupportedJobParams)) *MockJobCommander_Unsupported_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 UnsupportedJobParams
-		if args[1] != nil {
-			arg1 = args[1].(UnsupportedJobParams)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockJobCommander_Unsupported_Call) Return(err error) *MockJobCommander_Unsupported_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockJobCommander_Unsupported_Call) RunAndReturn(run func(ctx context.Context, params UnsupportedJobParams) error) *MockJobCommander_Unsupported_Call {
 	_c.Call.Return(run)
 	return _c
 }

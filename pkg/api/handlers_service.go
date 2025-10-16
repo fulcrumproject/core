@@ -60,6 +60,13 @@ type ServiceActionReq struct {
 	Action string `json:"action"`
 }
 
+// ServiceActionRequest represents a generic action request with optional properties
+// Used by the generic action endpoint (POST /services/{id}/actions/{action})
+// Authorization is handled via service ID from URL path (AuthzFromID middleware)
+type ServiceActionRequest struct {
+	Properties *properties.JSON `json:"properties,omitempty"`
+}
+
 // CreateServiceScopeExtractor creates an extractor that gets a combined scope from the request body
 // by retrieving scopes from both ServiceGroup and Agent
 func CreateServiceScopeExtractor(
@@ -109,16 +116,6 @@ func (h *ServiceHandler) Routes() func(r chi.Router) {
 				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionUpdate, h.authz, h.querier.AuthScope),
 			).Patch("/{id}", Update(h.Update, ServiceToRes))
 
-			// Start - authorize from resource ID
-			r.With(
-				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionStart, h.authz, h.querier.AuthScope),
-			).Post("/{id}/start", CommandWithoutBody(h.Start))
-
-			// Stop - authorize from resource ID
-			r.With(
-				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionStop, h.authz, h.querier.AuthScope),
-			).Post("/{id}/stop", CommandWithoutBody(h.Stop))
-
 			// Delete - authorize from resource ID
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionDelete, h.authz, h.querier.AuthScope),
@@ -128,6 +125,13 @@ func (h *ServiceHandler) Routes() func(r chi.Router) {
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionUpdate, h.authz, h.querier.AuthScope),
 			).Post("/{id}/retry", CommandWithoutBody(h.Retry))
+
+			// Generic action - handle any lifecycle action (start, stop, restart, etc.)
+			// Note: "delete" action should use DELETE /{id}, "update" should use PATCH /{id}
+			r.With(
+				middlewares.ActionName,
+				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionUpdate, h.authz, h.querier.AuthScope),
+			).Post("/{id}/{action}", h.GenericAction)
 		})
 	}
 }
@@ -189,28 +193,32 @@ func (h *ServiceHandler) Update(ctx context.Context, id properties.UUID, req *Up
 	return h.commander.Update(ctx, params)
 }
 
-func (h *ServiceHandler) Start(ctx context.Context, id properties.UUID) error {
-	params := domain.DoServiceActionParams{
-		ID:     id,
-		Action: domain.ServiceActionStart,
-	}
-	_, err := h.commander.DoAction(ctx, params)
-	return err
-}
+// GenericAction handles generic lifecycle actions from the URL path
+// Can optionally accept a ServiceActionRequest body with properties
+func (h *ServiceHandler) GenericAction(w http.ResponseWriter, r *http.Request) {
+	id := middlewares.MustGetID(r.Context())
+	action := middlewares.MustGetActionName(r.Context())
 
-func (h *ServiceHandler) Stop(ctx context.Context, id properties.UUID) error {
+	// For now, all actions go through DoAction
+	// Future: check requestSchemaType in lifecycle and handle properties accordingly
 	params := domain.DoServiceActionParams{
 		ID:     id,
-		Action: domain.ServiceActionStop,
+		Action: action,
 	}
-	_, err := h.commander.DoAction(ctx, params)
-	return err
+	service, err := h.commander.DoAction(r.Context(), params)
+
+	if err != nil {
+		render.Render(w, r, ErrDomain(err))
+		return
+	}
+
+	render.JSON(w, r, ServiceToRes(service))
 }
 
 func (h *ServiceHandler) Delete(ctx context.Context, id properties.UUID) error {
 	params := domain.DoServiceActionParams{
 		ID:     id,
-		Action: domain.ServiceActionDelete,
+		Action: "delete",
 	}
 	_, err := h.commander.DoAction(ctx, params)
 	return err
@@ -223,19 +231,19 @@ func (h *ServiceHandler) Retry(ctx context.Context, id properties.UUID) error {
 
 // ServiceRes represents the response body for service operations
 type ServiceRes struct {
-	ID            properties.UUID      `json:"id"`
-	ProviderID    properties.UUID      `json:"providerId"`
-	ConsumerID    properties.UUID      `json:"consumerId"`
-	AgentID       properties.UUID      `json:"agentId"`
-	ServiceTypeID properties.UUID      `json:"serviceTypeId"`
-	GroupID       properties.UUID      `json:"groupId"`
-	ExternalID    *string              `json:"externalId,omitempty"`
-	Name          string               `json:"name"`
-	Status        domain.ServiceStatus `json:"status"`
-	Properties    *properties.JSON     `json:"properties,omitempty"`
-	Resources     *properties.JSON     `json:"resources,omitempty"`
-	CreatedAt     JSONUTCTime          `json:"createdAt"`
-	UpdatedAt     JSONUTCTime          `json:"updatedAt"`
+	ID            properties.UUID  `json:"id"`
+	ProviderID    properties.UUID  `json:"providerId"`
+	ConsumerID    properties.UUID  `json:"consumerId"`
+	AgentID       properties.UUID  `json:"agentId"`
+	ServiceTypeID properties.UUID  `json:"serviceTypeId"`
+	GroupID       properties.UUID  `json:"groupId"`
+	ExternalID    *string          `json:"externalId,omitempty"`
+	Name          string           `json:"name"`
+	Status        string           `json:"status"`
+	Properties    *properties.JSON `json:"properties,omitempty"`
+	Resources     *properties.JSON `json:"resources,omitempty"`
+	CreatedAt     JSONUTCTime      `json:"createdAt"`
+	UpdatedAt     JSONUTCTime      `json:"updatedAt"`
 }
 
 // ServiceToRes converts a domain.Service to a ServiceResponse

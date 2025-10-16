@@ -8,114 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestServiceStatus_Validate(t *testing.T) {
-	tests := []struct {
-		name       string
-		status     ServiceStatus
-		wantErr    bool
-		errMessage string
-	}{
-		{
-			name:    "Valid New status",
-			status:  ServiceNew,
-			wantErr: false,
-		},
-		{
-			name:    "Valid Started status",
-			status:  ServiceStarted,
-			wantErr: false,
-		},
-
-		{
-			name:    "Valid Stopped status",
-			status:  ServiceStopped,
-			wantErr: false,
-		},
-
-		{
-			name:    "Valid Deleted status",
-			status:  ServiceDeleted,
-			wantErr: false,
-		},
-		{
-			name:       "Invalid status",
-			status:     "InvalidStatus",
-			wantErr:    true,
-			errMessage: "invalid service status",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.status.Validate()
-			if tt.wantErr {
-				assert.Error(t, err)
-				if tt.errMessage != "" {
-					assert.Contains(t, err.Error(), tt.errMessage)
-				}
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestParseServiceStatus(t *testing.T) {
-	tests := []struct {
-		name       string
-		input      string
-		want       ServiceStatus
-		wantErr    bool
-		errMessage string
-	}{
-		{
-			name:    "Valid New status",
-			input:   "New",
-			want:    ServiceNew,
-			wantErr: false,
-		},
-		{
-			name:    "Valid Started status",
-			input:   "Started",
-			want:    ServiceStarted,
-			wantErr: false,
-		},
-		{
-			name:    "Valid Stopped status",
-			input:   "Stopped",
-			want:    ServiceStopped,
-			wantErr: false,
-		},
-		{
-			name:    "Valid Deleted status",
-			input:   "Deleted",
-			want:    ServiceDeleted,
-			wantErr: false,
-		},
-		{
-			name:       "Invalid status",
-			input:      "InvalidStatus",
-			wantErr:    true,
-			errMessage: "invalid service status",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseServiceStatus(tt.input)
-			if tt.wantErr {
-				assert.Error(t, err)
-				if tt.errMessage != "" {
-					assert.Contains(t, err.Error(), tt.errMessage)
-				}
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.want, got)
-			}
-		})
-	}
-}
-
 func TestService_TableName(t *testing.T) {
 	svc := &Service{}
 	assert.Equal(t, "services", svc.TableName())
@@ -134,7 +26,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Valid service",
 			service: &Service{
 				Name:          "Web Server",
-				Status:        ServiceNew,
+				Status:        "New",
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -147,7 +39,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Empty name",
 			service: &Service{
 				Name:          "",
-				Status:        ServiceNew,
+				Status:        "New",
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -158,10 +50,10 @@ func TestService_Validate(t *testing.T) {
 			errMessage: "service name cannot be empty",
 		},
 		{
-			name: "Invalid status",
+			name: "Empty status",
 			service: &Service{
 				Name:          "Web Server",
-				Status:        "InvalidStatus",
+				Status:        "",
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -169,13 +61,13 @@ func TestService_Validate(t *testing.T) {
 				ConsumerID:    validID,
 			},
 			wantErr:    true,
-			errMessage: "invalid service status",
+			errMessage: "service status cannot be empty",
 		},
 		{
 			name: "Nil group ID",
 			service: &Service{
 				Name:          "Web Server",
-				Status:        ServiceNew,
+				Status:        "New",
 				GroupID:       uuid.Nil,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -189,7 +81,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Nil agent ID",
 			service: &Service{
 				Name:          "Web Server",
-				Status:        ServiceNew,
+				Status:        "New",
 				GroupID:       validID,
 				AgentID:       uuid.Nil,
 				ServiceTypeID: validID,
@@ -203,7 +95,7 @@ func TestService_Validate(t *testing.T) {
 			name: "Nil service type ID",
 			service: &Service{
 				Name:          "Web Server",
-				Status:        ServiceNew,
+				Status:        "New",
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: uuid.Nil,
@@ -217,7 +109,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With properties",
 			service: &Service{
 				Name:          "Web Server",
-				Status:        ServiceNew,
+				Status:        "New",
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -231,7 +123,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With external ID",
 			service: &Service{
 				Name:          "Web Server",
-				Status:        ServiceNew,
+				Status:        "New",
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -245,7 +137,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With error message",
 			service: &Service{
 				Name:          "Web Server",
-				Status:        ServiceNew,
+				Status:        "New",
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -258,7 +150,7 @@ func TestService_Validate(t *testing.T) {
 			name: "With failed action",
 			service: &Service{
 				Name:          "Web Server",
-				Status:        ServiceNew,
+				Status:        "New",
 				GroupID:       validID,
 				AgentID:       validID,
 				ServiceTypeID: validID,
@@ -598,7 +490,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 		name               string
 		initialProperties  *properties.JSON
 		updates            map[string]any
-		serviceStatus      ServiceStatus
+		serviceStatus      string
 		schema             *ServiceSchema
 		expectError        bool
 		errorContains      string
@@ -608,7 +500,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			name:              "Valid agent properties are applied",
 			initialProperties: &properties.JSON{"user_prop": "value1"},
 			updates:           map[string]any{"agent_prop": "192.168.1.1"},
-			serviceStatus:     ServiceStarted,
+			serviceStatus:     "Started",
 			schema: &ServiceSchema{
 				"user_prop": ServicePropertyDefinition{
 					Type:   "string",
@@ -629,7 +521,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			name:              "Non-agent properties return error",
 			initialProperties: &properties.JSON{"user_prop": "value1"},
 			updates:           map[string]any{"user_prop": "newvalue"},
-			serviceStatus:     ServiceStarted,
+			serviceStatus:     "Started",
 			schema: &ServiceSchema{
 				"user_prop": ServicePropertyDefinition{
 					Type:   "string",
@@ -643,7 +535,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			name:              "Properties validated against updatability - never",
 			initialProperties: &properties.JSON{},
 			updates:           map[string]any{"immutable_agent": "value"},
-			serviceStatus:     ServiceStarted,
+			serviceStatus:     "Started",
 			schema: &ServiceSchema{
 				"immutable_agent": ServicePropertyDefinition{
 					Type:      "string",
@@ -658,7 +550,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			name:              "Properties validated against updatability - statuses allowed",
 			initialProperties: &properties.JSON{},
 			updates:           map[string]any{"state_dep": "value"},
-			serviceStatus:     ServiceStopped,
+			serviceStatus:     "Stopped",
 			schema: &ServiceSchema{
 				"state_dep": ServicePropertyDefinition{
 					Type:        "string",
@@ -676,7 +568,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			name:              "Properties validated against updatability - statuses disallowed",
 			initialProperties: &properties.JSON{},
 			updates:           map[string]any{"state_dep": "value"},
-			serviceStatus:     ServiceStarted,
+			serviceStatus:     "Started",
 			schema: &ServiceSchema{
 				"state_dep": ServicePropertyDefinition{
 					Type:        "string",
@@ -692,7 +584,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			name:              "Empty properties are no-op",
 			initialProperties: &properties.JSON{"existing": "value"},
 			updates:           map[string]any{},
-			serviceStatus:     ServiceStarted,
+			serviceStatus:     "Started",
 			schema: &ServiceSchema{
 				"existing": ServicePropertyDefinition{
 					Type:   "string",
@@ -708,7 +600,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			name:              "Nil properties are no-op",
 			initialProperties: &properties.JSON{"existing": "value"},
 			updates:           nil,
-			serviceStatus:     ServiceStarted,
+			serviceStatus:     "Started",
 			schema: &ServiceSchema{
 				"existing": ServicePropertyDefinition{
 					Type:   "string",
@@ -724,7 +616,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			name:              "Properties merged into existing properties",
 			initialProperties: &properties.JSON{"existing": "value1", "agent_prop": "old"},
 			updates:           map[string]any{"agent_prop": "new", "agent_prop2": "value2"},
-			serviceStatus:     ServiceStarted,
+			serviceStatus:     "Started",
 			schema: &ServiceSchema{
 				"existing": ServicePropertyDefinition{
 					Type:   "string",
@@ -750,7 +642,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			name:              "Initialize properties if nil",
 			initialProperties: nil,
 			updates:           map[string]any{"agent_prop": "value"},
-			serviceStatus:     ServiceStarted,
+			serviceStatus:     "Started",
 			schema: &ServiceSchema{
 				"agent_prop": ServicePropertyDefinition{
 					Type:   "string",
@@ -763,10 +655,10 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			},
 		},
 		{
-			name:              "Immutable agent properties can be set during creation (ServiceNew)",
+			name:              "Immutable agent properties can be set during creation (New)",
 			initialProperties: nil,
 			updates:           map[string]any{"immutable_agent": "10.0.0.1"},
-			serviceStatus:     ServiceNew,
+			serviceStatus:     "New",
 			schema: &ServiceSchema{
 				"immutable_agent": ServicePropertyDefinition{
 					Type:      "string",
@@ -780,10 +672,10 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			},
 		},
 		{
-			name:              "State-conditional agent properties can be set during creation (ServiceNew)",
+			name:              "State-conditional agent properties can be set during creation (New)",
 			initialProperties: nil,
 			updates:           map[string]any{"state_dep": "value"},
-			serviceStatus:     ServiceNew,
+			serviceStatus:     "New",
 			schema: &ServiceSchema{
 				"state_dep": ServicePropertyDefinition{
 					Type:        "string",

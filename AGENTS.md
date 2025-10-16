@@ -45,6 +45,18 @@ This document contains project-specific guidelines and technical context for wor
 
 ---
 
+## Testing
+
+### Mock Generation
+
+- We use **mockery** to generate mocks for interfaces
+- Configuration is in `.mockery.yml`
+- To regenerate all mocks after interface changes, run: `mockery`
+- Mocks are generated in the same package as the interface (e.g., `pkg/domain/mocks_test.go`)
+- Always regenerate mocks after changing interface signatures
+
+---
+
 ## System Architecture
 
 ### Overview
@@ -181,10 +193,10 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 
 #### Service
 - Cloud resource managed by an agent
-- Has sophisticated state management with current and target states
-- State transitions: Creating → Created → Starting → Started → Stopping → Stopped → Deleting → Deleted
-- Supports both hot updates (while running) and cold updates (while stopped)
-- Tracks failed operations with error messages and retry counts
+- State machine driven by ServiceType's lifecycle schema (not hardcoded enums)
+- Status field is a string that matches a state in the lifecycle schema
+- State transitions determined by lifecycle schema actions and transitions
+- Supports error-driven state transitions based on error message regexp matching
 - Has properties (configuration that can be updated) and attributes (static metadata)
 - Can be linked to a consumer participant via ConsumerParticipantID
 
@@ -195,10 +207,11 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 
 #### Job
 - Represents a discrete operation to be performed by an agent
-- Actions include: Create, Start, Stop, HotUpdate, ColdUpdate, Delete
-- States include: Pending, Processing, Completed, Failed
+- Actions are strings defined by the ServiceType's lifecycle schema (e.g., "create", "start", "stop", "delete")
+- States include: Pending, Processing, Completed, Failed (no Unsupported status)
 - Prioritizes operations for execution order
-- Tracks execution timing and error details
+- Tracks execution timing and error messages
+- Error messages are used for lifecycle transition regexp matching (not stored separately as error codes)
 
 #### Token
 - Provides secure authentication mechanism for system access
@@ -244,18 +257,59 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 
 ### Service Management
 
+#### Lifecycle Schema
+Services use a schema-driven state machine defined in `ServiceType.LifecycleSchema`. Each service type can have a completely custom lifecycle.
+
+**Schema Structure:**
+- **States**: List of valid states (e.g., "New", "Started", "Stopped", "Deleted")
+- **Actions**: Operations that can be performed (e.g., "create", "start", "stop", "delete")
+- **InitialState**: Starting state for new services
+- **TerminalStates**: States where no further actions are allowed
+- **RunningStates**: States considered "running" for uptime calculation
+
+**Transitions:**
+Each action defines transitions between states:
+- **from**: Source state
+- **to**: Destination state
+- **onError**: Whether this transition handles errors (boolean)
+- **onErrorRegexp**: Optional regex to match specific error messages
+
+**Error Handling:**
+- When a job fails, the error message is matched against transition regexps
+- If a transition has `onError: true` and its regexp matches, that transition is used
+- If no regexp is specified, the transition matches any error
+- This allows routing to different states based on specific error types (e.g., "quota exceeded" vs "network error")
+
+**Example:**
+```json
+{
+  "states": [{"name": "New"}, {"name": "Started"}, {"name": "Failed"}],
+  "actions": [
+    {
+      "name": "start",
+      "transitions": [
+        {"from": "New", "to": "Started"},
+        {"from": "New", "to": "Failed", "onError": true, "onErrorRegexp": "quota.*exceeded"},
+        {"from": "New", "to": "Stopped", "onError": true}
+      ]
+    }
+  ],
+  "initialState": "New",
+  "terminalStates": ["Deleted"],
+  "runningStates": ["Started"]
+}
+```
+
 #### State Transitions
+State transitions are driven by the lifecycle schema, not hardcoded. Common patterns:
 - Creating → Created: Service is initially created
 - Created → Starting: Service begins startup
 - Starting → Started: Service is fully running
 - Started → Stopping: Service begins shutdown
 - Stopping → Stopped: Service is fully stopped
-- Started → HotUpdating: Service update while running
-- HotUpdating → Started: Hot update completed
-- Stopped → ColdUpdating: Service update while stopped
-- ColdUpdating → Stopped: Cold update completed
-- Stopped → Deleting: Service begins deletion
-- Deleting → Deleted: Service is fully removed
+- Failed states: Services transition to error states based on error message patterns
+
+The actual states and transitions depend on the ServiceType's lifecycle schema.
 
 #### Properties vs Attributes vs Resources
 - **Properties**: Service configuration with source control and updatability constraints
@@ -267,11 +321,13 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 ### Job Processing
 
 #### Job States
-- Pending: Job created and waiting for an agent to claim it
-- Processing: Job claimed by an agent and in progress
-- Completed: Job successfully finished
-- Failed: Job encountered an error
-- Failed jobs may auto-retry after timeout
+- **Pending**: Job created and waiting for an agent to claim it
+- **Processing**: Job claimed by an agent and in progress
+- **Completed**: Job successfully finished
+- **Failed**: Job encountered an error
+  - Error message drives service state transition via lifecycle schema regexp matching
+  - Failed jobs may auto-retry after timeout
+  - No separate "Unsupported" status - unsupported operations are just Failed with specific error messages
 
 #### Job Processing Flow
 1. Service operation requested (create/start/stop/update/delete)
@@ -280,7 +336,9 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 4. Agent claims job (transitions to Processing)
 5. Agent performs the operation
 6. Agent updates job to Completed or Failed (optionally including agent properties)
-7. Service state and properties updated based on job outcome
+7. Service state updated based on job outcome:
+   - **On success**: Service transitions to the success state defined in lifecycle
+   - **On failure**: Error message is matched against lifecycle transition regexps to determine next state
 
 #### Agent Property Updates
 
@@ -306,7 +364,7 @@ Agents can update service properties when completing a job by including a `prope
 - During initial service creation (ServiceNew status): Only source is validated (agents can set immutable properties)
 - During subsequent updates: Both source and updatability constraints are validated
 - Validation errors return HTTP 400 and roll back the entire job completion
-- See `docs/SERVICE_TYPE_SCHEMA.md` for detailed examples and error messages
+- See `docs/SERVICE_TYPE.md` for detailed examples and error messages
 
 ### Monitoring & Audit
 

@@ -20,7 +20,7 @@ This document provides a high-level overview of the Fulcrum Core system design. 
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): Detailed description of the system's layered architecture, package structure, and implementation patterns
 - [AUTHORIZATION.md](AUTHORIZATION.md): Comprehensive authorization rules and role-based permissions
-- [SERVICE_TYPE_SCHEMA.md](SERVICE_TYPE_SCHEMA.md): Service property schema validation syntax and usage guide
+- [SERVICE_TYPE.md](SERVICE_TYPE.md): ServiceType documentation including property schema validation and lifecycle schema
 - [openapi.yaml](openapi.yaml): Complete API specification in OpenAPI format
 
 ## Context
@@ -141,6 +141,7 @@ classDiagram
             id : properties.UUID
             name : string
             propertySchema : CustomSchema
+            lifecycleSchema : LifecycleSchema
             createdAt : datetime
             updatedAt : datetime
         }
@@ -169,7 +170,7 @@ classDiagram
             id : properties.UUID
             externalId : string
             name : string
-            status : enum[New,Started,Stopped,Deleted]
+            status : string
             properties : json
             resources : json
             consumerParticipantID : properties.UUID
@@ -191,9 +192,9 @@ classDiagram
             consumerId : properties.UUID
             agentId : properties.UUID
             serviceId : properties.UUID
-            action : enum[Create,Start,Stop,Update,Delete]
+            action : string
             params : json
-            status : enum[Pending,Processing,Completed,Failed,Unsupported]
+            status : enum[Pending,Processing,Completed,Failed]
             priority : int
             errorMessage : string
             claimedAt : datetime
@@ -258,10 +259,12 @@ classDiagram
         }
     }
 
-    note for Service "Service has a simplified status management system:
-    - Single status field (New, Started, Stopped, Deleted)
+    note for Service "Service lifecycle is schema-driven:
+    - Status field is a string (not hardcoded enum)
+    - States and transitions defined by ServiceType's lifecycleSchema
+    - Each service type can have custom lifecycle
     - Properties field for configuration
-    - Jobs handle status transitions"
+    - Jobs handle status transitions based on lifecycle schema"
 
     note for ServiceType "Service types include:
     - VM
@@ -276,19 +279,19 @@ classDiagram
     tags for specialized requirements"
     
     note for Job "Jobs represent operations that agents
-    perform on services including:
-    - Creating services
-    - Starting/stopping services
-    - Updating services
-    - Deleting services
+    perform on services. Actions are defined by the
+    service type's lifecycle schema (e.g., create, start,
+    stop, restart, update, delete).
     
     Jobs include provider/consumer context and parameters.
     
-    Jobs can fail in two ways:
-    - Regular failure: May retry based on configuration
-    - Unsupported operation: No retry, graceful degradation
+    Failed jobs use error message regexp matching to
+    determine the next service state via lifecycle schema
+    transitions. This enables custom error handling and
+    state routing (e.g., quota errors vs network errors).
     
-    Each job transitions service status appropriately"
+    Each job transitions service status based on the
+    lifecycle schema definition"
     
 ```
 
@@ -324,16 +327,18 @@ classDiagram
 
 3. **Service**
    - Cloud resource managed by an agent
-   - Simplified status management with single status field
-   - Status transitions: New → Stopped → Started → Stopped → Deleted
-   - Supports updates while running (hot update) or stopped (cold update)
-   - Error handling and retry logic managed through Job entities
+   - Schema-driven lifecycle with status field as a string
+   - States and transitions defined by the ServiceType's lifecycleSchema
+   - Each service type can define completely custom lifecycles
+   - Supports custom actions (e.g., start, stop, restart, backup, maintenance)
+   - Error handling uses regexp matching on error messages to determine next state
    - Stores service configuration in a single properties field
    - Stores service-specific resource configuration
    - Can be linked to a consumer participant via ConsumerParticipantID (optional)
 
    Properties:
    - Properties: properties.JSON data representing the service configuration that can be updated during the service lifecycle. Updates to properties trigger job creation for update operations.
+   - Status: String field that must match a state defined in the ServiceType's lifecycleSchema
 
 4. **AgentType**
    - Defines the type classification for agents
@@ -342,7 +347,10 @@ classDiagram
 
 5. **ServiceType**
    - Defines the type classification for services
-   - Examples include VM, Container, Kubernetes nodes, etc.
+   - Includes optional propertySchema for service property validation
+   - Includes optional lifecycleSchema defining states, actions, and transitions
+   - Enables custom lifecycles per service type without code changes
+   - Examples include VM, Container, Kubernetes nodes, Database, etc.
 
 6. **ServiceGroup**
    - Organizes related services into logical groups
@@ -351,14 +359,15 @@ classDiagram
 
 7. **Job**
    - Represents a discrete operation to be performed by an agent
-   - Action types: Create, Start, Stop, Update, Delete
-   - Lifecycle statuss: Pending → Processing → Completed/Failed/Unsupported
+   - Action field is a string defined by the ServiceType's lifecycleSchema
+   - Common actions: create, start, stop, restart, update, delete, backup, etc.
+   - Lifecycle statuses: Pending → Processing → Completed/Failed
    - Prioritizes operations for execution order
    - Tracks execution timing through claimedAt and completedAt
    - Records error details for failed operations
+   - Error messages are matched against lifecycle regexps to determine next service state
    - Includes provider and consumer participant context
    - Contains parameters for the operation in params field
-   - Supports unsupported operation handling with graceful degradation
 
 8. **Token**
    - Provides secure authentication mechanism for system access
@@ -430,20 +439,31 @@ For detailed information about the system's architecture, layers, and implementa
 
 ### Services, Agents, and Jobs
 
-#### Service Status Transitions
+#### Service Lifecycle Schema
 
-The following diagram illustrates the various statuss a service can transition through during its lifecycle:
+Service lifecycles are now schema-driven rather than hardcoded. Each ServiceType defines its own lifecycle with custom states, actions, and transitions.
+
+**Example: Simple VM Lifecycle**
 
 ```mermaid
 stateDiagram-v2
     [*] --> New: service created
-    New --> Stopped: create operation complete
-    Stopped --> Started: start operation
-    Started --> Stopped: stop operation
-    Started --> Started: update operation (hot update)
-    Stopped --> Stopped: update operation (cold update)
-    Stopped --> Deleted: delete operation
+    New --> Stopped: create action
+    Stopped --> Started: start action
+    Started --> Stopped: stop action
+    Started --> Started: update action (hot update)
+    Stopped --> Stopped: update action (cold update)
+    Stopped --> Deleted: delete action
+    Started --> Deleted: delete action
 ```
+
+**Note:** This is just one example. ServiceTypes can define completely different lifecycles:
+- Different state names (e.g., Provisioning, Maintenance, Backup)
+- Different actions (e.g., restart, pause, resume, snapshot)
+- Error-driven transitions with regexp matching
+- Multi-step actions with intermediate states
+
+See [SERVICE_TYPE.md](SERVICE_TYPE.md) for comprehensive lifecycle schema documentation and examples.
 
 #### Service Property Schema Validation
 
@@ -499,7 +519,7 @@ The system provides a dedicated validation endpoint for testing property schemas
 - **Response**: Returns validation status and detailed error messages
 - **Use Cases**: Frontend validation, schema testing, development workflows
 
-For detailed schema syntax and examples, see [SERVICE_TYPE_SCHEMA.md](SERVICE_TYPE_SCHEMA.md).
+For detailed schema syntax and examples, see [SERVICE_TYPE.md](SERVICE_TYPE.md).
 
 #### Agent Authentication Flow
 
@@ -528,7 +548,7 @@ sequenceDiagram
 
 #### Job Management Flow
 
-Job statuss and transitions can be visualized as follows:
+Job statuses and transitions can be visualized as follows:
 
 ```mermaid
 stateDiagram-v2
@@ -536,12 +556,12 @@ stateDiagram-v2
     Pending --> Processing: Agent Claims Job
     Processing --> Completed: Operation Successful
     Processing --> Failed: Operation Error
-    Processing --> Unsupported: Unsupported Operation
     Completed --> [*]
     Failed --> Pending: Auto-retry (configurable)
     Failed --> [*]: Max retries reached
-    Unsupported --> [*]: No retry
 ```
+
+**Note:** When a job fails, the error message is matched against lifecycle transition regexps to determine the next service state. This enables intelligent error handling and state routing based on error types.
 
 The job queue system manages the complete lifecycle of service operations from creation to completion. The following diagram illustrates the job management flow:
 
@@ -584,16 +604,9 @@ sequenceDiagram
         MS-->>Agent: Operation failed with error
         Agent->>API: Fail job (POST /jobs/{id}/fail)
         API->>API: Update job status to Failed and record error
-        API->>API: Update service with error info
+        API->>API: Update service state based on error message regexp matching
+        Note right of API: Lifecycle schema determines next state
         API-->>Agent: Confirm job failed
-    
-    %% Unsupported Operation Path
-    else Unsupported Operation
-        Agent->>Agent: Detect unsupported operation
-        Agent->>API: Mark as unsupported (POST /jobs/{id}/unsupported)
-        API->>API: Update job status to Failed and record error
-        API->>API: Roll back service state (clear target status/properties)
-        API-->>Agent: Confirm job marked as unsupported
     end
 
 ```
@@ -627,22 +640,16 @@ The job management process follows these steps:
 5. **Job Failure Handling**:
    - If an operation fails, the agent calls `/api/v1/jobs/{id}/fail` with error details
    - The job status changes to "Failed"
-   - The service status is updated to reflect the error
+   - The error message is matched against lifecycle transition regexps
+   - The service transitions to the appropriate error state based on the match
+   - This enables intelligent error handling (e.g., quota errors vs network errors)
    - Jobs may be automatically retried based on error type and configured policies
 
-6. **Job Unsupported Operation Handling**:
-   - If an agent encounters an operation it cannot support, it calls `/api/v1/jobs/{id}/unsupported` with error details
-   - The job status changes to "Unsupported" (distinct from regular failure)
-   - The service maintains its current state without changes
-   - Error details are recorded in the job for tracking and debugging
-   - Unlike regular failures, unsupported operations are not automatically retried
-   - This provides a graceful degradation mechanism when agents lack capabilities for specific operations
-
-7. **Job Maintenance**:
+6. **Job Maintenance**:
    - Background workers periodically:
      - Release stuck jobs (processing too long)
      - Clean up old completed jobs after retention period
-     - Handle retry logic for failed jobs (excluding unsupported operations)
+     - Handle retry logic for failed jobs
      - Monitor queue health and performance metrics
 
 ### Event Consumption API

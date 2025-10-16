@@ -72,7 +72,7 @@ func TestMetricEntryRepository(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, err)
 
-	t.Run("Create", func(t *testing.T) {
+	t.Run("create", func(t *testing.T) {
 		metricEntry := &domain.MetricEntry{
 			AgentID:    agent.ID,
 			ServiceID:  service.ID,

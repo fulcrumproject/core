@@ -144,6 +144,7 @@ The application layer serves as the entry point and wires together all component
 - Sets up middleware and request processing pipelines
 - Establishes connections to databases and external systems
 - Launches background workers for maintenance tasks
+
 ## 4. Project Structure Layout
 
 The system follows a modular directory structure that reinforces the separation of concerns and clean architecture principles:

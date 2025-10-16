@@ -25,10 +25,6 @@ type FailJobReq struct {
 	ErrorMessage string `json:"errorMessage"`
 }
 
-type UnsupportedJobReq struct {
-	ErrorMessage string `json:"errorMessage"`
-}
-
 // JobHandler handles HTTP requests for jobs
 type JobHandler struct {
 	querier   domain.JobQuerier
@@ -84,19 +80,13 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionComplete, h.authz, h.querier.AuthScope),
 			).Post("/{id}/complete", Command(h.Complete))
 
-			r.With(
-				middlewares.MustHaveRoles(auth.RoleAgent),
-				middlewares.DecodeBody[FailJobReq](),
-				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionFail, h.authz, h.querier.AuthScope),
-			).Post("/{id}/fail", Command(h.Fail))
-
-			r.With(
-				middlewares.MustHaveRoles(auth.RoleAgent),
-				middlewares.DecodeBody[UnsupportedJobReq](),
-				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionFail, h.authz, h.querier.AuthScope),
-			).Post("/{id}/unsupported", Command(h.Unsupported))
-		})
-	}
+		r.With(
+			middlewares.MustHaveRoles(auth.RoleAgent),
+			middlewares.DecodeBody[FailJobReq](),
+			middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionFail, h.authz, h.querier.AuthScope),
+		).Post("/{id}/fail", Command(h.Fail))
+	})
+}
 }
 
 // Pending handles GET /jobs/pending
@@ -155,31 +145,23 @@ func (h *JobHandler) Fail(ctx context.Context, id properties.UUID, req *FailJobR
 	return h.commander.Fail(ctx, params)
 }
 
-func (h *JobHandler) Unsupported(ctx context.Context, id properties.UUID, req *UnsupportedJobReq) error {
-	params := domain.UnsupportedJobParams{
-		JobID:        id,
-		ErrorMessage: req.ErrorMessage,
-	}
-	return h.commander.Unsupported(ctx, params)
-}
-
 // JobRes represents the response for a job
 type JobRes struct {
-	ID           properties.UUID      `json:"id"`
-	ProviderID   properties.UUID      `json:"providerId"`
-	ConsumerID   properties.UUID      `json:"consumerId"`
-	AgentID      properties.UUID      `json:"agentId"`
-	ServiceID    properties.UUID      `json:"serviceId"`
-	Action       domain.ServiceAction `json:"action"`
-	Params       *properties.JSON     `json:"params,omitempty"`
-	Status       domain.JobStatus     `json:"status"`
-	Priority     int                  `json:"priority"`
-	ErrorMessage string               `json:"errorMessage,omitempty"`
-	ClaimedAt    *JSONUTCTime         `json:"claimedAt,omitempty"`
-	CompletedAt  *JSONUTCTime         `json:"completedAt,omitempty"`
-	CreatedAt    JSONUTCTime          `json:"createdAt"`
-	UpdatedAt    JSONUTCTime          `json:"updatedAt"`
-	Service      *ServiceRes          `json:"service,omitempty"`
+	ID           properties.UUID  `json:"id"`
+	ProviderID   properties.UUID  `json:"providerId"`
+	ConsumerID   properties.UUID  `json:"consumerId"`
+	AgentID      properties.UUID  `json:"agentId"`
+	ServiceID    properties.UUID  `json:"serviceId"`
+	Action       string           `json:"action"`
+	Params       *properties.JSON `json:"params,omitempty"`
+	Status       domain.JobStatus `json:"status"`
+	Priority     int              `json:"priority"`
+	ErrorMessage string           `json:"errorMessage,omitempty"`
+	ClaimedAt    *JSONUTCTime     `json:"claimedAt,omitempty"`
+	CompletedAt  *JSONUTCTime     `json:"completedAt,omitempty"`
+	CreatedAt    JSONUTCTime      `json:"createdAt"`
+	UpdatedAt    JSONUTCTime      `json:"updatedAt"`
+	Service      *ServiceRes      `json:"service,omitempty"`
 }
 
 // JobToRes converts a job entity to a response

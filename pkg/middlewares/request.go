@@ -16,6 +16,7 @@ type contextKey string
 const (
 	uuidContextKey        = contextKey("uuid")
 	decodedBodyContextKey = contextKey("decodedBody")
+	actionNameContextKey  = contextKey("actionName")
 )
 
 // ID extracts and validates the UUID from URL paths with /{id} format
@@ -44,6 +45,29 @@ func MustGetID(ctx context.Context) properties.UUID {
 		panic("UUID not found in request context")
 	}
 	return id
+}
+
+// ActionName extracts the action name from URL paths with /{action} format
+func ActionName(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		actionParam := chi.URLParam(r, "action")
+		if actionParam == "" {
+			render.Render(w, r, response.ErrInvalidRequest(fmt.Errorf("action name is required")))
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), actionNameContextKey, actionParam)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// MustGetActionName retrieves the action name from the request context
+func MustGetActionName(ctx context.Context) string {
+	action, ok := ctx.Value(actionNameContextKey).(string)
+	if !ok {
+		panic("action name not found in request context")
+	}
+	return action
 }
 
 // DecodeBody is middleware that decodes the request body into a struct
