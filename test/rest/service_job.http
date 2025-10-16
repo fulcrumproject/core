@@ -4,6 +4,7 @@
 ### - Immutable property validation
 ### - State-conditional property updates
 ### - Source-based property access control
+### - Non-standard state transitions (Maintenance mode)
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
@@ -83,6 +84,7 @@ Content-Type: application/json
             {"name": "New"},
             {"name": "Stopped"},
             {"name": "Started"},
+            {"name": "Maintenance"},
             {"name": "Deleted"}
         ],
         "actions": [
@@ -113,6 +115,22 @@ Content-Type: application/json
                 "transitions": [
                     {"from": "Stopped", "to": "Stopped"},
                     {"from": "Started", "to": "Started"}
+                ]
+            },
+            {
+                "name": "enterMaintenance",
+                "transitions": [
+                    {"from": "Stopped", "to": "Maintenance"},
+                    {"from": "Started", "to": "Maintenance"},
+                    {"from": "Stopped", "to": "Stopped", "onError": true},
+                    {"from": "Started", "to": "Started", "onError": true}
+                ]
+            },
+            {
+                "name": "exitMaintenance",
+                "transitions": [
+                    {"from": "Maintenance", "to": "Stopped"},
+                    {"from": "Maintenance", "to": "Maintenance", "onError": true}
                 ]
             },
             {
@@ -619,5 +637,79 @@ Content-Type: application/json
 }
 
 ### Get service (verify successful retry)
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### PART 11: MAINTENANCE MODE TESTING (Non-Standard State)
+###############################################################################
+
+### Enter maintenance mode from Stopped state
+POST {{baseUrl}}/services/{{serviceId}}/enterMaintenance
+Authorization: Bearer {{adminToken}}
+
+### Get pending jobs (should have an enterMaintenance job)
+# @name pendingEnterMaintenanceJobs
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@enterMaintenanceJobId = {{pendingEnterMaintenanceJobs.response.body.$[0].id}}
+
+### Claim the enterMaintenance job
+POST {{baseUrl}}/jobs/{{enterMaintenanceJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete the enterMaintenance job
+POST {{baseUrl}}/jobs/{{enterMaintenanceJobId}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "resources": {
+        "status": "maintenance",
+        "details": {
+            "duration": "1s",
+            "output": "VM entered maintenance mode",
+            "reason": "Scheduled system maintenance"
+        }
+    }
+}
+
+### Get service (verify status is Maintenance)
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+### Exit maintenance mode (return to Stopped)
+POST {{baseUrl}}/services/{{serviceId}}/exitMaintenance
+Authorization: Bearer {{adminToken}}
+
+### Get pending jobs (should have an exitMaintenance job)
+# @name pendingExitMaintenanceJobs
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@exitMaintenanceJobId = {{pendingExitMaintenanceJobs.response.body.$[0].id}}
+
+### Claim the exitMaintenance job
+POST {{baseUrl}}/jobs/{{exitMaintenanceJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete the exitMaintenance job
+POST {{baseUrl}}/jobs/{{exitMaintenanceJobId}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "resources": {
+        "status": "stopped",
+        "details": {
+            "duration": "1s",
+            "output": "VM exited maintenance mode",
+            "maintenanceComplete": true
+        }
+    }
+}
+
+### Get service (verify status is back to Stopped)
 GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
