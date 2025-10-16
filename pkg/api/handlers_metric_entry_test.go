@@ -175,7 +175,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				}
 
 				// Setup the commander
-				commander.createWithExternalIDFunc = func(ctx context.Context, params domain.CreateMetricEntryWithExternalIDParams) (*domain.MetricEntry, error) {
+				commander.createWithAgentInstanceIDFunc = func(ctx context.Context, params domain.CreateMetricEntryWithAgentInstanceIDParams) (*domain.MetricEntry, error) {
 					assert.Equal(t, "cpu", params.TypeName)
 					assert.Equal(t, agentID, params.AgentID)
 					assert.Equal(t, "service-inst-1", params.AgentInstanceID)

@@ -778,7 +778,7 @@ func TestServiceToResponse(t *testing.T) {
 	providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 	serviceID := uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000")
 
-	externalID := "ext-123"
+	agentInstanceID := "ext-123"
 	props := properties.JSON{"key": "value"}
 	resources := properties.JSON{"cpu": "1", "memory": "2GB"}
 
@@ -794,7 +794,7 @@ func TestServiceToResponse(t *testing.T) {
 		GroupID:         groupID,
 		ConsumerID:      consumerID,
 		ProviderID:      providerID,
-		AgentInstanceID: &externalID,
+		AgentInstanceID: &agentInstanceID,
 		Status:          "New",
 		Properties:      &props,
 		AgentData:       &resources,
@@ -811,7 +811,7 @@ func TestServiceToResponse(t *testing.T) {
 	assert.Equal(t, groupID, response.GroupID)
 	assert.Equal(t, consumerID, response.ConsumerID)
 	assert.Equal(t, providerID, response.ProviderID)
-	assert.Equal(t, externalID, *response.AgentInstanceID)
+	assert.Equal(t, agentInstanceID, *response.AgentInstanceID)
 	assert.Equal(t, "New", response.Status)
 	assert.Equal(t, props, *response.Properties)
 	assert.Equal(t, resources, *response.AgentData)

@@ -163,8 +163,8 @@ func (m *mockJobCommander) Fail(ctx context.Context, params domain.FailJobParams
 
 // MockMetricEntryCommander mocks the MetricEntryCommander interface
 type mockMetricEntryCommander struct {
-	createFunc               func(ctx context.Context, params domain.CreateMetricEntryParams) (*domain.MetricEntry, error)
-	createWithExternalIDFunc func(ctx context.Context, params domain.CreateMetricEntryWithExternalIDParams) (*domain.MetricEntry, error)
+	createFunc                    func(ctx context.Context, params domain.CreateMetricEntryParams) (*domain.MetricEntry, error)
+	createWithAgentInstanceIDFunc func(ctx context.Context, params domain.CreateMetricEntryWithAgentInstanceIDParams) (*domain.MetricEntry, error)
 }
 
 func (m *mockMetricEntryCommander) Create(ctx context.Context, params domain.CreateMetricEntryParams) (*domain.MetricEntry, error) {
@@ -174,11 +174,11 @@ func (m *mockMetricEntryCommander) Create(ctx context.Context, params domain.Cre
 	return nil, fmt.Errorf("create not mocked")
 }
 
-func (m *mockMetricEntryCommander) CreateWithExternalID(ctx context.Context, params domain.CreateMetricEntryWithExternalIDParams) (*domain.MetricEntry, error) {
-	if m.createWithExternalIDFunc != nil {
-		return m.createWithExternalIDFunc(ctx, params)
+func (m *mockMetricEntryCommander) CreateWithAgentInstanceID(ctx context.Context, params domain.CreateMetricEntryWithAgentInstanceIDParams) (*domain.MetricEntry, error) {
+	if m.createWithAgentInstanceIDFunc != nil {
+		return m.createWithAgentInstanceIDFunc(ctx, params)
 	}
-	return nil, fmt.Errorf("createWithExternalID not mocked")
+	return nil, fmt.Errorf("createWithAgentInstanceID not mocked")
 }
 
 // mockMetricTypeCommander is a custom mock for MetricTypeCommander

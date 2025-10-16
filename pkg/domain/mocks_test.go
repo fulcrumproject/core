@@ -8661,27 +8661,27 @@ func (_c *MockMetricEntryCommander_Create_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
-// CreateWithExternalID provides a mock function for the type MockMetricEntryCommander
-func (_mock *MockMetricEntryCommander) CreateWithExternalID(ctx context.Context, params CreateMetricEntryWithExternalIDParams) (*MetricEntry, error) {
+// CreateWithAgentInstanceID provides a mock function for the type MockMetricEntryCommander
+func (_mock *MockMetricEntryCommander) CreateWithAgentInstanceID(ctx context.Context, params CreateMetricEntryWithAgentInstanceIDParams) (*MetricEntry, error) {
 	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
-		panic("no return value specified for CreateWithExternalID")
+		panic("no return value specified for CreateWithAgentInstanceID")
 	}
 
 	var r0 *MetricEntry
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateMetricEntryWithExternalIDParams) (*MetricEntry, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateMetricEntryWithAgentInstanceIDParams) (*MetricEntry, error)); ok {
 		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateMetricEntryWithExternalIDParams) *MetricEntry); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateMetricEntryWithAgentInstanceIDParams) *MetricEntry); ok {
 		r0 = returnFunc(ctx, params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*MetricEntry)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateMetricEntryWithExternalIDParams) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateMetricEntryWithAgentInstanceIDParams) error); ok {
 		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
@@ -8689,27 +8689,27 @@ func (_mock *MockMetricEntryCommander) CreateWithExternalID(ctx context.Context,
 	return r0, r1
 }
 
-// MockMetricEntryCommander_CreateWithExternalID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateWithExternalID'
-type MockMetricEntryCommander_CreateWithExternalID_Call struct {
+// MockMetricEntryCommander_CreateWithAgentInstanceID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateWithAgentInstanceID'
+type MockMetricEntryCommander_CreateWithAgentInstanceID_Call struct {
 	*mock.Call
 }
 
-// CreateWithExternalID is a helper method to define mock.On call
+// CreateWithAgentInstanceID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - params CreateMetricEntryWithExternalIDParams
-func (_e *MockMetricEntryCommander_Expecter) CreateWithExternalID(ctx interface{}, params interface{}) *MockMetricEntryCommander_CreateWithExternalID_Call {
-	return &MockMetricEntryCommander_CreateWithExternalID_Call{Call: _e.mock.On("CreateWithExternalID", ctx, params)}
+//   - params CreateMetricEntryWithAgentInstanceIDParams
+func (_e *MockMetricEntryCommander_Expecter) CreateWithAgentInstanceID(ctx interface{}, params interface{}) *MockMetricEntryCommander_CreateWithAgentInstanceID_Call {
+	return &MockMetricEntryCommander_CreateWithAgentInstanceID_Call{Call: _e.mock.On("CreateWithAgentInstanceID", ctx, params)}
 }
 
-func (_c *MockMetricEntryCommander_CreateWithExternalID_Call) Run(run func(ctx context.Context, params CreateMetricEntryWithExternalIDParams)) *MockMetricEntryCommander_CreateWithExternalID_Call {
+func (_c *MockMetricEntryCommander_CreateWithAgentInstanceID_Call) Run(run func(ctx context.Context, params CreateMetricEntryWithAgentInstanceIDParams)) *MockMetricEntryCommander_CreateWithAgentInstanceID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 CreateMetricEntryWithExternalIDParams
+		var arg1 CreateMetricEntryWithAgentInstanceIDParams
 		if args[1] != nil {
-			arg1 = args[1].(CreateMetricEntryWithExternalIDParams)
+			arg1 = args[1].(CreateMetricEntryWithAgentInstanceIDParams)
 		}
 		run(
 			arg0,
@@ -8719,12 +8719,12 @@ func (_c *MockMetricEntryCommander_CreateWithExternalID_Call) Run(run func(ctx c
 	return _c
 }
 
-func (_c *MockMetricEntryCommander_CreateWithExternalID_Call) Return(metricEntry *MetricEntry, err error) *MockMetricEntryCommander_CreateWithExternalID_Call {
+func (_c *MockMetricEntryCommander_CreateWithAgentInstanceID_Call) Return(metricEntry *MetricEntry, err error) *MockMetricEntryCommander_CreateWithAgentInstanceID_Call {
 	_c.Call.Return(metricEntry, err)
 	return _c
 }
 
-func (_c *MockMetricEntryCommander_CreateWithExternalID_Call) RunAndReturn(run func(ctx context.Context, params CreateMetricEntryWithExternalIDParams) (*MetricEntry, error)) *MockMetricEntryCommander_CreateWithExternalID_Call {
+func (_c *MockMetricEntryCommander_CreateWithAgentInstanceID_Call) RunAndReturn(run func(ctx context.Context, params CreateMetricEntryWithAgentInstanceIDParams) (*MetricEntry, error)) *MockMetricEntryCommander_CreateWithAgentInstanceID_Call {
 	_c.Call.Return(run)
 	return _c
 }

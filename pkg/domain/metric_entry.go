@@ -109,8 +109,8 @@ type MetricEntryCommander interface {
 	// Create creates a new metric entry
 	Create(ctx context.Context, params CreateMetricEntryParams) (*MetricEntry, error)
 
-	// CreateWithExternalID creates a new metric entry using service's external ID
-	CreateWithExternalID(ctx context.Context, params CreateMetricEntryWithExternalIDParams) (*MetricEntry, error)
+	// CreateWithAgentInstanceID creates a new metric entry using service's external ID
+	CreateWithAgentInstanceID(ctx context.Context, params CreateMetricEntryWithAgentInstanceIDParams) (*MetricEntry, error)
 }
 
 type CreateMetricEntryParams struct {
@@ -121,7 +121,7 @@ type CreateMetricEntryParams struct {
 	Value      float64         `json:"value"`
 }
 
-type CreateMetricEntryWithExternalIDParams struct {
+type CreateMetricEntryWithAgentInstanceIDParams struct {
 	TypeName        string          `json:"typeName"`
 	AgentID         properties.UUID `json:"agentId"`
 	AgentInstanceID string          `json:"agentInstanceId"`
@@ -146,9 +146,9 @@ func NewMetricEntryCommander(
 	}
 }
 
-func (s *metricEntryCommander) CreateWithExternalID(
+func (s *metricEntryCommander) CreateWithAgentInstanceID(
 	ctx context.Context,
-	params CreateMetricEntryWithExternalIDParams,
+	params CreateMetricEntryWithAgentInstanceIDParams,
 ) (*MetricEntry, error) {
 	// 1. Validate agent exists
 	ok, err := s.store.AgentRepo().Exists(ctx, params.AgentID)

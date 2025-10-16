@@ -204,8 +204,8 @@ func TestJobHandleCompleteJob(t *testing.T) {
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: `{
-				"resources": {"cpu": 2, "memory": 4},
-				"externalID": "ext-123"
+				"agentData": {"cpu": 2, "memory": 4},
+				"agentInstanceID": "ext-123"
 			}`,
 			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
 				// Return a successful auth
@@ -225,8 +225,8 @@ func TestJobHandleCompleteJob(t *testing.T) {
 			name: "CompleteError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: `{
-				"resources": {"cpu": 2, "memory": 4},
-				"externalID": "ext-123"
+				"agentData": {"cpu": 2, "memory": 4},
+				"agentInstanceID": "ext-123"
 			}`,
 			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
 				// Return a successful auth
@@ -246,8 +246,8 @@ func TestJobHandleCompleteJob(t *testing.T) {
 			name: "SuccessWithProperties",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: `{
-				"resources": {"cpu": 2, "memory": 4},
-				"externalID": "ext-123",
+				"agentData": {"cpu": 2, "memory": 4},
+				"agentInstanceID": "ext-123",
 				"properties": {"ipAddress": "192.168.1.100", "port": 8080}
 			}`,
 			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
@@ -272,8 +272,8 @@ func TestJobHandleCompleteJob(t *testing.T) {
 			name: "PropertyValidationError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: `{
-				"resources": {"cpu": 2, "memory": 4},
-				"externalID": "ext-123",
+				"agentData": {"cpu": 2, "memory": 4},
+				"agentInstanceID": "ext-123",
 				"properties": {"instanceName": "new-name"}
 			}`,
 			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
@@ -295,8 +295,8 @@ func TestJobHandleCompleteJob(t *testing.T) {
 			name: "SuccessWithoutProperties",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: `{
-				"resources": {"cpu": 2, "memory": 4},
-				"externalID": "ext-123"
+				"agentData": {"cpu": 2, "memory": 4},
+				"agentInstanceID": "ext-123"
 			}`,
 			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
 				// Return a successful auth
@@ -538,4 +538,3 @@ func TestJobHandlerRoutes(t *testing.T) {
 	err := chi.Walk(r, walkFunc)
 	assert.NoError(t, err)
 }
-
