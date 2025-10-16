@@ -362,9 +362,9 @@ components:
           $ref: "#/components/schemas/ServiceStatus"
         properties:
           $ref: "#/components/schemas/JSONObject"
-        resources:
+        agentData:
           $ref: "#/components/schemas/JSONObject"
-        externalId:
+        agentInstanceId:
           type: string
           nullable: true
         providerId:
@@ -584,13 +584,13 @@ components:
     CompleteJobReq:
       type: object
       properties:
-        externalId:
+        agentInstanceId:
           type: string
-          description: External identifier for the provisioned resource
+          description: Agent's native instance identifier for the provisioned resource
           example: "i-1234567890abcdef0"
-        resources:
+        agentData:
           $ref: "#/components/schemas/JSONObject"
-          description: Resource information about the provisioned service
+          description: Agent-owned runtime data about the provisioned service
         properties:
           type: object
           additionalProperties: true
@@ -653,15 +653,15 @@ components:
         - value
       oneOf:
         - required: ["serviceId"]
-        - required: ["externalId"]
+        - required: ["agentInstanceId"]
       properties:
         serviceId:
           $ref: "#/components/schemas/properties.UUID"
           description: "ID of the service associated with this metric"
-        externalId:
+        agentInstanceId:
           type: string
-          description: "External ID of the service associated with this metric"
-          example: "vm-i-12345"
+          description: "Agent instance ID of the service associated with this metric"
+          example: "i-12345"
         resourceId:
           type: string
           example: "cpu-1"
