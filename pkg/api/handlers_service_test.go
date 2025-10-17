@@ -11,23 +11,26 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 // TestNewServiceHandler tests the constructor
 func TestNewServiceHandler(t *testing.T) {
-	serviceQuerier := &mockServiceQuerier{}
-	agentQuerier := &mockAgentQuerier{}
-	serviceGroupQuerier := &mockServiceGroupQuerier{}
-	commander := &mockServiceCommander{}
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	serviceQuerier := mocks.NewMockServiceQuerier(t)
+	agentQuerier := mocks.NewMockAgentQuerier(t)
+	serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
+	commander := mocks.NewMockServiceCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
 	assert.NotNil(t, handler)
@@ -41,11 +44,11 @@ func TestNewServiceHandler(t *testing.T) {
 // TestServiceHandlerRoutes tests that routes are properly registered with middlewares
 func TestServiceHandlerRoutes(t *testing.T) {
 	// Create mocks
-	serviceQuerier := &mockServiceQuerier{}
-	agentQuerier := &mockAgentQuerier{}
-	serviceGroupQuerier := &mockServiceGroupQuerier{}
-	commander := &mockServiceCommander{}
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	serviceQuerier := mocks.NewMockServiceQuerier(t)
+	agentQuerier := mocks.NewMockAgentQuerier(t)
+	serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
+	commander := mocks.NewMockServiceCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
@@ -99,7 +102,7 @@ func TestServiceHandleCreate(t *testing.T) {
 	testCases := []struct {
 		name           string
 		request        CreateServiceReq
-		mockSetup      func(commander *mockServiceCommander)
+		mockSetup      func(commander *mocks.MockServiceCommander)
 		expectedStatus int
 	}{
 		{
@@ -111,33 +114,33 @@ func TestServiceHandleCreate(t *testing.T) {
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"prop": "value"},
 			},
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander for successful creation
-				commander.createFunc = func(ctx context.Context, params domain.CreateServiceParams) (*domain.Service, error) {
-					assert.Equal(t, "Test Service", params.Name)
-					assert.Equal(t, properties.JSON{"prop": "value"}, params.Properties)
+				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+				consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
+				providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
 
-					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-					updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-					consumerID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
-					providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
-
-					return &domain.Service{
+				commander.EXPECT().
+					Create(mock.Anything, mock.MatchedBy(func(params domain.CreateServiceParams) bool {
+						return params.Name == "Test Service" &&
+							params.Properties["prop"] == "value"
+					})).
+					Return(&domain.Service{
 						BaseEntity: domain.BaseEntity{
 							ID:        uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:          params.Name,
-						AgentID:       params.AgentID,
-						ServiceTypeID: params.ServiceTypeID,
-						GroupID:       params.GroupID,
+						Name:          "Test Service",
+						AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+						ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
+						GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 						ConsumerID:    consumerID,
 						ProviderID:    providerID,
 						Status:        "New",
-						Properties:    &params.Properties,
-					}, nil
-				}
+						Properties:    &properties.JSON{"prop": "value"},
+					}, nil)
 			},
 			expectedStatus: http.StatusCreated,
 		},
@@ -150,11 +153,11 @@ func TestServiceHandleCreate(t *testing.T) {
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"prop": "value"},
 			},
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander to return an error
-				commander.createFunc = func(ctx context.Context, params domain.CreateServiceParams) (*domain.Service, error) {
-					return nil, domain.NewInvalidInputErrorf("invalid input")
-				}
+				commander.EXPECT().
+					Create(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("invalid input"))
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -163,11 +166,11 @@ func TestServiceHandleCreate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			serviceQuerier := &mockServiceQuerier{}
-			agentQuerier := &mockAgentQuerier{}
-			serviceGroupQuerier := &mockServiceGroupQuerier{}
-			commander := &mockServiceCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true} // Not used in handler tests
+			serviceQuerier := mocks.NewMockServiceQuerier(t)
+			agentQuerier := mocks.NewMockAgentQuerier(t)
+			serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
+			commander := mocks.NewMockServiceCommander(t)
+			authz := authmocks.NewMockAuthorizer(t) // Not used in handler tests
 			tc.mockSetup(commander)
 
 			// Create the handler
@@ -213,7 +216,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 		name           string
 		id             string
 		request        UpdateServiceReq
-		mockSetup      func(commander *mockServiceCommander)
+		mockSetup      func(commander *mocks.MockServiceCommander)
 		expectedStatus int
 	}{
 		{
@@ -223,27 +226,29 @@ func TestServiceHandleUpdate(t *testing.T) {
 				Name:       helpers.StringPtr("Updated Service"),
 				Properties: helpers.JSONPtr(properties.JSON{"updated": "value"}),
 			},
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander for successful update
-				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), params.ID)
-					assert.Equal(t, "Updated Service", *params.Name)
-					assert.Equal(t, properties.JSON{"updated": "value"}, *params.Properties)
+				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+				updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+				updatedName := "Updated Service"
+				updatedProps := properties.JSON{"updated": "value"}
 
-					createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-					updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
-
-					return &domain.Service{
+				commander.EXPECT().
+					Update(mock.Anything, mock.MatchedBy(func(params domain.UpdateServiceParams) bool {
+						return params.ID == uuid.MustParse("550e8400-e29b-41d4-a716-446655440000") &&
+							*params.Name == "Updated Service" &&
+							(*params.Properties)["updated"] == "value"
+					})).
+					Return(&domain.Service{
 						BaseEntity: domain.BaseEntity{
-							ID:        params.ID,
+							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 							CreatedAt: createdAt,
 							UpdatedAt: updatedAt,
 						},
-						Name:       "Updated Service",
+						Name:       updatedName,
 						Status:     "Started",
-						Properties: params.Properties,
-					}, nil
-				}
+						Properties: &updatedProps,
+					}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -254,11 +259,11 @@ func TestServiceHandleUpdate(t *testing.T) {
 				Name:       helpers.StringPtr("Invalid"),
 				Properties: helpers.JSONPtr(properties.JSON{"invalid": "data"}),
 			},
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander to return a validation error
-				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
-					return nil, domain.NewInvalidInputErrorf("validation error")
-				}
+				commander.EXPECT().
+					Update(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("validation error"))
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -269,11 +274,11 @@ func TestServiceHandleUpdate(t *testing.T) {
 				Name:       helpers.StringPtr("Updated Service"),
 				Properties: helpers.JSONPtr(properties.JSON{"updated": "value"}),
 			},
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander to return not found
-				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
-					return nil, domain.NewNotFoundErrorf("service not found")
-				}
+				commander.EXPECT().
+					Update(mock.Anything, mock.Anything).
+					Return(nil, domain.NewNotFoundErrorf("service not found"))
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -282,11 +287,11 @@ func TestServiceHandleUpdate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			serviceQuerier := &mockServiceQuerier{}
-			agentQuerier := &mockAgentQuerier{}
-			serviceGroupQuerier := &mockServiceGroupQuerier{}
-			commander := &mockServiceCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true} // Not used in handler tests
+			serviceQuerier := mocks.NewMockServiceQuerier(t)
+			agentQuerier := mocks.NewMockAgentQuerier(t)
+			serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
+			commander := mocks.NewMockServiceCommander(t)
+			authz := authmocks.NewMockAuthorizer(t) // Not used in handler tests
 			tc.mockSetup(commander)
 
 			// Create the handler
@@ -339,25 +344,26 @@ func TestServiceHandleTransition(t *testing.T) {
 		name           string
 		id             string
 		transitionTo   string
-		mockSetup      func(commander *mockServiceCommander)
+		mockSetup      func(commander *mocks.MockServiceCommander)
 		expectedStatus int
 	}{
 		{
 			name:         "SuccessfulStart",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
 			transitionTo: "Started",
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander for successful transition
-				commander.doActionFunc = func(ctx context.Context, params domain.DoServiceActionParams) (*domain.Service, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), params.ID)
-					assert.Equal(t, "start", params.Action)
-					return &domain.Service{
+				commander.EXPECT().
+					DoAction(mock.Anything, mock.MatchedBy(func(params domain.DoServiceActionParams) bool {
+						return params.ID == uuid.MustParse("550e8400-e29b-41d4-a716-446655440000") &&
+							params.Action == "start"
+					})).
+					Return(&domain.Service{
 						BaseEntity: domain.BaseEntity{
-							ID: params.ID,
+							ID: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 						},
 						Status: "Started",
-					}, nil
-				}
+					}, nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -365,18 +371,19 @@ func TestServiceHandleTransition(t *testing.T) {
 			name:         "SuccessfulStop",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
 			transitionTo: "Stopped",
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander for successful transition
-				commander.doActionFunc = func(ctx context.Context, params domain.DoServiceActionParams) (*domain.Service, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), params.ID)
-					assert.Equal(t, "stop", params.Action)
-					return &domain.Service{
+				commander.EXPECT().
+					DoAction(mock.Anything, mock.MatchedBy(func(params domain.DoServiceActionParams) bool {
+						return params.ID == uuid.MustParse("550e8400-e29b-41d4-a716-446655440000") &&
+							params.Action == "stop"
+					})).
+					Return(&domain.Service{
 						BaseEntity: domain.BaseEntity{
-							ID: params.ID,
+							ID: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 						},
 						Status: "Stopped",
-					}, nil
-				}
+					}, nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -384,17 +391,18 @@ func TestServiceHandleTransition(t *testing.T) {
 			name:         "SuccessfulDelete",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
 			transitionTo: "Deleted",
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander for successful transition
-				commander.doActionFunc = func(ctx context.Context, params domain.DoServiceActionParams) (*domain.Service, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), params.ID)
-					return &domain.Service{
+				commander.EXPECT().
+					DoAction(mock.Anything, mock.MatchedBy(func(params domain.DoServiceActionParams) bool {
+						return params.ID == uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+					})).
+					Return(&domain.Service{
 						BaseEntity: domain.BaseEntity{
-							ID: params.ID,
+							ID: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 						},
 						Status: "Deleted",
-					}, nil
-				}
+					}, nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -402,11 +410,11 @@ func TestServiceHandleTransition(t *testing.T) {
 			name:         "InvalidStatusTransition",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
 			transitionTo: "Started",
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander to return an error for invalid transition
-				commander.doActionFunc = func(ctx context.Context, params domain.DoServiceActionParams) (*domain.Service, error) {
-					return nil, domain.NewInvalidInputErrorf("invalid status transition")
-				}
+				commander.EXPECT().
+					DoAction(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("invalid status transition"))
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -414,11 +422,11 @@ func TestServiceHandleTransition(t *testing.T) {
 			name:         "ServiceNotFound",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
 			transitionTo: "Started",
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander to return not found
-				commander.doActionFunc = func(ctx context.Context, params domain.DoServiceActionParams) (*domain.Service, error) {
-					return nil, domain.NewNotFoundErrorf("service not found")
-				}
+				commander.EXPECT().
+					DoAction(mock.Anything, mock.Anything).
+					Return(nil, domain.NewNotFoundErrorf("service not found"))
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -427,11 +435,11 @@ func TestServiceHandleTransition(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			serviceQuerier := &mockServiceQuerier{}
-			agentQuerier := &mockAgentQuerier{}
-			serviceGroupQuerier := &mockServiceGroupQuerier{}
-			commander := &mockServiceCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true} // Not used in handler tests
+			serviceQuerier := mocks.NewMockServiceQuerier(t)
+			agentQuerier := mocks.NewMockAgentQuerier(t)
+			serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
+			commander := mocks.NewMockServiceCommander(t)
+			authz := authmocks.NewMockAuthorizer(t) // Not used in handler tests
 			tc.mockSetup(commander)
 
 			// Create the handler
@@ -482,45 +490,44 @@ func TestServiceHandleRetry(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(commander *mockServiceCommander)
+		mockSetup      func(commander *mocks.MockServiceCommander)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander for successful retry
-				commander.retryFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
-					assert.Equal(t, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), id)
-					return &domain.Service{
+				commander.EXPECT().
+					Retry(mock.Anything, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")).
+					Return(&domain.Service{
 						BaseEntity: domain.BaseEntity{
-							ID: id,
+							ID: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 						},
 						Status: "New",
-					}, nil
-				}
+					}, nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name: "ServiceNotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander to return not found
-				commander.retryFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
-					return nil, domain.NewNotFoundErrorf("service not found")
-				}
+				commander.EXPECT().
+					Retry(mock.Anything, mock.Anything).
+					Return(nil, domain.NewNotFoundErrorf("service not found"))
 			},
 			expectedStatus: http.StatusNotFound,
 		},
 		{
 			name: "InvalidRetry",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(commander *mockServiceCommander) {
+			mockSetup: func(commander *mocks.MockServiceCommander) {
 				// Setup the commander to return an error for invalid retry
-				commander.retryFunc = func(ctx context.Context, id properties.UUID) (*domain.Service, error) {
-					return nil, domain.NewInvalidInputErrorf("service is not in a failed status")
-				}
+				commander.EXPECT().
+					Retry(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("service is not in a failed status"))
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -529,11 +536,11 @@ func TestServiceHandleRetry(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			serviceQuerier := &mockServiceQuerier{}
-			agentQuerier := &mockAgentQuerier{}
-			serviceGroupQuerier := &mockServiceGroupQuerier{}
-			commander := &mockServiceCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true} // Not used in handler tests
+			serviceQuerier := mocks.NewMockServiceQuerier(t)
+			agentQuerier := mocks.NewMockAgentQuerier(t)
+			serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
+			commander := mocks.NewMockServiceCommander(t)
+			authz := authmocks.NewMockAuthorizer(t) // Not used in handler tests
 			tc.mockSetup(commander)
 
 			// Create the handler
@@ -569,7 +576,7 @@ func TestServicePropertyValidation(t *testing.T) {
 		operation      string // "create" or "update"
 		serviceID      string // only for update
 		request        any
-		mockSetup      func(commander *mockServiceCommander)
+		mockSetup      func(commander *mocks.MockServiceCommander)
 		expectedStatus int
 		checkError     func(t *testing.T, errorText string)
 	}{
@@ -580,15 +587,17 @@ func TestServicePropertyValidation(t *testing.T) {
 			request: UpdateServiceReq{
 				Properties: helpers.JSONPtr(properties.JSON{"instanceName": "new-name"}),
 			},
-			mockSetup: func(commander *mockServiceCommander) {
-				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
-					return &domain.Service{
-						BaseEntity: domain.BaseEntity{
-							ID: params.ID,
-						},
-						Properties: params.Properties,
-					}, nil
-				}
+			mockSetup: func(commander *mocks.MockServiceCommander) {
+				commander.EXPECT().
+					Update(mock.Anything, mock.Anything).
+					RunAndReturn(func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
+						return &domain.Service{
+							BaseEntity: domain.BaseEntity{
+								ID: params.ID,
+							},
+							Properties: params.Properties,
+						}, nil
+					})
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -599,10 +608,10 @@ func TestServicePropertyValidation(t *testing.T) {
 			request: UpdateServiceReq{
 				Properties: helpers.JSONPtr(properties.JSON{"uuid": "new-uuid"}),
 			},
-			mockSetup: func(commander *mockServiceCommander) {
-				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
-					return nil, domain.NewInvalidInputErrorf("property 'uuid' cannot be updated (updatable: never)")
-				}
+			mockSetup: func(commander *mocks.MockServiceCommander) {
+				commander.EXPECT().
+					Update(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("property 'uuid' cannot be updated (updatable: never)"))
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkError: func(t *testing.T, errorText string) {
@@ -618,10 +627,10 @@ func TestServicePropertyValidation(t *testing.T) {
 			request: UpdateServiceReq{
 				Properties: helpers.JSONPtr(properties.JSON{"diskSize": 500}),
 			},
-			mockSetup: func(commander *mockServiceCommander) {
-				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
-					return nil, domain.NewInvalidInputErrorf("property 'diskSize' cannot be updated in status 'Started' (allowed statuses: [Stopped])")
-				}
+			mockSetup: func(commander *mocks.MockServiceCommander) {
+				commander.EXPECT().
+					Update(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("property 'diskSize' cannot be updated in status 'Started' (allowed statuses: [Stopped])"))
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkError: func(t *testing.T, errorText string) {
@@ -637,10 +646,10 @@ func TestServicePropertyValidation(t *testing.T) {
 			request: UpdateServiceReq{
 				Properties: helpers.JSONPtr(properties.JSON{"ipAddress": "192.168.1.100"}),
 			},
-			mockSetup: func(commander *mockServiceCommander) {
-				commander.updateFunc = func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
-					return nil, domain.NewInvalidInputErrorf("property 'ipAddress' cannot be updated by user (source: agent)")
-				}
+			mockSetup: func(commander *mocks.MockServiceCommander) {
+				commander.EXPECT().
+					Update(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("property 'ipAddress' cannot be updated by user (source: agent)"))
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkError: func(t *testing.T, errorText string) {
@@ -659,10 +668,10 @@ func TestServicePropertyValidation(t *testing.T) {
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"ipAddress": "192.168.1.100"},
 			},
-			mockSetup: func(commander *mockServiceCommander) {
-				commander.createFunc = func(ctx context.Context, params domain.CreateServiceParams) (*domain.Service, error) {
-					return nil, domain.NewInvalidInputErrorf("property 'ipAddress' cannot be updated by user (source: agent)")
-				}
+			mockSetup: func(commander *mocks.MockServiceCommander) {
+				commander.EXPECT().
+					Create(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("property 'ipAddress' cannot be updated by user (source: agent)"))
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkError: func(t *testing.T, errorText string) {
@@ -681,15 +690,17 @@ func TestServicePropertyValidation(t *testing.T) {
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"instanceName": "my-instance"},
 			},
-			mockSetup: func(commander *mockServiceCommander) {
-				commander.createFunc = func(ctx context.Context, params domain.CreateServiceParams) (*domain.Service, error) {
-					return &domain.Service{
-						BaseEntity: domain.BaseEntity{
-							ID: uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
-						},
-						Properties: &params.Properties,
-					}, nil
-				}
+			mockSetup: func(commander *mocks.MockServiceCommander) {
+				commander.EXPECT().
+					Create(mock.Anything, mock.Anything).
+					RunAndReturn(func(ctx context.Context, params domain.CreateServiceParams) (*domain.Service, error) {
+						return &domain.Service{
+							BaseEntity: domain.BaseEntity{
+								ID: uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
+							},
+							Properties: &params.Properties,
+						}, nil
+					})
 			},
 			expectedStatus: http.StatusCreated,
 		},
@@ -698,11 +709,11 @@ func TestServicePropertyValidation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			serviceQuerier := &mockServiceQuerier{}
-			agentQuerier := &mockAgentQuerier{}
-			serviceGroupQuerier := &mockServiceGroupQuerier{}
-			commander := &mockServiceCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
+			serviceQuerier := mocks.NewMockServiceQuerier(t)
+			agentQuerier := mocks.NewMockAgentQuerier(t)
+			serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
+			commander := mocks.NewMockServiceCommander(t)
+			authz := authmocks.NewMockAuthorizer(t)
 			tc.mockSetup(commander)
 
 			// Create the handler
