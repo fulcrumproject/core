@@ -231,7 +231,7 @@ func TestEventHandleLease(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			// Add auth identity to context (required by all handlers)
-			authIdentity := NewMockAuthAgent()
+			authIdentity := newMockAuthAgent()
 			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 			// Create response recorder
@@ -436,7 +436,7 @@ func TestEventHandleAcknowledge(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			// Add auth identity to context (required by all handlers)
-			authIdentity := NewMockAuthAgent()
+			authIdentity := newMockAuthAgent()
 			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 			// Create response recorder

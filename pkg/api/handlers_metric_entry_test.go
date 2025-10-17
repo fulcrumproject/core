@@ -251,7 +251,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 			bodyBytes, err := json.Marshal(tc.requestBody)
 			require.NoError(t, err)
 			req := httptest.NewRequest("POST", "/metric-entries", bytes.NewReader(bodyBytes))
-			req = req.WithContext(auth.WithIdentity(req.Context(), NewMockAuthAgent()))
+			req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
 			req.Header.Set("Content-Type", "application/json")
 
 			// Execute request with middleware

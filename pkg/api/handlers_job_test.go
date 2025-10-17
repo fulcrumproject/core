@@ -90,7 +90,7 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 			req := httptest.NewRequest("GET", "/jobs/pending?limit=10", nil)
 
 			// Create agent identity
-			authIdentity := NewMockAuthAgent()
+			authIdentity := newMockAuthAgent()
 			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 			// Execute request
@@ -171,7 +171,7 @@ func TestJobHandleClaimJob(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthAgent()
+			authIdentity := newMockAuthAgent()
 			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 			// Execute request with middleware
@@ -321,7 +321,7 @@ func TestJobHandleCompleteJob(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthAgent()
+			authIdentity := newMockAuthAgent()
 			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 			// Execute request with middleware
@@ -404,7 +404,7 @@ func TestJobHandleFailJob(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context for authorization
-			authIdentity := NewMockAuthAgent()
+			authIdentity := newMockAuthAgent()
 			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 			// Execute request with middleware

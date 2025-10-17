@@ -183,7 +183,7 @@ func TestServiceHandleCreate(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthAdmin()
+			authIdentity := newMockAuthAdmin()
 			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 			// Execute request with middleware
@@ -310,7 +310,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthAdmin()
+			authIdentity := newMockAuthAdmin()
 			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 			// Execute request with middleware
@@ -454,7 +454,7 @@ func TestServiceHandleTransition(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthAdmin()
+			authIdentity := newMockAuthAdmin()
 			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 			// Execute request with middleware
@@ -555,7 +555,7 @@ func TestServiceHandleRetry(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Add auth identity to context (always required)
-			authIdentity := NewMockAuthAdmin()
+			authIdentity := newMockAuthAdmin()
 			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 			// Execute request with middleware
@@ -736,7 +736,7 @@ func TestServicePropertyValidation(t *testing.T) {
 				req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 				// Add auth identity
-				authIdentity := NewMockAuthAdmin()
+				authIdentity := newMockAuthAdmin()
 				req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 				// Setup middleware chain
@@ -750,7 +750,7 @@ func TestServicePropertyValidation(t *testing.T) {
 				req.Header.Set("Content-Type", "application/json")
 
 				// Add auth identity
-				authIdentity := NewMockAuthAdmin()
+				authIdentity := newMockAuthAdmin()
 				req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 				// Setup middleware chain

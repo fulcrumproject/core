@@ -80,7 +80,7 @@ func TestHandleGetMe(t *testing.T) {
 
 			// Add agent auth identity to context (simulating RequireAgentIdentity middleware)
 			agentUUID := uuid.MustParse(tc.agentID)
-			authIdentity := NewMockAuthAgentWithID(agentUUID)
+			authIdentity := newMockAuthAgentWithID(agentUUID)
 			req = req.WithContext(auth.WithIdentity(req.Context(), authIdentity))
 
 			// Execute request
