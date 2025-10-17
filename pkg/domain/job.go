@@ -157,10 +157,10 @@ type JobCommander interface {
 }
 
 type CompleteJobParams struct {
-	JobID      properties.UUID  `json:"jobId"`
-	Resources  *properties.JSON `json:"resources"`
-	ExternalID *string          `json:"externalId"`
-	Properties map[string]any   `json:"properties,omitempty"`
+	JobID             properties.UUID  `json:"jobId"`
+	AgentInstanceData *properties.JSON `json:"agentInstanceData"`
+	AgentInstanceID   *string          `json:"agentInstanceId"`
+	Properties        map[string]any   `json:"properties,omitempty"`
 }
 
 type FailJobParams struct {
@@ -227,7 +227,7 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 		}
 
 		// Update service
-		if err := svc.HandleJobComplete(serviceType.LifecycleSchema, job.Action, nil, job.Params, params.Resources, params.ExternalID); err != nil {
+		if err := svc.HandleJobComplete(serviceType.LifecycleSchema, job.Action, nil, job.Params, params.AgentInstanceData, params.AgentInstanceID); err != nil {
 			return InvalidInputError{Err: err}
 		}
 		if err := svc.Validate(); err != nil {

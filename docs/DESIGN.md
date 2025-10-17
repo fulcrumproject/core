@@ -168,11 +168,11 @@ classDiagram
     namespace Services {
         class Service {
             id : properties.UUID
-            externalId : string
+            agentInstanceId : string
             name : string
             status : string
             properties : json
-            resources : json
+            agentInstanceData : json
             consumerParticipantID : properties.UUID
             createdAt : datetime
             updatedAt : datetime

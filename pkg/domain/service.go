@@ -27,10 +27,10 @@ type Service struct {
 	Status     string           `json:"status" gorm:"not null"`
 	Properties *properties.JSON `json:"properties,omitempty" gorm:"type:jsonb"`
 
-	// To store an external ID for the agent's use to facilitate metric reporting
-	ExternalID *string `json:"externalId,omitempty" gorm:"uniqueIndex:service_external_id_uniq"`
-	// Safe place for the Agent for store data
-	Resources *properties.JSON `json:"resources,omitempty" gorm:"type:jsonb"`
+	// Agent's native instance identifier for this service in their infrastructure system
+	AgentInstanceID *string `json:"agentInstanceId,omitempty" gorm:"uniqueIndex:service_agent_instance_id_uniq"`
+	// Safe place for the Agent to store data
+	AgentInstanceData *properties.JSON `json:"agentInstanceData,omitempty" gorm:"type:jsonb"`
 
 	// Relationships
 	ProviderID    properties.UUID `json:"providerId" gorm:"not null"`
@@ -65,7 +65,7 @@ func NewService(
 }
 
 // HandleJobComplete handles the completion of a job
-func (s *Service) HandleJobComplete(lifecycle *LifecycleSchema, action string, errorCode *string, params *properties.JSON, resources *properties.JSON, externalID *string) error {
+func (s *Service) HandleJobComplete(lifecycle *LifecycleSchema, action string, errorCode *string, params *properties.JSON, agentInstanceData *properties.JSON, agentInstanceID *string) error {
 	// Update status using lifecycle schema
 	nextStatus, err := lifecycle.ResolveNextState(s.Status, action, errorCode)
 	if err != nil {
@@ -73,12 +73,12 @@ func (s *Service) HandleJobComplete(lifecycle *LifecycleSchema, action string, e
 	}
 	s.Status = nextStatus
 
-	// Update resources and external ID if provided
-	if resources != nil {
-		s.Resources = resources
+	// Update agent data and agent instance ID if provided
+	if agentInstanceData != nil {
+		s.AgentInstanceData = agentInstanceData
 	}
-	if externalID != nil {
-		s.ExternalID = externalID
+	if agentInstanceID != nil {
+		s.AgentInstanceID = agentInstanceID
 	}
 
 	// Update properties if the action is an update
@@ -599,8 +599,8 @@ type ServiceRepository interface {
 type ServiceQuerier interface {
 	BaseEntityQuerier[Service]
 
-	// FindByExternalID retrieves a service by its external ID and agent ID
-	FindByExternalID(ctx context.Context, agentID properties.UUID, externalID string) (*Service, error)
+	// FindByAgentInstanceID retrieves a service by its agent instance ID and agent ID
+	FindByAgentInstanceID(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*Service, error)
 
 	// CountByGroup returns the number of services in a specific group
 	CountByGroup(ctx context.Context, groupID properties.UUID) (int64, error)

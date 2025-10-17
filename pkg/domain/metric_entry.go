@@ -109,8 +109,8 @@ type MetricEntryCommander interface {
 	// Create creates a new metric entry
 	Create(ctx context.Context, params CreateMetricEntryParams) (*MetricEntry, error)
 
-	// CreateWithExternalID creates a new metric entry using service's external ID
-	CreateWithExternalID(ctx context.Context, params CreateMetricEntryWithExternalIDParams) (*MetricEntry, error)
+	// CreateWithAgentInstanceID creates a new metric entry using service's external ID
+	CreateWithAgentInstanceID(ctx context.Context, params CreateMetricEntryWithAgentInstanceIDParams) (*MetricEntry, error)
 }
 
 type CreateMetricEntryParams struct {
@@ -121,12 +121,12 @@ type CreateMetricEntryParams struct {
 	Value      float64         `json:"value"`
 }
 
-type CreateMetricEntryWithExternalIDParams struct {
-	TypeName   string          `json:"typeName"`
-	AgentID    properties.UUID `json:"agentId"`
-	ExternalID string          `json:"externalId"`
-	ResourceID string          `json:"resourceId"`
-	Value      float64         `json:"value"`
+type CreateMetricEntryWithAgentInstanceIDParams struct {
+	TypeName        string          `json:"typeName"`
+	AgentID         properties.UUID `json:"agentId"`
+	AgentInstanceID string          `json:"agentInstanceId"`
+	ResourceID      string          `json:"resourceId"`
+	Value           float64         `json:"value"`
 }
 
 // metricEntryCommander is the concrete implementation of MetricEntryCommander
@@ -146,9 +146,9 @@ func NewMetricEntryCommander(
 	}
 }
 
-func (s *metricEntryCommander) CreateWithExternalID(
+func (s *metricEntryCommander) CreateWithAgentInstanceID(
 	ctx context.Context,
-	params CreateMetricEntryWithExternalIDParams,
+	params CreateMetricEntryWithAgentInstanceIDParams,
 ) (*MetricEntry, error) {
 	// 1. Validate agent exists
 	ok, err := s.store.AgentRepo().Exists(ctx, params.AgentID)
@@ -159,8 +159,8 @@ func (s *metricEntryCommander) CreateWithExternalID(
 		return nil, NewInvalidInputErrorf("invalid agent ID %s", params.AgentID)
 	}
 
-	// 2. Find service by external ID
-	svc, err := s.store.ServiceRepo().FindByExternalID(ctx, params.AgentID, params.ExternalID)
+	// 2. Find service by agent instance ID
+	svc, err := s.store.ServiceRepo().FindByAgentInstanceID(ctx, params.AgentID, params.AgentInstanceID)
 	if err != nil {
 		return nil, err
 	}

@@ -16,9 +16,9 @@ import (
 )
 
 type CompleteJobReq struct {
-	Resources  *properties.JSON `json:"resources"`
-	ExternalID *string          `json:"externalID"`
-	Properties *properties.JSON `json:"properties,omitempty"`
+	AgentInstanceData *properties.JSON `json:"agentInstanceData"`
+	AgentInstanceID   *string          `json:"agentInstanceId"`
+	Properties        *properties.JSON `json:"properties,omitempty"`
 }
 
 type FailJobReq struct {
@@ -80,13 +80,13 @@ func (h *JobHandler) Routes() func(r chi.Router) {
 				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionComplete, h.authz, h.querier.AuthScope),
 			).Post("/{id}/complete", Command(h.Complete))
 
-		r.With(
-			middlewares.MustHaveRoles(auth.RoleAgent),
-			middlewares.DecodeBody[FailJobReq](),
-			middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionFail, h.authz, h.querier.AuthScope),
-		).Post("/{id}/fail", Command(h.Fail))
-	})
-}
+			r.With(
+				middlewares.MustHaveRoles(auth.RoleAgent),
+				middlewares.DecodeBody[FailJobReq](),
+				middlewares.AuthzFromID(authz.ObjectTypeJob, authz.ActionFail, h.authz, h.querier.AuthScope),
+			).Post("/{id}/fail", Command(h.Fail))
+		})
+	}
 }
 
 // Pending handles GET /jobs/pending
@@ -129,10 +129,10 @@ func (h *JobHandler) Complete(ctx context.Context, id properties.UUID, req *Comp
 	}
 
 	params := domain.CompleteJobParams{
-		JobID:      id,
-		Resources:  req.Resources,
-		ExternalID: req.ExternalID,
-		Properties: properties,
+		JobID:             id,
+		AgentInstanceData: req.AgentInstanceData,
+		AgentInstanceID:   req.AgentInstanceID,
+		Properties:        properties,
 	}
 	return h.commander.Complete(ctx, params)
 }

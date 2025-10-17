@@ -271,8 +271,8 @@ Content-Type: application/json
     "properties": {
         "internalIp": "10.{{$randomInt 0 255}}.{{$randomInt 0 255}}.{{$randomInt 0 255}}"
     },
-    "externalId": "vm-{{$guid}}",
-    "resources": {
+    "agentInstanceId": "vm-{{$guid}}",
+    "agentInstanceData": {
         "status": "success",
         "details": {
             "duration": "5s",
@@ -336,7 +336,7 @@ Authorization: Bearer {{agentToken}}
 Content-Type: application/json
 
 {
-    "resources": {
+    "agentInstanceData": {
         "status": "running",
         "details": {
             "duration": "3s",
@@ -377,7 +377,7 @@ Authorization: Bearer {{agentToken}}
 Content-Type: application/json
 
 {
-    "resources": {
+    "agentInstanceData": {
         "status": "stopped"
     }
 }
@@ -406,7 +406,7 @@ Content-Type: application/json
     "properties": {
         "internalIp": "192.168.99.99"
     },
-    "resources": {
+    "agentInstanceData": {
         "status": "running"
     }
 }
@@ -417,7 +417,7 @@ Authorization: Bearer {{agentToken}}
 Content-Type: application/json
 
 {
-    "resources": {
+    "agentInstanceData": {
         "status": "running",
         "details": {
             "duration": "3s",
@@ -470,7 +470,7 @@ Authorization: Bearer {{agentToken}}
 Content-Type: application/json
 
 {
-    "resources": {
+    "agentInstanceData": {
         "status": "stopped",
         "details": {
             "duration": "2s",
@@ -517,7 +517,7 @@ Authorization: Bearer {{agentToken}}
 Content-Type: application/json
 
 {
-    "resources": {
+    "agentInstanceData": {
         "status": "stopped",
         "details": {
             "duration": "3s",
@@ -558,7 +558,7 @@ Authorization: Bearer {{agentToken}}
 Content-Type: application/json
 
 {
-    "resources": {
+    "agentInstanceData": {
         "status": "running",
         "details": {
             "duration": "4s",
@@ -627,7 +627,7 @@ Authorization: Bearer {{agentToken}}
 Content-Type: application/json
 
 {
-    "resources": {
+    "agentInstanceData": {
         "status": "stopped",
         "details": {
             "duration": "2s",
@@ -665,7 +665,7 @@ Authorization: Bearer {{agentToken}}
 Content-Type: application/json
 
 {
-    "resources": {
+    "agentInstanceData": {
         "status": "maintenance",
         "details": {
             "duration": "1s",
@@ -700,7 +700,7 @@ Authorization: Bearer {{agentToken}}
 Content-Type: application/json
 
 {
-    "resources": {
+    "agentInstanceData": {
         "status": "stopped",
         "details": {
             "duration": "1s",

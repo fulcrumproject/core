@@ -55,15 +55,15 @@ func TestServiceRepository(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		service := &domain.Service{
-			Name:          "Test Service",
-			Status:        "Started",
-			Properties:    &(properties.JSON{"key": "value"}),
-			Resources:     &(properties.JSON{"cpu": "1"}),
-			AgentID:       agent.ID,
-			ProviderID:    provider.ID, // Set ProviderID to the created provider's ID
-			ConsumerID:    consumer.ID, // Set ConsumerID to the created consumer's ID
-			ServiceTypeID: serviceType.ID,
-			GroupID:       serviceGroup.ID,
+			Name:              "Test Service",
+			Status:            "Started",
+			Properties:        &(properties.JSON{"key": "value"}),
+			AgentInstanceData: &(properties.JSON{"cpu": "1"}),
+			AgentID:           agent.ID,
+			ProviderID:        provider.ID, // Set ProviderID to the created provider's ID
+			ConsumerID:        consumer.ID, // Set ConsumerID to the created consumer's ID
+			ServiceTypeID:     serviceType.ID,
+			GroupID:           serviceGroup.ID,
 		}
 
 		err := repo.Create(context.Background(), service)
@@ -76,15 +76,15 @@ func TestServiceRepository(t *testing.T) {
 	t.Run("Get", func(t *testing.T) {
 		// Create a service
 		service := &domain.Service{
-			Name:          "Test Service",
-			Status:        "Started",
-			Properties:    &(properties.JSON{"key": "value"}),
-			Resources:     &(properties.JSON{"cpu": "1"}),
-			AgentID:       agent.ID,
-			ProviderID:    provider.ID, // Set ProviderID
-			ConsumerID:    consumer.ID, // Set ConsumerID
-			ServiceTypeID: serviceType.ID,
-			GroupID:       serviceGroup.ID,
+			Name:              "Test Service",
+			Status:            "Started",
+			Properties:        &(properties.JSON{"key": "value"}),
+			AgentInstanceData: &(properties.JSON{"cpu": "1"}),
+			AgentID:           agent.ID,
+			ProviderID:        provider.ID, // Set ProviderID
+			ConsumerID:        consumer.ID, // Set ConsumerID
+			ServiceTypeID:     serviceType.ID,
+			GroupID:           serviceGroup.ID,
 		}
 		err := repo.Create(context.Background(), service)
 		require.NoError(t, err)
@@ -96,7 +96,7 @@ func TestServiceRepository(t *testing.T) {
 		assert.Equal(t, service.Name, found.Name)
 		assert.Equal(t, service.Status, found.Status)
 		assert.Equal(t, service.Properties, found.Properties)
-		assert.Equal(t, &(properties.JSON{"cpu": "1"}), found.Resources)
+		assert.Equal(t, &(properties.JSON{"cpu": "1"}), found.AgentInstanceData)
 		assert.Equal(t, service.AgentID, found.AgentID)
 		assert.Equal(t, service.ServiceTypeID, found.ServiceTypeID)
 		assert.Equal(t, service.GroupID, found.GroupID)
@@ -117,15 +117,15 @@ func TestServiceRepository(t *testing.T) {
 	t.Run("Save", func(t *testing.T) {
 		// Create a service
 		service := &domain.Service{
-			Name:          "Test Service",
-			Status:        "Started",
-			Properties:    &(properties.JSON{"key": "value"}),
-			Resources:     &(properties.JSON{"cpu": "1"}),
-			AgentID:       agent.ID,
-			ProviderID:    provider.ID, // Set ProviderID
-			ConsumerID:    consumer.ID, // Set ConsumerID
-			ServiceTypeID: serviceType.ID,
-			GroupID:       serviceGroup.ID,
+			Name:              "Test Service",
+			Status:            "Started",
+			Properties:        &(properties.JSON{"key": "value"}),
+			AgentInstanceData: &(properties.JSON{"cpu": "1"}),
+			AgentID:           agent.ID,
+			ProviderID:        provider.ID, // Set ProviderID
+			ConsumerID:        consumer.ID, // Set ConsumerID
+			ServiceTypeID:     serviceType.ID,
+			GroupID:           serviceGroup.ID,
 		}
 		err := repo.Create(context.Background(), service)
 		require.NoError(t, err)
@@ -134,7 +134,7 @@ func TestServiceRepository(t *testing.T) {
 		service.Name = "Updated Service"
 		service.Status = "Started"
 		service.Properties = &(properties.JSON{"key": "value"})
-		service.Resources = &(properties.JSON{"cpu": "2"})
+		service.AgentInstanceData = &(properties.JSON{"cpu": "2"})
 
 		err = repo.Save(context.Background(), service)
 		require.NoError(t, err)
@@ -145,7 +145,7 @@ func TestServiceRepository(t *testing.T) {
 		assert.Equal(t, "Updated Service", found.Name)
 		assert.Equal(t, "Started", found.Status)
 		assert.Equal(t, &(properties.JSON{"key": "value"}), found.Properties)
-		assert.Equal(t, &(properties.JSON{"cpu": "2"}), found.Resources)
+		assert.Equal(t, &(properties.JSON{"cpu": "2"}), found.AgentInstanceData)
 	})
 
 	t.Run("delete", func(t *testing.T) {
@@ -336,40 +336,40 @@ func TestServiceRepository(t *testing.T) {
 		assert.Equal(t, int64(0), count, "Should return zero for non-existent agent")
 	})
 
-	t.Run("FindByExternalID", func(t *testing.T) {
-		// Create a service with an external ID
-		externalID := "ext-123456"
+	t.Run("FindByAgentInstanceID", func(t *testing.T) {
+		// Create a service with an agent instance ID
+		agentInstanceID := "inst-123456"
 		service := &domain.Service{
-			Name:          "External ID Test Service",
-			Status:        "Started",
-			ExternalID:    &externalID,
-			AgentID:       agent.ID,
-			ProviderID:    provider.ID,
-			ConsumerID:    consumer.ID,
-			ServiceTypeID: serviceType.ID,
-			GroupID:       serviceGroup.ID,
+			Name:            "Agent Instance ID Test Service",
+			Status:          "Started",
+			AgentInstanceID: &agentInstanceID,
+			AgentID:         agent.ID,
+			ProviderID:      provider.ID,
+			ConsumerID:      consumer.ID,
+			ServiceTypeID:   serviceType.ID,
+			GroupID:         serviceGroup.ID,
 		}
 		err := repo.Create(context.Background(), service)
 		require.NoError(t, err)
 
-		// Test finding by external ID
-		found, err := repo.FindByExternalID(context.Background(), agent.ID, externalID)
+		// Test finding by agent instance ID
+		found, err := repo.FindByAgentInstanceID(context.Background(), agent.ID, agentInstanceID)
 		require.NoError(t, err)
-		assert.NotNil(t, found, "Should find service by external ID")
+		assert.NotNil(t, found, "Should find service by agent instance ID")
 		assert.Equal(t, service.ID, found.ID, "IDs should match")
-		assert.Equal(t, externalID, *found.ExternalID, "External IDs should match")
+		assert.Equal(t, agentInstanceID, *found.AgentInstanceID, "Agent instance IDs should match")
 		assert.Equal(t, agent.ID, found.AgentID, "Agent IDs should match")
 
-		// Test with valid agent ID but non-existent external ID
-		nonExistentExternalID := "non-existent-id"
-		found, err = repo.FindByExternalID(context.Background(), agent.ID, nonExistentExternalID)
-		assert.Error(t, err, "Should return error for non-existent external ID")
+		// Test with valid agent ID but non-existent agent instance ID
+		nonExistentAgentInstanceID := "non-existent-id"
+		found, err = repo.FindByAgentInstanceID(context.Background(), agent.ID, nonExistentAgentInstanceID)
+		assert.Error(t, err, "Should return error for non-existent agent instance ID")
 		assert.IsType(t, domain.NotFoundError{}, err, "Error should be NotFoundError")
 		assert.Nil(t, found, "Result should be nil")
 
-		// Test with non-existent agent ID but valid external ID
+		// Test with non-existent agent ID but valid agent instance ID
 		nonExistentAgentID := properties.NewUUID()
-		found, err = repo.FindByExternalID(context.Background(), nonExistentAgentID, externalID)
+		found, err = repo.FindByAgentInstanceID(context.Background(), nonExistentAgentID, agentInstanceID)
 		assert.Error(t, err, "Should return error for non-existent agent ID")
 		assert.IsType(t, domain.NotFoundError{}, err, "Error should be NotFoundError")
 		assert.Nil(t, found, "Result should be nil")

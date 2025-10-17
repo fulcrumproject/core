@@ -163,8 +163,8 @@ func (m *mockJobCommander) Fail(ctx context.Context, params domain.FailJobParams
 
 // MockMetricEntryCommander mocks the MetricEntryCommander interface
 type mockMetricEntryCommander struct {
-	createFunc               func(ctx context.Context, params domain.CreateMetricEntryParams) (*domain.MetricEntry, error)
-	createWithExternalIDFunc func(ctx context.Context, params domain.CreateMetricEntryWithExternalIDParams) (*domain.MetricEntry, error)
+	createFunc                    func(ctx context.Context, params domain.CreateMetricEntryParams) (*domain.MetricEntry, error)
+	createWithAgentInstanceIDFunc func(ctx context.Context, params domain.CreateMetricEntryWithAgentInstanceIDParams) (*domain.MetricEntry, error)
 }
 
 func (m *mockMetricEntryCommander) Create(ctx context.Context, params domain.CreateMetricEntryParams) (*domain.MetricEntry, error) {
@@ -174,11 +174,11 @@ func (m *mockMetricEntryCommander) Create(ctx context.Context, params domain.Cre
 	return nil, fmt.Errorf("create not mocked")
 }
 
-func (m *mockMetricEntryCommander) CreateWithExternalID(ctx context.Context, params domain.CreateMetricEntryWithExternalIDParams) (*domain.MetricEntry, error) {
-	if m.createWithExternalIDFunc != nil {
-		return m.createWithExternalIDFunc(ctx, params)
+func (m *mockMetricEntryCommander) CreateWithAgentInstanceID(ctx context.Context, params domain.CreateMetricEntryWithAgentInstanceIDParams) (*domain.MetricEntry, error) {
+	if m.createWithAgentInstanceIDFunc != nil {
+		return m.createWithAgentInstanceIDFunc(ctx, params)
 	}
-	return nil, fmt.Errorf("createWithExternalID not mocked")
+	return nil, fmt.Errorf("createWithAgentInstanceID not mocked")
 }
 
 // mockMetricTypeCommander is a custom mock for MetricTypeCommander
@@ -426,7 +426,7 @@ func (m *mockServiceRepository) Exists(ctx context.Context, id properties.UUID) 
 func (m *mockServiceRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 	return &auth.AllwaysMatchObjectScope{}, nil
 }
-func (m *mockServiceRepository) FindByExternalID(ctx context.Context, agentID properties.UUID, externalID string) (*domain.Service, error) {
+func (m *mockServiceRepository) FindByAgentInstanceID(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*domain.Service, error) {
 	return nil, nil
 }
 func (m *mockServiceRepository) CountByGroup(ctx context.Context, groupID properties.UUID) (int64, error) {
