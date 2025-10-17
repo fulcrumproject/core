@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,19 +10,22 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 // TestNewEventyHandler tests the constructor
 func TestNewEventyHandler(t *testing.T) {
-	querier := &mockEventQuerier{}
-	eventSubscriptionCmd := &mockEventSubscriptionCommander{}
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	querier := mocks.NewMockEventQuerier(t)
+	eventSubscriptionCmd := mocks.NewMockEventSubscriptionCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	handler := NewEventHandler(querier, eventSubscriptionCmd, authz)
 	assert.NotNil(t, handler)
@@ -35,9 +37,9 @@ func TestNewEventyHandler(t *testing.T) {
 // TestEventyHandlerRoutes tests that routes are properly registered
 func TestEventyHandlerRoutes(t *testing.T) {
 	// Create mocks
-	querier := &mockEventQuerier{}
-	eventSubscriptionCmd := &mockEventSubscriptionCommander{}
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	querier := mocks.NewMockEventQuerier(t)
+	eventSubscriptionCmd := mocks.NewMockEventSubscriptionCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewEventHandler(querier, eventSubscriptionCmd, authz)
@@ -111,8 +113,8 @@ func TestEventHandleLease(t *testing.T) {
 	testCases := []struct {
 		name                     string
 		requestBody              string
-		mockEventSetup           func(querier *mockEventQuerier)
-		mockSubscriptionSetup    func(cmd *mockEventSubscriptionCommander)
+		mockEventSetup           func(querier *mocks.MockEventQuerier)
+		mockSubscriptionSetup    func(cmd *mocks.MockEventSubscriptionCommander)
 		expectedStatus           int
 		expectedResponseContains map[string]any
 	}{
@@ -124,12 +126,13 @@ func TestEventHandleLease(t *testing.T) {
 				"leaseDurationSeconds": 300,
 				"limit": 10
 			}`,
-			mockEventSetup: func(querier *mockEventQuerier) {
+			mockEventSetup: func(querier *mocks.MockEventQuerier) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.listFromSequenceFunc = func(ctx context.Context, fromSequenceNumber int64, limit int) ([]*domain.Event, error) {
-					return []*domain.Event{
+				querier.EXPECT().
+					ListFromSequence(mock.Anything, int64(100), 10).
+					Return([]*domain.Event{
 						{
 							BaseEntity: domain.BaseEntity{
 								ID:        uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
@@ -142,23 +145,25 @@ func TestEventHandleLease(t *testing.T) {
 							Type:           domain.EventTypeParticipantCreated,
 							Payload:        properties.JSON{"key": "value"},
 						},
-					}, nil
-				}
+					}, nil)
 			},
-			mockSubscriptionSetup: func(cmd *mockEventSubscriptionCommander) {
+			mockSubscriptionSetup: func(cmd *mocks.MockEventSubscriptionCommander) {
 				leaseExpiresAt := time.Now().Add(5 * time.Minute)
-				cmd.acquireLeaseFunc = func(ctx context.Context, params domain.LeaseParams) (*domain.EventSubscription, error) {
-					return &domain.EventSubscription{
+				instanceID := "instance-1"
+				cmd.EXPECT().
+					AcquireLease(mock.Anything, mock.MatchedBy(func(params domain.LeaseParams) bool {
+						return params.SubscriberID == "test-subscriber" && params.InstanceID == "instance-1"
+					})).
+					Return(&domain.EventSubscription{
 						BaseEntity: domain.BaseEntity{
 							ID: uuid.New(),
 						},
-						SubscriberID:               params.SubscriberID,
+						SubscriberID:               "test-subscriber",
 						LastEventSequenceProcessed: 100,
-						LeaseOwnerInstanceID:       &params.InstanceID,
+						LeaseOwnerInstanceID:       &instanceID,
 						LeaseExpiresAt:             &leaseExpiresAt,
 						IsActive:                   true,
-					}, nil
-				}
+					}, nil)
 			},
 			expectedStatus: 200,
 			expectedResponseContains: map[string]any{
@@ -171,13 +176,13 @@ func TestEventHandleLease(t *testing.T) {
 				"subscriberId": "test-subscriber",
 				"instanceId": "instance-1"
 			}`,
-			mockEventSetup: func(querier *mockEventQuerier) {
+			mockEventSetup: func(querier *mocks.MockEventQuerier) {
 				// No setup needed for this test
 			},
-			mockSubscriptionSetup: func(cmd *mockEventSubscriptionCommander) {
-				cmd.acquireLeaseFunc = func(ctx context.Context, params domain.LeaseParams) (*domain.EventSubscription, error) {
-					return nil, domain.NewInvalidInputErrorf("lease is already held by instance instance-2")
-				}
+			mockSubscriptionSetup: func(cmd *mocks.MockEventSubscriptionCommander) {
+				cmd.EXPECT().
+					AcquireLease(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("lease is already held by instance instance-2"))
 			},
 			expectedStatus: 409,
 		},
@@ -186,10 +191,10 @@ func TestEventHandleLease(t *testing.T) {
 			requestBody: `{
 				"instanceId": "instance-1"
 			}`,
-			mockEventSetup: func(querier *mockEventQuerier) {
+			mockEventSetup: func(querier *mocks.MockEventQuerier) {
 				// No setup needed for this test
 			},
-			mockSubscriptionSetup: func(cmd *mockEventSubscriptionCommander) {
+			mockSubscriptionSetup: func(cmd *mocks.MockEventSubscriptionCommander) {
 				// No setup needed for this test
 			},
 			expectedStatus: 400,
@@ -199,10 +204,10 @@ func TestEventHandleLease(t *testing.T) {
 			requestBody: `{
 				"subscriberId": "test-subscriber"
 			}`,
-			mockEventSetup: func(querier *mockEventQuerier) {
+			mockEventSetup: func(querier *mocks.MockEventQuerier) {
 				// No setup needed for this test
 			},
-			mockSubscriptionSetup: func(cmd *mockEventSubscriptionCommander) {
+			mockSubscriptionSetup: func(cmd *mocks.MockEventSubscriptionCommander) {
 				// No setup needed for this test
 			},
 			expectedStatus: 400,
@@ -212,9 +217,9 @@ func TestEventHandleLease(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			querier := &mockEventQuerier{}
-			eventSubscriptionCmd := &mockEventSubscriptionCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
+			querier := mocks.NewMockEventQuerier(t)
+			eventSubscriptionCmd := mocks.NewMockEventSubscriptionCommander(t)
+			authz := authmocks.NewMockAuthorizer(t)
 			tc.mockEventSetup(querier)
 			tc.mockSubscriptionSetup(eventSubscriptionCmd)
 
@@ -312,7 +317,7 @@ func TestEventHandleAcknowledge(t *testing.T) {
 	testCases := []struct {
 		name           string
 		requestBody    string
-		setupMock      func(*mockEventSubscriptionCommander)
+		setupMock      func(*mocks.MockEventSubscriptionCommander)
 		expectedStatus int
 		expectedBody   string
 	}{
@@ -323,14 +328,17 @@ func TestEventHandleAcknowledge(t *testing.T) {
 				"instanceId": "instance-1",
 				"lastEventSequenceProcessed": 100
 			}`,
-			setupMock: func(cmd *mockEventSubscriptionCommander) {
-				subscription := &domain.EventSubscription{
-					SubscriberID:               "test-subscriber",
-					LastEventSequenceProcessed: 100,
-				}
-				cmd.acknowledgeEventsFunc = func(ctx context.Context, params domain.AcknowledgeEventsParams) (*domain.EventSubscription, error) {
-					return subscription, nil
-				}
+			setupMock: func(cmd *mocks.MockEventSubscriptionCommander) {
+				cmd.EXPECT().
+					AcknowledgeEvents(mock.Anything, mock.MatchedBy(func(params domain.AcknowledgeEventsParams) bool {
+						return params.SubscriberID == "test-subscriber" &&
+							params.InstanceID == "instance-1" &&
+							params.LastEventSequenceProcessed == 100
+					})).
+					Return(&domain.EventSubscription{
+						SubscriberID:               "test-subscriber",
+						LastEventSequenceProcessed: 100,
+					}, nil)
 			},
 			expectedStatus: 200,
 			expectedBody:   `{"lastEventSequenceProcessed":100}`,
@@ -342,10 +350,10 @@ func TestEventHandleAcknowledge(t *testing.T) {
 				"instanceId": "instance-1",
 				"lastEventSequenceProcessed": 100
 			}`,
-			setupMock: func(cmd *mockEventSubscriptionCommander) {
-				cmd.acknowledgeEventsFunc = func(ctx context.Context, params domain.AcknowledgeEventsParams) (*domain.EventSubscription, error) {
-					return nil, domain.NewInvalidInputErrorf("no active lease found for subscriber %s", params.SubscriberID)
-				}
+			setupMock: func(cmd *mocks.MockEventSubscriptionCommander) {
+				cmd.EXPECT().
+					AcknowledgeEvents(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("no active lease found for subscriber test-subscriber"))
 			},
 			expectedStatus: 409,
 			expectedBody:   `"invalid input: no active lease found for subscriber test-subscriber"`,
@@ -357,10 +365,10 @@ func TestEventHandleAcknowledge(t *testing.T) {
 				"instanceId": "instance-1",
 				"lastEventSequenceProcessed": 100
 			}`,
-			setupMock: func(cmd *mockEventSubscriptionCommander) {
-				cmd.acknowledgeEventsFunc = func(ctx context.Context, params domain.AcknowledgeEventsParams) (*domain.EventSubscription, error) {
-					return nil, domain.NewInvalidInputErrorf("lease is not owned by instance %s", params.InstanceID)
-				}
+			setupMock: func(cmd *mocks.MockEventSubscriptionCommander) {
+				cmd.EXPECT().
+					AcknowledgeEvents(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("lease is not owned by instance instance-1"))
 			},
 			expectedStatus: 409,
 			expectedBody:   `"invalid input: lease is not owned by instance instance-1"`,
@@ -372,10 +380,10 @@ func TestEventHandleAcknowledge(t *testing.T) {
 				"instanceId": "instance-1",
 				"lastEventSequenceProcessed": 50
 			}`,
-			setupMock: func(cmd *mockEventSubscriptionCommander) {
-				cmd.acknowledgeEventsFunc = func(ctx context.Context, params domain.AcknowledgeEventsParams) (*domain.EventSubscription, error) {
-					return nil, domain.NewInvalidInputErrorf("cannot acknowledge sequence %d: must be greater than current sequence %d", params.LastEventSequenceProcessed, 100)
-				}
+			setupMock: func(cmd *mocks.MockEventSubscriptionCommander) {
+				cmd.EXPECT().
+					AcknowledgeEvents(mock.Anything, mock.Anything).
+					Return(nil, domain.NewInvalidInputErrorf("cannot acknowledge sequence 50: must be greater than current sequence 100"))
 			},
 			expectedStatus: 409,
 			expectedBody:   `"invalid input: cannot acknowledge sequence 50: must be greater than current sequence 100"`,
@@ -386,7 +394,7 @@ func TestEventHandleAcknowledge(t *testing.T) {
 				"instanceId": "instance-1",
 				"lastEventSequenceProcessed": 100
 			}`,
-			setupMock:      func(cmd *mockEventSubscriptionCommander) {},
+			setupMock:      func(cmd *mocks.MockEventSubscriptionCommander) {},
 			expectedStatus: 400,
 			expectedBody:   `"subscriberId is required"`,
 		},
@@ -396,7 +404,7 @@ func TestEventHandleAcknowledge(t *testing.T) {
 				"subscriberId": "test-subscriber",
 				"lastEventSequenceProcessed": 100
 			}`,
-			setupMock:      func(cmd *mockEventSubscriptionCommander) {},
+			setupMock:      func(cmd *mocks.MockEventSubscriptionCommander) {},
 			expectedStatus: 400,
 			expectedBody:   `"instanceId is required"`,
 		},
@@ -407,7 +415,7 @@ func TestEventHandleAcknowledge(t *testing.T) {
 				"instanceId": "instance-1",
 				"lastEventSequenceProcessed": 0
 			}`,
-			setupMock:      func(cmd *mockEventSubscriptionCommander) {},
+			setupMock:      func(cmd *mocks.MockEventSubscriptionCommander) {},
 			expectedStatus: 400,
 			expectedBody:   `"lastEventSequenceProcessed must be greater than 0"`,
 		},
@@ -416,10 +424,10 @@ func TestEventHandleAcknowledge(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			querier := &mockEventQuerier{}
-			eventSubscriptionCmd := &mockEventSubscriptionCommander{}
+			querier := mocks.NewMockEventQuerier(t)
+			eventSubscriptionCmd := mocks.NewMockEventSubscriptionCommander(t)
 			tc.setupMock(eventSubscriptionCmd)
-			authz := &MockAuthorizer{ShouldSucceed: true}
+			authz := authmocks.NewMockAuthorizer(t)
 
 			handler := NewEventHandler(querier, eventSubscriptionCmd, authz)
 
