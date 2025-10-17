@@ -108,7 +108,7 @@ POST {{baseUrl}}/jobs/{{jobId}}/complete
 Authorization: Bearer {{agentToken}}
 
 {
-    "agentData": {
+    "agentInstanceData": {
         "status": "success",
         "details": {
             "duration": "10s",

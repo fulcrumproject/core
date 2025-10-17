@@ -58,15 +58,15 @@ func TestJobRepository(t *testing.T) {
 
 	serviceRepo := NewServiceRepository(testDB.DB)
 	service := &domain.Service{
-		Name:          "Test Service",
-		Status:        "Started",
-		Properties:    &(properties.JSON{"key": "value"}),
-		AgentData:     &(properties.JSON{"cpu": 1}),
-		AgentID:       agent.ID,
-		ServiceTypeID: serviceType.ID,
-		GroupID:       serviceGroup.ID,
-		ConsumerID:    consumer.ID,
-		ProviderID:    provider.ID,
+		Name:              "Test Service",
+		Status:            "Started",
+		Properties:        &(properties.JSON{"key": "value"}),
+		AgentInstanceData: &(properties.JSON{"cpu": 1}),
+		AgentID:           agent.ID,
+		ServiceTypeID:     serviceType.ID,
+		GroupID:           serviceGroup.ID,
+		ConsumerID:        consumer.ID,
+		ProviderID:        provider.ID,
 	}
 	require.NoError(t, serviceRepo.Create(context.Background(), service))
 
@@ -231,15 +231,15 @@ func TestJobRepository(t *testing.T) {
 
 		// Create a second service in the second service group
 		service2 := &domain.Service{
-			Name:          "Test Service 2",
-			Status:        "Started",
-			Properties:    &(properties.JSON{"key": "value2"}),
-			AgentData:     &(properties.JSON{"cpu": 2}),
-			AgentID:       agent.ID,
-			ServiceTypeID: serviceType.ID,
-			GroupID:       serviceGroup2.ID,
-			ConsumerID:    consumer.ID,
-			ProviderID:    provider.ID,
+			Name:              "Test Service 2",
+			Status:            "Started",
+			Properties:        &(properties.JSON{"key": "value2"}),
+			AgentInstanceData: &(properties.JSON{"cpu": 2}),
+			AgentID:           agent.ID,
+			ServiceTypeID:     serviceType.ID,
+			GroupID:           serviceGroup2.ID,
+			ConsumerID:        consumer.ID,
+			ProviderID:        provider.ID,
 		}
 		require.NoError(t, serviceRepo.Create(context.Background(), service2))
 

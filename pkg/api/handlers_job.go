@@ -16,9 +16,9 @@ import (
 )
 
 type CompleteJobReq struct {
-	AgentData       *properties.JSON `json:"agentData"`
-	AgentInstanceID *string          `json:"agentInstanceId"`
-	Properties      *properties.JSON `json:"properties,omitempty"`
+	AgentInstanceData *properties.JSON `json:"agentInstanceData"`
+	AgentInstanceID   *string          `json:"agentInstanceId"`
+	Properties        *properties.JSON `json:"properties,omitempty"`
 }
 
 type FailJobReq struct {
@@ -129,10 +129,10 @@ func (h *JobHandler) Complete(ctx context.Context, id properties.UUID, req *Comp
 	}
 
 	params := domain.CompleteJobParams{
-		JobID:           id,
-		AgentData:       req.AgentData,
-		AgentInstanceID: req.AgentInstanceID,
-		Properties:      properties,
+		JobID:             id,
+		AgentInstanceData: req.AgentInstanceData,
+		AgentInstanceID:   req.AgentInstanceID,
+		Properties:        properties,
 	}
 	return h.commander.Complete(ctx, params)
 }

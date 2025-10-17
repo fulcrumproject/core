@@ -172,7 +172,7 @@ classDiagram
             name : string
             status : string
             properties : json
-            agentData : json
+            agentInstanceData : json
             consumerParticipantID : properties.UUID
             createdAt : datetime
             updatedAt : datetime

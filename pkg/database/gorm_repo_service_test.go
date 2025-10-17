@@ -55,15 +55,15 @@ func TestServiceRepository(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		service := &domain.Service{
-			Name:          "Test Service",
-			Status:        "Started",
-			Properties:    &(properties.JSON{"key": "value"}),
-			AgentData:     &(properties.JSON{"cpu": "1"}),
-			AgentID:       agent.ID,
-			ProviderID:    provider.ID, // Set ProviderID to the created provider's ID
-			ConsumerID:    consumer.ID, // Set ConsumerID to the created consumer's ID
-			ServiceTypeID: serviceType.ID,
-			GroupID:       serviceGroup.ID,
+			Name:              "Test Service",
+			Status:            "Started",
+			Properties:        &(properties.JSON{"key": "value"}),
+			AgentInstanceData: &(properties.JSON{"cpu": "1"}),
+			AgentID:           agent.ID,
+			ProviderID:        provider.ID, // Set ProviderID to the created provider's ID
+			ConsumerID:        consumer.ID, // Set ConsumerID to the created consumer's ID
+			ServiceTypeID:     serviceType.ID,
+			GroupID:           serviceGroup.ID,
 		}
 
 		err := repo.Create(context.Background(), service)
@@ -76,15 +76,15 @@ func TestServiceRepository(t *testing.T) {
 	t.Run("Get", func(t *testing.T) {
 		// Create a service
 		service := &domain.Service{
-			Name:          "Test Service",
-			Status:        "Started",
-			Properties:    &(properties.JSON{"key": "value"}),
-			AgentData:     &(properties.JSON{"cpu": "1"}),
-			AgentID:       agent.ID,
-			ProviderID:    provider.ID, // Set ProviderID
-			ConsumerID:    consumer.ID, // Set ConsumerID
-			ServiceTypeID: serviceType.ID,
-			GroupID:       serviceGroup.ID,
+			Name:              "Test Service",
+			Status:            "Started",
+			Properties:        &(properties.JSON{"key": "value"}),
+			AgentInstanceData: &(properties.JSON{"cpu": "1"}),
+			AgentID:           agent.ID,
+			ProviderID:        provider.ID, // Set ProviderID
+			ConsumerID:        consumer.ID, // Set ConsumerID
+			ServiceTypeID:     serviceType.ID,
+			GroupID:           serviceGroup.ID,
 		}
 		err := repo.Create(context.Background(), service)
 		require.NoError(t, err)
@@ -96,7 +96,7 @@ func TestServiceRepository(t *testing.T) {
 		assert.Equal(t, service.Name, found.Name)
 		assert.Equal(t, service.Status, found.Status)
 		assert.Equal(t, service.Properties, found.Properties)
-		assert.Equal(t, &(properties.JSON{"cpu": "1"}), found.AgentData)
+		assert.Equal(t, &(properties.JSON{"cpu": "1"}), found.AgentInstanceData)
 		assert.Equal(t, service.AgentID, found.AgentID)
 		assert.Equal(t, service.ServiceTypeID, found.ServiceTypeID)
 		assert.Equal(t, service.GroupID, found.GroupID)
@@ -117,15 +117,15 @@ func TestServiceRepository(t *testing.T) {
 	t.Run("Save", func(t *testing.T) {
 		// Create a service
 		service := &domain.Service{
-			Name:          "Test Service",
-			Status:        "Started",
-			Properties:    &(properties.JSON{"key": "value"}),
-			AgentData:     &(properties.JSON{"cpu": "1"}),
-			AgentID:       agent.ID,
-			ProviderID:    provider.ID, // Set ProviderID
-			ConsumerID:    consumer.ID, // Set ConsumerID
-			ServiceTypeID: serviceType.ID,
-			GroupID:       serviceGroup.ID,
+			Name:              "Test Service",
+			Status:            "Started",
+			Properties:        &(properties.JSON{"key": "value"}),
+			AgentInstanceData: &(properties.JSON{"cpu": "1"}),
+			AgentID:           agent.ID,
+			ProviderID:        provider.ID, // Set ProviderID
+			ConsumerID:        consumer.ID, // Set ConsumerID
+			ServiceTypeID:     serviceType.ID,
+			GroupID:           serviceGroup.ID,
 		}
 		err := repo.Create(context.Background(), service)
 		require.NoError(t, err)
@@ -134,7 +134,7 @@ func TestServiceRepository(t *testing.T) {
 		service.Name = "Updated Service"
 		service.Status = "Started"
 		service.Properties = &(properties.JSON{"key": "value"})
-		service.AgentData = &(properties.JSON{"cpu": "2"})
+		service.AgentInstanceData = &(properties.JSON{"cpu": "2"})
 
 		err = repo.Save(context.Background(), service)
 		require.NoError(t, err)
@@ -145,7 +145,7 @@ func TestServiceRepository(t *testing.T) {
 		assert.Equal(t, "Updated Service", found.Name)
 		assert.Equal(t, "Started", found.Status)
 		assert.Equal(t, &(properties.JSON{"key": "value"}), found.Properties)
-		assert.Equal(t, &(properties.JSON{"cpu": "2"}), found.AgentData)
+		assert.Equal(t, &(properties.JSON{"cpu": "2"}), found.AgentInstanceData)
 	})
 
 	t.Run("delete", func(t *testing.T) {

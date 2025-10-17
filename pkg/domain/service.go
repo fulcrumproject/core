@@ -30,7 +30,7 @@ type Service struct {
 	// Agent's native instance identifier for this service in their infrastructure system
 	AgentInstanceID *string `json:"agentInstanceId,omitempty" gorm:"uniqueIndex:service_agent_instance_id_uniq"`
 	// Safe place for the Agent to store data
-	AgentData *properties.JSON `json:"agentData,omitempty" gorm:"type:jsonb"`
+	AgentInstanceData *properties.JSON `json:"agentInstanceData,omitempty" gorm:"type:jsonb"`
 
 	// Relationships
 	ProviderID    properties.UUID `json:"providerId" gorm:"not null"`
@@ -65,7 +65,7 @@ func NewService(
 }
 
 // HandleJobComplete handles the completion of a job
-func (s *Service) HandleJobComplete(lifecycle *LifecycleSchema, action string, errorCode *string, params *properties.JSON, agentData *properties.JSON, agentInstanceID *string) error {
+func (s *Service) HandleJobComplete(lifecycle *LifecycleSchema, action string, errorCode *string, params *properties.JSON, agentInstanceData *properties.JSON, agentInstanceID *string) error {
 	// Update status using lifecycle schema
 	nextStatus, err := lifecycle.ResolveNextState(s.Status, action, errorCode)
 	if err != nil {
@@ -74,8 +74,8 @@ func (s *Service) HandleJobComplete(lifecycle *LifecycleSchema, action string, e
 	s.Status = nextStatus
 
 	// Update agent data and agent instance ID if provided
-	if agentData != nil {
-		s.AgentData = agentData
+	if agentInstanceData != nil {
+		s.AgentInstanceData = agentInstanceData
 	}
 	if agentInstanceID != nil {
 		s.AgentInstanceID = agentInstanceID

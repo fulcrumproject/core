@@ -362,7 +362,7 @@ components:
           $ref: "#/components/schemas/ServiceStatus"
         properties:
           $ref: "#/components/schemas/JSONObject"
-        agentData:
+        agentInstanceData:
           $ref: "#/components/schemas/JSONObject"
         agentInstanceId:
           type: string
@@ -588,7 +588,7 @@ components:
           type: string
           description: Agent's native instance identifier for the provisioned resource
           example: "i-1234567890abcdef0"
-        agentData:
+        agentInstanceData:
           $ref: "#/components/schemas/JSONObject"
           description: Agent-owned runtime data about the provisioned service
         properties:
