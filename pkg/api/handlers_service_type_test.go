@@ -8,17 +8,20 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // TestNewServiceTypeHandler tests the constructor
 func TestNewServiceTypeHandler(t *testing.T) {
-	querier := &mockServiceTypeQuerier{}
-	commander := createMockServiceTypeCommander()
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	querier := mocks.NewMockServiceTypeQuerier(t)
+	commander := mocks.NewMockServiceTypeCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	handler := NewServiceTypeHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -30,9 +33,9 @@ func TestNewServiceTypeHandler(t *testing.T) {
 // TestServiceTypeHandlerRoutes tests that routes are properly registered
 func TestServiceTypeHandlerRoutes(t *testing.T) {
 	// Create mocks
-	querier := &mockServiceTypeQuerier{}
-	commander := createMockServiceTypeCommander()
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	querier := mocks.NewMockServiceTypeQuerier(t)
+	commander := mocks.NewMockServiceTypeCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewServiceTypeHandler(querier, commander, authz)
@@ -92,12 +95,22 @@ func TestServiceTypeToResponse(t *testing.T) {
 
 // TestServiceTypeHandlerCreate tests the Create adapter function
 func TestServiceTypeHandlerCreate(t *testing.T) {
-	commander := createMockServiceTypeCommander()
+	commander := mocks.NewMockServiceTypeCommander(t)
 	handler := &ServiceTypeHandler{commander: commander}
 
 	req := &CreateServiceTypeReq{
 		Name: "Test Service Type",
 	}
+
+	// Set up mock expectation
+	commander.EXPECT().
+		Create(mock.Anything, mock.MatchedBy(func(params domain.CreateServiceTypeParams) bool {
+			return params.Name == "Test Service Type"
+		})).
+		Return(&domain.ServiceType{
+			BaseEntity: domain.BaseEntity{ID: uuid.New()},
+			Name:       "Test Service Type",
+		}, nil)
 
 	ctx := auth.WithIdentity(context.Background(), &auth.Identity{
 		ID:   uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
@@ -112,20 +125,31 @@ func TestServiceTypeHandlerCreate(t *testing.T) {
 
 // TestServiceTypeHandlerUpdate tests the Update adapter function
 func TestServiceTypeHandlerUpdate(t *testing.T) {
-	commander := createMockServiceTypeCommander()
+	commander := mocks.NewMockServiceTypeCommander(t)
 	handler := &ServiceTypeHandler{commander: commander}
 
+	serviceTypeID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 	name := "Updated Service Type"
 	req := &UpdateServiceTypeReq{
 		Name: &name,
 	}
+
+	// Set up mock expectation
+	commander.EXPECT().
+		Update(mock.Anything, mock.MatchedBy(func(params domain.UpdateServiceTypeParams) bool {
+			return params.ID == serviceTypeID && params.Name != nil && *params.Name == "Updated Service Type"
+		})).
+		Return(&domain.ServiceType{
+			BaseEntity: domain.BaseEntity{ID: serviceTypeID},
+			Name:       "Updated Service Type",
+		}, nil)
 
 	ctx := auth.WithIdentity(context.Background(), &auth.Identity{
 		ID:   uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 		Name: "test-admin",
 		Role: auth.RoleAdmin,
 	})
-	result, err := handler.Update(ctx, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), req)
+	result, err := handler.Update(ctx, serviceTypeID, req)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)

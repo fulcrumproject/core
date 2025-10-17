@@ -5,15 +5,17 @@ import (
 	"net/http"
 	"testing"
 
+	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
+	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
 
 // TestNewParticipantHandler tests the constructor
 func TestNewParticipantHandler(t *testing.T) {
-	querier := &mockParticipantQuerier{}
-	commander := &mockParticipantCommander{}
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	querier := mocks.NewMockParticipantQuerier(t)
+	commander := mocks.NewMockParticipantCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	handler := NewParticipantHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -25,9 +27,9 @@ func TestNewParticipantHandler(t *testing.T) {
 // TestParticipantHandlerRoutes tests that routes are properly registered
 func TestParticipantHandlerRoutes(t *testing.T) {
 	// Create mocks
-	querier := &mockParticipantQuerier{}
-	commander := &mockParticipantCommander{}
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	querier := mocks.NewMockParticipantQuerier(t)
+	commander := mocks.NewMockParticipantCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewParticipantHandler(querier, commander, authz)

@@ -52,7 +52,12 @@ This document contains project-specific guidelines and technical context for wor
 - We use **mockery** to generate mocks for interfaces
 - Configuration is in `.mockery.yml`
 - To regenerate all mocks after interface changes, run: `mockery`
-- Mocks are generated in the same package as the interface (e.g., `pkg/domain/mocks_test.go`)
+- Mocks are generated in separate `mocks/` packages:
+  - `pkg/domain/mocks/` - Domain interface mocks
+  - `pkg/auth/mocks/` - Auth interface mocks
+- Import in tests: `import "github.com/fulcrumproject/core/pkg/domain/mocks"`
+- Use alias for auth mocks: `import authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"`
+- Generated mocks support testify EXPECT() pattern for type-safe test expectations
 - Always regenerate mocks after changing interface signatures
 
 ---

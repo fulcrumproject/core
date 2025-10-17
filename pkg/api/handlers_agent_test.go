@@ -1,17 +1,19 @@
 package api
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // TestHandleGetMe tests the handleGetMe method
@@ -19,18 +21,19 @@ func TestHandleGetMe(t *testing.T) {
 	testCases := []struct {
 		name           string
 		agentID        string
-		mockSetup      func(querier *mockAgentQuerier)
+		mockSetup      func(querier *mocks.MockAgentQuerier)
 		expectedStatus int
 	}{
 		{
 			name:    "Success",
 			agentID: "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier) {
+			mockSetup: func(querier *mocks.MockAgentQuerier) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
-					return &domain.Agent{
+				querier.EXPECT().
+					Get(mock.Anything, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")).
+					Return(&domain.Agent{
 						BaseEntity: domain.BaseEntity{
 							ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 							CreatedAt: createdAt,
@@ -45,18 +48,17 @@ func TestHandleGetMe(t *testing.T) {
 							"timeout": 60,
 							"debug":   true,
 						},
-					}, nil
-				}
+					}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:    "NotFound",
 			agentID: "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockAgentQuerier) {
-				querier.GetFunc = func(ctx context.Context, id properties.UUID) (*domain.Agent, error) {
-					return nil, domain.NewNotFoundErrorf("agent not found")
-				}
+			mockSetup: func(querier *mocks.MockAgentQuerier) {
+				querier.EXPECT().
+					Get(mock.Anything, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")).
+					Return(nil, domain.NewNotFoundErrorf("agent not found"))
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -65,9 +67,9 @@ func TestHandleGetMe(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			querier := &mockAgentQuerier{}
-			commander := &mockAgentCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
+			querier := mocks.NewMockAgentQuerier(t)
+			commander := mocks.NewMockAgentCommander(t)
+			authz := authmocks.NewMockAuthorizer(t)
 			tc.mockSetup(querier)
 
 			// Create the handler
@@ -93,9 +95,9 @@ func TestHandleGetMe(t *testing.T) {
 
 // TestNewAgentHandler tests the constructor
 func TestNewAgentHandler(t *testing.T) {
-	querier := &mockAgentQuerier{}
-	commander := &mockAgentCommander{}
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	querier := mocks.NewMockAgentQuerier(t)
+	commander := mocks.NewMockAgentCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	handler := NewAgentHandler(querier, commander, authz)
 	assert.NotNil(t, handler)

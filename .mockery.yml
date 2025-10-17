@@ -1,16 +1,20 @@
 all: false
-dir: '{{.InterfaceDir}}'
-filename: mocks_test.go
+dir: "{{.InterfaceDir}}/mocks"
+filename: "{{.InterfaceName | snakecase}}.go"
 force-file-write: true
 formatter: goimports
 log-level: info
-structname: '{{.Mock}}{{.InterfaceName}}'
-pkgname: '{{.SrcPackageName}}'
+structname: "Mock{{.InterfaceName}}"
+pkgname: "mocks"
+inpackage: false
 recursive: false
-require-template-schema-exists: true
 template: testify
-template-schema: '{{.Template}}.schema.json'
+
 packages:
   github.com/fulcrumproject/core/pkg/domain:
+    config:
+      all: true
+
+  github.com/fulcrumproject/core/pkg/auth:
     config:
       all: true
