@@ -463,9 +463,9 @@ func TestJobToResponse(t *testing.T) {
 // TestNewJobHandler tests the NewJobHandler function
 func TestNewJobHandler(t *testing.T) {
 	// Create mocks
-	querier := &mockJobQuerier{}
-	commander := &mockJobCommander{}
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	querier := mocks.NewMockJobQuerier(t)
+	commander := mocks.NewMockJobCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	// Execute
 	handler := NewJobHandler(querier, commander, authz)
@@ -480,9 +480,9 @@ func TestNewJobHandler(t *testing.T) {
 // TestJobHandlerRoutes tests the Routes function
 func TestJobHandlerRoutes(t *testing.T) {
 	// Create mocks
-	querier := &mockJobQuerier{}
-	commander := &mockJobCommander{}
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	querier := mocks.NewMockJobQuerier(t)
+	commander := mocks.NewMockJobCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewJobHandler(querier, commander, authz)
