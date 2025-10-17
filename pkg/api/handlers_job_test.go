@@ -11,12 +11,14 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/fulcrumproject/core/pkg/middlewares"
-	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,22 +27,20 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer)
+		mockSetup      func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
-
+			mockSetup: func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer) {
 				// Setup the mock to return pending jobs
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 
-				querier.getPendingJobsForAgentFunc = func(ctx context.Context, requestedAgentID properties.UUID, limit int) ([]*domain.Job, error) {
-					return []*domain.Job{
+				querier.EXPECT().
+					GetPendingJobsForAgent(mock.Anything, agentID, 10).
+					Return([]*domain.Job{
 						{
 							BaseEntity: domain.BaseEntity{
 								ID:        uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
@@ -69,8 +69,7 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 							Status:     domain.JobPending,
 							Priority:   2,
 						},
-					}, nil
-				}
+					}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -79,9 +78,9 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			querier := &mockJobQuerier{}
-			commander := &mockJobCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
+			querier := mocks.NewMockJobQuerier(t)
+			commander := mocks.NewMockJobCommander(t)
+			authz := authmocks.NewMockAuthorizer(t)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -117,40 +116,36 @@ func TestJobHandleClaimJob(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer)
+		mockSetup      func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
+			mockSetup: func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer) {
+				querier.EXPECT().
+					AuthScope(mock.Anything, mock.Anything).
+					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Maybe()
 
-				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
-				}
-
-				commander.claimFunc = func(ctx context.Context, jobID properties.UUID) error {
-					return nil
-				}
+				commander.EXPECT().
+					Claim(mock.Anything, mock.Anything).
+					Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name: "ClaimError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
+			mockSetup: func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer) {
+				querier.EXPECT().
+					AuthScope(mock.Anything, mock.Anything).
+					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Maybe()
 
-				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
-				}
-
-				commander.claimFunc = func(ctx context.Context, jobID properties.UUID) error {
-					return domain.NewInvalidInputErrorf("job already claimed")
-				}
+				commander.EXPECT().
+					Claim(mock.Anything, mock.Anything).
+					Return(domain.NewInvalidInputErrorf("job already claimed"))
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -159,9 +154,9 @@ func TestJobHandleClaimJob(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			querier := &mockJobQuerier{}
-			commander := &mockJobCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
+			querier := mocks.NewMockJobQuerier(t)
+			commander := mocks.NewMockJobCommander(t)
+			authz := authmocks.NewMockAuthorizer(t)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -197,7 +192,7 @@ func TestJobHandleCompleteJob(t *testing.T) {
 		name           string
 		id             string
 		requestBody    string
-		mockSetup      func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer)
+		mockSetup      func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer)
 		expectedStatus int
 	}{
 		{
@@ -207,17 +202,15 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				"agentInstanceData": {"cpu": 2, "memory": 4},
 				"agentInstanceID": "ext-123"
 			}`,
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
+			mockSetup: func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer) {
+				querier.EXPECT().
+					AuthScope(mock.Anything, mock.Anything).
+					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Maybe()
 
-				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
-				}
-
-				commander.completeFunc = func(ctx context.Context, params domain.CompleteJobParams) error {
-					return nil
-				}
+				commander.EXPECT().
+					Complete(mock.Anything, mock.Anything).
+					Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -228,17 +221,15 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				"agentInstanceData": {"cpu": 2, "memory": 4},
 				"agentInstanceID": "ext-123"
 			}`,
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
+			mockSetup: func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer) {
+				querier.EXPECT().
+					AuthScope(mock.Anything, mock.Anything).
+					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Maybe()
 
-				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
-				}
-
-				commander.completeFunc = func(ctx context.Context, params domain.CompleteJobParams) error {
-					return domain.NewInvalidInputErrorf("job already completed")
-				}
+				commander.EXPECT().
+					Complete(mock.Anything, mock.Anything).
+					Return(domain.NewInvalidInputErrorf("job already completed"))
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -250,21 +241,19 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				"agentInstanceID": "ext-123",
 				"properties": {"ipAddress": "192.168.1.100", "port": 8080}
 			}`,
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
+			mockSetup: func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer) {
+				querier.EXPECT().
+					AuthScope(mock.Anything, mock.Anything).
+					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Maybe()
 
-				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
-				}
-
-				commander.completeFunc = func(ctx context.Context, params domain.CompleteJobParams) error {
-					// Verify properties were passed correctly
-					assert.NotNil(t, params.Properties)
-					assert.Equal(t, "192.168.1.100", params.Properties["ipAddress"])
-					assert.Equal(t, float64(8080), params.Properties["port"])
-					return nil
-				}
+				commander.EXPECT().
+					Complete(mock.Anything, mock.MatchedBy(func(params domain.CompleteJobParams) bool {
+						return params.Properties != nil &&
+							params.Properties["ipAddress"] == "192.168.1.100" &&
+							params.Properties["port"] == float64(8080)
+					})).
+					Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -276,18 +265,15 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				"agentInstanceID": "ext-123",
 				"properties": {"instanceName": "new-name"}
 			}`,
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
+			mockSetup: func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer) {
+				querier.EXPECT().
+					AuthScope(mock.Anything, mock.Anything).
+					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Maybe()
 
-				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
-				}
-
-				commander.completeFunc = func(ctx context.Context, params domain.CompleteJobParams) error {
-					// Simulate validation error for user-source property
-					return domain.NewInvalidInputErrorf("property 'instanceName' cannot be updated by agent (source: input)")
-				}
+				commander.EXPECT().
+					Complete(mock.Anything, mock.Anything).
+					Return(domain.NewInvalidInputErrorf("property 'instanceName' cannot be updated by agent (source: input)"))
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -298,19 +284,17 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				"agentInstanceData": {"cpu": 2, "memory": 4},
 				"agentInstanceID": "ext-123"
 			}`,
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
+			mockSetup: func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer) {
+				querier.EXPECT().
+					AuthScope(mock.Anything, mock.Anything).
+					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Maybe()
 
-				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
-				}
-
-				commander.completeFunc = func(ctx context.Context, params domain.CompleteJobParams) error {
-					// Verify properties is nil/empty when not provided
-					assert.Nil(t, params.Properties)
-					return nil
-				}
+				commander.EXPECT().
+					Complete(mock.Anything, mock.MatchedBy(func(params domain.CompleteJobParams) bool {
+						return params.Properties == nil
+					})).
+					Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -319,9 +303,9 @@ func TestJobHandleCompleteJob(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			querier := &mockJobQuerier{}
-			commander := &mockJobCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
+			querier := mocks.NewMockJobQuerier(t)
+			commander := mocks.NewMockJobCommander(t)
+			authz := authmocks.NewMockAuthorizer(t)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
@@ -358,7 +342,7 @@ func TestJobHandleFailJob(t *testing.T) {
 		name           string
 		id             string
 		requestBody    string
-		mockSetup      func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer)
+		mockSetup      func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer)
 		expectedStatus int
 	}{
 		{
@@ -367,17 +351,15 @@ func TestJobHandleFailJob(t *testing.T) {
 			requestBody: `{
 				"errorMessage": "Resource allocation failed"
 			}`,
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
+			mockSetup: func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer) {
+				querier.EXPECT().
+					AuthScope(mock.Anything, mock.Anything).
+					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Maybe()
 
-				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
-				}
-
-				commander.failFunc = func(ctx context.Context, params domain.FailJobParams) error {
-					return nil
-				}
+				commander.EXPECT().
+					Fail(mock.Anything, mock.Anything).
+					Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -387,17 +369,15 @@ func TestJobHandleFailJob(t *testing.T) {
 			requestBody: `{
 				"errorMessage": "Resource allocation failed"
 			}`,
-			mockSetup: func(querier *mockJobQuerier, commander *mockJobCommander, authz *MockAuthorizer) {
-				// Return a successful auth
-				authz.ShouldSucceed = true
+			mockSetup: func(querier *mocks.MockJobQuerier, commander *mocks.MockJobCommander, authz *authmocks.MockAuthorizer) {
+				querier.EXPECT().
+					AuthScope(mock.Anything, mock.Anything).
+					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Maybe()
 
-				querier.AuthScopeFunc = func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
-				}
-
-				commander.failFunc = func(ctx context.Context, params domain.FailJobParams) error {
-					return domain.NewInvalidInputErrorf("job already failed")
-				}
+				commander.EXPECT().
+					Fail(mock.Anything, mock.Anything).
+					Return(domain.NewInvalidInputErrorf("job already failed"))
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -406,9 +386,9 @@ func TestJobHandleFailJob(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			querier := &mockJobQuerier{}
-			commander := &mockJobCommander{}
-			authz := &MockAuthorizer{ShouldSucceed: true}
+			querier := mocks.NewMockJobQuerier(t)
+			commander := mocks.NewMockJobCommander(t)
+			authz := authmocks.NewMockAuthorizer(t)
 			tc.mockSetup(querier, commander, authz)
 
 			// Create the handler
