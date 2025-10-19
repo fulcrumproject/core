@@ -8,18 +8,21 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // TestNewAgentTypeHandler tests the constructor
 func TestNewAgentTypeHandler(t *testing.T) {
-	querier := &mockAgentTypeQuerier{}
-	commander := createMockAgentTypeCommander()
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	querier := mocks.NewMockAgentTypeQuerier(t)
+	commander := mocks.NewMockAgentTypeCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	handler := NewAgentTypeHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -31,9 +34,9 @@ func TestNewAgentTypeHandler(t *testing.T) {
 // TestAgentTypeHandlerRoutes tests that routes are properly registered
 func TestAgentTypeHandlerRoutes(t *testing.T) {
 	// Create mocks
-	querier := &mockAgentTypeQuerier{}
-	commander := createMockAgentTypeCommander()
-	authz := &MockAuthorizer{ShouldSucceed: true}
+	querier := mocks.NewMockAgentTypeQuerier(t)
+	commander := mocks.NewMockAgentTypeCommander(t)
+	authz := authmocks.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewAgentTypeHandler(querier, commander, authz)
@@ -67,7 +70,7 @@ func TestAgentTypeHandlerRoutes(t *testing.T) {
 
 // TestAgentTypeHandlerCreate tests the Create adapter function
 func TestAgentTypeHandlerCreate(t *testing.T) {
-	commander := createMockAgentTypeCommander()
+	commander := mocks.NewMockAgentTypeCommander(t)
 	handler := &AgentTypeHandler{commander: commander}
 
 	serviceTypeId := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
@@ -75,6 +78,16 @@ func TestAgentTypeHandlerCreate(t *testing.T) {
 		Name:           "Test Agent Type",
 		ServiceTypeIds: []properties.UUID{serviceTypeId},
 	}
+
+	// Set up mock expectation
+	commander.EXPECT().
+		Create(mock.Anything, mock.MatchedBy(func(params domain.CreateAgentTypeParams) bool {
+			return params.Name == "Test Agent Type" && len(params.ServiceTypeIds) == 1
+		})).
+		Return(&domain.AgentType{
+			BaseEntity: domain.BaseEntity{ID: uuid.New()},
+			Name:       "Test Agent Type",
+		}, nil)
 
 	ctx := auth.WithIdentity(context.Background(), &auth.Identity{
 		ID:   uuid.MustParse("550e8400-e29b-41d4-a716-446655440001"),
@@ -89,7 +102,7 @@ func TestAgentTypeHandlerCreate(t *testing.T) {
 
 // TestAgentTypeHandlerUpdate tests the Update adapter function
 func TestAgentTypeHandlerUpdate(t *testing.T) {
-	commander := createMockAgentTypeCommander()
+	commander := mocks.NewMockAgentTypeCommander(t)
 	handler := &AgentTypeHandler{commander: commander}
 
 	serviceTypeId := uuid.MustParse("550e8400-e29b-41d4-a716-446655440001")
@@ -100,12 +113,24 @@ func TestAgentTypeHandlerUpdate(t *testing.T) {
 		ServiceTypeIds: &serviceTypeIds,
 	}
 
+	agentTypeID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+
+	// Set up mock expectation
+	commander.EXPECT().
+		Update(mock.Anything, mock.MatchedBy(func(params domain.UpdateAgentTypeParams) bool {
+			return params.ID == agentTypeID && params.Name != nil && *params.Name == "Updated Agent Type"
+		})).
+		Return(&domain.AgentType{
+			BaseEntity: domain.BaseEntity{ID: agentTypeID},
+			Name:       "Updated Agent Type",
+		}, nil)
+
 	ctx := auth.WithIdentity(context.Background(), &auth.Identity{
 		ID:   uuid.MustParse("550e8400-e29b-41d4-a716-446655440002"),
 		Name: "test-admin",
 		Role: auth.RoleAdmin,
 	})
-	result, err := handler.Update(ctx, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"), req)
+	result, err := handler.Update(ctx, agentTypeID, req)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
