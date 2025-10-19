@@ -47,27 +47,7 @@ components:
             participant: Participant administrator that can act as both provider and consumer
             agent: Agent role with access to specific operations
 
-  x-auth-roles:
-    admin:
-      description: System administrator with unrestricted access
-    participant:
-      description: Participant administrator that can act as both provider and consumer
-    agent:
-      description: Agent role with access to specific operations
-
   schemas:
-    PaginationParams:
-      type: object
-      properties:
-        page:
-          type: integer
-          description: The page number (1-based)
-          default: 1
-        pageSize:
-          type: integer
-          description: The number of items per page
-          default: 20
-
     ErrorRes:
       type: object
       properties:
@@ -290,15 +270,6 @@ components:
               description: "The agent authentication token"
 
     # Agent Type schemas
-    AgentTypeReq:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          example: "Participant VM Agent"
-
     AgentTypeRes:
       type: object
       properties:
@@ -365,8 +336,9 @@ components:
         agentInstanceData:
           $ref: "#/components/schemas/JSONObject"
         agentInstanceId:
-          type: string
-          nullable: true
+          anyOf:
+            - type: string
+            - type: "null"
         providerId:
           $ref: "#/components/schemas/properties.UUID"
         consumerId:
@@ -385,17 +357,6 @@ components:
           format: date-time
 
     # Service Type schemas
-    ServiceTypeReq:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          example: "VM"
-        resourceDefinitions:
-          $ref: "#/components/schemas/JSONObject"
-
     ServiceTypeRes:
       type: object
       properties:
@@ -564,13 +525,15 @@ components:
           type: string
           example: "Failed to create VM: insufficient resources"
         claimedAt:
-          type: string
-          format: date-time
-          nullable: true
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
         completedAt:
-          type: string
-          format: date-time
-          nullable: true
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
         createdAt:
           type: string
           format: date-time
@@ -651,9 +614,6 @@ components:
         - resourceId
         - typeName
         - value
-      oneOf:
-        - required: ["serviceId"]
-        - required: ["agentInstanceId"]
       properties:
         serviceId:
           $ref: "#/components/schemas/properties.UUID"
@@ -1050,12 +1010,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorRes"
-    NotFound:
-      description: Not Found
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorRes"
     InternalServerError:
       description: Internal Server Error
       content:
@@ -1069,6 +1023,7 @@ paths:
   #
   /participants:
     get:
+      operationId: participantsList
       summary: List participants
       tags:
         - Participants
@@ -1105,7 +1060,12 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/ParticipantRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
+      operationId: participantsCreate
       summary: Create a participant
       tags:
         - Participants
@@ -1145,6 +1105,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     get:
+      operationId: participantsGet
       summary: Get a participant
       tags:
         - Participants
@@ -1170,6 +1131,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     patch:
+      operationId: participantsUpdate
       summary: Update a participant
       tags:
         - Participants
@@ -1201,6 +1163,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     delete:
+      operationId: participantsDelete
       summary: Delete a participant
       tags:
         - Participants
@@ -1227,6 +1190,7 @@ paths:
   #
   /tokens:
     get:
+      operationId: tokensList
       summary: List tokens
       tags:
         - Tokens
@@ -1263,7 +1227,12 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/TokenRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
+      operationId: tokensCreate
       summary: Create a token
       tags:
         - Tokens
@@ -1303,6 +1272,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     get:
+      operationId: tokensGet
       summary: Get a token
       tags:
         - Tokens
@@ -1328,6 +1298,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     patch:
+      operationId: tokensUpdate
       summary: Update a token
       tags:
         - Tokens
@@ -1370,6 +1341,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     delete:
+      operationId: tokensDelete
       summary: Delete a token
       tags:
         - Tokens
@@ -1399,6 +1371,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     post:
+      operationId: tokensRegenerate
       summary: Regenerate token value
       tags:
         - Tokens
@@ -1429,6 +1402,7 @@ paths:
   #
   /agents:
     get:
+      operationId: agentsList
       summary: List agents
       tags:
         - Agents
@@ -1465,7 +1439,12 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/AgentRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
+      operationId: agentsCreate
       summary: Create an agent
       tags:
         - Agents
@@ -1505,6 +1484,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     get:
+      operationId: agentsGet
       summary: Get an agent
       tags:
         - Agents
@@ -1530,6 +1510,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     patch:
+      operationId: agentsUpdate
       summary: Update an agent
       tags:
         - Agents
@@ -1561,6 +1542,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     delete:
+      operationId: agentsDelete
       summary: Delete an agent
       tags:
         - Agents
@@ -1584,6 +1566,7 @@ paths:
 
   /agents/me/status:
     put:
+      operationId: agentsUpdateStatus
       summary: Update agent status
       tags:
         - Agents
@@ -1623,6 +1606,7 @@ paths:
 
   /agents/me:
     get:
+      operationId: agentsGetCurrent
       summary: Get current agent
       tags:
         - Agents
@@ -1648,6 +1632,7 @@ paths:
   #
   /agent-types:
     get:
+      operationId: agentTypesList
       summary: List agent types
       tags:
         - Agents
@@ -1684,7 +1669,12 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/AgentTypeRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
+      operationId: agentTypesCreate
       summary: Create an agent type
       tags:
         - Agents
@@ -1738,6 +1728,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     get:
+      operationId: agentTypesGet
       summary: Get an agent type
       tags:
         - Agents
@@ -1763,6 +1754,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     patch:
+      operationId: agentTypesUpdate
       summary: Update an agent type
       tags:
         - Agents
@@ -1814,6 +1806,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     delete:
+      operationId: agentTypesDelete
       summary: Delete an agent type
       tags:
         - Agents
@@ -1853,6 +1846,7 @@ paths:
   #
   /services:
     get:
+      operationId: servicesList
       summary: List services
       tags:
         - Services
@@ -1889,7 +1883,12 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/ServiceRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
+      operationId: servicesCreate
       summary: Create a service
       tags:
         - Services
@@ -1931,6 +1930,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     get:
+      operationId: servicesGet
       summary: Get a service
       tags:
         - Services
@@ -1956,6 +1956,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     patch:
+      operationId: servicesUpdate
       summary: Update a service
       tags:
         - Services
@@ -2018,6 +2019,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     delete:
+      operationId: servicesDelete
       summary: Delete a service
       tags:
         - Services
@@ -2054,6 +2056,7 @@ paths:
         description: The lifecycle action to perform (e.g., start, stop, restart). Available actions are defined in the service type's lifecycle schema.
         example: "start"
     post:
+      operationId: servicesAction
       summary: Perform a lifecycle action on a service
       tags:
         - Services
@@ -2111,6 +2114,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     post:
+      operationId: servicesRetry
       summary: Retry a failed service operation
       tags:
         - Services
@@ -2137,6 +2141,7 @@ paths:
   #
   /service-types:
     get:
+      operationId: serviceTypesList
       summary: List service types
       tags:
         - Services
@@ -2173,8 +2178,13 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/ServiceTypeRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
     post:
+      operationId: serviceTypesCreate
       summary: Create a service type
       tags:
         - Services
@@ -2222,6 +2232,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     get:
+      operationId: serviceTypesGet
       summary: Get a service type
       tags:
         - Services
@@ -2248,6 +2259,7 @@ paths:
                 $ref: "#/components/schemas/ErrorRes"
 
     patch:
+      operationId: serviceTypesUpdate
       summary: Update a service type
       tags:
         - Services
@@ -2294,6 +2306,7 @@ paths:
                 $ref: "#/components/schemas/ErrorRes"
 
     delete:
+      operationId: serviceTypesDelete
       summary: Delete a service type
       tags:
         - Services
@@ -2331,6 +2344,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     post:
+      operationId: serviceTypesValidate
       summary: Validate service properties
       tags:
         - Services
@@ -2373,6 +2387,7 @@ paths:
   #
   /service-groups:
     get:
+      operationId: serviceGroupsList
       summary: List service groups
       tags:
         - Services
@@ -2409,7 +2424,12 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/ServiceGroupRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
+      operationId: serviceGroupsCreate
       summary: Create a service group
       tags:
         - Services
@@ -2449,6 +2469,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     get:
+      operationId: serviceGroupsGet
       summary: Get a service group
       tags:
         - Services
@@ -2474,6 +2495,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     patch:
+      operationId: serviceGroupsUpdate
       summary: Update a service group
       tags:
         - Services
@@ -2505,6 +2527,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     delete:
+      operationId: serviceGroupsDelete
       summary: Delete a service group
       tags:
         - Services
@@ -2530,6 +2553,7 @@ paths:
   #
   /jobs:
     get:
+      operationId: jobsList
       summary: List jobs
       tags:
         - Jobs
@@ -2566,9 +2590,14 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/JobRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   /jobs/pending:
     get:
+      operationId: jobsPending
       summary: Get pending jobs
       tags:
         - Jobs
@@ -2612,6 +2641,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     get:
+      operationId: jobsGet
       summary: Get a job
       tags:
         - Jobs
@@ -2638,6 +2668,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     post:
+      operationId: jobsClaim
       summary: Claim a job
       tags:
         - Jobs
@@ -2668,6 +2699,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     post:
+      operationId: jobsComplete
       summary: Complete a job
       tags:
         - Jobs
@@ -2704,6 +2736,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     post:
+      operationId: jobsFail
       summary: Fail a job
       tags:
         - Jobs
@@ -2737,6 +2770,7 @@ paths:
   #
   /metric-types:
     get:
+      operationId: metricTypesList
       summary: List metric types
       tags:
         - Metrics
@@ -2773,7 +2807,12 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/MetricTypeRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
+      operationId: metricTypesCreate
       summary: Create a metric type
       tags:
         - Metrics
@@ -2813,6 +2852,7 @@ paths:
         schema:
           $ref: "#/components/schemas/properties.UUID"
     get:
+      operationId: metricTypesGet
       summary: Get a metric type
       tags:
         - Metrics
@@ -2838,6 +2878,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     patch:
+      operationId: metricTypesUpdate
       summary: Update a metric type
       tags:
         - Metrics
@@ -2873,6 +2914,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorRes"
     delete:
+      operationId: metricTypesDelete
       summary: Delete a metric type
       tags:
         - Metrics
@@ -2899,6 +2941,7 @@ paths:
   #
   /metric-entries:
     get:
+      operationId: metricEntriesList
       summary: List metric entries
       tags:
         - Metrics
@@ -2928,7 +2971,12 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/MetricEntryRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
+      operationId: metricEntriesCreate
       summary: Create a metric entry
       tags:
         - Metrics
@@ -2966,6 +3014,7 @@ paths:
   #
   /events:
     get:
+      operationId: eventsList
       summary: List events
       tags:
         - Event
@@ -3013,6 +3062,7 @@ paths:
 
   /events/lease:
     post:
+      operationId: eventsLease
       summary: Acquire event lease and fetch events
       tags:
         - Event
@@ -3054,6 +3104,7 @@ paths:
 
   /events/ack:
     post:
+      operationId: eventsAck
       summary: Acknowledge processed events
       tags:
         - Event
