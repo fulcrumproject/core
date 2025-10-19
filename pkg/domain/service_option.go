@@ -257,4 +257,3 @@ func (c *serviceOptionCommander) Delete(ctx context.Context, id properties.UUID)
 		return nil
 	})
 }
-
