@@ -11,25 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Helper to extract map from JSONB value that may be wrapped in *interface{}
-func extractValueMap(t *testing.T, value any) map[string]any {
-	// Direct map
-	if valueMap, ok := value.(map[string]any); ok {
-		return valueMap
-	}
-
-	// Pointer to any
-	if ptr, ok := value.(*any); ok && ptr != nil {
-		if valueMap, ok := (*ptr).(map[string]any); ok {
-			return valueMap
-		}
-	}
-
-	// Log the actual type for debugging
-	t.Logf("extractValueMap: unexpected type %T for value", value)
-	return nil
-}
-
 func TestServiceOptionRepository(t *testing.T) {
 	testDB := NewTestDB(t)
 	defer testDB.Cleanup(t)

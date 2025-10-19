@@ -107,7 +107,7 @@ func TestServiceOptionToRes(t *testing.T) {
 // TestCreateServiceOptionReq_ObjectScope tests the ObjectScope method
 func TestCreateServiceOptionReq_ObjectScope(t *testing.T) {
 	providerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
-	
+
 	req := CreateServiceOptionReq{
 		ProviderID: properties.UUID(providerID),
 	}
@@ -122,4 +122,3 @@ func TestCreateServiceOptionReq_ObjectScope(t *testing.T) {
 	assert.NotNil(t, defaultScope.ProviderID)
 	assert.Equal(t, properties.UUID(providerID), *defaultScope.ProviderID)
 }
-
