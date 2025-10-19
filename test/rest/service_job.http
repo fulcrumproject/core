@@ -21,8 +21,8 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-    "name": "Operating System",
-    "type": "operating_system",
+    "name": "Operating System {{$guid}}",
+    "type": "operating_system_{{$guid}}",
     "description": "Available operating system images for VMs"
 }
 
@@ -134,7 +134,7 @@ Content-Type: application/json
             "validators": [
                 {
                     "type": "serviceOption",
-                    "value": "operating_system"
+                    "value": "{{createOSOptionType.response.body.type}}"
                 }
             ]
         },
