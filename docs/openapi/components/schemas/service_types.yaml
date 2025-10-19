@@ -61,7 +61,7 @@ PropertyDefinition:
   properties:
     type:
       type: string
-      enum: [string, integer, number, boolean, object, array, reference]
+      enum: [string, integer, number, boolean, object, array, serviceReference]
       description: The data type of the property
     label:
       type: string
@@ -122,8 +122,6 @@ ValidatorDefinition:
           maxItems,
           uniqueItems,
           sameOrigin,
-          serviceType,
-          serviceOption,
         ]
       description: Type of validator
     value:
@@ -272,4 +270,3 @@ LifecycleTransition:
         is matched against this regexp to determine which error transition to use.
         If not specified, matches any error.
       example: "quota.*exceeded"
-

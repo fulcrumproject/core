@@ -29,6 +29,10 @@ MetricEntryRes:
   properties:
     id:
       $ref: "./common.yaml#/properties.UUID"
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+    consumerId:
+      $ref: "./common.yaml#/properties.UUID"
     agentId:
       $ref: "./common.yaml#/properties.UUID"
     serviceId:
@@ -40,8 +44,13 @@ MetricEntryRes:
       type: number
       format: float
       example: 78.5
+    typeId:
+      type: string
+      description: "Metric type ID as string"
     createdAt:
       type: string
       format: date-time
-
+    updatedAt:
+      type: string
+      format: date-time
 # Event schemas

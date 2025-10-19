@@ -3,6 +3,10 @@ EventRes:
   properties:
     id:
       $ref: "./common.yaml#/properties.UUID"
+    sequenceNumber:
+      type: integer
+      format: int64
+      description: "Sequence number for strict event ordering"
     initiatorType:
       type: string
       example: "user"
@@ -14,7 +18,17 @@ EventRes:
       example: "service.created"
     properties:
       $ref: "./common.yaml#/JSONObject"
+      description: "Event payload data"
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+    agentId:
+      $ref: "./common.yaml#/properties.UUID"
+    consumerId:
+      $ref: "./common.yaml#/properties.UUID"
     createdAt:
+      type: string
+      format: date-time
+    updatedAt:
       type: string
       format: date-time
 
@@ -95,4 +109,3 @@ EventAckRes:
       format: int64
       description: Updated last event sequence processed
       example: 150
-

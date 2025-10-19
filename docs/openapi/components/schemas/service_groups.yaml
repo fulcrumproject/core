@@ -19,11 +19,13 @@ ServiceGroupRes:
     name:
       type: string
       example: "Web Servers"
+    consumerId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "ID of the consumer participant that owns this service group"
     createdAt:
       type: string
       format: date-time
     updatedAt:
       type: string
       format: date-time
-
 # Service Option Type schemas

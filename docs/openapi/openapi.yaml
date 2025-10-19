@@ -134,8 +134,6 @@ components:
       $ref: ./components/schemas/services.yaml#/ServiceReq
     ServiceRes:
       $ref: ./components/schemas/services.yaml#/ServiceRes
-    ServiceStatus:
-      $ref: ./components/schemas/services.yaml#/ServiceStatus
     ServiceTypeRes:
       $ref: ./components/schemas/service_types.yaml#/ServiceTypeRes
     TokenReq:

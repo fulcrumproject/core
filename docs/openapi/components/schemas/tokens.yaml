@@ -36,14 +36,12 @@ TokenRes:
     expireAt:
       type: string
       format: date-time
-    scopeId:
-      $ref: "./common.yaml#/properties.UUID"
-      description: "For participant role - the participant ID; for agent role - the agent ID"
-    agentId:
-      $ref: "./common.yaml#/properties.UUID"
-      description: "For agent role tokens only - the agent ID"
     participantId:
       $ref: "./common.yaml#/properties.UUID"
+      description: "For participant role tokens - the participant ID"
+    agentId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "For agent role tokens - the agent ID"
     createdAt:
       type: string
       format: date-time
@@ -54,5 +52,4 @@ TokenRes:
       type: string
       description: "Plain token value. Only returned during token creation or regeneration"
       example: "eyJhbGciOiJIUzI1NiIsInR5c..."
-
 # Agent schemas

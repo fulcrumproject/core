@@ -2,16 +2,12 @@ ErrorRes:
   type: object
   properties:
     status:
-      type: integer
-      description: HTTP status code
-      example: 400
+      type: string
+      description: User-level status message
+      example: "Invalid request"
     error:
       type: string
-      description: Error message
-      example: "Invalid request parameters"
-    details:
-      type: string
-      description: Additional error details
+      description: Application-level error message
       example: "The field 'name' is required"
 
 properties.UUID:
@@ -24,7 +20,6 @@ JSONObject:
   additionalProperties: true
   description: A generic properties.JSON object
 
-# Participant schemas
 PageRes:
   type: object
   properties:
@@ -34,10 +29,17 @@ PageRes:
         type: object
     totalItems:
       type: integer
+      format: int64
+      description: Total number of items across all pages
     totalPages:
       type: integer
-    pageSize:
+      description: Total number of pages
+    currentPage:
       type: integer
-    page:
-      type: integer
-
+      description: Current page number
+    hasNext:
+      type: boolean
+      description: Whether there is a next page
+    hasPrev:
+      type: boolean
+      description: Whether there is a previous page

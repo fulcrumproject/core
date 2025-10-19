@@ -1,7 +1,3 @@
-ServiceStatus:
-  type: string
-  enum: [New, Started, Stopped, Deleted]
-
 ServiceReq:
   type: object
   required:
@@ -37,7 +33,9 @@ ServiceRes:
       type: string
       example: "web-server-01"
     status:
-      $ref: "./services.yaml#/ServiceStatus"
+      type: string
+      description: "Current lifecycle state. Valid values are defined by the service type's lifecycle schema"
+      example: "Started"
     properties:
       $ref: "./common.yaml#/JSONObject"
     agentInstanceData:
@@ -63,11 +61,7 @@ ServiceRes:
       type: string
       format: date-time
 
-# Service Type schemas
 ServiceAction:
   type: string
-  enum: [Create, Start, Stop, Update, Delete]
-
-# Job schemas
-# Using the same ServiceAction enum for job actions
-
+  description: "Lifecycle action to perform on the service. Valid values are defined by the service type's lifecycle schema"
+  example: "start"
