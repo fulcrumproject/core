@@ -5,17 +5,19 @@ import (
 )
 
 const (
-	ObjectTypeParticipant  auth.ObjectType = "participant"
-	ObjectTypeAgent        auth.ObjectType = "agent"
-	ObjectTypeAgentType    auth.ObjectType = "agent_type"
-	ObjectTypeService      auth.ObjectType = "service"
-	ObjectTypeServiceType  auth.ObjectType = "service_type"
-	ObjectTypeServiceGroup auth.ObjectType = "service_group"
-	ObjectTypeJob          auth.ObjectType = "job"
-	ObjectTypeMetricType   auth.ObjectType = "metric_type"
-	ObjectTypeMetricEntry  auth.ObjectType = "metric_entry"
-	ObjectTypeEvent        auth.ObjectType = "event_entry"
-	ObjectTypeToken        auth.ObjectType = "token"
+	ObjectTypeParticipant       auth.ObjectType = "participant"
+	ObjectTypeAgent             auth.ObjectType = "agent"
+	ObjectTypeAgentType         auth.ObjectType = "agent_type"
+	ObjectTypeService           auth.ObjectType = "service"
+	ObjectTypeServiceType       auth.ObjectType = "service_type"
+	ObjectTypeServiceGroup      auth.ObjectType = "service_group"
+	ObjectTypeServiceOptionType auth.ObjectType = "service_option_type"
+	ObjectTypeServiceOption     auth.ObjectType = "service_option"
+	ObjectTypeJob               auth.ObjectType = "job"
+	ObjectTypeMetricType        auth.ObjectType = "metric_type"
+	ObjectTypeMetricEntry       auth.ObjectType = "metric_entry"
+	ObjectTypeEvent             auth.ObjectType = "event_entry"
+	ObjectTypeToken             auth.ObjectType = "token"
 )
 
 const (
@@ -74,6 +76,18 @@ var Rules = []auth.AuthorizationRule{
 	{Object: ObjectTypeServiceGroup, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 	{Object: ObjectTypeServiceGroup, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 	{Object: ObjectTypeServiceGroup, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+
+	// ServiceOptionType permissions (global resources - types readable by all, writable by admin only)
+	{Object: ObjectTypeServiceOptionType, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+	{Object: ObjectTypeServiceOptionType, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeServiceOptionType, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeServiceOptionType, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
+
+	// ServiceOption permissions (provider-scoped - admin, participant for own provider, agent for own provider)
+	{Object: ObjectTypeServiceOption, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+	{Object: ObjectTypeServiceOption, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+	{Object: ObjectTypeServiceOption, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+	{Object: ObjectTypeServiceOption, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
 
 	// Job permissions
 	{Object: ObjectTypeJob, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},

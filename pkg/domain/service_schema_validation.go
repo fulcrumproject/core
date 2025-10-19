@@ -85,9 +85,9 @@ const (
 	ErrSchemaInvalidServiceTypeValidatorValue  = "serviceType validator value must be a string or array of strings"
 
 	// Service option error messages
-	ErrSchemaServiceOptionValidatorValueNotString = "serviceOption validator value must be a string (serviceOptionType)"
-	ErrSchemaServiceOptionTypeNotFound            = "service option type '%s' not found"
-	ErrSchemaServiceOptionNotFound                = "service option with value '%v' not found or not enabled for provider"
+	ErrSchemaServiceOptionValidatorValueNotString   = "serviceOption validator value must be a string (serviceOptionType)"
+	ErrSchemaServiceOptionTypeNotFound              = "service option type '%s' not found"
+	ErrSchemaServiceOptionNotFound                  = "service option with value '%v' not found or not enabled for provider"
 	ErrSchemaServiceOptionValidationMissingProvider = "service option validation requires provider ID in context"
 )
 
