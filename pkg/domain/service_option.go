@@ -21,7 +21,7 @@ type ServiceOption struct {
 	ProviderID          properties.UUID `json:"providerId" gorm:"type:uuid;not null;index:idx_service_option_provider"`
 	ServiceOptionTypeID properties.UUID `json:"serviceOptionTypeId" gorm:"type:uuid;not null;index:idx_service_option_type"`
 	Name                string          `json:"name" gorm:"not null"`
-	Value               any             `json:"value" gorm:"type:jsonb;not null"`
+	Value               any             `json:"value" gorm:"type:jsonb;serializer:json;not null"`
 	Enabled             bool            `json:"enabled" gorm:"not null;default:true"`
 	DisplayOrder        int             `json:"displayOrder" gorm:"default:0"`
 }

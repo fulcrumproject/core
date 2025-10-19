@@ -84,6 +84,91 @@ func TestServiceOptionRepository(t *testing.T) {
 		assert.IsType(t, domain.NotFoundError{}, err)
 	})
 
+	t.Run("Create_DifferentValueTypes", func(t *testing.T) {
+		tests := []struct {
+			name         string
+			value        any
+			assertValue  func(t *testing.T, value any)
+			displayOrder int
+		}{
+			{
+				name:         "String value",
+				value:        "ubuntu:20.04",
+				displayOrder: 10,
+				assertValue: func(t *testing.T, value any) {
+					assert.Equal(t, "ubuntu:20.04", value)
+				},
+			},
+			{
+				name:         "Number value",
+				value:        float64(42),
+				displayOrder: 11,
+				assertValue: func(t *testing.T, value any) {
+					assert.Equal(t, float64(42), value)
+				},
+			},
+			{
+				name:         "Boolean value",
+				value:        true,
+				displayOrder: 12,
+				assertValue: func(t *testing.T, value any) {
+					assert.Equal(t, true, value)
+				},
+			},
+			{
+				name:         "Array value",
+				value:        []any{"value1", "value2", "value3"},
+				displayOrder: 13,
+				assertValue: func(t *testing.T, value any) {
+					assert.IsType(t, []any{}, value)
+					arr := value.([]any)
+					assert.Len(t, arr, 3)
+					assert.Equal(t, "value1", arr[0])
+					assert.Equal(t, "value2", arr[1])
+					assert.Equal(t, "value3", arr[2])
+				},
+			},
+			{
+				name: "Object value",
+				value: map[string]any{
+					"image":   "ubuntu-22.04",
+					"version": "22.04",
+					"arch":    "amd64",
+				},
+				displayOrder: 14,
+				assertValue: func(t *testing.T, value any) {
+					assert.IsType(t, map[string]any{}, value)
+					obj := value.(map[string]any)
+					assert.Equal(t, "ubuntu-22.04", obj["image"])
+					assert.Equal(t, "22.04", obj["version"])
+					assert.Equal(t, "amd64", obj["arch"])
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				option := &domain.ServiceOption{
+					ProviderID:          participant.ID,
+					ServiceOptionTypeID: optionType.ID,
+					Name:                tt.name,
+					Value:               tt.value,
+					Enabled:             true,
+					DisplayOrder:        tt.displayOrder,
+				}
+
+				err := repo.Create(context.Background(), option)
+				require.NoError(t, err)
+				assert.NotEmpty(t, option.ID)
+
+				// Fetch and verify the value
+				found, err := repo.Get(context.Background(), option.ID)
+				require.NoError(t, err)
+				tt.assertValue(t, found.Value)
+			})
+		}
+	})
+
 	t.Run("FindByProviderAndTypeAndValue", func(t *testing.T) {
 		// Create a service option with a specific value
 		testValue := map[string]any{
