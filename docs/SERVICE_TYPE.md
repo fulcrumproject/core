@@ -323,6 +323,194 @@ Combined validators example:
 }
 ```
 
+##### serviceOption
+Validates that a value is one of the enabled service options for a specific service option type. Service options are provider-specific, dynamically managed validation lists.
+
+**Basic Usage:**
+```json
+{
+  "operatingSystem": {
+    "type": "string",
+    "label": "Operating System",
+    "required": true,
+    "validators": [
+      { "type": "serviceOption", "value": "os" }
+    ]
+  }
+}
+```
+
+This validates that the `operatingSystem` property value matches an enabled `ServiceOption` with `serviceOptionTypeId` corresponding to the "os" type for the provider.
+
+**How it works:**
+1. The validator value references a `ServiceOptionType` (e.g., "os", "machine_type", "region")
+2. At validation time, the system looks up all enabled `ServiceOption` entries for the provider
+3. The property value must match the `value` field of one of these enabled options
+4. Only options with `enabled: true` are considered valid
+
+**Examples:**
+
+Machine type selection:
+```json
+{
+  "machineType": {
+    "type": "string",
+    "label": "Machine Type",
+    "required": true,
+    "validators": [
+      { "type": "serviceOption", "value": "machine_type" }
+    ]
+  }
+}
+```
+
+Region selection:
+```json
+{
+  "region": {
+    "type": "string",
+    "label": "Region",
+    "required": true,
+    "validators": [
+      { "type": "serviceOption", "value": "region" }
+    ]
+  }
+}
+```
+
+Disk type with complex value:
+```json
+{
+  "diskConfig": {
+    "type": "object",
+    "label": "Disk Configuration",
+    "required": true,
+    "validators": [
+      { "type": "serviceOption", "value": "disk_type" }
+    ]
+  }
+}
+```
+
+**Value Matching:**
+Service option values can be any JSON type (string, number, object, array). The validator performs exact JSON matching:
+
+- **String values**: `"ubuntu-22.04"` matches option with `value: "ubuntu-22.04"`
+- **Object values**: `{"type": "ssd", "size": 100}` matches option with same JSON structure
+- **Array values**: `["us-east-1a", "us-east-1b"]` matches option with same array
+
+**Service Option Management:**
+
+Administrators manage service option types:
+```http
+POST /api/v1/service-option-types
+{
+  "name": "Operating System",
+  "type": "os",
+  "description": "Available operating systems for VM instances"
+}
+```
+
+Providers manage their specific options:
+```http
+POST /api/v1/service-options
+{
+  "providerId": "participant-uuid",
+  "serviceOptionTypeId": "option-type-uuid",
+  "name": "Ubuntu 22.04 LTS",
+  "value": "ubuntu-22.04",
+  "enabled": true,
+  "displayOrder": 1
+}
+```
+
+**Benefits:**
+- **Dynamic**: Options can be added/removed without changing service type schemas
+- **Provider-specific**: Each provider can offer different options
+- **Flexible**: Values can be simple strings or complex objects
+- **Manageable**: Options can be disabled without deletion for controlled rollout
+
+**Error Messages:**
+- `"serviceOption validator value must be a string (serviceOptionType)"` - Invalid validator configuration
+- `"service option type 'type' not found"` - ServiceOptionType doesn't exist
+- `"service option with value 'value' not found or not enabled for provider"` - No matching enabled option found
+- `"service option validation requires provider ID in context"` - Missing provider context (internal error)
+
+**Complete Example:**
+
+Service type schema:
+```json
+{
+  "name": "VM Instance",
+  "propertySchema": {
+    "operatingSystem": {
+      "type": "string",
+      "label": "Operating System",
+      "required": true,
+      "validators": [
+        { "type": "serviceOption", "value": "os" }
+      ]
+    },
+    "machineType": {
+      "type": "string",
+      "label": "Machine Type",
+      "required": true,
+      "validators": [
+        { "type": "serviceOption", "value": "machine_type" }
+      ]
+    },
+    "region": {
+      "type": "string",
+      "label": "Region",
+      "required": true,
+      "validators": [
+        { "type": "serviceOption", "value": "region" }
+      ]
+    }
+  }
+}
+```
+
+Provider's service options:
+```json
+[
+  {
+    "name": "Ubuntu 22.04 LTS",
+    "value": "ubuntu-22.04",
+    "serviceOptionType": "os",
+    "enabled": true,
+    "displayOrder": 1
+  },
+  {
+    "name": "Ubuntu 24.04 LTS",
+    "value": "ubuntu-24.04",
+    "serviceOptionType": "os",
+    "enabled": true,
+    "displayOrder": 2
+  },
+  {
+    "name": "Standard (2 vCPU, 4GB RAM)",
+    "value": "n1-standard-2",
+    "serviceOptionType": "machine_type",
+    "enabled": true,
+    "displayOrder": 1
+  }
+]
+```
+
+Valid service creation:
+```json
+{
+  "name": "web-server-01",
+  "serviceTypeId": "vm-type-uuid",
+  "properties": {
+    "operatingSystem": "ubuntu-22.04",
+    "machineType": "n1-standard-2",
+    "region": "us-east-1"
+  }
+}
+```
+
 ### Property Source
 
 The `source` field controls who can set and update a property value. This enables proper separation between user-provided configuration and agent-discovered information.

@@ -478,6 +478,97 @@ components:
           type: string
           format: date-time
 
+    # Service Option Type schemas
+    ServiceOptionTypeReq:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          example: "Operating System"
+        type:
+          type: string
+          example: "operating_system"
+          description: "Unique identifier (lowercase, underscores)"
+        description:
+          type: string
+          example: "Available operating systems for VMs"
+
+    ServiceOptionTypeRes:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/properties.UUID"
+        name:
+          type: string
+          example: "Operating System"
+        type:
+          type: string
+          example: "operating_system"
+        description:
+          type: string
+          example: "Available operating systems for VMs"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Service Option schemas
+    ServiceOptionReq:
+      type: object
+      required:
+        - providerId
+        - serviceOptionTypeId
+        - name
+        - value
+      properties:
+        providerId:
+          $ref: "#/components/schemas/properties.UUID"
+        serviceOptionTypeId:
+          $ref: "#/components/schemas/properties.UUID"
+        name:
+          type: string
+          example: "Ubuntu 22.04 LTS"
+        value:
+          description: "Any JSON value (string, number, object, array)"
+          example: "ubuntu-22.04"
+        enabled:
+          type: boolean
+          default: true
+        displayOrder:
+          type: integer
+          default: 0
+
+    ServiceOptionRes:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/properties.UUID"
+        providerId:
+          $ref: "#/components/schemas/properties.UUID"
+        serviceOptionTypeId:
+          $ref: "#/components/schemas/properties.UUID"
+        name:
+          type: string
+          example: "Ubuntu 22.04 LTS"
+        value:
+          description: "Any JSON value (string, number, object, array)"
+          example: "ubuntu-22.04"
+        enabled:
+          type: boolean
+        displayOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
     # Action types
     ServiceAction:
       type: string
@@ -842,6 +933,7 @@ components:
               uniqueItems,
               sameOrigin,
               serviceType,
+              serviceOption,
             ]
           description: Type of validator
         value:
@@ -2544,6 +2636,338 @@ paths:
           description: Service group deleted successfully
         "404":
           description: Service group not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+
+  #
+  # Service Option Type endpoints
+  #
+  /service-option-types:
+    get:
+      operationId: serviceOptionTypesList
+      summary: List service option types
+      tags:
+        - Service Options
+      description: Retrieves a paginated list of service option types
+      x-auth-permissions:
+        - role: admin
+          permission: all service option types
+        - role: participant
+          permission: all service option types
+        - role: agent
+          permission: all service option types
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of service option types
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageRes"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ServiceOptionTypeRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: serviceOptionTypesCreate
+      summary: Create a service option type
+      tags:
+        - Service Options
+      description: Creates a new service option type
+      x-auth-permissions:
+        - role: admin
+          permission: always
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceOptionTypeReq"
+      responses:
+        "201":
+          description: Service option type created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceOptionTypeRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /service-option-types/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/properties.UUID"
+    get:
+      operationId: serviceOptionTypesGet
+      summary: Get a service option type
+      tags:
+        - Service Options
+      description: Retrieves a specific service option type by ID
+      x-auth-permissions:
+        - role: admin
+          permission: all service option types
+        - role: participant
+          permission: all service option types
+        - role: agent
+          permission: all service option types
+      responses:
+        "200":
+          description: Service option type details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceOptionTypeRes"
+        "404":
+          description: Service option type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+    patch:
+      operationId: serviceOptionTypesUpdate
+      summary: Update a service option type
+      tags:
+        - Service Options
+      description: Updates an existing service option type
+      x-auth-permissions:
+        - role: admin
+          permission: always
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceOptionTypeReq"
+      responses:
+        "200":
+          description: Service option type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceOptionTypeRes"
+        "404":
+          description: Service option type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+    delete:
+      operationId: serviceOptionTypesDelete
+      summary: Delete a service option type
+      tags:
+        - Service Options
+      description: Deletes a service option type by ID
+      x-auth-permissions:
+        - role: admin
+          permission: always
+      responses:
+        "204":
+          description: Service option type deleted successfully
+        "404":
+          description: Service option type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+
+  #
+  # Service Option endpoints
+  #
+  /service-options:
+    get:
+      operationId: serviceOptionsList
+      summary: List service options
+      tags:
+        - Service Options
+      description: Retrieves a paginated list of service options
+      x-auth-permissions:
+        - role: admin
+          permission: all service options
+        - role: participant
+          permission: service options for its provider
+        - role: agent
+          permission: service options for its provider
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: providerId
+          in: query
+          schema:
+            $ref: "#/components/schemas/properties.UUID"
+          description: Filter by provider ID
+        - name: serviceOptionTypeId
+          in: query
+          schema:
+            $ref: "#/components/schemas/properties.UUID"
+          description: Filter by service option type ID
+      responses:
+        "200":
+          description: A paginated list of service options
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageRes"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ServiceOptionRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: serviceOptionsCreate
+      summary: Create a service option
+      tags:
+        - Service Options
+      description: Creates a new service option
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: for its participant as provider
+        - role: agent
+          permission: for its participant as provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceOptionReq"
+      responses:
+        "201":
+          description: Service option created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceOptionRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /service-options/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/properties.UUID"
+    get:
+      operationId: serviceOptionsGet
+      summary: Get a service option
+      tags:
+        - Service Options
+      description: Retrieves a specific service option by ID
+      x-auth-permissions:
+        - role: admin
+          permission: all service options
+        - role: participant
+          permission: service options for its provider
+        - role: agent
+          permission: service options for its provider
+      responses:
+        "200":
+          description: Service option details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceOptionRes"
+        "404":
+          description: Service option not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+    patch:
+      operationId: serviceOptionsUpdate
+      summary: Update a service option
+      tags:
+        - Service Options
+      description: Updates an existing service option
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: for its participant as provider
+        - role: agent
+          permission: for its participant as provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceOptionReq"
+      responses:
+        "200":
+          description: Service option updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceOptionRes"
+        "404":
+          description: Service option not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRes"
+    delete:
+      operationId: serviceOptionsDelete
+      summary: Delete a service option
+      tags:
+        - Service Options
+      description: Deletes a service option by ID
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: for its participant as provider
+        - role: agent
+          permission: for its participant as provider
+      responses:
+        "204":
+          description: Service option deleted successfully
+        "404":
+          description: Service option not found
           content:
             application/json:
               schema:
