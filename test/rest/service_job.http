@@ -14,7 +14,67 @@
 ### PART 1: SETUP
 ###############################################################################
 
-### Create VM Service Type with property source/updatability rules
+### Create Service Option Type for Operating Systems
+# @name createOSOptionType
+POST {{baseUrl}}/service-option-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Operating System",
+    "type": "operating_system",
+    "description": "Available operating system images for VMs"
+}
+
+### Create Provider (moved here to use in service options)
+# @name createProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test Provider {{$guid}}",
+    "status": "Enabled",
+    "attributes": {
+        "type": ["test"]
+    }
+}
+
+### Create Service Option - Ubuntu 20.04
+# @name createOSOption1
+POST {{baseUrl}}/service-options
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "providerId": "{{createProvider.response.body.id}}",
+    "serviceOptionTypeId": "{{createOSOptionType.response.body.id}}",
+    "name": "Ubuntu 20.04 LTS",
+    "value": "ubuntu:20.04",
+    "enabled": true,
+    "displayOrder": 1
+}
+
+### Create Service Option - Ubuntu 22.04
+# @name createOSOption2
+POST {{baseUrl}}/service-options
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "providerId": "{{createProvider.response.body.id}}",
+    "serviceOptionTypeId": "{{createOSOptionType.response.body.id}}",
+    "name": "Ubuntu 22.04 LTS",
+    "value": "ubuntu:22.04",
+    "enabled": true,
+    "displayOrder": 2
+}
+
+### List service options for provider (verify they were created)
+GET {{baseUrl}}/service-options?providerId={{createProvider.response.body.id}}
+Authorization: Bearer {{adminToken}}
+
+### Create VM Service Type with serviceOption validator for image
 # @name createVMServiceType
 POST {{baseUrl}}/service-types
 Authorization: Bearer {{adminToken}}
@@ -70,7 +130,13 @@ Content-Type: application/json
             "label": "Image",
             "source": "input",
             "updatable": "never",
-            "required": true
+            "required": true,
+            "validators": [
+                {
+                    "type": "serviceOption",
+                    "value": "operating_system"
+                }
+            ]
         },
         "internalIp": {
             "type": "string",
@@ -160,20 +226,6 @@ Content-Type: application/json
     ]
 }
 
-### Create Provider
-# @name createProvider
-POST {{baseUrl}}/participants
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "name": "Test Provider {{$guid}}",
-    "status": "Enabled",
-    "attributes": {
-        "type": ["test"]
-    }
-}
-
 ### Create Agent
 # @name createAgent
 POST {{baseUrl}}/agents
@@ -227,7 +279,33 @@ Content-Type: application/json
 }
 
 ###############################################################################
-### PART 2: SERVICE CREATION & INITIAL JOB
+### PART 2: SERVICE OPTION VALIDATION TESTING
+###############################################################################
+
+### ❌ TEST: Try to create service with invalid image (not in service options - should fail with 400)
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Invalid VM {{$guid}}",
+    "properties": {
+        "cpu": 4,
+        "memory": 8192,
+        "disk": 128,
+        "image": "invalid-os:999"
+    },
+    "agentId": "{{agentId}}",
+    "serviceTypeId": "{{createVMServiceType.response.body.id}}",
+    "groupId": "{{createServiceGroup.response.body.id}}"
+}
+
+### ✅ Verify service options are listed correctly
+GET {{baseUrl}}/service-options?providerId={{createProvider.response.body.id}}&serviceOptionTypeId={{createOSOptionType.response.body.id}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### PART 3: SERVICE CREATION & INITIAL JOB
 ###############################################################################
 
 ### Create VM Service (user sets input properties, agent will set internalIp)
@@ -286,7 +364,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 3: PROPERTY UPDATE VALIDATION TESTS (Expected Failures)
+### PART 4: PROPERTY UPDATE VALIDATION TESTS (Expected Failures)
 ###############################################################################
 
 ### ❌ TEST 1: Try to update immutable property (should fail with 400)
@@ -312,7 +390,7 @@ Content-Type: application/json
 }
 
 ###############################################################################
-### PART 4: START SERVICE
+### PART 5: START SERVICE
 ###############################################################################
 
 ### Start service (creates Start job)
@@ -350,7 +428,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 5: AGENT IMMUTABLE PROPERTY UPDATE TEST
+### PART 6: AGENT IMMUTABLE PROPERTY UPDATE TEST
 ###############################################################################
 
 ### ❌ TEST: Try to update immutable agent property during job completion (should fail with 400)
@@ -431,7 +509,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 6: STATE-CONDITIONAL UPDATE TEST WHILE STARTED
+### PART 7: STATE-CONDITIONAL UPDATE TEST WHILE STARTED
 ###############################################################################
 
 ### ❌ TEST 4: Try to update state-conditional property while Started (should fail with 400)
@@ -446,7 +524,7 @@ Content-Type: application/json
 }
 
 ###############################################################################
-### PART 7: STOP SERVICE
+### PART 8: STOP SERVICE
 ###############################################################################
 
 ### Stop service (creates Stop job)
@@ -484,7 +562,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 8: SUCCESSFUL STATE-CONDITIONAL UPDATE WHILE STOPPED
+### PART 9: SUCCESSFUL STATE-CONDITIONAL UPDATE WHILE STOPPED
 ###############################################################################
 
 ### ✅ TEST 5: Update state-conditional properties while Stopped (should succeed)
@@ -534,7 +612,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 9: RESTART WITH UPDATED PROPERTIES
+### PART 10: RESTART WITH UPDATED PROPERTIES
 ###############################################################################
 
 ### Start service again with updated properties (creates Start job)
@@ -575,7 +653,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 10: JOB FAILURE TESTING
+### PART 11: JOB FAILURE TESTING
 ###############################################################################
 
 ### Stop service for failure test
@@ -641,7 +719,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 11: MAINTENANCE MODE TESTING (Non-Standard State)
+### PART 12: MAINTENANCE MODE TESTING (Non-Standard State)
 ###############################################################################
 
 ### Enter maintenance mode from Stopped state
