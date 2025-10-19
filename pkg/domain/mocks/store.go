@@ -463,6 +463,98 @@ func (_c *MockStore_ServiceGroupRepo_Call) RunAndReturn(run func() domain.Servic
 	return _c
 }
 
+// ServiceOptionRepo provides a mock function for the type MockStore
+func (_mock *MockStore) ServiceOptionRepo() domain.ServiceOptionRepository {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServiceOptionRepo")
+	}
+
+	var r0 domain.ServiceOptionRepository
+	if returnFunc, ok := ret.Get(0).(func() domain.ServiceOptionRepository); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.ServiceOptionRepository)
+		}
+	}
+	return r0
+}
+
+// MockStore_ServiceOptionRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServiceOptionRepo'
+type MockStore_ServiceOptionRepo_Call struct {
+	*mock.Call
+}
+
+// ServiceOptionRepo is a helper method to define mock.On call
+func (_e *MockStore_Expecter) ServiceOptionRepo() *MockStore_ServiceOptionRepo_Call {
+	return &MockStore_ServiceOptionRepo_Call{Call: _e.mock.On("ServiceOptionRepo")}
+}
+
+func (_c *MockStore_ServiceOptionRepo_Call) Run(run func()) *MockStore_ServiceOptionRepo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockStore_ServiceOptionRepo_Call) Return(serviceOptionRepository domain.ServiceOptionRepository) *MockStore_ServiceOptionRepo_Call {
+	_c.Call.Return(serviceOptionRepository)
+	return _c
+}
+
+func (_c *MockStore_ServiceOptionRepo_Call) RunAndReturn(run func() domain.ServiceOptionRepository) *MockStore_ServiceOptionRepo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ServiceOptionTypeRepo provides a mock function for the type MockStore
+func (_mock *MockStore) ServiceOptionTypeRepo() domain.ServiceOptionTypeRepository {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServiceOptionTypeRepo")
+	}
+
+	var r0 domain.ServiceOptionTypeRepository
+	if returnFunc, ok := ret.Get(0).(func() domain.ServiceOptionTypeRepository); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.ServiceOptionTypeRepository)
+		}
+	}
+	return r0
+}
+
+// MockStore_ServiceOptionTypeRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServiceOptionTypeRepo'
+type MockStore_ServiceOptionTypeRepo_Call struct {
+	*mock.Call
+}
+
+// ServiceOptionTypeRepo is a helper method to define mock.On call
+func (_e *MockStore_Expecter) ServiceOptionTypeRepo() *MockStore_ServiceOptionTypeRepo_Call {
+	return &MockStore_ServiceOptionTypeRepo_Call{Call: _e.mock.On("ServiceOptionTypeRepo")}
+}
+
+func (_c *MockStore_ServiceOptionTypeRepo_Call) Run(run func()) *MockStore_ServiceOptionTypeRepo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockStore_ServiceOptionTypeRepo_Call) Return(serviceOptionTypeRepository domain.ServiceOptionTypeRepository) *MockStore_ServiceOptionTypeRepo_Call {
+	_c.Call.Return(serviceOptionTypeRepository)
+	return _c
+}
+
+func (_c *MockStore_ServiceOptionTypeRepo_Call) RunAndReturn(run func() domain.ServiceOptionTypeRepository) *MockStore_ServiceOptionTypeRepo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ServiceRepo provides a mock function for the type MockStore
 func (_mock *MockStore) ServiceRepo() domain.ServiceRepository {
 	ret := _mock.Called()

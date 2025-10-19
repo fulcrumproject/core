@@ -18,6 +18,8 @@ type GormStore struct {
 	serviceTypeRepo       domain.ServiceTypeRepository
 	serviceGroupRepo      domain.ServiceGroupRepository
 	serviceRepo           domain.ServiceRepository
+	serviceOptionTypeRepo domain.ServiceOptionTypeRepository
+	serviceOptionRepo     domain.ServiceOptionRepository
 	jobRepo               domain.JobRepository
 	eventEntryRepo        domain.EventRepository
 	eventSubscriptionRepo domain.EventSubscriptionRepository
@@ -118,6 +120,20 @@ func (s *GormStore) MetricTypeRepo() domain.MetricTypeRepository {
 	return s.metricTypeRepo
 }
 
+func (s *GormStore) ServiceOptionTypeRepo() domain.ServiceOptionTypeRepository {
+	if s.serviceOptionTypeRepo == nil {
+		s.serviceOptionTypeRepo = NewServiceOptionTypeRepository(s.db)
+	}
+	return s.serviceOptionTypeRepo
+}
+
+func (s *GormStore) ServiceOptionRepo() domain.ServiceOptionRepository {
+	if s.serviceOptionRepo == nil {
+		s.serviceOptionRepo = NewServiceOptionRepository(s.db)
+	}
+	return s.serviceOptionRepo
+}
+
 // GormReadOnlyStore implements the domain.ReadOnlyStore interface using GORM
 type GormReadOnlyStore struct {
 	db *gorm.DB
@@ -172,4 +188,12 @@ func (s *GormReadOnlyStore) ServiceQuerier() domain.ServiceQuerier {
 
 func (s *GormReadOnlyStore) JobQuerier() domain.JobQuerier {
 	return NewJobRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) ServiceOptionTypeQuerier() domain.ServiceOptionTypeQuerier {
+	return NewServiceOptionTypeRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) ServiceOptionQuerier() domain.ServiceOptionQuerier {
+	return NewServiceOptionRepository(s.db)
 }
