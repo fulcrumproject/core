@@ -54,6 +54,7 @@ func NewServiceOptionRepository(db *gorm.DB) *GormServiceOptionRepository {
 }
 
 // FindByProviderAndTypeAndValue retrieves a service option by provider, type, and value
+// Only returns enabled options
 func (r *GormServiceOptionRepository) FindByProviderAndTypeAndValue(
 	ctx context.Context,
 	providerID, typeID properties.UUID,
@@ -66,11 +67,12 @@ func (r *GormServiceOptionRepository) FindByProviderAndTypeAndValue(
 	}
 
 	var entity domain.ServiceOption
-	// Use JSONB equality comparison
+	// Use JSONB equality comparison and filter by enabled
 	result := r.db.WithContext(ctx).
 		Where("provider_id = ?", providerID).
 		Where("service_option_type_id = ?", typeID).
 		Where("value = ?", valueJSON).
+		Where("enabled = ?", true).
 		First(&entity)
 
 	if result.Error != nil {

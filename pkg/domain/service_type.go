@@ -180,6 +180,7 @@ type ServiceTypeCommander interface {
 type ServicePropertyValidationParams struct {
 	ServiceTypeID properties.UUID
 	GroupID       properties.UUID
+	ProviderID    properties.UUID
 	Properties    map[string]any
 }
 
@@ -340,6 +341,7 @@ func ValidateServiceProperties(ctx context.Context, store Store, params *Service
 		Store:      store,
 		Schema:     *serviceType.PropertySchema,
 		GroupID:    params.GroupID,
+		ProviderID: params.ProviderID,
 		Properties: propertiesWithDefaults,
 	}
 

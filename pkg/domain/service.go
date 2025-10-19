@@ -292,6 +292,7 @@ func CreateServiceWithAgent(
 	validationParams := &ServicePropertyValidationParams{
 		ServiceTypeID: params.ServiceTypeID,
 		GroupID:       params.GroupID,
+		ProviderID:    agent.ProviderID,
 		Properties:    params.Properties,
 	}
 	validatedProperties, err := ValidateServiceProperties(ctx, store, validationParams)
