@@ -17,14 +17,14 @@ func extractValueMap(t *testing.T, value any) map[string]any {
 	if valueMap, ok := value.(map[string]any); ok {
 		return valueMap
 	}
-	
+
 	// Pointer to any
 	if ptr, ok := value.(*any); ok && ptr != nil {
 		if valueMap, ok := (*ptr).(map[string]any); ok {
 			return valueMap
 		}
 	}
-	
+
 	// Log the actual type for debugging
 	t.Logf("extractValueMap: unexpected type %T for value", value)
 	return nil
