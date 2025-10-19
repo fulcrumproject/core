@@ -1,0 +1,98 @@
+EventRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    initiatorType:
+      type: string
+      example: "user"
+    initiatorId:
+      type: string
+      example: "admin"
+    type:
+      type: string
+      example: "service.created"
+    properties:
+      $ref: "./common.yaml#/JSONObject"
+    createdAt:
+      type: string
+      format: date-time
+
+EventLeaseReq:
+  type: object
+  required:
+    - subscriberId
+    - instanceId
+  properties:
+    subscriberId:
+      type: string
+      description: Unique identifier for the subscriber system
+      example: "external-system"
+    instanceId:
+      type: string
+      description: Unique identifier for the consuming instance
+      example: "instance-1"
+    leaseDurationSeconds:
+      type: integer
+      description: Lease duration in seconds (default 300, max 3600, min 30)
+      minimum: 30
+      maximum: 3600
+      default: 300
+      example: 300
+    limit:
+      type: integer
+      description: Maximum number of events to fetch (default 100, max 1000, min 1)
+      minimum: 1
+      maximum: 1000
+      default: 100
+      example: 100
+
+EventLeaseRes:
+  type: object
+  properties:
+    events:
+      type: array
+      items:
+        $ref: "./events.yaml#/EventRes"
+      description: Array of events fetched in chronological order
+    leaseExpiresAt:
+      type: string
+      format: date-time
+      description: When the current lease expires
+    lastEventSequenceProcessed:
+      type: integer
+      format: int64
+      description: Last event sequence number processed by this subscriber
+      example: 150
+
+EventAckReq:
+  type: object
+  required:
+    - subscriberId
+    - instanceId
+    - lastEventSequenceProcessed
+  properties:
+    subscriberId:
+      type: string
+      description: Unique identifier for the subscriber system
+      example: "external-system"
+    instanceId:
+      type: string
+      description: Unique identifier for the consuming instance
+      example: "instance-1"
+    lastEventSequenceProcessed:
+      type: integer
+      format: int64
+      description: Sequence number of the last event successfully processed
+      minimum: 1
+      example: 150
+
+EventAckRes:
+  type: object
+  properties:
+    lastEventSequenceProcessed:
+      type: integer
+      format: int64
+      description: Updated last event sequence processed
+      example: 150
+

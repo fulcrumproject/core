@@ -1,0 +1,34 @@
+ParticipantReq:
+  type: object
+  required:
+    - name
+    - status
+  properties:
+    name:
+      type: string
+      example: "Test Participant"
+    status:
+      $ref: "./participants.yaml#/ParticipantStatus"
+
+ParticipantRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "Test Participant"
+    status:
+      $ref: "./participants.yaml#/ParticipantStatus"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+ParticipantStatus:
+  type: string
+  enum: [Enabled, Disabled]
+
+# Token schemas

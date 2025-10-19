@@ -1,0 +1,123 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  get:
+    operationId: agentTypesGet
+    summary: Get an agent type
+    tags:
+      - Agents
+    description: Retrieves a specific agent type by ID
+    x-auth-permissions:
+      - role: admin
+        permission: all agent types
+      - role: participant
+        permission: all agent types
+      - role: agent
+        permission: all agent types
+    responses:
+      "200":
+        description: The agent type details
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/agent_types.yaml#/AgentTypeRes"
+      "404":
+        description: Agent type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  patch:
+    operationId: agentTypesUpdate
+    summary: Update an agent type
+    tags:
+      - Agents
+    description: Partially updates an agent type (PATCH semantics)
+    x-auth-permissions:
+      - role: admin
+        permission: all agent types
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/agent_types.yaml#/UpdateAgentTypeReq"
+    responses:
+      "200":
+        description: Agent type updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/agent_types.yaml#/AgentTypeRes"
+      "400":
+        description: Invalid request body or validation error
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "401":
+        description: Authentication required
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "403":
+        description: Administrator access required
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "404":
+        description: Agent type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "409":
+        description: Agent type with same name already exists
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  delete:
+    operationId: agentTypesDelete
+    summary: Delete an agent type
+    tags:
+      - Agents
+    description: Deletes an agent type if no agents depend on it
+    x-auth-permissions:
+      - role: admin
+        permission: all agent types
+    responses:
+      "204":
+        description: Agent type deleted successfully
+      "401":
+        description: Authentication required
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "403":
+        description: Administrator access required
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "404":
+        description: Agent type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "409":
+        description: Cannot delete agent type with dependent agents
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+#
+# Service endpoints
+#

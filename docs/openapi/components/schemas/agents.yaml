@@ -1,0 +1,103 @@
+AgentStatus:
+  type: string
+  enum: [New, Connected, Disconnected, Error, Disabled]
+
+CreateAgentReq:
+  type: object
+  required:
+    - name
+    - providerId
+    - agentTypeId
+  properties:
+    name:
+      type: string
+      example: "aws-agent-01"
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "The participant ID that owns this agent"
+    agentTypeId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "The agent type ID"
+    tags:
+      type: array
+      items:
+        type: string
+      example: ["gpu", "high-memory", "ssd"]
+      description: "Tags representing capabilities or certifications of this agent"
+    configuration:
+      $ref: "./common.yaml#/JSONObject"
+      description: "Agent-specific configuration parameters"
+      example:
+        timeout: 30
+        retries: 3
+        environment: "production"
+
+UpdateAgentReq:
+  type: object
+  properties:
+    name:
+      type: string
+      example: "aws-agent-01"
+    status:
+      $ref: "./agents.yaml#/AgentStatus"
+    tags:
+      type: array
+      items:
+        type: string
+      example: ["gpu", "high-memory", "ssd"]
+      description: "Tags representing capabilities or certifications of this agent"
+    configuration:
+      $ref: "./common.yaml#/JSONObject"
+      description: "Agent-specific configuration parameters"
+      example:
+        timeout: 60
+        retries: 5
+        environment: "staging"
+
+AgentRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "aws-agent-01"
+    status:
+      $ref: "./agents.yaml#/AgentStatus"
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+    agentTypeId:
+      $ref: "./common.yaml#/properties.UUID"
+    tags:
+      type: array
+      items:
+        type: string
+      example: ["gpu", "high-memory", "ssd"]
+    configuration:
+      $ref: "./common.yaml#/JSONObject"
+      description: "Agent-specific configuration parameters"
+      example:
+        timeout: 30
+        retries: 3
+        environment: "production"
+    participant:
+      $ref: "./participants.yaml#/ParticipantRes"
+    agentType:
+      $ref: "./agent_types.yaml#/AgentTypeRes"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+AgentCreateRes:
+  allOf:
+    - $ref: "./agents.yaml#/AgentRes"
+    - type: object
+      properties:
+        token:
+          $ref: "./tokens.yaml#/TokenRes"
+          description: "The agent authentication token"
+
+# Agent Type schemas

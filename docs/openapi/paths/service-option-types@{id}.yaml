@@ -1,0 +1,81 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  get:
+    operationId: serviceOptionTypesGet
+    summary: Get a service option type
+    tags:
+      - Service Options
+    description: Retrieves a specific service option type by ID
+    x-auth-permissions:
+      - role: admin
+        permission: all service option types
+      - role: participant
+        permission: all service option types
+      - role: agent
+        permission: all service option types
+    responses:
+      "200":
+        description: Service option type details
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/service_option_types.yaml#/ServiceOptionTypeRes"
+      "404":
+        description: Service option type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  patch:
+    operationId: serviceOptionTypesUpdate
+    summary: Update a service option type
+    tags:
+      - Service Options
+    description: Updates an existing service option type
+    x-auth-permissions:
+      - role: admin
+        permission: always
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/service_option_types.yaml#/ServiceOptionTypeReq"
+    responses:
+      "200":
+        description: Service option type updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/service_option_types.yaml#/ServiceOptionTypeRes"
+      "404":
+        description: Service option type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  delete:
+    operationId: serviceOptionTypesDelete
+    summary: Delete a service option type
+    tags:
+      - Service Options
+    description: Deletes a service option type by ID
+    x-auth-permissions:
+      - role: admin
+        permission: always
+    responses:
+      "204":
+        description: Service option type deleted successfully
+      "404":
+        description: Service option type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+#
+# Service Option endpoints
+#

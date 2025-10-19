@@ -1,0 +1,88 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  get:
+    operationId: serviceOptionsGet
+    summary: Get a service option
+    tags:
+      - Service Options
+    description: Retrieves a specific service option by ID
+    x-auth-permissions:
+      - role: admin
+        permission: all service options
+      - role: participant
+        permission: service options for its provider
+      - role: agent
+        permission: service options for its provider
+    responses:
+      "200":
+        description: Service option details
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/service_options.yaml#/ServiceOptionRes"
+      "404":
+        description: Service option not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  patch:
+    operationId: serviceOptionsUpdate
+    summary: Update a service option
+    tags:
+      - Service Options
+    description: Updates an existing service option
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: for its participant as provider
+      - role: agent
+        permission: for its participant as provider
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/service_options.yaml#/ServiceOptionReq"
+    responses:
+      "200":
+        description: Service option updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/service_options.yaml#/ServiceOptionRes"
+      "404":
+        description: Service option not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  delete:
+    operationId: serviceOptionsDelete
+    summary: Delete a service option
+    tags:
+      - Service Options
+    description: Deletes a service option by ID
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: for its participant as provider
+      - role: agent
+        permission: for its participant as provider
+    responses:
+      "204":
+        description: Service option deleted successfully
+      "404":
+        description: Service option not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+# Job endpoints
+#

@@ -1,0 +1,36 @@
+  get:
+    operationId: jobsPending
+    summary: Get pending jobs
+    tags:
+      - Jobs
+    description: Retrieves a list of pending jobs for the authenticated agent
+    security:
+      - BearerAuth: []
+    x-auth-permissions:
+      - role: admin
+        permission: not authorized
+      - role: participant
+        permission: not authorized
+      - role: agent
+        permission: pending jobs assigned to the agent
+    parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 10
+    responses:
+      "200":
+        description: List of pending jobs
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../components/schemas/jobs.yaml#/JobRes"
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"

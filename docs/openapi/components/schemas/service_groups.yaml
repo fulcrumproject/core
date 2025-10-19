@@ -1,0 +1,29 @@
+ServiceGroupReq:
+  type: object
+  required:
+    - name
+    - consumerId
+  properties:
+    name:
+      type: string
+      example: "Web Servers"
+    consumerId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "ID of the consumer participant that owns this service group"
+
+ServiceGroupRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "Web Servers"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+# Service Option Type schemas

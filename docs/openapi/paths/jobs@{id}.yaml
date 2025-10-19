@@ -1,0 +1,25 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  get:
+    operationId: jobsGet
+    summary: Get a job
+    tags:
+      - Jobs
+    description: Retrieves a specific job by ID (admin route)
+    responses:
+      "200":
+        description: The job details
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/jobs.yaml#/JobRes"
+      "404":
+        description: Job not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"

@@ -1,0 +1,47 @@
+MetricEntryReq:
+  type: object
+  required:
+    - resourceId
+    - typeName
+    - value
+  properties:
+    serviceId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "ID of the service associated with this metric"
+    agentInstanceId:
+      type: string
+      description: "Agent instance ID of the service associated with this metric"
+      example: "i-12345"
+    resourceId:
+      type: string
+      example: "cpu-1"
+    value:
+      type: number
+      format: float
+      example: 78.5
+    typeName:
+      type: string
+      description: "Name of the metric type"
+      example: "cpu.usage"
+
+MetricEntryRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    agentId:
+      $ref: "./common.yaml#/properties.UUID"
+    serviceId:
+      $ref: "./common.yaml#/properties.UUID"
+    resourceId:
+      type: string
+      example: "cpu-1"
+    value:
+      type: number
+      format: float
+      example: 78.5
+    createdAt:
+      type: string
+      format: date-time
+
+# Event schemas

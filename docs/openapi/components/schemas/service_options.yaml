@@ -1,0 +1,52 @@
+ServiceOptionReq:
+  type: object
+  required:
+    - providerId
+    - serviceOptionTypeId
+    - name
+    - value
+  properties:
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+    serviceOptionTypeId:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "Ubuntu 22.04 LTS"
+    value:
+      description: "Any JSON value (string, number, object, array)"
+      example: "ubuntu-22.04"
+    enabled:
+      type: boolean
+      default: true
+    displayOrder:
+      type: integer
+      default: 0
+
+ServiceOptionRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+    serviceOptionTypeId:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "Ubuntu 22.04 LTS"
+    value:
+      description: "Any JSON value (string, number, object, array)"
+      example: "ubuntu-22.04"
+    enabled:
+      type: boolean
+    displayOrder:
+      type: integer
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+# Action types

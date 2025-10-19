@@ -1,0 +1,108 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  get:
+    operationId: serviceTypesGet
+    summary: Get a service type
+    tags:
+      - Services
+    description: Retrieves a specific service type by ID
+    x-auth-permissions:
+      - role: admin
+        permission: all service types
+      - role: participant
+        permission: all service types
+      - role: agent
+        permission: all service types
+    responses:
+      "200":
+        description: The service type details
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/service_types.yaml#/ServiceTypeRes"
+      "404":
+        description: Service type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  patch:
+    operationId: serviceTypesUpdate
+    summary: Update a service type
+    tags:
+      - Services
+    description: Partially updates a service type (PATCH semantics)
+    x-auth-permissions:
+      - role: admin
+        permission: all service types
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/service_types.yaml#/UpdateServiceTypeReq"
+    responses:
+      "200":
+        description: Service type updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/service_types.yaml#/ServiceTypeRes"
+      "400":
+        description: Invalid request body or validation errors
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "403":
+        description: Insufficient permissions (admin required)
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "404":
+        description: Service type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "409":
+        description: Service type name already exists
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  delete:
+    operationId: serviceTypesDelete
+    summary: Delete a service type
+    tags:
+      - Services
+    description: Deletes a service type if no services depend on it
+    x-auth-permissions:
+      - role: admin
+        permission: all service types
+    responses:
+      "204":
+        description: Service type deleted successfully
+      "403":
+        description: Insufficient permissions (admin required)
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "404":
+        description: Service type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "409":
+        description: Cannot delete service type with dependent services
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"

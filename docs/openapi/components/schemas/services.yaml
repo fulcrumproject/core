@@ -1,0 +1,73 @@
+ServiceStatus:
+  type: string
+  enum: [New, Started, Stopped, Deleted]
+
+ServiceReq:
+  type: object
+  required:
+    - name
+    - serviceTypeId
+    - groupId
+  properties:
+    name:
+      type: string
+      example: "web-server-01"
+    properties:
+      $ref: "./common.yaml#/JSONObject"
+    agentTags:
+      type: array
+      items:
+        type: string
+      example: ["gpu", "high-memory"]
+      description: "Tags used for agent discovery when agentId is not specified"
+    agentId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "Specific agent ID (optional - if not provided, agent discovery will use agentTags)"
+    serviceTypeId:
+      $ref: "./common.yaml#/properties.UUID"
+    groupId:
+      $ref: "./common.yaml#/properties.UUID"
+
+ServiceRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "web-server-01"
+    status:
+      $ref: "./services.yaml#/ServiceStatus"
+    properties:
+      $ref: "./common.yaml#/JSONObject"
+    agentInstanceData:
+      $ref: "./common.yaml#/JSONObject"
+    agentInstanceId:
+      anyOf:
+        - type: string
+        - type: "null"
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+    consumerId:
+      $ref: "./common.yaml#/properties.UUID"
+    agentId:
+      $ref: "./common.yaml#/properties.UUID"
+    serviceTypeId:
+      $ref: "./common.yaml#/properties.UUID"
+    groupId:
+      $ref: "./common.yaml#/properties.UUID"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+# Service Type schemas
+ServiceAction:
+  type: string
+  enum: [Create, Start, Stop, Update, Delete]
+
+# Job schemas
+# Using the same ServiceAction enum for job actions
+

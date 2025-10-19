@@ -1,0 +1,25 @@
+BadRequest:
+  description: Bad Request
+  content:
+    application/json:
+      schema:
+        $ref: "./schemas/common.yaml#/ErrorRes"
+Unauthorized:
+  description: Unauthorized
+  content:
+    application/json:
+      schema:
+        $ref: "./schemas/common.yaml#/ErrorRes"
+Forbidden:
+  description: Forbidden
+  content:
+    application/json:
+      schema:
+        $ref: "./schemas/common.yaml#/ErrorRes"
+InternalServerError:
+  description: Internal Server Error
+  content:
+    application/json:
+      schema:
+        $ref: "./schemas/common.yaml#/ErrorRes"
+

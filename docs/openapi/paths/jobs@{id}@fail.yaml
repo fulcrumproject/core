@@ -1,0 +1,38 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  post:
+    operationId: jobsFail
+    summary: Fail a job
+    tags:
+      - Jobs
+    description: Marks a job as failed with an error message
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/jobs.yaml#/FailJobReq"
+    responses:
+      "204":
+        description: Job marked as failed successfully
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "404":
+        description: Job not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+#
+# Metric Type endpoints
+#

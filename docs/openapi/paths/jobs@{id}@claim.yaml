@@ -1,0 +1,29 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  post:
+    operationId: jobsClaim
+    summary: Claim a job
+    tags:
+      - Jobs
+    description: Claims a job for processing by the authenticated agent
+    security:
+      - BearerAuth: []
+    responses:
+      "204":
+        description: Job claimed successfully
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "404":
+        description: Job not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"

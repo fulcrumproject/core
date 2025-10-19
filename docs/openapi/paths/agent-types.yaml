@@ -1,0 +1,88 @@
+  get:
+    operationId: agentTypesList
+    summary: List agent types
+    tags:
+      - Agents
+    description: Retrieves a paginated list of agent types
+    x-auth-permissions:
+      - role: admin
+        permission: all agent types
+      - role: participant
+        permission: all agent types
+      - role: agent
+        permission: all agent types
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          default: 20
+    responses:
+      "200":
+        description: A paginated list of agent types
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "../components/schemas/common.yaml#/PageRes"
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: "../components/schemas/agent_types.yaml#/AgentTypeRes"
+      "401":
+        $ref: "../components/responses.yaml#/Unauthorized"
+      "403":
+        $ref: "../components/responses.yaml#/Forbidden"
+  post:
+    operationId: agentTypesCreate
+    summary: Create an agent type
+    tags:
+      - Agents
+    description: Creates a new agent type with optional service types
+    x-auth-permissions:
+      - role: admin
+        permission: all agent types
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/agent_types.yaml#/CreateAgentTypeReq"
+    responses:
+      "201":
+        description: Agent type created successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/agent_types.yaml#/AgentTypeRes"
+      "400":
+        description: Invalid request body or validation error
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "401":
+        description: Authentication required
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "403":
+        description: Administrator access required
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "409":
+        description: Agent type with same name already exists
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"

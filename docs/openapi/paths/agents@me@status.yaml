@@ -1,0 +1,38 @@
+  put:
+    operationId: agentsUpdateStatus
+    summary: Update agent status
+    tags:
+      - Agents
+    description: Updates the status of the authenticated agent
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - status
+            properties:
+              status:
+                $ref: "../components/schemas/agents.yaml#/AgentStatus"
+    responses:
+      "200":
+        description: Agent status updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/agents.yaml#/AgentRes"
+      "400":
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"

@@ -1,0 +1,244 @@
+openapi: 3.1.0
+info:
+  title: Fulcrum Core API
+  description: A comprehensive cloud infrastructure management system designed to orchestrate and monitor distributed cloud resources across multiple providers.
+  version: 1.0.0
+  contact:
+    name: Fulcrum Project
+    url: https://fulcrumproject.org
+  license:
+    name: Apache License 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+tags:
+  - name: Participants
+    description: Cloud service participant management
+  - name: Agents
+    description: Agent and agent type management
+  - name: Services
+    description: Service, service type, and service group management
+  - name: Jobs
+    description: Job queue and processing
+  - name: Metrics
+    description: Metrics collection and management
+  - name: Event
+    description: Event logging
+  - name: Tokens
+    description: Authentication token management
+
+servers:
+  - url: https://api.fulcrum.testudosrl.dev/api/v1
+    description: Development server
+
+# Default security for all operations
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: oauth2
+      description: Role-based authentication using bearer tokens
+      flows:
+        implicit:
+          authorizationUrl: https://api.fulcrum.testudosrl.dev/oauth/authorize
+          scopes:
+            admin: System administrator with unrestricted access
+            participant: Participant administrator that can act as both provider and consumer
+            agent: Agent role with access to specific operations
+
+  schemas:
+    AgentCreateRes:
+      $ref: ./components/schemas/agents.yaml#/AgentCreateRes
+    AgentRes:
+      $ref: ./components/schemas/agents.yaml#/AgentRes
+    AgentStatus:
+      $ref: ./components/schemas/agents.yaml#/AgentStatus
+    AgentTypeRes:
+      $ref: ./components/schemas/agent_types.yaml#/AgentTypeRes
+    AuthRole:
+      $ref: ./components/schemas/tokens.yaml#/AuthRole
+    CompleteJobReq:
+      $ref: ./components/schemas/jobs.yaml#/CompleteJobReq
+    CreateAgentReq:
+      $ref: ./components/schemas/agents.yaml#/CreateAgentReq
+    CreateAgentTypeReq:
+      $ref: ./components/schemas/agent_types.yaml#/CreateAgentTypeReq
+    CreateServiceTypeReq:
+      $ref: ./components/schemas/service_types.yaml#/CreateServiceTypeReq
+    ErrorRes:
+      $ref: ./components/schemas/common.yaml#/ErrorRes
+    EventAckReq:
+      $ref: ./components/schemas/events.yaml#/EventAckReq
+    EventAckRes:
+      $ref: ./components/schemas/events.yaml#/EventAckRes
+    EventLeaseReq:
+      $ref: ./components/schemas/events.yaml#/EventLeaseReq
+    EventLeaseRes:
+      $ref: ./components/schemas/events.yaml#/EventLeaseRes
+    EventRes:
+      $ref: ./components/schemas/events.yaml#/EventRes
+    FailJobReq:
+      $ref: ./components/schemas/jobs.yaml#/FailJobReq
+    JSONObject:
+      $ref: ./components/schemas/common.yaml#/JSONObject
+    JobRes:
+      $ref: ./components/schemas/jobs.yaml#/JobRes
+    JobStatus:
+      $ref: ./components/schemas/jobs.yaml#/JobStatus
+    LifecycleAction:
+      $ref: ./components/schemas/service_types.yaml#/LifecycleAction
+    LifecycleSchema:
+      $ref: ./components/schemas/service_types.yaml#/LifecycleSchema
+    LifecycleState:
+      $ref: ./components/schemas/service_types.yaml#/LifecycleState
+    LifecycleTransition:
+      $ref: ./components/schemas/service_types.yaml#/LifecycleTransition
+    MetricEntityType:
+      $ref: ./components/schemas/metric_types.yaml#/MetricEntityType
+    MetricEntryReq:
+      $ref: ./components/schemas/metric_entries.yaml#/MetricEntryReq
+    MetricEntryRes:
+      $ref: ./components/schemas/metric_entries.yaml#/MetricEntryRes
+    MetricTypeReq:
+      $ref: ./components/schemas/metric_types.yaml#/MetricTypeReq
+    MetricTypeRes:
+      $ref: ./components/schemas/metric_types.yaml#/MetricTypeRes
+    PageRes:
+      $ref: ./components/schemas/common.yaml#/PageRes
+    ParticipantReq:
+      $ref: ./components/schemas/participants.yaml#/ParticipantReq
+    ParticipantRes:
+      $ref: ./components/schemas/participants.yaml#/ParticipantRes
+    ParticipantStatus:
+      $ref: ./components/schemas/participants.yaml#/ParticipantStatus
+    PropertyDefinition:
+      $ref: ./components/schemas/service_types.yaml#/PropertyDefinition
+    PropertySchema:
+      $ref: ./components/schemas/service_types.yaml#/PropertySchema
+    ServiceAction:
+      $ref: ./components/schemas/services.yaml#/ServiceAction
+    ServiceGroupReq:
+      $ref: ./components/schemas/service_groups.yaml#/ServiceGroupReq
+    ServiceGroupRes:
+      $ref: ./components/schemas/service_groups.yaml#/ServiceGroupRes
+    ServiceOptionReq:
+      $ref: ./components/schemas/service_options.yaml#/ServiceOptionReq
+    ServiceOptionRes:
+      $ref: ./components/schemas/service_options.yaml#/ServiceOptionRes
+    ServiceOptionTypeReq:
+      $ref: ./components/schemas/service_option_types.yaml#/ServiceOptionTypeReq
+    ServiceOptionTypeRes:
+      $ref: ./components/schemas/service_option_types.yaml#/ServiceOptionTypeRes
+    ServiceReq:
+      $ref: ./components/schemas/services.yaml#/ServiceReq
+    ServiceRes:
+      $ref: ./components/schemas/services.yaml#/ServiceRes
+    ServiceStatus:
+      $ref: ./components/schemas/services.yaml#/ServiceStatus
+    ServiceTypeRes:
+      $ref: ./components/schemas/service_types.yaml#/ServiceTypeRes
+    TokenReq:
+      $ref: ./components/schemas/tokens.yaml#/TokenReq
+    TokenRes:
+      $ref: ./components/schemas/tokens.yaml#/TokenRes
+    UpdateAgentReq:
+      $ref: ./components/schemas/agents.yaml#/UpdateAgentReq
+    UpdateAgentTypeReq:
+      $ref: ./components/schemas/agent_types.yaml#/UpdateAgentTypeReq
+    UpdateServiceTypeReq:
+      $ref: ./components/schemas/service_types.yaml#/UpdateServiceTypeReq
+    ValidatePropertiesReq:
+      $ref: ./components/schemas/service_types.yaml#/ValidatePropertiesReq
+    ValidatePropertiesRes:
+      $ref: ./components/schemas/service_types.yaml#/ValidatePropertiesRes
+    ValidationError:
+      $ref: ./components/schemas/service_types.yaml#/ValidationError
+    ValidatorDefinition:
+      $ref: ./components/schemas/service_types.yaml#/ValidatorDefinition
+    properties.UUID:
+      $ref: ./components/schemas/common.yaml#/properties.UUID
+
+  responses:
+    BadRequest:
+      $ref: ./components/responses.yaml#/BadRequest
+    Unauthorized:
+      $ref: ./components/responses.yaml#/Unauthorized
+    Forbidden:
+      $ref: ./components/responses.yaml#/Forbidden
+    InternalServerError:
+      $ref: ./components/responses.yaml#/InternalServerError
+
+paths:
+  /agent-types:
+    $ref: ./paths/agent-types.yaml
+  /agent-types/{id}:
+    $ref: ./paths/agent-types@{id}.yaml
+  /agents:
+    $ref: ./paths/agents.yaml
+  /agents/me:
+    $ref: ./paths/agents@me.yaml
+  /agents/me/status:
+    $ref: ./paths/agents@me@status.yaml
+  /agents/{id}:
+    $ref: ./paths/agents@{id}.yaml
+  /events:
+    $ref: ./paths/events.yaml
+  /events/ack:
+    $ref: ./paths/events@ack.yaml
+  /events/lease:
+    $ref: ./paths/events@lease.yaml
+  /jobs:
+    $ref: ./paths/jobs.yaml
+  /jobs/pending:
+    $ref: ./paths/jobs@pending.yaml
+  /jobs/{id}:
+    $ref: ./paths/jobs@{id}.yaml
+  /jobs/{id}/claim:
+    $ref: ./paths/jobs@{id}@claim.yaml
+  /jobs/{id}/complete:
+    $ref: ./paths/jobs@{id}@complete.yaml
+  /jobs/{id}/fail:
+    $ref: ./paths/jobs@{id}@fail.yaml
+  /metric-entries:
+    $ref: ./paths/metric-entries.yaml
+  /metric-types:
+    $ref: ./paths/metric-types.yaml
+  /metric-types/{id}:
+    $ref: ./paths/metric-types@{id}.yaml
+  /participants:
+    $ref: ./paths/participants.yaml
+  /participants/{id}:
+    $ref: ./paths/participants@{id}.yaml
+  /service-groups:
+    $ref: ./paths/service-groups.yaml
+  /service-groups/{id}:
+    $ref: ./paths/service-groups@{id}.yaml
+  /service-option-types:
+    $ref: ./paths/service-option-types.yaml
+  /service-option-types/{id}:
+    $ref: ./paths/service-option-types@{id}.yaml
+  /service-options:
+    $ref: ./paths/service-options.yaml
+  /service-options/{id}:
+    $ref: ./paths/service-options@{id}.yaml
+  /service-types:
+    $ref: ./paths/service-types.yaml
+  /service-types/{id}:
+    $ref: ./paths/service-types@{id}.yaml
+  /service-types/{id}/validate:
+    $ref: ./paths/service-types@{id}@validate.yaml
+  /services:
+    $ref: ./paths/services.yaml
+  /services/{id}:
+    $ref: ./paths/services@{id}.yaml
+  /services/{id}/retry:
+    $ref: ./paths/services@{id}@retry.yaml
+  /services/{id}/{action}:
+    $ref: ./paths/services@{id}@{action}.yaml
+  /tokens:
+    $ref: ./paths/tokens.yaml
+  /tokens/{id}:
+    $ref: ./paths/tokens@{id}.yaml
+  /tokens/{id}/regenerate:
+    $ref: ./paths/tokens@{id}@regenerate.yaml

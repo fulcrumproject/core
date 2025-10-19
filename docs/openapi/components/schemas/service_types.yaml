@@ -1,0 +1,275 @@
+ServiceTypeRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "VM"
+    propertySchema:
+      $ref: "./service_types.yaml#/PropertySchema"
+    lifecycleSchema:
+      $ref: "./service_types.yaml#/LifecycleSchema"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+CreateServiceTypeReq:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      description: Name of the service type
+      example: "VM Instance"
+      minLength: 1
+    propertySchema:
+      $ref: "./service_types.yaml#/PropertySchema"
+      description: Optional property schema defining the structure and validation rules for service properties
+    lifecycleSchema:
+      $ref: "./service_types.yaml#/LifecycleSchema"
+      description: Optional lifecycle schema defining states, actions, and transitions for services of this type
+
+UpdateServiceTypeReq:
+  type: object
+  properties:
+    name:
+      type: string
+      description: Updated name of the service type
+      example: "Updated VM Instance"
+      minLength: 1
+    propertySchema:
+      $ref: "./service_types.yaml#/PropertySchema"
+      description: Updated property schema defining the structure and validation rules for service properties
+    lifecycleSchema:
+      $ref: "./service_types.yaml#/LifecycleSchema"
+      description: Updated lifecycle schema defining states, actions, and transitions for services of this type
+
+# Agent Type schemas
+PropertySchema:
+  type: object
+  description: properties.JSON schema defining validation rules for service properties
+  additionalProperties:
+    $ref: "./service_types.yaml#/PropertyDefinition"
+
+PropertyDefinition:
+  type: object
+  properties:
+    type:
+      type: string
+      enum: [string, integer, number, boolean, object, array, reference]
+      description: The data type of the property
+    label:
+      type: string
+      description: Human-readable label for the property
+    required:
+      type: boolean
+      description: Whether the property is required
+      default: false
+    default:
+      description: Default value for the property
+    validators:
+      type: array
+      items:
+        $ref: "./service_types.yaml#/ValidatorDefinition"
+      description: Array of validation rules
+    properties:
+      type: object
+      additionalProperties:
+        $ref: "./service_types.yaml#/PropertyDefinition"
+      description: Nested properties for object types
+    items:
+      $ref: "./service_types.yaml#/PropertyDefinition"
+      description: Schema for array items
+    source:
+      type: string
+      enum: [input, agent]
+      description: Who can set and update this property (input = users, agent = agents)
+      default: input
+    updatable:
+      type: string
+      enum: [always, never, statuses]
+      description: When the property can be updated (always = any time, never = immutable, statuses = only in specific statuses)
+      default: always
+    updatableIn:
+      type: array
+      items:
+        type: string
+      description: List of service statuses when property can be updated (required when updatable=statuses)
+      example: ["Stopped"]
+
+ValidatorDefinition:
+  type: object
+  required:
+    - type
+    - value
+  properties:
+    type:
+      type: string
+      enum:
+        [
+          minLength,
+          maxLength,
+          pattern,
+          enum,
+          min,
+          max,
+          minItems,
+          maxItems,
+          uniqueItems,
+          sameOrigin,
+          serviceType,
+          serviceOption,
+        ]
+      description: Type of validator
+    value:
+      description: Value for the validator (type depends on validator type)
+
+ValidatePropertiesReq:
+  type: object
+  required:
+    - properties
+  properties:
+    properties:
+      type: object
+      description: Properties to validate against the schema
+      additionalProperties: true
+
+ValidatePropertiesRes:
+  type: object
+  properties:
+    valid:
+      type: boolean
+      description: Whether the properties are valid
+    errors:
+      type: array
+      items:
+        $ref: "./service_types.yaml#/ValidationError"
+      description: Array of validation errors (empty if valid)
+
+ValidationError:
+  type: object
+  properties:
+    path:
+      type: string
+      description: Path to the property that failed validation
+      example: "cpu"
+    message:
+      type: string
+      description: Error message describing the validation failure
+      example: "property 'cpu' cannot be updated in status 'Started' (allowed statuses: [Stopped])"
+  examples:
+    - path: "ipAddress"
+      message: "property 'ipAddress' cannot be updated by user (source: agent)"
+    - path: "region"
+      message: "property 'region' cannot be updated (updatable: never)"
+    - path: "diskSize"
+      message: "property 'diskSize' cannot be updated in status 'Started' (allowed statuses: [Stopped])"
+
+# Lifecycle Schema
+LifecycleSchema:
+  type: object
+  description: |
+    Schema-driven lifecycle definition for service state management. Each ServiceType can define
+    its own custom lifecycle with states, actions, and transitions.
+  required:
+    - states
+    - actions
+    - initialState
+  properties:
+    states:
+      type: array
+      description: List of possible service states
+      items:
+        $ref: "./service_types.yaml#/LifecycleState"
+      example:
+        - name: "New"
+        - name: "Stopped"
+        - name: "Started"
+        - name: "Deleted"
+    actions:
+      type: array
+      description: List of available actions that can be performed on services
+      items:
+        $ref: "./service_types.yaml#/LifecycleAction"
+    initialState:
+      type: string
+      description: Initial state for new services
+      example: "New"
+    terminalStates:
+      type: array
+      description: States where no further actions can be performed
+      items:
+        type: string
+      example: ["Deleted"]
+    runningStates:
+      type: array
+      description: States considered "running" for uptime calculation
+      items:
+        type: string
+      example: ["Started"]
+
+LifecycleState:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      description: Unique name for this state
+      example: "Started"
+
+LifecycleAction:
+  type: object
+  required:
+    - name
+    - transitions
+  properties:
+    name:
+      type: string
+      description: Name of the action (e.g., start, stop, restart)
+      example: "start"
+    requestSchemaType:
+      type: string
+      enum: [properties]
+      description: |
+        Type of request body expected for this action:
+        - properties: Action accepts service properties in request body
+        - (none): Action requires no request body
+      example: "properties"
+    transitions:
+      type: array
+      description: State transitions for this action
+      items:
+        $ref: "./service_types.yaml#/LifecycleTransition"
+
+LifecycleTransition:
+  type: object
+  required:
+    - from
+    - to
+  properties:
+    from:
+      type: string
+      description: Source state for this transition
+      example: "Stopped"
+    to:
+      type: string
+      description: Destination state for this transition
+      example: "Started"
+    onError:
+      type: boolean
+      description: Whether this transition applies to error cases
+      default: false
+    onErrorRegexp:
+      type: string
+      description: |
+        Regular expression to match error messages. When a job fails, the error message
+        is matched against this regexp to determine which error transition to use.
+        If not specified, matches any error.
+      example: "quota.*exceeded"
+

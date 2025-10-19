@@ -1,0 +1,43 @@
+ErrorRes:
+  type: object
+  properties:
+    status:
+      type: integer
+      description: HTTP status code
+      example: 400
+    error:
+      type: string
+      description: Error message
+      example: "Invalid request parameters"
+    details:
+      type: string
+      description: Additional error details
+      example: "The field 'name' is required"
+
+properties.UUID:
+  type: string
+  format: uuid
+  example: "123e4567-e89b-12d3-a456-426614174000"
+
+JSONObject:
+  type: object
+  additionalProperties: true
+  description: A generic properties.JSON object
+
+# Participant schemas
+PageRes:
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        type: object
+    totalItems:
+      type: integer
+    totalPages:
+      type: integer
+    pageSize:
+      type: integer
+    page:
+      type: integer
+
