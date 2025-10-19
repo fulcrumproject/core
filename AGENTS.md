@@ -31,6 +31,17 @@ This document contains project-specific guidelines and technical context for wor
 - Mermaid diagrams should not contain styles
 - All code files MUST start with a brief 2-line comment explaining what the file does
 
+### OpenAPI Specification
+
+- API specification is in `docs/openapi/` using OpenAPI 3.1.0
+- Split into multiple files for maintainability:
+  - `openapi.yaml` - Main entry point
+  - `components/schemas/*.yaml` - Schema definitions grouped by domain
+  - `components/responses.yaml` - Reusable response definitions
+  - `paths/*.yaml` - Path definitions (one file per endpoint)
+- Validate changes: `npx @redocly/cli lint docs/openapi/openapi.yaml`
+- See `docs/openapi/README.md` for details on structure and workflow
+
 ### Maintaining AGENTS.md
 
 - This file is for **AI agents** working on the codebase
