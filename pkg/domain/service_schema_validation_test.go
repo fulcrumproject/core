@@ -37,14 +37,16 @@ func (m *mockStore) Atomic(ctx context.Context, fn func(store Store) error) erro
 }
 
 // Implement remaining Store interface methods
-func (m *mockStore) AgentTypeRepo() AgentTypeRepository                 { return nil }
-func (m *mockStore) AgentRepo() AgentRepository                         { return nil }
-func (m *mockStore) TokenRepo() TokenRepository                         { return nil }
-func (m *mockStore) JobRepo() JobRepository                             { return nil }
-func (m *mockStore) EventRepo() EventRepository                         { return nil }
-func (m *mockStore) EventSubscriptionRepo() EventSubscriptionRepository { return nil }
-func (m *mockStore) MetricTypeRepo() MetricTypeRepository               { return nil }
-func (m *mockStore) ParticipantRepo() ParticipantRepository             { return nil }
+func (m *mockStore) AgentTypeRepo() AgentTypeRepository                   { return nil }
+func (m *mockStore) AgentRepo() AgentRepository                           { return nil }
+func (m *mockStore) TokenRepo() TokenRepository                           { return nil }
+func (m *mockStore) JobRepo() JobRepository                               { return nil }
+func (m *mockStore) EventRepo() EventRepository                           { return nil }
+func (m *mockStore) EventSubscriptionRepo() EventSubscriptionRepository   { return nil }
+func (m *mockStore) MetricTypeRepo() MetricTypeRepository                 { return nil }
+func (m *mockStore) ParticipantRepo() ParticipantRepository               { return nil }
+func (m *mockStore) ServiceOptionTypeRepo() ServiceOptionTypeRepository   { return nil }
+func (m *mockStore) ServiceOptionRepo() ServiceOptionRepository           { return nil }
 
 // Mock service type repo
 type mockServiceTypeRepo struct {

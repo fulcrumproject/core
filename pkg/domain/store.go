@@ -14,6 +14,8 @@ type Store interface {
 	ServiceTypeRepo() ServiceTypeRepository
 	ServiceGroupRepo() ServiceGroupRepository
 	ServiceRepo() ServiceRepository
+	ServiceOptionTypeRepo() ServiceOptionTypeRepository
+	ServiceOptionRepo() ServiceOptionRepository
 	JobRepo() JobRepository
 	EventRepo() EventRepository
 	EventSubscriptionRepo() EventSubscriptionRepository
@@ -30,6 +32,8 @@ type ReadOnlyStore interface {
 	ServiceTypeQuerier() ServiceTypeQuerier
 	ServiceGroupQuerier() ServiceGroupQuerier
 	ServiceQuerier() ServiceQuerier
+	ServiceOptionTypeQuerier() ServiceOptionTypeQuerier
+	ServiceOptionQuerier() ServiceOptionQuerier
 	JobQuerier() JobQuerier
 	EventQuerier() EventQuerier
 	EventSubscriptionQuerier() EventSubscriptionQuerier
