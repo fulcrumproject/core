@@ -110,6 +110,75 @@ type ServicePoolValueQuerier interface {
 
 // ServicePoolValueCommander handles complex ServicePoolValue operations
 type ServicePoolValueCommander interface {
-	CreateServicePoolValue(ctx context.Context, params CreateServicePoolValueParams) (*ServicePoolValue, error)
-	DeleteServicePoolValue(ctx context.Context, id properties.UUID) error
+	Create(ctx context.Context, params CreateServicePoolValueParams) (*ServicePoolValue, error)
+	Delete(ctx context.Context, id properties.UUID) error
+}
+
+// servicePoolValueCommander is the concrete implementation of ServicePoolValueCommander
+type servicePoolValueCommander struct {
+	store Store
+}
+
+// NewServicePoolValueCommander creates a new ServicePoolValueCommander
+func NewServicePoolValueCommander(store Store) ServicePoolValueCommander {
+	return &servicePoolValueCommander{store: store}
+}
+
+// Create creates a new service pool value
+func (c *servicePoolValueCommander) Create(
+	ctx context.Context,
+	params CreateServicePoolValueParams,
+) (*ServicePoolValue, error) {
+	var value *ServicePoolValue
+	err := c.store.Atomic(ctx, func(store Store) error {
+		// Validate that the service pool exists
+		exists, err := store.ServicePoolRepo().Exists(ctx, params.ServicePoolID)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return NewNotFoundErrorf("service pool with id %s not found", params.ServicePoolID)
+		}
+
+		// Create the pool value
+		value = NewServicePoolValue(params)
+		if err := value.Validate(); err != nil {
+			return err
+		}
+
+		// Save to database
+		if err := store.ServicePoolValueRepo().Create(ctx, value); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
+}
+
+// Delete deletes a service pool value (only if not allocated)
+func (c *servicePoolValueCommander) Delete(
+	ctx context.Context,
+	id properties.UUID,
+) error {
+	return c.store.Atomic(ctx, func(store Store) error {
+		// Get the pool value
+		value, err := store.ServicePoolValueRepo().Get(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		// Check if it's allocated
+		if value.IsAllocated() {
+			return NewInvalidInputErrorf("cannot delete allocated pool value")
+		}
+
+		// Delete the pool value
+		return store.ServicePoolValueRepo().Delete(ctx, id)
+	})
 }

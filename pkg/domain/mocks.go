@@ -19535,12 +19535,12 @@ func (_m *MockServicePoolCommander) EXPECT() *MockServicePoolCommander_Expecter 
 	return &MockServicePoolCommander_Expecter{mock: &_m.Mock}
 }
 
-// CreateServicePool provides a mock function for the type MockServicePoolCommander
-func (_mock *MockServicePoolCommander) CreateServicePool(ctx context.Context, params CreateServicePoolParams) (*ServicePool, error) {
+// Create provides a mock function for the type MockServicePoolCommander
+func (_mock *MockServicePoolCommander) Create(ctx context.Context, params CreateServicePoolParams) (*ServicePool, error) {
 	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
-		panic("no return value specified for CreateServicePool")
+		panic("no return value specified for Create")
 	}
 
 	var r0 *ServicePool
@@ -19563,19 +19563,19 @@ func (_mock *MockServicePoolCommander) CreateServicePool(ctx context.Context, pa
 	return r0, r1
 }
 
-// MockServicePoolCommander_CreateServicePool_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateServicePool'
-type MockServicePoolCommander_CreateServicePool_Call struct {
+// MockServicePoolCommander_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockServicePoolCommander_Create_Call struct {
 	*mock.Call
 }
 
-// CreateServicePool is a helper method to define mock.On call
+// Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - params CreateServicePoolParams
-func (_e *MockServicePoolCommander_Expecter) CreateServicePool(ctx interface{}, params interface{}) *MockServicePoolCommander_CreateServicePool_Call {
-	return &MockServicePoolCommander_CreateServicePool_Call{Call: _e.mock.On("CreateServicePool", ctx, params)}
+func (_e *MockServicePoolCommander_Expecter) Create(ctx interface{}, params interface{}) *MockServicePoolCommander_Create_Call {
+	return &MockServicePoolCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
 }
 
-func (_c *MockServicePoolCommander_CreateServicePool_Call) Run(run func(ctx context.Context, params CreateServicePoolParams)) *MockServicePoolCommander_CreateServicePool_Call {
+func (_c *MockServicePoolCommander_Create_Call) Run(run func(ctx context.Context, params CreateServicePoolParams)) *MockServicePoolCommander_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -19593,22 +19593,22 @@ func (_c *MockServicePoolCommander_CreateServicePool_Call) Run(run func(ctx cont
 	return _c
 }
 
-func (_c *MockServicePoolCommander_CreateServicePool_Call) Return(servicePool *ServicePool, err error) *MockServicePoolCommander_CreateServicePool_Call {
+func (_c *MockServicePoolCommander_Create_Call) Return(servicePool *ServicePool, err error) *MockServicePoolCommander_Create_Call {
 	_c.Call.Return(servicePool, err)
 	return _c
 }
 
-func (_c *MockServicePoolCommander_CreateServicePool_Call) RunAndReturn(run func(ctx context.Context, params CreateServicePoolParams) (*ServicePool, error)) *MockServicePoolCommander_CreateServicePool_Call {
+func (_c *MockServicePoolCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateServicePoolParams) (*ServicePool, error)) *MockServicePoolCommander_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// DeleteServicePool provides a mock function for the type MockServicePoolCommander
-func (_mock *MockServicePoolCommander) DeleteServicePool(ctx context.Context, id properties.UUID) error {
+// Delete provides a mock function for the type MockServicePoolCommander
+func (_mock *MockServicePoolCommander) Delete(ctx context.Context, id properties.UUID) error {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
-		panic("no return value specified for DeleteServicePool")
+		panic("no return value specified for Delete")
 	}
 
 	var r0 error
@@ -19620,19 +19620,19 @@ func (_mock *MockServicePoolCommander) DeleteServicePool(ctx context.Context, id
 	return r0
 }
 
-// MockServicePoolCommander_DeleteServicePool_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteServicePool'
-type MockServicePoolCommander_DeleteServicePool_Call struct {
+// MockServicePoolCommander_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockServicePoolCommander_Delete_Call struct {
 	*mock.Call
 }
 
-// DeleteServicePool is a helper method to define mock.On call
+// Delete is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id properties.UUID
-func (_e *MockServicePoolCommander_Expecter) DeleteServicePool(ctx interface{}, id interface{}) *MockServicePoolCommander_DeleteServicePool_Call {
-	return &MockServicePoolCommander_DeleteServicePool_Call{Call: _e.mock.On("DeleteServicePool", ctx, id)}
+func (_e *MockServicePoolCommander_Expecter) Delete(ctx interface{}, id interface{}) *MockServicePoolCommander_Delete_Call {
+	return &MockServicePoolCommander_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
 }
 
-func (_c *MockServicePoolCommander_DeleteServicePool_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolCommander_DeleteServicePool_Call {
+func (_c *MockServicePoolCommander_Delete_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolCommander_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -19650,22 +19650,22 @@ func (_c *MockServicePoolCommander_DeleteServicePool_Call) Run(run func(ctx cont
 	return _c
 }
 
-func (_c *MockServicePoolCommander_DeleteServicePool_Call) Return(err error) *MockServicePoolCommander_DeleteServicePool_Call {
+func (_c *MockServicePoolCommander_Delete_Call) Return(err error) *MockServicePoolCommander_Delete_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockServicePoolCommander_DeleteServicePool_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockServicePoolCommander_DeleteServicePool_Call {
+func (_c *MockServicePoolCommander_Delete_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockServicePoolCommander_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// UpdateServicePool provides a mock function for the type MockServicePoolCommander
-func (_mock *MockServicePoolCommander) UpdateServicePool(ctx context.Context, id properties.UUID, params UpdateServicePoolParams) (*ServicePool, error) {
+// Update provides a mock function for the type MockServicePoolCommander
+func (_mock *MockServicePoolCommander) Update(ctx context.Context, id properties.UUID, params UpdateServicePoolParams) (*ServicePool, error) {
 	ret := _mock.Called(ctx, id, params)
 
 	if len(ret) == 0 {
-		panic("no return value specified for UpdateServicePool")
+		panic("no return value specified for Update")
 	}
 
 	var r0 *ServicePool
@@ -19688,20 +19688,20 @@ func (_mock *MockServicePoolCommander) UpdateServicePool(ctx context.Context, id
 	return r0, r1
 }
 
-// MockServicePoolCommander_UpdateServicePool_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateServicePool'
-type MockServicePoolCommander_UpdateServicePool_Call struct {
+// MockServicePoolCommander_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockServicePoolCommander_Update_Call struct {
 	*mock.Call
 }
 
-// UpdateServicePool is a helper method to define mock.On call
+// Update is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id properties.UUID
 //   - params UpdateServicePoolParams
-func (_e *MockServicePoolCommander_Expecter) UpdateServicePool(ctx interface{}, id interface{}, params interface{}) *MockServicePoolCommander_UpdateServicePool_Call {
-	return &MockServicePoolCommander_UpdateServicePool_Call{Call: _e.mock.On("UpdateServicePool", ctx, id, params)}
+func (_e *MockServicePoolCommander_Expecter) Update(ctx interface{}, id interface{}, params interface{}) *MockServicePoolCommander_Update_Call {
+	return &MockServicePoolCommander_Update_Call{Call: _e.mock.On("Update", ctx, id, params)}
 }
 
-func (_c *MockServicePoolCommander_UpdateServicePool_Call) Run(run func(ctx context.Context, id properties.UUID, params UpdateServicePoolParams)) *MockServicePoolCommander_UpdateServicePool_Call {
+func (_c *MockServicePoolCommander_Update_Call) Run(run func(ctx context.Context, id properties.UUID, params UpdateServicePoolParams)) *MockServicePoolCommander_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -19724,12 +19724,12 @@ func (_c *MockServicePoolCommander_UpdateServicePool_Call) Run(run func(ctx cont
 	return _c
 }
 
-func (_c *MockServicePoolCommander_UpdateServicePool_Call) Return(servicePool *ServicePool, err error) *MockServicePoolCommander_UpdateServicePool_Call {
+func (_c *MockServicePoolCommander_Update_Call) Return(servicePool *ServicePool, err error) *MockServicePoolCommander_Update_Call {
 	_c.Call.Return(servicePool, err)
 	return _c
 }
 
-func (_c *MockServicePoolCommander_UpdateServicePool_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, params UpdateServicePoolParams) (*ServicePool, error)) *MockServicePoolCommander_UpdateServicePool_Call {
+func (_c *MockServicePoolCommander_Update_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, params UpdateServicePoolParams) (*ServicePool, error)) *MockServicePoolCommander_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -21195,12 +21195,12 @@ func (_m *MockServicePoolSetCommander) EXPECT() *MockServicePoolSetCommander_Exp
 	return &MockServicePoolSetCommander_Expecter{mock: &_m.Mock}
 }
 
-// CreateServicePoolSet provides a mock function for the type MockServicePoolSetCommander
-func (_mock *MockServicePoolSetCommander) CreateServicePoolSet(ctx context.Context, params CreateServicePoolSetParams) (*ServicePoolSet, error) {
+// Create provides a mock function for the type MockServicePoolSetCommander
+func (_mock *MockServicePoolSetCommander) Create(ctx context.Context, params CreateServicePoolSetParams) (*ServicePoolSet, error) {
 	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
-		panic("no return value specified for CreateServicePoolSet")
+		panic("no return value specified for Create")
 	}
 
 	var r0 *ServicePoolSet
@@ -21223,19 +21223,19 @@ func (_mock *MockServicePoolSetCommander) CreateServicePoolSet(ctx context.Conte
 	return r0, r1
 }
 
-// MockServicePoolSetCommander_CreateServicePoolSet_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateServicePoolSet'
-type MockServicePoolSetCommander_CreateServicePoolSet_Call struct {
+// MockServicePoolSetCommander_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockServicePoolSetCommander_Create_Call struct {
 	*mock.Call
 }
 
-// CreateServicePoolSet is a helper method to define mock.On call
+// Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - params CreateServicePoolSetParams
-func (_e *MockServicePoolSetCommander_Expecter) CreateServicePoolSet(ctx interface{}, params interface{}) *MockServicePoolSetCommander_CreateServicePoolSet_Call {
-	return &MockServicePoolSetCommander_CreateServicePoolSet_Call{Call: _e.mock.On("CreateServicePoolSet", ctx, params)}
+func (_e *MockServicePoolSetCommander_Expecter) Create(ctx interface{}, params interface{}) *MockServicePoolSetCommander_Create_Call {
+	return &MockServicePoolSetCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
 }
 
-func (_c *MockServicePoolSetCommander_CreateServicePoolSet_Call) Run(run func(ctx context.Context, params CreateServicePoolSetParams)) *MockServicePoolSetCommander_CreateServicePoolSet_Call {
+func (_c *MockServicePoolSetCommander_Create_Call) Run(run func(ctx context.Context, params CreateServicePoolSetParams)) *MockServicePoolSetCommander_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -21253,22 +21253,22 @@ func (_c *MockServicePoolSetCommander_CreateServicePoolSet_Call) Run(run func(ct
 	return _c
 }
 
-func (_c *MockServicePoolSetCommander_CreateServicePoolSet_Call) Return(servicePoolSet *ServicePoolSet, err error) *MockServicePoolSetCommander_CreateServicePoolSet_Call {
+func (_c *MockServicePoolSetCommander_Create_Call) Return(servicePoolSet *ServicePoolSet, err error) *MockServicePoolSetCommander_Create_Call {
 	_c.Call.Return(servicePoolSet, err)
 	return _c
 }
 
-func (_c *MockServicePoolSetCommander_CreateServicePoolSet_Call) RunAndReturn(run func(ctx context.Context, params CreateServicePoolSetParams) (*ServicePoolSet, error)) *MockServicePoolSetCommander_CreateServicePoolSet_Call {
+func (_c *MockServicePoolSetCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateServicePoolSetParams) (*ServicePoolSet, error)) *MockServicePoolSetCommander_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// DeleteServicePoolSet provides a mock function for the type MockServicePoolSetCommander
-func (_mock *MockServicePoolSetCommander) DeleteServicePoolSet(ctx context.Context, id properties.UUID) error {
+// Delete provides a mock function for the type MockServicePoolSetCommander
+func (_mock *MockServicePoolSetCommander) Delete(ctx context.Context, id properties.UUID) error {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
-		panic("no return value specified for DeleteServicePoolSet")
+		panic("no return value specified for Delete")
 	}
 
 	var r0 error
@@ -21280,19 +21280,19 @@ func (_mock *MockServicePoolSetCommander) DeleteServicePoolSet(ctx context.Conte
 	return r0
 }
 
-// MockServicePoolSetCommander_DeleteServicePoolSet_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteServicePoolSet'
-type MockServicePoolSetCommander_DeleteServicePoolSet_Call struct {
+// MockServicePoolSetCommander_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockServicePoolSetCommander_Delete_Call struct {
 	*mock.Call
 }
 
-// DeleteServicePoolSet is a helper method to define mock.On call
+// Delete is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id properties.UUID
-func (_e *MockServicePoolSetCommander_Expecter) DeleteServicePoolSet(ctx interface{}, id interface{}) *MockServicePoolSetCommander_DeleteServicePoolSet_Call {
-	return &MockServicePoolSetCommander_DeleteServicePoolSet_Call{Call: _e.mock.On("DeleteServicePoolSet", ctx, id)}
+func (_e *MockServicePoolSetCommander_Expecter) Delete(ctx interface{}, id interface{}) *MockServicePoolSetCommander_Delete_Call {
+	return &MockServicePoolSetCommander_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
 }
 
-func (_c *MockServicePoolSetCommander_DeleteServicePoolSet_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolSetCommander_DeleteServicePoolSet_Call {
+func (_c *MockServicePoolSetCommander_Delete_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolSetCommander_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -21310,22 +21310,22 @@ func (_c *MockServicePoolSetCommander_DeleteServicePoolSet_Call) Run(run func(ct
 	return _c
 }
 
-func (_c *MockServicePoolSetCommander_DeleteServicePoolSet_Call) Return(err error) *MockServicePoolSetCommander_DeleteServicePoolSet_Call {
+func (_c *MockServicePoolSetCommander_Delete_Call) Return(err error) *MockServicePoolSetCommander_Delete_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockServicePoolSetCommander_DeleteServicePoolSet_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockServicePoolSetCommander_DeleteServicePoolSet_Call {
+func (_c *MockServicePoolSetCommander_Delete_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockServicePoolSetCommander_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// UpdateServicePoolSet provides a mock function for the type MockServicePoolSetCommander
-func (_mock *MockServicePoolSetCommander) UpdateServicePoolSet(ctx context.Context, id properties.UUID, params UpdateServicePoolSetParams) (*ServicePoolSet, error) {
+// Update provides a mock function for the type MockServicePoolSetCommander
+func (_mock *MockServicePoolSetCommander) Update(ctx context.Context, id properties.UUID, params UpdateServicePoolSetParams) (*ServicePoolSet, error) {
 	ret := _mock.Called(ctx, id, params)
 
 	if len(ret) == 0 {
-		panic("no return value specified for UpdateServicePoolSet")
+		panic("no return value specified for Update")
 	}
 
 	var r0 *ServicePoolSet
@@ -21348,20 +21348,20 @@ func (_mock *MockServicePoolSetCommander) UpdateServicePoolSet(ctx context.Conte
 	return r0, r1
 }
 
-// MockServicePoolSetCommander_UpdateServicePoolSet_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateServicePoolSet'
-type MockServicePoolSetCommander_UpdateServicePoolSet_Call struct {
+// MockServicePoolSetCommander_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockServicePoolSetCommander_Update_Call struct {
 	*mock.Call
 }
 
-// UpdateServicePoolSet is a helper method to define mock.On call
+// Update is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id properties.UUID
 //   - params UpdateServicePoolSetParams
-func (_e *MockServicePoolSetCommander_Expecter) UpdateServicePoolSet(ctx interface{}, id interface{}, params interface{}) *MockServicePoolSetCommander_UpdateServicePoolSet_Call {
-	return &MockServicePoolSetCommander_UpdateServicePoolSet_Call{Call: _e.mock.On("UpdateServicePoolSet", ctx, id, params)}
+func (_e *MockServicePoolSetCommander_Expecter) Update(ctx interface{}, id interface{}, params interface{}) *MockServicePoolSetCommander_Update_Call {
+	return &MockServicePoolSetCommander_Update_Call{Call: _e.mock.On("Update", ctx, id, params)}
 }
 
-func (_c *MockServicePoolSetCommander_UpdateServicePoolSet_Call) Run(run func(ctx context.Context, id properties.UUID, params UpdateServicePoolSetParams)) *MockServicePoolSetCommander_UpdateServicePoolSet_Call {
+func (_c *MockServicePoolSetCommander_Update_Call) Run(run func(ctx context.Context, id properties.UUID, params UpdateServicePoolSetParams)) *MockServicePoolSetCommander_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -21384,12 +21384,12 @@ func (_c *MockServicePoolSetCommander_UpdateServicePoolSet_Call) Run(run func(ct
 	return _c
 }
 
-func (_c *MockServicePoolSetCommander_UpdateServicePoolSet_Call) Return(servicePoolSet *ServicePoolSet, err error) *MockServicePoolSetCommander_UpdateServicePoolSet_Call {
+func (_c *MockServicePoolSetCommander_Update_Call) Return(servicePoolSet *ServicePoolSet, err error) *MockServicePoolSetCommander_Update_Call {
 	_c.Call.Return(servicePoolSet, err)
 	return _c
 }
 
-func (_c *MockServicePoolSetCommander_UpdateServicePoolSet_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, params UpdateServicePoolSetParams) (*ServicePoolSet, error)) *MockServicePoolSetCommander_UpdateServicePoolSet_Call {
+func (_c *MockServicePoolSetCommander_Update_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID, params UpdateServicePoolSetParams) (*ServicePoolSet, error)) *MockServicePoolSetCommander_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -22998,12 +22998,12 @@ func (_m *MockServicePoolValueCommander) EXPECT() *MockServicePoolValueCommander
 	return &MockServicePoolValueCommander_Expecter{mock: &_m.Mock}
 }
 
-// CreateServicePoolValue provides a mock function for the type MockServicePoolValueCommander
-func (_mock *MockServicePoolValueCommander) CreateServicePoolValue(ctx context.Context, params CreateServicePoolValueParams) (*ServicePoolValue, error) {
+// Create provides a mock function for the type MockServicePoolValueCommander
+func (_mock *MockServicePoolValueCommander) Create(ctx context.Context, params CreateServicePoolValueParams) (*ServicePoolValue, error) {
 	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
-		panic("no return value specified for CreateServicePoolValue")
+		panic("no return value specified for Create")
 	}
 
 	var r0 *ServicePoolValue
@@ -23026,19 +23026,19 @@ func (_mock *MockServicePoolValueCommander) CreateServicePoolValue(ctx context.C
 	return r0, r1
 }
 
-// MockServicePoolValueCommander_CreateServicePoolValue_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateServicePoolValue'
-type MockServicePoolValueCommander_CreateServicePoolValue_Call struct {
+// MockServicePoolValueCommander_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockServicePoolValueCommander_Create_Call struct {
 	*mock.Call
 }
 
-// CreateServicePoolValue is a helper method to define mock.On call
+// Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - params CreateServicePoolValueParams
-func (_e *MockServicePoolValueCommander_Expecter) CreateServicePoolValue(ctx interface{}, params interface{}) *MockServicePoolValueCommander_CreateServicePoolValue_Call {
-	return &MockServicePoolValueCommander_CreateServicePoolValue_Call{Call: _e.mock.On("CreateServicePoolValue", ctx, params)}
+func (_e *MockServicePoolValueCommander_Expecter) Create(ctx interface{}, params interface{}) *MockServicePoolValueCommander_Create_Call {
+	return &MockServicePoolValueCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
 }
 
-func (_c *MockServicePoolValueCommander_CreateServicePoolValue_Call) Run(run func(ctx context.Context, params CreateServicePoolValueParams)) *MockServicePoolValueCommander_CreateServicePoolValue_Call {
+func (_c *MockServicePoolValueCommander_Create_Call) Run(run func(ctx context.Context, params CreateServicePoolValueParams)) *MockServicePoolValueCommander_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -23056,22 +23056,22 @@ func (_c *MockServicePoolValueCommander_CreateServicePoolValue_Call) Run(run fun
 	return _c
 }
 
-func (_c *MockServicePoolValueCommander_CreateServicePoolValue_Call) Return(servicePoolValue *ServicePoolValue, err error) *MockServicePoolValueCommander_CreateServicePoolValue_Call {
+func (_c *MockServicePoolValueCommander_Create_Call) Return(servicePoolValue *ServicePoolValue, err error) *MockServicePoolValueCommander_Create_Call {
 	_c.Call.Return(servicePoolValue, err)
 	return _c
 }
 
-func (_c *MockServicePoolValueCommander_CreateServicePoolValue_Call) RunAndReturn(run func(ctx context.Context, params CreateServicePoolValueParams) (*ServicePoolValue, error)) *MockServicePoolValueCommander_CreateServicePoolValue_Call {
+func (_c *MockServicePoolValueCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateServicePoolValueParams) (*ServicePoolValue, error)) *MockServicePoolValueCommander_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// DeleteServicePoolValue provides a mock function for the type MockServicePoolValueCommander
-func (_mock *MockServicePoolValueCommander) DeleteServicePoolValue(ctx context.Context, id properties.UUID) error {
+// Delete provides a mock function for the type MockServicePoolValueCommander
+func (_mock *MockServicePoolValueCommander) Delete(ctx context.Context, id properties.UUID) error {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
-		panic("no return value specified for DeleteServicePoolValue")
+		panic("no return value specified for Delete")
 	}
 
 	var r0 error
@@ -23083,19 +23083,19 @@ func (_mock *MockServicePoolValueCommander) DeleteServicePoolValue(ctx context.C
 	return r0
 }
 
-// MockServicePoolValueCommander_DeleteServicePoolValue_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteServicePoolValue'
-type MockServicePoolValueCommander_DeleteServicePoolValue_Call struct {
+// MockServicePoolValueCommander_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockServicePoolValueCommander_Delete_Call struct {
 	*mock.Call
 }
 
-// DeleteServicePoolValue is a helper method to define mock.On call
+// Delete is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id properties.UUID
-func (_e *MockServicePoolValueCommander_Expecter) DeleteServicePoolValue(ctx interface{}, id interface{}) *MockServicePoolValueCommander_DeleteServicePoolValue_Call {
-	return &MockServicePoolValueCommander_DeleteServicePoolValue_Call{Call: _e.mock.On("DeleteServicePoolValue", ctx, id)}
+func (_e *MockServicePoolValueCommander_Expecter) Delete(ctx interface{}, id interface{}) *MockServicePoolValueCommander_Delete_Call {
+	return &MockServicePoolValueCommander_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
 }
 
-func (_c *MockServicePoolValueCommander_DeleteServicePoolValue_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolValueCommander_DeleteServicePoolValue_Call {
+func (_c *MockServicePoolValueCommander_Delete_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolValueCommander_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -23113,12 +23113,12 @@ func (_c *MockServicePoolValueCommander_DeleteServicePoolValue_Call) Run(run fun
 	return _c
 }
 
-func (_c *MockServicePoolValueCommander_DeleteServicePoolValue_Call) Return(err error) *MockServicePoolValueCommander_DeleteServicePoolValue_Call {
+func (_c *MockServicePoolValueCommander_Delete_Call) Return(err error) *MockServicePoolValueCommander_Delete_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockServicePoolValueCommander_DeleteServicePoolValue_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockServicePoolValueCommander_DeleteServicePoolValue_Call {
+func (_c *MockServicePoolValueCommander_Delete_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockServicePoolValueCommander_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }

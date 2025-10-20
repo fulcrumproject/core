@@ -74,7 +74,7 @@ func (h *ServicePoolHandler) Routes() func(r chi.Router) {
 			// Delete service pool - scope-checked
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeServicePool, authz.ActionDelete, h.authz, h.querier.AuthScope),
-			).Delete("/{id}", Delete(h.querier, h.commander.DeleteServicePool))
+			).Delete("/{id}", Delete(h.querier, h.commander.Delete))
 		})
 	}
 }
@@ -89,7 +89,7 @@ func (h *ServicePoolHandler) Create(ctx context.Context, req *CreateServicePoolR
 		GeneratorConfig:  req.GeneratorConfig,
 		ServicePoolSetID: req.ServicePoolSetID,
 	}
-	return h.commander.CreateServicePool(ctx, params)
+	return h.commander.Create(ctx, params)
 }
 
 func (h *ServicePoolHandler) Update(ctx context.Context, id properties.UUID, req *UpdateServicePoolReq) (*domain.ServicePool, error) {
@@ -97,7 +97,7 @@ func (h *ServicePoolHandler) Update(ctx context.Context, id properties.UUID, req
 		Name:            req.Name,
 		GeneratorConfig: req.GeneratorConfig,
 	}
-	return h.commander.UpdateServicePool(ctx, id, params)
+	return h.commander.Update(ctx, id, params)
 }
 
 // ServicePoolRes represents the response body for service pool operations

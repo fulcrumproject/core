@@ -62,7 +62,7 @@ func (h *ServicePoolValueHandler) Routes() func(r chi.Router) {
 			// Delete service pool value - scope-checked (only if not allocated)
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeServicePoolValue, authz.ActionDelete, h.authz, h.querier.AuthScope),
-			).Delete("/{id}", Delete(h.querier, h.commander.DeleteServicePoolValue))
+			).Delete("/{id}", Delete(h.querier, h.commander.Delete))
 		})
 	}
 }
@@ -75,7 +75,7 @@ func (h *ServicePoolValueHandler) Create(ctx context.Context, req *CreateService
 		Name:          req.Name,
 		Value:         req.Value,
 	}
-	return h.commander.CreateServicePoolValue(ctx, params)
+	return h.commander.Create(ctx, params)
 }
 
 // ServicePoolValueRes represents the response body for service pool value operations

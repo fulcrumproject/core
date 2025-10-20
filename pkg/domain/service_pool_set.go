@@ -83,7 +83,112 @@ type ServicePoolSetQuerier interface {
 
 // ServicePoolSetCommander handles complex ServicePoolSet operations
 type ServicePoolSetCommander interface {
-	CreateServicePoolSet(ctx context.Context, params CreateServicePoolSetParams) (*ServicePoolSet, error)
-	UpdateServicePoolSet(ctx context.Context, id properties.UUID, params UpdateServicePoolSetParams) (*ServicePoolSet, error)
-	DeleteServicePoolSet(ctx context.Context, id properties.UUID) error
+	Create(ctx context.Context, params CreateServicePoolSetParams) (*ServicePoolSet, error)
+	Update(ctx context.Context, id properties.UUID, params UpdateServicePoolSetParams) (*ServicePoolSet, error)
+	Delete(ctx context.Context, id properties.UUID) error
+}
+
+// servicePoolSetCommander is the concrete implementation of ServicePoolSetCommander
+type servicePoolSetCommander struct {
+	store Store
+}
+
+// NewServicePoolSetCommander creates a new ServicePoolSetCommander
+func NewServicePoolSetCommander(store Store) ServicePoolSetCommander {
+	return &servicePoolSetCommander{store: store}
+}
+
+// Create creates a new service pool set
+func (c *servicePoolSetCommander) Create(
+	ctx context.Context,
+	params CreateServicePoolSetParams,
+) (*ServicePoolSet, error) {
+	var poolSet *ServicePoolSet
+	err := c.store.Atomic(ctx, func(store Store) error {
+		// Validate that the provider exists
+		exists, err := store.ParticipantRepo().Exists(ctx, params.ProviderID)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return NewNotFoundErrorf("provider with id %s not found", params.ProviderID)
+		}
+
+		// Create the pool set
+		poolSet = NewServicePoolSet(params)
+		if err := poolSet.Validate(); err != nil {
+			return err
+		}
+
+		// Save to database
+		if err := store.ServicePoolSetRepo().Create(ctx, poolSet); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return poolSet, nil
+}
+
+// Update updates an existing service pool set
+func (c *servicePoolSetCommander) Update(
+	ctx context.Context,
+	id properties.UUID,
+	params UpdateServicePoolSetParams,
+) (*ServicePoolSet, error) {
+	var poolSet *ServicePoolSet
+	err := c.store.Atomic(ctx, func(store Store) error {
+		// Get the existing pool set
+		var err error
+		poolSet, err = store.ServicePoolSetRepo().Get(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		// Update fields
+		poolSet.Update(params)
+
+		// Validate
+		if err := poolSet.Validate(); err != nil {
+			return err
+		}
+
+		// Save changes
+		if err := store.ServicePoolSetRepo().Update(ctx, poolSet); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return poolSet, nil
+}
+
+// Delete deletes a service pool set
+func (c *servicePoolSetCommander) Delete(
+	ctx context.Context,
+	id properties.UUID,
+) error {
+	return c.store.Atomic(ctx, func(store Store) error {
+		// Check if the pool set exists
+		exists, err := store.ServicePoolSetRepo().Exists(ctx, id)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return NewNotFoundErrorf("service pool set with id %s not found", id)
+		}
+
+		// Delete the pool set
+		return store.ServicePoolSetRepo().Delete(ctx, id)
+	})
 }

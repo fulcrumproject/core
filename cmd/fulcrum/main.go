@@ -141,14 +141,19 @@ func main() {
 
 	athz := auth.NewRuleBasedAuthorizer(authz.Rules)
 
+	// Initialize commanders for service pools
+	servicePoolSetCmd := domain.NewServicePoolSetCommander(store)
+	servicePoolCmd := domain.NewServicePoolCommander(store)
+	servicePoolValueCmd := domain.NewServicePoolValueCommander(store)
+
 	// Initialize handlers
 	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz)
 	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz)
 	serviceOptionTypeHandler := api.NewServiceOptionTypeHandler(store.ServiceOptionTypeRepo(), serviceOptionTypeCmd, athz)
 	serviceOptionHandler := api.NewServiceOptionHandler(store.ServiceOptionRepo(), serviceOptionCmd, athz)
-	servicePoolSetHandler := api.NewServicePoolSetHandler(store.ServicePoolSetRepo(), nil, athz)       // TODO: Add commander in Phase 6
-	servicePoolHandler := api.NewServicePoolHandler(store.ServicePoolRepo(), nil, athz)                // TODO: Add commander in Phase 6
-	servicePoolValueHandler := api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), nil, athz) // TODO: Add commander in Phase 6
+	servicePoolSetHandler := api.NewServicePoolSetHandler(store.ServicePoolSetRepo(), servicePoolSetCmd, athz)
+	servicePoolHandler := api.NewServicePoolHandler(store.ServicePoolRepo(), servicePoolCmd, athz)
+	servicePoolValueHandler := api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), servicePoolValueCmd, athz)
 	participantHandler := api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz)
 	agentHandler := api.NewAgentHandler(store.AgentRepo(), agentCmd, athz)
 	serviceGroupHandler := api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz)
