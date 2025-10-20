@@ -1021,6 +1021,57 @@ func TestValidatePropertiesForUpdate(t *testing.T) {
 			expectErr:     true,
 			errMsg:        "cannot be updated (updatable: never)",
 		},
+		{
+			name: "User cannot update system property",
+			updates: map[string]any{
+				"publicIp": "192.168.1.20",
+			},
+			currentStatus: "Running",
+			schema: &ServicePropertySchema{
+				"publicIp": ServicePropertyDefinition{
+					Type:      "string",
+					Source:    "system",
+					Updatable: "never",
+				},
+			},
+			updateSource: "user",
+			expectErr:    true,
+			errMsg:       "cannot be updated by user (source: system)",
+		},
+		{
+			name: "Agent cannot update system property",
+			updates: map[string]any{
+				"publicIp": "192.168.1.20",
+			},
+			currentStatus: "Running",
+			schema: &ServicePropertySchema{
+				"publicIp": ServicePropertyDefinition{
+					Type:      "string",
+					Source:    "system",
+					Updatable: "never",
+				},
+			},
+			updateSource: "agent",
+			expectErr:    true,
+			errMsg:       "cannot be updated by agent (source: system)",
+		},
+		{
+			name: "System can update system property (but will fail on updatable validation)",
+			updates: map[string]any{
+				"publicIp": "192.168.1.20",
+			},
+			currentStatus: "Running",
+			schema: &ServicePropertySchema{
+				"publicIp": ServicePropertyDefinition{
+					Type:      "string",
+					Source:    "system",
+					Updatable: "never",
+				},
+			},
+			updateSource: "system",
+			expectErr:    true,
+			errMsg:       "cannot be updated (updatable: never)",
+		},
 	}
 
 	for _, tt := range tests {
@@ -1183,6 +1234,50 @@ func TestValidatePropertiesForCreation(t *testing.T) {
 			source:    "agent",
 			expectErr: true,
 			errMsg:    "cannot be set by agent (source: input)",
+		},
+		{
+			name: "User cannot set system property",
+			properties: map[string]any{
+				"publicIp": "192.168.1.10",
+			},
+			schema: &ServicePropertySchema{
+				"publicIp": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "system",
+				},
+			},
+			source:    "user",
+			expectErr: true,
+			errMsg:    "cannot be set by user (source: system)",
+		},
+		{
+			name: "Agent cannot set system property",
+			properties: map[string]any{
+				"publicIp": "192.168.1.10",
+			},
+			schema: &ServicePropertySchema{
+				"publicIp": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "system",
+				},
+			},
+			source:    "agent",
+			expectErr: true,
+			errMsg:    "cannot be set by agent (source: system)",
+		},
+		{
+			name: "System can set system property",
+			properties: map[string]any{
+				"publicIp": "192.168.1.10",
+			},
+			schema: &ServicePropertySchema{
+				"publicIp": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "system",
+				},
+			},
+			source:    "system",
+			expectErr: false,
 		},
 	}
 

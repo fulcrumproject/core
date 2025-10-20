@@ -887,6 +887,8 @@ func ValidatePropertiesForCreation(properties map[string]any, schema *ServicePro
 			if propSource != "agent" {
 				return fmt.Errorf("property '%s' cannot be set by agent (source: %s)", propName, propSource)
 			}
+		case "system":
+			// System can set any property
 		default:
 			return fmt.Errorf("invalid source: %s", source)
 		}
@@ -931,6 +933,8 @@ func ValidatePropertiesForUpdate(updates map[string]any, currentStatus string, s
 			if propSource != "agent" {
 				return fmt.Errorf("property '%s' cannot be updated by agent (source: %s)", propName, propSource)
 			}
+		case "system":
+			// System can update any property
 		default:
 			return fmt.Errorf("invalid update source: %s", updateSource)
 		}

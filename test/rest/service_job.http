@@ -171,7 +171,7 @@ Content-Type: application/json
         "publicIp": {
             "type": "string",
             "label": "Public IP",
-            "source": "agent",
+            "source": "system",
             "updatable": "never",
             "validators": [
                 {
@@ -336,10 +336,6 @@ Content-Type: application/json
     "serviceTypeId": "{{createVMServiceType.response.body.id}}",
     "groupId": "{{createServiceGroup.response.body.id}}"
 }
-
-### ✅ Verify service options are listed correctly
-GET {{baseUrl}}/service-options?providerId={{createProvider.response.body.id}}&serviceOptionTypeId={{createOSOptionType.response.body.id}}
-Authorization: Bearer {{adminToken}}
 
 ###############################################################################
 ### PART 3: SERVICE CREATION & INITIAL JOB

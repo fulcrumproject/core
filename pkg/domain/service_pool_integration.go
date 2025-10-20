@@ -34,8 +34,13 @@ func AllocateServicePoolProperties(
 		result[k] = v
 	}
 
-	// Find properties with servicePool validators and allocate
+	// Find properties with servicePool validators and source: "system", then allocate
 	for propName, propDef := range propertySchema {
+		// Only allocate properties with source: "system"
+		if propDef.Source != "system" {
+			continue
+		}
+
 		// Check if this property has a servicePool validator
 		var poolType string
 		for _, validator := range propDef.Validators {

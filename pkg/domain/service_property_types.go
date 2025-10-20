@@ -89,8 +89,8 @@ func (cs ServicePropertySchema) Validate() error {
 func validatePropertyDefinition(propName string, propDef ServicePropertyDefinition) error {
 	// Validate source field
 	if propDef.Source != "" {
-		if propDef.Source != "input" && propDef.Source != "agent" {
-			return fmt.Errorf("property %s: source must be 'input' or 'agent', got '%s'", propName, propDef.Source)
+		if propDef.Source != "input" && propDef.Source != "agent" && propDef.Source != "system" {
+			return fmt.Errorf("property %s: source must be 'input', 'agent', or 'system', got '%s'", propName, propDef.Source)
 		}
 	}
 
@@ -136,7 +136,7 @@ type ServicePropertyDefinition struct {
 	Items      *ServicePropertyDefinition           `json:"items,omitempty"`
 
 	// Property source and updatability control
-	Source      string   `json:"source,omitempty"`      // "input", "agent"
+	Source      string   `json:"source,omitempty"`      // "input", "agent", "system"
 	Updatable   string   `json:"updatable,omitempty"`   // "always", "never", "statuses"
 	UpdatableIn []string `json:"updatableIn,omitempty"` // For "statuses" mode
 }
