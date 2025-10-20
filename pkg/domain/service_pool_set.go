@@ -76,8 +76,8 @@ type ServicePoolSetRepository interface {
 // ServicePoolSetQuerier provides read-only access to ServicePoolSet entities
 type ServicePoolSetQuerier interface {
 	Get(ctx context.Context, id properties.UUID) (*ServicePoolSet, error)
-	List(ctx context.Context) ([]*ServicePoolSet, error)
-	ListByProvider(ctx context.Context, providerID properties.UUID) ([]*ServicePoolSet, error)
+	FindByProvider(ctx context.Context, providerID properties.UUID) ([]*ServicePoolSet, error)
+	FindByProviderAndName(ctx context.Context, providerID properties.UUID, name string) (*ServicePoolSet, error)
 	Exists(ctx context.Context, id properties.UUID) (bool, error)
 }
 
@@ -87,4 +87,3 @@ type ServicePoolSetCommander interface {
 	UpdateServicePoolSet(ctx context.Context, id properties.UUID, params UpdateServicePoolSetParams) (*ServicePoolSet, error)
 	DeleteServicePoolSet(ctx context.Context, id properties.UUID) error
 }
-

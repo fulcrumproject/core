@@ -18676,68 +18676,6 @@ func (_c *MockServicePoolRepository_Get_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
-// List provides a mock function for the type MockServicePoolRepository
-func (_mock *MockServicePoolRepository) List(ctx context.Context) ([]*ServicePool, error) {
-	ret := _mock.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for List")
-	}
-
-	var r0 []*ServicePool
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*ServicePool, error)); ok {
-		return returnFunc(ctx)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []*ServicePool); ok {
-		r0 = returnFunc(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*ServicePool)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockServicePoolRepository_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
-type MockServicePoolRepository_List_Call struct {
-	*mock.Call
-}
-
-// List is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockServicePoolRepository_Expecter) List(ctx interface{}) *MockServicePoolRepository_List_Call {
-	return &MockServicePoolRepository_List_Call{Call: _e.mock.On("List", ctx)}
-}
-
-func (_c *MockServicePoolRepository_List_Call) Run(run func(ctx context.Context)) *MockServicePoolRepository_List_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockServicePoolRepository_List_Call) Return(servicePools []*ServicePool, err error) *MockServicePoolRepository_List_Call {
-	_c.Call.Return(servicePools, err)
-	return _c
-}
-
-func (_c *MockServicePoolRepository_List_Call) RunAndReturn(run func(ctx context.Context) ([]*ServicePool, error)) *MockServicePoolRepository_List_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // ListByPoolSet provides a mock function for the type MockServicePoolRepository
 func (_mock *MockServicePoolRepository) ListByPoolSet(ctx context.Context, poolSetID properties.UUID) ([]*ServicePool, error) {
 	ret := _mock.Called(ctx, poolSetID)
@@ -19098,68 +19036,6 @@ func (_c *MockServicePoolQuerier_Get_Call) RunAndReturn(run func(ctx context.Con
 	return _c
 }
 
-// List provides a mock function for the type MockServicePoolQuerier
-func (_mock *MockServicePoolQuerier) List(ctx context.Context) ([]*ServicePool, error) {
-	ret := _mock.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for List")
-	}
-
-	var r0 []*ServicePool
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*ServicePool, error)); ok {
-		return returnFunc(ctx)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []*ServicePool); ok {
-		r0 = returnFunc(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*ServicePool)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockServicePoolQuerier_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
-type MockServicePoolQuerier_List_Call struct {
-	*mock.Call
-}
-
-// List is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockServicePoolQuerier_Expecter) List(ctx interface{}) *MockServicePoolQuerier_List_Call {
-	return &MockServicePoolQuerier_List_Call{Call: _e.mock.On("List", ctx)}
-}
-
-func (_c *MockServicePoolQuerier_List_Call) Run(run func(ctx context.Context)) *MockServicePoolQuerier_List_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockServicePoolQuerier_List_Call) Return(servicePools []*ServicePool, err error) *MockServicePoolQuerier_List_Call {
-	_c.Call.Return(servicePools, err)
-	return _c
-}
-
-func (_c *MockServicePoolQuerier_List_Call) RunAndReturn(run func(ctx context.Context) ([]*ServicePool, error)) *MockServicePoolQuerier_List_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // ListByPoolSet provides a mock function for the type MockServicePoolQuerier
 func (_mock *MockServicePoolQuerier) ListByPoolSet(ctx context.Context, poolSetID properties.UUID) ([]*ServicePool, error) {
 	ret := _mock.Called(ctx, poolSetID)
@@ -19454,6 +19330,259 @@ func (_c *MockServicePoolCommander_UpdateServicePool_Call) RunAndReturn(run func
 	return _c
 }
 
+// NewMockPoolGenerator creates a new instance of MockPoolGenerator. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockPoolGenerator(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockPoolGenerator {
+	mock := &MockPoolGenerator{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockPoolGenerator is an autogenerated mock type for the PoolGenerator type
+type MockPoolGenerator struct {
+	mock.Mock
+}
+
+type MockPoolGenerator_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockPoolGenerator) EXPECT() *MockPoolGenerator_Expecter {
+	return &MockPoolGenerator_Expecter{mock: &_m.Mock}
+}
+
+// Allocate provides a mock function for the type MockPoolGenerator
+func (_mock *MockPoolGenerator) Allocate(ctx context.Context, poolID properties.UUID, serviceID properties.UUID, propertyName string) (any, error) {
+	ret := _mock.Called(ctx, poolID, serviceID, propertyName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Allocate")
+	}
+
+	var r0 any
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, properties.UUID, string) (any, error)); ok {
+		return returnFunc(ctx, poolID, serviceID, propertyName)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, properties.UUID, string) any); ok {
+		r0 = returnFunc(ctx, poolID, serviceID, propertyName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(any)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, properties.UUID, string) error); ok {
+		r1 = returnFunc(ctx, poolID, serviceID, propertyName)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPoolGenerator_Allocate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Allocate'
+type MockPoolGenerator_Allocate_Call struct {
+	*mock.Call
+}
+
+// Allocate is a helper method to define mock.On call
+//   - ctx context.Context
+//   - poolID properties.UUID
+//   - serviceID properties.UUID
+//   - propertyName string
+func (_e *MockPoolGenerator_Expecter) Allocate(ctx interface{}, poolID interface{}, serviceID interface{}, propertyName interface{}) *MockPoolGenerator_Allocate_Call {
+	return &MockPoolGenerator_Allocate_Call{Call: _e.mock.On("Allocate", ctx, poolID, serviceID, propertyName)}
+}
+
+func (_c *MockPoolGenerator_Allocate_Call) Run(run func(ctx context.Context, poolID properties.UUID, serviceID properties.UUID, propertyName string)) *MockPoolGenerator_Allocate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		var arg2 properties.UUID
+		if args[2] != nil {
+			arg2 = args[2].(properties.UUID)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPoolGenerator_Allocate_Call) Return(v any, err error) *MockPoolGenerator_Allocate_Call {
+	_c.Call.Return(v, err)
+	return _c
+}
+
+func (_c *MockPoolGenerator_Allocate_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID, serviceID properties.UUID, propertyName string) (any, error)) *MockPoolGenerator_Allocate_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Release provides a mock function for the type MockPoolGenerator
+func (_mock *MockPoolGenerator) Release(ctx context.Context, serviceID properties.UUID) error {
+	ret := _mock.Called(ctx, serviceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Release")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
+		r0 = returnFunc(ctx, serviceID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockPoolGenerator_Release_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Release'
+type MockPoolGenerator_Release_Call struct {
+	*mock.Call
+}
+
+// Release is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceID properties.UUID
+func (_e *MockPoolGenerator_Expecter) Release(ctx interface{}, serviceID interface{}) *MockPoolGenerator_Release_Call {
+	return &MockPoolGenerator_Release_Call{Call: _e.mock.On("Release", ctx, serviceID)}
+}
+
+func (_c *MockPoolGenerator_Release_Call) Run(run func(ctx context.Context, serviceID properties.UUID)) *MockPoolGenerator_Release_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPoolGenerator_Release_Call) Return(err error) *MockPoolGenerator_Release_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockPoolGenerator_Release_Call) RunAndReturn(run func(ctx context.Context, serviceID properties.UUID) error) *MockPoolGenerator_Release_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockPoolGeneratorFactory creates a new instance of MockPoolGeneratorFactory. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockPoolGeneratorFactory(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockPoolGeneratorFactory {
+	mock := &MockPoolGeneratorFactory{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockPoolGeneratorFactory is an autogenerated mock type for the PoolGeneratorFactory type
+type MockPoolGeneratorFactory struct {
+	mock.Mock
+}
+
+type MockPoolGeneratorFactory_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockPoolGeneratorFactory) EXPECT() *MockPoolGeneratorFactory_Expecter {
+	return &MockPoolGeneratorFactory_Expecter{mock: &_m.Mock}
+}
+
+// CreateGenerator provides a mock function for the type MockPoolGeneratorFactory
+func (_mock *MockPoolGeneratorFactory) CreateGenerator(pool *ServicePool) (PoolGenerator, error) {
+	ret := _mock.Called(pool)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateGenerator")
+	}
+
+	var r0 PoolGenerator
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(*ServicePool) (PoolGenerator, error)); ok {
+		return returnFunc(pool)
+	}
+	if returnFunc, ok := ret.Get(0).(func(*ServicePool) PoolGenerator); ok {
+		r0 = returnFunc(pool)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(PoolGenerator)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(*ServicePool) error); ok {
+		r1 = returnFunc(pool)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPoolGeneratorFactory_CreateGenerator_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateGenerator'
+type MockPoolGeneratorFactory_CreateGenerator_Call struct {
+	*mock.Call
+}
+
+// CreateGenerator is a helper method to define mock.On call
+//   - pool *ServicePool
+func (_e *MockPoolGeneratorFactory_Expecter) CreateGenerator(pool interface{}) *MockPoolGeneratorFactory_CreateGenerator_Call {
+	return &MockPoolGeneratorFactory_CreateGenerator_Call{Call: _e.mock.On("CreateGenerator", pool)}
+}
+
+func (_c *MockPoolGeneratorFactory_CreateGenerator_Call) Run(run func(pool *ServicePool)) *MockPoolGeneratorFactory_CreateGenerator_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 *ServicePool
+		if args[0] != nil {
+			arg0 = args[0].(*ServicePool)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPoolGeneratorFactory_CreateGenerator_Call) Return(poolGenerator PoolGenerator, err error) *MockPoolGeneratorFactory_CreateGenerator_Call {
+	_c.Call.Return(poolGenerator, err)
+	return _c
+}
+
+func (_c *MockPoolGeneratorFactory_CreateGenerator_Call) RunAndReturn(run func(pool *ServicePool) (PoolGenerator, error)) *MockPoolGeneratorFactory_CreateGenerator_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockServicePoolSetRepository creates a new instance of MockServicePoolSetRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockServicePoolSetRepository(t interface {
@@ -19661,6 +19790,148 @@ func (_c *MockServicePoolSetRepository_Exists_Call) RunAndReturn(run func(ctx co
 	return _c
 }
 
+// FindByProvider provides a mock function for the type MockServicePoolSetRepository
+func (_mock *MockServicePoolSetRepository) FindByProvider(ctx context.Context, providerID properties.UUID) ([]*ServicePoolSet, error) {
+	ret := _mock.Called(ctx, providerID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByProvider")
+	}
+
+	var r0 []*ServicePoolSet
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ServicePoolSet, error)); ok {
+		return returnFunc(ctx, providerID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ServicePoolSet); ok {
+		r0 = returnFunc(ctx, providerID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ServicePoolSet)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, providerID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolSetRepository_FindByProvider_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByProvider'
+type MockServicePoolSetRepository_FindByProvider_Call struct {
+	*mock.Call
+}
+
+// FindByProvider is a helper method to define mock.On call
+//   - ctx context.Context
+//   - providerID properties.UUID
+func (_e *MockServicePoolSetRepository_Expecter) FindByProvider(ctx interface{}, providerID interface{}) *MockServicePoolSetRepository_FindByProvider_Call {
+	return &MockServicePoolSetRepository_FindByProvider_Call{Call: _e.mock.On("FindByProvider", ctx, providerID)}
+}
+
+func (_c *MockServicePoolSetRepository_FindByProvider_Call) Run(run func(ctx context.Context, providerID properties.UUID)) *MockServicePoolSetRepository_FindByProvider_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolSetRepository_FindByProvider_Call) Return(servicePoolSets []*ServicePoolSet, err error) *MockServicePoolSetRepository_FindByProvider_Call {
+	_c.Call.Return(servicePoolSets, err)
+	return _c
+}
+
+func (_c *MockServicePoolSetRepository_FindByProvider_Call) RunAndReturn(run func(ctx context.Context, providerID properties.UUID) ([]*ServicePoolSet, error)) *MockServicePoolSetRepository_FindByProvider_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByProviderAndName provides a mock function for the type MockServicePoolSetRepository
+func (_mock *MockServicePoolSetRepository) FindByProviderAndName(ctx context.Context, providerID properties.UUID, name string) (*ServicePoolSet, error) {
+	ret := _mock.Called(ctx, providerID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByProviderAndName")
+	}
+
+	var r0 *ServicePoolSet
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) (*ServicePoolSet, error)); ok {
+		return returnFunc(ctx, providerID, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) *ServicePoolSet); ok {
+		r0 = returnFunc(ctx, providerID, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*ServicePoolSet)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, string) error); ok {
+		r1 = returnFunc(ctx, providerID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolSetRepository_FindByProviderAndName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByProviderAndName'
+type MockServicePoolSetRepository_FindByProviderAndName_Call struct {
+	*mock.Call
+}
+
+// FindByProviderAndName is a helper method to define mock.On call
+//   - ctx context.Context
+//   - providerID properties.UUID
+//   - name string
+func (_e *MockServicePoolSetRepository_Expecter) FindByProviderAndName(ctx interface{}, providerID interface{}, name interface{}) *MockServicePoolSetRepository_FindByProviderAndName_Call {
+	return &MockServicePoolSetRepository_FindByProviderAndName_Call{Call: _e.mock.On("FindByProviderAndName", ctx, providerID, name)}
+}
+
+func (_c *MockServicePoolSetRepository_FindByProviderAndName_Call) Run(run func(ctx context.Context, providerID properties.UUID, name string)) *MockServicePoolSetRepository_FindByProviderAndName_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolSetRepository_FindByProviderAndName_Call) Return(servicePoolSet *ServicePoolSet, err error) *MockServicePoolSetRepository_FindByProviderAndName_Call {
+	_c.Call.Return(servicePoolSet, err)
+	return _c
+}
+
+func (_c *MockServicePoolSetRepository_FindByProviderAndName_Call) RunAndReturn(run func(ctx context.Context, providerID properties.UUID, name string) (*ServicePoolSet, error)) *MockServicePoolSetRepository_FindByProviderAndName_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Get provides a mock function for the type MockServicePoolSetRepository
 func (_mock *MockServicePoolSetRepository) Get(ctx context.Context, id properties.UUID) (*ServicePoolSet, error) {
 	ret := _mock.Called(ctx, id)
@@ -19725,136 +19996,6 @@ func (_c *MockServicePoolSetRepository_Get_Call) Return(servicePoolSet *ServiceP
 }
 
 func (_c *MockServicePoolSetRepository_Get_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*ServicePoolSet, error)) *MockServicePoolSetRepository_Get_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// List provides a mock function for the type MockServicePoolSetRepository
-func (_mock *MockServicePoolSetRepository) List(ctx context.Context) ([]*ServicePoolSet, error) {
-	ret := _mock.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for List")
-	}
-
-	var r0 []*ServicePoolSet
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*ServicePoolSet, error)); ok {
-		return returnFunc(ctx)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []*ServicePoolSet); ok {
-		r0 = returnFunc(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*ServicePoolSet)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockServicePoolSetRepository_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
-type MockServicePoolSetRepository_List_Call struct {
-	*mock.Call
-}
-
-// List is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockServicePoolSetRepository_Expecter) List(ctx interface{}) *MockServicePoolSetRepository_List_Call {
-	return &MockServicePoolSetRepository_List_Call{Call: _e.mock.On("List", ctx)}
-}
-
-func (_c *MockServicePoolSetRepository_List_Call) Run(run func(ctx context.Context)) *MockServicePoolSetRepository_List_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockServicePoolSetRepository_List_Call) Return(servicePoolSets []*ServicePoolSet, err error) *MockServicePoolSetRepository_List_Call {
-	_c.Call.Return(servicePoolSets, err)
-	return _c
-}
-
-func (_c *MockServicePoolSetRepository_List_Call) RunAndReturn(run func(ctx context.Context) ([]*ServicePoolSet, error)) *MockServicePoolSetRepository_List_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// ListByProvider provides a mock function for the type MockServicePoolSetRepository
-func (_mock *MockServicePoolSetRepository) ListByProvider(ctx context.Context, providerID properties.UUID) ([]*ServicePoolSet, error) {
-	ret := _mock.Called(ctx, providerID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ListByProvider")
-	}
-
-	var r0 []*ServicePoolSet
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ServicePoolSet, error)); ok {
-		return returnFunc(ctx, providerID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ServicePoolSet); ok {
-		r0 = returnFunc(ctx, providerID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*ServicePoolSet)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
-		r1 = returnFunc(ctx, providerID)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockServicePoolSetRepository_ListByProvider_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListByProvider'
-type MockServicePoolSetRepository_ListByProvider_Call struct {
-	*mock.Call
-}
-
-// ListByProvider is a helper method to define mock.On call
-//   - ctx context.Context
-//   - providerID properties.UUID
-func (_e *MockServicePoolSetRepository_Expecter) ListByProvider(ctx interface{}, providerID interface{}) *MockServicePoolSetRepository_ListByProvider_Call {
-	return &MockServicePoolSetRepository_ListByProvider_Call{Call: _e.mock.On("ListByProvider", ctx, providerID)}
-}
-
-func (_c *MockServicePoolSetRepository_ListByProvider_Call) Run(run func(ctx context.Context, providerID properties.UUID)) *MockServicePoolSetRepository_ListByProvider_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 properties.UUID
-		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockServicePoolSetRepository_ListByProvider_Call) Return(servicePoolSets []*ServicePoolSet, err error) *MockServicePoolSetRepository_ListByProvider_Call {
-	_c.Call.Return(servicePoolSets, err)
-	return _c
-}
-
-func (_c *MockServicePoolSetRepository_ListByProvider_Call) RunAndReturn(run func(ctx context.Context, providerID properties.UUID) ([]*ServicePoolSet, error)) *MockServicePoolSetRepository_ListByProvider_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -20009,6 +20150,148 @@ func (_c *MockServicePoolSetQuerier_Exists_Call) RunAndReturn(run func(ctx conte
 	return _c
 }
 
+// FindByProvider provides a mock function for the type MockServicePoolSetQuerier
+func (_mock *MockServicePoolSetQuerier) FindByProvider(ctx context.Context, providerID properties.UUID) ([]*ServicePoolSet, error) {
+	ret := _mock.Called(ctx, providerID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByProvider")
+	}
+
+	var r0 []*ServicePoolSet
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ServicePoolSet, error)); ok {
+		return returnFunc(ctx, providerID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ServicePoolSet); ok {
+		r0 = returnFunc(ctx, providerID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ServicePoolSet)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, providerID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolSetQuerier_FindByProvider_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByProvider'
+type MockServicePoolSetQuerier_FindByProvider_Call struct {
+	*mock.Call
+}
+
+// FindByProvider is a helper method to define mock.On call
+//   - ctx context.Context
+//   - providerID properties.UUID
+func (_e *MockServicePoolSetQuerier_Expecter) FindByProvider(ctx interface{}, providerID interface{}) *MockServicePoolSetQuerier_FindByProvider_Call {
+	return &MockServicePoolSetQuerier_FindByProvider_Call{Call: _e.mock.On("FindByProvider", ctx, providerID)}
+}
+
+func (_c *MockServicePoolSetQuerier_FindByProvider_Call) Run(run func(ctx context.Context, providerID properties.UUID)) *MockServicePoolSetQuerier_FindByProvider_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolSetQuerier_FindByProvider_Call) Return(servicePoolSets []*ServicePoolSet, err error) *MockServicePoolSetQuerier_FindByProvider_Call {
+	_c.Call.Return(servicePoolSets, err)
+	return _c
+}
+
+func (_c *MockServicePoolSetQuerier_FindByProvider_Call) RunAndReturn(run func(ctx context.Context, providerID properties.UUID) ([]*ServicePoolSet, error)) *MockServicePoolSetQuerier_FindByProvider_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByProviderAndName provides a mock function for the type MockServicePoolSetQuerier
+func (_mock *MockServicePoolSetQuerier) FindByProviderAndName(ctx context.Context, providerID properties.UUID, name string) (*ServicePoolSet, error) {
+	ret := _mock.Called(ctx, providerID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByProviderAndName")
+	}
+
+	var r0 *ServicePoolSet
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) (*ServicePoolSet, error)); ok {
+		return returnFunc(ctx, providerID, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) *ServicePoolSet); ok {
+		r0 = returnFunc(ctx, providerID, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*ServicePoolSet)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, string) error); ok {
+		r1 = returnFunc(ctx, providerID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolSetQuerier_FindByProviderAndName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByProviderAndName'
+type MockServicePoolSetQuerier_FindByProviderAndName_Call struct {
+	*mock.Call
+}
+
+// FindByProviderAndName is a helper method to define mock.On call
+//   - ctx context.Context
+//   - providerID properties.UUID
+//   - name string
+func (_e *MockServicePoolSetQuerier_Expecter) FindByProviderAndName(ctx interface{}, providerID interface{}, name interface{}) *MockServicePoolSetQuerier_FindByProviderAndName_Call {
+	return &MockServicePoolSetQuerier_FindByProviderAndName_Call{Call: _e.mock.On("FindByProviderAndName", ctx, providerID, name)}
+}
+
+func (_c *MockServicePoolSetQuerier_FindByProviderAndName_Call) Run(run func(ctx context.Context, providerID properties.UUID, name string)) *MockServicePoolSetQuerier_FindByProviderAndName_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolSetQuerier_FindByProviderAndName_Call) Return(servicePoolSet *ServicePoolSet, err error) *MockServicePoolSetQuerier_FindByProviderAndName_Call {
+	_c.Call.Return(servicePoolSet, err)
+	return _c
+}
+
+func (_c *MockServicePoolSetQuerier_FindByProviderAndName_Call) RunAndReturn(run func(ctx context.Context, providerID properties.UUID, name string) (*ServicePoolSet, error)) *MockServicePoolSetQuerier_FindByProviderAndName_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Get provides a mock function for the type MockServicePoolSetQuerier
 func (_mock *MockServicePoolSetQuerier) Get(ctx context.Context, id properties.UUID) (*ServicePoolSet, error) {
 	ret := _mock.Called(ctx, id)
@@ -20073,136 +20356,6 @@ func (_c *MockServicePoolSetQuerier_Get_Call) Return(servicePoolSet *ServicePool
 }
 
 func (_c *MockServicePoolSetQuerier_Get_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*ServicePoolSet, error)) *MockServicePoolSetQuerier_Get_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// List provides a mock function for the type MockServicePoolSetQuerier
-func (_mock *MockServicePoolSetQuerier) List(ctx context.Context) ([]*ServicePoolSet, error) {
-	ret := _mock.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for List")
-	}
-
-	var r0 []*ServicePoolSet
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*ServicePoolSet, error)); ok {
-		return returnFunc(ctx)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []*ServicePoolSet); ok {
-		r0 = returnFunc(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*ServicePoolSet)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockServicePoolSetQuerier_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
-type MockServicePoolSetQuerier_List_Call struct {
-	*mock.Call
-}
-
-// List is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockServicePoolSetQuerier_Expecter) List(ctx interface{}) *MockServicePoolSetQuerier_List_Call {
-	return &MockServicePoolSetQuerier_List_Call{Call: _e.mock.On("List", ctx)}
-}
-
-func (_c *MockServicePoolSetQuerier_List_Call) Run(run func(ctx context.Context)) *MockServicePoolSetQuerier_List_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockServicePoolSetQuerier_List_Call) Return(servicePoolSets []*ServicePoolSet, err error) *MockServicePoolSetQuerier_List_Call {
-	_c.Call.Return(servicePoolSets, err)
-	return _c
-}
-
-func (_c *MockServicePoolSetQuerier_List_Call) RunAndReturn(run func(ctx context.Context) ([]*ServicePoolSet, error)) *MockServicePoolSetQuerier_List_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// ListByProvider provides a mock function for the type MockServicePoolSetQuerier
-func (_mock *MockServicePoolSetQuerier) ListByProvider(ctx context.Context, providerID properties.UUID) ([]*ServicePoolSet, error) {
-	ret := _mock.Called(ctx, providerID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ListByProvider")
-	}
-
-	var r0 []*ServicePoolSet
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ServicePoolSet, error)); ok {
-		return returnFunc(ctx, providerID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ServicePoolSet); ok {
-		r0 = returnFunc(ctx, providerID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*ServicePoolSet)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
-		r1 = returnFunc(ctx, providerID)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockServicePoolSetQuerier_ListByProvider_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListByProvider'
-type MockServicePoolSetQuerier_ListByProvider_Call struct {
-	*mock.Call
-}
-
-// ListByProvider is a helper method to define mock.On call
-//   - ctx context.Context
-//   - providerID properties.UUID
-func (_e *MockServicePoolSetQuerier_Expecter) ListByProvider(ctx interface{}, providerID interface{}) *MockServicePoolSetQuerier_ListByProvider_Call {
-	return &MockServicePoolSetQuerier_ListByProvider_Call{Call: _e.mock.On("ListByProvider", ctx, providerID)}
-}
-
-func (_c *MockServicePoolSetQuerier_ListByProvider_Call) Run(run func(ctx context.Context, providerID properties.UUID)) *MockServicePoolSetQuerier_ListByProvider_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 properties.UUID
-		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockServicePoolSetQuerier_ListByProvider_Call) Return(servicePoolSets []*ServicePoolSet, err error) *MockServicePoolSetQuerier_ListByProvider_Call {
-	_c.Call.Return(servicePoolSets, err)
-	return _c
-}
-
-func (_c *MockServicePoolSetQuerier_ListByProvider_Call) RunAndReturn(run func(ctx context.Context, providerID properties.UUID) ([]*ServicePoolSet, error)) *MockServicePoolSetQuerier_ListByProvider_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -20912,68 +21065,6 @@ func (_c *MockServicePoolValueRepository_Get_Call) RunAndReturn(run func(ctx con
 	return _c
 }
 
-// List provides a mock function for the type MockServicePoolValueRepository
-func (_mock *MockServicePoolValueRepository) List(ctx context.Context) ([]*ServicePoolValue, error) {
-	ret := _mock.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for List")
-	}
-
-	var r0 []*ServicePoolValue
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*ServicePoolValue, error)); ok {
-		return returnFunc(ctx)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []*ServicePoolValue); ok {
-		r0 = returnFunc(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*ServicePoolValue)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockServicePoolValueRepository_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
-type MockServicePoolValueRepository_List_Call struct {
-	*mock.Call
-}
-
-// List is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockServicePoolValueRepository_Expecter) List(ctx interface{}) *MockServicePoolValueRepository_List_Call {
-	return &MockServicePoolValueRepository_List_Call{Call: _e.mock.On("List", ctx)}
-}
-
-func (_c *MockServicePoolValueRepository_List_Call) Run(run func(ctx context.Context)) *MockServicePoolValueRepository_List_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockServicePoolValueRepository_List_Call) Return(servicePoolValues []*ServicePoolValue, err error) *MockServicePoolValueRepository_List_Call {
-	_c.Call.Return(servicePoolValues, err)
-	return _c
-}
-
-func (_c *MockServicePoolValueRepository_List_Call) RunAndReturn(run func(ctx context.Context) ([]*ServicePoolValue, error)) *MockServicePoolValueRepository_List_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // ListByPool provides a mock function for the type MockServicePoolValueRepository
 func (_mock *MockServicePoolValueRepository) ListByPool(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error) {
 	ret := _mock.Called(ctx, poolID)
@@ -21528,68 +21619,6 @@ func (_c *MockServicePoolValueQuerier_Get_Call) Return(servicePoolValue *Service
 }
 
 func (_c *MockServicePoolValueQuerier_Get_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*ServicePoolValue, error)) *MockServicePoolValueQuerier_Get_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// List provides a mock function for the type MockServicePoolValueQuerier
-func (_mock *MockServicePoolValueQuerier) List(ctx context.Context) ([]*ServicePoolValue, error) {
-	ret := _mock.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for List")
-	}
-
-	var r0 []*ServicePoolValue
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*ServicePoolValue, error)); ok {
-		return returnFunc(ctx)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []*ServicePoolValue); ok {
-		r0 = returnFunc(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*ServicePoolValue)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockServicePoolValueQuerier_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
-type MockServicePoolValueQuerier_List_Call struct {
-	*mock.Call
-}
-
-// List is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockServicePoolValueQuerier_Expecter) List(ctx interface{}) *MockServicePoolValueQuerier_List_Call {
-	return &MockServicePoolValueQuerier_List_Call{Call: _e.mock.On("List", ctx)}
-}
-
-func (_c *MockServicePoolValueQuerier_List_Call) Run(run func(ctx context.Context)) *MockServicePoolValueQuerier_List_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockServicePoolValueQuerier_List_Call) Return(servicePoolValues []*ServicePoolValue, err error) *MockServicePoolValueQuerier_List_Call {
-	_c.Call.Return(servicePoolValues, err)
-	return _c
-}
-
-func (_c *MockServicePoolValueQuerier_List_Call) RunAndReturn(run func(ctx context.Context) ([]*ServicePoolValue, error)) *MockServicePoolValueQuerier_List_Call {
 	_c.Call.Return(run)
 	return _c
 }

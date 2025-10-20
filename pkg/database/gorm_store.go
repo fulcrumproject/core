@@ -20,6 +20,9 @@ type GormStore struct {
 	serviceRepo           domain.ServiceRepository
 	serviceOptionTypeRepo domain.ServiceOptionTypeRepository
 	serviceOptionRepo     domain.ServiceOptionRepository
+	servicePoolSetRepo    domain.ServicePoolSetRepository
+	servicePoolRepo       domain.ServicePoolRepository
+	servicePoolValueRepo  domain.ServicePoolValueRepository
 	jobRepo               domain.JobRepository
 	eventEntryRepo        domain.EventRepository
 	eventSubscriptionRepo domain.EventSubscriptionRepository
@@ -134,22 +137,25 @@ func (s *GormStore) ServiceOptionRepo() domain.ServiceOptionRepository {
 	return s.serviceOptionRepo
 }
 
-// ServicePoolSetRepo returns nil (not yet implemented - Phase 4)
 func (s *GormStore) ServicePoolSetRepo() domain.ServicePoolSetRepository {
-	// TODO: Implement in Phase 4
-	return nil
+	if s.servicePoolSetRepo == nil {
+		s.servicePoolSetRepo = NewServicePoolSetRepository(s.db)
+	}
+	return s.servicePoolSetRepo
 }
 
-// ServicePoolRepo returns nil (not yet implemented - Phase 4)
 func (s *GormStore) ServicePoolRepo() domain.ServicePoolRepository {
-	// TODO: Implement in Phase 4
-	return nil
+	if s.servicePoolRepo == nil {
+		s.servicePoolRepo = NewServicePoolRepository(s.db)
+	}
+	return s.servicePoolRepo
 }
 
-// ServicePoolValueRepo returns nil (not yet implemented - Phase 4)
 func (s *GormStore) ServicePoolValueRepo() domain.ServicePoolValueRepository {
-	// TODO: Implement in Phase 4
-	return nil
+	if s.servicePoolValueRepo == nil {
+		s.servicePoolValueRepo = NewServicePoolValueRepository(s.db)
+	}
+	return s.servicePoolValueRepo
 }
 
 // GormReadOnlyStore implements the domain.ReadOnlyStore interface using GORM
@@ -216,20 +222,14 @@ func (s *GormReadOnlyStore) ServiceOptionQuerier() domain.ServiceOptionQuerier {
 	return NewServiceOptionRepository(s.db)
 }
 
-// ServicePoolSetQuerier returns nil (not yet implemented - Phase 4)
 func (s *GormReadOnlyStore) ServicePoolSetQuerier() domain.ServicePoolSetQuerier {
-	// TODO: Implement in Phase 4
-	return nil
+	return NewServicePoolSetRepository(s.db)
 }
 
-// ServicePoolQuerier returns nil (not yet implemented - Phase 4)
 func (s *GormReadOnlyStore) ServicePoolQuerier() domain.ServicePoolQuerier {
-	// TODO: Implement in Phase 4
-	return nil
+	return NewServicePoolRepository(s.db)
 }
 
-// ServicePoolValueQuerier returns nil (not yet implemented - Phase 4)
 func (s *GormReadOnlyStore) ServicePoolValueQuerier() domain.ServicePoolValueQuerier {
-	// TODO: Implement in Phase 4
-	return nil
+	return NewServicePoolValueRepository(s.db)
 }

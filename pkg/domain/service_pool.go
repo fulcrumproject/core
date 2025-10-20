@@ -36,12 +36,12 @@ func (t PoolGeneratorType) Validate() error {
 type ServicePool struct {
 	BaseEntity
 
-	Name             string                `json:"name" gorm:"not null"`
-	Type             string                `json:"type" gorm:"not null"`
-	GeneratorType    PoolGeneratorType     `json:"generatorType" gorm:"not null"`
-	GeneratorConfig  *properties.JSON      `json:"generatorConfig,omitempty" gorm:"type:jsonb"`
-	ServicePoolSetID properties.UUID       `json:"servicePoolSetId" gorm:"not null;index"`
-	ServicePoolSet   *ServicePoolSet       `json:"-" gorm:"foreignKey:ServicePoolSetID"`
+	Name             string            `json:"name" gorm:"not null"`
+	Type             string            `json:"type" gorm:"not null"`
+	GeneratorType    PoolGeneratorType `json:"generatorType" gorm:"not null"`
+	GeneratorConfig  *properties.JSON  `json:"generatorConfig,omitempty" gorm:"type:jsonb"`
+	ServicePoolSetID properties.UUID   `json:"servicePoolSetId" gorm:"not null;index"`
+	ServicePoolSet   *ServicePoolSet   `json:"-" gorm:"foreignKey:ServicePoolSetID"`
 }
 
 // CreateServicePoolParams defines parameters for creating a ServicePool
@@ -113,7 +113,6 @@ type ServicePoolRepository interface {
 // ServicePoolQuerier provides read-only access to ServicePool entities
 type ServicePoolQuerier interface {
 	Get(ctx context.Context, id properties.UUID) (*ServicePool, error)
-	List(ctx context.Context) ([]*ServicePool, error)
 	ListByPoolSet(ctx context.Context, poolSetID properties.UUID) ([]*ServicePool, error)
 	FindByPoolSetAndType(ctx context.Context, poolSetID properties.UUID, poolType string) (*ServicePool, error)
 	Exists(ctx context.Context, id properties.UUID) (bool, error)
@@ -125,4 +124,3 @@ type ServicePoolCommander interface {
 	UpdateServicePool(ctx context.Context, id properties.UUID, params UpdateServicePoolParams) (*ServicePool, error)
 	DeleteServicePool(ctx context.Context, id properties.UUID) error
 }
-
