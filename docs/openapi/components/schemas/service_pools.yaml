@@ -3,6 +3,7 @@ CreateServicePoolReq:
   required:
     - name
     - type
+    - propertyType
     - generatorType
     - servicePoolSetId
   properties:
@@ -13,7 +14,12 @@ CreateServicePoolReq:
     type:
       type: string
       example: "public_ip"
-      description: "Type identifier used in servicePool validators"
+      description: "Type identifier referenced in servicePoolType property field"
+    propertyType:
+      type: string
+      enum: [string, integer, number, boolean, json]
+      example: "string"
+      description: "Property type that this pool provides (must match property definitions)"
     generatorType:
       type: string
       enum: [list, subnet]
@@ -47,6 +53,11 @@ ServicePoolRes:
     type:
       type: string
       example: "public_ip"
+    propertyType:
+      type: string
+      enum: [string, integer, number, boolean, json]
+      example: "string"
+      description: "Property type that this pool provides"
     generatorType:
       type: string
       enum: [list, subnet]

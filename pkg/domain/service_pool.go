@@ -4,6 +4,7 @@ package domain
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 )
@@ -38,6 +39,7 @@ type ServicePool struct {
 
 	Name             string            `json:"name" gorm:"not null"`
 	Type             string            `json:"type" gorm:"not null"`
+	PropertyType     string            `json:"propertyType" gorm:"not null"`
 	GeneratorType    PoolGeneratorType `json:"generatorType" gorm:"not null"`
 	GeneratorConfig  *properties.JSON  `json:"generatorConfig,omitempty" gorm:"type:jsonb"`
 	ServicePoolSetID properties.UUID   `json:"servicePoolSetId" gorm:"not null;index"`
@@ -49,6 +51,7 @@ type CreateServicePoolParams struct {
 	ServicePoolSetID properties.UUID
 	Name             string
 	Type             string
+	PropertyType     string
 	GeneratorType    PoolGeneratorType
 	GeneratorConfig  *properties.JSON
 }
@@ -64,6 +67,7 @@ func NewServicePool(params CreateServicePoolParams) *ServicePool {
 	return &ServicePool{
 		Name:             params.Name,
 		Type:             params.Type,
+		PropertyType:     params.PropertyType,
 		GeneratorType:    params.GeneratorType,
 		GeneratorConfig:  params.GeneratorConfig,
 		ServicePoolSetID: params.ServicePoolSetID,
@@ -83,6 +87,12 @@ func (sp *ServicePool) Validate() error {
 	if sp.Type == "" {
 		return fmt.Errorf("pool type cannot be empty")
 	}
+
+	// Validate PropertyType
+	if !slices.Contains(PrimitivePropertyTypes, sp.PropertyType) {
+		return fmt.Errorf("invalid property type: %s (must be a primitive property type)", sp.PropertyType)
+	}
+
 	if err := sp.GeneratorType.Validate(); err != nil {
 		return err
 	}

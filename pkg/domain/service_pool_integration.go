@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// AllocateServicePoolProperties allocates pool values for properties with servicePool validators
+// AllocateServicePoolProperties allocates pool values for properties with servicePoolType field
 // Returns updated properties with allocated values
 func AllocateServicePoolProperties(
 	ctx context.Context,
@@ -34,28 +34,19 @@ func AllocateServicePoolProperties(
 		result[k] = v
 	}
 
-	// Find properties with servicePool validators and source: "system", then allocate
+	// Find properties with servicePoolType field and source: "system", then allocate
 	for propName, propDef := range propertySchema {
 		// Only allocate properties with source: "system"
 		if propDef.Source != "system" {
 			continue
 		}
 
-		// Check if this property has a servicePool validator
-		var poolType string
-		for _, validator := range propDef.Validators {
-			if validator.Type == SchemaValidatorServicePool {
-				// Get the pool type from validator value
-				if poolTypeStr, ok := validator.Value.(string); ok {
-					poolType = poolTypeStr
-					break
-				}
-			}
+		// Check if this property has servicePoolType set
+		if propDef.ServicePoolType == nil || *propDef.ServicePoolType == "" {
+			continue // Not a pool-allocated property
 		}
 
-		if poolType == "" {
-			continue // No servicePool validator for this property
-		}
+		poolType := *propDef.ServicePoolType
 
 		// Find the pool in the pool set with matching type
 		pools, err := store.ServicePoolRepo().ListByPoolSet(ctx, poolSetID)
@@ -73,6 +64,12 @@ func AllocateServicePoolProperties(
 
 		if targetPool == nil {
 			return nil, fmt.Errorf("no pool found with type %s in pool set", poolType)
+		}
+
+		// Validate property type matches pool property type
+		if propDef.Type != targetPool.PropertyType {
+			return nil, fmt.Errorf("property %s has type %s but pool %s provides type %s",
+				propName, propDef.Type, poolType, targetPool.PropertyType)
 		}
 
 		// Create generator factory and allocate

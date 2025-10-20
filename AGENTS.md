@@ -269,10 +269,11 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 #### ServicePool
 - Defines a pool of allocatable resources (IPs, ports, hostnames, etc.)
 - Belongs to a ServicePoolSet
-- Has type (identifies what property it provides) and name
+- Has type (identifies what property it provides), name, and propertyType
+- PropertyType defines the data type provided: string, integer, number, boolean, or json (must match property definitions)
 - Generator type determines allocation strategy: `list` (pre-configured values) or `subnet` (IP ranges)
 - Generator config stores type-specific configuration (e.g., CIDR for subnets)
-- Used in `servicePool` validator in service type property schemas
+- Referenced in property definitions via `servicePoolType` field
 
 #### ServicePoolValue
 - Individual allocatable value within a ServicePool
@@ -390,11 +391,26 @@ Properties can have validators including:
 - **serviceOption**: Validates against provider-managed option lists
   - Requires ServiceOptionType in validator value
   - Provides dynamic dropdowns and validation
-- **servicePool**: Triggers automatic allocation from resource pools
-  - Requires pool type in validator value (matches ServicePool.Type)
+
+#### Property Pool Allocation
+Properties with `source: "system"` can use automatic pool allocation:
+- **servicePoolType** field: Specifies which pool type to allocate from (matches ServicePool.Type)
+  - Property type must match pool's propertyType (e.g., string property → string pool)
+  - System validates type compatibility during service creation
   - Actual values copied directly into properties during service creation
   - Values released and marked available when service is deleted
   - No dereferencing needed - agents receive concrete values
+
+**Example:**
+```json
+{
+  "publicIp": {
+    "type": "string",
+    "source": "system",
+    "servicePoolType": "public_ip"
+  }
+}
+```
 
 ### Job Processing
 

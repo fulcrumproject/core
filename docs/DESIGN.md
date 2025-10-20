@@ -227,6 +227,7 @@ classDiagram
             id : properties.UUID
             name : string
             type : string
+            propertyType : enum[string|integer|number|boolean|json]
             generatorType : enum[list|subnet]
             generatorConfig : jsonb
             servicePoolSetId : properties.UUID
@@ -358,11 +359,13 @@ classDiagram
     
     note for ServicePool "Service pools manage allocatable resources:
     - Each pool has a type (identifies what property it provides)
+    - PropertyType defines the data type: string, integer, number, boolean, json
+    - Must match the type of properties that reference it
     - Generator type determines allocation strategy:
       * list: Pre-configured values (manually added)
       * subnet: IP ranges with automatic CIDR allocation
     - Generator config stores type-specific settings (e.g., CIDR)
-    - Used via servicePool validator in property schemas
+    - Referenced via servicePoolType field in property definitions
     - Values stored as individual ServicePoolValue records"
     
     note for ServicePoolValue "Pool values are allocatable resources:
@@ -501,12 +504,15 @@ classDiagram
    - Defines a pool of allocatable resources (IPs, ports, hostnames, etc.)
    - Belongs to one ServicePoolSet
    - Has type (identifies what property it provides, e.g., "public_ip", "hostname")
+   - Has propertyType (data type provided: string, integer, number, boolean, json)
+   - PropertyType must match the type of service properties that reference this pool
    - Has name for human-readable identification
    - Generator type determines allocation strategy:
      * `list`: Pre-configured values manually added as ServicePoolValue records
      * `subnet`: IP ranges with automatic CIDR-based allocation
    - Generator config stores type-specific configuration (e.g., CIDR, excludeFirst, excludeLast for subnets)
-   - Used in `servicePool` validator in service type property schemas
+   - Referenced in property definitions via `servicePoolType` field (requires `source: "system"`)
+   - Type validation ensures property type matches pool's propertyType
    - Values stored as individual ServicePoolValue records (not JSON arrays)
 
 13. **ServicePoolValue**

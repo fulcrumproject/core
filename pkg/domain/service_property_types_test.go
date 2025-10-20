@@ -123,16 +123,6 @@ func TestPropertyDefinition_Validation(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "valid json property with servicePool validator",
-			propDef: ServicePropertyDefinition{
-				Type: SchemaTypeJSON,
-				Validators: []ServicePropertyValidatorDefinition{
-					{Type: SchemaValidatorServicePool, Value: "pool-type-id"},
-				},
-			},
-			expectError: false,
-		},
-		{
 			name: "valid json property with serviceOption validator",
 			propDef: ServicePropertyDefinition{
 				Type: SchemaTypeJSON,

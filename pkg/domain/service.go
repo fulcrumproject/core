@@ -338,8 +338,8 @@ func CreateServiceWithAgent(
 			return err
 		}
 
-		// Allocate pool properties if agent has a pool set
-		if agent.ServicePoolSetID != nil && *agent.ServicePoolSetID != uuid.Nil {
+		// Allocate pool properties if agent has a pool set and service type has a property schema
+		if agent.ServicePoolSetID != nil && *agent.ServicePoolSetID != uuid.Nil && serviceType.PropertySchema != nil {
 			allocatedProperties, err := AllocateServicePoolProperties(
 				ctx,
 				store,

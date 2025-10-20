@@ -511,8 +511,9 @@ Valid service creation:
 }
 ```
 
-##### servicePool
-Validates that a property will be automatically allocated from a service pool. Service pools manage finite, exclusive resources (IPs, ports, hostnames) with automatic allocation and lifecycle management.
+### Property Pool Allocation
+
+Properties with `source: "system"` can use automatic pool allocation via the `servicePoolType` field. Service pools manage finite, exclusive resources (IPs, ports, hostnames) with automatic allocation and lifecycle management.
 
 **Basic Usage:**
 ```json
@@ -520,11 +521,9 @@ Validates that a property will be automatically allocated from a service pool. S
   "publicIp": {
     "type": "string",
     "label": "Public IP Address",
-    "source": "agent",
+    "source": "system",
     "updatable": "never",
-    "validators": [
-      { "type": "servicePool", "value": "public_ip" }
-    ]
+    "servicePoolType": "public_ip"
   }
 }
 ```
@@ -532,18 +531,21 @@ Validates that a property will be automatically allocated from a service pool. S
 This marks the `publicIp` property for automatic allocation from a pool with type "public_ip" during service creation.
 
 **How it works:**
-1. The validator value references a pool type (e.g., "public_ip", "hostname", "port")
-2. The agent must have a `servicePoolSetId` configured
-3. During service creation, the system finds a pool with the matching type in the agent's pool set
-4. A value is automatically allocated from the pool and stored directly in the property
-5. When the service is deleted, the value is released back to the pool
+1. The `servicePoolType` field references a pool type (e.g., "public_ip", "hostname", "port")
+2. The property must have `source: "system"` to enable automatic allocation
+3. The agent must have a `servicePoolSetId` configured
+4. During service creation, the system finds a pool with the matching type in the agent's pool set
+5. The property type must match the pool's `propertyType` (e.g., string property → string pool)
+6. A value is automatically allocated from the pool and stored directly in the property
+7. When the service is deleted, the value is released back to the pool
 
 **Key Features:**
 - **Automatic allocation**: No manual value selection required
+- **Type validation**: Property type must match pool's propertyType
 - **Exclusive access**: Each value can only be allocated to one service at a time
 - **Lifecycle management**: Values automatically released on service deletion
 - **Direct storage**: Actual values copied into properties (no dereferencing needed)
-- **Agent-source**: Always combined with `source: "agent"` since allocation happens during job completion
+- **System-source**: Requires `source: "system"` since allocation is automatic
 
 **Pool Types:**
 
@@ -553,11 +555,9 @@ List pools (pre-configured values):
   "ipAddress": {
     "type": "string",
     "label": "IP Address",
-    "source": "agent",
+    "source": "system",
     "updatable": "never",
-    "validators": [
-      { "type": "servicePool", "value": "public_ip" }
-    ]
+    "servicePoolType": "public_ip"
   }
 }
 ```
@@ -568,11 +568,9 @@ Subnet pools (automatic CIDR allocation):
   "privateIp": {
     "type": "string",
     "label": "Private IP Address",
-    "source": "agent",
+    "source": "system",
     "updatable": "never",
-    "validators": [
-      { "type": "servicePool", "value": "private_ip" }
-    ]
+    "servicePoolType": "private_ip"
   }
 }
 ```
@@ -583,11 +581,9 @@ JSON type for complex values:
   "hostname": {
     "type": "json",
     "label": "Hostname Configuration",
-    "source": "agent",
+    "source": "system",
     "updatable": "never",
-    "validators": [
-      { "type": "servicePool", "value": "hostname" }
-    ]
+    "servicePoolType": "hostname"
   }
 }
 ```
@@ -603,12 +599,13 @@ POST /api/v1/service-pool-sets
 }
 ```
 
-2. Create a pool with matching type:
+2. Create a pool with matching type and propertyType:
 ```http
 POST /api/v1/service-pools
 {
   "name": "Public IP Pool",
   "type": "public_ip",
+  "propertyType": "string",
   "generatorType": "list",
   "servicePoolSetId": "pool-set-uuid"
 }
@@ -656,8 +653,9 @@ Pool values can be any JSON type:
 - **Flexible**: Supports simple strings or complex JSON structures
 
 **Error Messages:**
-- `"service pool validation requires provider ID in context"` - Missing provider context
-- `"service pool type cannot be empty"` - Invalid validator configuration
+- `"servicePoolType cannot be empty"` - Empty servicePoolType field
+- `"servicePoolType requires source to be 'system'"` - Property doesn't have `source: "system"`
+- `"property X has type Y but pool Z provides type W"` - Property type doesn't match pool's propertyType
 - `"no pool found with type X in pool set"` - Pool type doesn't exist in agent's pool set
 - `"failed to allocate from pool X"` - No available values in pool
 
@@ -671,29 +669,23 @@ Service type schema:
     "publicIp": {
       "type": "string",
       "label": "Public IP",
-      "source": "agent",
+      "source": "system",
       "updatable": "never",
-      "validators": [
-        { "type": "servicePool", "value": "public_ip" }
-      ]
+      "servicePoolType": "public_ip"
     },
     "privateIp": {
       "type": "string",
       "label": "Private IP",
-      "source": "agent",
+      "source": "system",
       "updatable": "never",
-      "validators": [
-        { "type": "servicePool", "value": "private_ip" }
-      ]
+      "servicePoolType": "private_ip"
     },
     "hostname": {
       "type": "json",
       "label": "Hostname Config",
-      "source": "agent",
+      "source": "system",
       "updatable": "never",
-      "validators": [
-        { "type": "servicePool", "value": "hostname" }
-      ]
+      "servicePoolType": "hostname"
     }
   }
 }
@@ -715,6 +707,7 @@ POST /api/v1/service-pools
 {
   "name": "Private Network",
   "type": "private_ip",
+  "propertyType": "string",
   "generatorType": "subnet",
   "generatorConfig": {
     "cidr": "192.168.1.0/24",
@@ -727,6 +720,15 @@ POST /api/v1/service-pools
 
 Pool setup (complex JSON values):
 ```http
+POST /api/v1/service-pools
+{
+  "name": "Hostname Pool",
+  "type": "hostname",
+  "propertyType": "json",
+  "generatorType": "list",
+  "servicePoolSetId": "pool-set-uuid"
+}
+
 POST /api/v1/service-pool-values
 {
   "servicePoolId": "hostname-pool-uuid",

@@ -17,17 +17,12 @@ func TestAllocateServicePoolProperties(t *testing.T) {
 	poolSetID := properties.UUID(uuid.New())
 	poolID := properties.UUID(uuid.New())
 
-	// Define a property schema with a servicePool validator
+	// Define a property schema with a servicePoolType field
 	schema := ServicePropertySchema{
 		"publicIp": {
-			Type:   "string",
-			Source: "system",
-			Validators: []ServicePropertyValidatorDefinition{
-				{
-					Type:  SchemaValidatorServicePool,
-					Value: "public_ip",
-				},
-			},
+			Type:            "string",
+			Source:          "system",
+			ServicePoolType: stringPtr("public_ip"),
 		},
 		"cpu": {
 			Type:     "integer",
@@ -52,6 +47,7 @@ func TestAllocateServicePoolProperties(t *testing.T) {
 		},
 		Name:             "Public IPs",
 		Type:             "public_ip",
+		PropertyType:     "string",
 		GeneratorType:    PoolGeneratorList,
 		ServicePoolSetID: poolSetID,
 	}
@@ -94,14 +90,9 @@ func TestAllocateServicePoolProperties_NoPoolSet(t *testing.T) {
 
 	schema := ServicePropertySchema{
 		"publicIp": {
-			Type:   "string",
-			Source: "system",
-			Validators: []ServicePropertyValidatorDefinition{
-				{
-					Type:  SchemaValidatorServicePool,
-					Value: "public_ip",
-				},
-			},
+			Type:            "string",
+			Source:          "system",
+			ServicePoolType: stringPtr("public_ip"),
 		},
 	}
 
@@ -128,4 +119,55 @@ func TestAllocateServicePoolProperties_NilSchema(t *testing.T) {
 	// Should succeed and return original properties
 	assert.NoError(t, err)
 	assert.Equal(t, inputProps, result)
+}
+
+func TestAllocateServicePoolProperties_TypeMismatch(t *testing.T) {
+	ctx := context.Background()
+	serviceID := properties.UUID(uuid.New())
+	poolSetID := properties.UUID(uuid.New())
+	poolID := properties.UUID(uuid.New())
+
+	// Property wants string, but pool provides json
+	schema := ServicePropertySchema{
+		"publicIp": {
+			Type:            "string",
+			Source:          "system",
+			ServicePoolType: stringPtr("public_ip"),
+		},
+	}
+
+	// Create mocks
+	store := NewMockStore(t)
+	poolRepo := NewMockServicePoolRepository(t)
+
+	// Set up expectations
+	store.On("ServicePoolRepo").Return(poolRepo)
+
+	// Mock the pool lookup - pool has json type but property expects string
+	pool := &ServicePool{
+		BaseEntity: BaseEntity{
+			ID: poolID,
+		},
+		Name:             "Public IPs",
+		Type:             "public_ip",
+		PropertyType:     "json", // Mismatch: property is string
+		GeneratorType:    PoolGeneratorList,
+		ServicePoolSetID: poolSetID,
+	}
+	poolRepo.On("ListByPoolSet", ctx, poolSetID).Return([]*ServicePool{pool}, nil)
+
+	// Test allocation
+	inputProps := map[string]any{}
+
+	result, err := AllocateServicePoolProperties(ctx, store, serviceID, poolSetID, schema, inputProps)
+
+	// Should fail with type mismatch error
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "has type string but pool")
+	assert.Contains(t, err.Error(), "provides type json")
+
+	// Verify mocks were called
+	store.AssertExpectations(t)
+	poolRepo.AssertExpectations(t)
 }

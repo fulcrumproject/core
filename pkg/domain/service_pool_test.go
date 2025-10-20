@@ -17,6 +17,7 @@ func TestNewServicePool(t *testing.T) {
 		ServicePoolSetID: poolSetID,
 		Name:             "Test Pool",
 		Type:             "publicIp",
+		PropertyType:     "string",
 		GeneratorType:    PoolGeneratorList,
 	}
 
@@ -24,6 +25,7 @@ func TestNewServicePool(t *testing.T) {
 
 	assert.Equal(t, "Test Pool", pool.Name)
 	assert.Equal(t, "publicIp", pool.Type)
+	assert.Equal(t, "string", pool.PropertyType)
 	assert.Equal(t, PoolGeneratorList, pool.GeneratorType)
 	assert.Equal(t, poolSetID, pool.ServicePoolSetID)
 }
@@ -42,6 +44,7 @@ func TestServicePool_Validate(t *testing.T) {
 			pool: &ServicePool{
 				Name:             "Valid Pool",
 				Type:             "publicIp",
+				PropertyType:     "string",
 				GeneratorType:    PoolGeneratorList,
 				ServicePoolSetID: poolSetID,
 			},
@@ -52,6 +55,7 @@ func TestServicePool_Validate(t *testing.T) {
 			pool: &ServicePool{
 				Name:             "Valid Subnet Pool",
 				Type:             "internalIp",
+				PropertyType:     "json",
 				GeneratorType:    PoolGeneratorSubnet,
 				ServicePoolSetID: poolSetID,
 			},
@@ -62,6 +66,7 @@ func TestServicePool_Validate(t *testing.T) {
 			pool: &ServicePool{
 				Name:             "",
 				Type:             "publicIp",
+				PropertyType:     "string",
 				GeneratorType:    PoolGeneratorList,
 				ServicePoolSetID: poolSetID,
 			},
@@ -73,6 +78,7 @@ func TestServicePool_Validate(t *testing.T) {
 			pool: &ServicePool{
 				Name:             "Test Pool",
 				Type:             "",
+				PropertyType:     "string",
 				GeneratorType:    PoolGeneratorList,
 				ServicePoolSetID: poolSetID,
 			},
@@ -80,10 +86,35 @@ func TestServicePool_Validate(t *testing.T) {
 			errorMsg:  "pool type cannot be empty",
 		},
 		{
+			name: "invalid property type",
+			pool: &ServicePool{
+				Name:             "Test Pool",
+				Type:             "publicIp",
+				PropertyType:     "invalid",
+				GeneratorType:    PoolGeneratorList,
+				ServicePoolSetID: poolSetID,
+			},
+			wantError: true,
+			errorMsg:  "invalid property type",
+		},
+		{
+			name: "empty property type",
+			pool: &ServicePool{
+				Name:             "Test Pool",
+				Type:             "publicIp",
+				PropertyType:     "",
+				GeneratorType:    PoolGeneratorList,
+				ServicePoolSetID: poolSetID,
+			},
+			wantError: true,
+			errorMsg:  "invalid property type",
+		},
+		{
 			name: "invalid generator type",
 			pool: &ServicePool{
 				Name:             "Test Pool",
 				Type:             "publicIp",
+				PropertyType:     "string",
 				GeneratorType:    "invalid",
 				ServicePoolSetID: poolSetID,
 			},
@@ -95,6 +126,7 @@ func TestServicePool_Validate(t *testing.T) {
 			pool: &ServicePool{
 				Name:             "Test Pool",
 				Type:             "publicIp",
+				PropertyType:     "string",
 				GeneratorType:    PoolGeneratorList,
 				ServicePoolSetID: properties.UUID{},
 			},
@@ -155,4 +187,3 @@ func TestPoolGeneratorType_Validate(t *testing.T) {
 		})
 	}
 }
-

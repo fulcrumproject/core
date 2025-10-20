@@ -64,6 +64,7 @@ Content-Type: application/json
 {
     "name": "Public IP Pool",
     "type": "public_ip",
+    "propertyType": "string",
     "generatorType": "list",
     "servicePoolSetId": "{{createPoolSet.response.body.id}}"
 }
@@ -75,8 +76,8 @@ Content-Type: application/json
 
 {
     "servicePoolId": "{{createIPPool.response.body.id}}",
-    "name": "185.123.45.10",
-    "value": "185.123.45.10"
+    "name": "185.123.45.11",
+    "value": "185.123.45.11"
 }
 
 ### Create Service Option - Ubuntu 20.04
@@ -173,12 +174,7 @@ Content-Type: application/json
             "label": "Public IP",
             "source": "system",
             "updatable": "never",
-            "validators": [
-                {
-                    "type": "servicePool",
-                    "value": "public_ip"
-                }
-            ]
+            "servicePoolType": "public_ip"
         }
     },
     "lifecycleSchema": {

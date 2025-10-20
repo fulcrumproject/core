@@ -14,6 +14,7 @@ import (
 type CreateServicePoolReq struct {
 	Name             string                   `json:"name"`
 	Type             string                   `json:"type"`
+	PropertyType     string                   `json:"propertyType"`
 	GeneratorType    domain.PoolGeneratorType `json:"generatorType"`
 	GeneratorConfig  *properties.JSON         `json:"generatorConfig,omitempty"`
 	ServicePoolSetID properties.UUID          `json:"servicePoolSetId"`
@@ -85,6 +86,7 @@ func (h *ServicePoolHandler) Create(ctx context.Context, req *CreateServicePoolR
 	params := domain.CreateServicePoolParams{
 		Name:             req.Name,
 		Type:             req.Type,
+		PropertyType:     req.PropertyType,
 		GeneratorType:    req.GeneratorType,
 		GeneratorConfig:  req.GeneratorConfig,
 		ServicePoolSetID: req.ServicePoolSetID,
@@ -105,6 +107,7 @@ type ServicePoolRes struct {
 	ID               properties.UUID          `json:"id"`
 	Name             string                   `json:"name"`
 	Type             string                   `json:"type"`
+	PropertyType     string                   `json:"propertyType"`
 	GeneratorType    domain.PoolGeneratorType `json:"generatorType"`
 	GeneratorConfig  *properties.JSON         `json:"generatorConfig,omitempty"`
 	ServicePoolSetID properties.UUID          `json:"servicePoolSetId"`
@@ -118,6 +121,7 @@ func ServicePoolToRes(p *domain.ServicePool) *ServicePoolRes {
 		ID:               p.ID,
 		Name:             p.Name,
 		Type:             p.Type,
+		PropertyType:     p.PropertyType,
 		GeneratorType:    p.GeneratorType,
 		GeneratorConfig:  p.GeneratorConfig,
 		ServicePoolSetID: p.ServicePoolSetID,

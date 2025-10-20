@@ -108,6 +108,17 @@ func validatePropertyDefinition(propName string, propDef ServicePropertyDefiniti
 		}
 	}
 
+	// Validate servicePoolType field
+	if propDef.ServicePoolType != nil {
+		if *propDef.ServicePoolType == "" {
+			return fmt.Errorf("property %s: servicePoolType cannot be empty", propName)
+		}
+		// If servicePoolType is set, source must be "system"
+		if propDef.Source != "system" {
+			return fmt.Errorf("property %s: servicePoolType requires source to be 'system'", propName)
+		}
+	}
+
 	// Recursively validate nested properties
 	for nestedPropName, nestedPropDef := range propDef.Properties {
 		if err := validatePropertyDefinition(fmt.Sprintf("%s.%s", propName, nestedPropName), nestedPropDef); err != nil {
@@ -139,11 +150,14 @@ type ServicePropertyDefinition struct {
 	Source      string   `json:"source,omitempty"`      // "input", "agent", "system"
 	Updatable   string   `json:"updatable,omitempty"`   // "always", "never", "statuses"
 	UpdatableIn []string `json:"updatableIn,omitempty"` // For "statuses" mode
+
+	// Pool allocation
+	ServicePoolType *string `json:"servicePoolType,omitempty"` // If set, allocate from this pool type
 }
 
 // ServicePropertyValidatorDefinition defines a validation rule
 type ServicePropertyValidatorDefinition struct {
-	Type  string `json:"type" validate:"required,oneof=minLength maxLength pattern enum min max minItems maxItems uniqueItems sameOrigin serviceOption servicePool"`
+	Type  string `json:"type" validate:"required,oneof=minLength maxLength pattern enum min max minItems maxItems uniqueItems sameOrigin serviceOption"`
 	Value any    `json:"value" validate:"required"`
 }
 
@@ -248,6 +262,13 @@ func parsePropertyDefinition(propDefMap map[string]any) (ServicePropertyDefiniti
 					propDef.UpdatableIn = append(propDef.UpdatableIn, itemStr)
 				}
 			}
+		}
+	}
+
+	// Parse servicePoolType
+	if servicePoolTypeVal, exists := propDefMap["servicePoolType"]; exists {
+		if servicePoolTypeStr, ok := servicePoolTypeVal.(string); ok {
+			propDef.ServicePoolType = &servicePoolTypeStr
 		}
 	}
 
