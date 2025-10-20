@@ -11,9 +11,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
-	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
 	"github.com/fulcrumproject/core/pkg/domain"
-	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -26,11 +24,11 @@ import (
 
 // TestNewServiceHandler tests the constructor
 func TestNewServiceHandler(t *testing.T) {
-	serviceQuerier := mocks.NewMockServiceQuerier(t)
-	agentQuerier := mocks.NewMockAgentQuerier(t)
-	serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
-	commander := mocks.NewMockServiceCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	serviceQuerier := domain.NewMockServiceQuerier(t)
+	agentQuerier := domain.NewMockAgentQuerier(t)
+	serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
+	commander := domain.NewMockServiceCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
 	assert.NotNil(t, handler)
@@ -44,11 +42,11 @@ func TestNewServiceHandler(t *testing.T) {
 // TestServiceHandlerRoutes tests that routes are properly registered with middlewares
 func TestServiceHandlerRoutes(t *testing.T) {
 	// Create mocks
-	serviceQuerier := mocks.NewMockServiceQuerier(t)
-	agentQuerier := mocks.NewMockAgentQuerier(t)
-	serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
-	commander := mocks.NewMockServiceCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	serviceQuerier := domain.NewMockServiceQuerier(t)
+	agentQuerier := domain.NewMockAgentQuerier(t)
+	serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
+	commander := domain.NewMockServiceCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
@@ -102,7 +100,7 @@ func TestServiceHandleCreate(t *testing.T) {
 	testCases := []struct {
 		name           string
 		request        CreateServiceReq
-		mockSetup      func(commander *mocks.MockServiceCommander)
+		mockSetup      func(commander *domain.MockServiceCommander)
 		expectedStatus int
 	}{
 		{
@@ -114,7 +112,7 @@ func TestServiceHandleCreate(t *testing.T) {
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"prop": "value"},
 			},
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander for successful creation
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -153,7 +151,7 @@ func TestServiceHandleCreate(t *testing.T) {
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"prop": "value"},
 			},
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander to return an error
 				commander.EXPECT().
 					Create(mock.Anything, mock.Anything).
@@ -166,11 +164,11 @@ func TestServiceHandleCreate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			serviceQuerier := mocks.NewMockServiceQuerier(t)
-			agentQuerier := mocks.NewMockAgentQuerier(t)
-			serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
-			commander := mocks.NewMockServiceCommander(t)
-			authz := authmocks.NewMockAuthorizer(t) // Not used in handler tests
+			serviceQuerier := domain.NewMockServiceQuerier(t)
+			agentQuerier := domain.NewMockAgentQuerier(t)
+			serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
+			commander := domain.NewMockServiceCommander(t)
+			authz := auth.NewMockAuthorizer(t) // Not used in handler tests
 			tc.mockSetup(commander)
 
 			// Create the handler
@@ -216,7 +214,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 		name           string
 		id             string
 		request        UpdateServiceReq
-		mockSetup      func(commander *mocks.MockServiceCommander)
+		mockSetup      func(commander *domain.MockServiceCommander)
 		expectedStatus int
 	}{
 		{
@@ -226,7 +224,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 				Name:       helpers.StringPtr("Updated Service"),
 				Properties: helpers.JSONPtr(properties.JSON{"updated": "value"}),
 			},
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander for successful update
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
@@ -259,7 +257,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 				Name:       helpers.StringPtr("Invalid"),
 				Properties: helpers.JSONPtr(properties.JSON{"invalid": "data"}),
 			},
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander to return a validation error
 				commander.EXPECT().
 					Update(mock.Anything, mock.Anything).
@@ -274,7 +272,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 				Name:       helpers.StringPtr("Updated Service"),
 				Properties: helpers.JSONPtr(properties.JSON{"updated": "value"}),
 			},
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander to return not found
 				commander.EXPECT().
 					Update(mock.Anything, mock.Anything).
@@ -287,11 +285,11 @@ func TestServiceHandleUpdate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			serviceQuerier := mocks.NewMockServiceQuerier(t)
-			agentQuerier := mocks.NewMockAgentQuerier(t)
-			serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
-			commander := mocks.NewMockServiceCommander(t)
-			authz := authmocks.NewMockAuthorizer(t) // Not used in handler tests
+			serviceQuerier := domain.NewMockServiceQuerier(t)
+			agentQuerier := domain.NewMockAgentQuerier(t)
+			serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
+			commander := domain.NewMockServiceCommander(t)
+			authz := auth.NewMockAuthorizer(t) // Not used in handler tests
 			tc.mockSetup(commander)
 
 			// Create the handler
@@ -344,14 +342,14 @@ func TestServiceHandleTransition(t *testing.T) {
 		name           string
 		id             string
 		transitionTo   string
-		mockSetup      func(commander *mocks.MockServiceCommander)
+		mockSetup      func(commander *domain.MockServiceCommander)
 		expectedStatus int
 	}{
 		{
 			name:         "SuccessfulStart",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
 			transitionTo: "Started",
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander for successful transition
 				commander.EXPECT().
 					DoAction(mock.Anything, mock.MatchedBy(func(params domain.DoServiceActionParams) bool {
@@ -371,7 +369,7 @@ func TestServiceHandleTransition(t *testing.T) {
 			name:         "SuccessfulStop",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
 			transitionTo: "Stopped",
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander for successful transition
 				commander.EXPECT().
 					DoAction(mock.Anything, mock.MatchedBy(func(params domain.DoServiceActionParams) bool {
@@ -391,7 +389,7 @@ func TestServiceHandleTransition(t *testing.T) {
 			name:         "SuccessfulDelete",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
 			transitionTo: "Deleted",
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander for successful transition
 				commander.EXPECT().
 					DoAction(mock.Anything, mock.MatchedBy(func(params domain.DoServiceActionParams) bool {
@@ -410,7 +408,7 @@ func TestServiceHandleTransition(t *testing.T) {
 			name:         "InvalidStatusTransition",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
 			transitionTo: "Started",
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander to return an error for invalid transition
 				commander.EXPECT().
 					DoAction(mock.Anything, mock.Anything).
@@ -422,7 +420,7 @@ func TestServiceHandleTransition(t *testing.T) {
 			name:         "ServiceNotFound",
 			id:           "550e8400-e29b-41d4-a716-446655440000",
 			transitionTo: "Started",
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander to return not found
 				commander.EXPECT().
 					DoAction(mock.Anything, mock.Anything).
@@ -435,11 +433,11 @@ func TestServiceHandleTransition(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			serviceQuerier := mocks.NewMockServiceQuerier(t)
-			agentQuerier := mocks.NewMockAgentQuerier(t)
-			serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
-			commander := mocks.NewMockServiceCommander(t)
-			authz := authmocks.NewMockAuthorizer(t) // Not used in handler tests
+			serviceQuerier := domain.NewMockServiceQuerier(t)
+			agentQuerier := domain.NewMockAgentQuerier(t)
+			serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
+			commander := domain.NewMockServiceCommander(t)
+			authz := auth.NewMockAuthorizer(t) // Not used in handler tests
 			tc.mockSetup(commander)
 
 			// Create the handler
@@ -490,13 +488,13 @@ func TestServiceHandleRetry(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(commander *mocks.MockServiceCommander)
+		mockSetup      func(commander *domain.MockServiceCommander)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander for successful retry
 				commander.EXPECT().
 					Retry(mock.Anything, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")).
@@ -512,7 +510,7 @@ func TestServiceHandleRetry(t *testing.T) {
 		{
 			name: "ServiceNotFound",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander to return not found
 				commander.EXPECT().
 					Retry(mock.Anything, mock.Anything).
@@ -523,7 +521,7 @@ func TestServiceHandleRetry(t *testing.T) {
 		{
 			name: "InvalidRetry",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				// Setup the commander to return an error for invalid retry
 				commander.EXPECT().
 					Retry(mock.Anything, mock.Anything).
@@ -536,11 +534,11 @@ func TestServiceHandleRetry(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			serviceQuerier := mocks.NewMockServiceQuerier(t)
-			agentQuerier := mocks.NewMockAgentQuerier(t)
-			serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
-			commander := mocks.NewMockServiceCommander(t)
-			authz := authmocks.NewMockAuthorizer(t) // Not used in handler tests
+			serviceQuerier := domain.NewMockServiceQuerier(t)
+			agentQuerier := domain.NewMockAgentQuerier(t)
+			serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
+			commander := domain.NewMockServiceCommander(t)
+			authz := auth.NewMockAuthorizer(t) // Not used in handler tests
 			tc.mockSetup(commander)
 
 			// Create the handler
@@ -576,7 +574,7 @@ func TestServicePropertyValidation(t *testing.T) {
 		operation      string // "create" or "update"
 		serviceID      string // only for update
 		request        any
-		mockSetup      func(commander *mocks.MockServiceCommander)
+		mockSetup      func(commander *domain.MockServiceCommander)
 		expectedStatus int
 		checkError     func(t *testing.T, errorText string)
 	}{
@@ -587,7 +585,7 @@ func TestServicePropertyValidation(t *testing.T) {
 			request: UpdateServiceReq{
 				Properties: helpers.JSONPtr(properties.JSON{"instanceName": "new-name"}),
 			},
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				commander.EXPECT().
 					Update(mock.Anything, mock.Anything).
 					RunAndReturn(func(ctx context.Context, params domain.UpdateServiceParams) (*domain.Service, error) {
@@ -608,7 +606,7 @@ func TestServicePropertyValidation(t *testing.T) {
 			request: UpdateServiceReq{
 				Properties: helpers.JSONPtr(properties.JSON{"uuid": "new-uuid"}),
 			},
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				commander.EXPECT().
 					Update(mock.Anything, mock.Anything).
 					Return(nil, domain.NewInvalidInputErrorf("property 'uuid' cannot be updated (updatable: never)"))
@@ -627,7 +625,7 @@ func TestServicePropertyValidation(t *testing.T) {
 			request: UpdateServiceReq{
 				Properties: helpers.JSONPtr(properties.JSON{"diskSize": 500}),
 			},
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				commander.EXPECT().
 					Update(mock.Anything, mock.Anything).
 					Return(nil, domain.NewInvalidInputErrorf("property 'diskSize' cannot be updated in status 'Started' (allowed statuses: [Stopped])"))
@@ -646,7 +644,7 @@ func TestServicePropertyValidation(t *testing.T) {
 			request: UpdateServiceReq{
 				Properties: helpers.JSONPtr(properties.JSON{"ipAddress": "192.168.1.100"}),
 			},
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				commander.EXPECT().
 					Update(mock.Anything, mock.Anything).
 					Return(nil, domain.NewInvalidInputErrorf("property 'ipAddress' cannot be updated by user (source: agent)"))
@@ -668,7 +666,7 @@ func TestServicePropertyValidation(t *testing.T) {
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"ipAddress": "192.168.1.100"},
 			},
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				commander.EXPECT().
 					Create(mock.Anything, mock.Anything).
 					Return(nil, domain.NewInvalidInputErrorf("property 'ipAddress' cannot be updated by user (source: agent)"))
@@ -690,7 +688,7 @@ func TestServicePropertyValidation(t *testing.T) {
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"instanceName": "my-instance"},
 			},
-			mockSetup: func(commander *mocks.MockServiceCommander) {
+			mockSetup: func(commander *domain.MockServiceCommander) {
 				commander.EXPECT().
 					Create(mock.Anything, mock.Anything).
 					RunAndReturn(func(ctx context.Context, params domain.CreateServiceParams) (*domain.Service, error) {
@@ -709,11 +707,11 @@ func TestServicePropertyValidation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			serviceQuerier := mocks.NewMockServiceQuerier(t)
-			agentQuerier := mocks.NewMockAgentQuerier(t)
-			serviceGroupQuerier := mocks.NewMockServiceGroupQuerier(t)
-			commander := mocks.NewMockServiceCommander(t)
-			authz := authmocks.NewMockAuthorizer(t)
+			serviceQuerier := domain.NewMockServiceQuerier(t)
+			agentQuerier := domain.NewMockAgentQuerier(t)
+			serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
+			commander := domain.NewMockServiceCommander(t)
+			authz := auth.NewMockAuthorizer(t)
 			tc.mockSetup(commander)
 
 			// Create the handler

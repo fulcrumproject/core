@@ -55,21 +55,6 @@ Content-Type: application/json
     "displayOrder": 1
 }
 
-### Create Service Option - Ubuntu 22.04
-# @name createOSOption2
-POST {{baseUrl}}/service-options
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "providerId": "{{createProvider.response.body.id}}",
-    "serviceOptionTypeId": "{{createOSOptionType.response.body.id}}",
-    "name": "Ubuntu 22.04 LTS",
-    "value": "ubuntu:22.04",
-    "enabled": true,
-    "displayOrder": 2
-}
-
 ### List service options for provider (verify they were created)
 GET {{baseUrl}}/service-options?providerId={{createProvider.response.body.id}}
 Authorization: Bearer {{adminToken}}

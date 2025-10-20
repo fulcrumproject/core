@@ -134,6 +134,24 @@ func (s *GormStore) ServiceOptionRepo() domain.ServiceOptionRepository {
 	return s.serviceOptionRepo
 }
 
+// ServicePoolSetRepo returns nil (not yet implemented - Phase 4)
+func (s *GormStore) ServicePoolSetRepo() domain.ServicePoolSetRepository {
+	// TODO: Implement in Phase 4
+	return nil
+}
+
+// ServicePoolRepo returns nil (not yet implemented - Phase 4)
+func (s *GormStore) ServicePoolRepo() domain.ServicePoolRepository {
+	// TODO: Implement in Phase 4
+	return nil
+}
+
+// ServicePoolValueRepo returns nil (not yet implemented - Phase 4)
+func (s *GormStore) ServicePoolValueRepo() domain.ServicePoolValueRepository {
+	// TODO: Implement in Phase 4
+	return nil
+}
+
 // GormReadOnlyStore implements the domain.ReadOnlyStore interface using GORM
 type GormReadOnlyStore struct {
 	db *gorm.DB
@@ -196,4 +214,22 @@ func (s *GormReadOnlyStore) ServiceOptionTypeQuerier() domain.ServiceOptionTypeQ
 
 func (s *GormReadOnlyStore) ServiceOptionQuerier() domain.ServiceOptionQuerier {
 	return NewServiceOptionRepository(s.db)
+}
+
+// ServicePoolSetQuerier returns nil (not yet implemented - Phase 4)
+func (s *GormReadOnlyStore) ServicePoolSetQuerier() domain.ServicePoolSetQuerier {
+	// TODO: Implement in Phase 4
+	return nil
+}
+
+// ServicePoolQuerier returns nil (not yet implemented - Phase 4)
+func (s *GormReadOnlyStore) ServicePoolQuerier() domain.ServicePoolQuerier {
+	// TODO: Implement in Phase 4
+	return nil
+}
+
+// ServicePoolValueQuerier returns nil (not yet implemented - Phase 4)
+func (s *GormReadOnlyStore) ServicePoolValueQuerier() domain.ServicePoolValueQuerier {
+	// TODO: Implement in Phase 4
+	return nil
 }

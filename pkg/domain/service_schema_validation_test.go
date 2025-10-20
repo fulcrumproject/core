@@ -6,244 +6,29 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-// Mock store for testing
-type mockStore struct {
-	serviceTypeRepo  *mockServiceTypeRepo
-	serviceRepo      *mockServiceRepo
-	serviceGroupRepo *mockServiceGroupRepo
-}
+func createTestStore(t *testing.T, serviceType *ServiceType) Store {
+	mockStore := NewMockStore(t)
+	mockServiceTypeRepo := NewMockServiceTypeRepository(t)
 
-func (m *mockStore) ServiceTypeRepo() ServiceTypeRepository {
-	return m.serviceTypeRepo
-}
+	// Setup ServiceTypeRepo mock
+	mockStore.EXPECT().ServiceTypeRepo().Return(mockServiceTypeRepo).Maybe()
+	mockServiceTypeRepo.EXPECT().Get(mock.Anything, serviceType.ID).Return(serviceType, nil).Maybe()
 
-func (m *mockStore) ServiceRepo() ServiceRepository {
-	return m.serviceRepo
-}
-
-func (m *mockStore) ServiceGroupRepo() ServiceGroupRepository {
-	return m.serviceGroupRepo
-}
-
-func (m *mockStore) Atomic(ctx context.Context, fn func(store Store) error) error {
-	return fn(m)
-}
-
-// Implement remaining Store interface methods
-func (m *mockStore) AgentTypeRepo() AgentTypeRepository                 { return nil }
-func (m *mockStore) AgentRepo() AgentRepository                         { return nil }
-func (m *mockStore) TokenRepo() TokenRepository                         { return nil }
-func (m *mockStore) JobRepo() JobRepository                             { return nil }
-func (m *mockStore) EventRepo() EventRepository                         { return nil }
-func (m *mockStore) EventSubscriptionRepo() EventSubscriptionRepository { return nil }
-func (m *mockStore) MetricTypeRepo() MetricTypeRepository               { return nil }
-func (m *mockStore) ParticipantRepo() ParticipantRepository             { return nil }
-func (m *mockStore) ServicePoolSetRepo() ServicePoolSetRepository       { return nil }
-func (m *mockStore) ServicePoolRepo() ServicePoolRepository             { return nil }
-func (m *mockStore) ServicePoolValueRepo() ServicePoolValueRepository   { return nil }
-func (m *mockStore) ServiceOptionTypeRepo() ServiceOptionTypeRepository { return nil }
-func (m *mockStore) ServiceOptionRepo() ServiceOptionRepository         { return nil }
-
-// Mock service type repo
-type mockServiceTypeRepo struct {
-	serviceTypes map[properties.UUID]*ServiceType
-}
-
-func (m *mockServiceTypeRepo) Get(ctx context.Context, id properties.UUID) (*ServiceType, error) {
-	if st, exists := m.serviceTypes[id]; exists {
-		return st, nil
-	}
-	return nil, NewNotFoundErrorf("ServiceType with ID %s not found", id.String())
-}
-
-// Implement BaseEntityQuerier methods
-func (m *mockServiceTypeRepo) Exists(ctx context.Context, id properties.UUID) (bool, error) {
-	_, exists := m.serviceTypes[id]
-	return exists, nil
-}
-
-func (m *mockServiceTypeRepo) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServiceType], error) {
-	return &PageRes[ServiceType]{}, nil
-}
-
-func (m *mockServiceTypeRepo) Count(ctx context.Context) (int64, error) {
-	return int64(len(m.serviceTypes)), nil
-}
-
-func (m *mockServiceTypeRepo) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-	return &auth.DefaultObjectScope{}, nil
-}
-
-// Implement BaseEntityRepository methods
-func (m *mockServiceTypeRepo) Create(ctx context.Context, entity *ServiceType) error {
-	m.serviceTypes[entity.ID] = entity
-	return nil
-}
-
-func (m *mockServiceTypeRepo) Save(ctx context.Context, entity *ServiceType) error {
-	m.serviceTypes[entity.ID] = entity
-	return nil
-}
-
-func (m *mockServiceTypeRepo) Delete(ctx context.Context, id properties.UUID) error {
-	delete(m.serviceTypes, id)
-	return nil
-}
-
-// Mock service repo
-type mockServiceRepo struct {
-	services map[properties.UUID]*Service
-}
-
-func (m *mockServiceRepo) Get(ctx context.Context, id properties.UUID) (*Service, error) {
-	if s, exists := m.services[id]; exists {
-		return s, nil
-	}
-	return nil, NewNotFoundErrorf("Service with ID %s not found", id.String())
-}
-
-// Implement BaseEntityQuerier methods
-func (m *mockServiceRepo) Exists(ctx context.Context, id properties.UUID) (bool, error) {
-	_, exists := m.services[id]
-	return exists, nil
-}
-
-func (m *mockServiceRepo) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[Service], error) {
-	return &PageRes[Service]{}, nil
-}
-
-func (m *mockServiceRepo) Count(ctx context.Context) (int64, error) {
-	return int64(len(m.services)), nil
-}
-
-func (m *mockServiceRepo) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-	return &auth.DefaultObjectScope{}, nil
-}
-
-// Implement BaseEntityRepository methods
-func (m *mockServiceRepo) Create(ctx context.Context, entity *Service) error {
-	m.services[entity.ID] = entity
-	return nil
-}
-
-func (m *mockServiceRepo) Save(ctx context.Context, entity *Service) error {
-	m.services[entity.ID] = entity
-	return nil
-}
-
-func (m *mockServiceRepo) Delete(ctx context.Context, id properties.UUID) error {
-	delete(m.services, id)
-	return nil
-}
-
-// Implement ServiceQuerier methods
-func (m *mockServiceRepo) GetServicesByGroupID(ctx context.Context, groupID properties.UUID) ([]*Service, error) {
-	return nil, nil
-}
-
-func (m *mockServiceRepo) ListByGroupID(ctx context.Context, groupID properties.UUID, scope *auth.IdentityScope, req *PageReq) (*PageRes[Service], error) {
-	return &PageRes[Service]{}, nil
-}
-
-func (m *mockServiceRepo) GetActiveJobsForService(ctx context.Context, serviceID properties.UUID) ([]*Job, error) {
-	return nil, nil
-}
-
-func (m *mockServiceRepo) CountByAgent(ctx context.Context, agentID properties.UUID) (int64, error) {
-	return 0, nil
-}
-
-func (m *mockServiceRepo) CountByGroup(ctx context.Context, groupID properties.UUID) (int64, error) {
-	return 0, nil
-}
-
-func (m *mockServiceRepo) FindByAgentInstanceID(ctx context.Context, agentID properties.UUID, agentInstanceID string) (*Service, error) {
-	return nil, NewNotFoundErrorf("Service with agent instance ID %s not found", agentInstanceID)
-}
-
-func (m *mockServiceRepo) CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error) {
-	return 0, nil
-}
-
-// Mock service group repo
-type mockServiceGroupRepo struct {
-	groups map[properties.UUID]*ServiceGroup
-}
-
-func (m *mockServiceGroupRepo) Get(ctx context.Context, id properties.UUID) (*ServiceGroup, error) {
-	if g, exists := m.groups[id]; exists {
-		return g, nil
-	}
-	return nil, NewNotFoundErrorf("ServiceGroup with ID %s not found", id.String())
-}
-
-// Implement BaseEntityQuerier methods
-func (m *mockServiceGroupRepo) Exists(ctx context.Context, id properties.UUID) (bool, error) {
-	_, exists := m.groups[id]
-	return exists, nil
-}
-
-func (m *mockServiceGroupRepo) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServiceGroup], error) {
-	return &PageRes[ServiceGroup]{}, nil
-}
-
-func (m *mockServiceGroupRepo) Count(ctx context.Context) (int64, error) {
-	return int64(len(m.groups)), nil
-}
-
-func (m *mockServiceGroupRepo) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-	return &auth.DefaultObjectScope{}, nil
-}
-
-// Implement BaseEntityRepository methods
-func (m *mockServiceGroupRepo) Create(ctx context.Context, entity *ServiceGroup) error {
-	m.groups[entity.ID] = entity
-	return nil
-}
-
-func (m *mockServiceGroupRepo) Save(ctx context.Context, entity *ServiceGroup) error {
-	m.groups[entity.ID] = entity
-	return nil
-}
-
-func (m *mockServiceGroupRepo) Delete(ctx context.Context, id properties.UUID) error {
-	delete(m.groups, id)
-	return nil
-}
-
-// Implement ServiceGroupQuerier methods
-func (m *mockServiceGroupRepo) ListByConsumerID(ctx context.Context, consumerID properties.UUID, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServiceGroup], error) {
-	return &PageRes[ServiceGroup]{}, nil
-}
-
-// Test helper functions
-func createTestContext() context.Context {
-	return context.Background()
-}
-
-func createTestStore(serviceType *ServiceType) Store {
-	uuid := uuid.New()
-	serviceTypeID := properties.UUID(uuid)
-	if serviceType != nil {
-		serviceType.ID = serviceTypeID
-	}
-
-	return &mockStore{
-		serviceTypeRepo: &mockServiceTypeRepo{
-			serviceTypes: map[properties.UUID]*ServiceType{
-				serviceTypeID: serviceType,
-			},
+	// Setup Atomic to just execute the function with the same store
+	mockStore.EXPECT().Atomic(mock.Anything, mock.Anything).RunAndReturn(
+		func(ctx context.Context, fn func(Store) error) error {
+			return fn(mockStore)
 		},
-		serviceRepo:      &mockServiceRepo{services: make(map[properties.UUID]*Service)},
-		serviceGroupRepo: &mockServiceGroupRepo{groups: make(map[properties.UUID]*ServiceGroup)},
-	}
+	).Maybe()
+
+	return mockStore
 }
 
 func createTestServiceType(schema ServiceSchema) *ServiceType {
@@ -260,10 +45,10 @@ func createTestServiceType(schema ServiceSchema) *ServiceType {
 	}
 }
 
-func validateServicePropertiesHelper(data map[string]any, schema ServiceSchema) (map[string]any, []ValidationErrorDetail) {
-	ctx := createTestContext()
+func validateServicePropertiesHelper(t *testing.T, data map[string]any, schema ServiceSchema) (map[string]any, []ValidationErrorDetail) {
+	ctx := context.Background()
 	serviceType := createTestServiceType(schema)
-	store := createTestStore(serviceType)
+	store := createTestStore(t, serviceType)
 	uuid := uuid.New()
 	groupID := properties.UUID(uuid)
 
@@ -301,14 +86,14 @@ func TestValidate_RequiredFields(t *testing.T) {
 		"age": 25,
 	}
 
-	_, errors := validateServicePropertiesHelper(data, schema)
+	_, errors := validateServicePropertiesHelper(t, data, schema)
 	require.Len(t, errors, 1)
 	assert.Equal(t, "name", errors[0].Path)
 	assert.Equal(t, ErrSchemaRequiredFieldMissing, errors[0].Message)
 
 	// Test with required field present
 	data["name"] = "John"
-	result, errors := validateServicePropertiesHelper(data, schema)
+	result, errors := validateServicePropertiesHelper(t, data, schema)
 	require.Len(t, errors, 0)
 	assert.Equal(t, "John", result["name"])
 	assert.Equal(t, 25, result["age"])
@@ -334,7 +119,7 @@ func TestValidate_TypeValidation(t *testing.T) {
 		"tags":   []any{"tag1", "tag2"},
 	}
 
-	result, errors := validateServicePropertiesHelper(validData, schema)
+	result, errors := validateServicePropertiesHelper(t, validData, schema)
 	require.Len(t, errors, 0)
 	assert.Equal(t, "John", result["name"])
 
@@ -348,7 +133,7 @@ func TestValidate_TypeValidation(t *testing.T) {
 		"tags":   "tag1,tag2", // should be array
 	}
 
-	_, errors = validateServicePropertiesHelper(invalidData, schema)
+	_, errors = validateServicePropertiesHelper(t, invalidData, schema)
 	assert.Len(t, errors, 6)
 }
 
@@ -424,7 +209,7 @@ func TestValidate_StringValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, errors := validateServicePropertiesHelper(tt.data, schema)
+			_, errors := validateServicePropertiesHelper(t, tt.data, schema)
 			if tt.expectError {
 				assert.Len(t, errors, tt.errorCount)
 			} else {
@@ -506,7 +291,7 @@ func TestValidate_NumericValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, errors := validateServicePropertiesHelper(tt.data, schema)
+			_, errors := validateServicePropertiesHelper(t, tt.data, schema)
 			if tt.expectError {
 				assert.Len(t, errors, tt.errorCount)
 			} else {
@@ -584,7 +369,7 @@ func TestValidate_ArrayValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, errors := validateServicePropertiesHelper(tt.data, schema)
+			_, errors := validateServicePropertiesHelper(t, tt.data, schema)
 			if tt.expectError {
 				assert.Len(t, errors, tt.errorCount)
 			} else {
@@ -664,7 +449,7 @@ func TestValidate_NestedObjects(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, errors := validateServicePropertiesHelper(tt.data, schema)
+			_, errors := validateServicePropertiesHelper(t, tt.data, schema)
 			if tt.expectError {
 				assert.Len(t, errors, tt.errorCount)
 			} else {
@@ -783,7 +568,7 @@ func TestValidateWithDefaults(t *testing.T) {
 		"name": "test-service",
 	}
 
-	result, errors := validateServicePropertiesHelper(input, schema)
+	result, errors := validateServicePropertiesHelper(t, input, schema)
 	require.Len(t, errors, 0)
 
 	expected := map[string]any{
@@ -810,7 +595,7 @@ func TestValidateWithDefaults(t *testing.T) {
 		},
 	}
 
-	_, errors = validateServicePropertiesHelper(input, schemaWithInvalidDefault)
+	_, errors = validateServicePropertiesHelper(t, input, schemaWithInvalidDefault)
 	require.Greater(t, len(errors), 0, "Expected validation error for invalid default value")
 }
 
@@ -826,7 +611,7 @@ func TestValidate_UnknownProperties(t *testing.T) {
 		"unknown_prop": "value",
 	}
 
-	_, errors := validateServicePropertiesHelper(data, schema)
+	_, errors := validateServicePropertiesHelper(t, data, schema)
 	require.Len(t, errors, 1)
 	assert.Equal(t, "unknown_prop", errors[0].Path)
 	assert.Equal(t, ErrSchemaUnknownProperty, errors[0].Message)
@@ -907,7 +692,7 @@ func TestValidate_ComplexExample(t *testing.T) {
 		"ports": []any{80, 443},
 	}
 
-	_, errors := validateServicePropertiesHelper(validData, schema)
+	_, errors := validateServicePropertiesHelper(t, validData, schema)
 	require.Len(t, errors, 0, "Expected no errors for valid complex data, got: %v", errors)
 
 	// Invalid data with multiple errors
@@ -923,7 +708,7 @@ func TestValidate_ComplexExample(t *testing.T) {
 		"ports": []any{}, // Below minimum items
 	}
 
-	_, errors = validateServicePropertiesHelper(invalidData, schema)
+	_, errors = validateServicePropertiesHelper(t, invalidData, schema)
 	require.GreaterOrEqual(t, len(errors), 5, "Expected at least 5 errors for invalid complex data, got: %v", errors)
 }
 

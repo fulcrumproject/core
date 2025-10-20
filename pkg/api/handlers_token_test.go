@@ -7,9 +7,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
-	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
 	"github.com/fulcrumproject/core/pkg/domain"
-	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -17,10 +15,10 @@ import (
 
 // TestNewTokenHandler tests the constructor
 func TestNewTokenHandler(t *testing.T) {
-	tokenQuerier := mocks.NewMockTokenQuerier(t)
-	agentQuerier := mocks.NewMockAgentQuerier(t)
-	commander := mocks.NewMockTokenCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	tokenQuerier := domain.NewMockTokenQuerier(t)
+	agentQuerier := domain.NewMockAgentQuerier(t)
+	commander := domain.NewMockTokenCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	handler := NewTokenHandler(tokenQuerier, commander, agentQuerier, authz)
 	assert.NotNil(t, handler)
@@ -33,10 +31,10 @@ func TestNewTokenHandler(t *testing.T) {
 // TestTokenHandlerRoutes tests that routes are properly registered
 func TestTokenHandlerRoutes(t *testing.T) {
 	// Create mocks
-	tokenQuerier := mocks.NewMockTokenQuerier(t)
-	agentQuerier := mocks.NewMockAgentQuerier(t)
-	commander := mocks.NewMockTokenCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	tokenQuerier := domain.NewMockTokenQuerier(t)
+	agentQuerier := domain.NewMockAgentQuerier(t)
+	commander := domain.NewMockTokenCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewTokenHandler(tokenQuerier, commander, agentQuerier, authz)
