@@ -129,4 +129,3 @@ func TestAllocateServicePoolProperties_NilSchema(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, inputProps, result)
 }
-
