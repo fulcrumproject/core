@@ -20641,23 +20641,23 @@ func (_c *MockServicePoolValueRepository_Exists_Call) RunAndReturn(run func(ctx 
 }
 
 // FindAvailable provides a mock function for the type MockServicePoolValueRepository
-func (_mock *MockServicePoolValueRepository) FindAvailable(ctx context.Context, poolID properties.UUID) (*ServicePoolValue, error) {
+func (_mock *MockServicePoolValueRepository) FindAvailable(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error) {
 	ret := _mock.Called(ctx, poolID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindAvailable")
 	}
 
-	var r0 *ServicePoolValue
+	var r0 []*ServicePoolValue
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*ServicePoolValue, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ServicePoolValue, error)); ok {
 		return returnFunc(ctx, poolID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *ServicePoolValue); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ServicePoolValue); ok {
 		r0 = returnFunc(ctx, poolID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ServicePoolValue)
+			r0 = ret.Get(0).([]*ServicePoolValue)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -20698,12 +20698,148 @@ func (_c *MockServicePoolValueRepository_FindAvailable_Call) Run(run func(ctx co
 	return _c
 }
 
-func (_c *MockServicePoolValueRepository_FindAvailable_Call) Return(servicePoolValue *ServicePoolValue, err error) *MockServicePoolValueRepository_FindAvailable_Call {
-	_c.Call.Return(servicePoolValue, err)
+func (_c *MockServicePoolValueRepository_FindAvailable_Call) Return(servicePoolValues []*ServicePoolValue, err error) *MockServicePoolValueRepository_FindAvailable_Call {
+	_c.Call.Return(servicePoolValues, err)
 	return _c
 }
 
-func (_c *MockServicePoolValueRepository_FindAvailable_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) (*ServicePoolValue, error)) *MockServicePoolValueRepository_FindAvailable_Call {
+func (_c *MockServicePoolValueRepository_FindAvailable_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)) *MockServicePoolValueRepository_FindAvailable_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByPool provides a mock function for the type MockServicePoolValueRepository
+func (_mock *MockServicePoolValueRepository) FindByPool(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error) {
+	ret := _mock.Called(ctx, poolID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByPool")
+	}
+
+	var r0 []*ServicePoolValue
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ServicePoolValue, error)); ok {
+		return returnFunc(ctx, poolID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ServicePoolValue); ok {
+		r0 = returnFunc(ctx, poolID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ServicePoolValue)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, poolID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueRepository_FindByPool_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByPool'
+type MockServicePoolValueRepository_FindByPool_Call struct {
+	*mock.Call
+}
+
+// FindByPool is a helper method to define mock.On call
+//   - ctx context.Context
+//   - poolID properties.UUID
+func (_e *MockServicePoolValueRepository_Expecter) FindByPool(ctx interface{}, poolID interface{}) *MockServicePoolValueRepository_FindByPool_Call {
+	return &MockServicePoolValueRepository_FindByPool_Call{Call: _e.mock.On("FindByPool", ctx, poolID)}
+}
+
+func (_c *MockServicePoolValueRepository_FindByPool_Call) Run(run func(ctx context.Context, poolID properties.UUID)) *MockServicePoolValueRepository_FindByPool_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_FindByPool_Call) Return(servicePoolValues []*ServicePoolValue, err error) *MockServicePoolValueRepository_FindByPool_Call {
+	_c.Call.Return(servicePoolValues, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_FindByPool_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)) *MockServicePoolValueRepository_FindByPool_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByService provides a mock function for the type MockServicePoolValueRepository
+func (_mock *MockServicePoolValueRepository) FindByService(ctx context.Context, serviceID properties.UUID) ([]*ServicePoolValue, error) {
+	ret := _mock.Called(ctx, serviceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByService")
+	}
+
+	var r0 []*ServicePoolValue
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ServicePoolValue, error)); ok {
+		return returnFunc(ctx, serviceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ServicePoolValue); ok {
+		r0 = returnFunc(ctx, serviceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ServicePoolValue)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueRepository_FindByService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByService'
+type MockServicePoolValueRepository_FindByService_Call struct {
+	*mock.Call
+}
+
+// FindByService is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceID properties.UUID
+func (_e *MockServicePoolValueRepository_Expecter) FindByService(ctx interface{}, serviceID interface{}) *MockServicePoolValueRepository_FindByService_Call {
+	return &MockServicePoolValueRepository_FindByService_Call{Call: _e.mock.On("FindByService", ctx, serviceID)}
+}
+
+func (_c *MockServicePoolValueRepository_FindByService_Call) Run(run func(ctx context.Context, serviceID properties.UUID)) *MockServicePoolValueRepository_FindByService_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_FindByService_Call) Return(servicePoolValues []*ServicePoolValue, err error) *MockServicePoolValueRepository_FindByService_Call {
+	_c.Call.Return(servicePoolValues, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_FindByService_Call) RunAndReturn(run func(ctx context.Context, serviceID properties.UUID) ([]*ServicePoolValue, error)) *MockServicePoolValueRepository_FindByService_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -21125,23 +21261,23 @@ func (_c *MockServicePoolValueQuerier_Exists_Call) RunAndReturn(run func(ctx con
 }
 
 // FindAvailable provides a mock function for the type MockServicePoolValueQuerier
-func (_mock *MockServicePoolValueQuerier) FindAvailable(ctx context.Context, poolID properties.UUID) (*ServicePoolValue, error) {
+func (_mock *MockServicePoolValueQuerier) FindAvailable(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error) {
 	ret := _mock.Called(ctx, poolID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindAvailable")
 	}
 
-	var r0 *ServicePoolValue
+	var r0 []*ServicePoolValue
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*ServicePoolValue, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ServicePoolValue, error)); ok {
 		return returnFunc(ctx, poolID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *ServicePoolValue); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ServicePoolValue); ok {
 		r0 = returnFunc(ctx, poolID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ServicePoolValue)
+			r0 = ret.Get(0).([]*ServicePoolValue)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -21182,12 +21318,148 @@ func (_c *MockServicePoolValueQuerier_FindAvailable_Call) Run(run func(ctx conte
 	return _c
 }
 
-func (_c *MockServicePoolValueQuerier_FindAvailable_Call) Return(servicePoolValue *ServicePoolValue, err error) *MockServicePoolValueQuerier_FindAvailable_Call {
-	_c.Call.Return(servicePoolValue, err)
+func (_c *MockServicePoolValueQuerier_FindAvailable_Call) Return(servicePoolValues []*ServicePoolValue, err error) *MockServicePoolValueQuerier_FindAvailable_Call {
+	_c.Call.Return(servicePoolValues, err)
 	return _c
 }
 
-func (_c *MockServicePoolValueQuerier_FindAvailable_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) (*ServicePoolValue, error)) *MockServicePoolValueQuerier_FindAvailable_Call {
+func (_c *MockServicePoolValueQuerier_FindAvailable_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)) *MockServicePoolValueQuerier_FindAvailable_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByPool provides a mock function for the type MockServicePoolValueQuerier
+func (_mock *MockServicePoolValueQuerier) FindByPool(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error) {
+	ret := _mock.Called(ctx, poolID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByPool")
+	}
+
+	var r0 []*ServicePoolValue
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ServicePoolValue, error)); ok {
+		return returnFunc(ctx, poolID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ServicePoolValue); ok {
+		r0 = returnFunc(ctx, poolID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ServicePoolValue)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, poolID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueQuerier_FindByPool_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByPool'
+type MockServicePoolValueQuerier_FindByPool_Call struct {
+	*mock.Call
+}
+
+// FindByPool is a helper method to define mock.On call
+//   - ctx context.Context
+//   - poolID properties.UUID
+func (_e *MockServicePoolValueQuerier_Expecter) FindByPool(ctx interface{}, poolID interface{}) *MockServicePoolValueQuerier_FindByPool_Call {
+	return &MockServicePoolValueQuerier_FindByPool_Call{Call: _e.mock.On("FindByPool", ctx, poolID)}
+}
+
+func (_c *MockServicePoolValueQuerier_FindByPool_Call) Run(run func(ctx context.Context, poolID properties.UUID)) *MockServicePoolValueQuerier_FindByPool_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_FindByPool_Call) Return(servicePoolValues []*ServicePoolValue, err error) *MockServicePoolValueQuerier_FindByPool_Call {
+	_c.Call.Return(servicePoolValues, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_FindByPool_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)) *MockServicePoolValueQuerier_FindByPool_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByService provides a mock function for the type MockServicePoolValueQuerier
+func (_mock *MockServicePoolValueQuerier) FindByService(ctx context.Context, serviceID properties.UUID) ([]*ServicePoolValue, error) {
+	ret := _mock.Called(ctx, serviceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByService")
+	}
+
+	var r0 []*ServicePoolValue
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ServicePoolValue, error)); ok {
+		return returnFunc(ctx, serviceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ServicePoolValue); ok {
+		r0 = returnFunc(ctx, serviceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ServicePoolValue)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueQuerier_FindByService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByService'
+type MockServicePoolValueQuerier_FindByService_Call struct {
+	*mock.Call
+}
+
+// FindByService is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceID properties.UUID
+func (_e *MockServicePoolValueQuerier_Expecter) FindByService(ctx interface{}, serviceID interface{}) *MockServicePoolValueQuerier_FindByService_Call {
+	return &MockServicePoolValueQuerier_FindByService_Call{Call: _e.mock.On("FindByService", ctx, serviceID)}
+}
+
+func (_c *MockServicePoolValueQuerier_FindByService_Call) Run(run func(ctx context.Context, serviceID properties.UUID)) *MockServicePoolValueQuerier_FindByService_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_FindByService_Call) Return(servicePoolValues []*ServicePoolValue, err error) *MockServicePoolValueQuerier_FindByService_Call {
+	_c.Call.Return(servicePoolValues, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_FindByService_Call) RunAndReturn(run func(ctx context.Context, serviceID properties.UUID) ([]*ServicePoolValue, error)) *MockServicePoolValueQuerier_FindByService_Call {
 	_c.Call.Return(run)
 	return _c
 }

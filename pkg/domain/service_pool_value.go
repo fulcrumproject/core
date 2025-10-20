@@ -19,11 +19,11 @@ const (
 type ServicePoolValue struct {
 	BaseEntity
 
-	Name          string              `json:"name" gorm:"not null"`
-	Value         properties.JSON     `json:"value" gorm:"type:jsonb;not null"`
-	ServicePoolID properties.UUID     `json:"servicePoolId" gorm:"not null;index"`
-	ServicePool   *ServicePool        `json:"-" gorm:"foreignKey:ServicePoolID"`
-	
+	Name          string          `json:"name" gorm:"not null"`
+	Value         any             `json:"value" gorm:"type:jsonb;serializer:json;not null"`
+	ServicePoolID properties.UUID `json:"servicePoolId" gorm:"not null;index"`
+	ServicePool   *ServicePool    `json:"-" gorm:"foreignKey:ServicePoolID"`
+
 	// Allocation tracking (nullable - null when available)
 	ServiceID    *properties.UUID `json:"serviceId,omitempty" gorm:"index"`
 	Service      *Service         `json:"-" gorm:"foreignKey:ServiceID"`
@@ -35,7 +35,7 @@ type ServicePoolValue struct {
 type CreateServicePoolValueParams struct {
 	ServicePoolID properties.UUID
 	Name          string
-	Value         properties.JSON
+	Value         any
 }
 
 // NewServicePoolValue creates a new service pool value without validation
@@ -103,7 +103,9 @@ type ServicePoolValueQuerier interface {
 	List(ctx context.Context) ([]*ServicePoolValue, error)
 	ListByPool(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)
 	ListByService(ctx context.Context, serviceID properties.UUID) ([]*ServicePoolValue, error)
-	FindAvailable(ctx context.Context, poolID properties.UUID) (*ServicePoolValue, error)
+	FindByPool(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)
+	FindAvailable(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)
+	FindByService(ctx context.Context, serviceID properties.UUID) ([]*ServicePoolValue, error)
 	Exists(ctx context.Context, id properties.UUID) (bool, error)
 }
 
@@ -112,4 +114,3 @@ type ServicePoolValueCommander interface {
 	CreateServicePoolValue(ctx context.Context, params CreateServicePoolValueParams) (*ServicePoolValue, error)
 	DeleteServicePoolValue(ctx context.Context, id properties.UUID) error
 }
-
