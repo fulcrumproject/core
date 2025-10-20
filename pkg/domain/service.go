@@ -423,6 +423,7 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 		validationParams := &ServicePropertyValidationParams{
 			ServiceTypeID: svc.ServiceTypeID,
 			GroupID:       svc.GroupID,
+			ProviderID:    svc.ProviderID,
 			Properties:    mergedProperties,
 		}
 		validatedProperties, err := ValidateServiceProperties(ctx, store, validationParams)
