@@ -97,14 +97,14 @@ const (
 type ServicePropertyValidationCtx struct {
 	Context    context.Context
 	Store      Store
-	Schema     ServiceSchema
+	Schema     ServicePropertySchema
 	GroupID    properties.UUID
 	ProviderID properties.UUID
 	Properties map[string]any
 }
 
 // applyServicePropertiesDefaults applies default values to data based on the schema
-func applyServicePropertiesDefaults(data map[string]any, schema ServiceSchema) map[string]any {
+func applyServicePropertiesDefaults(data map[string]any, schema ServicePropertySchema) map[string]any {
 	result := make(map[string]any)
 
 	// Copy existing data
@@ -853,7 +853,7 @@ func ValidatePropertyUpdatability(propertyName string, currentStatus string, pro
 
 // ValidatePropertiesForCreation validates properties during service creation
 // Only checks source - updatability doesn't apply to initial values
-func ValidatePropertiesForCreation(properties map[string]any, schema *ServiceSchema, source string) error {
+func ValidatePropertiesForCreation(properties map[string]any, schema *ServicePropertySchema, source string) error {
 	// Empty properties are valid
 	if len(properties) == 0 {
 		return nil
@@ -897,7 +897,7 @@ func ValidatePropertiesForCreation(properties map[string]any, schema *ServiceSch
 
 // ValidatePropertiesForUpdate validates properties during service update
 // Checks both source AND updatability
-func ValidatePropertiesForUpdate(updates map[string]any, currentStatus string, schema *ServiceSchema, updateSource string) error {
+func ValidatePropertiesForUpdate(updates map[string]any, currentStatus string, schema *ServicePropertySchema, updateSource string) error {
 	// Empty updates are valid
 	if len(updates) == 0 {
 		return nil

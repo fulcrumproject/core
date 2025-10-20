@@ -31,7 +31,7 @@ func createTestStore(t *testing.T, serviceType *ServiceType) Store {
 	return mockStore
 }
 
-func createTestServiceType(schema ServiceSchema) *ServiceType {
+func createTestServiceType(schema ServicePropertySchema) *ServiceType {
 	uuid := uuid.New()
 	id := properties.UUID(uuid)
 	return &ServiceType{
@@ -45,7 +45,7 @@ func createTestServiceType(schema ServiceSchema) *ServiceType {
 	}
 }
 
-func validateServicePropertiesHelper(t *testing.T, data map[string]any, schema ServiceSchema) (map[string]any, []ValidationErrorDetail) {
+func validateServicePropertiesHelper(t *testing.T, data map[string]any, schema ServicePropertySchema) (map[string]any, []ValidationErrorDetail) {
 	ctx := context.Background()
 	serviceType := createTestServiceType(schema)
 	store := createTestStore(t, serviceType)
@@ -70,7 +70,7 @@ func validateServicePropertiesHelper(t *testing.T, data map[string]any, schema S
 }
 
 func TestValidate_RequiredFields(t *testing.T) {
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"name": ServicePropertyDefinition{
 			Type:     SchemaTypeString,
 			Required: true,
@@ -100,7 +100,7 @@ func TestValidate_RequiredFields(t *testing.T) {
 }
 
 func TestValidate_TypeValidation(t *testing.T) {
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"name":   ServicePropertyDefinition{Type: SchemaTypeString},
 		"age":    ServicePropertyDefinition{Type: SchemaTypeInteger},
 		"score":  ServicePropertyDefinition{Type: SchemaTypeNumber},
@@ -138,7 +138,7 @@ func TestValidate_TypeValidation(t *testing.T) {
 }
 
 func TestValidate_StringValidators(t *testing.T) {
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"username": ServicePropertyDefinition{
 			Type: SchemaTypeString,
 			Validators: []ServicePropertyValidatorDefinition{
@@ -220,7 +220,7 @@ func TestValidate_StringValidators(t *testing.T) {
 }
 
 func TestValidate_NumericValidators(t *testing.T) {
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"cpu": ServicePropertyDefinition{
 			Type: SchemaTypeInteger,
 			Validators: []ServicePropertyValidatorDefinition{
@@ -302,7 +302,7 @@ func TestValidate_NumericValidators(t *testing.T) {
 }
 
 func TestValidate_ArrayValidators(t *testing.T) {
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"ports": ServicePropertyDefinition{
 			Type: SchemaTypeArray,
 			Validators: []ServicePropertyValidatorDefinition{
@@ -380,7 +380,7 @@ func TestValidate_ArrayValidators(t *testing.T) {
 }
 
 func TestValidate_NestedObjects(t *testing.T) {
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"metadata": ServicePropertyDefinition{
 			Type: SchemaTypeObject,
 			Properties: map[string]ServicePropertyDefinition{
@@ -460,7 +460,7 @@ func TestValidate_NestedObjects(t *testing.T) {
 }
 
 func TestApplyDefaults(t *testing.T) {
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"name": ServicePropertyDefinition{
 			Type:     SchemaTypeString,
 			Required: true,
@@ -548,7 +548,7 @@ func TestApplyDefaults(t *testing.T) {
 }
 
 func TestValidateWithDefaults(t *testing.T) {
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"name": ServicePropertyDefinition{
 			Type:     SchemaTypeString,
 			Required: true,
@@ -581,7 +581,7 @@ func TestValidateWithDefaults(t *testing.T) {
 	}
 
 	// Test with invalid default (this shouldn't happen in practice, but tests edge case)
-	schemaWithInvalidDefault := ServiceSchema{
+	schemaWithInvalidDefault := ServicePropertySchema{
 		"name": ServicePropertyDefinition{
 			Type:     SchemaTypeString,
 			Required: true,
@@ -600,7 +600,7 @@ func TestValidateWithDefaults(t *testing.T) {
 }
 
 func TestValidate_UnknownProperties(t *testing.T) {
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"name": ServicePropertyDefinition{
 			Type: SchemaTypeString,
 		},
@@ -619,7 +619,7 @@ func TestValidate_UnknownProperties(t *testing.T) {
 
 func TestValidate_ComplexExample(t *testing.T) {
 	// This test uses the example schema from the feature specification
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"cpu": ServicePropertyDefinition{
 			Type:     SchemaTypeInteger,
 			Label:    "CPU Cores",
@@ -816,7 +816,7 @@ func TestValidatePropertyUpdatability(t *testing.T) {
 
 // TestValidatePropertiesForUpdate tests the ValidatePropertiesForUpdate function
 func TestValidatePropertiesForUpdate(t *testing.T) {
-	schema := &ServiceSchema{
+	schema := &ServicePropertySchema{
 		"hostname": ServicePropertyDefinition{
 			Type:      "string",
 			Source:    "input",
@@ -849,7 +849,7 @@ func TestValidatePropertiesForUpdate(t *testing.T) {
 		name          string
 		updates       map[string]any
 		currentStatus string
-		schema        *ServiceSchema
+		schema        *ServicePropertySchema
 		updateSource  string
 		expectErr     bool
 		errMsg        string
@@ -971,7 +971,7 @@ func TestValidatePropertiesForUpdate(t *testing.T) {
 				"implicitInput": "value",
 			},
 			currentStatus: "Started",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"implicitInput": ServicePropertyDefinition{
 					Type:      "string",
 					Updatable: "always",
@@ -987,7 +987,7 @@ func TestValidatePropertiesForUpdate(t *testing.T) {
 				"implicitInput": "value",
 			},
 			currentStatus: "Started",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"implicitInput": ServicePropertyDefinition{
 					Type:      "string",
 					Updatable: "always",
@@ -1038,7 +1038,7 @@ func TestValidatePropertiesForUpdate(t *testing.T) {
 
 // TestValidatePropertiesForCreation tests the ValidatePropertiesForCreation function
 func TestValidatePropertiesForCreation(t *testing.T) {
-	schema := &ServiceSchema{
+	schema := &ServicePropertySchema{
 		"hostname": ServicePropertyDefinition{
 			Type:      "string",
 			Source:    "input",
@@ -1060,7 +1060,7 @@ func TestValidatePropertiesForCreation(t *testing.T) {
 	tests := []struct {
 		name       string
 		properties map[string]any
-		schema     *ServiceSchema
+		schema     *ServicePropertySchema
 		source     string
 		expectErr  bool
 		errMsg     string
@@ -1160,7 +1160,7 @@ func TestValidatePropertiesForCreation(t *testing.T) {
 			properties: map[string]any{
 				"implicitInput": "value",
 			},
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"implicitInput": ServicePropertyDefinition{
 					Type: "string",
 					// Source not set, defaults to "input"
@@ -1174,7 +1174,7 @@ func TestValidatePropertiesForCreation(t *testing.T) {
 			properties: map[string]any{
 				"implicitInput": "value",
 			},
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"implicitInput": ServicePropertyDefinition{
 					Type: "string",
 					// Source not set, defaults to "input"

@@ -45,7 +45,7 @@ func TestServiceTypeRepository(t *testing.T) {
 
 			// Setup - ServiceType with property schema containing new fields
 			serviceType := createTestServiceType(t)
-			schema := &domain.ServiceSchema{
+			schema := &domain.ServicePropertySchema{
 				"instanceName": domain.ServicePropertyDefinition{
 					Type:      "string",
 					Label:     "Instance Name",
@@ -107,7 +107,7 @@ func TestServiceTypeRepository(t *testing.T) {
 
 			// Setup - ServiceType with nested property schema
 			serviceType := createTestServiceType(t)
-			schema := &domain.ServiceSchema{
+			schema := &domain.ServicePropertySchema{
 				"config": domain.ServicePropertyDefinition{
 					Type:  "object",
 					Label: "Configuration",
@@ -467,7 +467,7 @@ func TestServiceTypeRepository(t *testing.T) {
 			for _, tc := range testCases {
 				t.Run(tc.name, func(t *testing.T) {
 					st := createTestServiceType(t)
-					st.PropertySchema = &domain.ServiceSchema{
+					st.PropertySchema = &domain.ServicePropertySchema{
 						"testProp": domain.ServicePropertyDefinition{
 							Type:   "string",
 							Source: tc.source,
@@ -502,7 +502,7 @@ func TestServiceTypeRepository(t *testing.T) {
 			for _, tc := range testCases {
 				t.Run(tc.name, func(t *testing.T) {
 					st := createTestServiceType(t)
-					st.PropertySchema = &domain.ServiceSchema{
+					st.PropertySchema = &domain.ServicePropertySchema{
 						"testProp": domain.ServicePropertyDefinition{
 							Type:        "string",
 							Updatable:   tc.updatable,

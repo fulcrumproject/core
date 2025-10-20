@@ -54,17 +54,17 @@ func TestServiceTypeBasics(t *testing.T) {
 	}
 }
 
-// TestServiceSchema_Validate_Source tests source field validation
-func TestServiceSchema_Validate_Source(t *testing.T) {
+// TestServicePropertySchema_Validate_Source tests source field validation
+func TestServicePropertySchema_Validate_Source(t *testing.T) {
 	tests := []struct {
 		name      string
-		schema    ServiceSchema
+		schema    ServicePropertySchema
 		expectErr bool
 		errMsg    string
 	}{
 		{
 			name: "Valid source: input",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"hostname": ServicePropertyDefinition{
 					Type:   "string",
 					Source: "input",
@@ -74,7 +74,7 @@ func TestServiceSchema_Validate_Source(t *testing.T) {
 		},
 		{
 			name: "Valid source: agent",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"internalIp": ServicePropertyDefinition{
 					Type:   "string",
 					Source: "agent",
@@ -84,7 +84,7 @@ func TestServiceSchema_Validate_Source(t *testing.T) {
 		},
 		{
 			name: "Valid source: empty (default)",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"hostname": ServicePropertyDefinition{
 					Type:   "string",
 					Source: "",
@@ -94,7 +94,7 @@ func TestServiceSchema_Validate_Source(t *testing.T) {
 		},
 		{
 			name: "Invalid source: invalid value",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"hostname": ServicePropertyDefinition{
 					Type:   "string",
 					Source: "invalid",
@@ -118,17 +118,17 @@ func TestServiceSchema_Validate_Source(t *testing.T) {
 	}
 }
 
-// TestServiceSchema_Validate_Updatable tests updatable field validation
-func TestServiceSchema_Validate_Updatable(t *testing.T) {
+// TestServicePropertySchema_Validate_Updatable tests updatable field validation
+func TestServicePropertySchema_Validate_Updatable(t *testing.T) {
 	tests := []struct {
 		name      string
-		schema    ServiceSchema
+		schema    ServicePropertySchema
 		expectErr bool
 		errMsg    string
 	}{
 		{
 			name: "Valid updatable: always",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"tags": ServicePropertyDefinition{
 					Type:      "string",
 					Updatable: "always",
@@ -138,7 +138,7 @@ func TestServiceSchema_Validate_Updatable(t *testing.T) {
 		},
 		{
 			name: "Valid updatable: never",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"hostname": ServicePropertyDefinition{
 					Type:      "string",
 					Updatable: "never",
@@ -148,7 +148,7 @@ func TestServiceSchema_Validate_Updatable(t *testing.T) {
 		},
 		{
 			name: "Valid updatable: statuses with updatableIn",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"cpu": ServicePropertyDefinition{
 					Type:        "integer",
 					Updatable:   "statuses",
@@ -159,7 +159,7 @@ func TestServiceSchema_Validate_Updatable(t *testing.T) {
 		},
 		{
 			name: "Valid updatable: empty (default)",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"hostname": ServicePropertyDefinition{
 					Type:      "string",
 					Updatable: "",
@@ -169,7 +169,7 @@ func TestServiceSchema_Validate_Updatable(t *testing.T) {
 		},
 		{
 			name: "Invalid updatable: invalid value",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"hostname": ServicePropertyDefinition{
 					Type:      "string",
 					Updatable: "sometimes",
@@ -180,7 +180,7 @@ func TestServiceSchema_Validate_Updatable(t *testing.T) {
 		},
 		{
 			name: "Invalid updatable: statuses without updatableIn",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"cpu": ServicePropertyDefinition{
 					Type:      "integer",
 					Updatable: "statuses",
@@ -191,7 +191,7 @@ func TestServiceSchema_Validate_Updatable(t *testing.T) {
 		},
 		{
 			name: "Invalid updatable: statuses with empty updatableIn",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"cpu": ServicePropertyDefinition{
 					Type:        "integer",
 					Updatable:   "statuses",
@@ -216,17 +216,17 @@ func TestServiceSchema_Validate_Updatable(t *testing.T) {
 	}
 }
 
-// TestServiceSchema_Validate_NestedProperties tests validation of nested properties
-func TestServiceSchema_Validate_NestedProperties(t *testing.T) {
+// TestServicePropertySchema_Validate_NestedProperties tests validation of nested properties
+func TestServicePropertySchema_Validate_NestedProperties(t *testing.T) {
 	tests := []struct {
 		name      string
-		schema    ServiceSchema
+		schema    ServicePropertySchema
 		expectErr bool
 		errMsg    string
 	}{
 		{
 			name: "Valid nested properties with source",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"network": ServicePropertyDefinition{
 					Type: "object",
 					Properties: map[string]ServicePropertyDefinition{
@@ -241,7 +241,7 @@ func TestServiceSchema_Validate_NestedProperties(t *testing.T) {
 		},
 		{
 			name: "Invalid nested property source",
-			schema: ServiceSchema{
+			schema: ServicePropertySchema{
 				"network": ServicePropertyDefinition{
 					Type: "object",
 					Properties: map[string]ServicePropertyDefinition{
@@ -270,9 +270,9 @@ func TestServiceSchema_Validate_NestedProperties(t *testing.T) {
 	}
 }
 
-// TestServiceSchema_Validate_CompleteSchema tests a complete schema with multiple properties
-func TestServiceSchema_Validate_CompleteSchema(t *testing.T) {
-	schema := ServiceSchema{
+// TestServicePropertySchema_Validate_CompleteSchema tests a complete schema with multiple properties
+func TestServicePropertySchema_Validate_CompleteSchema(t *testing.T) {
+	schema := ServicePropertySchema{
 		"hostname": ServicePropertyDefinition{
 			Type:      "string",
 			Source:    "input",

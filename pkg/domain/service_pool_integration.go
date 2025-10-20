@@ -16,7 +16,7 @@ func AllocateServicePoolProperties(
 	store Store,
 	serviceID properties.UUID,
 	poolSetID properties.UUID,
-	propertySchema ServiceSchema,
+	propertySchema ServicePropertySchema,
 	properties map[string]any,
 ) (map[string]any, error) {
 	if propertySchema == nil {

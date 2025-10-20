@@ -17,9 +17,9 @@ const (
 // ServiceType represents a type of service that can be provided
 type ServiceType struct {
 	BaseEntity
-	Name            string           `json:"name" gorm:"not null;unique"`
-	PropertySchema  *ServiceSchema   `json:"propertySchema,omitempty" gorm:"type:jsonb"`
-	LifecycleSchema *LifecycleSchema `json:"lifecycleSchema,omitempty" gorm:"type:jsonb"`
+	Name            string                 `json:"name" gorm:"not null;unique"`
+	PropertySchema  *ServicePropertySchema `json:"propertySchema,omitempty" gorm:"type:jsonb"`
+	LifecycleSchema *LifecycleSchema       `json:"lifecycleSchema,omitempty" gorm:"type:jsonb"`
 }
 
 // NewServiceType creates a new service type without validation
@@ -185,16 +185,16 @@ type ServicePropertyValidationParams struct {
 }
 
 type CreateServiceTypeParams struct {
-	Name            string           `json:"name"`
-	PropertySchema  *ServiceSchema   `json:"propertySchema,omitempty"`
-	LifecycleSchema *LifecycleSchema `json:"lifecycleSchema,omitempty"`
+	Name            string                 `json:"name"`
+	PropertySchema  *ServicePropertySchema `json:"propertySchema,omitempty"`
+	LifecycleSchema *LifecycleSchema       `json:"lifecycleSchema,omitempty"`
 }
 
 type UpdateServiceTypeParams struct {
-	ID              properties.UUID  `json:"id"`
-	Name            *string          `json:"name"`
-	PropertySchema  *ServiceSchema   `json:"propertySchema,omitempty"`
-	LifecycleSchema *LifecycleSchema `json:"lifecycleSchema,omitempty"`
+	ID              properties.UUID        `json:"id"`
+	Name            *string                `json:"name"`
+	PropertySchema  *ServicePropertySchema `json:"propertySchema,omitempty"`
+	LifecycleSchema *LifecycleSchema       `json:"lifecycleSchema,omitempty"`
 }
 
 // serviceTypeCommander is the concrete implementation of ServiceTypeCommander

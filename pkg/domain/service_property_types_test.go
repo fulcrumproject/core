@@ -146,7 +146,7 @@ func TestPropertyDefinition_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			schema := ServiceSchema{
+			schema := ServicePropertySchema{
 				"test_prop": tt.propDef,
 			}
 
@@ -217,7 +217,7 @@ func TestValidatorDefinition_Validation(t *testing.T) {
 				Validators: []ServicePropertyValidatorDefinition{tt.validator},
 			}
 
-			schema := ServiceSchema{
+			schema := ServicePropertySchema{
 				"test_prop": propDef,
 			}
 
@@ -233,7 +233,7 @@ func TestValidatorDefinition_Validation(t *testing.T) {
 }
 
 func TestCustomSchema_JSONSerialization(t *testing.T) {
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"name": ServicePropertyDefinition{
 			Type:     SchemaTypeString,
 			Label:    "Full Name",
@@ -275,7 +275,7 @@ func TestCustomSchema_JSONSerialization(t *testing.T) {
 	assert.NotEmpty(t, jsonData)
 
 	// Test unmarshaling
-	var unmarshaled ServiceSchema
+	var unmarshaled ServicePropertySchema
 	err = unmarshaled.UnmarshalJSON(jsonData)
 	require.NoError(t, err)
 
@@ -298,7 +298,7 @@ func TestCustomSchema_JSONSerialization(t *testing.T) {
 }
 
 func TestCustomSchema_DatabaseSerialization(t *testing.T) {
-	schema := ServiceSchema{
+	schema := ServicePropertySchema{
 		"test": ServicePropertyDefinition{
 			Type:  SchemaTypeString,
 			Label: "Test Field",
@@ -311,7 +311,7 @@ func TestCustomSchema_DatabaseSerialization(t *testing.T) {
 	assert.NotNil(t, value)
 
 	// Test Scan() method (for database retrieval)
-	var scanned ServiceSchema
+	var scanned ServicePropertySchema
 	err = scanned.Scan(value)
 	require.NoError(t, err)
 
@@ -320,7 +320,7 @@ func TestCustomSchema_DatabaseSerialization(t *testing.T) {
 }
 
 func TestCustomSchema_GormDataType(t *testing.T) {
-	schema := ServiceSchema{}
+	schema := ServicePropertySchema{}
 	dataType := schema.GormDataType()
 	assert.Equal(t, "jsonb", dataType)
 }

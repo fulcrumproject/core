@@ -8,13 +8,13 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// ServiceSchema represents the root schema structure
-type ServiceSchema map[string]ServicePropertyDefinition
+// ServicePropertySchema represents the root schema structure
+type ServicePropertySchema map[string]ServicePropertyDefinition
 
 // Scan implements the sql.Scanner interface
-func (cs *ServiceSchema) Scan(value any) error {
+func (cs *ServicePropertySchema) Scan(value any) error {
 	if value == nil {
-		*cs = make(ServiceSchema)
+		*cs = make(ServicePropertySchema)
 		return nil
 	}
 
@@ -27,7 +27,7 @@ func (cs *ServiceSchema) Scan(value any) error {
 }
 
 // Value implements the driver.Valuer interface
-func (cs ServiceSchema) Value() (driver.Value, error) {
+func (cs ServicePropertySchema) Value() (driver.Value, error) {
 	if cs == nil {
 		return nil, nil
 	}
@@ -35,23 +35,23 @@ func (cs ServiceSchema) Value() (driver.Value, error) {
 }
 
 // GormDataType returns the GORM data type for CustomSchema
-func (cs ServiceSchema) GormDataType() string {
+func (cs ServicePropertySchema) GormDataType() string {
 	return "jsonb"
 }
 
 // MarshalJSON implements custom properties.JSON marshaling for CustomSchema
-func (cs ServiceSchema) MarshalJSON() ([]byte, error) {
+func (cs ServicePropertySchema) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]ServicePropertyDefinition(cs))
 }
 
 // UnmarshalJSON implements custom properties.JSON unmarshaling for CustomSchema
-func (cs *ServiceSchema) UnmarshalJSON(data []byte) error {
+func (cs *ServicePropertySchema) UnmarshalJSON(data []byte) error {
 	var rawSchema map[string]any
 	if err := json.Unmarshal(data, &rawSchema); err != nil {
 		return err
 	}
 
-	*cs = make(ServiceSchema)
+	*cs = make(ServicePropertySchema)
 	for propName, propDefRaw := range rawSchema {
 		if propDefMap, ok := propDefRaw.(map[string]any); ok {
 			propDef, err := parsePropertyDefinition(propDefMap)
@@ -66,7 +66,7 @@ func (cs *ServiceSchema) UnmarshalJSON(data []byte) error {
 }
 
 // Validate checks if the CustomSchema is valid using go-playground/validator
-func (cs ServiceSchema) Validate() error {
+func (cs ServicePropertySchema) Validate() error {
 	validate := validator.New()
 
 	for propName, propDef := range cs {
