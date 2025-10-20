@@ -93,6 +93,16 @@ func TestServicePropertySchema_Validate_Source(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			name: "Valid source: system",
+			schema: ServicePropertySchema{
+				"publicIp": ServicePropertyDefinition{
+					Type:   "string",
+					Source: "system",
+				},
+			},
+			expectErr: false,
+		},
+		{
 			name: "Invalid source: invalid value",
 			schema: ServicePropertySchema{
 				"hostname": ServicePropertyDefinition{
@@ -101,7 +111,7 @@ func TestServicePropertySchema_Validate_Source(t *testing.T) {
 				},
 			},
 			expectErr: true,
-			errMsg:    "source must be 'input' or 'agent'",
+			errMsg:    "source must be 'input', 'agent', or 'system'",
 		},
 	}
 
@@ -253,7 +263,7 @@ func TestServicePropertySchema_Validate_NestedProperties(t *testing.T) {
 				},
 			},
 			expectErr: true,
-			errMsg:    "source must be 'input' or 'agent'",
+			errMsg:    "source must be 'input', 'agent', or 'system'",
 		},
 	}
 
