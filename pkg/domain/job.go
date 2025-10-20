@@ -211,6 +211,11 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 	}
 
 	return s.store.Atomic(ctx, func(store Store) error {
+		// Validate lifecycle schema exists
+		if serviceType.LifecycleSchema == nil {
+			return NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
+		}
+
 		// Update job
 		if err := job.Complete(); err != nil {
 			return InvalidInputError{Err: err}
@@ -238,7 +243,7 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 		}
 
 		// Release pool allocations if service reached a terminal state
-		if serviceType.LifecycleSchema != nil && serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
+		if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
 			if err := ReleaseServicePoolAllocations(ctx, store, svc.ID); err != nil {
 				return fmt.Errorf("failed to release pool allocations: %w", err)
 			}
@@ -274,6 +279,11 @@ func (s *jobCommander) Fail(ctx context.Context, params FailJobParams) error {
 	}
 
 	return s.store.Atomic(ctx, func(store Store) error {
+		// Validate lifecycle schema exists
+		if serviceType.LifecycleSchema == nil {
+			return NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
+		}
+
 		// Update job
 		if err := job.Fail(params.ErrorMessage); err != nil {
 			return InvalidInputError{Err: err}
