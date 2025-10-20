@@ -99,13 +99,13 @@ type ServicePoolValueRepository interface {
 
 // ServicePoolValueQuerier provides read-only access to ServicePoolValue entities
 type ServicePoolValueQuerier interface {
-	Get(ctx context.Context, id properties.UUID) (*ServicePoolValue, error)
+	BaseEntityQuerier[ServicePoolValue]
+
 	ListByPool(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)
 	ListByService(ctx context.Context, serviceID properties.UUID) ([]*ServicePoolValue, error)
 	FindByPool(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)
 	FindAvailable(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)
 	FindByService(ctx context.Context, serviceID properties.UUID) ([]*ServicePoolValue, error)
-	Exists(ctx context.Context, id properties.UUID) (bool, error)
 }
 
 // ServicePoolValueCommander handles complex ServicePoolValue operations

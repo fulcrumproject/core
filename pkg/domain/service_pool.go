@@ -112,10 +112,10 @@ type ServicePoolRepository interface {
 
 // ServicePoolQuerier provides read-only access to ServicePool entities
 type ServicePoolQuerier interface {
-	Get(ctx context.Context, id properties.UUID) (*ServicePool, error)
+	BaseEntityQuerier[ServicePool]
+
 	ListByPoolSet(ctx context.Context, poolSetID properties.UUID) ([]*ServicePool, error)
 	FindByPoolSetAndType(ctx context.Context, poolSetID properties.UUID, poolType string) (*ServicePool, error)
-	Exists(ctx context.Context, id properties.UUID) (bool, error)
 }
 
 // ServicePoolCommander handles complex ServicePool operations

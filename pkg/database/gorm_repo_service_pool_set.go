@@ -92,3 +92,8 @@ func (r *GormServicePoolSetRepository) FindByProviderAndName(
 func (r *GormServicePoolSetRepository) Update(ctx context.Context, poolSet *domain.ServicePoolSet) error {
 	return r.Save(ctx, poolSet)
 }
+
+// AuthScope returns the authorization scope for a service pool set
+func (r *GormServicePoolSetRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	return r.AuthScopeByFields(ctx, id, "provider_id")
+}

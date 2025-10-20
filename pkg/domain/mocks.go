@@ -18354,6 +18354,134 @@ func (_m *MockServicePoolRepository) EXPECT() *MockServicePoolRepository_Expecte
 	return &MockServicePoolRepository_Expecter{mock: &_m.Mock}
 }
 
+// AuthScope provides a mock function for the type MockServicePoolRepository
+func (_mock *MockServicePoolRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthScope")
+	}
+
+	var r0 auth.ObjectScope
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(auth.ObjectScope)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolRepository_AuthScope_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthScope'
+type MockServicePoolRepository_AuthScope_Call struct {
+	*mock.Call
+}
+
+// AuthScope is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockServicePoolRepository_Expecter) AuthScope(ctx interface{}, id interface{}) *MockServicePoolRepository_AuthScope_Call {
+	return &MockServicePoolRepository_AuthScope_Call{Call: _e.mock.On("AuthScope", ctx, id)}
+}
+
+func (_c *MockServicePoolRepository_AuthScope_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolRepository_AuthScope_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolRepository_AuthScope_Call {
+	_c.Call.Return(objectScope, err)
+	return _c
+}
+
+func (_c *MockServicePoolRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolRepository_AuthScope_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Count provides a mock function for the type MockServicePoolRepository
+func (_mock *MockServicePoolRepository) Count(ctx context.Context) (int64, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Count")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolRepository_Count_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Count'
+type MockServicePoolRepository_Count_Call struct {
+	*mock.Call
+}
+
+// Count is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockServicePoolRepository_Expecter) Count(ctx interface{}) *MockServicePoolRepository_Count_Call {
+	return &MockServicePoolRepository_Count_Call{Call: _e.mock.On("Count", ctx)}
+}
+
+func (_c *MockServicePoolRepository_Count_Call) Run(run func(ctx context.Context)) *MockServicePoolRepository_Count_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolRepository_Count_Call) Return(n int64, err error) *MockServicePoolRepository_Count_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockServicePoolRepository_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockServicePoolRepository_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function for the type MockServicePoolRepository
 func (_mock *MockServicePoolRepository) Create(ctx context.Context, pool *ServicePool) error {
 	ret := _mock.Called(ctx, pool)
@@ -18676,6 +18804,80 @@ func (_c *MockServicePoolRepository_Get_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// List provides a mock function for the type MockServicePoolRepository
+func (_mock *MockServicePoolRepository) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePool], error) {
+	ret := _mock.Called(ctx, scope, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 *PageRes[ServicePool]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[ServicePool], error)); ok {
+		return returnFunc(ctx, scope, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[ServicePool]); ok {
+		r0 = returnFunc(ctx, scope, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[ServicePool])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolRepository_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockServicePoolRepository_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - req *PageReq
+func (_e *MockServicePoolRepository_Expecter) List(ctx interface{}, scope interface{}, req interface{}) *MockServicePoolRepository_List_Call {
+	return &MockServicePoolRepository_List_Call{Call: _e.mock.On("List", ctx, scope, req)}
+}
+
+func (_c *MockServicePoolRepository_List_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq)) *MockServicePoolRepository_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolRepository_List_Call) Return(pageRes *PageRes[ServicePool], err error) *MockServicePoolRepository_List_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockServicePoolRepository_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePool], error)) *MockServicePoolRepository_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListByPoolSet provides a mock function for the type MockServicePoolRepository
 func (_mock *MockServicePoolRepository) ListByPoolSet(ctx context.Context, poolSetID properties.UUID) ([]*ServicePool, error) {
 	ret := _mock.Called(ctx, poolSetID)
@@ -18826,6 +19028,134 @@ type MockServicePoolQuerier_Expecter struct {
 
 func (_m *MockServicePoolQuerier) EXPECT() *MockServicePoolQuerier_Expecter {
 	return &MockServicePoolQuerier_Expecter{mock: &_m.Mock}
+}
+
+// AuthScope provides a mock function for the type MockServicePoolQuerier
+func (_mock *MockServicePoolQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthScope")
+	}
+
+	var r0 auth.ObjectScope
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(auth.ObjectScope)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolQuerier_AuthScope_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthScope'
+type MockServicePoolQuerier_AuthScope_Call struct {
+	*mock.Call
+}
+
+// AuthScope is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockServicePoolQuerier_Expecter) AuthScope(ctx interface{}, id interface{}) *MockServicePoolQuerier_AuthScope_Call {
+	return &MockServicePoolQuerier_AuthScope_Call{Call: _e.mock.On("AuthScope", ctx, id)}
+}
+
+func (_c *MockServicePoolQuerier_AuthScope_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolQuerier_AuthScope_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolQuerier_AuthScope_Call {
+	_c.Call.Return(objectScope, err)
+	return _c
+}
+
+func (_c *MockServicePoolQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolQuerier_AuthScope_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Count provides a mock function for the type MockServicePoolQuerier
+func (_mock *MockServicePoolQuerier) Count(ctx context.Context) (int64, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Count")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolQuerier_Count_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Count'
+type MockServicePoolQuerier_Count_Call struct {
+	*mock.Call
+}
+
+// Count is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockServicePoolQuerier_Expecter) Count(ctx interface{}) *MockServicePoolQuerier_Count_Call {
+	return &MockServicePoolQuerier_Count_Call{Call: _e.mock.On("Count", ctx)}
+}
+
+func (_c *MockServicePoolQuerier_Count_Call) Run(run func(ctx context.Context)) *MockServicePoolQuerier_Count_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolQuerier_Count_Call) Return(n int64, err error) *MockServicePoolQuerier_Count_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockServicePoolQuerier_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockServicePoolQuerier_Count_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // Exists provides a mock function for the type MockServicePoolQuerier
@@ -19032,6 +19362,80 @@ func (_c *MockServicePoolQuerier_Get_Call) Return(servicePool *ServicePool, err 
 }
 
 func (_c *MockServicePoolQuerier_Get_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*ServicePool, error)) *MockServicePoolQuerier_Get_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// List provides a mock function for the type MockServicePoolQuerier
+func (_mock *MockServicePoolQuerier) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePool], error) {
+	ret := _mock.Called(ctx, scope, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 *PageRes[ServicePool]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[ServicePool], error)); ok {
+		return returnFunc(ctx, scope, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[ServicePool]); ok {
+		r0 = returnFunc(ctx, scope, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[ServicePool])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolQuerier_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockServicePoolQuerier_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - req *PageReq
+func (_e *MockServicePoolQuerier_Expecter) List(ctx interface{}, scope interface{}, req interface{}) *MockServicePoolQuerier_List_Call {
+	return &MockServicePoolQuerier_List_Call{Call: _e.mock.On("List", ctx, scope, req)}
+}
+
+func (_c *MockServicePoolQuerier_List_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq)) *MockServicePoolQuerier_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolQuerier_List_Call) Return(pageRes *PageRes[ServicePool], err error) *MockServicePoolQuerier_List_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockServicePoolQuerier_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePool], error)) *MockServicePoolQuerier_List_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -19610,6 +20014,134 @@ func (_m *MockServicePoolSetRepository) EXPECT() *MockServicePoolSetRepository_E
 	return &MockServicePoolSetRepository_Expecter{mock: &_m.Mock}
 }
 
+// AuthScope provides a mock function for the type MockServicePoolSetRepository
+func (_mock *MockServicePoolSetRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthScope")
+	}
+
+	var r0 auth.ObjectScope
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(auth.ObjectScope)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolSetRepository_AuthScope_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthScope'
+type MockServicePoolSetRepository_AuthScope_Call struct {
+	*mock.Call
+}
+
+// AuthScope is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockServicePoolSetRepository_Expecter) AuthScope(ctx interface{}, id interface{}) *MockServicePoolSetRepository_AuthScope_Call {
+	return &MockServicePoolSetRepository_AuthScope_Call{Call: _e.mock.On("AuthScope", ctx, id)}
+}
+
+func (_c *MockServicePoolSetRepository_AuthScope_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolSetRepository_AuthScope_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolSetRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolSetRepository_AuthScope_Call {
+	_c.Call.Return(objectScope, err)
+	return _c
+}
+
+func (_c *MockServicePoolSetRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolSetRepository_AuthScope_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Count provides a mock function for the type MockServicePoolSetRepository
+func (_mock *MockServicePoolSetRepository) Count(ctx context.Context) (int64, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Count")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolSetRepository_Count_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Count'
+type MockServicePoolSetRepository_Count_Call struct {
+	*mock.Call
+}
+
+// Count is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockServicePoolSetRepository_Expecter) Count(ctx interface{}) *MockServicePoolSetRepository_Count_Call {
+	return &MockServicePoolSetRepository_Count_Call{Call: _e.mock.On("Count", ctx)}
+}
+
+func (_c *MockServicePoolSetRepository_Count_Call) Run(run func(ctx context.Context)) *MockServicePoolSetRepository_Count_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolSetRepository_Count_Call) Return(n int64, err error) *MockServicePoolSetRepository_Count_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockServicePoolSetRepository_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockServicePoolSetRepository_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function for the type MockServicePoolSetRepository
 func (_mock *MockServicePoolSetRepository) Create(ctx context.Context, poolSet *ServicePoolSet) error {
 	ret := _mock.Called(ctx, poolSet)
@@ -20000,6 +20532,80 @@ func (_c *MockServicePoolSetRepository_Get_Call) RunAndReturn(run func(ctx conte
 	return _c
 }
 
+// List provides a mock function for the type MockServicePoolSetRepository
+func (_mock *MockServicePoolSetRepository) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePoolSet], error) {
+	ret := _mock.Called(ctx, scope, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 *PageRes[ServicePoolSet]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[ServicePoolSet], error)); ok {
+		return returnFunc(ctx, scope, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[ServicePoolSet]); ok {
+		r0 = returnFunc(ctx, scope, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[ServicePoolSet])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolSetRepository_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockServicePoolSetRepository_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - req *PageReq
+func (_e *MockServicePoolSetRepository_Expecter) List(ctx interface{}, scope interface{}, req interface{}) *MockServicePoolSetRepository_List_Call {
+	return &MockServicePoolSetRepository_List_Call{Call: _e.mock.On("List", ctx, scope, req)}
+}
+
+func (_c *MockServicePoolSetRepository_List_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq)) *MockServicePoolSetRepository_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolSetRepository_List_Call) Return(pageRes *PageRes[ServicePoolSet], err error) *MockServicePoolSetRepository_List_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockServicePoolSetRepository_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePoolSet], error)) *MockServicePoolSetRepository_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Update provides a mock function for the type MockServicePoolSetRepository
 func (_mock *MockServicePoolSetRepository) Update(ctx context.Context, poolSet *ServicePoolSet) error {
 	ret := _mock.Called(ctx, poolSet)
@@ -20082,6 +20688,134 @@ type MockServicePoolSetQuerier_Expecter struct {
 
 func (_m *MockServicePoolSetQuerier) EXPECT() *MockServicePoolSetQuerier_Expecter {
 	return &MockServicePoolSetQuerier_Expecter{mock: &_m.Mock}
+}
+
+// AuthScope provides a mock function for the type MockServicePoolSetQuerier
+func (_mock *MockServicePoolSetQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthScope")
+	}
+
+	var r0 auth.ObjectScope
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(auth.ObjectScope)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolSetQuerier_AuthScope_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthScope'
+type MockServicePoolSetQuerier_AuthScope_Call struct {
+	*mock.Call
+}
+
+// AuthScope is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockServicePoolSetQuerier_Expecter) AuthScope(ctx interface{}, id interface{}) *MockServicePoolSetQuerier_AuthScope_Call {
+	return &MockServicePoolSetQuerier_AuthScope_Call{Call: _e.mock.On("AuthScope", ctx, id)}
+}
+
+func (_c *MockServicePoolSetQuerier_AuthScope_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolSetQuerier_AuthScope_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolSetQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolSetQuerier_AuthScope_Call {
+	_c.Call.Return(objectScope, err)
+	return _c
+}
+
+func (_c *MockServicePoolSetQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolSetQuerier_AuthScope_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Count provides a mock function for the type MockServicePoolSetQuerier
+func (_mock *MockServicePoolSetQuerier) Count(ctx context.Context) (int64, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Count")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolSetQuerier_Count_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Count'
+type MockServicePoolSetQuerier_Count_Call struct {
+	*mock.Call
+}
+
+// Count is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockServicePoolSetQuerier_Expecter) Count(ctx interface{}) *MockServicePoolSetQuerier_Count_Call {
+	return &MockServicePoolSetQuerier_Count_Call{Call: _e.mock.On("Count", ctx)}
+}
+
+func (_c *MockServicePoolSetQuerier_Count_Call) Run(run func(ctx context.Context)) *MockServicePoolSetQuerier_Count_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolSetQuerier_Count_Call) Return(n int64, err error) *MockServicePoolSetQuerier_Count_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockServicePoolSetQuerier_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockServicePoolSetQuerier_Count_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // Exists provides a mock function for the type MockServicePoolSetQuerier
@@ -20360,6 +21094,80 @@ func (_c *MockServicePoolSetQuerier_Get_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// List provides a mock function for the type MockServicePoolSetQuerier
+func (_mock *MockServicePoolSetQuerier) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePoolSet], error) {
+	ret := _mock.Called(ctx, scope, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 *PageRes[ServicePoolSet]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[ServicePoolSet], error)); ok {
+		return returnFunc(ctx, scope, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[ServicePoolSet]); ok {
+		r0 = returnFunc(ctx, scope, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[ServicePoolSet])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolSetQuerier_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockServicePoolSetQuerier_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - req *PageReq
+func (_e *MockServicePoolSetQuerier_Expecter) List(ctx interface{}, scope interface{}, req interface{}) *MockServicePoolSetQuerier_List_Call {
+	return &MockServicePoolSetQuerier_List_Call{Call: _e.mock.On("List", ctx, scope, req)}
+}
+
+func (_c *MockServicePoolSetQuerier_List_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq)) *MockServicePoolSetQuerier_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolSetQuerier_List_Call) Return(pageRes *PageRes[ServicePoolSet], err error) *MockServicePoolSetQuerier_List_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockServicePoolSetQuerier_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePoolSet], error)) *MockServicePoolSetQuerier_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockServicePoolSetCommander creates a new instance of MockServicePoolSetCommander. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockServicePoolSetCommander(t interface {
@@ -20611,6 +21419,134 @@ type MockServicePoolValueRepository_Expecter struct {
 
 func (_m *MockServicePoolValueRepository) EXPECT() *MockServicePoolValueRepository_Expecter {
 	return &MockServicePoolValueRepository_Expecter{mock: &_m.Mock}
+}
+
+// AuthScope provides a mock function for the type MockServicePoolValueRepository
+func (_mock *MockServicePoolValueRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthScope")
+	}
+
+	var r0 auth.ObjectScope
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(auth.ObjectScope)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueRepository_AuthScope_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthScope'
+type MockServicePoolValueRepository_AuthScope_Call struct {
+	*mock.Call
+}
+
+// AuthScope is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockServicePoolValueRepository_Expecter) AuthScope(ctx interface{}, id interface{}) *MockServicePoolValueRepository_AuthScope_Call {
+	return &MockServicePoolValueRepository_AuthScope_Call{Call: _e.mock.On("AuthScope", ctx, id)}
+}
+
+func (_c *MockServicePoolValueRepository_AuthScope_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolValueRepository_AuthScope_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolValueRepository_AuthScope_Call {
+	_c.Call.Return(objectScope, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolValueRepository_AuthScope_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Count provides a mock function for the type MockServicePoolValueRepository
+func (_mock *MockServicePoolValueRepository) Count(ctx context.Context) (int64, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Count")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueRepository_Count_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Count'
+type MockServicePoolValueRepository_Count_Call struct {
+	*mock.Call
+}
+
+// Count is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockServicePoolValueRepository_Expecter) Count(ctx interface{}) *MockServicePoolValueRepository_Count_Call {
+	return &MockServicePoolValueRepository_Count_Call{Call: _e.mock.On("Count", ctx)}
+}
+
+func (_c *MockServicePoolValueRepository_Count_Call) Run(run func(ctx context.Context)) *MockServicePoolValueRepository_Count_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_Count_Call) Return(n int64, err error) *MockServicePoolValueRepository_Count_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockServicePoolValueRepository_Count_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // Create provides a mock function for the type MockServicePoolValueRepository
@@ -21065,6 +22001,80 @@ func (_c *MockServicePoolValueRepository_Get_Call) RunAndReturn(run func(ctx con
 	return _c
 }
 
+// List provides a mock function for the type MockServicePoolValueRepository
+func (_mock *MockServicePoolValueRepository) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePoolValue], error) {
+	ret := _mock.Called(ctx, scope, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 *PageRes[ServicePoolValue]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[ServicePoolValue], error)); ok {
+		return returnFunc(ctx, scope, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[ServicePoolValue]); ok {
+		r0 = returnFunc(ctx, scope, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[ServicePoolValue])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueRepository_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockServicePoolValueRepository_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - req *PageReq
+func (_e *MockServicePoolValueRepository_Expecter) List(ctx interface{}, scope interface{}, req interface{}) *MockServicePoolValueRepository_List_Call {
+	return &MockServicePoolValueRepository_List_Call{Call: _e.mock.On("List", ctx, scope, req)}
+}
+
+func (_c *MockServicePoolValueRepository_List_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq)) *MockServicePoolValueRepository_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_List_Call) Return(pageRes *PageRes[ServicePoolValue], err error) *MockServicePoolValueRepository_List_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePoolValue], error)) *MockServicePoolValueRepository_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListByPool provides a mock function for the type MockServicePoolValueRepository
 func (_mock *MockServicePoolValueRepository) ListByPool(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error) {
 	ret := _mock.Called(ctx, poolID)
@@ -21283,6 +22293,134 @@ type MockServicePoolValueQuerier_Expecter struct {
 
 func (_m *MockServicePoolValueQuerier) EXPECT() *MockServicePoolValueQuerier_Expecter {
 	return &MockServicePoolValueQuerier_Expecter{mock: &_m.Mock}
+}
+
+// AuthScope provides a mock function for the type MockServicePoolValueQuerier
+func (_mock *MockServicePoolValueQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthScope")
+	}
+
+	var r0 auth.ObjectScope
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(auth.ObjectScope)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueQuerier_AuthScope_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthScope'
+type MockServicePoolValueQuerier_AuthScope_Call struct {
+	*mock.Call
+}
+
+// AuthScope is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockServicePoolValueQuerier_Expecter) AuthScope(ctx interface{}, id interface{}) *MockServicePoolValueQuerier_AuthScope_Call {
+	return &MockServicePoolValueQuerier_AuthScope_Call{Call: _e.mock.On("AuthScope", ctx, id)}
+}
+
+func (_c *MockServicePoolValueQuerier_AuthScope_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockServicePoolValueQuerier_AuthScope_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolValueQuerier_AuthScope_Call {
+	_c.Call.Return(objectScope, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolValueQuerier_AuthScope_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Count provides a mock function for the type MockServicePoolValueQuerier
+func (_mock *MockServicePoolValueQuerier) Count(ctx context.Context) (int64, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Count")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueQuerier_Count_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Count'
+type MockServicePoolValueQuerier_Count_Call struct {
+	*mock.Call
+}
+
+// Count is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockServicePoolValueQuerier_Expecter) Count(ctx interface{}) *MockServicePoolValueQuerier_Count_Call {
+	return &MockServicePoolValueQuerier_Count_Call{Call: _e.mock.On("Count", ctx)}
+}
+
+func (_c *MockServicePoolValueQuerier_Count_Call) Run(run func(ctx context.Context)) *MockServicePoolValueQuerier_Count_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_Count_Call) Return(n int64, err error) *MockServicePoolValueQuerier_Count_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockServicePoolValueQuerier_Count_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // Exists provides a mock function for the type MockServicePoolValueQuerier
@@ -21619,6 +22757,80 @@ func (_c *MockServicePoolValueQuerier_Get_Call) Return(servicePoolValue *Service
 }
 
 func (_c *MockServicePoolValueQuerier_Get_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*ServicePoolValue, error)) *MockServicePoolValueQuerier_Get_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// List provides a mock function for the type MockServicePoolValueQuerier
+func (_mock *MockServicePoolValueQuerier) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePoolValue], error) {
+	ret := _mock.Called(ctx, scope, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 *PageRes[ServicePoolValue]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[ServicePoolValue], error)); ok {
+		return returnFunc(ctx, scope, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[ServicePoolValue]); ok {
+		r0 = returnFunc(ctx, scope, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[ServicePoolValue])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueQuerier_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockServicePoolValueQuerier_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - req *PageReq
+func (_e *MockServicePoolValueQuerier_Expecter) List(ctx interface{}, scope interface{}, req interface{}) *MockServicePoolValueQuerier_List_Call {
+	return &MockServicePoolValueQuerier_List_Call{Call: _e.mock.On("List", ctx, scope, req)}
+}
+
+func (_c *MockServicePoolValueQuerier_List_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq)) *MockServicePoolValueQuerier_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_List_Call) Return(pageRes *PageRes[ServicePoolValue], err error) *MockServicePoolValueQuerier_List_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[ServicePoolValue], error)) *MockServicePoolValueQuerier_List_Call {
 	_c.Call.Return(run)
 	return _c
 }
