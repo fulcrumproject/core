@@ -390,7 +390,7 @@ func TestAgent_Update(t *testing.T) {
 				"timeout": 30,
 			}
 
-			updated := agent.Update(tt.updateName, tt.updateTags, tt.updateConfig)
+			updated := agent.Update(tt.updateName, tt.updateTags, tt.updateConfig, nil)
 			assert.Equal(t, tt.expectUpdated, updated)
 
 			if tt.updateName != nil {

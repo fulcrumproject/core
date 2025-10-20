@@ -555,6 +555,144 @@ func (_c *MockStore_ServiceOptionTypeRepo_Call) RunAndReturn(run func() domain.S
 	return _c
 }
 
+// ServicePoolRepo provides a mock function for the type MockStore
+func (_mock *MockStore) ServicePoolRepo() domain.ServicePoolRepository {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServicePoolRepo")
+	}
+
+	var r0 domain.ServicePoolRepository
+	if returnFunc, ok := ret.Get(0).(func() domain.ServicePoolRepository); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.ServicePoolRepository)
+		}
+	}
+	return r0
+}
+
+// MockStore_ServicePoolRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServicePoolRepo'
+type MockStore_ServicePoolRepo_Call struct {
+	*mock.Call
+}
+
+// ServicePoolRepo is a helper method to define mock.On call
+func (_e *MockStore_Expecter) ServicePoolRepo() *MockStore_ServicePoolRepo_Call {
+	return &MockStore_ServicePoolRepo_Call{Call: _e.mock.On("ServicePoolRepo")}
+}
+
+func (_c *MockStore_ServicePoolRepo_Call) Run(run func()) *MockStore_ServicePoolRepo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockStore_ServicePoolRepo_Call) Return(servicePoolRepository domain.ServicePoolRepository) *MockStore_ServicePoolRepo_Call {
+	_c.Call.Return(servicePoolRepository)
+	return _c
+}
+
+func (_c *MockStore_ServicePoolRepo_Call) RunAndReturn(run func() domain.ServicePoolRepository) *MockStore_ServicePoolRepo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ServicePoolSetRepo provides a mock function for the type MockStore
+func (_mock *MockStore) ServicePoolSetRepo() domain.ServicePoolSetRepository {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServicePoolSetRepo")
+	}
+
+	var r0 domain.ServicePoolSetRepository
+	if returnFunc, ok := ret.Get(0).(func() domain.ServicePoolSetRepository); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.ServicePoolSetRepository)
+		}
+	}
+	return r0
+}
+
+// MockStore_ServicePoolSetRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServicePoolSetRepo'
+type MockStore_ServicePoolSetRepo_Call struct {
+	*mock.Call
+}
+
+// ServicePoolSetRepo is a helper method to define mock.On call
+func (_e *MockStore_Expecter) ServicePoolSetRepo() *MockStore_ServicePoolSetRepo_Call {
+	return &MockStore_ServicePoolSetRepo_Call{Call: _e.mock.On("ServicePoolSetRepo")}
+}
+
+func (_c *MockStore_ServicePoolSetRepo_Call) Run(run func()) *MockStore_ServicePoolSetRepo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockStore_ServicePoolSetRepo_Call) Return(servicePoolSetRepository domain.ServicePoolSetRepository) *MockStore_ServicePoolSetRepo_Call {
+	_c.Call.Return(servicePoolSetRepository)
+	return _c
+}
+
+func (_c *MockStore_ServicePoolSetRepo_Call) RunAndReturn(run func() domain.ServicePoolSetRepository) *MockStore_ServicePoolSetRepo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ServicePoolValueRepo provides a mock function for the type MockStore
+func (_mock *MockStore) ServicePoolValueRepo() domain.ServicePoolValueRepository {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServicePoolValueRepo")
+	}
+
+	var r0 domain.ServicePoolValueRepository
+	if returnFunc, ok := ret.Get(0).(func() domain.ServicePoolValueRepository); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.ServicePoolValueRepository)
+		}
+	}
+	return r0
+}
+
+// MockStore_ServicePoolValueRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServicePoolValueRepo'
+type MockStore_ServicePoolValueRepo_Call struct {
+	*mock.Call
+}
+
+// ServicePoolValueRepo is a helper method to define mock.On call
+func (_e *MockStore_Expecter) ServicePoolValueRepo() *MockStore_ServicePoolValueRepo_Call {
+	return &MockStore_ServicePoolValueRepo_Call{Call: _e.mock.On("ServicePoolValueRepo")}
+}
+
+func (_c *MockStore_ServicePoolValueRepo_Call) Run(run func()) *MockStore_ServicePoolValueRepo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockStore_ServicePoolValueRepo_Call) Return(servicePoolValueRepository domain.ServicePoolValueRepository) *MockStore_ServicePoolValueRepo_Call {
+	_c.Call.Return(servicePoolValueRepository)
+	return _c
+}
+
+func (_c *MockStore_ServicePoolValueRepo_Call) RunAndReturn(run func() domain.ServicePoolValueRepository) *MockStore_ServicePoolValueRepo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ServiceRepo provides a mock function for the type MockStore
 func (_mock *MockStore) ServiceRepo() domain.ServiceRepository {
 	ret := _mock.Called()

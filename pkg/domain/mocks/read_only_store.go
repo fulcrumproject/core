@@ -496,6 +496,144 @@ func (_c *MockReadOnlyStore_ServiceOptionTypeQuerier_Call) RunAndReturn(run func
 	return _c
 }
 
+// ServicePoolQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) ServicePoolQuerier() domain.ServicePoolQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServicePoolQuerier")
+	}
+
+	var r0 domain.ServicePoolQuerier
+	if returnFunc, ok := ret.Get(0).(func() domain.ServicePoolQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.ServicePoolQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_ServicePoolQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServicePoolQuerier'
+type MockReadOnlyStore_ServicePoolQuerier_Call struct {
+	*mock.Call
+}
+
+// ServicePoolQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) ServicePoolQuerier() *MockReadOnlyStore_ServicePoolQuerier_Call {
+	return &MockReadOnlyStore_ServicePoolQuerier_Call{Call: _e.mock.On("ServicePoolQuerier")}
+}
+
+func (_c *MockReadOnlyStore_ServicePoolQuerier_Call) Run(run func()) *MockReadOnlyStore_ServicePoolQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServicePoolQuerier_Call) Return(servicePoolQuerier domain.ServicePoolQuerier) *MockReadOnlyStore_ServicePoolQuerier_Call {
+	_c.Call.Return(servicePoolQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServicePoolQuerier_Call) RunAndReturn(run func() domain.ServicePoolQuerier) *MockReadOnlyStore_ServicePoolQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ServicePoolSetQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) ServicePoolSetQuerier() domain.ServicePoolSetQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServicePoolSetQuerier")
+	}
+
+	var r0 domain.ServicePoolSetQuerier
+	if returnFunc, ok := ret.Get(0).(func() domain.ServicePoolSetQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.ServicePoolSetQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_ServicePoolSetQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServicePoolSetQuerier'
+type MockReadOnlyStore_ServicePoolSetQuerier_Call struct {
+	*mock.Call
+}
+
+// ServicePoolSetQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) ServicePoolSetQuerier() *MockReadOnlyStore_ServicePoolSetQuerier_Call {
+	return &MockReadOnlyStore_ServicePoolSetQuerier_Call{Call: _e.mock.On("ServicePoolSetQuerier")}
+}
+
+func (_c *MockReadOnlyStore_ServicePoolSetQuerier_Call) Run(run func()) *MockReadOnlyStore_ServicePoolSetQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServicePoolSetQuerier_Call) Return(servicePoolSetQuerier domain.ServicePoolSetQuerier) *MockReadOnlyStore_ServicePoolSetQuerier_Call {
+	_c.Call.Return(servicePoolSetQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServicePoolSetQuerier_Call) RunAndReturn(run func() domain.ServicePoolSetQuerier) *MockReadOnlyStore_ServicePoolSetQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ServicePoolValueQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) ServicePoolValueQuerier() domain.ServicePoolValueQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServicePoolValueQuerier")
+	}
+
+	var r0 domain.ServicePoolValueQuerier
+	if returnFunc, ok := ret.Get(0).(func() domain.ServicePoolValueQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.ServicePoolValueQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_ServicePoolValueQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServicePoolValueQuerier'
+type MockReadOnlyStore_ServicePoolValueQuerier_Call struct {
+	*mock.Call
+}
+
+// ServicePoolValueQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) ServicePoolValueQuerier() *MockReadOnlyStore_ServicePoolValueQuerier_Call {
+	return &MockReadOnlyStore_ServicePoolValueQuerier_Call{Call: _e.mock.On("ServicePoolValueQuerier")}
+}
+
+func (_c *MockReadOnlyStore_ServicePoolValueQuerier_Call) Run(run func()) *MockReadOnlyStore_ServicePoolValueQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServicePoolValueQuerier_Call) Return(servicePoolValueQuerier domain.ServicePoolValueQuerier) *MockReadOnlyStore_ServicePoolValueQuerier_Call {
+	_c.Call.Return(servicePoolValueQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServicePoolValueQuerier_Call) RunAndReturn(run func() domain.ServicePoolValueQuerier) *MockReadOnlyStore_ServicePoolValueQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ServiceQuerier provides a mock function for the type MockReadOnlyStore
 func (_mock *MockReadOnlyStore) ServiceQuerier() domain.ServiceQuerier {
 	ret := _mock.Called()
