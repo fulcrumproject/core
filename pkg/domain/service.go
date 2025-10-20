@@ -301,6 +301,9 @@ func CreateServiceWithAgent(
 	}
 	params.Properties = validatedProperties
 
+	// Note: Pool allocation will happen inside the transaction after service creation
+	// This ensures we have a service ID for tracking allocations
+
 	// Check if the agent's type supports the requested service type
 	supported := false
 	for _, agentServiceType := range agent.AgentType.ServiceTypes {
@@ -330,11 +333,41 @@ func CreateServiceWithAgent(
 	}
 
 	err = store.Atomic(ctx, func(store Store) error {
+		// Create service first to get ID
 		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
 			return err
 		}
 
-		job := NewJob(svc, "create", &params.Properties, 1)
+		// Allocate pool properties if agent has a pool set
+		if agent.ServicePoolSetID != nil && *agent.ServicePoolSetID != uuid.Nil {
+			allocatedProperties, err := AllocateServicePoolProperties(
+				ctx,
+				store,
+				svc.ID,
+				*agent.ServicePoolSetID,
+				*serviceType.PropertySchema,
+				params.Properties,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to allocate pool properties: %w", err)
+			}
+
+			// Update service properties with allocated values
+			if len(allocatedProperties) > 0 {
+				props := properties.JSON(allocatedProperties)
+				svc.Properties = &props
+				if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+					return err
+				}
+			}
+		}
+
+		// Create job with final properties (including allocated pool values)
+		finalProps := params.Properties
+		if svc.Properties != nil {
+			finalProps = *svc.Properties
+		}
+		job := NewJob(svc, "create", &finalProps, 1)
 		if err := job.Validate(); err != nil {
 			return err
 		}
