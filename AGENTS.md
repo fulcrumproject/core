@@ -260,15 +260,41 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 - Values can be any JSON structure (strings, objects, arrays)
 - Used in `serviceOption` validator in service type property schemas
 
+#### ServicePoolSet
+- Container for related service pools belonging to a provider
+- Agents reference a pool set to enable automatic resource allocation
+- Contains name and provider reference
+- Supports organizing pools by environment, region, or other criteria
+
+#### ServicePool
+- Defines a pool of allocatable resources (IPs, ports, hostnames, etc.)
+- Belongs to a ServicePoolSet
+- Has type (identifies what property it provides) and name
+- Generator type determines allocation strategy: `list` (pre-configured values) or `subnet` (IP ranges)
+- Generator config stores type-specific configuration (e.g., CIDR for subnets)
+- Used in `servicePool` validator in service type property schemas
+
+#### ServicePoolValue
+- Individual allocatable value within a ServicePool
+- Can be any JSON type (string, number, object, array)
+- Tracks allocation status: serviceId, propertyName, allocatedAt
+- Created manually for `list` pools, automatically for `subnet` pools
+- Released when service is deleted (marked available for reuse)
+
 ### Entity Relationships
 - Participant has many Agents (when acting as provider)
 - Participant has many ServiceOptions (when acting as provider)
+- Participant has many ServicePoolSets (when acting as provider)
 - Agent belongs to one Participant and one AgentType
+- Agent may reference a ServicePoolSet for automatic resource allocation
 - Agent handles many Services and processes many Jobs
 - Service is of one ServiceType and may belong to a ServiceGroup
 - Service can be linked to a consumer participant via ConsumerParticipantID
 - ServiceGroup belongs to a specific Participant and has many Services
 - ServiceOption belongs to one Participant (provider) and one ServiceOptionType
+- ServicePoolSet belongs to one Participant (provider) and contains many ServicePools
+- ServicePool belongs to one ServicePoolSet and contains many ServicePoolValues
+- ServicePoolValue belongs to one ServicePool and may be allocated to one Service
 - Jobs are related to specific Agents and Services
 - AgentType can provide various ServiceTypes (many-to-many)
 
@@ -348,6 +374,27 @@ The actual states and transitions depend on the ServiceType's lifecycle schema.
   - `updatable`: When it can be updated (`always`, `never`, `statuses` with `updatableIn` array)
 - **Attributes**: Static metadata set during creation (for selection/filtering)
 - **AgentInstanceData**: Agent-owned runtime data and technical infrastructure info
+
+#### Property Types
+Service properties support multiple types including:
+- Basic types: `string`, `integer`, `number`, `boolean`
+- Complex types: `object`, `array`, `json`
+- Special types: `serviceReference`
+- **JSON type**: Accepts any valid JSON value without schema validation
+  - Used for pool values and options that can be strings, objects, or arrays
+  - Backend validation ensures valid JSON structure
+  - Example: IP pools may use `{"ip": "192.168.1.10", "gateway": "192.168.1.1"}` or simple strings
+
+#### Property Validators
+Properties can have validators including:
+- **serviceOption**: Validates against provider-managed option lists
+  - Requires ServiceOptionType in validator value
+  - Provides dynamic dropdowns and validation
+- **servicePool**: Triggers automatic allocation from resource pools
+  - Requires pool type in validator value (matches ServicePool.Type)
+  - Actual values copied directly into properties during service creation
+  - Values released and marked available when service is deleted
+  - No dereferencing needed - agents receive concrete values
 
 ### Job Processing
 

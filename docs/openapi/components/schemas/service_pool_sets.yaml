@@ -1,0 +1,36 @@
+CreateServicePoolSetReq:
+  type: object
+  required:
+    - name
+    - providerId
+  properties:
+    name:
+      type: string
+      example: "Production Pools"
+      description: "Name of the pool set"
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+
+UpdateServicePoolSetReq:
+  type: object
+  properties:
+    name:
+      type: string
+      example: "Production Pools - Updated"
+
+ServicePoolSetRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "Production Pools"
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time

@@ -1,10 +1,14 @@
 ### Complete Job Lifecycle with Property Source & Updatability Testing
 ### This file demonstrates the full service lifecycle including:
+### - Service pool setup and automatic resource allocation
 ### - Agent-set properties during job completion
+### - Pool-allocated properties (publicIp from pool)
 ### - Immutable property validation
 ### - State-conditional property updates
 ### - Source-based property access control
+### - Service option validation (operating system images)
 ### - Non-standard state transitions (Maintenance mode)
+### - Pool value release on service deletion
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
@@ -26,7 +30,7 @@ Content-Type: application/json
     "description": "Available operating system images for VMs"
 }
 
-### Create Provider (moved here to use in service options)
+### Create Provider (moved here to use in service options and pools)
 # @name createProvider
 POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
@@ -38,6 +42,41 @@ Content-Type: application/json
     "attributes": {
         "type": ["test"]
     }
+}
+
+### Create Service Pool Set
+# @name createPoolSet
+POST {{baseUrl}}/service-pool-sets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test Pools {{$guid}}",
+    "providerId": "{{createProvider.response.body.id}}"
+}
+
+### Create IP Pool (list type)
+# @name createIPPool
+POST {{baseUrl}}/service-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Public IP Pool",
+    "type": "public_ip",
+    "generatorType": "list",
+    "servicePoolSetId": "{{createPoolSet.response.body.id}}"
+}
+
+### Add public IP value to pool
+POST {{baseUrl}}/service-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "servicePoolId": "{{createIPPool.response.body.id}}",
+    "name": "185.123.45.10",
+    "value": "185.123.45.10"
 }
 
 ### Create Service Option - Ubuntu 20.04
@@ -128,6 +167,18 @@ Content-Type: application/json
             "label": "Internal IP",
             "source": "agent",
             "updatable": "never"
+        },
+        "publicIp": {
+            "type": "string",
+            "label": "Public IP",
+            "source": "agent",
+            "updatable": "never",
+            "validators": [
+                {
+                    "type": "servicePool",
+                    "value": "public_ip"
+                }
+            ]
         }
     },
     "lifecycleSchema": {
@@ -211,7 +262,7 @@ Content-Type: application/json
     ]
 }
 
-### Create Agent
+### Create Agent (with pool set reference for automatic pool allocation)
 # @name createAgent
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
@@ -221,6 +272,7 @@ Content-Type: application/json
     "name": "Test Agent {{$guid}}",
     "agentTypeId": "{{createAgentType.response.body.id}}",
     "providerId": "{{createProvider.response.body.id}}",
+    "servicePoolSetId": "{{createPoolSet.response.body.id}}",
     "tags": ["test-agent", "property-testing"]
 }
 
@@ -325,7 +377,7 @@ Authorization: Bearer {{agentToken}}
 POST {{baseUrl}}/jobs/{{createJobId}}/claim
 Authorization: Bearer {{agentToken}}
 
-### Complete the Create job - agent sets internalIp property
+### Complete the Create job - agent sets internalIp property (publicIp auto-allocated from pool)
 POST {{baseUrl}}/jobs/{{createJobId}}/complete
 Authorization: Bearer {{agentToken}}
 Content-Type: application/json
@@ -344,8 +396,12 @@ Content-Type: application/json
     }
 }
 
-### Get service (verify internalIp is now set by agent)
+### Get service (verify internalIp and publicIp are now set - publicIp auto-allocated from pool)
 GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+### View pool allocation status (should show one IP allocated to our service)
+GET {{baseUrl}}/service-pool-values?servicePoolId={{createIPPool.response.body.id}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
@@ -775,4 +831,46 @@ Content-Type: application/json
 
 ### Get service (verify status is back to Stopped)
 GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### PART 13: SERVICE DELETION & POOL VALUE RELEASE
+###############################################################################
+
+### Delete the service (creates Delete job, will release publicIp back to pool after completion)
+DELETE {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+### Get pending jobs (should have a Delete job)
+# @name pendingDeleteJobs
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
+Authorization: Bearer {{agentToken}}
+
+@deleteJobId = {{pendingDeleteJobs.response.body.$[0].id}}
+
+### Claim the Delete job
+POST {{baseUrl}}/jobs/{{deleteJobId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Complete the Delete job (this will release the publicIp)
+POST {{baseUrl}}/jobs/{{deleteJobId}}/complete
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "agentInstanceData": {
+        "status": "deleted",
+        "details": {
+            "duration": "2s",
+            "output": "VM deleted successfully"
+        }
+    }
+}
+
+### Get service (verify status is Deleted)
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+### Verify the publicIp is now available again in the pool (serviceId should be null)
+GET {{baseUrl}}/service-pool-values?servicePoolId={{createIPPool.response.body.id}}
 Authorization: Bearer {{adminToken}}

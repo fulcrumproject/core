@@ -1,0 +1,88 @@
+get:
+  operationId: servicePoolsList
+  summary: List service pools
+  tags:
+    - Service Pools
+  description: Retrieves a paginated list of service pools
+  x-auth-permissions:
+    - role: admin
+      permission: all service pools
+    - role: participant
+      permission: service pools for its provider
+    - role: agent
+      permission: service pools for its provider (read-only)
+  parameters:
+    - name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    - name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 20
+    - name: servicePoolSetId
+      in: query
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by service pool set ID
+    - name: type
+      in: query
+      schema:
+        type: string
+      description: Filter by pool type
+    - name: generatorType
+      in: query
+      schema:
+        type: string
+        enum: [list, subnet]
+      description: Filter by generator type
+  responses:
+    "200":
+      description: A paginated list of service pools
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/common.yaml#/PageRes"
+              - type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/service_pools.yaml#/ServicePoolRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+post:
+  operationId: servicePoolsCreate
+  summary: Create a service pool
+  tags:
+    - Service Pools
+  description: Creates a new service pool
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: for its participant as provider
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/service_pools.yaml#/CreateServicePoolReq"
+  responses:
+    "201":
+      description: Service pool created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/service_pools.yaml#/ServicePoolRes"
+    "400":
+      $ref: "../components/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
