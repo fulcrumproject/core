@@ -802,9 +802,10 @@ func validateServicePropertyServiceOption(ctx *ServicePropertyValidationCtx, sta
 	return nil
 }
 
-// validateServicePropertyServicePool validates that the value is a valid pool type
+// validateServicePropertyServicePool validates that the pool type is configured
 // Note: Actual pool allocation happens during service creation, not during validation
-func validateServicePropertyServicePool(ctx *ServicePropertyValidationCtx, standardValue any, validatorValue any) error {
+// The standardValue parameter is intentionally unused - we don't validate the value itself here
+func validateServicePropertyServicePool(ctx *ServicePropertyValidationCtx, _ any, validatorValue any) error {
 	// Check that we have provider ID in context
 	if ctx.ProviderID == (properties.UUID{}) {
 		return errors.New("service pool validation requires provider ID in context")
@@ -816,7 +817,7 @@ func validateServicePropertyServicePool(ctx *ServicePropertyValidationCtx, stand
 		return errors.New("service pool validator value must be a string (pool type)")
 	}
 
-	// For now, just validate that the pool type string is provided
+	// Validate that the pool type string is provided
 	// The actual pool lookup and allocation will happen during service creation
 	// This validator just ensures the property is marked as requiring pool allocation
 	if poolType == "" {
