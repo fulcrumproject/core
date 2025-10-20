@@ -1,0 +1,71 @@
+  get:
+    operationId: metricEntriesList
+    summary: List metric entries
+    tags:
+      - Metrics
+    description: Retrieves a paginated list of metric entries
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          default: 20
+    responses:
+      "200":
+        description: A paginated list of metric entries
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "../components/schemas/common.yaml#/PageRes"
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: "../components/schemas/metric_entries.yaml#/MetricEntryRes"
+      "401":
+        $ref: "../components/responses.yaml#/Unauthorized"
+      "403":
+        $ref: "../components/responses.yaml#/Forbidden"
+  post:
+    operationId: metricEntriesCreate
+    summary: Create a metric entry
+    tags:
+      - Metrics
+    security:
+      - BearerAuth: []
+    description: Creates a new metric entry
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/metric_entries.yaml#/MetricEntryReq"
+    responses:
+      "201":
+        description: Metric entry created successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/metric_entries.yaml#/MetricEntryRes"
+      "400":
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+#
+# Event Entry endpoints
+#

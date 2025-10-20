@@ -1,0 +1,35 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  post:
+    operationId: tokensRegenerate
+    summary: Regenerate token value
+    tags:
+      - Tokens
+    description: Regenerates the value for an existing token. The new plain token value is returned in the response and cannot be retrieved later.
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: its own tokens and those of its agents
+      - role: agent
+        permission: not authorized
+    responses:
+      "200":
+        description: Token value regenerated successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/tokens.yaml#/TokenRes"
+      "404":
+        description: Token not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+#
+# Agent endpoints
+#

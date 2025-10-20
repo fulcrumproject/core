@@ -31,6 +31,17 @@ This document contains project-specific guidelines and technical context for wor
 - Mermaid diagrams should not contain styles
 - All code files MUST start with a brief 2-line comment explaining what the file does
 
+### OpenAPI Specification
+
+- API specification is in `docs/openapi/` using OpenAPI 3.1.0
+- Split into multiple files for maintainability:
+  - `openapi.yaml` - Main entry point
+  - `components/schemas/*.yaml` - Schema definitions grouped by domain
+  - `components/responses.yaml` - Reusable response definitions
+  - `paths/*.yaml` - Path definitions (one file per endpoint)
+- Validate changes: `npx @redocly/cli lint docs/openapi/openapi.yaml`
+- See `docs/openapi/README.md` for details on structure and workflow
+
 ### Maintaining AGENTS.md
 
 - This file is for **AI agents** working on the codebase
@@ -236,13 +247,28 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 - Categorizes events by type
 - Stores detailed event information in properties
 
+#### ServiceOptionType
+- Global category defining a type of service option (e.g., "operating_system", "machine_type", "region")
+- Has a name (display), type (unique identifier), and description
+- Admin-managed resource (not provider-specific)
+- Used as validation categories in service type property schemas
+
+#### ServiceOption
+- Provider-specific option value for a ServiceOptionType
+- Contains name, value (JSONB), enabled flag, and display order
+- Provider-scoped authorization (admin, participant for own provider, agent for own provider)
+- Values can be any JSON structure (strings, objects, arrays)
+- Used in `serviceOption` validator in service type property schemas
+
 ### Entity Relationships
 - Participant has many Agents (when acting as provider)
+- Participant has many ServiceOptions (when acting as provider)
 - Agent belongs to one Participant and one AgentType
 - Agent handles many Services and processes many Jobs
 - Service is of one ServiceType and may belong to a ServiceGroup
 - Service can be linked to a consumer participant via ConsumerParticipantID
 - ServiceGroup belongs to a specific Participant and has many Services
+- ServiceOption belongs to one Participant (provider) and one ServiceOptionType
 - Jobs are related to specific Agents and Services
 - AgentType can provide various ServiceTypes (many-to-many)
 

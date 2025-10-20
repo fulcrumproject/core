@@ -1,0 +1,40 @@
+  post:
+    operationId: eventsAck
+    summary: Acknowledge processed events
+    tags:
+      - Event
+    description: Acknowledge processed events and update progress (Option B - does not renew lease)
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: not authorized
+      - role: agent
+        permission: not authorized
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/events.yaml#/EventAckReq"
+    responses:
+      "200":
+        description: Events acknowledged successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/events.yaml#/EventAckRes"
+      "400":
+        $ref: "../components/responses.yaml#/BadRequest"
+      "401":
+        $ref: "../components/responses.yaml#/Unauthorized"
+      "403":
+        $ref: "../components/responses.yaml#/Forbidden"
+      "409":
+        description: Acknowledgement conflict - lease not held or sequence regression
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "500":
+        $ref: "../components/responses.yaml#/InternalServerError"

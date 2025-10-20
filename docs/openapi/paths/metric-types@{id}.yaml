@@ -1,0 +1,93 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  get:
+    operationId: metricTypesGet
+    summary: Get a metric type
+    tags:
+      - Metrics
+    description: Retrieves a specific metric type by ID
+    x-auth-permissions:
+      - role: admin
+        permission: all metric types
+      - role: participant
+        permission: all metric types
+      - role: agent
+        permission: all metric types
+    responses:
+      "200":
+        description: The metric type details
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/metric_types.yaml#/MetricTypeRes"
+      "404":
+        description: Metric type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  patch:
+    operationId: metricTypesUpdate
+    summary: Update a metric type
+    tags:
+      - Metrics
+    description: Updates an existing metric type
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: not authorized
+      - role: agent
+        permission: not authorized
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "cpu_usage_updated"
+    responses:
+      "200":
+        description: Metric type updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/metric_types.yaml#/MetricTypeRes"
+      "404":
+        description: Metric type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  delete:
+    operationId: metricTypesDelete
+    summary: Delete a metric type
+    tags:
+      - Metrics
+    description: Deletes a metric type by ID
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: not authorized
+      - role: agent
+        permission: not authorized
+    responses:
+      "204":
+        description: Metric type deleted successfully
+      "404":
+        description: Metric type not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+#
+# Metric Entry endpoints
+#

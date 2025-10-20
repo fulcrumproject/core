@@ -1,0 +1,89 @@
+JobStatus:
+  type: string
+  enum: [Pending, Processing, Completed, Failed]
+  description: |
+    Job status transitions:
+    - Pending: Job created and waiting for agent to claim
+    - Processing: Job claimed by agent and in progress
+    - Completed: Job successfully finished
+    - Failed: Job encountered an error (error message drives service state transition via regexp)
+
+JobRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "ID of the participant that provides the service"
+    consumerId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "ID of the participant that consumes the service"
+    agentId:
+      $ref: "./common.yaml#/properties.UUID"
+    serviceId:
+      $ref: "./common.yaml#/properties.UUID"
+    action:
+      $ref: "./services.yaml#/ServiceAction" # Use the common ServiceAction enum
+    params:
+      $ref: "./common.yaml#/JSONObject"
+      description: "Parameters for the job action"
+    status:
+      $ref: "./jobs.yaml#/JobStatus"
+    priority:
+      type: integer
+      example: 1
+    errorMessage:
+      type: string
+      example: "Failed to create VM: insufficient resources"
+    claimedAt:
+      anyOf:
+        - type: string
+          format: date-time
+        - type: "null"
+    completedAt:
+      anyOf:
+        - type: string
+          format: date-time
+        - type: "null"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+    service:
+      $ref: "./services.yaml#/ServiceRes"
+      description: "Associated service details (optional)"
+
+CompleteJobReq:
+  type: object
+  properties:
+    agentInstanceId:
+      type: string
+      description: Agent's native instance identifier for the provisioned resource
+      example: "i-1234567890abcdef0"
+    agentInstanceData:
+      $ref: "./common.yaml#/JSONObject"
+      description: Agent-owned runtime data about the provisioned service
+    properties:
+      type: object
+      additionalProperties: true
+      description: Agent-discovered property values to update on the service (only agent-source properties)
+      example:
+        ipAddress: "192.168.1.100"
+        port: 8080
+
+FailJobReq:
+  type: object
+  required:
+    - errorMessage
+  properties:
+    errorMessage:
+      type: string
+      description: |
+        Error message describing the failure. This message is matched against
+        lifecycle transition regexps to determine the next service state.
+      example: "Failed to create VM: insufficient resources"
+
+# Metric schemas

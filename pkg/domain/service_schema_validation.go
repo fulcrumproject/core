@@ -14,17 +14,18 @@ import (
 
 // Validator type constants
 const (
-	SchemaValidatorMinLength   = "minLength"
-	SchemaValidatorMaxLength   = "maxLength"
-	SchemaValidatorPattern     = "pattern"
-	SchemaValidatorEnum        = "enum"
-	SchemaValidatorMin         = "min"
-	SchemaValidatorMax         = "max"
-	SchemaValidatorMinItems    = "minItems"
-	SchemaValidatorMaxItems    = "maxItems"
-	SchemaValidatorUniqueItems = "uniqueItems"
-	SchemaValidatorSameOrigin  = "sameOrigin"
-	SchemaValidatorServiceType = "serviceType"
+	SchemaValidatorMinLength     = "minLength"
+	SchemaValidatorMaxLength     = "maxLength"
+	SchemaValidatorPattern       = "pattern"
+	SchemaValidatorEnum          = "enum"
+	SchemaValidatorMin           = "min"
+	SchemaValidatorMax           = "max"
+	SchemaValidatorMinItems      = "minItems"
+	SchemaValidatorMaxItems      = "maxItems"
+	SchemaValidatorUniqueItems   = "uniqueItems"
+	SchemaValidatorSameOrigin    = "sameOrigin"
+	SchemaValidatorServiceType   = "serviceType"
+	SchemaValidatorServiceOption = "serviceOption"
 )
 
 // Schema type constants
@@ -82,6 +83,12 @@ const (
 	ErrSchemaReferenceValidationMissingContext = "service reference validation requires validation context"
 	ErrSchemaServiceWrongType                  = "referenced service is not of the allowed service type"
 	ErrSchemaInvalidServiceTypeValidatorValue  = "serviceType validator value must be a string or array of strings"
+
+	// Service option error messages
+	ErrSchemaServiceOptionValidatorValueNotString   = "serviceOption validator value must be a string (serviceOptionType)"
+	ErrSchemaServiceOptionTypeNotFound              = "service option type '%s' not found"
+	ErrSchemaServiceOptionNotFound                  = "service option with value '%v' not found or not enabled for provider"
+	ErrSchemaServiceOptionValidationMissingProvider = "service option validation requires provider ID in context"
 )
 
 // ServicePropertyValidationCtx provides the context for validating service properties
@@ -90,6 +97,7 @@ type ServicePropertyValidationCtx struct {
 	Store      Store
 	Schema     ServiceSchema
 	GroupID    properties.UUID
+	ProviderID properties.UUID
 	Properties map[string]any
 }
 
@@ -252,6 +260,8 @@ func applyServicePropertyValidator(ctx *ServicePropertyValidationCtx, value any,
 		return validateServicePropertySameOrigin(ctx, value, validator.Value)
 	case SchemaValidatorServiceType:
 		return validateServicePropertyServiceType(ctx, value, validator.Value)
+	case SchemaValidatorServiceOption:
+		return validateServicePropertyServiceOption(ctx, value, validator.Value)
 	default:
 		return fmt.Errorf(ErrSchemaUnknownValidatorType, validator.Type)
 	}
@@ -741,6 +751,47 @@ func validateServicePropertyServiceType(ctx *ServicePropertyValidationCtx, stand
 		return errors.New(ErrSchemaServiceWrongType)
 	}
 
+	return nil
+}
+
+// validateServicePropertyServiceOption validates that a property value is in the provider's enabled service options
+func validateServicePropertyServiceOption(ctx *ServicePropertyValidationCtx, standardValue any, validatorValue any) error {
+	// Check that we have provider ID in context
+	if ctx.ProviderID == (properties.UUID{}) {
+		return errors.New(ErrSchemaServiceOptionValidationMissingProvider)
+	}
+
+	// Get the serviceOptionType from validator value
+	serviceOptionTypeName, err := convertToServicePropertyStandardString(validatorValue)
+	if err != nil {
+		return errors.New(ErrSchemaServiceOptionValidatorValueNotString)
+	}
+
+	// Find the ServiceOptionType by its type field
+	serviceOptionType, err := ctx.Store.ServiceOptionTypeRepo().FindByType(ctx.Context, serviceOptionTypeName)
+	if err != nil {
+		if _, ok := err.(NotFoundError); ok {
+			return fmt.Errorf(ErrSchemaServiceOptionTypeNotFound, serviceOptionTypeName)
+		}
+		return fmt.Errorf("failed to find service option type: %w", err)
+	}
+
+	// Find the ServiceOption by provider, type, value, and enabled=true
+	_, err = ctx.Store.ServiceOptionRepo().FindByProviderAndTypeAndValue(
+		ctx.Context,
+		ctx.ProviderID,
+		serviceOptionType.ID,
+		standardValue,
+	)
+	if err != nil {
+		if _, ok := err.(NotFoundError); ok {
+			return fmt.Errorf(ErrSchemaServiceOptionNotFound, standardValue)
+		}
+		return fmt.Errorf("failed to validate service option: %w", err)
+	}
+
+	// Check that the option is enabled (the query should already filter by enabled=true)
+	// The option exists and is enabled if we got here
 	return nil
 }
 

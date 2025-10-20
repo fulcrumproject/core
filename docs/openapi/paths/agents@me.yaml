@@ -1,0 +1,24 @@
+  get:
+    operationId: agentsGetCurrent
+    summary: Get current agent
+    tags:
+      - Agents
+    description: Retrieves information about the currently authenticated agent
+    security:
+      - BearerAuth: []
+    responses:
+      "200":
+        description: The agent details
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/agents.yaml#/AgentRes"
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+#
+# Agent Type endpoints
+#

@@ -1,0 +1,33 @@
+MetricEntityType:
+  type: string
+  enum: [Agent, Service, Resource]
+
+MetricTypeReq:
+  type: object
+  required:
+    - name
+    - entityType
+  properties:
+    name:
+      type: string
+      example: "cpu_usage"
+    entityType:
+      $ref: "./metric_types.yaml#/MetricEntityType"
+
+MetricTypeRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    entityType:
+      $ref: "./metric_types.yaml#/MetricEntityType"
+    name:
+      type: string
+      example: "cpu_usage"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+

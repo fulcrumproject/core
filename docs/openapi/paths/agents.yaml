@@ -1,0 +1,74 @@
+  get:
+    operationId: agentsList
+    summary: List agents
+    tags:
+      - Agents
+    description: Retrieves a paginated list of agents
+    x-auth-permissions:
+      - role: admin
+        permission: all agents
+      - role: participant
+        permission: agents belonging to its participant
+      - role: agent
+        permission: itself only
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          default: 20
+    responses:
+      "200":
+        description: A paginated list of agents
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "../components/schemas/common.yaml#/PageRes"
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: "../components/schemas/agents.yaml#/AgentRes"
+      "401":
+        $ref: "../components/responses.yaml#/Unauthorized"
+      "403":
+        $ref: "../components/responses.yaml#/Forbidden"
+  post:
+    operationId: agentsCreate
+    summary: Create an agent
+    tags:
+      - Agents
+    description: Creates a new agent and returns the agent data with an authentication token
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: for its participant (when acting as provider)
+      - role: agent
+        permission: not authorized
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/agents.yaml#/CreateAgentReq"
+    responses:
+      "201":
+        description: Agent created successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/agents.yaml#/AgentCreateRes"
+      "400":
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"

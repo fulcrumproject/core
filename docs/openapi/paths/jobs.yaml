@@ -1,0 +1,42 @@
+  get:
+    operationId: jobsList
+    summary: List jobs
+    tags:
+      - Jobs
+    description: Retrieves a paginated list of jobs (admin route)
+    x-auth-permissions:
+      - role: admin
+        permission: all jobs
+      - role: participant
+        permission: jobs related to its participant (as provider via agents or as consumer via services)
+      - role: agent
+        permission: jobs assigned to the agent
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          default: 20
+    responses:
+      "200":
+        description: A paginated list of jobs
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "../components/schemas/common.yaml#/PageRes"
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: "../components/schemas/jobs.yaml#/JobRes"
+      "401":
+        $ref: "../components/responses.yaml#/Unauthorized"
+      "403":
+        $ref: "../components/responses.yaml#/Forbidden"

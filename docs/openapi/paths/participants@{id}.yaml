@@ -1,0 +1,89 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  get:
+    operationId: participantsGet
+    summary: Get a participant
+    tags:
+      - Participants
+    description: Retrieves a specific participant by ID
+    x-auth-permissions:
+      - role: admin
+        permission: all participants
+      - role: participant
+        permission: its own participant
+      - role: agent
+        permission: its associated participant
+    responses:
+      "200":
+        description: The participant details
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/participants.yaml#/ParticipantRes"
+      "404":
+        description: Participant not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  patch:
+    operationId: participantsUpdate
+    summary: Update a participant
+    tags:
+      - Participants
+    description: Updates an existing participant
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: its own participant
+      - role: agent
+        permission: not authorized
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/participants.yaml#/ParticipantReq"
+    responses:
+      "200":
+        description: Participant updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/participants.yaml#/ParticipantRes"
+      "404":
+        description: Participant not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  delete:
+    operationId: participantsDelete
+    summary: Delete a participant
+    tags:
+      - Participants
+    description: Deletes a participant by ID
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: not authorized
+      - role: agent
+        permission: not authorized
+    responses:
+      "204":
+        description: Participant deleted successfully
+      "404":
+        description: Participant not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+#
+# Token endpoints
+#

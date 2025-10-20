@@ -1,0 +1,89 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  get:
+    operationId: serviceGroupsGet
+    summary: Get a service group
+    tags:
+      - Services
+    description: Retrieves a specific service group by ID
+    x-auth-permissions:
+      - role: admin
+        permission: all service groups
+      - role: participant
+        permission: service groups belonging to its participant
+      - role: agent
+        permission: not authorized
+    responses:
+      "200":
+        description: The service group details
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/service_groups.yaml#/ServiceGroupRes"
+      "404":
+        description: Service group not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  patch:
+    operationId: serviceGroupsUpdate
+    summary: Update a service group
+    tags:
+      - Services
+    description: Updates an existing service group
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: service groups belonging to its participant
+      - role: agent
+        permission: not authorized
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/service_groups.yaml#/ServiceGroupReq"
+    responses:
+      "200":
+        description: Service group updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/service_groups.yaml#/ServiceGroupRes"
+      "404":
+        description: Service group not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+  delete:
+    operationId: serviceGroupsDelete
+    summary: Delete a service group
+    tags:
+      - Services
+    description: Deletes a service group by ID
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: service groups belonging to its participant
+      - role: agent
+        permission: not authorized
+    responses:
+      "204":
+        description: Service group deleted successfully
+      "404":
+        description: Service group not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+#
+# Service Option Type endpoints
+#

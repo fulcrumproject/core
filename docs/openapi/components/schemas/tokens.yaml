@@ -1,0 +1,55 @@
+AuthRole:
+  type: string
+  enum: [admin, participant, agent]
+  description: Access role for the token
+
+TokenReq:
+  type: object
+  required:
+    - name
+    - role
+    - expireAt
+  properties:
+    name:
+      type: string
+      example: "API Access Token"
+    role:
+      $ref: "./tokens.yaml#/AuthRole"
+    expireAt:
+      type: string
+      format: date-time
+      example: "2025-12-31T23:59:59Z"
+    scopeId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "Required for participant and agent roles. For participant role - the participant ID; for agent role - the agent ID"
+
+TokenRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "API Access Token"
+    role:
+      $ref: "./tokens.yaml#/AuthRole"
+    expireAt:
+      type: string
+      format: date-time
+    participantId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "For participant role tokens - the participant ID"
+    agentId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "For agent role tokens - the agent ID"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+    value:
+      type: string
+      description: "Plain token value. Only returned during token creation or regeneration"
+      example: "eyJhbGciOiJIUzI1NiIsInR5c..."
+# Agent schemas

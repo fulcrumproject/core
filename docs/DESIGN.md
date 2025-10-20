@@ -117,6 +117,8 @@ classDiagram
     ServiceGroup "1" --> "0..N" Service : groups
     MetricType "1" --> "0..N" MetricEntry : categorizes
     Participant "1" --> "0..N" Token : has many
+    Participant "1" --> "0..N" ServiceOption : provides
+    ServiceOptionType "1" --> "0..N" ServiceOption : categorizes
     Agent "1" --> "0..N" Token : has many
     Agent "1" --> "0..N" MetricEntry : generates
     Service "1" --> "0..N" MetricEntry : monitored via
@@ -182,6 +184,27 @@ classDiagram
             id : properties.UUID
             name : string
             participantID : properties.UUID
+            createdAt : datetime
+            updatedAt : datetime
+        }
+
+        class ServiceOptionType {
+            id : properties.UUID
+            name : string
+            type : string
+            description : string
+            createdAt : datetime
+            updatedAt : datetime
+        }
+
+        class ServiceOption {
+            id : properties.UUID
+            providerId : properties.UUID
+            serviceOptionTypeId : properties.UUID
+            name : string
+            value : jsonb
+            enabled : bool
+            displayOrder : int
             createdAt : datetime
             updatedAt : datetime
         }
@@ -276,7 +299,19 @@ classDiagram
     
     Agents can provide specific service types
     based on their AgentType capabilities and
-    tags for specialized requirements"
+    tags for specialized requirements
+    
+    Property schemas can use serviceOption validator
+    to validate against provider-specific options"
+    
+    note for ServiceOption "Service options provide dynamic validation
+    lists for service properties:
+    - ServiceOptionType defines global categories (os, region, etc.)
+    - ServiceOption provides provider-specific values
+    - Used via serviceOption validator in property schemas
+    - Values are JSONB for flexibility (strings, objects, arrays)
+    - Can be enabled/disabled without deletion
+    - Display order controls presentation order"
     
     note for Job "Jobs represent operations that agents
     perform on services. Actions are defined by the
@@ -376,6 +411,23 @@ classDiagram
    - Has expiration date for enhanced security
    - Scoped to specific Participant or Agent based on role
    - Used alongside or instead of OAuth/OIDC authentication depending on system configuration
+
+9. **ServiceOptionType**
+   - Global category defining a type of service option (e.g., "operating_system", "machine_type", "region")
+   - Has name (display), type (unique identifier), and description
+   - Admin-managed resource, not provider-specific
+   - Used as validation categories in service type property schemas via `serviceOption` validator
+   - Examples: os, machine_type, region, disk_type, network_tier
+
+10. **ServiceOption**
+   - Provider-specific option value for a ServiceOptionType
+   - Belongs to one Participant (acting as provider) and one ServiceOptionType
+   - Contains name, value (JSONB for flexibility), enabled flag, and display order
+   - Value can be any JSON structure (strings, objects, arrays)
+   - Provider-scoped authorization (admin, participant for own provider, agent for own provider)
+   - Used in `serviceOption` validator in service type property schemas
+   - Enables dynamic validation lists for service creation without code changes
+   - Can be enabled/disabled to control availability without deletion
 
 ##### Metrics
 

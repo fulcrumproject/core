@@ -1,0 +1,62 @@
+AgentTypeRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "Participant VM Agent"
+    serviceTypeIds:
+      type: array
+      items:
+        $ref: "./common.yaml#/properties.UUID"
+      description: "IDs of service types that this agent type can provide"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+# Service schemas
+CreateAgentTypeReq:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      description: Name of the agent type
+      example: "VM Agent"
+      minLength: 1
+    serviceTypeIds:
+      type: array
+      description: Optional list of service type IDs that this agent type can manage
+      items:
+        $ref: "./common.yaml#/properties.UUID"
+      example:
+        [
+          "550e8400-e29b-41d4-a716-446655440000",
+          "550e8400-e29b-41d4-a716-446655440001",
+        ]
+
+UpdateAgentTypeReq:
+  type: object
+  properties:
+    name:
+      type: string
+      description: Updated name of the agent type
+      example: "Updated VM Agent"
+      minLength: 1
+    serviceTypeIds:
+      type: array
+      description: Updated list of service type IDs that this agent type can manage
+      items:
+        $ref: "./common.yaml#/properties.UUID"
+      example:
+        [
+          "550e8400-e29b-41d4-a716-446655440000",
+          "550e8400-e29b-41d4-a716-446655440002",
+        ]
+
+# Service Group schemas

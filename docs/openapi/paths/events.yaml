@@ -1,0 +1,46 @@
+  get:
+    operationId: eventsList
+    summary: List events
+    tags:
+      - Event
+    description: Retrieves a paginated list of events
+    x-auth-permissions:
+      - role: admin
+        permission: all events
+      - role: participant
+        permission: events related to its participant
+      - role: agent
+        permission: not authorized
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          default: 20
+    responses:
+      "200":
+        description: A paginated list of events
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "../components/schemas/common.yaml#/PageRes"
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: "../components/schemas/events.yaml#/EventRes"
+      "400":
+        $ref: "../components/responses.yaml#/BadRequest"
+      "401":
+        $ref: "../components/responses.yaml#/Unauthorized"
+      "403":
+        $ref: "../components/responses.yaml#/Forbidden"
+      "500":
+        $ref: "../components/responses.yaml#/InternalServerError"

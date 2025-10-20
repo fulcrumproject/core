@@ -1,0 +1,45 @@
+ErrorRes:
+  type: object
+  properties:
+    status:
+      type: string
+      description: User-level status message
+      example: "Invalid request"
+    error:
+      type: string
+      description: Application-level error message
+      example: "The field 'name' is required"
+
+properties.UUID:
+  type: string
+  format: uuid
+  example: "123e4567-e89b-12d3-a456-426614174000"
+
+JSONObject:
+  type: object
+  additionalProperties: true
+  description: A generic properties.JSON object
+
+PageRes:
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        type: object
+    totalItems:
+      type: integer
+      format: int64
+      description: Total number of items across all pages
+    totalPages:
+      type: integer
+      description: Total number of pages
+    currentPage:
+      type: integer
+      description: Current page number
+    hasNext:
+      type: boolean
+      description: Whether there is a next page
+    hasPrev:
+      type: boolean
+      description: Whether there is a previous page

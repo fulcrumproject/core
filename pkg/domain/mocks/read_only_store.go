@@ -404,6 +404,98 @@ func (_c *MockReadOnlyStore_ServiceGroupQuerier_Call) RunAndReturn(run func() do
 	return _c
 }
 
+// ServiceOptionQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) ServiceOptionQuerier() domain.ServiceOptionQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServiceOptionQuerier")
+	}
+
+	var r0 domain.ServiceOptionQuerier
+	if returnFunc, ok := ret.Get(0).(func() domain.ServiceOptionQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.ServiceOptionQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_ServiceOptionQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServiceOptionQuerier'
+type MockReadOnlyStore_ServiceOptionQuerier_Call struct {
+	*mock.Call
+}
+
+// ServiceOptionQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) ServiceOptionQuerier() *MockReadOnlyStore_ServiceOptionQuerier_Call {
+	return &MockReadOnlyStore_ServiceOptionQuerier_Call{Call: _e.mock.On("ServiceOptionQuerier")}
+}
+
+func (_c *MockReadOnlyStore_ServiceOptionQuerier_Call) Run(run func()) *MockReadOnlyStore_ServiceOptionQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServiceOptionQuerier_Call) Return(serviceOptionQuerier domain.ServiceOptionQuerier) *MockReadOnlyStore_ServiceOptionQuerier_Call {
+	_c.Call.Return(serviceOptionQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServiceOptionQuerier_Call) RunAndReturn(run func() domain.ServiceOptionQuerier) *MockReadOnlyStore_ServiceOptionQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ServiceOptionTypeQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) ServiceOptionTypeQuerier() domain.ServiceOptionTypeQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServiceOptionTypeQuerier")
+	}
+
+	var r0 domain.ServiceOptionTypeQuerier
+	if returnFunc, ok := ret.Get(0).(func() domain.ServiceOptionTypeQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.ServiceOptionTypeQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_ServiceOptionTypeQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServiceOptionTypeQuerier'
+type MockReadOnlyStore_ServiceOptionTypeQuerier_Call struct {
+	*mock.Call
+}
+
+// ServiceOptionTypeQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) ServiceOptionTypeQuerier() *MockReadOnlyStore_ServiceOptionTypeQuerier_Call {
+	return &MockReadOnlyStore_ServiceOptionTypeQuerier_Call{Call: _e.mock.On("ServiceOptionTypeQuerier")}
+}
+
+func (_c *MockReadOnlyStore_ServiceOptionTypeQuerier_Call) Run(run func()) *MockReadOnlyStore_ServiceOptionTypeQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServiceOptionTypeQuerier_Call) Return(serviceOptionTypeQuerier domain.ServiceOptionTypeQuerier) *MockReadOnlyStore_ServiceOptionTypeQuerier_Call {
+	_c.Call.Return(serviceOptionTypeQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_ServiceOptionTypeQuerier_Call) RunAndReturn(run func() domain.ServiceOptionTypeQuerier) *MockReadOnlyStore_ServiceOptionTypeQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ServiceQuerier provides a mock function for the type MockReadOnlyStore
 func (_mock *MockReadOnlyStore) ServiceQuerier() domain.ServiceQuerier {
 	ret := _mock.Called()

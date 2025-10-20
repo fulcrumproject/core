@@ -133,6 +133,23 @@ func WithAgentType(t *AgentType) EventOption {
 	}
 }
 
+// WithServiceOptionType sets the entity ID for the event
+func WithServiceOptionType(t *ServiceOptionType) EventOption {
+	return func(e *Event) error {
+		e.EntityID = &t.ID
+		return nil
+	}
+}
+
+// WithServiceOption sets the entity ID for the event
+func WithServiceOption(t *ServiceOption) EventOption {
+	return func(e *Event) error {
+		e.EntityID = &t.ID
+		e.ProviderID = &t.ProviderID
+		return nil
+	}
+}
+
 // WithInitiatorCtx sets the event from a context
 func WithInitiatorCtx(ctx context.Context) EventOption {
 	return func(e *Event) error {

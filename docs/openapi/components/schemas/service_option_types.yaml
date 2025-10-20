@@ -1,0 +1,39 @@
+ServiceOptionTypeReq:
+  type: object
+  required:
+    - name
+    - type
+  properties:
+    name:
+      type: string
+      example: "Operating System"
+    type:
+      type: string
+      example: "operating_system"
+      description: "Unique identifier (lowercase, underscores)"
+    description:
+      type: string
+      example: "Available operating systems for VMs"
+
+ServiceOptionTypeRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "Operating System"
+    type:
+      type: string
+      example: "operating_system"
+    description:
+      type: string
+      example: "Available operating systems for VMs"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+# Service Option schemas

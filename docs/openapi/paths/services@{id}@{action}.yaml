@@ -1,0 +1,61 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+    - name: action
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The lifecycle action to perform (e.g., start, stop, restart). Available actions are defined in the service type's lifecycle schema.
+      example: "start"
+  post:
+    operationId: servicesAction
+    summary: Perform a lifecycle action on a service
+    tags:
+      - Services
+    description: |
+      Performs a generic lifecycle action on a service. The action name is specified in the URL path
+      and must be defined in the service type's lifecycle schema. 
+      Common actions include: start, stop, restart, pause, resume, etc.
+      Note: Use DELETE /services/{id} for delete actions and PATCH /services/{id} for update actions.
+    x-auth-permissions:
+      - role: admin
+        permission: always
+      - role: participant
+        permission: services where it is the consumer participant
+      - role: agent
+        permission: not authorized
+    requestBody:
+      required: false
+      description: Optional properties for actions that require additional parameters (based on lifecycle schema requestSchemaType)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              properties:
+                type: object
+                additionalProperties: true
+                description: Action-specific properties
+    responses:
+      "200":
+        description: Service action initiated successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/services.yaml#/ServiceRes"
+      "400":
+        description: Invalid action or service state does not allow this action
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "404":
+        description: Service not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"

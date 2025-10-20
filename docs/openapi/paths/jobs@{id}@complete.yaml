@@ -1,0 +1,35 @@
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  post:
+    operationId: jobsComplete
+    summary: Complete a job
+    tags:
+      - Jobs
+    description: Marks a job as completed with results
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/jobs.yaml#/CompleteJobReq"
+    responses:
+      "204":
+        description: Job completed successfully
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
+      "404":
+        description: Job not found
+        content:
+          application/json:
+            schema:
+              $ref: "../components/schemas/common.yaml#/ErrorRes"
