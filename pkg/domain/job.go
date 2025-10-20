@@ -237,6 +237,13 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 			return err
 		}
 
+		// Release pool allocations if service reached a terminal state
+		if serviceType.LifecycleSchema != nil && serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
+			if err := ReleaseServicePoolAllocations(ctx, store, svc.ID); err != nil {
+				return fmt.Errorf("failed to release pool allocations: %w", err)
+			}
+		}
+
 		// Create event for the updated service
 		eventEntry, err := NewEvent(EventTypeServiceTransitioned, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
 		if err != nil {
