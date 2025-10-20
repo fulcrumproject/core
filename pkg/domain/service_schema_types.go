@@ -127,7 +127,7 @@ func validatePropertyDefinition(propName string, propDef ServicePropertyDefiniti
 
 // ServicePropertyDefinition defines a single property in the schema
 type ServicePropertyDefinition struct {
-	Type       string                               `json:"type" validate:"required,oneof=string integer number boolean object array serviceReference"`
+	Type       string                               `json:"type" validate:"required,oneof=string integer number boolean object array serviceReference json"`
 	Label      string                               `json:"label,omitempty"`
 	Required   bool                                 `json:"required,omitempty"`
 	Default    any                                  `json:"default,omitempty"`
@@ -143,7 +143,7 @@ type ServicePropertyDefinition struct {
 
 // ServicePropertyValidatorDefinition defines a validation rule
 type ServicePropertyValidatorDefinition struct {
-	Type  string `json:"type" validate:"required,oneof=minLength maxLength pattern enum min max minItems maxItems uniqueItems sameOrigin"`
+	Type  string `json:"type" validate:"required,oneof=minLength maxLength pattern enum min max minItems maxItems uniqueItems sameOrigin serviceOption servicePool"`
 	Value any    `json:"value" validate:"required"`
 }
 

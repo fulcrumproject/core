@@ -114,6 +114,34 @@ func TestPropertyDefinition_Validation(t *testing.T) {
 			expectError: true,
 			errorMsg:    "Type",
 		},
+		{
+			name: "valid json property",
+			propDef: ServicePropertyDefinition{
+				Type:  SchemaTypeJSON,
+				Label: "Configuration",
+			},
+			expectError: false,
+		},
+		{
+			name: "valid json property with servicePool validator",
+			propDef: ServicePropertyDefinition{
+				Type: SchemaTypeJSON,
+				Validators: []ServicePropertyValidatorDefinition{
+					{Type: SchemaValidatorServicePool, Value: "pool-type-id"},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "valid json property with serviceOption validator",
+			propDef: ServicePropertyDefinition{
+				Type: SchemaTypeJSON,
+				Validators: []ServicePropertyValidatorDefinition{
+					{Type: SchemaValidatorServiceOption, Value: "option-type-id"},
+				},
+			},
+			expectError: false,
+		},
 	}
 
 	for _, tt := range tests {

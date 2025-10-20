@@ -26,6 +26,7 @@ const (
 	SchemaValidatorSameOrigin    = "sameOrigin"
 	SchemaValidatorServiceType   = "serviceType"
 	SchemaValidatorServiceOption = "serviceOption"
+	SchemaValidatorServicePool   = "servicePool"
 )
 
 // Schema type constants
@@ -37,6 +38,7 @@ const (
 	SchemaTypeObject    = "object"
 	SchemaTypeArray     = "array"
 	SchemaTypeReference = "reference"
+	SchemaTypeJSON      = "json"
 )
 
 // Standard target types for each schema type
@@ -262,6 +264,8 @@ func applyServicePropertyValidator(ctx *ServicePropertyValidationCtx, value any,
 		return validateServicePropertyServiceType(ctx, value, validator.Value)
 	case SchemaValidatorServiceOption:
 		return validateServicePropertyServiceOption(ctx, value, validator.Value)
+	case SchemaValidatorServicePool:
+		return validateServicePropertyServicePool(ctx, value, validator.Value)
 	default:
 		return fmt.Errorf(ErrSchemaUnknownValidatorType, validator.Type)
 	}
@@ -523,6 +527,9 @@ func convertToServicePropertyStandardType(ctx *ServicePropertyValidationCtx, val
 		return convertToServicePropertyStandardArray(value)
 	case SchemaTypeReference:
 		return convertToServicePropertyStandardReference(ctx, value)
+	case SchemaTypeJSON:
+		// JSON type accepts any valid JSON value (already parsed)
+		return value, nil
 	default:
 		return nil, fmt.Errorf(ErrSchemaUnknownSchemaType, schemaType)
 	}
@@ -792,6 +799,30 @@ func validateServicePropertyServiceOption(ctx *ServicePropertyValidationCtx, sta
 
 	// Check that the option is enabled (the query should already filter by enabled=true)
 	// The option exists and is enabled if we got here
+	return nil
+}
+
+// validateServicePropertyServicePool validates that the value is a valid pool type
+// Note: Actual pool allocation happens during service creation, not during validation
+func validateServicePropertyServicePool(ctx *ServicePropertyValidationCtx, standardValue any, validatorValue any) error {
+	// Check that we have provider ID in context
+	if ctx.ProviderID == (properties.UUID{}) {
+		return errors.New("service pool validation requires provider ID in context")
+	}
+
+	// Get the pool type from validator value
+	poolType, err := convertToServicePropertyStandardString(validatorValue)
+	if err != nil {
+		return errors.New("service pool validator value must be a string (pool type)")
+	}
+
+	// For now, just validate that the pool type string is provided
+	// The actual pool lookup and allocation will happen during service creation
+	// This validator just ensures the property is marked as requiring pool allocation
+	if poolType == "" {
+		return errors.New("service pool type cannot be empty")
+	}
+
 	return nil
 }
 
