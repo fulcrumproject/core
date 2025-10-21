@@ -13,6 +13,9 @@ const (
 	ObjectTypeServiceGroup      auth.ObjectType = "service_group"
 	ObjectTypeServiceOptionType auth.ObjectType = "service_option_type"
 	ObjectTypeServiceOption     auth.ObjectType = "service_option"
+	ObjectTypeServicePoolSet    auth.ObjectType = "service_pool_set"
+	ObjectTypeServicePool       auth.ObjectType = "service_pool"
+	ObjectTypeServicePoolValue  auth.ObjectType = "service_pool_value"
 	ObjectTypeJob               auth.ObjectType = "job"
 	ObjectTypeMetricType        auth.ObjectType = "metric_type"
 	ObjectTypeMetricEntry       auth.ObjectType = "metric_entry"
@@ -88,6 +91,24 @@ var Rules = []auth.AuthorizationRule{
 	{Object: ObjectTypeServiceOption, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
 	{Object: ObjectTypeServiceOption, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
 	{Object: ObjectTypeServiceOption, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+
+	// ServicePoolSet permissions (provider-scoped - admin, participant for own provider)
+	{Object: ObjectTypeServicePoolSet, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeServicePoolSet, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeServicePoolSet, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeServicePoolSet, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+
+	// ServicePool permissions (provider-scoped via pool set - admin, participant for own provider)
+	{Object: ObjectTypeServicePool, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+	{Object: ObjectTypeServicePool, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeServicePool, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeServicePool, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+
+	// ServicePoolValue permissions (provider-scoped via pool - admin, participant for own provider, agent for own provider)
+	{Object: ObjectTypeServicePoolValue, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+	{Object: ObjectTypeServicePoolValue, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeServicePoolValue, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeServicePoolValue, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 
 	// Job permissions
 	{Object: ObjectTypeJob, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},

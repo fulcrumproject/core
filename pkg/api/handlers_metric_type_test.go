@@ -6,9 +6,8 @@ import (
 	"testing"
 	"time"
 
-	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
-	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -16,9 +15,9 @@ import (
 
 // TestNewMetricTypeHandler tests the constructor
 func TestNewMetricTypeHandler(t *testing.T) {
-	querier := mocks.NewMockMetricTypeQuerier(t)
-	commander := mocks.NewMockMetricTypeCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	querier := domain.NewMockMetricTypeQuerier(t)
+	commander := domain.NewMockMetricTypeCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	handler := NewMetricTypeHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -30,9 +29,9 @@ func TestNewMetricTypeHandler(t *testing.T) {
 // TestMetricTypeHandlerRoutes tests that routes are properly registered
 func TestMetricTypeHandlerRoutes(t *testing.T) {
 	// Create mocks
-	querier := mocks.NewMockMetricTypeQuerier(t)
-	commander := mocks.NewMockMetricTypeCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	querier := domain.NewMockMetricTypeQuerier(t)
+	commander := domain.NewMockMetricTypeCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewMetricTypeHandler(querier, commander, authz)

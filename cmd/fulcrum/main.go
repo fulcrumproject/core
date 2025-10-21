@@ -141,11 +141,19 @@ func main() {
 
 	athz := auth.NewRuleBasedAuthorizer(authz.Rules)
 
+	// Initialize commanders for service pools
+	servicePoolSetCmd := domain.NewServicePoolSetCommander(store)
+	servicePoolCmd := domain.NewServicePoolCommander(store)
+	servicePoolValueCmd := domain.NewServicePoolValueCommander(store)
+
 	// Initialize handlers
 	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz)
 	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz)
 	serviceOptionTypeHandler := api.NewServiceOptionTypeHandler(store.ServiceOptionTypeRepo(), serviceOptionTypeCmd, athz)
 	serviceOptionHandler := api.NewServiceOptionHandler(store.ServiceOptionRepo(), serviceOptionCmd, athz)
+	servicePoolSetHandler := api.NewServicePoolSetHandler(store.ServicePoolSetRepo(), servicePoolSetCmd, athz)
+	servicePoolHandler := api.NewServicePoolHandler(store.ServicePoolRepo(), servicePoolCmd, athz)
+	servicePoolValueHandler := api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), servicePoolValueCmd, athz)
 	participantHandler := api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz)
 	agentHandler := api.NewAgentHandler(store.AgentRepo(), agentCmd, athz)
 	serviceGroupHandler := api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz)
@@ -162,7 +170,7 @@ func main() {
 	var server *http.Server
 	var healthServer *http.Server
 	if cfg.ApiServer {
-		server = BuildHttpServer(&cfg, ath, agentTypeHandler, serviceTypeHandler, serviceOptionTypeHandler, serviceOptionHandler, participantHandler, agentHandler, serviceGroupHandler, serviceHandler, metricTypeHandler, metricEntryHandler, eventHandler, jobHandler, tokenHandler, logger)
+		server = BuildHttpServer(&cfg, ath, agentTypeHandler, serviceTypeHandler, serviceOptionTypeHandler, serviceOptionHandler, servicePoolSetHandler, servicePoolHandler, servicePoolValueHandler, participantHandler, agentHandler, serviceGroupHandler, serviceHandler, metricTypeHandler, metricEntryHandler, eventHandler, jobHandler, tokenHandler, logger)
 		// Start main API server
 		go func() {
 			slog.Info("Server starting", "port", cfg.Port)
@@ -280,6 +288,9 @@ func BuildHttpServer(
 	serviceTypeHandler *api.ServiceTypeHandler,
 	serviceOptionTypeHandler *api.ServiceOptionTypeHandler,
 	serviceOptionHandler *api.ServiceOptionHandler,
+	servicePoolSetHandler *api.ServicePoolSetHandler,
+	servicePoolHandler *api.ServicePoolHandler,
+	servicePoolValueHandler *api.ServicePoolValueHandler,
 	participantHandler *api.ParticipantHandler,
 	agentHandler *api.AgentHandler,
 	serviceGroupHandler *api.ServiceGroupHandler,
@@ -312,6 +323,9 @@ func BuildHttpServer(
 		r.Route("/service-types", serviceTypeHandler.Routes())
 		r.Route("/service-option-types", serviceOptionTypeHandler.Routes())
 		r.Route("/service-options", serviceOptionHandler.Routes())
+		r.Route("/service-pool-sets", servicePoolSetHandler.Routes())
+		r.Route("/service-pools", servicePoolHandler.Routes())
+		r.Route("/service-pool-values", servicePoolValueHandler.Routes())
 		r.Route("/participants", participantHandler.Routes())
 		r.Route("/agents", agentHandler.Routes())
 		r.Route("/service-groups", serviceGroupHandler.Routes())

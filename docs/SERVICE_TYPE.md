@@ -511,6 +511,282 @@ Valid service creation:
 }
 ```
 
+### Property Pool Allocation
+
+Properties with `source: "system"` can use automatic pool allocation via the `servicePoolType` field. Service pools manage finite, exclusive resources (IPs, ports, hostnames) with automatic allocation and lifecycle management.
+
+**Basic Usage:**
+```json
+{
+  "publicIp": {
+    "type": "string",
+    "label": "Public IP Address",
+    "source": "system",
+    "updatable": "never",
+    "servicePoolType": "public_ip"
+  }
+}
+```
+
+This marks the `publicIp` property for automatic allocation from a pool with type "public_ip" during service creation.
+
+**How it works:**
+1. The `servicePoolType` field references a pool type (e.g., "public_ip", "hostname", "port")
+2. The property must have `source: "system"` to enable automatic allocation
+3. The agent must have a `servicePoolSetId` configured
+4. During service creation, the system finds a pool with the matching type in the agent's pool set
+5. The property type must match the pool's `propertyType` (e.g., string property → string pool)
+6. A value is automatically allocated from the pool and stored directly in the property
+7. When the service is deleted, the value is released back to the pool
+
+**Key Features:**
+- **Automatic allocation**: No manual value selection required
+- **Type validation**: Property type must match pool's propertyType
+- **Exclusive access**: Each value can only be allocated to one service at a time
+- **Lifecycle management**: Values automatically released on service deletion
+- **Direct storage**: Actual values copied into properties (no dereferencing needed)
+- **System-source**: Requires `source: "system"` since allocation is automatic
+
+**Pool Types:**
+
+List pools (pre-configured values):
+```json
+{
+  "ipAddress": {
+    "type": "string",
+    "label": "IP Address",
+    "source": "system",
+    "updatable": "never",
+    "servicePoolType": "public_ip"
+  }
+}
+```
+
+Subnet pools (automatic CIDR allocation):
+```json
+{
+  "privateIp": {
+    "type": "string",
+    "label": "Private IP Address",
+    "source": "system",
+    "updatable": "never",
+    "servicePoolType": "private_ip"
+  }
+}
+```
+
+JSON type for complex values:
+```json
+{
+  "hostname": {
+    "type": "json",
+    "label": "Hostname Configuration",
+    "source": "system",
+    "updatable": "never",
+    "servicePoolType": "hostname"
+  }
+}
+```
+
+**Pool Setup:**
+
+1. Create a pool set for the provider:
+```http
+POST /api/v1/service-pool-sets
+{
+  "name": "Production Pools",
+  "providerId": "participant-uuid"
+}
+```
+
+2. Create a pool with matching type and propertyType:
+```http
+POST /api/v1/service-pools
+{
+  "name": "Public IP Pool",
+  "type": "public_ip",
+  "propertyType": "string",
+  "generatorType": "list",
+  "servicePoolSetId": "pool-set-uuid"
+}
+```
+
+3. Add values (for list generators):
+```http
+POST /api/v1/service-pool-values
+{
+  "servicePoolId": "pool-uuid",
+  "name": "185.123.45.10",
+  "value": "185.123.45.10"
+}
+```
+
+4. Configure agent with pool set:
+```http
+PATCH /api/v1/agents/{agent-id}
+{
+  "servicePoolSetId": "pool-set-uuid"
+}
+```
+
+**Generator Types:**
+- **list**: Pre-configured values stored as individual ServicePoolValue records
+- **subnet**: IP addresses automatically generated from CIDR ranges
+
+**Allocation Tracking:**
+Each allocated value tracks:
+- `serviceId`: Which service owns this value
+- `propertyName`: Which property uses this value
+- `allocatedAt`: When the allocation occurred
+
+**Value Types:**
+Pool values can be any JSON type:
+- **String**: `"185.123.45.10"` for simple IPs
+- **Object**: `{"ip": "10.0.1.5", "gateway": "10.0.1.1"}` for complex network config
+- **Array**: `["dns1.example.com", "dns2.example.com"]` for multiple values
+
+**Benefits:**
+- **Resource management**: Prevents conflicts (no two services get the same IP)
+- **Automatic**: No manual IP selection by users
+- **Trackable**: See which service uses which resource
+- **Reusable**: Values automatically returned to pool on deletion
+- **Flexible**: Supports simple strings or complex JSON structures
+
+**Error Messages:**
+- `"servicePoolType cannot be empty"` - Empty servicePoolType field
+- `"servicePoolType requires source to be 'system'"` - Property doesn't have `source: "system"`
+- `"property X has type Y but pool Z provides type W"` - Property type doesn't match pool's propertyType
+- `"no pool found with type X in pool set"` - Pool type doesn't exist in agent's pool set
+- `"failed to allocate from pool X"` - No available values in pool
+
+**Complete Example:**
+
+Service type schema:
+```json
+{
+  "name": "VM Instance",
+  "propertySchema": {
+    "publicIp": {
+      "type": "string",
+      "label": "Public IP",
+      "source": "system",
+      "updatable": "never",
+      "servicePoolType": "public_ip"
+    },
+    "privateIp": {
+      "type": "string",
+      "label": "Private IP",
+      "source": "system",
+      "updatable": "never",
+      "servicePoolType": "private_ip"
+    },
+    "hostname": {
+      "type": "json",
+      "label": "Hostname Config",
+      "source": "system",
+      "updatable": "never",
+      "servicePoolType": "hostname"
+    }
+  }
+}
+```
+
+Pool setup (list pool):
+```http
+POST /api/v1/service-pool-values
+{
+  "servicePoolId": "public-ip-pool-uuid",
+  "name": "185.123.45.10",
+  "value": "185.123.45.10"
+}
+```
+
+Pool setup (subnet pool):
+```http
+POST /api/v1/service-pools
+{
+  "name": "Private Network",
+  "type": "private_ip",
+  "propertyType": "string",
+  "generatorType": "subnet",
+  "generatorConfig": {
+    "cidr": "192.168.1.0/24",
+    "excludeFirst": 1,
+    "excludeLast": 1
+  },
+  "servicePoolSetId": "pool-set-uuid"
+}
+```
+
+Pool setup (complex JSON values):
+```http
+POST /api/v1/service-pools
+{
+  "name": "Hostname Pool",
+  "type": "hostname",
+  "propertyType": "json",
+  "generatorType": "list",
+  "servicePoolSetId": "pool-set-uuid"
+}
+
+POST /api/v1/service-pool-values
+{
+  "servicePoolId": "hostname-pool-uuid",
+  "name": "web01.example.com",
+  "value": {
+    "hostname": "web01.example.com",
+    "internalDns": "web01.internal",
+    "zone": "us-east-1a"
+  }
+}
+```
+
+Service creation (automatic allocation):
+```json
+{
+  "name": "web-server-01",
+  "serviceTypeId": "vm-type-uuid",
+  "agentId": "agent-with-pool-set-uuid",
+  "properties": {}
+}
+```
+
+After service creation, properties contain allocated values:
+```json
+{
+  "properties": {
+    "publicIp": "185.123.45.10",
+    "privateIp": "192.168.1.1",
+    "hostname": {
+      "hostname": "web01.example.com",
+      "internalDns": "web01.internal",
+      "zone": "us-east-1a"
+    }
+  }
+}
+```
+
+View allocation status:
+```http
+GET /api/v1/service-pool-values?servicePoolId=public-ip-pool-uuid
+```
+
+Response shows allocated status:
+```json
+{
+  "items": [
+    {
+      "id": "value-uuid",
+      "name": "185.123.45.10",
+      "value": "185.123.45.10",
+      "serviceId": "service-uuid",
+      "propertyName": "publicIp",
+      "allocatedAt": "2025-10-20T12:00:00Z"
+    }
+  ]
+}
+```
+
 ### Property Source
 
 The `source` field controls who can set and update a property value. This enables proper separation between user-provided configuration and agent-discovered information.

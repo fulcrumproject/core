@@ -1,0 +1,94 @@
+get:
+  operationId: servicePoolSetsGet
+  summary: Get a service pool set by ID
+  tags:
+    - Service Pools
+  description: Retrieves details of a specific service pool set
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: if owned by participant as provider
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  responses:
+    "200":
+      description: Service pool set retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/service_pool_sets.yaml#/ServicePoolSetRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Service pool set not found
+patch:
+  operationId: servicePoolSetsUpdate
+  summary: Update a service pool set
+  tags:
+    - Service Pools
+  description: Updates an existing service pool set
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: if owned by participant as provider
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/service_pool_sets.yaml#/UpdateServicePoolSetReq"
+  responses:
+    "200":
+      description: Service pool set updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/service_pool_sets.yaml#/ServicePoolSetRes"
+    "400":
+      $ref: "../components/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Service pool set not found
+delete:
+  operationId: servicePoolSetsDelete
+  summary: Delete a service pool set
+  tags:
+    - Service Pools
+  description: Deletes an existing service pool set
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: if owned by participant as provider
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  responses:
+    "204":
+      description: Service pool set deleted successfully
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Service pool set not found

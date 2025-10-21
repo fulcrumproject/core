@@ -63,10 +63,12 @@ type Agent struct {
 	Configuration *properties.JSON `json:"configuration,omitempty" gorm:"type:jsonb"`
 
 	// Relationships
-	AgentTypeID properties.UUID `json:"agentTypeId" gorm:"not null"`
-	AgentType   *AgentType      `json:"agentType,omitempty" gorm:"foreignKey:AgentTypeID"`
-	ProviderID  properties.UUID `json:"providerId" gorm:"not null"`
-	Provider    *Participant    `json:"-" gorm:"foreignKey:ProviderID"`
+	AgentTypeID      properties.UUID  `json:"agentTypeId" gorm:"not null"`
+	AgentType        *AgentType       `json:"agentType,omitempty" gorm:"foreignKey:AgentTypeID"`
+	ProviderID       properties.UUID  `json:"providerId" gorm:"not null"`
+	Provider         *Participant     `json:"-" gorm:"foreignKey:ProviderID"`
+	ServicePoolSetID *properties.UUID `json:"servicePoolSetId,omitempty"`
+	ServicePoolSet   *ServicePoolSet  `json:"-" gorm:"foreignKey:ServicePoolSetID"`
 }
 
 // NewAgent creates a new agent with proper validation
@@ -79,6 +81,7 @@ func NewAgent(params CreateAgentParams) *Agent {
 		AgentTypeID:      params.AgentTypeID,
 		Tags:             pq.StringArray(params.Tags),
 		Configuration:    params.Configuration,
+		ServicePoolSetID: params.ServicePoolSetID,
 	}
 }
 
@@ -139,7 +142,7 @@ func (a *Agent) RegisterMetadata(name *string) {
 }
 
 // Update updates the agent's fields
-func (a *Agent) Update(name *string, tags *[]string, configuration *properties.JSON) bool {
+func (a *Agent) Update(name *string, tags *[]string, configuration *properties.JSON, servicePoolSetID *properties.UUID) bool {
 	updated := false
 
 	if name != nil {
@@ -154,6 +157,11 @@ func (a *Agent) Update(name *string, tags *[]string, configuration *properties.J
 
 	if configuration != nil {
 		a.Configuration = configuration
+		updated = true
+	}
+
+	if servicePoolSetID != nil {
+		a.ServicePoolSetID = servicePoolSetID
 		updated = true
 	}
 
@@ -176,19 +184,21 @@ type AgentCommander interface {
 }
 
 type CreateAgentParams struct {
-	Name          string           `json:"name"`
-	ProviderID    properties.UUID  `json:"providerId"`
-	AgentTypeID   properties.UUID  `json:"agentTypeId"`
-	Tags          []string         `json:"tags"`
-	Configuration *properties.JSON `json:"configuration,omitempty"`
+	Name             string           `json:"name"`
+	ProviderID       properties.UUID  `json:"providerId"`
+	AgentTypeID      properties.UUID  `json:"agentTypeId"`
+	Tags             []string         `json:"tags"`
+	Configuration    *properties.JSON `json:"configuration,omitempty"`
+	ServicePoolSetID *properties.UUID `json:"servicePoolSetId,omitempty"`
 }
 
 type UpdateAgentParams struct {
-	ID            properties.UUID  `json:"id"`
-	Name          *string          `json:"name,omitempty"`
-	Status        *AgentStatus     `json:"status,omitempty"`
-	Tags          *[]string        `json:"tags,omitempty"`
-	Configuration *properties.JSON `json:"configuration,omitempty"`
+	ID               properties.UUID  `json:"id"`
+	Name             *string          `json:"name,omitempty"`
+	Status           *AgentStatus     `json:"status,omitempty"`
+	Tags             *[]string        `json:"tags,omitempty"`
+	Configuration    *properties.JSON `json:"configuration,omitempty"`
+	ServicePoolSetID *properties.UUID `json:"servicePoolSetId,omitempty"`
 }
 
 type UpdateAgentStatusParams struct {
@@ -270,7 +280,7 @@ func (s *agentCommander) Update(ctx context.Context,
 	if params.Status != nil {
 		agent.UpdateStatus(*params.Status)
 	}
-	agent.Update(params.Name, params.Tags, params.Configuration)
+	agent.Update(params.Name, params.Tags, params.Configuration, params.ServicePoolSetID)
 	if err := agent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}

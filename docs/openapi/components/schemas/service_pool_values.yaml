@@ -1,0 +1,47 @@
+CreateServicePoolValueReq:
+  type: object
+  required:
+    - servicePoolId
+    - name
+    - value
+  properties:
+    servicePoolId:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "192.168.1.10"
+      description: "Display name for the value"
+    value:
+      description: "Any JSON value (string, number, object, array)"
+      example: "192.168.1.10"
+
+ServicePoolValueRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "192.168.1.10"
+    value:
+      description: "Any JSON value (string, number, object, array)"
+      example: "192.168.1.10"
+    servicePoolId:
+      $ref: "./common.yaml#/properties.UUID"
+    serviceId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "Service this value is allocated to (null if available)"
+    propertyName:
+      type: string
+      example: "ipAddress"
+      description: "Property name this value is allocated to"
+    allocatedAt:
+      type: string
+      format: date-time
+      description: "When this value was allocated"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time

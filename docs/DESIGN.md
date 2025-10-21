@@ -119,6 +119,11 @@ classDiagram
     Participant "1" --> "0..N" Token : has many
     Participant "1" --> "0..N" ServiceOption : provides
     ServiceOptionType "1" --> "0..N" ServiceOption : categorizes
+    Participant "1" --> "0..N" ServicePoolSet : provides
+    ServicePoolSet "1" --> "0..N" ServicePool : contains
+    ServicePool "1" --> "0..N" ServicePoolValue : contains
+    ServicePoolValue "0..1" --> "1" Service : allocated to
+    Agent "0..1" --> "1" ServicePoolSet : references
     Agent "1" --> "0..N" Token : has many
     Agent "1" --> "0..N" MetricEntry : generates
     Service "1" --> "0..N" MetricEntry : monitored via
@@ -162,6 +167,7 @@ classDiagram
             lastStatusUpdate : datetime
             tags : string[]
             configuration : json
+            servicePoolSetId : properties.UUID
             createdAt : datetime
             updatedAt : datetime
         }
@@ -205,6 +211,38 @@ classDiagram
             value : jsonb
             enabled : bool
             displayOrder : int
+            createdAt : datetime
+            updatedAt : datetime
+        }
+
+        class ServicePoolSet {
+            id : properties.UUID
+            name : string
+            providerId : properties.UUID
+            createdAt : datetime
+            updatedAt : datetime
+        }
+
+        class ServicePool {
+            id : properties.UUID
+            name : string
+            type : string
+            propertyType : enum[string|integer|number|boolean|json]
+            generatorType : enum[list|subnet]
+            generatorConfig : jsonb
+            servicePoolSetId : properties.UUID
+            createdAt : datetime
+            updatedAt : datetime
+        }
+
+        class ServicePoolValue {
+            id : properties.UUID
+            name : string
+            value : jsonb
+            servicePoolId : properties.UUID
+            serviceId : properties.UUID
+            propertyName : string
+            allocatedAt : datetime
             createdAt : datetime
             updatedAt : datetime
         }
@@ -312,6 +350,31 @@ classDiagram
     - Values are JSONB for flexibility (strings, objects, arrays)
     - Can be enabled/disabled without deletion
     - Display order controls presentation order"
+    
+    note for ServicePoolSet "Service pool sets organize resource pools:
+    - Container for related pools belonging to a provider
+    - Agents reference a pool set for automatic allocation
+    - Supports organizing pools by environment, region, etc.
+    - One pool set can contain multiple pools of different types"
+    
+    note for ServicePool "Service pools manage allocatable resources:
+    - Each pool has a type (identifies what property it provides)
+    - PropertyType defines the data type: string, integer, number, boolean, json
+    - Must match the type of properties that reference it
+    - Generator type determines allocation strategy:
+      * list: Pre-configured values (manually added)
+      * subnet: IP ranges with automatic CIDR allocation
+    - Generator config stores type-specific settings (e.g., CIDR)
+    - Referenced via servicePoolType field in property definitions
+    - Values stored as individual ServicePoolValue records"
+    
+    note for ServicePoolValue "Pool values are allocatable resources:
+    - Values can be any JSON type (strings, objects, arrays)
+    - Tracks allocation: serviceId, propertyName, allocatedAt
+    - Created manually for list pools, automatically for subnet pools
+    - Actual values copied directly into service properties
+    - Released and marked available when service is deleted
+    - No dereferencing - agents receive concrete values"
     
     note for Job "Jobs represent operations that agents
     perform on services. Actions are defined by the
@@ -428,6 +491,42 @@ classDiagram
    - Used in `serviceOption` validator in service type property schemas
    - Enables dynamic validation lists for service creation without code changes
    - Can be enabled/disabled to control availability without deletion
+
+11. **ServicePoolSet**
+   - Container for related service pools belonging to a provider
+   - Belongs to one Participant (acting as provider)
+   - Agents can reference a pool set to enable automatic resource allocation
+   - Contains name for organization (e.g., "Production Pools", "Development Pools")
+   - Supports organizing pools by environment, region, or other criteria
+   - One pool set can contain multiple pools of different types
+
+12. **ServicePool**
+   - Defines a pool of allocatable resources (IPs, ports, hostnames, etc.)
+   - Belongs to one ServicePoolSet
+   - Has type (identifies what property it provides, e.g., "public_ip", "hostname")
+   - Has propertyType (data type provided: string, integer, number, boolean, json)
+   - PropertyType must match the type of service properties that reference this pool
+   - Has name for human-readable identification
+   - Generator type determines allocation strategy:
+     * `list`: Pre-configured values manually added as ServicePoolValue records
+     * `subnet`: IP ranges with automatic CIDR-based allocation
+   - Generator config stores type-specific configuration (e.g., CIDR, excludeFirst, excludeLast for subnets)
+   - Referenced in property definitions via `servicePoolType` field (requires `source: "system"`)
+   - Type validation ensures property type matches pool's propertyType
+   - Values stored as individual ServicePoolValue records (not JSON arrays)
+
+13. **ServicePoolValue**
+   - Individual allocatable value within a ServicePool
+   - Value field can be any JSON type (strings, objects, arrays) for flexibility
+   - Tracks allocation status:
+     * serviceId: Which service this value is allocated to (null if available)
+     * propertyName: Which property in the service uses this value
+     * allocatedAt: When the allocation occurred
+   - Created manually for `list` pools via API
+   - Created automatically on-the-fly for `subnet` pools during service creation
+   - Actual values are copied directly into service properties (no dereferencing)
+   - Released and marked available when service is deleted
+   - Cannot be deleted if currently allocated
 
 ##### Metrics
 

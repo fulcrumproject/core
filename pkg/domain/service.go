@@ -301,6 +301,9 @@ func CreateServiceWithAgent(
 	}
 	params.Properties = validatedProperties
 
+	// Note: Pool allocation will happen inside the transaction after service creation
+	// This ensures we have a service ID for tracking allocations
+
 	// Check if the agent's type supports the requested service type
 	supported := false
 	for _, agentServiceType := range agent.AgentType.ServiceTypes {
@@ -313,11 +316,13 @@ func CreateServiceWithAgent(
 		return nil, NewInvalidInputErrorf("agent type %s does not support service type %s", agent.AgentType.Name, params.ServiceTypeID)
 	}
 
-	// Get initial state from lifecycle schema
-	initialState := "New" // Default if no lifecycle schema
-	if serviceType.LifecycleSchema != nil {
-		initialState = serviceType.LifecycleSchema.InitialState
+	// Validate lifecycle schema exists
+	if serviceType.LifecycleSchema == nil {
+		return nil, NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
 	}
+
+	// Get initial state from lifecycle schema
+	initialState := serviceType.LifecycleSchema.InitialState
 
 	svc := NewService(
 		agent,
@@ -330,11 +335,41 @@ func CreateServiceWithAgent(
 	}
 
 	err = store.Atomic(ctx, func(store Store) error {
+		// Create service first to get ID
 		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
 			return err
 		}
 
-		job := NewJob(svc, "create", &params.Properties, 1)
+		// Allocate pool properties if agent has a pool set and service type has a property schema
+		if agent.ServicePoolSetID != nil && *agent.ServicePoolSetID != uuid.Nil && serviceType.PropertySchema != nil {
+			allocatedProperties, err := AllocateServicePoolProperties(
+				ctx,
+				store,
+				svc.ID,
+				*agent.ServicePoolSetID,
+				*serviceType.PropertySchema,
+				params.Properties,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to allocate pool properties: %w", err)
+			}
+
+			// Update service properties with allocated values
+			if len(allocatedProperties) > 0 {
+				props := properties.JSON(allocatedProperties)
+				svc.Properties = &props
+				if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+					return err
+				}
+			}
+		}
+
+		// Create job with final properties (including allocated pool values)
+		finalProps := params.Properties
+		if svc.Properties != nil {
+			finalProps = *svc.Properties
+		}
+		job := NewJob(svc, "create", &finalProps, 1)
 		if err := job.Validate(); err != nil {
 			return err
 		}
@@ -390,6 +425,7 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 		validationParams := &ServicePropertyValidationParams{
 			ServiceTypeID: svc.ServiceTypeID,
 			GroupID:       svc.GroupID,
+			ProviderID:    svc.ProviderID,
 			Properties:    mergedProperties,
 		}
 		validatedProperties, err := ValidateServiceProperties(ctx, store, validationParams)
@@ -425,18 +461,19 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 			}
 		}
 		if action {
+			// Validate lifecycle schema exists
+			if serviceType.LifecycleSchema == nil {
+				return NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
+			}
+
 			// Check if service is in a terminal state
-			if serviceType.LifecycleSchema != nil {
-				if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
-					return NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
-				}
+			if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
+				return NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
 			}
 
 			// Check if the service is in a valid state to be updated with a job
-			if serviceType.LifecycleSchema != nil {
-				if err := serviceType.LifecycleSchema.ValidateActionAllowed(svc.Status, "update"); err != nil {
-					return InvalidInputError{Err: err}
-				}
+			if err := serviceType.LifecycleSchema.ValidateActionAllowed(svc.Status, "update"); err != nil {
+				return InvalidInputError{Err: err}
 			}
 
 			// If pending job exists, fail it
@@ -480,18 +517,19 @@ func DoServiceAction(ctx context.Context, store Store, params DoServiceActionPar
 		return nil, err
 	}
 
+	// Validate lifecycle schema exists
+	if serviceType.LifecycleSchema == nil {
+		return nil, NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
+	}
+
 	// Check if service is in a terminal state
-	if serviceType.LifecycleSchema != nil {
-		if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
-			return nil, NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
-		}
+	if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
+		return nil, NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
 	}
 
 	// Check if the service is in a valid state to perform this action
-	if serviceType.LifecycleSchema != nil {
-		if err := serviceType.LifecycleSchema.ValidateActionAllowed(svc.Status, params.Action); err != nil {
-			return nil, InvalidInputError{Err: err}
-		}
+	if err := serviceType.LifecycleSchema.ValidateActionAllowed(svc.Status, params.Action); err != nil {
+		return nil, InvalidInputError{Err: err}
 	}
 
 	// If pending job exists, fail it

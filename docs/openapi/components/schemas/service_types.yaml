@@ -61,7 +61,17 @@ PropertyDefinition:
   properties:
     type:
       type: string
-      enum: [string, integer, number, boolean, object, array, serviceReference]
+      enum:
+        [
+          string,
+          integer,
+          number,
+          boolean,
+          object,
+          array,
+          serviceReference,
+          json,
+        ]
       description: The data type of the property
     label:
       type: string
@@ -87,8 +97,8 @@ PropertyDefinition:
       description: Schema for array items
     source:
       type: string
-      enum: [input, agent]
-      description: Who can set and update this property (input = users, agent = agents)
+      enum: [input, agent, system]
+      description: Who can set and update this property (input = users, agent = agents, system = automatic allocation)
       default: input
     updatable:
       type: string
@@ -101,6 +111,10 @@ PropertyDefinition:
         type: string
       description: List of service statuses when property can be updated (required when updatable=statuses)
       example: ["Stopped"]
+    servicePoolType:
+      type: string
+      description: Pool type to allocate from (requires source=system). Must match a ServicePool.type in the agent's ServicePoolSet
+      example: "public_ip"
 
 ValidatorDefinition:
   type: object

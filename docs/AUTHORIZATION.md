@@ -204,6 +204,68 @@ Fulcrum Core uses a role-based authorization system where permissions are define
   - participant: service options for its participant (when acting as provider)
   - agent: service options for its associated provider participant
 
+### ServicePoolSet
+- **create**:
+  - admin: always
+  - participant: for its participant (when acting as provider)
+  - agent: none (not authorized)
+- **get**:
+  - admin: all service pool sets
+  - participant: service pool sets for its participant (when acting as provider)
+  - agent: none (not authorized)
+- **list**:
+  - admin: all service pool sets
+  - participant: service pool sets for its participant (when acting as provider)
+  - agent: none (not authorized)
+- **update**:
+  - admin: always
+  - participant: service pool sets for its participant (when acting as provider)
+  - agent: none (not authorized)
+- **delete**:
+  - admin: always
+  - participant: service pool sets for its participant (when acting as provider)
+  - agent: none (not authorized)
+
+### ServicePool
+- **create**:
+  - admin: always
+  - participant: for service pool sets owned by its participant (when acting as provider)
+  - agent: none (not authorized)
+- **get**:
+  - admin: all service pools
+  - participant: service pools in sets owned by its participant (when acting as provider)
+  - agent: service pools in sets owned by its associated provider participant (read-only)
+- **list**:
+  - admin: all service pools
+  - participant: service pools in sets owned by its participant (when acting as provider)
+  - agent: service pools in sets owned by its associated provider participant (read-only)
+- **update**:
+  - admin: always
+  - participant: service pools in sets owned by its participant (when acting as provider)
+  - agent: none (not authorized)
+- **delete**:
+  - admin: always
+  - participant: service pools in sets owned by its participant (when acting as provider)
+  - agent: none (not authorized)
+
+### ServicePoolValue
+- **create**:
+  - admin: always
+  - participant: for pools in sets owned by its participant (when acting as provider, list generators only)
+  - agent: none (not authorized)
+- **get**:
+  - admin: all service pool values
+  - participant: pool values in sets owned by its participant (when acting as provider)
+  - agent: pool values in sets owned by its associated provider participant (read-only)
+- **list**:
+  - admin: all service pool values
+  - participant: pool values in sets owned by its participant (when acting as provider)
+  - agent: pool values in sets owned by its associated provider participant (read-only)
+- **delete**:
+  - admin: always (only if not allocated)
+  - participant: pool values in sets owned by its participant (when acting as provider, only if not allocated)
+  - agent: none (not authorized)
+
 ### Job
 - **get**:
   - admin: all jobs

@@ -6,9 +6,8 @@ import (
 	"testing"
 	"time"
 
-	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
-	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -16,9 +15,9 @@ import (
 
 // TestNewServiceGroupHandler tests the constructor
 func TestNewServiceGroupHandler(t *testing.T) {
-	querier := mocks.NewMockServiceGroupQuerier(t)
-	commander := mocks.NewMockServiceGroupCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	querier := domain.NewMockServiceGroupQuerier(t)
+	commander := domain.NewMockServiceGroupCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	handler := NewServiceGroupHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -30,9 +29,9 @@ func TestNewServiceGroupHandler(t *testing.T) {
 // TestServiceGroupHandlerRoutes tests that routes are properly registered
 func TestServiceGroupHandlerRoutes(t *testing.T) {
 	// Create mocks
-	querier := mocks.NewMockServiceGroupQuerier(t)
-	commander := mocks.NewMockServiceGroupCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	querier := domain.NewMockServiceGroupQuerier(t)
+	commander := domain.NewMockServiceGroupCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewServiceGroupHandler(querier, commander, authz)

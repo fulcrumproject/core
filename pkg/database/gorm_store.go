@@ -20,6 +20,9 @@ type GormStore struct {
 	serviceRepo           domain.ServiceRepository
 	serviceOptionTypeRepo domain.ServiceOptionTypeRepository
 	serviceOptionRepo     domain.ServiceOptionRepository
+	servicePoolSetRepo    domain.ServicePoolSetRepository
+	servicePoolRepo       domain.ServicePoolRepository
+	servicePoolValueRepo  domain.ServicePoolValueRepository
 	jobRepo               domain.JobRepository
 	eventEntryRepo        domain.EventRepository
 	eventSubscriptionRepo domain.EventSubscriptionRepository
@@ -134,6 +137,27 @@ func (s *GormStore) ServiceOptionRepo() domain.ServiceOptionRepository {
 	return s.serviceOptionRepo
 }
 
+func (s *GormStore) ServicePoolSetRepo() domain.ServicePoolSetRepository {
+	if s.servicePoolSetRepo == nil {
+		s.servicePoolSetRepo = NewServicePoolSetRepository(s.db)
+	}
+	return s.servicePoolSetRepo
+}
+
+func (s *GormStore) ServicePoolRepo() domain.ServicePoolRepository {
+	if s.servicePoolRepo == nil {
+		s.servicePoolRepo = NewServicePoolRepository(s.db)
+	}
+	return s.servicePoolRepo
+}
+
+func (s *GormStore) ServicePoolValueRepo() domain.ServicePoolValueRepository {
+	if s.servicePoolValueRepo == nil {
+		s.servicePoolValueRepo = NewServicePoolValueRepository(s.db)
+	}
+	return s.servicePoolValueRepo
+}
+
 // GormReadOnlyStore implements the domain.ReadOnlyStore interface using GORM
 type GormReadOnlyStore struct {
 	db *gorm.DB
@@ -196,4 +220,16 @@ func (s *GormReadOnlyStore) ServiceOptionTypeQuerier() domain.ServiceOptionTypeQ
 
 func (s *GormReadOnlyStore) ServiceOptionQuerier() domain.ServiceOptionQuerier {
 	return NewServiceOptionRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) ServicePoolSetQuerier() domain.ServicePoolSetQuerier {
+	return NewServicePoolSetRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) ServicePoolQuerier() domain.ServicePoolQuerier {
+	return NewServicePoolRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) ServicePoolValueQuerier() domain.ServicePoolValueQuerier {
+	return NewServicePoolValueRepository(s.db)
 }

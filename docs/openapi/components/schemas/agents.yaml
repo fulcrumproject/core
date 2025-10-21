@@ -31,6 +31,9 @@ CreateAgentReq:
         timeout: 30
         retries: 3
         environment: "production"
+    servicePoolSetId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "Optional service pool set for automatic resource allocation"
 
 UpdateAgentReq:
   type: object
@@ -53,6 +56,9 @@ UpdateAgentReq:
         timeout: 60
         retries: 5
         environment: "staging"
+    servicePoolSetId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "Optional service pool set for automatic resource allocation"
 
 AgentRes:
   type: object
@@ -80,6 +86,9 @@ AgentRes:
         timeout: 30
         retries: 3
         environment: "production"
+    servicePoolSetId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "Optional service pool set for automatic resource allocation"
     participant:
       $ref: "./participants.yaml#/ParticipantRes"
     agentType:
@@ -99,5 +108,4 @@ AgentCreateRes:
         token:
           $ref: "./tokens.yaml#/TokenRes"
           description: "The agent authentication token"
-
 # Agent Type schemas

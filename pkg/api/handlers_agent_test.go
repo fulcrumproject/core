@@ -7,9 +7,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
-	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
 	"github.com/fulcrumproject/core/pkg/domain"
-	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -21,13 +19,13 @@ func TestHandleGetMe(t *testing.T) {
 	testCases := []struct {
 		name           string
 		agentID        string
-		mockSetup      func(querier *mocks.MockAgentQuerier)
+		mockSetup      func(querier *domain.MockAgentQuerier)
 		expectedStatus int
 	}{
 		{
 			name:    "Success",
 			agentID: "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mocks.MockAgentQuerier) {
+			mockSetup: func(querier *domain.MockAgentQuerier) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -55,7 +53,7 @@ func TestHandleGetMe(t *testing.T) {
 		{
 			name:    "NotFound",
 			agentID: "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *mocks.MockAgentQuerier) {
+			mockSetup: func(querier *domain.MockAgentQuerier) {
 				querier.EXPECT().
 					Get(mock.Anything, uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")).
 					Return(nil, domain.NewNotFoundErrorf("agent not found"))
@@ -67,9 +65,9 @@ func TestHandleGetMe(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			querier := mocks.NewMockAgentQuerier(t)
-			commander := mocks.NewMockAgentCommander(t)
-			authz := authmocks.NewMockAuthorizer(t)
+			querier := domain.NewMockAgentQuerier(t)
+			commander := domain.NewMockAgentCommander(t)
+			authz := auth.NewMockAuthorizer(t)
 			tc.mockSetup(querier)
 
 			// Create the handler
@@ -95,9 +93,9 @@ func TestHandleGetMe(t *testing.T) {
 
 // TestNewAgentHandler tests the constructor
 func TestNewAgentHandler(t *testing.T) {
-	querier := mocks.NewMockAgentQuerier(t)
-	commander := mocks.NewMockAgentCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	querier := domain.NewMockAgentQuerier(t)
+	commander := domain.NewMockAgentCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	handler := NewAgentHandler(querier, commander, authz)
 	assert.NotNil(t, handler)

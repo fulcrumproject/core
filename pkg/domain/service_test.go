@@ -3,6 +3,7 @@ package domain
 import (
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -129,7 +130,7 @@ func TestService_Validate(t *testing.T) {
 				ServiceTypeID:   validID,
 				ProviderID:      validID,
 				ConsumerID:      validID,
-				AgentInstanceID: stringPtr("ext-123"),
+				AgentInstanceID: helpers.StringPtr("ext-123"),
 			},
 			wantErr: false,
 		},
@@ -491,7 +492,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 		initialProperties  *properties.JSON
 		updates            map[string]any
 		serviceStatus      string
-		schema             *ServiceSchema
+		schema             *ServicePropertySchema
 		expectError        bool
 		errorContains      string
 		expectedProperties *properties.JSON
@@ -501,7 +502,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			initialProperties: &properties.JSON{"user_prop": "value1"},
 			updates:           map[string]any{"agent_prop": "192.168.1.1"},
 			serviceStatus:     "Started",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"user_prop": ServicePropertyDefinition{
 					Type:   "string",
 					Source: "input",
@@ -522,7 +523,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			initialProperties: &properties.JSON{"user_prop": "value1"},
 			updates:           map[string]any{"user_prop": "newvalue"},
 			serviceStatus:     "Started",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"user_prop": ServicePropertyDefinition{
 					Type:   "string",
 					Source: "input",
@@ -536,7 +537,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			initialProperties: &properties.JSON{},
 			updates:           map[string]any{"immutable_agent": "value"},
 			serviceStatus:     "Started",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"immutable_agent": ServicePropertyDefinition{
 					Type:      "string",
 					Source:    "agent",
@@ -551,7 +552,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			initialProperties: &properties.JSON{},
 			updates:           map[string]any{"state_dep": "value"},
 			serviceStatus:     "Stopped",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"state_dep": ServicePropertyDefinition{
 					Type:        "string",
 					Source:      "agent",
@@ -569,7 +570,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			initialProperties: &properties.JSON{},
 			updates:           map[string]any{"state_dep": "value"},
 			serviceStatus:     "Started",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"state_dep": ServicePropertyDefinition{
 					Type:        "string",
 					Source:      "agent",
@@ -585,7 +586,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			initialProperties: &properties.JSON{"existing": "value"},
 			updates:           map[string]any{},
 			serviceStatus:     "Started",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"existing": ServicePropertyDefinition{
 					Type:   "string",
 					Source: "input",
@@ -601,7 +602,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			initialProperties: &properties.JSON{"existing": "value"},
 			updates:           nil,
 			serviceStatus:     "Started",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"existing": ServicePropertyDefinition{
 					Type:   "string",
 					Source: "input",
@@ -617,7 +618,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			initialProperties: &properties.JSON{"existing": "value1", "agent_prop": "old"},
 			updates:           map[string]any{"agent_prop": "new", "agent_prop2": "value2"},
 			serviceStatus:     "Started",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"existing": ServicePropertyDefinition{
 					Type:   "string",
 					Source: "input",
@@ -643,7 +644,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			initialProperties: nil,
 			updates:           map[string]any{"agent_prop": "value"},
 			serviceStatus:     "Started",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"agent_prop": ServicePropertyDefinition{
 					Type:   "string",
 					Source: "agent",
@@ -659,7 +660,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			initialProperties: nil,
 			updates:           map[string]any{"immutable_agent": "10.0.0.1"},
 			serviceStatus:     "New",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"immutable_agent": ServicePropertyDefinition{
 					Type:      "string",
 					Source:    "agent",
@@ -676,7 +677,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 			initialProperties: nil,
 			updates:           map[string]any{"state_dep": "value"},
 			serviceStatus:     "New",
-			schema: &ServiceSchema{
+			schema: &ServicePropertySchema{
 				"state_dep": ServicePropertyDefinition{
 					Type:        "string",
 					Source:      "agent",

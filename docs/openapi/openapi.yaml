@@ -130,6 +130,22 @@ components:
       $ref: ./components/schemas/service_option_types.yaml#/ServiceOptionTypeReq
     ServiceOptionTypeRes:
       $ref: ./components/schemas/service_option_types.yaml#/ServiceOptionTypeRes
+    ServicePoolRes:
+      $ref: ./components/schemas/service_pools.yaml#/ServicePoolRes
+    ServicePoolSetRes:
+      $ref: ./components/schemas/service_pool_sets.yaml#/ServicePoolSetRes
+    ServicePoolValueRes:
+      $ref: ./components/schemas/service_pool_values.yaml#/ServicePoolValueRes
+    CreateServicePoolReq:
+      $ref: ./components/schemas/service_pools.yaml#/CreateServicePoolReq
+    CreateServicePoolSetReq:
+      $ref: ./components/schemas/service_pool_sets.yaml#/CreateServicePoolSetReq
+    CreateServicePoolValueReq:
+      $ref: ./components/schemas/service_pool_values.yaml#/CreateServicePoolValueReq
+    UpdateServicePoolReq:
+      $ref: ./components/schemas/service_pools.yaml#/UpdateServicePoolReq
+    UpdateServicePoolSetReq:
+      $ref: ./components/schemas/service_pool_sets.yaml#/UpdateServicePoolSetReq
     ServiceReq:
       $ref: ./components/schemas/services.yaml#/ServiceReq
     ServiceRes:
@@ -220,6 +236,18 @@ paths:
     $ref: ./paths/service-options.yaml
   /service-options/{id}:
     $ref: ./paths/service-options@{id}.yaml
+  /service-pool-sets:
+    $ref: ./paths/service-pool-sets.yaml
+  /service-pool-sets/{id}:
+    $ref: ./paths/service-pool-sets@{id}.yaml
+  /service-pools:
+    $ref: ./paths/service-pools.yaml
+  /service-pools/{id}:
+    $ref: ./paths/service-pools@{id}.yaml
+  /service-pool-values:
+    $ref: ./paths/service-pool-values.yaml
+  /service-pool-values/{id}:
+    $ref: ./paths/service-pool-values@{id}.yaml
   /service-types:
     $ref: ./paths/service-types.yaml
   /service-types/{id}:

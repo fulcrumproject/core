@@ -14,11 +14,12 @@ import (
 )
 
 type CreateAgentReq struct {
-	Name          string           `json:"name"`
-	ProviderID    properties.UUID  `json:"providerId"`
-	AgentTypeID   properties.UUID  `json:"agentTypeId"`
-	Tags          []string         `json:"tags"`
-	Configuration *properties.JSON `json:"configuration,omitempty"`
+	Name             string           `json:"name"`
+	ProviderID       properties.UUID  `json:"providerId"`
+	AgentTypeID      properties.UUID  `json:"agentTypeId"`
+	Tags             []string         `json:"tags"`
+	Configuration    *properties.JSON `json:"configuration,omitempty"`
+	ServicePoolSetID *properties.UUID `json:"servicePoolSetId,omitempty"`
 }
 
 // auth.ObjectScope implements auth.ObjectScopeProvider interface
@@ -27,10 +28,11 @@ func (r CreateAgentReq) ObjectScope() (auth.ObjectScope, error) {
 }
 
 type UpdateAgentReq struct {
-	Name          *string             `json:"name"`
-	Status        *domain.AgentStatus `json:"status"`
-	Tags          *[]string           `json:"tags"`
-	Configuration *properties.JSON    `json:"configuration,omitempty"`
+	Name             *string             `json:"name"`
+	Status           *domain.AgentStatus `json:"status"`
+	Tags             *[]string           `json:"tags"`
+	Configuration    *properties.JSON    `json:"configuration,omitempty"`
+	ServicePoolSetID *properties.UUID    `json:"servicePoolSetId,omitempty"`
 }
 
 type UpdateAgentStatusReq struct {
@@ -105,11 +107,12 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 // Adapter functions that convert request structs to commander method calls
 func (h *AgentHandler) Create(ctx context.Context, req *CreateAgentReq) (*domain.Agent, error) {
 	params := domain.CreateAgentParams{
-		Name:          req.Name,
-		ProviderID:    req.ProviderID,
-		AgentTypeID:   req.AgentTypeID,
-		Tags:          req.Tags,
-		Configuration: req.Configuration,
+		Name:             req.Name,
+		ProviderID:       req.ProviderID,
+		AgentTypeID:      req.AgentTypeID,
+		Tags:             req.Tags,
+		Configuration:    req.Configuration,
+		ServicePoolSetID: req.ServicePoolSetID,
 	}
 	return h.commander.Create(ctx, params)
 }
@@ -117,11 +120,12 @@ func (h *AgentHandler) Create(ctx context.Context, req *CreateAgentReq) (*domain
 // Adapter functions that convert request structs to commander method calls
 func (h *AgentHandler) Update(ctx context.Context, id properties.UUID, req *UpdateAgentReq) (*domain.Agent, error) {
 	params := domain.UpdateAgentParams{
-		ID:            id,
-		Name:          req.Name,
-		Status:        req.Status,
-		Tags:          req.Tags,
-		Configuration: req.Configuration,
+		ID:               id,
+		Name:             req.Name,
+		Status:           req.Status,
+		Tags:             req.Tags,
+		Configuration:    req.Configuration,
+		ServicePoolSetID: req.ServicePoolSetID,
 	}
 	return h.commander.Update(ctx, params)
 }
@@ -152,31 +156,33 @@ func (h *AgentHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 // AgentRes represents the response body for agent operations
 type AgentRes struct {
-	ID            properties.UUID    `json:"id"`
-	Name          string             `json:"name"`
-	Status        domain.AgentStatus `json:"status"`
-	ProviderID    properties.UUID    `json:"providerId"`
-	AgentTypeID   properties.UUID    `json:"agentTypeId"`
-	Tags          []string           `json:"tags"`
-	Configuration *properties.JSON   `json:"configuration,omitempty"`
-	Participant   *ParticipantRes    `json:"participant,omitempty"`
-	AgentType     *AgentTypeRes      `json:"agentType,omitempty"`
-	CreatedAt     JSONUTCTime        `json:"createdAt"`
-	UpdatedAt     JSONUTCTime        `json:"updatedAt"`
+	ID               properties.UUID    `json:"id"`
+	Name             string             `json:"name"`
+	Status           domain.AgentStatus `json:"status"`
+	ProviderID       properties.UUID    `json:"providerId"`
+	AgentTypeID      properties.UUID    `json:"agentTypeId"`
+	Tags             []string           `json:"tags"`
+	Configuration    *properties.JSON   `json:"configuration,omitempty"`
+	ServicePoolSetID *properties.UUID   `json:"servicePoolSetId,omitempty"`
+	Participant      *ParticipantRes    `json:"participant,omitempty"`
+	AgentType        *AgentTypeRes      `json:"agentType,omitempty"`
+	CreatedAt        JSONUTCTime        `json:"createdAt"`
+	UpdatedAt        JSONUTCTime        `json:"updatedAt"`
 }
 
 // AgentToRes converts a domain.Agent to an AgentResponse
 func AgentToRes(a *domain.Agent) *AgentRes {
 	response := &AgentRes{
-		ID:            a.ID,
-		Name:          a.Name,
-		Status:        a.Status,
-		ProviderID:    a.ProviderID,
-		AgentTypeID:   a.AgentTypeID,
-		Tags:          []string(a.Tags),
-		Configuration: a.Configuration,
-		CreatedAt:     JSONUTCTime(a.CreatedAt),
-		UpdatedAt:     JSONUTCTime(a.UpdatedAt),
+		ID:               a.ID,
+		Name:             a.Name,
+		Status:           a.Status,
+		ProviderID:       a.ProviderID,
+		AgentTypeID:      a.AgentTypeID,
+		Tags:             []string(a.Tags),
+		Configuration:    a.Configuration,
+		ServicePoolSetID: a.ServicePoolSetID,
+		CreatedAt:        JSONUTCTime(a.CreatedAt),
+		UpdatedAt:        JSONUTCTime(a.UpdatedAt),
 	}
 	if a.Provider != nil {
 		response.Participant = ParticipantToRes(a.Provider)

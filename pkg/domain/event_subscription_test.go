@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -64,7 +65,7 @@ func TestEventSubscription_Validate(t *testing.T) {
 			subscription: &EventSubscription{
 				SubscriberID:               "test-subscriber",
 				LastEventSequenceProcessed: 0,
-				LeaseOwnerInstanceID:       stringPtr("instance-1"),
+				LeaseOwnerInstanceID:       helpers.StringPtr("instance-1"),
 				LeaseAcquiredAt:            timePtr(time.Now()),
 				LeaseExpiresAt:             timePtr(time.Now().Add(time.Hour)),
 				IsActive:                   true,
@@ -75,7 +76,7 @@ func TestEventSubscription_Validate(t *testing.T) {
 			name: "lease with missing acquired time",
 			subscription: &EventSubscription{
 				SubscriberID:         "test-subscriber",
-				LeaseOwnerInstanceID: stringPtr("instance-1"),
+				LeaseOwnerInstanceID: helpers.StringPtr("instance-1"),
 				LeaseExpiresAt:       timePtr(time.Now().Add(time.Hour)),
 				IsActive:             true,
 			},
@@ -86,7 +87,7 @@ func TestEventSubscription_Validate(t *testing.T) {
 			name: "lease with missing expires time",
 			subscription: &EventSubscription{
 				SubscriberID:         "test-subscriber",
-				LeaseOwnerInstanceID: stringPtr("instance-1"),
+				LeaseOwnerInstanceID: helpers.StringPtr("instance-1"),
 				LeaseAcquiredAt:      timePtr(time.Now()),
 				IsActive:             true,
 			},
@@ -97,7 +98,7 @@ func TestEventSubscription_Validate(t *testing.T) {
 			name: "lease expires before acquired",
 			subscription: &EventSubscription{
 				SubscriberID:         "test-subscriber",
-				LeaseOwnerInstanceID: stringPtr("instance-1"),
+				LeaseOwnerInstanceID: helpers.StringPtr("instance-1"),
 				LeaseAcquiredAt:      timePtr(time.Now()),
 				LeaseExpiresAt:       timePtr(time.Now().Add(-time.Hour)),
 				IsActive:             true,

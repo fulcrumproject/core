@@ -10,9 +10,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
-	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
 	"github.com/fulcrumproject/core/pkg/domain"
-	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
@@ -24,10 +22,10 @@ import (
 
 // TestNewMetricEntryHandler tests the constructor
 func TestNewMetricEntryHandler(t *testing.T) {
-	querier := mocks.NewMockMetricEntryQuerier(t)
-	serviceQuerier := mocks.NewMockServiceQuerier(t)
-	commander := mocks.NewMockMetricEntryCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	querier := domain.NewMockMetricEntryQuerier(t)
+	serviceQuerier := domain.NewMockServiceQuerier(t)
+	commander := domain.NewMockMetricEntryCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authz)
 	assert.NotNil(t, handler)
@@ -40,10 +38,10 @@ func TestNewMetricEntryHandler(t *testing.T) {
 // TestMetricEntryHandlerRoutes tests that routes are properly registered
 func TestMetricEntryHandlerRoutes(t *testing.T) {
 	// Create mocks
-	querier := mocks.NewMockMetricEntryQuerier(t)
-	serviceQuerier := mocks.NewMockServiceQuerier(t)
-	commander := mocks.NewMockMetricEntryCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	querier := domain.NewMockMetricEntryQuerier(t)
+	serviceQuerier := domain.NewMockServiceQuerier(t)
+	commander := domain.NewMockMetricEntryCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authz)
@@ -78,7 +76,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 	testCases := []struct {
 		name           string
 		requestBody    CreateMetricEntryReq
-		mockSetup      func(serviceQuerier *mocks.MockServiceQuerier, commander *mocks.MockMetricEntryCommander)
+		mockSetup      func(serviceQuerier *domain.MockServiceQuerier, commander *domain.MockMetricEntryCommander)
 		expectedStatus int
 	}{
 		{
@@ -89,7 +87,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				Value:      123.45,
 				TypeName:   "cpu",
 			},
-			mockSetup: func(serviceQuerier *mocks.MockServiceQuerier, commander *mocks.MockMetricEntryCommander) {
+			mockSetup: func(serviceQuerier *domain.MockServiceQuerier, commander *domain.MockMetricEntryCommander) {
 				// Use the same agent ID that's in NewMockAuthAgent
 				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
@@ -139,7 +137,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				Value:           123.45,
 				TypeName:        "cpu",
 			},
-			mockSetup: func(serviceQuerier *mocks.MockServiceQuerier, commander *mocks.MockMetricEntryCommander) {
+			mockSetup: func(serviceQuerier *domain.MockServiceQuerier, commander *domain.MockMetricEntryCommander) {
 				// Use the same agent ID that's in NewMockAuthAgent
 				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
@@ -189,7 +187,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				Value:      123.45,
 				TypeName:   "cpu",
 			},
-			mockSetup: func(serviceQuerier *mocks.MockServiceQuerier, commander *mocks.MockMetricEntryCommander) {
+			mockSetup: func(serviceQuerier *domain.MockServiceQuerier, commander *domain.MockMetricEntryCommander) {
 				// Setup the service querier to return an error
 				serviceQuerier.EXPECT().
 					Get(mock.Anything, mock.Anything).
@@ -207,7 +205,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 				Value:      123.45,
 				TypeName:   "cpu",
 			},
-			mockSetup: func(serviceQuerier *mocks.MockServiceQuerier, commander *mocks.MockMetricEntryCommander) {
+			mockSetup: func(serviceQuerier *domain.MockServiceQuerier, commander *domain.MockMetricEntryCommander) {
 				// Use the same agent ID that's in NewMockAuthAgent
 				agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
 				serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
@@ -238,10 +236,10 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mocks
-			querier := mocks.NewMockMetricEntryQuerier(t)
-			serviceQuerier := mocks.NewMockServiceQuerier(t)
-			commander := mocks.NewMockMetricEntryCommander(t)
-			authz := authmocks.NewMockAuthorizer(t)
+			querier := domain.NewMockMetricEntryQuerier(t)
+			serviceQuerier := domain.NewMockServiceQuerier(t)
+			commander := domain.NewMockMetricEntryCommander(t)
+			authz := auth.NewMockAuthorizer(t)
 			tc.mockSetup(serviceQuerier, commander)
 
 			// Create the handler

@@ -8,9 +8,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
-	authmocks "github.com/fulcrumproject/core/pkg/auth/mocks"
 	"github.com/fulcrumproject/core/pkg/domain"
-	"github.com/fulcrumproject/core/pkg/domain/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -19,9 +17,9 @@ import (
 
 // TestNewServiceTypeHandler tests the constructor
 func TestNewServiceTypeHandler(t *testing.T) {
-	querier := mocks.NewMockServiceTypeQuerier(t)
-	commander := mocks.NewMockServiceTypeCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	querier := domain.NewMockServiceTypeQuerier(t)
+	commander := domain.NewMockServiceTypeCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	handler := NewServiceTypeHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -33,9 +31,9 @@ func TestNewServiceTypeHandler(t *testing.T) {
 // TestServiceTypeHandlerRoutes tests that routes are properly registered
 func TestServiceTypeHandlerRoutes(t *testing.T) {
 	// Create mocks
-	querier := mocks.NewMockServiceTypeQuerier(t)
-	commander := mocks.NewMockServiceTypeCommander(t)
-	authz := authmocks.NewMockAuthorizer(t)
+	querier := domain.NewMockServiceTypeQuerier(t)
+	commander := domain.NewMockServiceTypeCommander(t)
+	authz := auth.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewServiceTypeHandler(querier, commander, authz)
@@ -95,7 +93,7 @@ func TestServiceTypeToResponse(t *testing.T) {
 
 // TestServiceTypeHandlerCreate tests the Create adapter function
 func TestServiceTypeHandlerCreate(t *testing.T) {
-	commander := mocks.NewMockServiceTypeCommander(t)
+	commander := domain.NewMockServiceTypeCommander(t)
 	handler := &ServiceTypeHandler{commander: commander}
 
 	req := &CreateServiceTypeReq{
@@ -125,7 +123,7 @@ func TestServiceTypeHandlerCreate(t *testing.T) {
 
 // TestServiceTypeHandlerUpdate tests the Update adapter function
 func TestServiceTypeHandlerUpdate(t *testing.T) {
-	commander := mocks.NewMockServiceTypeCommander(t)
+	commander := domain.NewMockServiceTypeCommander(t)
 	handler := &ServiceTypeHandler{commander: commander}
 
 	serviceTypeID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")

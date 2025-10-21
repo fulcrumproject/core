@@ -1,0 +1,75 @@
+CreateServicePoolReq:
+  type: object
+  required:
+    - name
+    - type
+    - propertyType
+    - generatorType
+    - servicePoolSetId
+  properties:
+    name:
+      type: string
+      example: "Public IP Pool"
+      description: "Name of the pool"
+    type:
+      type: string
+      example: "public_ip"
+      description: "Type identifier referenced in servicePoolType property field"
+    propertyType:
+      type: string
+      enum: [string, integer, number, boolean, json]
+      example: "string"
+      description: "Property type that this pool provides (must match property definitions)"
+    generatorType:
+      type: string
+      enum: [list, subnet]
+      example: "list"
+      description: "Allocation strategy: 'list' for pre-configured values, 'subnet' for IP ranges"
+    generatorConfig:
+      type: object
+      description: "Generator-specific configuration (required for subnet)"
+      example: { "cidr": "192.168.1.0/24", "excludeFirst": 1, "excludeLast": 1 }
+    servicePoolSetId:
+      $ref: "./common.yaml#/properties.UUID"
+
+UpdateServicePoolReq:
+  type: object
+  properties:
+    name:
+      type: string
+      example: "Public IP Pool - Updated"
+    generatorConfig:
+      type: object
+      description: "Generator-specific configuration"
+
+ServicePoolRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "Public IP Pool"
+    type:
+      type: string
+      example: "public_ip"
+    propertyType:
+      type: string
+      enum: [string, integer, number, boolean, json]
+      example: "string"
+      description: "Property type that this pool provides"
+    generatorType:
+      type: string
+      enum: [list, subnet]
+      example: "list"
+    generatorConfig:
+      type: object
+      example: { "cidr": "192.168.1.0/24" }
+    servicePoolSetId:
+      $ref: "./common.yaml#/properties.UUID"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
