@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -120,7 +121,7 @@ func TestServicePoolValue_IsAllocated(t *testing.T) {
 			poolValue: &ServicePoolValue{
 				ServicePoolID: poolID,
 				ServiceID:     &serviceID,
-				PropertyName:  stringPtr("publicIp"),
+				PropertyName:  helpers.StringPtr("publicIp"),
 				AllocatedAt:   &now,
 			},
 			want: true,
@@ -169,7 +170,7 @@ func TestServicePoolValue_Release(t *testing.T) {
 		Name:          "IP 1",
 		Value:         value,
 		ServiceID:     &serviceID,
-		PropertyName:  stringPtr("publicIp"),
+		PropertyName:  helpers.StringPtr("publicIp"),
 		AllocatedAt:   &now,
 	}
 
@@ -187,4 +188,3 @@ func TestServicePoolValue_TableName(t *testing.T) {
 	poolValue := &ServicePoolValue{}
 	assert.Equal(t, "service_pool_values", poolValue.TableName())
 }
-

@@ -3,6 +3,7 @@ package domain
 import (
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -129,7 +130,7 @@ func TestService_Validate(t *testing.T) {
 				ServiceTypeID:   validID,
 				ProviderID:      validID,
 				ConsumerID:      validID,
-				AgentInstanceID: stringPtr("ext-123"),
+				AgentInstanceID: helpers.StringPtr("ext-123"),
 			},
 			wantErr: false,
 		},

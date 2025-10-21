@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ func TestAllocateServicePoolProperties(t *testing.T) {
 		"publicIp": {
 			Type:            "string",
 			Source:          "system",
-			ServicePoolType: stringPtr("public_ip"),
+			ServicePoolType: helpers.StringPtr("public_ip"),
 		},
 		"cpu": {
 			Type:     "integer",
@@ -92,7 +93,7 @@ func TestAllocateServicePoolProperties_NoPoolSet(t *testing.T) {
 		"publicIp": {
 			Type:            "string",
 			Source:          "system",
-			ServicePoolType: stringPtr("public_ip"),
+			ServicePoolType: helpers.StringPtr("public_ip"),
 		},
 	}
 
@@ -132,7 +133,7 @@ func TestAllocateServicePoolProperties_TypeMismatch(t *testing.T) {
 		"publicIp": {
 			Type:            "string",
 			Source:          "system",
-			ServicePoolType: stringPtr("public_ip"),
+			ServicePoolType: helpers.StringPtr("public_ip"),
 		},
 	}
 

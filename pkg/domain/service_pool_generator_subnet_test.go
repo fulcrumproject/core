@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -94,9 +95,9 @@ func TestSubnetGenerator_Allocate(t *testing.T) {
 			generatorConfig: properties.JSON{
 				"cidr": "invalid",
 			},
-			setupMock:     func(repo *MockServicePoolValueRepository) {},
-			expectErr:     true,
-			errMsg:        "invalid CIDR",
+			setupMock: func(repo *MockServicePoolValueRepository) {},
+			expectErr: true,
+			errMsg:    "invalid CIDR",
 		},
 		{
 			name: "Error - subnet exhausted",
@@ -159,7 +160,7 @@ func TestSubnetGenerator_Release(t *testing.T) {
 					Value:         "10.0.0.1",
 					ServicePoolID: poolID,
 					ServiceID:     &serviceID,
-					PropertyName:  stringPtr("ipAddress"),
+					PropertyName:  helpers.StringPtr("ipAddress"),
 					AllocatedAt:   timePtr(time.Now()),
 				}
 
@@ -188,7 +189,7 @@ func TestSubnetGenerator_Release(t *testing.T) {
 					Value:         "10.0.0.1",
 					ServicePoolID: otherPoolID,
 					ServiceID:     &serviceID,
-					PropertyName:  stringPtr("ipAddress"),
+					PropertyName:  helpers.StringPtr("ipAddress"),
 					AllocatedAt:   timePtr(time.Now()),
 				}
 
@@ -217,4 +218,3 @@ func TestSubnetGenerator_Release(t *testing.T) {
 		})
 	}
 }
-
