@@ -749,9 +749,7 @@ Content-Type: application/json
 GET {{baseUrl}}/jobs/{{failJobId}}
 Authorization: Bearer {{adminToken}}
 
-### Retry by calling the same action again (no special retry endpoint needed)
-# With the new behavior, failed jobs are non-active, so we can immediately
-# call the action again to create a new job
+### Retry by calling the same action again
 POST {{baseUrl}}/services/{{serviceId}}/stop
 Authorization: Bearer {{adminToken}}
 
