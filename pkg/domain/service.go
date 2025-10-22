@@ -184,9 +184,6 @@ type ServiceCommander interface {
 	// DoAction handles service actions
 	DoAction(ctx context.Context, params DoServiceActionParams) (*Service, error)
 
-	// Retry retries a failed service operation
-	Retry(ctx context.Context, id properties.UUID) (*Service, error)
-
 	// FailTimeoutServicesAndJobs fails services and jobs that have timed out
 	FailTimeoutServicesAndJobs(ctx context.Context, timeout time.Duration) (int, error)
 }
@@ -541,44 +538,6 @@ func DoServiceAction(ctx context.Context, store Store, params DoServiceActionPar
 	// Create the new job
 	err = store.Atomic(ctx, func(store Store) error {
 		job := NewJob(svc, params.Action, nil, 1)
-		if err := job.Validate(); err != nil {
-			return err
-		}
-		if err := store.JobRepo().Create(ctx, job); err != nil {
-			return err
-		}
-		return err
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return svc, nil
-}
-
-func (s *serviceCommander) Retry(ctx context.Context, id properties.UUID) (*Service, error) {
-	return RetryService(ctx, s.store, id)
-}
-
-func RetryService(ctx context.Context, store Store, id properties.UUID) (*Service, error) {
-	// Check if the service exists
-	svc, err := store.ServiceRepo().Get(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get last job and check if it's failed
-	job, err := store.JobRepo().GetLastJobForService(ctx, svc.ID)
-	if err != nil {
-		return nil, err
-	}
-	if job == nil || job.Status != JobFailed {
-		return nil, NewInvalidInputErrorf("no failed job found for service %s", svc.ID)
-	}
-
-	// Create the new job as a copy of the failed one
-	err = store.Atomic(ctx, func(store Store) error {
-		job := NewJob(svc, job.Action, job.Params, 1)
 		if err := job.Validate(); err != nil {
 			return err
 		}
