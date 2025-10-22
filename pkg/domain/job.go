@@ -235,6 +235,12 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 		if err := svc.HandleJobComplete(serviceType.LifecycleSchema, job.Action, nil, job.Params, params.AgentInstanceData, params.AgentInstanceID); err != nil {
 			return InvalidInputError{Err: err}
 		}
+
+		// Clear agent instance ID if service reached a terminal state to allow infrastructure ID reuse (e.g., Proxmox VM IDs)
+		if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
+			svc.AgentInstanceID = nil
+		}
+
 		if err := svc.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
