@@ -749,22 +749,22 @@ Content-Type: application/json
 GET {{baseUrl}}/jobs/{{failJobId}}
 Authorization: Bearer {{adminToken}}
 
-### Retry the failed operation
-POST {{baseUrl}}/services/{{serviceId}}/retry
+### Retry by calling the same action again
+POST {{baseUrl}}/services/{{serviceId}}/stop
 Authorization: Bearer {{adminToken}}
 
-### Get pending jobs for retry
+### Get pending jobs after retry
 # @name pendingRetryJobs
 GET {{baseUrl}}/jobs/pending?serviceId={{serviceId}}
 Authorization: Bearer {{agentToken}}
 
 @retryJobId = {{pendingRetryJobs.response.body.$[0].id}}
 
-### Claim the retry job
+### Claim the new job
 POST {{baseUrl}}/jobs/{{retryJobId}}/claim
 Authorization: Bearer {{agentToken}}
 
-### Complete the retry job successfully
+### Complete the new job successfully
 POST {{baseUrl}}/jobs/{{retryJobId}}/complete
 Authorization: Bearer {{agentToken}}
 Content-Type: application/json

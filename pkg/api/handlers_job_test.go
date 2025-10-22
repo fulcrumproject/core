@@ -506,7 +506,6 @@ func TestJobHandlerRoutes(t *testing.T) {
 		case method == "POST" && route == "/{id}/claim":
 		case method == "POST" && route == "/{id}/complete":
 		case method == "POST" && route == "/{id}/fail":
-		case method == "POST" && route == "/{id}/unsupported":
 		default:
 			return fmt.Errorf("unexpected route: %s %s", method, route)
 		}

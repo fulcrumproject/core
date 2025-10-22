@@ -121,11 +121,6 @@ func (h *ServiceHandler) Routes() func(r chi.Router) {
 				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionDelete, h.authz, h.querier.AuthScope),
 			).Delete("/{id}", CommandWithoutBody(h.Delete))
 
-			// Retry - authorize from resource ID
-			r.With(
-				middlewares.AuthzFromID(authz.ObjectTypeService, authz.ActionUpdate, h.authz, h.querier.AuthScope),
-			).Post("/{id}/retry", CommandWithoutBody(h.Retry))
-
 			// Generic action - handle any lifecycle action (start, stop, restart, etc.)
 			// Note: "delete" action should use DELETE /{id}, "update" should use PATCH /{id}
 			r.With(
@@ -221,11 +216,6 @@ func (h *ServiceHandler) Delete(ctx context.Context, id properties.UUID) error {
 		Action: "delete",
 	}
 	_, err := h.commander.DoAction(ctx, params)
-	return err
-}
-
-func (h *ServiceHandler) Retry(ctx context.Context, id properties.UUID) error {
-	_, err := h.commander.Retry(ctx, id)
 	return err
 }
 

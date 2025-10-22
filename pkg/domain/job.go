@@ -139,9 +139,9 @@ func (j *Job) Fail(errorMessage string) error {
 	return nil
 }
 
-// IsActive checks if the job is active
+// IsActive checks if the job is active (blocks new job attempts for the same service)
 func (j *Job) IsActive() bool {
-	return j.Status == JobProcessing || j.Status == JobPending || j.Status == JobFailed
+	return j.Status == JobProcessing || j.Status == JobPending
 }
 
 // JobCommander defines the interface for job command operations

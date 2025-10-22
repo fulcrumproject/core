@@ -258,8 +258,6 @@ paths:
     $ref: ./paths/services.yaml
   /services/{id}:
     $ref: ./paths/services@{id}.yaml
-  /services/{id}/retry:
-    $ref: ./paths/services@{id}@retry.yaml
   /services/{id}/{action}:
     $ref: ./paths/services@{id}@{action}.yaml
   /tokens:

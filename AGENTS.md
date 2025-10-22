@@ -224,7 +224,7 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 #### Job
 - Represents a discrete operation to be performed by an agent
 - Actions are strings defined by the ServiceType's lifecycle schema (e.g., "create", "start", "stop", "delete")
-- States include: Pending, Processing, Completed, Failed (no Unsupported status)
+- States include: Pending, Processing, Completed, Failed
 - Prioritizes operations for execution order
 - Tracks execution timing and error messages
 - Error messages are used for lifecycle transition regexp matching (not stored separately as error codes)
@@ -417,11 +417,10 @@ Properties with `source: "system"` can use automatic pool allocation:
 #### Job States
 - **Pending**: Job created and waiting for an agent to claim it
 - **Processing**: Job claimed by an agent and in progress
-- **Completed**: Job successfully finished
-- **Failed**: Job encountered an error
+- **Completed**: Job successfully finished (terminal, non-active)
+- **Failed**: Job encountered an error (terminal, non-active)
   - Error message drives service state transition via lifecycle schema regexp matching
-  - Failed jobs may auto-retry after timeout
-  - No separate "Unsupported" status - unsupported operations are just Failed with specific error messages
+  - Failed jobs do not block new attempts - users can retry by calling the action again
 
 #### Job Processing Flow
 1. Service operation requested (create/start/stop/update/delete)
