@@ -146,6 +146,12 @@ ValidatePropertiesReq:
   required:
     - properties
   properties:
+    groupId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: Service group ID for context
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: Provider ID for service option validation
     properties:
       type: object
       description: Properties to validate against the schema

@@ -114,6 +114,7 @@ func ServiceTypeToRes(st *domain.ServiceType) *ServiceTypeRes {
 // ValidateReq represents the request body for property validation
 type ValidateReq struct {
 	GroupID    properties.UUID `json:"groupId"`
+	ProviderID properties.UUID `json:"providerId"`
 	Properties map[string]any  `json:"properties"`
 }
 
@@ -150,6 +151,7 @@ func (h *ServiceTypeHandler) Validate(w http.ResponseWriter, r *http.Request) {
 	params := &domain.ServicePropertyValidationParams{
 		ServiceTypeID: serviceType.ID,
 		GroupID:       req.GroupID,
+		ProviderID:    req.ProviderID,
 		Properties:    req.Properties,
 	}
 	_, err = h.commander.ValidateServiceProperties(r.Context(), params)

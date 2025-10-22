@@ -315,6 +315,38 @@ Content-Type: application/json
 ### PART 2: SERVICE OPTION VALIDATION TESTING
 ###############################################################################
 
+### ✅ TEST: Validate properties with valid image (should return valid: true)
+POST {{baseUrl}}/service-types/{{createVMServiceType.response.body.id}}/validate
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "groupId": "{{createServiceGroup.response.body.id}}",
+    "providerId": "{{createProvider.response.body.id}}",
+    "properties": {
+        "cpu": 4,
+        "memory": 8192,
+        "disk": 128,
+        "image": "ubuntu:20.04"
+    }
+}
+
+### ❌ TEST: Validate properties with invalid image (should return valid: false)
+POST {{baseUrl}}/service-types/{{createVMServiceType.response.body.id}}/validate
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "groupId": "{{createServiceGroup.response.body.id}}",
+    "providerId": "{{createProvider.response.body.id}}",
+    "properties": {
+        "cpu": 4,
+        "memory": 8192,
+        "disk": 128,
+        "image": "invalid-os:999"
+    }
+}
+
 ### ❌ TEST: Try to create service with invalid image (not in service options - should fail with 400)
 POST {{baseUrl}}/services
 Authorization: Bearer {{adminToken}}
