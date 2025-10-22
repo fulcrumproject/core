@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	ErrTokenExpired  = errors.New("token is expired")
-	ErrTokenNotFound = errors.New("token not found")
+	ErrTokenExpired = errors.New("token is expired")
+	ErrTokenInvalid = errors.New("invalid token")
 )
 
 // GormTokenAuthenticator implements domain.Authenticator using GORM database
@@ -35,7 +35,7 @@ func (a *GormTokenAuthenticator) Authenticate(ctx context.Context, tokenValue st
 	// Look up the token in the database
 	token, err := a.store.TokenRepo().FindByHashedValue(ctx, hashedValue)
 	if err != nil {
-		return nil, ErrTokenNotFound
+		return nil, ErrTokenInvalid
 	}
 
 	// Check if token is expired
