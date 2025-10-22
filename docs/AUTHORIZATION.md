@@ -123,10 +123,6 @@ Fulcrum Core uses a role-based authorization system where permissions are define
   - participant: services where it is the consumer participant
   - agent: none (not authorized)
   - Note: All lifecycle actions use the generic `POST /services/{id}/{action}` endpoint and are authorized as "update" operations
-- **retry**:
-  - admin: always
-  - participant: services where it is the consumer participant
-  - agent: none (not authorized)
 
 ### ServiceType
 - **get**:

@@ -708,9 +708,10 @@ stateDiagram-v2
     Processing --> Completed: Operation Successful
     Processing --> Failed: Operation Error
     Completed --> [*]
-    Failed --> Pending: Auto-retry (configurable)
-    Failed --> [*]: Max retries reached
+    Failed --> [*]
 ```
+
+**Note on Retrying**: Failed jobs are terminal (non-active). To retry an operation, users simply call the action endpoint again, which creates a new Pending job.
 
 **Note:** When a job fails, the error message is matched against lifecycle transition regexps to determine the next service state. This enables intelligent error handling and state routing based on error types.
 
@@ -799,8 +800,7 @@ The job management process follows these steps:
 6. **Job Maintenance**:
    - Background workers periodically:
      - Release stuck jobs (processing too long)
-     - Clean up old completed jobs after retention period
-     - Handle retry logic for failed jobs
+     - Clean up old completed/failed jobs after retention period
      - Monitor queue health and performance metrics
 
 ### Event Consumption API
