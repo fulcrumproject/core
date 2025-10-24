@@ -270,6 +270,11 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 					return fmt.Errorf("failed to release pool value %s: %w", value.ID, err)
 				}
 			}
+
+			// Clean up vault secrets from service properties (best-effort)
+			if svc.Properties != nil {
+				s.engine.CleanupVaultSecrets(ctx, map[string]any(*svc.Properties))
+			}
 		}
 
 		// Create event for the updated service

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"strings"
 
@@ -39,6 +40,55 @@ func NewEngine[C any](
 		schemaValidators: schemaValidators,
 		generators:       generators,
 		vault:            vault,
+	}
+}
+
+// CleanupVaultSecrets deletes all vault secrets referenced in the properties
+// This is a best-effort operation - errors are logged but don't fail the operation
+func (e *Engine[C]) CleanupVaultSecrets(ctx context.Context, properties map[string]any) {
+	if e.vault == nil || properties == nil {
+		return
+	}
+
+	references := extractVaultReferences(properties)
+	for _, ref := range references {
+		if err := e.vault.Delete(ctx, ref); err != nil {
+			// Log error but continue - this is best-effort cleanup
+			slog.Warn("Failed to delete vault secret during cleanup", "reference", ref, "error", err)
+		} else {
+			slog.Debug("Deleted vault secret", "reference", ref)
+		}
+	}
+}
+
+// extractVaultReferences recursively extracts all vault:// references from properties
+// Returns a slice of reference strings (without the vault:// prefix)
+func extractVaultReferences(properties map[string]any) []string {
+	var references []string
+	extractVaultReferencesFromValue(properties, &references)
+	return references
+}
+
+// extractVaultReferencesFromValue recursively extracts vault references from any value type
+func extractVaultReferencesFromValue(value any, references *[]string) {
+	switch v := value.(type) {
+	case string:
+		// Check if this is a vault reference
+		if strings.HasPrefix(v, "vault://") {
+			ref := strings.TrimPrefix(v, "vault://")
+			*references = append(*references, ref)
+		}
+	case map[string]any:
+		// Recursively process object properties
+		for _, propValue := range v {
+			extractVaultReferencesFromValue(propValue, references)
+		}
+	case []any:
+		// Recursively process array items
+		for _, item := range v {
+			extractVaultReferencesFromValue(item, references)
+		}
+	// Ignore other types (numbers, booleans, nil)
 	}
 }
 

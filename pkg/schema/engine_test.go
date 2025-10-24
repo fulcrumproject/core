@@ -3,6 +3,7 @@ package schema
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -640,4 +641,242 @@ func TestEngine_WithMockGenerator(t *testing.T) {
 
 	// Verify mock was called
 	mockGenerator.AssertExpectations(t)
+}
+
+func TestExtractVaultReferences(t *testing.T) {
+	tests := []struct {
+		name       string
+		properties map[string]any
+		expected   []string
+	}{
+		{
+			name: "single string reference",
+			properties: map[string]any{
+				"apiKey": "vault://abc123",
+			},
+			expected: []string{"abc123"},
+		},
+		{
+			name: "multiple references",
+			properties: map[string]any{
+				"apiKey":      "vault://abc123",
+				"password":    "vault://def456",
+				"regularProp": "not-a-secret",
+			},
+			expected: []string{"abc123", "def456"},
+		},
+		{
+			name: "nested object with reference",
+			properties: map[string]any{
+				"database": map[string]any{
+					"host":     "localhost",
+					"password": "vault://xyz789",
+				},
+			},
+			expected: []string{"xyz789"},
+		},
+		{
+			name: "array with references",
+			properties: map[string]any{
+				"secrets": []any{
+					"vault://ref1",
+					"vault://ref2",
+					"not-a-secret",
+				},
+			},
+			expected: []string{"ref1", "ref2"},
+		},
+		{
+			name: "deeply nested structure",
+			properties: map[string]any{
+				"level1": map[string]any{
+					"level2": map[string]any{
+						"level3": []any{
+							map[string]any{
+								"secret": "vault://deep123",
+							},
+						},
+					},
+				},
+			},
+			expected: []string{"deep123"},
+		},
+		{
+			name: "no vault references",
+			properties: map[string]any{
+				"name":   "test",
+				"age":    30,
+				"active": true,
+			},
+			expected: []string{},
+		},
+		{
+			name:       "empty properties",
+			properties: map[string]any{},
+			expected:   []string{},
+		},
+		{
+			name: "mixed types",
+			properties: map[string]any{
+				"secret1": "vault://secret1",
+				"number":  42,
+				"bool":    true,
+				"null":    nil,
+				"secret2": "vault://secret2",
+				"object": map[string]any{
+					"nested": "vault://secret3",
+				},
+			},
+			expected: []string{"secret1", "secret2", "secret3"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractVaultReferences(tt.properties)
+			if len(tt.expected) == 0 && len(result) == 0 {
+				return // Both empty, test passes
+			}
+			if len(result) != len(tt.expected) {
+				t.Errorf("expected %d references, got %d", len(tt.expected), len(result))
+			}
+			// Check all expected references are present
+			for _, exp := range tt.expected {
+				found := false
+				for _, res := range result {
+					if res == exp {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected reference %s not found in result", exp)
+				}
+			}
+		})
+	}
+}
+
+func TestExtractVaultReferences_EmptyPrefix(t *testing.T) {
+	properties := map[string]any{
+		"notAVaultRef": "vault://", // Empty reference after prefix
+	}
+
+	result := extractVaultReferences(properties)
+	if len(result) != 1 || result[0] != "" {
+		t.Errorf("expected one empty string reference, got %v", result)
+	}
+}
+
+func TestEngine_CleanupVaultSecrets(t *testing.T) {
+	mockVault := NewMockVault(t)
+	engine := NewEngine[TestContext](nil, nil, nil, mockVault)
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		properties map[string]any
+		setupMock  func()
+	}{
+		{
+			name: "cleanup single reference",
+			properties: map[string]any{
+				"apiKey": "vault://abc123",
+			},
+			setupMock: func() {
+				mockVault.On("Delete", mock.Anything, "abc123").Return(nil).Once()
+			},
+		},
+		{
+			name: "cleanup multiple references",
+			properties: map[string]any{
+				"apiKey":   "vault://abc123",
+				"password": "vault://def456",
+			},
+			setupMock: func() {
+				mockVault.On("Delete", mock.Anything, "abc123").Return(nil).Once()
+				mockVault.On("Delete", mock.Anything, "def456").Return(nil).Once()
+			},
+		},
+		{
+			name: "cleanup nested references",
+			properties: map[string]any{
+				"database": map[string]any{
+					"password": "vault://xyz789",
+				},
+			},
+			setupMock: func() {
+				mockVault.On("Delete", mock.Anything, "xyz789").Return(nil).Once()
+			},
+		},
+		{
+			name: "no references to cleanup",
+			properties: map[string]any{
+				"name": "test",
+			},
+			setupMock: func() {
+				// No mock expectations - vault should not be called
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset mock for each test
+			mockVault.ExpectedCalls = nil
+			mockVault.Calls = nil
+
+			tt.setupMock()
+
+			// Call cleanup - should not return error (best-effort)
+			engine.CleanupVaultSecrets(ctx, tt.properties)
+
+			// Verify mock expectations
+			mockVault.AssertExpectations(t)
+		})
+	}
+}
+
+func TestEngine_CleanupVaultSecrets_WithErrors(t *testing.T) {
+	mockVault := NewMockVault(t)
+	engine := NewEngine[TestContext](nil, nil, nil, mockVault)
+	ctx := context.Background()
+
+	properties := map[string]any{
+		"secret1": "vault://abc123",
+		"secret2": "vault://def456",
+	}
+
+	// First delete succeeds, second fails
+	mockVault.On("Delete", mock.Anything, "abc123").Return(nil).Once()
+	mockVault.On("Delete", mock.Anything, "def456").Return(fmt.Errorf("vault error")).Once()
+
+	// Should not panic or fail - best effort cleanup
+	engine.CleanupVaultSecrets(ctx, properties)
+
+	mockVault.AssertExpectations(t)
+}
+
+func TestEngine_CleanupVaultSecrets_NilVault(t *testing.T) {
+	engine := NewEngine[TestContext](nil, nil, nil, nil)
+	ctx := context.Background()
+
+	properties := map[string]any{
+		"secret": "vault://abc123",
+	}
+
+	// Should not panic when vault is nil
+	engine.CleanupVaultSecrets(ctx, properties)
+}
+
+func TestEngine_CleanupVaultSecrets_NilProperties(t *testing.T) {
+	mockVault := NewMockVault(t)
+	engine := NewEngine[TestContext](nil, nil, nil, mockVault)
+	ctx := context.Background()
+
+	// Should not panic or call vault when properties is nil
+	engine.CleanupVaultSecrets(ctx, nil)
+
+	// Verify vault was not called
+	mockVault.AssertNotCalled(t, "Delete")
 }
