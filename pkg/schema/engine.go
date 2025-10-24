@@ -75,28 +75,44 @@ func (e *Engine[C]) apply(
 	newProperties map[string]any,
 ) (map[string]any, error) {
 	result := make(map[string]any)
+	var validationErrors []ValidationErrorDetail
 
-	// Process each property
+	// Process each property, collecting all validation errors
 	for propName, propDef := range schema.Properties {
 		oldValue := oldProperties[propName]
 		newValue := newProperties[propName]
 
 		finalValue, err := e.processProperty(ctx, schemaCtx, operation, propName, propDef, oldValue, newValue)
 		if err != nil {
-			return nil, err
+			validationErrors = append(validationErrors, ValidationErrorDetail{
+				Path:    propName,
+				Message: err.Error(),
+			})
+			continue
 		}
 
 		// Store result if not nil
 		if finalValue != nil {
 			result[propName] = finalValue
 		} else if propDef.Required && oldValue == nil {
-			return nil, fmt.Errorf("required property '%s' is missing", propName)
+			validationErrors = append(validationErrors, ValidationErrorDetail{
+				Path:    propName,
+				Message: "required property is missing",
+			})
 		}
 	}
 
 	// Run schema-level validators (cross-property validation)
 	if err := e.validateSchema(ctx, schemaCtx, operation, schema.Validators, oldProperties, result); err != nil {
-		return nil, err
+		validationErrors = append(validationErrors, ValidationErrorDetail{
+			Path:    "",
+			Message: err.Error(),
+		})
+	}
+
+	// Return all validation errors at once
+	if len(validationErrors) > 0 {
+		return nil, NewValidationError(validationErrors)
 	}
 
 	return result, nil

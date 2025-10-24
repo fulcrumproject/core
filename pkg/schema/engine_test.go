@@ -407,6 +407,75 @@ func TestEngine_ApplyCreate_WithSecrets(t *testing.T) {
 	vault.AssertExpectations(t)
 }
 
+func TestEngine_ApplyCreate_MultipleValidationErrors(t *testing.T) {
+	engine := newTestEngine()
+	ctx := context.Background()
+	testCtx := TestContext{Actor: "user"}
+
+	schema := Schema{
+		Properties: map[string]PropertyDefinition{
+			"name": {
+				Type:     "string",
+				Required: true,
+				Validators: []ValidatorConfig{
+					{Type: "minLength", Config: map[string]any{"value": 5}},
+				},
+			},
+			"age": {
+				Type:     "integer",
+				Required: true,
+				Validators: []ValidatorConfig{
+					{Type: "min", Config: map[string]any{"value": 18}},
+				},
+			},
+			"email": {
+				Type:     "string",
+				Required: true,
+				Validators: []ValidatorConfig{
+					{Type: "pattern", Config: map[string]any{"pattern": "^[^@]+@[^@]+\\.[^@]+$"}},
+				},
+			},
+		},
+	}
+
+	properties := map[string]any{
+		"name":  "Bob",   // Too short (< 5 chars)
+		"age":   15,      // Too young (< 18)
+		"email": "invalid", // Invalid email format
+	}
+
+	_, err := engine.ApplyCreate(ctx, testCtx, schema, properties)
+	if err == nil {
+		t.Fatal("ApplyCreate() expected error, got nil")
+	}
+
+	// Should be a ValidationError with all 3 errors
+	validationErr, ok := err.(ValidationError)
+	if !ok {
+		t.Fatalf("expected ValidationError, got %T: %v", err, err)
+	}
+
+	if len(validationErr.Errors) != 3 {
+		t.Errorf("expected 3 validation errors, got %d", len(validationErr.Errors))
+	}
+
+	// Verify each error is present
+	errorPaths := make(map[string]bool)
+	for _, e := range validationErr.Errors {
+		errorPaths[e.Path] = true
+	}
+
+	if !errorPaths["name"] {
+		t.Error("expected validation error for 'name' property")
+	}
+	if !errorPaths["age"] {
+		t.Error("expected validation error for 'age' property")
+	}
+	if !errorPaths["email"] {
+		t.Error("expected validation error for 'email' property")
+	}
+}
+
 func TestEngine_ValidateSchema(t *testing.T) {
 	engine := newTestEngine()
 

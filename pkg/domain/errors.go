@@ -51,26 +51,3 @@ func (e UnauthorizedError) Error() string {
 func (e UnauthorizedError) Unwrap() error {
 	return e.Err
 }
-
-type ValidationError struct {
-	Errors []ValidationErrorDetail `json:"errors"`
-}
-
-type ValidationErrorDetail struct {
-	Path    string `json:"path"`
-	Message string `json:"message"`
-}
-
-func NewValidationError(errors []ValidationErrorDetail) ValidationError {
-	return ValidationError{Errors: errors}
-}
-
-func (e ValidationError) Error() string {
-	if len(e.Errors) == 0 {
-		return "validation failed"
-	}
-	if len(e.Errors) == 1 {
-		return fmt.Sprintf("validation failed: %s", e.Errors[0].Message)
-	}
-	return fmt.Sprintf("validation failed: %d errors", len(e.Errors))
-}

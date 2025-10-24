@@ -123,8 +123,8 @@ type ValidateReq struct {
 
 // ValidateRes represents the response body for property validation
 type ValidateRes struct {
-	Valid  bool                           `json:"valid"`
-	Errors []domain.ValidationErrorDetail `json:"errors,omitempty"`
+	Valid  bool                            `json:"valid"`
+	Errors []schema.ValidationErrorDetail `json:"errors,omitempty"`
 }
 
 func (h *ServiceTypeHandler) Validate(w http.ResponseWriter, r *http.Request) {
@@ -179,21 +179,25 @@ func (h *ServiceTypeHandler) Validate(w http.ResponseWriter, r *http.Request) {
 
 	// Validate properties using the schema engine
 	_, err = h.engine.ApplyCreate(ctx, schemaCtx, *serviceType.PropertySchema, req.Properties)
-
+	
 	// Build response
 	res := ValidateRes{
 		Valid:  err == nil,
-		Errors: []domain.ValidationErrorDetail{},
+		Errors: []schema.ValidationErrorDetail{},
 	}
 
 	if err != nil {
 		// Extract validation errors
-		// For now, return error as a single validation error
-		// TODO: Enhance to parse structured errors from engine
-		res.Errors = append(res.Errors, domain.ValidationErrorDetail{
-			Path:    "",
-			Message: err.Error(),
-		})
+		if validationErr, ok := err.(schema.ValidationError); ok {
+			// Engine returned structured validation errors - return them all
+			res.Errors = validationErr.Errors
+		} else {
+			// Other error - wrap it
+			res.Errors = append(res.Errors, schema.ValidationErrorDetail{
+				Path:    "",
+				Message: err.Error(),
+			})
+		}
 	}
 
 	render.Status(r, http.StatusOK)
