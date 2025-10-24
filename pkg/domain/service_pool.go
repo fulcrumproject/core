@@ -89,8 +89,9 @@ func (sp *ServicePool) Validate() error {
 	}
 
 	// Validate PropertyType
-	if !slices.Contains(PrimitivePropertyTypes, sp.PropertyType) {
-		return fmt.Errorf("invalid property type: %s (must be a primitive property type)", sp.PropertyType)
+	validTypes := []string{"string", "integer", "number", "boolean", "json"}
+	if !slices.Contains(validTypes, sp.PropertyType) {
+		return fmt.Errorf("invalid property type: %s (must be one of: %v)", sp.PropertyType, validTypes)
 	}
 
 	if err := sp.GeneratorType.Validate(); err != nil {

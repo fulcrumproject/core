@@ -95,8 +95,12 @@ func main() {
 	store := database.NewGormStore(db)
 	metricEntryRepo := database.NewMetricEntryRepository(metricDb)
 
+	// Initialize schema engine for service property validation
+	// TODO: Implement proper vault instead of nil
+	propertyEngine := domain.NewServicePropertyEngine(store, nil)
+
 	// Initialize commanders
-	serviceCmd := domain.NewServiceCommander(store)
+	serviceCmd := domain.NewServiceCommander(store, propertyEngine)
 	serviceTypeCmd := domain.NewServiceTypeCommander(store)
 	serviceGroupCmd := domain.NewServiceGroupCommander(store)
 	serviceOptionTypeCmd := domain.NewServiceOptionTypeCommander(store)

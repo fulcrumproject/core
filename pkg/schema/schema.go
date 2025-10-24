@@ -2,7 +2,12 @@
 // validating, and processing structured data with pluggable validators and generators.
 package schema
 
-import "context"
+import (
+	"context"
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
+)
 
 // Operation represents the type of write operation being performed
 type Operation string
@@ -16,6 +21,29 @@ const (
 type Schema struct {
 	Properties map[string]PropertyDefinition `json:"properties"` // Property definitions
 	Validators []SchemaValidatorConfig       `json:"validators"` // Cross-field validators
+}
+
+// Value implements driver.Valuer interface for database serialization
+func (s Schema) Value() (driver.Value, error) {
+	if s.Properties == nil && s.Validators == nil {
+		return nil, nil
+	}
+	return json.Marshal(s)
+}
+
+// Scan implements sql.Scanner interface for database deserialization
+func (s *Schema) Scan(value any) error {
+	if value == nil {
+		*s = Schema{}
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("failed to unmarshal Schema value: %v", value)
+	}
+
+	return json.Unmarshal(bytes, s)
 }
 
 // SchemaValidatorConfig defines a schema-level validator configuration

@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/fulcrumproject/core/pkg/auth"
@@ -11,6 +9,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
@@ -77,26 +76,26 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 
 // CreateServiceTypeReq represents the request body for creating service types
 type CreateServiceTypeReq struct {
-	Name            string                        `json:"name"`
-	PropertySchema  *domain.ServicePropertySchema `json:"propertySchema,omitempty"`
-	LifecycleSchema *domain.LifecycleSchema       `json:"lifecycleSchema,omitempty"`
+	Name            string                  `json:"name"`
+	PropertySchema  *schema.Schema          `json:"propertySchema,omitempty"`
+	LifecycleSchema *domain.LifecycleSchema `json:"lifecycleSchema,omitempty"`
 }
 
 // UpdateServiceTypeReq represents the request body for updating service types
 type UpdateServiceTypeReq struct {
-	Name            *string                       `json:"name"`
-	PropertySchema  *domain.ServicePropertySchema `json:"propertySchema,omitempty"`
-	LifecycleSchema *domain.LifecycleSchema       `json:"lifecycleSchema,omitempty"`
+	Name            *string                 `json:"name"`
+	PropertySchema  *schema.Schema          `json:"propertySchema,omitempty"`
+	LifecycleSchema *domain.LifecycleSchema `json:"lifecycleSchema,omitempty"`
 }
 
 // ServiceTypeRes represents the response body for service type operations
 type ServiceTypeRes struct {
-	ID              properties.UUID               `json:"id"`
-	Name            string                        `json:"name"`
-	PropertySchema  *domain.ServicePropertySchema `json:"propertySchema,omitempty"`
-	LifecycleSchema *domain.LifecycleSchema       `json:"lifecycleSchema,omitempty"`
-	CreatedAt       JSONUTCTime                   `json:"createdAt"`
-	UpdatedAt       JSONUTCTime                   `json:"updatedAt"`
+	ID              properties.UUID         `json:"id"`
+	Name            string                  `json:"name"`
+	PropertySchema  *schema.Schema          `json:"propertySchema,omitempty"`
+	LifecycleSchema *domain.LifecycleSchema `json:"lifecycleSchema,omitempty"`
+	CreatedAt       JSONUTCTime             `json:"createdAt"`
+	UpdatedAt       JSONUTCTime             `json:"updatedAt"`
 }
 
 // ServiceTypeToRes converts a domain.ServiceType to a ServiceTypeResponse
@@ -125,56 +124,13 @@ type ValidateRes struct {
 }
 
 func (h *ServiceTypeHandler) Validate(w http.ResponseWriter, r *http.Request) {
-	id := middlewares.MustGetID(r.Context())
-
-	// Get the service type
-	serviceType, err := h.querier.Get(r.Context(), id)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	// Check if service type has a property schema
-	if serviceType.PropertySchema == nil {
-		render.Render(w, r, ErrInvalidRequest(errors.New("service type has no property schema defined")))
-		return
-	}
-
-	// Parse request body
-	var req ValidateReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
-	// Validate properties against schema
-	params := &domain.ServicePropertyValidationParams{
-		ServiceTypeID: serviceType.ID,
-		GroupID:       req.GroupID,
-		ProviderID:    req.ProviderID,
-		Properties:    req.Properties,
-	}
-	_, err = h.commander.ValidateServiceProperties(r.Context(), params)
-
-	if err != nil {
-		validationErrors, ok := err.(domain.ValidationError)
-		if !ok {
-			render.Render(w, r, ErrDomain(err))
-			return
-		}
-		response := ValidateRes{
-			Valid:  false,
-			Errors: validationErrors.Errors,
-		}
-		render.JSON(w, r, response)
-		return
-	}
-
-	response := ValidateRes{
-		Valid:  true,
-		Errors: []domain.ValidationErrorDetail{},
-	}
-	render.JSON(w, r, response)
+	// TODO: This endpoint needs to be reimplemented using the schema engine
+	// For now, return a 501 Not Implemented error
+	render.Render(w, r, &ErrRes{
+		HTTPStatusCode: 501,
+		StatusText:     "Not Implemented",
+		ErrorText:      "Property validation has been moved to service creation/update endpoints",
+	})
 }
 
 // Adapter functions that convert request structs to commander method calls

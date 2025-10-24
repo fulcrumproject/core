@@ -250,8 +250,21 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 
 		// Release pool allocations if service reached a terminal state
 		if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
-			if err := ReleaseServicePoolAllocations(ctx, store, svc.ID); err != nil {
-				return fmt.Errorf("failed to release pool allocations: %w", err)
+			// Find all ServicePoolValues allocated to this service and release them
+			allocatedValues, err := store.ServicePoolValueRepo().FindByService(ctx, svc.ID)
+			if err != nil {
+				return fmt.Errorf("failed to find allocated pool values: %w", err)
+			}
+
+			// Release each value
+			for _, value := range allocatedValues {
+				value.ServiceID = nil
+				value.PropertyName = nil
+				value.AllocatedAt = nil
+
+				if err := store.ServicePoolValueRepo().Update(ctx, value); err != nil {
+					return fmt.Errorf("failed to release pool value %s: %w", value.ID, err)
+				}
 			}
 		}
 

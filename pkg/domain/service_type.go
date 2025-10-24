@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 )
 
 const (
@@ -17,9 +18,9 @@ const (
 // ServiceType represents a type of service that can be provided
 type ServiceType struct {
 	BaseEntity
-	Name            string                 `json:"name" gorm:"not null;unique"`
-	PropertySchema  *ServicePropertySchema `json:"propertySchema,omitempty" gorm:"type:jsonb"`
-	LifecycleSchema *LifecycleSchema       `json:"lifecycleSchema,omitempty" gorm:"type:jsonb"`
+	Name            string           `json:"name" gorm:"not null;unique"`
+	PropertySchema  *schema.Schema   `json:"propertySchema,omitempty" gorm:"type:jsonb"`
+	LifecycleSchema *LifecycleSchema `json:"lifecycleSchema,omitempty" gorm:"type:jsonb"`
 }
 
 // NewServiceType creates a new service type without validation
@@ -171,30 +172,19 @@ type ServiceTypeCommander interface {
 
 	// Delete removes a service type by ID after checking for dependencies
 	Delete(ctx context.Context, id properties.UUID) error
-
-	// ValidateServiceProperties validates properties against a service type's schema
-	ValidateServiceProperties(ctx context.Context, params *ServicePropertyValidationParams) (map[string]any, error)
-}
-
-// ServicePropertyValidationParams provides the parameters for validating service properties
-type ServicePropertyValidationParams struct {
-	ServiceTypeID properties.UUID
-	GroupID       properties.UUID
-	ProviderID    properties.UUID
-	Properties    map[string]any
 }
 
 type CreateServiceTypeParams struct {
-	Name            string                 `json:"name"`
-	PropertySchema  *ServicePropertySchema `json:"propertySchema,omitempty"`
-	LifecycleSchema *LifecycleSchema       `json:"lifecycleSchema,omitempty"`
+	Name            string           `json:"name"`
+	PropertySchema  *schema.Schema   `json:"propertySchema,omitempty"`
+	LifecycleSchema *LifecycleSchema `json:"lifecycleSchema,omitempty"`
 }
 
 type UpdateServiceTypeParams struct {
-	ID              properties.UUID        `json:"id"`
-	Name            *string                `json:"name"`
-	PropertySchema  *ServicePropertySchema `json:"propertySchema,omitempty"`
-	LifecycleSchema *LifecycleSchema       `json:"lifecycleSchema,omitempty"`
+	ID              properties.UUID  `json:"id"`
+	Name            *string          `json:"name"`
+	PropertySchema  *schema.Schema   `json:"propertySchema,omitempty"`
+	LifecycleSchema *LifecycleSchema `json:"lifecycleSchema,omitempty"`
 }
 
 // serviceTypeCommander is the concrete implementation of ServiceTypeCommander
@@ -312,47 +302,4 @@ func (c *serviceTypeCommander) Delete(ctx context.Context, id properties.UUID) e
 
 		return nil
 	})
-}
-
-// ValidateServiceProperties validates the properties against the service type schema
-func (c *serviceTypeCommander) ValidateServiceProperties(ctx context.Context, params *ServicePropertyValidationParams) (map[string]any, error) {
-	return ValidateServiceProperties(ctx, c.store, params)
-}
-
-// ValidateProperties validates the properties against the service type schema
-func ValidateServiceProperties(ctx context.Context, store Store, params *ServicePropertyValidationParams) (map[string]any, error) {
-	// Fetch the service type to get its schema
-	serviceType, err := store.ServiceTypeRepo().Get(ctx, params.ServiceTypeID)
-	if err != nil {
-		return nil, err
-	}
-
-	// If no schema, return properties as-is
-	if serviceType.PropertySchema == nil {
-		return params.Properties, nil
-	}
-
-	// Apply defaults to properties
-	propertiesWithDefaults := applyServicePropertiesDefaults(params.Properties, *serviceType.PropertySchema)
-
-	// Create validation context
-	validationCtx := &ServicePropertyValidationCtx{
-		Context:    ctx,
-		Store:      store,
-		Schema:     *serviceType.PropertySchema,
-		GroupID:    params.GroupID,
-		ProviderID: params.ProviderID,
-		Properties: propertiesWithDefaults,
-	}
-
-	// Validate properties against schema
-	validationErrors, err := validateServiceProperties(validationCtx)
-	if err != nil {
-		return nil, err
-	}
-	if len(validationErrors) > 0 {
-		return nil, NewValidationError(validationErrors)
-	}
-
-	return propertiesWithDefaults, nil
 }
