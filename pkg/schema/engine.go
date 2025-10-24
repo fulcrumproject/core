@@ -83,7 +83,7 @@ func (e *Engine[C]) CleanupEphemeralSecrets(ctx context.Context, schema Schema, 
 // Only primitive types (string, integer, number, boolean, json) can be secrets
 func extractEphemeralSecretProperties(schema Schema, properties map[string]any) map[string]any {
 	result := make(map[string]any)
-	
+
 	for propName, propDef := range schema.Properties {
 		// Only primitive types can be secrets (validated in schema validation)
 		// Check if this property is an ephemeral secret
@@ -93,7 +93,7 @@ func extractEphemeralSecretProperties(schema Schema, properties map[string]any) 
 			}
 			continue // Don't recurse into secrets
 		}
-		
+
 		// Recursively check nested objects (objects themselves cannot be secrets)
 		if propDef.Type == "object" && propDef.Properties != nil {
 			if nestedProps, ok := properties[propName].(map[string]any); ok {
@@ -105,13 +105,13 @@ func extractEphemeralSecretProperties(schema Schema, properties map[string]any) 
 				}
 			}
 		}
-		
+
 		// Arrays: the array itself cannot be a secret, check if array items contain secrets
 		if propDef.Type == "array" && propDef.Items != nil {
 			if arrayValue, exists := properties[propName]; exists {
 				if arrayItems, ok := arrayValue.([]any); ok {
 					var resultItems []any
-					
+
 					// If items are objects, recursively check their properties
 					if propDef.Items.Type == "object" && propDef.Items.Properties != nil {
 						itemSchema := Schema{Properties: propDef.Items.Properties}
@@ -124,7 +124,7 @@ func extractEphemeralSecretProperties(schema Schema, properties map[string]any) 
 							}
 						}
 					}
-					
+
 					if len(resultItems) > 0 {
 						result[propName] = resultItems
 					}
@@ -132,7 +132,7 @@ func extractEphemeralSecretProperties(schema Schema, properties map[string]any) 
 			}
 		}
 	}
-	
+
 	return result
 }
 

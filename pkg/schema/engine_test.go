@@ -1032,7 +1032,7 @@ func TestExtractEphemeralSecretProperties(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := extractEphemeralSecretProperties(tt.schema, tt.properties)
-			
+
 			if len(tt.expected) == 0 {
 				if len(result) != 0 {
 					t.Errorf("expected empty result, got %v", result)
@@ -1043,7 +1043,7 @@ func TestExtractEphemeralSecretProperties(t *testing.T) {
 			// Convert to JSON for easier comparison
 			expectedJSON, _ := json.Marshal(tt.expected)
 			resultJSON, _ := json.Marshal(result)
-			
+
 			if string(expectedJSON) != string(resultJSON) {
 				t.Errorf("extractEphemeralSecretProperties() mismatch\nExpected: %s\nGot: %s", expectedJSON, resultJSON)
 			}
