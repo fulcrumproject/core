@@ -13,6 +13,7 @@ The system is built as a RESTful API and enables organizations to:
 - Collect and analyze metrics from agents and services
 - Maintain a detailed event log of all system activities
 - Coordinate service operations with agents through a robust job queue system
+- Securely store and manage sensitive service properties through encrypted vault storage
 
 ## Documentation Structure
 
@@ -277,7 +278,17 @@ classDiagram
             createdAt : datetime
             updatedAt : datetime
         }
+        
+        class VaultSecret {
+            id : properties.UUID
+            reference : string
+            encryptedValue : bytes
+            createdAt : datetime
+            updatedAt : datetime
+        }
     }
+    
+    Service "1" --> "0..N" VaultSecret : may reference secrets
 
     namespace Metrics {
         class MetricEntry {
@@ -390,6 +401,16 @@ classDiagram
     
     Each job transitions service status based on the
     lifecycle schema definition"
+    
+    note for VaultSecret "Vault secrets provide secure storage
+    for sensitive service properties:
+    - AES-256-GCM encrypted storage
+    - Properties marked as secret are stored as vault://reference
+    - Two types: persistent (until deletion) and ephemeral (per job)
+    - Only agents can resolve secrets via API endpoint
+    - Automatic cleanup based on secret type
+    - Only primitive types can be secrets
+    - Nested secrets in objects/arrays supported"
     
 ```
 
@@ -561,6 +582,25 @@ classDiagram
    - Used by external systems to maintain consistent event processing state
 
 ##### Security
+
+1. **Token**
+   - Provides secure authentication mechanism for system access
+   - Supports different roles: admin, participant, agent
+   - Contains hashed value stored in database to verify authentication
+   - Has expiration date for enhanced security
+   - Scoped to specific Participant or Agent based on role
+
+2. **VaultSecret**
+   - Securely stores sensitive service property values using AES-256-GCM encryption
+   - Properties marked as secret are stored with vault references (`vault://reference`)
+   - Stores encrypted values that are only accessible via secure resolution endpoint
+   - Two secret types:
+     - **Persistent**: Long-lived secrets cleaned up on service deletion (API keys, credentials)
+     - **Ephemeral**: Short-lived secrets cleaned up after each job completion (temporary passwords, tokens)
+   - Only agents can resolve vault references to retrieve actual secret values
+   - Encryption key configured via `VAULT_ENCRYPTION_KEY` environment variable
+   - Automatic cleanup based on secret type and service lifecycle
+   - Supports secrets in primitive types and nested within objects/arrays
 
 Fulcrum Core implements a comprehensive authorization system with role-based access control (RBAC):
 
@@ -802,6 +842,75 @@ The job management process follows these steps:
      - Release stuck jobs (processing too long)
      - Clean up old completed/failed jobs after retention period
      - Monitor queue health and performance metrics
+
+### Vault Secrets Management
+
+The vault secrets system provides secure storage and management of sensitive service properties using AES-256-GCM encryption. This system ensures that sensitive data like passwords, API keys, and tokens are never exposed in plain text through the API or database.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant API as Fulcrum Core API
+    participant Vault as Vault Storage
+    participant Agent
+    participant Service as Cloud Service
+
+    %% Secret Storage Flow
+    User->>API: Create service with secret property
+    Note right of User: password: "mysecretpass"
+    API->>Vault: Store encrypted secret
+    Vault-->>API: Return reference (vault://abc123)
+    API->>API: Replace value with reference
+    Note right of API: password: "vault://abc123"
+    API-->>User: Service created
+
+    %% Secret Resolution Flow
+    Agent->>API: Get pending job
+    API-->>Agent: Job with service properties
+    Note right of Agent: password: "vault://abc123"
+    Agent->>API: GET /vault/secrets/abc123
+    API->>Vault: Retrieve encrypted secret
+    Vault-->>API: Decrypted value
+    API-->>Agent: Return actual value
+    Note right of Agent: password: "mysecretpass"
+    Agent->>Service: Use actual password
+
+    %% Secret Cleanup (Ephemeral)
+    Agent->>API: Complete job
+    API->>Vault: Delete ephemeral secrets
+    Note right of API: Cleanup after each job
+
+    %% Secret Cleanup (Persistent)
+    User->>API: Delete service
+    API->>Vault: Delete all remaining secrets
+    Note right of API: Cleanup on service deletion
+```
+
+#### Key Features
+
+1. **Secure Storage**:
+   - All secrets encrypted with AES-256-GCM before storage
+   - Encryption key configured via `VAULT_ENCRYPTION_KEY` environment variable
+   - Secrets never exposed in plain text through API responses
+
+2. **Secret Types**:
+   - **Persistent**: Long-lived secrets (API keys, credentials) cleaned up on service deletion
+   - **Ephemeral**: Short-lived secrets (temporary passwords, one-time tokens) cleaned up after each job
+
+3. **Agent Resolution**:
+   - Agents retrieve actual secret values via `GET /api/v1/vault/secrets/{reference}`
+   - Only agents can access the vault resolution endpoint (enforced by authentication middleware)
+   - Agents receive decrypted values for use in provisioning operations
+
+4. **Automatic Cleanup**:
+   - Ephemeral secrets: Cleaned up after every job completion (success or failure)
+   - Persistent secrets: Cleaned up when service reaches terminal state
+   - All cleanup operations are best-effort (errors logged, don't fail operations)
+
+5. **Restrictions**:
+   - Only primitive types can be secrets (string, integer, number, boolean, json)
+   - Objects and arrays cannot be secrets themselves, but can contain secret properties
+   - Nested secrets in objects and arrays are fully supported
 
 ### Event Consumption API
 

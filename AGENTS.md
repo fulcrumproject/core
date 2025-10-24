@@ -188,6 +188,7 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 - Collect and analyze metrics from agents and services
 - Maintain a comprehensive audit trail of all system operations
 - Coordinate service operations with agents through a robust job queue system
+- Securely store and manage sensitive service properties through encrypted vault storage
 
 ### Core Entities
 
@@ -281,6 +282,20 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 - Tracks allocation status: serviceId, propertyName, allocatedAt
 - Created manually for `list` pools, automatically for `subnet` pools
 - Released when service is deleted (marked available for reuse)
+
+#### Vault Secrets System
+- Securely stores sensitive service property values using AES-256-GCM encryption
+- Properties can be marked as secrets in the service type property schema
+- When a property is marked as secret, user provides the actual value, system stores it in vault and replaces it with `vault://reference` in the service properties
+- Two secret types:
+  - **Persistent**: Cleaned up when service reaches terminal state (e.g., API keys, credentials)
+  - **Ephemeral**: Cleaned up after each job completion (e.g., temporary passwords, one-time tokens)
+- Only primitive types can be secrets (string, integer, number, boolean, json), not objects or arrays
+- However, object properties and array items can contain secret properties
+- Agents resolve secrets via `GET /api/v1/vault/secrets/{reference}` endpoint
+- Vault interface defined in `pkg/schema`, implementation in `pkg/database`
+- Encryption key configured via `VAULT_ENCRYPTION_KEY` environment variable
+- All cleanup operations are best-effort (errors logged, don't fail operations)
 
 ### Entity Relationships
 - Participant has many Agents (when acting as provider)
@@ -385,6 +400,17 @@ Service properties support multiple types including:
   - Used for pool values and options that can be strings, objects, or arrays
   - Backend validation ensures valid JSON structure
   - Example: IP pools may use `{"ip": "192.168.1.10", "gateway": "192.168.1.1"}` or simple strings
+
+#### Property Secrets
+Properties can be marked as secrets for secure storage:
+- **Secret Field**: Property definition includes `secret` object with `type` field
+- **Secret Types**:
+  - `persistent`: Stored until service deletion (API keys, long-lived credentials)
+  - `ephemeral`: Deleted after each job completion (temporary tokens, one-time passwords)
+- **Storage**: User provides actual value → system stores in encrypted vault → property contains `vault://reference`
+- **Resolution**: Agents call `GET /api/v1/vault/secrets/{reference}` to retrieve actual value
+- **Restrictions**: Only primitive types (string, integer, number, boolean, json) can be secrets
+- **Cleanup**: Ephemeral secrets cleaned after every job; persistent secrets cleaned on service deletion
 
 #### Property Validators
 Properties can have validators including:

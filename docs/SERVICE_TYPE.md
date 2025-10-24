@@ -24,16 +24,36 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
 ```json
 {
   "propertyName": {
-    "type": "string|integer|number|boolean|object|array",
+    "type": "string|integer|number|boolean|object|array|json",
     "label": "Human-readable label (optional)",
     "required": true|false,
     "default": "default value (optional)",
-    "validators": [...],
-    "properties": {...},  // for object types
-    "items": {...}        // for array types
+    "immutable": true|false,                 // optional, if true property cannot be changed after creation
+    "secret": {                              // optional, for sensitive values
+      "type": "persistent|ephemeral"
+    },
+    "generator": {                           // optional, for automatic value generation
+      "type": "pool|custom",
+      "config": {...}                        // generator-specific configuration
+    },
+    "validators": [...],                     // property-level validators (source, mutable, etc.)
+    "properties": {...},                     // for object types
+    "items": {...}                           // for array types
   }
 }
 ```
+
+**Field Descriptions:**
+- **type**: Data type of the property (primitive or complex)
+- **label**: Human-readable label for UI display
+- **required**: Whether the property must be provided
+- **default**: Default value if not provided
+- **immutable**: If `true`, property cannot be changed after creation (defaults to `false`)
+- **secret**: Configuration for secure vault storage (persistent or ephemeral secrets)
+- **generator**: Configuration for automatic value generation (e.g., pool allocation)
+- **validators**: Array of validation rules to apply to the property value (includes `source`, `mutable`, etc.)
+- **properties**: Schema for nested object properties (only for `type: "object"`)
+- **items**: Schema for array elements (only for `type: "array"`)
 
 ### Property Types
 
@@ -82,6 +102,24 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
   }
 }
 ```
+
+##### JSON
+For properties that accept any valid JSON value without schema validation:
+
+```json
+{
+  "customData": {
+    "type": "json",
+    "label": "Custom Configuration",
+    "required": false
+  }
+}
+```
+
+**Note:** The `json` type accepts any valid JSON value (strings, numbers, objects, arrays, booleans, null) without schema validation. It's useful for:
+- Service pool values that can be strings, objects, or arrays
+- Service options with flexible value structures
+- Properties with dynamic, unstructured content
 
 #### Complex Types
 
@@ -140,7 +178,16 @@ For array properties, use the `items` field to define the schema for array eleme
 
 ### Validators
 
-Validators provide additional constraints beyond basic type checking. Each validator is an object with a `type` and `value` field.
+Validators provide additional constraints beyond basic type checking. Fulcrum Core supports two types of validators:
+
+1. **Property Validators**: Applied to individual properties to validate their values
+2. **Schema Validators**: Applied at the schema level to validate relationships between properties
+
+Each validator is configured as an object with a `type` field and validator-specific configuration (commonly a `value` or `config` field).
+
+#### Property Validators
+
+Property validators are specified in the `validators` array within a property definition. They validate the property's value against specific rules.
 
 #### String Validators
 
@@ -511,9 +558,64 @@ Valid service creation:
 }
 ```
 
+#### Schema Validators
+
+Schema validators operate at the schema level and validate relationships or constraints across multiple properties. They are specified in the root `validators` array of the property schema (not within individual property definitions).
+
+**Schema Structure with Validators:**
+```json
+{
+  "properties": {
+    "propertyA": {
+      "type": "string"
+    },
+    "propertyB": {
+      "type": "string"
+    }
+  },
+  "validators": [
+    {
+      "type": "validatorType",
+      "config": {...}
+    }
+  ]
+}
+```
+
+**Note:** Schema validators are currently supported by the engine infrastructure but no built-in schema validators are provided in the base system. Custom schema validators can be registered by the application to enforce cross-property validation rules such as:
+
+- **Mutual exclusivity**: Ensure only one of several properties is set
+- **Conditional requirements**: Require property B when property A has a specific value
+- **Cross-property constraints**: Validate relationships between property values
+- **Complex business rules**: Enforce domain-specific validation logic
+
+**Example Registration (Application Code):**
+```go
+// Custom schema validator implementation
+type ExactlyOneValidator struct{}
+
+func (v *ExactlyOneValidator) Validate(
+    ctx context.Context,
+    schemaCtx ServicePropertyContext,
+    operation Operation,
+    oldProperties map[string]any,
+    newProperties map[string]any,
+    config map[string]any,
+) error {
+    // Validation logic that checks multiple properties
+    return nil
+}
+
+// Register with engine
+engine := NewServicePropertyEngine(store, vault)
+engine.RegisterSchemaValidator("exactlyOne", &ExactlyOneValidator{})
+```
+
+Schema validators enable powerful cross-property validation while keeping individual property definitions clean and focused.
+
 ### Property Pool Allocation
 
-Properties with `source: "system"` can use automatic pool allocation via the `servicePoolType` field. Service pools manage finite, exclusive resources (IPs, ports, hostnames) with automatic allocation and lifecycle management.
+Properties can use automatic pool allocation via the `pool` generator. Service pools manage finite, exclusive resources (IPs, ports, hostnames) with automatic allocation and lifecycle management.
 
 **Basic Usage:**
 ```json
@@ -521,18 +623,30 @@ Properties with `source: "system"` can use automatic pool allocation via the `se
   "publicIp": {
     "type": "string",
     "label": "Public IP Address",
-    "source": "system",
-    "updatable": "never",
-    "servicePoolType": "public_ip"
+    "immutable": true,
+    "generator": {
+      "type": "pool",
+      "config": {
+        "poolType": "public_ip"
+      }
+    },
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "system"
+        }
+      }
+    ]
   }
 }
 ```
 
-This marks the `publicIp` property for automatic allocation from a pool with type "public_ip" during service creation.
+This configures the `publicIp` property for automatic allocation from a pool with type "public_ip" during service creation.
 
 **How it works:**
-1. The `servicePoolType` field references a pool type (e.g., "public_ip", "hostname", "port")
-2. The property must have `source: "system"` to enable automatic allocation
+1. The generator `config.poolType` field specifies which pool type to allocate from (e.g., "public_ip", "hostname", "port")
+2. The `source` validator marks the property as system-generated (preventing manual user/agent input)
 3. The agent must have a `servicePoolSetId` configured
 4. During service creation, the system finds a pool with the matching type in the agent's pool set
 5. The property type must match the pool's `propertyType` (e.g., string property → string pool)
@@ -545,7 +659,7 @@ This marks the `publicIp` property for automatic allocation from a pool with typ
 - **Exclusive access**: Each value can only be allocated to one service at a time
 - **Lifecycle management**: Values automatically released on service deletion
 - **Direct storage**: Actual values copied into properties (no dereferencing needed)
-- **System-source**: Requires `source: "system"` since allocation is automatic
+- **System-source**: Use `source` validator to prevent manual setting
 
 **Pool Types:**
 
@@ -555,9 +669,21 @@ List pools (pre-configured values):
   "ipAddress": {
     "type": "string",
     "label": "IP Address",
-    "source": "system",
-    "updatable": "never",
-    "servicePoolType": "public_ip"
+    "immutable": true,
+    "generator": {
+      "type": "pool",
+      "config": {
+        "poolType": "public_ip"
+      }
+    },
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "system"
+        }
+      }
+    ]
   }
 }
 ```
@@ -568,9 +694,21 @@ Subnet pools (automatic CIDR allocation):
   "privateIp": {
     "type": "string",
     "label": "Private IP Address",
-    "source": "system",
-    "updatable": "never",
-    "servicePoolType": "private_ip"
+    "immutable": true,
+    "generator": {
+      "type": "pool",
+      "config": {
+        "poolType": "private_ip"
+      }
+    },
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "system"
+        }
+      }
+    ]
   }
 }
 ```
@@ -581,9 +719,21 @@ JSON type for complex values:
   "hostname": {
     "type": "json",
     "label": "Hostname Configuration",
-    "source": "system",
-    "updatable": "never",
-    "servicePoolType": "hostname"
+    "immutable": true,
+    "generator": {
+      "type": "pool",
+      "config": {
+        "poolType": "hostname"
+      }
+    },
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "system"
+        }
+      }
+    ]
   }
 }
 ```
@@ -653,8 +803,11 @@ Pool values can be any JSON type:
 - **Flexible**: Supports simple strings or complex JSON structures
 
 **Error Messages:**
-- `"servicePoolType cannot be empty"` - Empty servicePoolType field
-- `"servicePoolType requires source to be 'system'"` - Property doesn't have `source: "system"`
+- `"pool generator config missing 'poolType'"` - Generator config missing poolType field
+- `"pool generator config 'poolType' must be a string"` - Pool type must be a string value
+- `"pool generator config 'poolType' cannot be empty"` - Empty poolType value
+- `"pool generator requires service context"` - Service context missing (internal error)
+- `"agent does not have a pool set configured"` - Agent's servicePoolSetId is not set
 - `"property X has type Y but pool Z provides type W"` - Property type doesn't match pool's propertyType
 - `"no pool found with type X in pool set"` - Pool type doesn't exist in agent's pool set
 - `"failed to allocate from pool X"` - No available values in pool
@@ -669,23 +822,59 @@ Service type schema:
     "publicIp": {
       "type": "string",
       "label": "Public IP",
-      "source": "system",
-      "updatable": "never",
-      "servicePoolType": "public_ip"
+      "immutable": true,
+      "generator": {
+        "type": "pool",
+        "config": {
+          "poolType": "public_ip"
+        }
+      },
+      "validators": [
+        {
+          "type": "source",
+          "config": {
+            "source": "system"
+          }
+        }
+      ]
     },
     "privateIp": {
       "type": "string",
       "label": "Private IP",
-      "source": "system",
-      "updatable": "never",
-      "servicePoolType": "private_ip"
+      "immutable": true,
+      "generator": {
+        "type": "pool",
+        "config": {
+          "poolType": "private_ip"
+        }
+      },
+      "validators": [
+        {
+          "type": "source",
+          "config": {
+            "source": "system"
+          }
+        }
+      ]
     },
     "hostname": {
       "type": "json",
       "label": "Hostname Config",
-      "source": "system",
-      "updatable": "never",
-      "servicePoolType": "hostname"
+      "immutable": true,
+      "generator": {
+        "type": "pool",
+        "config": {
+          "poolType": "hostname"
+        }
+      },
+      "validators": [
+        {
+          "type": "source",
+          "config": {
+            "source": "system"
+          }
+        }
+      ]
     }
   }
 }
@@ -787,9 +976,412 @@ Response shows allocated status:
 }
 ```
 
+### Generators
+
+Generators are components that automatically compute or allocate property values during service creation or updates. Unlike validators that check existing values, generators create values that weren't provided by the user.
+
+**Key Concepts:**
+- Generators run during the schema engine's `Apply` operation
+- They can generate values based on current context (service state, agent, etc.)
+- Multiple generators can be registered with the schema engine
+- Generators are optional - properties work without them
+
+**Built-in Generator: Pool Generator**
+
+The `servicePoolType` field uses the pool generator internally to allocate resources from service pools. This generator:
+- Allocates values from pools configured in the agent's service pool set
+- Ensures exclusive allocation (one value per service)
+- Automatically releases values when services are deleted
+- Supports multiple pool types (list pools, subnet pools)
+
+**Example: Pool Generator (via servicePoolType)**
+```json
+{
+  "publicIp": {
+    "type": "string",
+    "source": "system",
+    "updatable": "never",
+    "servicePoolType": "public_ip"
+  }
+}
+```
+
+This property uses the pool generator to:
+1. Find a pool with type "public_ip" in the agent's pool set
+2. Allocate an available value from that pool
+3. Store the actual value in the property
+4. Track the allocation for cleanup on deletion
+
+**Custom Generators**
+
+Applications can register custom generators for domain-specific value generation:
+
+```go
+// Custom generator implementation
+type HostnameGenerator struct{}
+
+func (g *HostnameGenerator) Generate(
+    ctx context.Context,
+    schemaCtx ServicePropertyContext,
+    propPath string,
+    currentValue any,
+    config map[string]any,
+) (value any, generated bool, err error) {
+    // Generate hostname based on service context
+    hostname := fmt.Sprintf("%s-%s", config["prefix"], schemaCtx.Service.ID)
+    return hostname, true, nil
+}
+
+func (g *HostnameGenerator) ValidateConfig(propPath string, config map[string]any) error {
+    // Validate generator configuration
+    if config["prefix"] == nil {
+        return fmt.Errorf("prefix is required")
+    }
+    return nil
+}
+
+// Register with engine
+engine.RegisterGenerator("hostname", &HostnameGenerator{})
+```
+
+**Generator Configuration:**
+
+Generators would be configured in property definitions (future enhancement):
+```json
+{
+  "hostname": {
+    "type": "string",
+    "source": "system",
+    "generator": {
+      "type": "hostname",
+      "config": {
+        "prefix": "server"
+      }
+    }
+  }
+}
+```
+
+**Generator vs Default vs Pool:**
+- **Default**: Static value used when property not provided
+- **Generator**: Dynamic value computed at runtime based on context
+- **Pool (servicePoolType)**: Special generator for allocating from finite resource pools
+
+**Return Values:**
+- `(value, true, nil)`: Value was generated successfully
+- `(nil, false, nil)`: No generation needed (e.g., value already exists)
+- `(nil, false, error)`: Generation failed
+
+**Use Cases:**
+- **Unique identifiers**: Generate UUIDs, slugs, or sequential IDs
+- **Computed values**: Calculate based on other properties
+- **Resource allocation**: Assign from pools (IPs, ports, hostnames)
+- **Timestamps**: Set creation or modification times
+- **Derived properties**: Generate based on service context
+
+Generators make schemas more powerful by automating value creation while keeping property definitions declarative.
+
+### Property Secrets
+
+Properties can be marked as secrets to enable secure storage using encrypted vault storage. When a property is marked as secret, users provide the actual sensitive value, which is stored encrypted in the vault, and the property value is replaced with a `vault://reference` string.
+
+**Basic Usage:**
+```json
+{
+  "apiKey": {
+    "type": "string",
+    "label": "API Key",
+    "source": "input",
+    "required": true,
+    "secret": {
+      "type": "persistent"
+    }
+  }
+}
+```
+
+This marks the `apiKey` property as a persistent secret. When creating a service, users provide the actual API key value, which is then stored encrypted and replaced with a vault reference.
+
+**How it works:**
+1. User provides actual secret value when creating/updating a service
+2. System encrypts the value using AES-256-GCM and stores it in the vault
+3. A unique reference (e.g., `vault://abc123def456`) is generated
+4. The property value is replaced with this reference in the service properties
+5. Agents retrieve the actual value by calling `GET /api/v1/vault/secrets/{reference}`
+6. Secrets are automatically cleaned up based on their type
+
+**Secret Types:**
+
+There are two types of secrets:
+
+- **`persistent`**: Long-lived secrets that remain until service deletion
+  - Use for: API keys, database passwords, SSL certificates, long-term credentials
+  - Cleanup: When service reaches terminal state (e.g., Deleted)
+  - Example: API key needed throughout the entire service lifetime
+
+- **`ephemeral`**: Short-lived secrets that are deleted after each job completion
+  - Use for: Temporary passwords, one-time tokens, initialization secrets
+  - Cleanup: After every job completion (success or failure)
+  - Example: Initial setup password that should only exist during first job
+
+**Type Restrictions:**
+
+Only primitive types can be secrets:
+- ✅ `string`, `integer`, `number`, `boolean`, `json`
+- ❌ `object`, `array` (the container itself)
+
+However, objects can contain properties that are secrets, and arrays of objects can have items with secret properties:
+
+```json
+{
+  "database": {
+    "type": "object",
+    "properties": {
+      "host": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string",
+        "secret": {
+          "type": "persistent"
+        }
+      }
+    }
+  },
+  "users": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string",
+          "secret": {
+            "type": "ephemeral"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Agent Resolution:**
+
+Agents resolve vault references by calling the vault resolution endpoint:
+
+```http
+GET /api/v1/vault/secrets/abc123def456
+Authorization: Bearer <agent-token>
+```
+
+Response:
+```json
+{
+  "value": "actual-secret-value"
+}
+```
+
+**Security Features:**
+
+1. **Encryption**: All secrets encrypted with AES-256-GCM before storage
+2. **Access Control**: Only agents can access the vault resolution endpoint
+3. **No Exposure**: Secrets never appear in plain text in API responses or logs
+4. **Automatic Cleanup**: Ephemeral secrets cleaned after each job, persistent on deletion
+5. **Reference Format**: `vault://` prefix makes secrets identifiable in properties
+
+**Cleanup Behavior:**
+
+**Ephemeral Secrets:**
+```
+Job 1 (install): Creates vault://secret1 → Job completes → secret1 deleted ✅
+Job 2 (configure): Creates vault://secret2 → Job completes → secret2 deleted ✅
+Job 3 (start): Creates vault://secret3 → Job completes → secret3 deleted ✅
+```
+
+**Persistent Secrets:**
+```
+Service creation: Creates vault://apikey → Remains throughout service life
+Service operations: Agents use vault://apikey for each operation
+Service deletion: vault://apikey deleted ✅
+```
+
+**Mixed Example:**
+```json
+{
+  "apiKey": {
+    "type": "string",
+    "secret": {
+      "type": "persistent"
+    }
+  },
+  "setupPassword": {
+    "type": "string",
+    "secret": {
+      "type": "ephemeral"
+    }
+  }
+}
+```
+
+When service is created:
+- Both secrets stored: `vault://key1` and `vault://pass1`
+
+After first job:
+- Persistent key remains: `vault://key1` ✅
+- Ephemeral password deleted: `vault://pass1` ❌
+
+On service deletion:
+- All remaining secrets deleted: `vault://key1` ❌
+
+**Benefits:**
+
+- **Security**: Sensitive data never exposed in API responses or database
+- **Flexibility**: Two secret types for different use cases
+- **Automatic**: Cleanup handled by system, no manual intervention
+- **Nested**: Support for secrets in complex structures
+- **Audit**: All secret access is logged and controlled
+
+**Error Messages:**
+
+- `"only primitive types (string, integer, number, boolean, json) can be secrets"` - Attempted to mark object/array as secret
+- `"secret type must be 'persistent' or 'ephemeral'"` - Invalid secret type
+- `"secret configuration must include 'type' field"` - Missing type in secret config
+- `"vault is not configured"` - VAULT_ENCRYPTION_KEY not set in environment
+- `"failed to store secret in vault"` - Vault storage error
+- `"secret with reference X not found"` - Agent tried to resolve non-existent reference
+
+**Configuration:**
+
+The vault system requires configuration via environment variable:
+
+```bash
+# Generate a 32-byte (256-bit) hex key
+openssl rand -hex 32
+
+# Set in environment
+export VAULT_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+```
+
+Without this configuration, secret properties will not work and service creation will fail with a validation error.
+
+**Complete Example:**
+
+Service type with secrets:
+```json
+{
+  "name": "Web Application",
+  "propertySchema": {
+    "appName": {
+      "type": "string",
+      "label": "Application Name",
+      "source": "input",
+      "required": true
+    },
+    "apiKey": {
+      "type": "string",
+      "label": "API Key",
+      "source": "input",
+      "required": true,
+      "secret": {
+        "type": "persistent"
+      }
+    },
+    "initialPassword": {
+      "type": "string",
+      "label": "Initial Admin Password",
+      "source": "input",
+      "required": true,
+      "secret": {
+        "type": "ephemeral"
+      }
+    },
+    "databaseConfig": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string",
+          "required": true
+        },
+        "port": {
+          "type": "integer",
+          "default": 5432
+        },
+        "password": {
+          "type": "string",
+          "required": true,
+          "secret": {
+            "type": "persistent"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Service creation request:
+```json
+{
+  "name": "my-web-app",
+  "serviceTypeId": "web-app-type-uuid",
+  "properties": {
+    "appName": "MyApp",
+    "apiKey": "sk_live_abc123xyz789",
+    "initialPassword": "temp_pass_123",
+    "databaseConfig": {
+      "host": "db.example.com",
+      "port": 5432,
+      "password": "db_secret_password"
+    }
+  }
+}
+```
+
+Stored service properties (what API returns):
+```json
+{
+  "appName": "MyApp",
+  "apiKey": "vault://a1b2c3d4",
+  "initialPassword": "vault://e5f6g7h8",
+  "databaseConfig": {
+    "host": "db.example.com",
+    "port": 5432,
+    "password": "vault://i9j0k1l2"
+  }
+}
+```
+
+Agent resolves secrets:
+```bash
+# Resolve API key (persistent)
+curl -H "Authorization: Bearer agent-token" \
+  https://api.fulcrum.example/api/v1/vault/secrets/a1b2c3d4
+# Returns: {"value": "sk_live_abc123xyz789"}
+
+# Resolve initial password (ephemeral)
+curl -H "Authorization: Bearer agent-token" \
+  https://api.fulcrum.example/api/v1/vault/secrets/e5f6g7h8
+# Returns: {"value": "temp_pass_123"}
+
+# Resolve database password (persistent)
+curl -H "Authorization: Bearer agent-token" \
+  https://api.fulcrum.example/api/v1/vault/secrets/i9j0k1l2
+# Returns: {"value": "db_secret_password"}
+```
+
+After first job completes:
+- `apiKey` (persistent): Still `vault://a1b2c3d4` ✅
+- `initialPassword` (ephemeral): Reference deleted from vault ❌
+- `databaseConfig.password` (persistent): Still `vault://i9j0k1l2` ✅
+
 ### Property Source
 
-The `source` field controls who can set and update a property value. This enables proper separation between user-provided configuration and agent-discovered information.
+The `source` validator controls who can set and update a property value. This enables proper separation between user-provided configuration, agent-discovered information, and system-generated values.
+
+**Implementation:** The source control is enforced through the `source` validator in the property's validators array, not through a dedicated `source` field.
 
 #### Source Values
 
@@ -801,17 +1393,17 @@ Properties set by users through the API. These represent the desired configurati
   "instanceName": {
     "type": "string",
     "label": "Instance Name",
-    "source": "input",
-    "required": true
+    "required": true,
+    "validators": []
   }
 }
 ```
 
 **Behavior:**
 - Users can set this property when creating a service
-- Users can update this property (subject to updatability rules)
+- Users can update this property (subject to immutability and mutable validator rules)
 - Agents cannot modify this property
-- If `source` is omitted, "input" is the default
+- If no `source` validator is specified, properties default to user input
 
 ##### agent
 Properties set by agents after provisioning resources. These represent actual provisioned values.
@@ -821,7 +1413,14 @@ Properties set by agents after provisioning resources. These represent actual pr
   "ipAddress": {
     "type": "string",
     "label": "Assigned IP Address",
-    "source": "agent"
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "agent"
+        }
+      }
+    ]
   }
 }
 ```
@@ -829,8 +1428,40 @@ Properties set by agents after provisioning resources. These represent actual pr
 **Behavior:**
 - Users cannot set or update this property
 - Agents can set this property when completing a job
-- Agents can update this property (subject to updatability rules)
+- Agents can update this property (subject to immutability and mutable validator rules)
 - Typically used for discovered values like IP addresses, ports, UUIDs
+
+##### system
+Properties automatically generated by the system through generators. Users and agents cannot set these manually.
+
+```json
+{
+  "publicIp": {
+    "type": "string",
+    "label": "Public IP Address",
+    "immutable": true,
+    "generator": {
+      "type": "pool",
+      "config": {
+        "poolType": "public_ip"
+      }
+    },
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "system"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Behavior:**
+- System generates the value automatically via the configured generator
+- Users and agents cannot set or modify this property manually
+- Typically used with pool allocation or computed values
 
 #### Source Usage Patterns
 
@@ -840,297 +1471,554 @@ Properties set by agents after provisioning resources. These represent actual pr
   "diskSize": {
     "type": "integer",
     "label": "Disk Size (GB)",
-    "source": "input",
     "required": true
   },
   "actualDiskPath": {
     "type": "string",
     "label": "Disk Path",
-    "source": "agent"
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "agent"
+        }
+      }
+    ]
   }
 }
 ```
 
 User specifies `diskSize`, agent reports back `actualDiskPath` after provisioning.
 
-### Property Updatability
-
-The `updatable` field controls when and if a property can be modified after initial creation. This prevents accidental changes to immutable infrastructure or ensures changes only happen in safe states.
-
-#### Updatable Values
-
-##### always (default)
-Property can be updated at any time in any service status.
-
+**System-Generated with Pool**
 ```json
 {
-  "description": {
+  "ipAddress": {
     "type": "string",
-    "label": "Description",
-    "updatable": "always"
+    "label": "IP Address",
+    "immutable": true,
+    "generator": {
+      "type": "pool",
+      "config": {
+        "poolType": "public_ip"
+      }
+    },
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "system"
+        }
+      }
+    ]
   }
 }
 ```
 
-**Behavior:**
-- Can be updated in any service state
-- Suitable for metadata and non-critical settings
-- If `updatable` is omitted, "always" is the default
+System automatically allocates from pool, preventing manual setting.
 
-##### never
-Property cannot be updated after initial creation (immutable).
+### Property Updatability
+
+Properties can be controlled for mutability in two ways:
+
+1. **`immutable` field**: Simple flag to prevent any updates after creation
+2. **`mutable` validator**: State-specific mutability control for complex workflows
+
+#### Immutable Properties
+
+Use the `immutable: true` field to mark properties that cannot be changed after initial creation. This is enforced at the schema engine level.
 
 ```json
 {
   "uuid": {
     "type": "string",
     "label": "Instance UUID",
-    "source": "agent",
-    "updatable": "never"
+    "immutable": true,
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "agent"
+        }
+      }
+    ]
   }
 }
 ```
 
 **Behavior:**
-- Can be set during initial service creation
+- Can be set during initial service creation (for user properties) or first job completion (for agent properties)
 - Cannot be changed after initial creation
-- Any attempt to update returns a validation error
-- Suitable for identifiers and immutable configuration
+- Any attempt to update returns a validation error: `"property is immutable and cannot be changed"`
+- Suitable for identifiers, region selection, and other immutable configuration
+- Default is `false` (mutable)
 
-**Note:** For agent-source properties, "initial creation" means the first job completion (typically the Create job). Agents can set immutable properties during this first job, but cannot update them in subsequent jobs.
+**Examples:**
 
-##### statuses
-Property can only be updated when service is in specific statuses. Requires `updatableIn` array.
+System-generated immutable identifier:
+```json
+{
+  "publicIp": {
+    "type": "string",
+    "label": "Public IP",
+    "immutable": true,
+    "generator": {
+      "type": "pool",
+      "config": {
+        "poolType": "public_ip"
+      }
+    },
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "system"
+        }
+      }
+    ]
+  }
+}
+```
+
+Agent-discovered immutable value:
+```json
+{
+  "instanceId": {
+    "type": "string",
+    "label": "Cloud Instance ID",
+    "immutable": true,
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "agent"
+        }
+      }
+    ]
+  }
+}
+```
+
+User-configured immutable value:
+```json
+{
+  "region": {
+    "type": "string",
+    "label": "Cloud Region",
+    "immutable": true,
+    "required": true,
+    "validators": [
+      {
+        "type": "enum",
+        "config": {
+          "values": ["us-east-1", "us-west-2", "eu-west-1"]
+        }
+      }
+    ]
+  }
+}
+```
+
+#### State-Specific Mutability
+
+Use the `mutable` validator to control when properties can be updated based on service state. This is useful for properties that can only be changed in specific lifecycle states.
 
 ```json
 {
   "diskSize": {
     "type": "integer",
     "label": "Disk Size (GB)",
-    "source": "input",
-    "updatable": "statuses",
-    "updatableIn": ["Stopped"]
+    "required": true,
+    "validators": [
+      {
+        "type": "mutable",
+        "config": {
+          "updatableIn": ["Stopped"]
+        }
+      },
+      {
+        "type": "min",
+        "config": {
+          "value": 10
+        }
+      },
+      {
+        "type": "max",
+        "config": {
+          "value": 1000
+        }
+      }
+    ]
   }
 }
 ```
 
 **Behavior:**
-- Can only be updated when service status is in the `updatableIn` list
-- Updates attempted in other statuses return validation errors
-- Suitable for properties requiring service to be in a safe state
+- Only applies to update operations (not create)
+- Checks if service is in one of the allowed states before allowing update
+- Error message: `"property cannot be updated in state 'CurrentState'"`
+- Suitable for properties that require service to be in a safe state for modification
 
-#### Updatability Patterns
+**Validator Configuration:**
+- `updatableIn`: Array of service status strings when updates are allowed
+- Must contain at least one status
+- Statuses should match those defined in the service type's lifecycle schema
 
-**Immutable Identifiers**
-```json
-{
-  "instanceId": {
-    "type": "string",
-    "label": "Cloud Instance ID",
-    "source": "agent",
-    "updatable": "never"
-  }
-}
-```
+**Examples:**
 
-**State-Conditional Updates**
+Hardware changes requiring stopped state:
 ```json
 {
   "cpu": {
     "type": "integer",
     "label": "CPU Cores",
-    "source": "input",
-    "updatable": "statuses",
-    "updatableIn": ["Stopped"],
     "validators": [
-      { "type": "enum", "value": [1, 2, 4, 8] }
+      {
+        "type": "mutable",
+        "config": {
+          "updatableIn": ["Stopped"]
+        }
+      },
+      {
+        "type": "enum",
+        "config": {
+          "values": [1, 2, 4, 8, 16, 32]
+        }
+      }
     ]
   },
   "memory": {
     "type": "integer",
     "label": "Memory (GB)",
-    "source": "input",
-    "updatable": "statuses",
-    "updatableIn": ["Stopped"],
     "validators": [
-      { "type": "enum", "value": [1, 2, 4, 8, 16] }
+      {
+        "type": "mutable",
+        "config": {
+          "updatableIn": ["Stopped"]
+        }
+      },
+      {
+        "type": "enum",
+        "config": {
+          "values": [1, 2, 4, 8, 16, 32, 64]
+        }
+      }
     ]
   }
 }
 ```
 
-**Hot-Updatable Configuration**
+Hot-updatable configuration:
 ```json
 {
   "maxConnections": {
     "type": "integer",
     "label": "Max Connections",
-    "source": "input",
-    "updatable": "statuses",
-    "updatableIn": ["Started", "Stopped"]
-  }
-}
-```
-
-### Combined Source and Updatability
-
-**User Configuration (Mutable)**
-```json
-{
-  "environment": {
-    "type": "string",
-    "label": "Environment",
-    "source": "input",
-    "updatable": "always",
     "validators": [
-      { "type": "enum", "value": ["dev", "staging", "prod"] }
+      {
+        "type": "mutable",
+        "config": {
+          "updatableIn": ["Started", "Stopped"]
+        }
+      }
     ]
   }
 }
 ```
 
-**User Configuration (Immutable After Creation)**
+Configuration updatable only during maintenance:
 ```json
 {
-  "region": {
-    "type": "string",
-    "label": "Cloud Region",
-    "source": "input",
-    "updatable": "never",
-    "required": true
+  "databaseConfig": {
+    "type": "object",
+    "properties": {
+      "host": {
+        "type": "string"
+      },
+      "port": {
+        "type": "integer"
+      }
+    },
+    "validators": [
+      {
+        "type": "mutable",
+        "config": {
+          "updatableIn": ["Maintenance"]
+        }
+      }
+    ]
   }
 }
 ```
 
-**Agent-Discovered (Immutable)**
+#### Combined Mutability Patterns
+
+**Always Mutable (default)**
 ```json
 {
-  "ipAddress": {
+  "description": {
     "type": "string",
-    "label": "IP Address",
-    "source": "agent",
-    "updatable": "never"
+    "label": "Description"
   }
 }
 ```
+No immutable field and no mutable validator = always updatable.
 
-**Agent-Discovered (Mutable)**
+**Completely Immutable**
+```json
+{
+  "createdDate": {
+    "type": "string",
+    "label": "Creation Date",
+    "immutable": true
+  }
+}
+```
+Cannot be changed after creation in any state.
+
+**State-Conditional Mutability**
+```json
+{
+  "diskSize": {
+    "type": "integer",
+    "label": "Disk Size (GB)",
+    "validators": [
+      {
+        "type": "mutable",
+        "config": {
+          "updatableIn": ["Stopped"]
+        }
+      }
+    ]
+  }
+}
+```
+Can be updated, but only when service is in Stopped state.
+
+**Combining with Source Control**
 ```json
 {
   "healthStatus": {
     "type": "string",
     "label": "Health Status",
-    "source": "agent",
-    "updatable": "always"
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "agent"
+        }
+      }
+    ]
   }
 }
 ```
+Agent can update in any state (no immutable or mutable validator).
+
+```json
+{
+  "maintenanceMode": {
+    "type": "boolean",
+    "label": "Maintenance Mode",
+    "validators": [
+      {
+        "type": "mutable",
+        "config": {
+          "updatableIn": ["Stopped", "Started"]
+        }
+      }
+    ]
+  }
+}
+```
+User can update, but only in specific states.
 
 ### Complete Examples
 
 #### VM Service Type with Mixed Sources
 
-Here's a comprehensive example for a VM service type with user configuration and agent-discovered properties:
+Here's a comprehensive example for a VM service type with user configuration, agent-discovered properties, and system-generated values:
 
 ```json
 {
   "instanceName": {
     "type": "string",
     "label": "Instance Name",
-    "source": "input",
-    "updatable": "always",
     "required": true,
     "validators": [
-      { "type": "minLength", "value": 3 },
-      { "type": "maxLength", "value": 50 },
-      { "type": "pattern", "value": "^[a-zA-Z0-9-]+$" }
+      {
+        "type": "minLength",
+        "config": {
+          "value": 3
+        }
+      },
+      {
+        "type": "maxLength",
+        "config": {
+          "value": 50
+        }
+      },
+      {
+        "type": "pattern",
+        "config": {
+          "value": "^[a-zA-Z0-9-]+$"
+        }
+      }
     ]
   },
   "region": {
     "type": "string",
     "label": "Cloud Region",
-    "source": "input",
-    "updatable": "never",
+    "immutable": true,
     "required": true,
     "validators": [
-      { "type": "enum", "value": ["us-east-1", "us-west-2", "eu-west-1"] }
+      {
+        "type": "enum",
+        "config": {
+          "values": ["us-east-1", "us-west-2", "eu-west-1"]
+        }
+      }
     ]
   },
   "cpu": {
     "type": "integer",
     "label": "CPU Cores",
-    "source": "input",
-    "updatable": "statuses",
-    "updatableIn": ["Stopped"],
     "required": true,
     "validators": [
-      { "type": "enum", "value": [1, 2, 4, 8, 16, 32] }
+      {
+        "type": "mutable",
+        "config": {
+          "updatableIn": ["Stopped"]
+        }
+      },
+      {
+        "type": "enum",
+        "config": {
+          "values": [1, 2, 4, 8, 16, 32]
+        }
+      }
     ]
   },
   "memory": {
     "type": "integer",
     "label": "Memory (GB)",
-    "source": "input",
-    "updatable": "statuses",
-    "updatableIn": ["Stopped"],
     "required": true,
     "validators": [
-      { "type": "enum", "value": [1, 2, 4, 8, 16, 32, 64] }
+      {
+        "type": "mutable",
+        "config": {
+          "updatableIn": ["Stopped"]
+        }
+      },
+      {
+        "type": "enum",
+        "config": {
+          "values": [1, 2, 4, 8, 16, 32, 64]
+        }
+      }
     ]
   },
   "diskSize": {
     "type": "integer",
     "label": "Disk Size (GB)",
-    "source": "input",
-    "updatable": "statuses",
-    "updatableIn": ["Stopped"],
     "required": true,
     "validators": [
-      { "type": "min", "value": 10 },
-      { "type": "max", "value": 1000 }
+      {
+        "type": "mutable",
+        "config": {
+          "updatableIn": ["Stopped"]
+        }
+      },
+      {
+        "type": "min",
+        "config": {
+          "value": 10
+        }
+      },
+      {
+        "type": "max",
+        "config": {
+          "value": 1000
+        }
+      }
     ]
   },
   "imageId": {
     "type": "string",
     "label": "VM Image ID",
-    "source": "input",
-    "updatable": "never",
+    "immutable": true,
     "required": true
+  },
+  "publicIp": {
+    "type": "string",
+    "label": "Public IP Address",
+    "immutable": true,
+    "generator": {
+      "type": "pool",
+      "config": {
+        "poolType": "public_ip"
+      }
+    },
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "system"
+        }
+      }
+    ]
   },
   "instanceId": {
     "type": "string",
     "label": "Cloud Instance ID",
-    "source": "agent",
-    "updatable": "never"
+    "immutable": true,
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "agent"
+        }
+      }
+    ]
   },
   "ipAddress": {
     "type": "string",
-    "label": "IP Address",
-    "source": "agent",
-    "updatable": "never"
-  },
-  "privateIpAddress": {
-    "type": "string",
     "label": "Private IP Address",
-    "source": "agent",
-    "updatable": "never"
+    "immutable": true,
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "agent"
+        }
+      }
+    ]
   },
   "hostname": {
     "type": "string",
     "label": "Hostname",
-    "source": "agent",
-    "updatable": "never"
+    "immutable": true,
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "agent"
+        }
+      }
+    ]
   },
   "tags": {
     "type": "object",
     "label": "Resource Tags",
-    "source": "input",
-    "updatable": "always",
     "properties": {
       "environment": {
         "type": "string",
         "validators": [
-          { "type": "enum", "value": ["dev", "staging", "prod"] }
+          {
+            "type": "enum",
+            "config": {
+              "values": ["dev", "staging", "prod"]
+            }
+          }
         ]
       },
       "owner": {
@@ -1141,7 +2029,7 @@ Here's a comprehensive example for a VM service type with user configuration and
 }
 ```
 
-### Disk Service Type
+#### Disk Service Type
 
 Example for a managed disk with state-conditional resizing:
 
@@ -1150,49 +2038,84 @@ Example for a managed disk with state-conditional resizing:
   "name": {
     "type": "string",
     "label": "Disk Name",
-    "source": "input",
-    "updatable": "always",
     "required": true
   },
   "sizeGb": {
     "type": "integer",
     "label": "Size (GB)",
-    "source": "input",
-    "updatable": "statuses",
-    "updatableIn": ["Stopped"],
     "required": true,
     "validators": [
-      { "type": "min", "value": 10 },
-      { "type": "max", "value": 16384 }
+      {
+        "type": "mutable",
+        "config": {
+          "updatableIn": ["Stopped"]
+        }
+      },
+      {
+        "type": "min",
+        "config": {
+          "value": 10
+        }
+      },
+      {
+        "type": "max",
+        "config": {
+          "value": 16384
+        }
+      }
     ]
   },
   "type": {
     "type": "string",
     "label": "Disk Type",
-    "source": "input",
-    "updatable": "never",
+    "immutable": true,
     "required": true,
     "validators": [
-      { "type": "enum", "value": ["ssd", "hdd", "nvme"] }
+      {
+        "type": "enum",
+        "config": {
+          "values": ["ssd", "hdd", "nvme"]
+        }
+      }
     ]
   },
   "diskId": {
     "type": "string",
     "label": "Cloud Disk ID",
-    "source": "agent",
-    "updatable": "never"
+    "immutable": true,
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "agent"
+        }
+      }
+    ]
   },
   "actualSizeGb": {
     "type": "integer",
     "label": "Actual Size (GB)",
-    "source": "agent",
-    "updatable": "always"
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "agent"
+        }
+      }
+    ]
   },
   "devicePath": {
     "type": "string",
     "label": "Device Path",
-    "source": "agent",
-    "updatable": "never"
+    "immutable": true,
+    "validators": [
+      {
+        "type": "source",
+        "config": {
+          "source": "agent"
+        }
+      }
+    ]
   }
 }
 ```
