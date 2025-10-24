@@ -439,8 +439,8 @@ func TestEngine_ApplyCreate_MultipleValidationErrors(t *testing.T) {
 	}
 
 	properties := map[string]any{
-		"name":  "Bob",   // Too short (< 5 chars)
-		"age":   15,      // Too young (< 18)
+		"name":  "Bob",     // Too short (< 5 chars)
+		"age":   15,        // Too young (< 18)
 		"email": "invalid", // Invalid email format
 	}
 

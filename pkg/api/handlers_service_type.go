@@ -123,7 +123,7 @@ type ValidateReq struct {
 
 // ValidateRes represents the response body for property validation
 type ValidateRes struct {
-	Valid  bool                            `json:"valid"`
+	Valid  bool                           `json:"valid"`
 	Errors []schema.ValidationErrorDetail `json:"errors,omitempty"`
 }
 
@@ -179,7 +179,7 @@ func (h *ServiceTypeHandler) Validate(w http.ResponseWriter, r *http.Request) {
 
 	// Validate properties using the schema engine
 	_, err = h.engine.ApplyCreate(ctx, schemaCtx, *serviceType.PropertySchema, req.Properties)
-	
+
 	// Build response
 	res := ValidateRes{
 		Valid:  err == nil,

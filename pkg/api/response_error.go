@@ -21,10 +21,10 @@ type ErrRes struct {
 
 // ValidationErrRes represents a validation error response with detailed errors
 type ValidationErrRes struct {
-	Err            error                         `json:"-"` // low-level runtime error
-	HTTPStatusCode int                           `json:"-"` // http response status code
-	StatusText     string                        `json:"status"`
-	Valid          bool                          `json:"valid"`
+	Err            error                          `json:"-"` // low-level runtime error
+	HTTPStatusCode int                            `json:"-"` // http response status code
+	StatusText     string                         `json:"status"`
+	Valid          bool                           `json:"valid"`
 	Errors         []schema.ValidationErrorDetail `json:"errors"`
 }
 

@@ -188,12 +188,18 @@ func main() {
 	eventHandler := api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz)
 	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz)
 
+	// Initialize vault handler only if vault is configured
+	var vaultHandler *api.VaultHandler
+	if vault != nil {
+		vaultHandler = api.NewVaultHandler(vault)
+	}
+
 	serverError := make(chan error, 1)
 
 	var server *http.Server
 	var healthServer *http.Server
 	if cfg.ApiServer {
-		server = BuildHttpServer(&cfg, ath, agentTypeHandler, serviceTypeHandler, serviceOptionTypeHandler, serviceOptionHandler, servicePoolSetHandler, servicePoolHandler, servicePoolValueHandler, participantHandler, agentHandler, serviceGroupHandler, serviceHandler, metricTypeHandler, metricEntryHandler, eventHandler, jobHandler, tokenHandler, logger)
+		server = BuildHttpServer(&cfg, ath, agentTypeHandler, serviceTypeHandler, serviceOptionTypeHandler, serviceOptionHandler, servicePoolSetHandler, servicePoolHandler, servicePoolValueHandler, participantHandler, agentHandler, serviceGroupHandler, serviceHandler, metricTypeHandler, metricEntryHandler, eventHandler, jobHandler, tokenHandler, vaultHandler, logger)
 		// Start main API server
 		go func() {
 			slog.Info("Server starting", "port", cfg.Port)
@@ -323,6 +329,7 @@ func BuildHttpServer(
 	eventHandler *api.EventHandler,
 	jobHandler *api.JobHandler,
 	tokenHandler *api.TokenHandler,
+	vaultHandler *api.VaultHandler,
 	logger *slog.Logger,
 ) *http.Server {
 	// Initialize router
@@ -358,6 +365,11 @@ func BuildHttpServer(
 		r.Route("/events", eventHandler.Routes())
 		r.Route("/jobs", jobHandler.Routes())
 		r.Route("/tokens", tokenHandler.Routes())
+		
+		// Register vault routes only if vault is configured
+		if vaultHandler != nil {
+			r.Route("/vault/secrets", vaultHandler.Routes())
+		}
 	})
 
 	return &http.Server{
