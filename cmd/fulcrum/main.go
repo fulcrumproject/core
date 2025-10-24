@@ -365,7 +365,7 @@ func BuildHttpServer(
 		r.Route("/events", eventHandler.Routes())
 		r.Route("/jobs", jobHandler.Routes())
 		r.Route("/tokens", tokenHandler.Routes())
-		
+
 		// Register vault routes only if vault is configured
 		if vaultHandler != nil {
 			r.Route("/vault/secrets", vaultHandler.Routes())

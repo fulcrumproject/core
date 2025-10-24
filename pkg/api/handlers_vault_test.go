@@ -148,4 +148,3 @@ func TestNewVaultHandler(t *testing.T) {
 	assert.NotNil(t, handler)
 	assert.Equal(t, mockVault, handler.vault)
 }
-
