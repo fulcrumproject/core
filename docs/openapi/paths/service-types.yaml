@@ -1,82 +1,82 @@
-  get:
-    operationId: serviceTypesList
-    summary: List service types
-    tags:
-      - Services
-    description: Retrieves a paginated list of service types
-    x-auth-permissions:
-      - role: admin
-        permission: all service types
-      - role: participant
-        permission: all service types
-      - role: agent
-        permission: all service types
-    parameters:
-      - name: page
-        in: query
-        schema:
-          type: integer
-          default: 1
-      - name: pageSize
-        in: query
-        schema:
-          type: integer
-          default: 20
-    responses:
-      "200":
-        description: A paginated list of service types
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: "../components/schemas/common.yaml#/PageRes"
-                - type: object
-                  properties:
-                    items:
-                      type: array
-                      items:
-                        $ref: "../components/schemas/service_types.yaml#/ServiceTypeRes"
-      "401":
-        $ref: "../components/responses.yaml#/Unauthorized"
-      "403":
-        $ref: "../components/responses.yaml#/Forbidden"
-  post:
-    operationId: serviceTypesCreate
-    summary: Create a service type
-    tags:
-      - Services
-    description: Creates a new service type with optional property schema
-    x-auth-permissions:
-      - role: admin
-        permission: all service types
-    requestBody:
-      required: true
+get:
+  operationId: serviceTypesList
+  summary: List service types
+  tags:
+    - Services
+  description: Retrieves a paginated list of service types
+  x-auth-permissions:
+    - role: admin
+      permission: all service types
+    - role: participant
+      permission: all service types
+    - role: agent
+      permission: all service types
+  parameters:
+    - name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    - name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 20
+  responses:
+    "200":
+      description: A paginated list of service types
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/service_types.yaml#/CreateServiceTypeReq"
-    responses:
-      "201":
-        description: Service type created successfully
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/service_types.yaml#/ServiceTypeRes"
-      "400":
-        description: Invalid request body or validation errors
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/common.yaml#/ErrorRes"
-      "403":
-        description: Insufficient permissions (admin required)
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/common.yaml#/ErrorRes"
-      "409":
-        description: Service type with this name already exists
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/common.yaml#/ErrorRes"
+            allOf:
+              - $ref: "../components/schemas/common.yaml#/PageRes"
+              - type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/service_types.yaml#/ServiceTypeRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+post:
+  operationId: serviceTypesCreate
+  summary: Create a service type
+  tags:
+    - Services
+  description: Creates a new service type with optional property schema
+  x-auth-permissions:
+    - role: admin
+      permission: all service types
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/service_types.yaml#/CreateServiceTypeReq"
+  responses:
+    "201":
+      description: Service type created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/service_types.yaml#/ServiceTypeRes"
+    "400":
+      description: Invalid request body or validation errors
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "403":
+      description: Insufficient permissions (admin required)
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "409":
+      description: Service type with this name already exists
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

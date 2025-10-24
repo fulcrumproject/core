@@ -164,13 +164,33 @@ For array properties, use the `items` field to define the schema for array eleme
     "items": {
       "type": "integer",
       "validators": [
-        { "type": "min", "value": 1 },
-        { "type": "max", "value": 65535 }
+        {
+          "type": "min",
+          "config": {
+            "value": 1
+          }
+        },
+        {
+          "type": "max",
+          "config": {
+            "value": 65535
+          }
+        }
       ]
     },
     "validators": [
-      { "type": "minItems", "value": 1 },
-      { "type": "maxItems", "value": 10 }
+      {
+        "type": "minItems",
+        "config": {
+          "value": 1
+        }
+      },
+      {
+        "type": "maxItems",
+        "config": {
+          "value": 10
+        }
+      }
     ]
   }
 }
@@ -196,7 +216,12 @@ Minimum string length:
 ```json
 {
   "validators": [
-    { "type": "minLength", "value": 3 }
+    {
+      "type": "minLength",
+      "config": {
+        "value": 3
+      }
+    }
   ]
 }
 ```
@@ -206,7 +231,12 @@ Maximum string length:
 ```json
 {
   "validators": [
-    { "type": "maxLength", "value": 50 }
+    {
+      "type": "maxLength",
+      "config": {
+        "value": 50
+      }
+    }
   ]
 }
 ```
@@ -216,7 +246,12 @@ Regular expression pattern:
 ```json
 {
   "validators": [
-    { "type": "pattern", "value": "^[a-zA-Z0-9_-]+$" }
+    {
+      "type": "pattern",
+      "config": {
+        "pattern": "^[a-zA-Z0-9_-]+$"
+      }
+    }
   ]
 }
 ```
@@ -226,7 +261,12 @@ Allowed values from a predefined list:
 ```json
 {
   "validators": [
-    { "type": "enum", "value": ["development", "staging", "production"] }
+    {
+      "type": "enum",
+      "config": {
+        "values": ["development", "staging", "production"]
+      }
+    }
   ]
 }
 ```
@@ -238,7 +278,12 @@ Minimum value:
 ```json
 {
   "validators": [
-    { "type": "min", "value": 1 }
+    {
+      "type": "min",
+      "config": {
+        "value": 1
+      }
+    }
   ]
 }
 ```
@@ -248,7 +293,12 @@ Maximum value:
 ```json
 {
   "validators": [
-    { "type": "max", "value": 100 }
+    {
+      "type": "max",
+      "config": {
+        "value": 100
+      }
+    }
   ]
 }
 ```
@@ -258,7 +308,12 @@ Allowed values from a predefined list:
 ```json
 {
   "validators": [
-    { "type": "enum", "value": [1, 2, 4, 8, 16, 32] }
+    {
+      "type": "enum",
+      "config": {
+        "values": [1, 2, 4, 8, 16, 32]
+      }
+    }
   ]
 }
 ```
@@ -270,7 +325,12 @@ Minimum number of items:
 ```json
 {
   "validators": [
-    { "type": "minItems", "value": 1 }
+    {
+      "type": "minItems",
+      "config": {
+        "value": 1
+      }
+    }
   ]
 }
 ```
@@ -280,7 +340,12 @@ Maximum number of items:
 ```json
 {
   "validators": [
-    { "type": "maxItems", "value": 10 }
+    {
+      "type": "maxItems",
+      "config": {
+        "value": 10
+      }
+    }
   ]
 }
 ```
@@ -290,7 +355,12 @@ Ensure all items are unique:
 ```json
 {
   "validators": [
-    { "type": "uniqueItems", "value": true }
+    {
+      "type": "uniqueItems",
+      "config": {
+        "value": true
+      }
+    }
   ]
 }
 ```
@@ -308,7 +378,12 @@ Single service type:
     "label": "Database Service",
     "required": true,
     "validators": [
-      { "type": "serviceType", "value": "MySQL" }
+      {
+        "type": "serviceType",
+        "config": {
+          "value": "MySQL"
+        }
+      }
     ]
   }
 }
@@ -322,7 +397,12 @@ Multiple allowed service types:
     "label": "Storage Service",
     "required": true,
     "validators": [
-      { "type": "serviceType", "value": ["MySQL", "PostgreSQL", "MongoDB"] }
+      {
+        "type": "serviceType",
+        "config": {
+          "value": ["MySQL", "PostgreSQL", "MongoDB"]
+        }
+      }
     ]
   }
 }
@@ -337,7 +417,12 @@ Same consumer constraint:
   "related_service": {
     "type": "reference",
     "validators": [
-      { "type": "sameOrigin", "value": "consumer" }
+      {
+        "type": "sameOrigin",
+        "config": {
+          "value": "consumer"
+        }
+      }
     ]
   }
 }
@@ -349,7 +434,12 @@ Same service group constraint:
   "dependent_service": {
     "type": "reference", 
     "validators": [
-      { "type": "sameOrigin", "value": "group" }
+      {
+        "type": "sameOrigin",
+        "config": {
+          "value": "group"
+        }
+      }
     ]
   }
 }
@@ -363,8 +453,18 @@ Combined validators example:
     "label": "Backend API Service", 
     "required": true,
     "validators": [
-      { "type": "serviceType", "value": ["NodeJS-API", "Python-API"] },
-      { "type": "sameOrigin", "value": "consumer" }
+      {
+        "type": "serviceType",
+        "config": {
+          "value": ["NodeJS-API", "Python-API"]
+        }
+      },
+      {
+        "type": "sameOrigin",
+        "config": {
+          "value": "consumer"
+        }
+      }
     ]
   }
 }
@@ -381,7 +481,12 @@ Validates that a value is one of the enabled service options for a specific serv
     "label": "Operating System",
     "required": true,
     "validators": [
-      { "type": "serviceOption", "value": "os" }
+      {
+        "type": "serviceOption",
+        "config": {
+          "value": "os"
+        }
+      }
     ]
   }
 }
@@ -405,7 +510,12 @@ Machine type selection:
     "label": "Machine Type",
     "required": true,
     "validators": [
-      { "type": "serviceOption", "value": "machine_type" }
+      {
+        "type": "serviceOption",
+        "config": {
+          "value": "machine_type"
+        }
+      }
     ]
   }
 }
@@ -419,7 +529,12 @@ Region selection:
     "label": "Region",
     "required": true,
     "validators": [
-      { "type": "serviceOption", "value": "region" }
+      {
+        "type": "serviceOption",
+        "config": {
+          "value": "region"
+        }
+      }
     ]
   }
 }
@@ -433,7 +548,12 @@ Disk type with complex value:
     "label": "Disk Configuration",
     "required": true,
     "validators": [
-      { "type": "serviceOption", "value": "disk_type" }
+      {
+        "type": "serviceOption",
+        "config": {
+          "value": "disk_type"
+        }
+      }
     ]
   }
 }
@@ -495,7 +615,12 @@ Service type schema:
       "label": "Operating System",
       "required": true,
       "validators": [
-        { "type": "serviceOption", "value": "os" }
+        {
+          "type": "serviceOption",
+          "config": {
+            "value": "os"
+          }
+        }
       ]
     },
     "machineType": {
@@ -503,7 +628,12 @@ Service type schema:
       "label": "Machine Type",
       "required": true,
       "validators": [
-        { "type": "serviceOption", "value": "machine_type" }
+        {
+          "type": "serviceOption",
+          "config": {
+            "value": "machine_type"
+          }
+        }
       ]
     },
     "region": {
@@ -511,7 +641,12 @@ Service type schema:
       "label": "Region",
       "required": true,
       "validators": [
-        { "type": "serviceOption", "value": "region" }
+        {
+          "type": "serviceOption",
+          "config": {
+            "value": "region"
+          }
+        }
       ]
     }
   }
@@ -1860,7 +1995,7 @@ Here's a comprehensive example for a VM service type with user configuration, ag
       {
         "type": "pattern",
         "config": {
-          "value": "^[a-zA-Z0-9-]+$"
+          "pattern": "^[a-zA-Z0-9-]+$"
         }
       }
     ]

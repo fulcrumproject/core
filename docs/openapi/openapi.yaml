@@ -25,6 +25,8 @@ tags:
     description: Event logging
   - name: Tokens
     description: Authentication token management
+  - name: Vault
+    description: Secure secret storage and retrieval
 
 servers:
   - url: https://api.fulcrum.testudosrl.dev/api/v1
@@ -266,3 +268,5 @@ paths:
     $ref: ./paths/tokens@{id}.yaml
   /tokens/{id}/regenerate:
     $ref: ./paths/tokens@{id}@regenerate.yaml
+  /vault/secrets/{reference}:
+    $ref: ./paths/vault@secrets@{reference}.yaml
