@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -29,6 +30,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/health"
 	"github.com/fulcrumproject/core/pkg/keycloak"
 	"github.com/fulcrumproject/core/pkg/middlewares"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/fulcrumproject/utils/confbuilder"
 	"github.com/fulcrumproject/utils/logging"
 )
@@ -95,9 +97,26 @@ func main() {
 	store := database.NewGormStore(db)
 	metricEntryRepo := database.NewMetricEntryRepository(metricDb)
 
+	// Initialize vault for secret storage (optional)
+	var vault schema.Vault
+	if cfg.VaultEncryptionKey != "" {
+		vaultKey, err := hex.DecodeString(cfg.VaultEncryptionKey)
+		if err != nil {
+			slog.Error("Invalid vault encryption key (must be 64-character hex string)", "error", err)
+			os.Exit(1)
+		}
+		vault, err = database.NewVault(db, vaultKey)
+		if err != nil {
+			slog.Error("Failed to initialize vault", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("Vault initialized for secret storage")
+	} else {
+		slog.Warn("Vault encryption key not configured - secret properties will not work")
+	}
+
 	// Initialize schema engine for service property validation
-	// TODO: Implement proper vault instead of nil
-	propertyEngine := domain.NewServicePropertyEngine(store, nil)
+	propertyEngine := domain.NewServicePropertyEngine(store, vault)
 
 	// Initialize commanders
 	serviceCmd := domain.NewServiceCommander(store, propertyEngine)
