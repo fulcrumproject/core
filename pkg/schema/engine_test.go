@@ -880,3 +880,236 @@ func TestEngine_CleanupVaultSecrets_NilProperties(t *testing.T) {
 	// Verify vault was not called
 	mockVault.AssertNotCalled(t, "Delete")
 }
+
+func TestExtractEphemeralSecretProperties(t *testing.T) {
+	tests := []struct {
+		name       string
+		schema     Schema
+		properties map[string]any
+		expected   map[string]any
+	}{
+		{
+			name: "single ephemeral secret",
+			schema: Schema{
+				Properties: map[string]PropertyDefinition{
+					"setupPassword": {
+						Type:   "string",
+						Secret: &SecretConfig{Type: "ephemeral"},
+					},
+					"apiKey": {
+						Type:   "string",
+						Secret: &SecretConfig{Type: "persistent"},
+					},
+				},
+			},
+			properties: map[string]any{
+				"setupPassword": "vault://setup123",
+				"apiKey":        "vault://api456",
+			},
+			expected: map[string]any{
+				"setupPassword": "vault://setup123",
+				// apiKey should NOT be included (it's persistent)
+			},
+		},
+		{
+			name: "multiple ephemeral secrets",
+			schema: Schema{
+				Properties: map[string]PropertyDefinition{
+					"tempToken": {
+						Type:   "string",
+						Secret: &SecretConfig{Type: "ephemeral"},
+					},
+					"installKey": {
+						Type:   "string",
+						Secret: &SecretConfig{Type: "ephemeral"},
+					},
+				},
+			},
+			properties: map[string]any{
+				"tempToken":  "vault://temp123",
+				"installKey": "vault://install456",
+			},
+			expected: map[string]any{
+				"tempToken":  "vault://temp123",
+				"installKey": "vault://install456",
+			},
+		},
+		{
+			name: "nested ephemeral secret in object",
+			schema: Schema{
+				Properties: map[string]PropertyDefinition{
+					"database": {
+						Type: "object",
+						Properties: map[string]PropertyDefinition{
+							"setupPassword": {
+								Type:   "string",
+								Secret: &SecretConfig{Type: "ephemeral"},
+							},
+							"host": {
+								Type: "string",
+							},
+						},
+					},
+				},
+			},
+			properties: map[string]any{
+				"database": map[string]any{
+					"setupPassword": "vault://setup123",
+					"host":          "localhost",
+				},
+			},
+			expected: map[string]any{
+				"database": map[string]any{
+					"setupPassword": "vault://setup123",
+				},
+			},
+		},
+		{
+			name: "array of objects with ephemeral secrets",
+			schema: Schema{
+				Properties: map[string]PropertyDefinition{
+					"users": {
+						Type: "array",
+						Items: &PropertyDefinition{
+							Type: "object",
+							Properties: map[string]PropertyDefinition{
+								"name": {
+									Type: "string",
+								},
+								"tempPassword": {
+									Type:   "string",
+									Secret: &SecretConfig{Type: "ephemeral"},
+								},
+							},
+						},
+					},
+				},
+			},
+			properties: map[string]any{
+				"users": []any{
+					map[string]any{
+						"name":         "user1",
+						"tempPassword": "vault://pass1",
+					},
+					map[string]any{
+						"name":         "user2",
+						"tempPassword": "vault://pass2",
+					},
+				},
+			},
+			expected: map[string]any{
+				"users": []any{
+					map[string]any{
+						"tempPassword": "vault://pass1",
+					},
+					map[string]any{
+						"tempPassword": "vault://pass2",
+					},
+				},
+			},
+		},
+		{
+			name: "no ephemeral secrets",
+			schema: Schema{
+				Properties: map[string]PropertyDefinition{
+					"apiKey": {
+						Type:   "string",
+						Secret: &SecretConfig{Type: "persistent"},
+					},
+					"regularProp": {
+						Type: "string",
+					},
+				},
+			},
+			properties: map[string]any{
+				"apiKey":      "vault://api456",
+				"regularProp": "value",
+			},
+			expected: map[string]any{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractEphemeralSecretProperties(tt.schema, tt.properties)
+			
+			if len(tt.expected) == 0 {
+				if len(result) != 0 {
+					t.Errorf("expected empty result, got %v", result)
+				}
+				return
+			}
+
+			// Convert to JSON for easier comparison
+			expectedJSON, _ := json.Marshal(tt.expected)
+			resultJSON, _ := json.Marshal(result)
+			
+			if string(expectedJSON) != string(resultJSON) {
+				t.Errorf("extractEphemeralSecretProperties() mismatch\nExpected: %s\nGot: %s", expectedJSON, resultJSON)
+			}
+		})
+	}
+}
+
+func TestEngine_CleanupEphemeralSecrets(t *testing.T) {
+	mockVault := NewMockVault(t)
+	engine := NewEngine[TestContext](nil, nil, nil, mockVault)
+	ctx := context.Background()
+
+	schema := Schema{
+		Properties: map[string]PropertyDefinition{
+			"setupPassword": {
+				Type:   "string",
+				Secret: &SecretConfig{Type: "ephemeral"},
+			},
+			"apiKey": {
+				Type:   "string",
+				Secret: &SecretConfig{Type: "persistent"},
+			},
+			"regularProp": {
+				Type: "string",
+			},
+		},
+	}
+
+	properties := map[string]any{
+		"setupPassword": "vault://setup123",
+		"apiKey":        "vault://api456",
+		"regularProp":   "some-value",
+	}
+
+	// Only setupPassword should be deleted (ephemeral)
+	mockVault.On("Delete", mock.Anything, "setup123").Return(nil).Once()
+
+	// Call cleanup
+	engine.CleanupEphemeralSecrets(ctx, schema, properties)
+
+	// Verify only ephemeral secret was deleted
+	mockVault.AssertExpectations(t)
+	mockVault.AssertNotCalled(t, "Delete", mock.Anything, "api456") // persistent should not be deleted
+}
+
+func TestEngine_CleanupEphemeralSecrets_NoEphemeral(t *testing.T) {
+	mockVault := NewMockVault(t)
+	engine := NewEngine[TestContext](nil, nil, nil, mockVault)
+	ctx := context.Background()
+
+	schema := Schema{
+		Properties: map[string]PropertyDefinition{
+			"apiKey": {
+				Type:   "string",
+				Secret: &SecretConfig{Type: "persistent"},
+			},
+		},
+	}
+
+	properties := map[string]any{
+		"apiKey": "vault://api456",
+	}
+
+	// Should not call vault.Delete since there are no ephemeral secrets
+	engine.CleanupEphemeralSecrets(ctx, schema, properties)
+
+	// Verify vault was not called
+	mockVault.AssertNotCalled(t, "Delete")
+}

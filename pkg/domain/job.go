@@ -252,6 +252,11 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 			return err
 		}
 
+		// Clean up ephemeral secrets after job completion (best-effort)
+		if svc.Properties != nil && serviceType.PropertySchema != nil {
+			s.engine.CleanupEphemeralSecrets(ctx, *serviceType.PropertySchema, map[string]any(*svc.Properties))
+		}
+
 		// Release pool allocations if service reached a terminal state
 		if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
 			// Find all ServicePoolValues allocated to this service and release them
@@ -271,7 +276,8 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 				}
 			}
 
-			// Clean up vault secrets from service properties (best-effort)
+			// Clean up ALL remaining vault secrets from service properties (best-effort)
+			// This includes persistent secrets and any ephemeral secrets that weren't already cleaned up
 			if svc.Properties != nil {
 				s.engine.CleanupVaultSecrets(ctx, map[string]any(*svc.Properties))
 			}
@@ -330,6 +336,12 @@ func (s *jobCommander) Fail(ctx context.Context, params FailJobParams) error {
 		}
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
+		}
+
+		// Clean up ephemeral secrets after job failure (best-effort)
+		// Even if the job failed, ephemeral secrets should be cleaned up
+		if svc.Properties != nil && serviceType.PropertySchema != nil {
+			s.engine.CleanupEphemeralSecrets(ctx, *serviceType.PropertySchema, map[string]any(*svc.Properties))
 		}
 
 		// Create event for the updated service

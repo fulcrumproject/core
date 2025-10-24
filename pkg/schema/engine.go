@@ -61,6 +61,81 @@ func (e *Engine[C]) CleanupVaultSecrets(ctx context.Context, properties map[stri
 	}
 }
 
+// CleanupEphemeralSecrets deletes only ephemeral vault secrets referenced in the properties
+// Uses the schema to identify which properties are ephemeral secrets
+// This is a best-effort operation - errors are logged but don't fail the operation
+func (e *Engine[C]) CleanupEphemeralSecrets(ctx context.Context, schema Schema, properties map[string]any) {
+	if e.vault == nil || properties == nil {
+		return
+	}
+
+	// Extract only ephemeral secrets
+	ephemeralProps := extractEphemeralSecretProperties(schema, properties)
+	if len(ephemeralProps) == 0 {
+		return
+	}
+
+	// Clean up the ephemeral secrets
+	e.CleanupVaultSecrets(ctx, ephemeralProps)
+}
+
+// extractEphemeralSecretProperties extracts only properties that are ephemeral secrets
+// Only primitive types (string, integer, number, boolean, json) can be secrets
+func extractEphemeralSecretProperties(schema Schema, properties map[string]any) map[string]any {
+	result := make(map[string]any)
+	
+	for propName, propDef := range schema.Properties {
+		// Only primitive types can be secrets (validated in schema validation)
+		// Check if this property is an ephemeral secret
+		if propDef.Secret != nil && propDef.Secret.Type == "ephemeral" {
+			if value, exists := properties[propName]; exists {
+				result[propName] = value
+			}
+			continue // Don't recurse into secrets
+		}
+		
+		// Recursively check nested objects (objects themselves cannot be secrets)
+		if propDef.Type == "object" && propDef.Properties != nil {
+			if nestedProps, ok := properties[propName].(map[string]any); ok {
+				// Create nested schema for recursion
+				nestedSchema := Schema{Properties: propDef.Properties}
+				nestedEphemeral := extractEphemeralSecretProperties(nestedSchema, nestedProps)
+				if len(nestedEphemeral) > 0 {
+					result[propName] = nestedEphemeral
+				}
+			}
+		}
+		
+		// Arrays: the array itself cannot be a secret, check if array items contain secrets
+		if propDef.Type == "array" && propDef.Items != nil {
+			if arrayValue, exists := properties[propName]; exists {
+				if arrayItems, ok := arrayValue.([]any); ok {
+					var resultItems []any
+					
+					// If items are objects, recursively check their properties
+					if propDef.Items.Type == "object" && propDef.Items.Properties != nil {
+						itemSchema := Schema{Properties: propDef.Items.Properties}
+						for _, item := range arrayItems {
+							if itemProps, ok := item.(map[string]any); ok {
+								itemEphemeral := extractEphemeralSecretProperties(itemSchema, itemProps)
+								if len(itemEphemeral) > 0 {
+									resultItems = append(resultItems, itemEphemeral)
+								}
+							}
+						}
+					}
+					
+					if len(resultItems) > 0 {
+						result[propName] = resultItems
+					}
+				}
+			}
+		}
+	}
+	
+	return result
+}
+
 // extractVaultReferences recursively extracts all vault:// references from properties
 // Returns a slice of reference strings (without the vault:// prefix)
 func extractVaultReferences(properties map[string]any) []string {
@@ -88,7 +163,7 @@ func extractVaultReferencesFromValue(value any, references *[]string) {
 		for _, item := range v {
 			extractVaultReferencesFromValue(item, references)
 		}
-	// Ignore other types (numbers, booleans, nil)
+		// Ignore other types (numbers, booleans, nil)
 	}
 }
 
