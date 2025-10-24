@@ -108,73 +108,110 @@ Content-Type: application/json
 {
     "name": "vm {{$guid}}",
     "propertySchema": {
-        "cpu": {
-            "type": "integer",
-            "label": "CPU Cores",
-            "source": "input",
-            "updatable": "statuses",
-            "updatableIn": ["Stopped"],
-            "required": true,
-            "validators": [
-                {
-                    "type": "enum",
-                    "value": [1, 2, 4, 8, 16, 32]
-                }
-            ]
-        },
-        "memory": {
-            "type": "integer",
-            "label": "Memory (MB)",
-            "source": "input",
-            "updatable": "statuses",
-            "updatableIn": ["Stopped"],
-            "required": true,
-            "validators": [
-                {
-                    "type": "enum",
-                    "value": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
-                }
-            ]
-        },
-        "disk": {
-            "type": "integer",
-            "label": "Disk (GB)",
-            "source": "input",
-            "updatable": "statuses",
-            "updatableIn": ["Stopped"],
-            "required": true,
-            "validators": [
-                {
-                    "type": "enum",
-                    "value": [8, 16, 32, 64, 128, 256, 512, 1024]
-                }
-            ]
-        },
-        "image": {
-            "type": "string",
-            "label": "Image",
-            "source": "input",
-            "updatable": "never",
-            "required": true,
-            "validators": [
-                {
-                    "type": "serviceOption",
-                    "value": "{{createOSOptionType.response.body.type}}"
-                }
-            ]
-        },
-        "internalIp": {
-            "type": "string",
-            "label": "Internal IP",
-            "source": "agent",
-            "updatable": "never"
-        },
-        "publicIp": {
-            "type": "string",
-            "label": "Public IP",
-            "source": "system",
-            "updatable": "never",
-            "servicePoolType": "public_ip"
+        "properties": {
+            "cpu": {
+                "type": "integer",
+                "label": "CPU Cores",
+                "required": true,
+                "validators": [
+                    {
+                        "type": "mutable",
+                        "config": {
+                            "updatableIn": ["Stopped"]
+                        }
+                    },
+                    {
+                        "type": "enum",
+                        "config": {
+                            "values": [1, 2, 4, 8, 16, 32]
+                        }
+                    }
+                ]
+            },
+            "memory": {
+                "type": "integer",
+                "label": "Memory (MB)",
+                "required": true,
+                "validators": [
+                    {
+                        "type": "mutable",
+                        "config": {
+                            "updatableIn": ["Stopped"]
+                        }
+                    },
+                    {
+                        "type": "enum",
+                        "config": {
+                            "values": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
+                        }
+                    }
+                ]
+            },
+            "disk": {
+                "type": "integer",
+                "label": "Disk (GB)",
+                "required": true,
+                "validators": [
+                    {
+                        "type": "mutable",
+                        "config": {
+                            "updatableIn": ["Stopped"]
+                        }
+                    },
+                    {
+                        "type": "enum",
+                        "config": {
+                            "values": [8, 16, 32, 64, 128, 256, 512, 1024]
+                        }
+                    }
+                ]
+            },
+            "image": {
+                "type": "string",
+                "label": "Image",
+                "required": true,
+                "immutable": true,
+                "validators": [
+                    {
+                        "type": "serviceOption",
+                        "config": {
+                            "value": "{{createOSOptionType.response.body.type}}"
+                        }
+                    }
+                ]
+            },
+            "internalIp": {
+                "type": "string",
+                "label": "Internal IP",
+                "immutable": true,
+                "validators": [
+                    {
+                        "type": "source",
+                        "config": {
+                            "source": "agent"
+                        }
+                    }
+                ]
+            },
+            "publicIp": {
+                "type": "string",
+                "label": "Public IP",
+                "immutable": true,
+                "generator": {
+                    "type": "pool",
+                    "config": {
+                        "poolType": "public_ip"
+                    }
+                },
+                "validators": [
+                    {
+                        "type": "source",
+                        "config": {
+                            "source": "system"
+                        }
+                    }
+                ]
+            }
         }
     },
     "lifecycleSchema": {
