@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
@@ -103,8 +104,11 @@ func (s *Service) Update(name *string, properties *properties.JSON) (update bool
 	return update, action, nil
 }
 
-// ApplyAgentPropertyUpdates applies property updates from an agent
-func (s *Service) ApplyAgentPropertyUpdates(
+// ApplyAgentPropertyUpdates applies property updates from an agent using the schema engine
+func ApplyAgentPropertyUpdates(
+	ctx context.Context,
+	engine *schema.Engine[ServicePropertyContext],
+	svc *Service,
 	serviceType *ServiceType,
 	updates map[string]any,
 ) error {
@@ -112,16 +116,33 @@ func (s *Service) ApplyAgentPropertyUpdates(
 		return nil
 	}
 
-	// TODO: Use schema engine for agent property validation
-	// For now, agent property updates bypass validation - this needs to be implemented properly
-
-	// Apply updates
-	if s.Properties == nil {
-		props := make(properties.JSON)
-		s.Properties = &props
+	// Validate schema exists
+	if serviceType.PropertySchema == nil {
+		return fmt.Errorf("service type %s does not have a property schema", serviceType.Name)
 	}
-	for k, v := range updates {
-		(*s.Properties)[k] = v
+
+	// Ensure properties map exists
+	if svc.Properties == nil {
+		props := make(properties.JSON)
+		svc.Properties = &props
+	}
+
+	// Create context for agent property updates
+	schemaCtx := ServicePropertyContext{
+		Actor:   ActorAgent,
+		Service: svc,
+	}
+
+	// Use engine to validate and process the updates
+	oldProperties := map[string]any(*svc.Properties)
+	validatedProperties, err := engine.ApplyUpdate(ctx, schemaCtx, *serviceType.PropertySchema, oldProperties, updates)
+	if err != nil {
+		return err
+	}
+
+	// Merge validated properties
+	for k, v := range validatedProperties {
+		(*svc.Properties)[k] = v
 	}
 
 	return nil
@@ -267,10 +288,14 @@ func CreateServiceWithAgent(
 		return nil, err
 	}
 
+	// Extract actor from auth context
+	identity := auth.MustGetIdentity(ctx)
+	actor := ActorTypeFromAuthRole(identity.Role)
+
 	// Validate and process properties using schema engine
 	schemaCtx := ServicePropertyContext{
-		Actor:   ActorUser, // TODO: Get from auth context
-		Service: nil,       // nil for create
+		Actor:   actor,
+		Service: nil, // nil for create
 	}
 
 	validatedProperties, err := engine.ApplyCreate(ctx, schemaCtx, *serviceType.PropertySchema, params.Properties)
@@ -369,10 +394,14 @@ func UpdateService(ctx context.Context, store Store, engine *schema.Engine[Servi
 
 	// Validate and process properties if provided
 	if params.Properties != nil {
+		// Extract actor from auth context
+		identity := auth.MustGetIdentity(ctx)
+		actor := ActorTypeFromAuthRole(identity.Role)
+
 		// Build schema context
 		schemaCtx := ServicePropertyContext{
-			Actor:   ActorUser, // TODO: Get from auth context
-			Service: svc,       // Pass service for update operation
+			Actor:   actor,
+			Service: svc, // Pass service for update operation
 		}
 
 		// Convert existing properties to map

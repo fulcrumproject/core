@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
 )
 
@@ -170,15 +171,18 @@ type FailJobParams struct {
 
 // jobCommander is the concrete implementation of JobCommander
 type jobCommander struct {
-	store Store
+	store  Store
+	engine *schema.Engine[ServicePropertyContext]
 }
 
 // NewJobCommander creates a new command executor
 func NewJobCommander(
 	store Store,
+	engine *schema.Engine[ServicePropertyContext],
 ) *jobCommander {
 	return &jobCommander{
-		store: store,
+		store:  store,
+		engine: engine,
 	}
 }
 
@@ -226,7 +230,7 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 
 		// Apply agent property updates if provided
 		if len(params.Properties) > 0 {
-			if err := svc.ApplyAgentPropertyUpdates(serviceType, params.Properties); err != nil {
+			if err := ApplyAgentPropertyUpdates(ctx, s.engine, svc, serviceType, params.Properties); err != nil {
 				return InvalidInputError{Err: err}
 			}
 		}

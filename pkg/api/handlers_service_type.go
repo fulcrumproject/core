@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/fulcrumproject/core/pkg/auth"
@@ -18,17 +19,20 @@ type ServiceTypeHandler struct {
 	querier   domain.ServiceTypeQuerier
 	commander domain.ServiceTypeCommander
 	authz     auth.Authorizer
+	engine    *schema.Engine[domain.ServicePropertyContext]
 }
 
 func NewServiceTypeHandler(
 	querier domain.ServiceTypeQuerier,
 	commander domain.ServiceTypeCommander,
 	authz auth.Authorizer,
+	engine *schema.Engine[domain.ServicePropertyContext],
 ) *ServiceTypeHandler {
 	return &ServiceTypeHandler{
 		querier:   querier,
 		commander: commander,
 		authz:     authz,
+		engine:    engine,
 	}
 }
 
@@ -124,13 +128,76 @@ type ValidateRes struct {
 }
 
 func (h *ServiceTypeHandler) Validate(w http.ResponseWriter, r *http.Request) {
-	// TODO: This endpoint needs to be reimplemented using the schema engine
-	// For now, return a 501 Not Implemented error
-	render.Render(w, r, &ErrRes{
-		HTTPStatusCode: 501,
-		StatusText:     "Not Implemented",
-		ErrorText:      "Property validation has been moved to service creation/update endpoints",
-	})
+	ctx := r.Context()
+
+	// Get service type ID from path
+	serviceTypeID := middlewares.MustGetID(ctx)
+
+	// Decode request body
+	var req ValidateReq
+	if err := render.DecodeJSON(r.Body, &req); err != nil {
+		render.Render(w, r, &ErrRes{
+			HTTPStatusCode: http.StatusBadRequest,
+			StatusText:     "Bad Request",
+			ErrorText:      fmt.Sprintf("Invalid request body: %v", err),
+		})
+		return
+	}
+
+	// Get service type
+	serviceType, err := h.querier.Get(ctx, serviceTypeID)
+	if err != nil {
+		render.Render(w, r, ErrNotFound())
+		return
+	}
+
+	// Check if service type has a property schema
+	if serviceType.PropertySchema == nil {
+		render.Render(w, r, &ErrRes{
+			HTTPStatusCode: http.StatusBadRequest,
+			StatusText:     "Bad Request",
+			ErrorText:      "Service type does not have a property schema",
+		})
+		return
+	}
+
+	// Extract actor from auth context
+	identity := auth.MustGetIdentity(ctx)
+	actor := domain.ActorTypeFromAuthRole(identity.Role)
+
+	// Create a temporary service for validation context
+	tempService := &domain.Service{
+		GroupID:    req.GroupID,
+		ProviderID: req.ProviderID,
+	}
+
+	// Create schema context for validation
+	schemaCtx := domain.ServicePropertyContext{
+		Actor:   actor,
+		Service: tempService, // Provide service context for validators that need it
+	}
+
+	// Validate properties using the schema engine
+	_, err = h.engine.ApplyCreate(ctx, schemaCtx, *serviceType.PropertySchema, req.Properties)
+
+	// Build response
+	res := ValidateRes{
+		Valid:  err == nil,
+		Errors: []domain.ValidationErrorDetail{},
+	}
+
+	if err != nil {
+		// Extract validation errors
+		// For now, return error as a single validation error
+		// TODO: Enhance to parse structured errors from engine
+		res.Errors = append(res.Errors, domain.ValidationErrorDetail{
+			Path:    "",
+			Message: err.Error(),
+		})
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, res)
 }
 
 // Adapter functions that convert request structs to commander method calls

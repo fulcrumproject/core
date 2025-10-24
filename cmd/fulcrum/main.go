@@ -107,7 +107,7 @@ func main() {
 	serviceOptionCmd := domain.NewServiceOptionCommander(store)
 	participantCmd := domain.NewParticipantCommander(store)
 	agentTypeCmd := domain.NewAgentTypeCommander(store)
-	jobCmd := domain.NewJobCommander(store)
+	jobCmd := domain.NewJobCommander(store, propertyEngine)
 	metricEntryCmd := domain.NewMetricEntryCommander(store, metricEntryRepo)
 	metricTypeCmd := domain.NewMetricTypeCommander(store, metricEntryRepo)
 	agentCmd := domain.NewAgentCommander(store)
@@ -152,7 +152,7 @@ func main() {
 
 	// Initialize handlers
 	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz)
-	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz)
+	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz, propertyEngine)
 	serviceOptionTypeHandler := api.NewServiceOptionTypeHandler(store.ServiceOptionTypeRepo(), serviceOptionTypeCmd, athz)
 	serviceOptionHandler := api.NewServiceOptionHandler(store.ServiceOptionRepo(), serviceOptionCmd, athz)
 	servicePoolSetHandler := api.NewServicePoolSetHandler(store.ServicePoolSetRepo(), servicePoolSetCmd, athz)
