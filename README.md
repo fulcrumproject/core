@@ -131,7 +131,7 @@ docker compose up postgres
 ```
 3. Start the application:
 ```bash
-go run cmd/fulcrum/main.go
+go run ./cmd/fulcrum
 ```
 
 For development with hot-reload:
