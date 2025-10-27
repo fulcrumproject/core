@@ -135,37 +135,6 @@ Content-Type: application/json
 GET {{baseUrl}}/service-types/{{createdServiceTypeId}}
 Authorization: Bearer {{adminToken}}
 
-### Validate service properties using the created service type
-# @name validateServiceProperties
-POST {{baseUrl}}/service-types/{{createdServiceTypeId}}/validate
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "groupId": "550e8400-e29b-41d4-a716-446655440000",
-    "properties": {
-        "cpu": 4,
-        "memory": 8192,
-        "environment": "production",
-        "storage": 50
-    }
-}
-
-### Validate with invalid properties (should return validation errors)
-# @name validateInvalidProperties
-POST {{baseUrl}}/service-types/{{createdServiceTypeId}}/validate
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "groupId": "550e8400-e29b-41d4-a716-446655440000",
-    "properties": {
-        "cpu": 0,
-        "memory": 256,
-        "environment": "invalid_env"
-    }
-}
-
 ### Delete the service type
 DELETE {{baseUrl}}/service-types/{{createdServiceTypeId}}
 Authorization: Bearer {{adminToken}}

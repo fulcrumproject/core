@@ -701,15 +701,6 @@ sequenceDiagram
     end
 ```
 
-##### Validation API Endpoint
-
-The system provides a dedicated validation endpoint for testing property schemas:
-
-- **Endpoint**: `POST /api/v1/service-types/{id}/validate`
-- **Purpose**: Validate service properties against a ServiceType's schema
-- **Response**: Returns validation status and detailed error messages
-- **Use Cases**: Frontend validation, schema testing, development workflows
-
 For detailed schema syntax and examples, see [SERVICE_TYPE.md](SERVICE_TYPE.md).
 
 #### Agent Authentication Flow

@@ -58,23 +58,23 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of agent types
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/AgentTypeRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/AgentTypeRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: agentTypesCreate
       summary: Create an agent type
@@ -89,45 +89,45 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAgentTypeReq'
+              $ref: "#/components/schemas/CreateAgentTypeReq"
       responses:
-        '201':
+        "201":
           description: Agent type created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentTypeRes'
-        '400':
+                $ref: "#/components/schemas/AgentTypeRes"
+        "400":
           description: Invalid request body or validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '401':
+                $ref: "#/components/schemas/ErrorRes"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '403':
+                $ref: "#/components/schemas/ErrorRes"
+        "403":
           description: Administrator access required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '409':
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
           description: Agent type with same name already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /agent-types/{id}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     get:
       operationId: agentTypesGet
       summary: Get an agent type
@@ -142,18 +142,18 @@ paths:
         - role: agent
           permission: all agent types
       responses:
-        '200':
+        "200":
           description: The agent type details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentTypeRes'
-        '404':
+                $ref: "#/components/schemas/AgentTypeRes"
+        "404":
           description: Agent type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       operationId: agentTypesUpdate
       summary: Update an agent type
@@ -168,44 +168,44 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateAgentTypeReq'
+              $ref: "#/components/schemas/UpdateAgentTypeReq"
       responses:
-        '200':
+        "200":
           description: Agent type updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentTypeRes'
-        '400':
+                $ref: "#/components/schemas/AgentTypeRes"
+        "400":
           description: Invalid request body or validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '401':
+                $ref: "#/components/schemas/ErrorRes"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '403':
+                $ref: "#/components/schemas/ErrorRes"
+        "403":
           description: Administrator access required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '404':
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
           description: Agent type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '409':
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
           description: Agent type with same name already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       operationId: agentTypesDelete
       summary: Delete an agent type
@@ -216,32 +216,32 @@ paths:
         - role: admin
           permission: all agent types
       responses:
-        '204':
+        "204":
           description: Agent type deleted successfully
-        '401':
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '403':
+                $ref: "#/components/schemas/ErrorRes"
+        "403":
           description: Administrator access required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '404':
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
           description: Agent type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '409':
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
           description: Cannot delete agent type with dependent agents
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /agents:
     get:
       operationId: agentsList
@@ -268,23 +268,23 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of agents
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/AgentRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/AgentRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: agentsCreate
       summary: Create an agent
@@ -303,20 +303,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAgentReq'
+              $ref: "#/components/schemas/CreateAgentReq"
       responses:
-        '201':
+        "201":
           description: Agent created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentCreateRes'
-        '400':
+                $ref: "#/components/schemas/AgentCreateRes"
+        "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /agents/me:
     get:
       operationId: agentsGetCurrent
@@ -327,18 +327,18 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: The agent details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentRes'
-        '401':
+                $ref: "#/components/schemas/AgentRes"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /agents/me/status:
     put:
       operationId: agentsUpdateStatus
@@ -358,33 +358,33 @@ paths:
                 - status
               properties:
                 status:
-                  $ref: '#/components/schemas/AgentStatus'
+                  $ref: "#/components/schemas/AgentStatus"
       responses:
-        '200':
+        "200":
           description: Agent status updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentRes'
-        '400':
+                $ref: "#/components/schemas/AgentRes"
+        "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '401':
+                $ref: "#/components/schemas/ErrorRes"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /agents/{id}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     get:
       operationId: agentsGet
       summary: Get an agent
@@ -399,18 +399,18 @@ paths:
         - role: agent
           permission: itself only
       responses:
-        '200':
+        "200":
           description: The agent details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentRes'
-        '404':
+                $ref: "#/components/schemas/AgentRes"
+        "404":
           description: Agent not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       operationId: agentsUpdate
       summary: Update an agent
@@ -429,20 +429,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateAgentReq'
+              $ref: "#/components/schemas/UpdateAgentReq"
       responses:
-        '200':
+        "200":
           description: Agent updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentRes'
-        '404':
+                $ref: "#/components/schemas/AgentRes"
+        "404":
           description: Agent not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       operationId: agentsDelete
       summary: Delete an agent
@@ -457,14 +457,14 @@ paths:
         - role: agent
           permission: not authorized
       responses:
-        '204':
+        "204":
           description: Agent deleted successfully
-        '404':
+        "404":
           description: Agent not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /events:
     get:
       operationId: eventsList
@@ -491,27 +491,27 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of events
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/EventRes'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                          $ref: "#/components/schemas/EventRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /events/ack:
     post:
       operationId: eventsAck
@@ -531,28 +531,28 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EventAckReq'
+              $ref: "#/components/schemas/EventAckReq"
       responses:
-        '200':
+        "200":
           description: Events acknowledged successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventAckRes'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
+                $ref: "#/components/schemas/EventAckRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
           description: Acknowledgement conflict - lease not held or sequence regression
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/ErrorRes"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /events/lease:
     post:
       operationId: eventsLease
@@ -572,28 +572,28 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EventLeaseReq'
+              $ref: "#/components/schemas/EventLeaseReq"
       responses:
-        '200':
+        "200":
           description: Lease acquired successfully with events
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventLeaseRes'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
+                $ref: "#/components/schemas/EventLeaseRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
           description: Lease conflict - held by another instance
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/ErrorRes"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /jobs:
     get:
       operationId: jobsList
@@ -620,23 +620,23 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of jobs
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/JobRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/JobRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /jobs/pending:
     get:
       operationId: jobsPending
@@ -660,27 +660,27 @@ paths:
             type: integer
             default: 10
       responses:
-        '200':
+        "200":
           description: List of pending jobs
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/JobRes'
-        '401':
+                  $ref: "#/components/schemas/JobRes"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /jobs/{id}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     get:
       operationId: jobsGet
       summary: Get a job
@@ -688,25 +688,25 @@ paths:
         - Jobs
       description: Retrieves a specific job by ID (admin route)
       responses:
-        '200':
+        "200":
           description: The job details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JobRes'
-        '404':
+                $ref: "#/components/schemas/JobRes"
+        "404":
           description: Job not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /jobs/{id}/claim:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     post:
       operationId: jobsClaim
       summary: Claim a job
@@ -716,27 +716,27 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '204':
+        "204":
           description: Job claimed successfully
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '404':
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
           description: Job not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /jobs/{id}/complete:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     post:
       operationId: jobsComplete
       summary: Complete a job
@@ -750,29 +750,29 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CompleteJobReq'
+              $ref: "#/components/schemas/CompleteJobReq"
       responses:
-        '204':
+        "204":
           description: Job completed successfully
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '404':
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
           description: Job not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /jobs/{id}/fail:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     post:
       operationId: jobsFail
       summary: Fail a job
@@ -786,22 +786,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FailJobReq'
+              $ref: "#/components/schemas/FailJobReq"
       responses:
-        '204':
+        "204":
           description: Job marked as failed successfully
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '404':
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
           description: Job not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /metric-entries:
     get:
       operationId: metricEntriesList
@@ -821,23 +821,23 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of metric entries
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/MetricEntryRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/MetricEntryRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: metricEntriesCreate
       summary: Create a metric entry
@@ -851,26 +851,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MetricEntryReq'
+              $ref: "#/components/schemas/MetricEntryReq"
       responses:
-        '201':
+        "201":
           description: Metric entry created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MetricEntryRes'
-        '400':
+                $ref: "#/components/schemas/MetricEntryRes"
+        "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '401':
+                $ref: "#/components/schemas/ErrorRes"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /metric-types:
     get:
       operationId: metricTypesList
@@ -897,23 +897,23 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of metric types
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/MetricTypeRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/MetricTypeRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: metricTypesCreate
       summary: Create a metric type
@@ -932,27 +932,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MetricTypeReq'
+              $ref: "#/components/schemas/MetricTypeReq"
       responses:
-        '201':
+        "201":
           description: Metric type created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MetricTypeRes'
-        '400':
+                $ref: "#/components/schemas/MetricTypeRes"
+        "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /metric-types/{id}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     get:
       operationId: metricTypesGet
       summary: Get a metric type
@@ -967,18 +967,18 @@ paths:
         - role: agent
           permission: all metric types
       responses:
-        '200':
+        "200":
           description: The metric type details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MetricTypeRes'
-        '404':
+                $ref: "#/components/schemas/MetricTypeRes"
+        "404":
           description: Metric type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       operationId: metricTypesUpdate
       summary: Update a metric type
@@ -1003,18 +1003,18 @@ paths:
                   type: string
                   example: cpu_usage_updated
       responses:
-        '200':
+        "200":
           description: Metric type updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MetricTypeRes'
-        '404':
+                $ref: "#/components/schemas/MetricTypeRes"
+        "404":
           description: Metric type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       operationId: metricTypesDelete
       summary: Delete a metric type
@@ -1029,14 +1029,14 @@ paths:
         - role: agent
           permission: not authorized
       responses:
-        '204':
+        "204":
           description: Metric type deleted successfully
-        '404':
+        "404":
           description: Metric type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /participants:
     get:
       operationId: participantsList
@@ -1063,23 +1063,23 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of participants
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/ParticipantRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/ParticipantRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: participantsCreate
       summary: Create a participant
@@ -1098,27 +1098,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ParticipantReq'
+              $ref: "#/components/schemas/ParticipantReq"
       responses:
-        '201':
+        "201":
           description: Participant created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipantRes'
-        '400':
+                $ref: "#/components/schemas/ParticipantRes"
+        "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /participants/{id}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     get:
       operationId: participantsGet
       summary: Get a participant
@@ -1133,18 +1133,18 @@ paths:
         - role: agent
           permission: its associated participant
       responses:
-        '200':
+        "200":
           description: The participant details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipantRes'
-        '404':
+                $ref: "#/components/schemas/ParticipantRes"
+        "404":
           description: Participant not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       operationId: participantsUpdate
       summary: Update a participant
@@ -1163,20 +1163,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ParticipantReq'
+              $ref: "#/components/schemas/ParticipantReq"
       responses:
-        '200':
+        "200":
           description: Participant updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipantRes'
-        '404':
+                $ref: "#/components/schemas/ParticipantRes"
+        "404":
           description: Participant not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       operationId: participantsDelete
       summary: Delete a participant
@@ -1191,14 +1191,14 @@ paths:
         - role: agent
           permission: not authorized
       responses:
-        '204':
+        "204":
           description: Participant deleted successfully
-        '404':
+        "404":
           description: Participant not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /service-groups:
     get:
       operationId: serviceGroupsList
@@ -1225,23 +1225,23 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of service groups
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/ServiceGroupRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/ServiceGroupRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: serviceGroupsCreate
       summary: Create a service group
@@ -1260,27 +1260,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ServiceGroupReq'
+              $ref: "#/components/schemas/ServiceGroupReq"
       responses:
-        '201':
+        "201":
           description: Service group created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceGroupRes'
-        '400':
+                $ref: "#/components/schemas/ServiceGroupRes"
+        "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /service-groups/{id}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     get:
       operationId: serviceGroupsGet
       summary: Get a service group
@@ -1295,18 +1295,18 @@ paths:
         - role: agent
           permission: not authorized
       responses:
-        '200':
+        "200":
           description: The service group details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceGroupRes'
-        '404':
+                $ref: "#/components/schemas/ServiceGroupRes"
+        "404":
           description: Service group not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       operationId: serviceGroupsUpdate
       summary: Update a service group
@@ -1325,20 +1325,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ServiceGroupReq'
+              $ref: "#/components/schemas/ServiceGroupReq"
       responses:
-        '200':
+        "200":
           description: Service group updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceGroupRes'
-        '404':
+                $ref: "#/components/schemas/ServiceGroupRes"
+        "404":
           description: Service group not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       operationId: serviceGroupsDelete
       summary: Delete a service group
@@ -1353,14 +1353,14 @@ paths:
         - role: agent
           permission: not authorized
       responses:
-        '204':
+        "204":
           description: Service group deleted successfully
-        '404':
+        "404":
           description: Service group not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /service-option-types:
     get:
       operationId: serviceOptionTypesList
@@ -1387,23 +1387,23 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of service option types
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/ServiceOptionTypeRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/ServiceOptionTypeRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: serviceOptionTypesCreate
       summary: Create a service option type
@@ -1418,27 +1418,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ServiceOptionTypeReq'
+              $ref: "#/components/schemas/ServiceOptionTypeReq"
       responses:
-        '201':
+        "201":
           description: Service option type created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceOptionTypeRes'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                $ref: "#/components/schemas/ServiceOptionTypeRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /service-option-types/{id}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     get:
       operationId: serviceOptionTypesGet
       summary: Get a service option type
@@ -1453,18 +1453,18 @@ paths:
         - role: agent
           permission: all service option types
       responses:
-        '200':
+        "200":
           description: Service option type details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceOptionTypeRes'
-        '404':
+                $ref: "#/components/schemas/ServiceOptionTypeRes"
+        "404":
           description: Service option type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       operationId: serviceOptionTypesUpdate
       summary: Update a service option type
@@ -1479,20 +1479,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ServiceOptionTypeReq'
+              $ref: "#/components/schemas/ServiceOptionTypeReq"
       responses:
-        '200':
+        "200":
           description: Service option type updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceOptionTypeRes'
-        '404':
+                $ref: "#/components/schemas/ServiceOptionTypeRes"
+        "404":
           description: Service option type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       operationId: serviceOptionTypesDelete
       summary: Delete a service option type
@@ -1503,14 +1503,14 @@ paths:
         - role: admin
           permission: always
       responses:
-        '204':
+        "204":
           description: Service option type deleted successfully
-        '404':
+        "404":
           description: Service option type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /service-options:
     get:
       operationId: serviceOptionsList
@@ -1539,31 +1539,31 @@ paths:
         - name: providerId
           in: query
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
           description: Filter by provider ID
         - name: serviceOptionTypeId
           in: query
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
           description: Filter by service option type ID
       responses:
-        '200':
+        "200":
           description: A paginated list of service options
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/ServiceOptionRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/ServiceOptionRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: serviceOptionsCreate
       summary: Create a service option
@@ -1582,27 +1582,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ServiceOptionReq'
+              $ref: "#/components/schemas/ServiceOptionReq"
       responses:
-        '201':
+        "201":
           description: Service option created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceOptionRes'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                $ref: "#/components/schemas/ServiceOptionRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /service-options/{id}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     get:
       operationId: serviceOptionsGet
       summary: Get a service option
@@ -1617,18 +1617,18 @@ paths:
         - role: agent
           permission: service options for its provider
       responses:
-        '200':
+        "200":
           description: Service option details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceOptionRes'
-        '404':
+                $ref: "#/components/schemas/ServiceOptionRes"
+        "404":
           description: Service option not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       operationId: serviceOptionsUpdate
       summary: Update a service option
@@ -1647,20 +1647,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ServiceOptionReq'
+              $ref: "#/components/schemas/ServiceOptionReq"
       responses:
-        '200':
+        "200":
           description: Service option updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceOptionRes'
-        '404':
+                $ref: "#/components/schemas/ServiceOptionRes"
+        "404":
           description: Service option not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       operationId: serviceOptionsDelete
       summary: Delete a service option
@@ -1675,14 +1675,14 @@ paths:
         - role: agent
           permission: for its participant as provider
       responses:
-        '204':
+        "204":
           description: Service option deleted successfully
-        '404':
+        "404":
           description: Service option not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /service-pool-sets:
     get:
       operationId: servicePoolSetsList
@@ -1709,7 +1709,7 @@ paths:
         - name: providerId
           in: query
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
           description: Filter by provider ID
         - name: name
           in: query
@@ -1717,23 +1717,23 @@ paths:
             type: string
           description: Filter by name
       responses:
-        '200':
+        "200":
           description: A paginated list of service pool sets
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/ServicePoolSetRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/ServicePoolSetRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: servicePoolSetsCreate
       summary: Create a service pool set
@@ -1750,20 +1750,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateServicePoolSetReq'
+              $ref: "#/components/schemas/CreateServicePoolSetReq"
       responses:
-        '201':
+        "201":
           description: Service pool set created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServicePoolSetRes'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                $ref: "#/components/schemas/ServicePoolSetRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /service-pool-sets/{id}:
     get:
       operationId: servicePoolSetsGet
@@ -1781,19 +1781,19 @@ paths:
           in: path
           required: true
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
       responses:
-        '200':
+        "200":
           description: Service pool set retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServicePoolSetRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
+                $ref: "#/components/schemas/ServicePoolSetRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
           description: Service pool set not found
     patch:
       operationId: servicePoolSetsUpdate
@@ -1811,27 +1811,27 @@ paths:
           in: path
           required: true
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateServicePoolSetReq'
+              $ref: "#/components/schemas/UpdateServicePoolSetReq"
       responses:
-        '200':
+        "200":
           description: Service pool set updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServicePoolSetRes'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
+                $ref: "#/components/schemas/ServicePoolSetRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
           description: Service pool set not found
     delete:
       operationId: servicePoolSetsDelete
@@ -1849,15 +1849,15 @@ paths:
           in: path
           required: true
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
       responses:
-        '204':
+        "204":
           description: Service pool set deleted successfully
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
           description: Service pool set not found
   /service-pools:
     get:
@@ -1887,7 +1887,7 @@ paths:
         - name: servicePoolSetId
           in: query
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
           description: Filter by service pool set ID
         - name: type
           in: query
@@ -1903,23 +1903,23 @@ paths:
               - subnet
           description: Filter by generator type
       responses:
-        '200':
+        "200":
           description: A paginated list of service pools
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/ServicePoolRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/ServicePoolRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: servicePoolsCreate
       summary: Create a service pool
@@ -1936,20 +1936,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateServicePoolReq'
+              $ref: "#/components/schemas/CreateServicePoolReq"
       responses:
-        '201':
+        "201":
           description: Service pool created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServicePoolRes'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                $ref: "#/components/schemas/ServicePoolRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /service-pools/{id}:
     get:
       operationId: servicePoolsGet
@@ -1969,19 +1969,19 @@ paths:
           in: path
           required: true
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
       responses:
-        '200':
+        "200":
           description: Service pool retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServicePoolRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
+                $ref: "#/components/schemas/ServicePoolRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
           description: Service pool not found
     patch:
       operationId: servicePoolsUpdate
@@ -1999,27 +1999,27 @@ paths:
           in: path
           required: true
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateServicePoolReq'
+              $ref: "#/components/schemas/UpdateServicePoolReq"
       responses:
-        '200':
+        "200":
           description: Service pool updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServicePoolRes'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
+                $ref: "#/components/schemas/ServicePoolRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
           description: Service pool not found
     delete:
       operationId: servicePoolsDelete
@@ -2037,15 +2037,15 @@ paths:
           in: path
           required: true
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
       responses:
-        '204':
+        "204":
           description: Service pool deleted successfully
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
           description: Service pool not found
   /service-pool-values:
     get:
@@ -2075,12 +2075,12 @@ paths:
         - name: servicePoolId
           in: query
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
           description: Filter by service pool ID
         - name: serviceId
           in: query
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
           description: Filter by allocated service ID
         - name: propertyName
           in: query
@@ -2088,23 +2088,23 @@ paths:
             type: string
           description: Filter by property name
       responses:
-        '200':
+        "200":
           description: A paginated list of service pool values
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/ServicePoolValueRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/ServicePoolValueRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: servicePoolValuesCreate
       summary: Create a service pool value
@@ -2121,20 +2121,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateServicePoolValueReq'
+              $ref: "#/components/schemas/CreateServicePoolValueReq"
       responses:
-        '201':
+        "201":
           description: Service pool value created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServicePoolValueRes'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                $ref: "#/components/schemas/ServicePoolValueRes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /service-pool-values/{id}:
     get:
       operationId: servicePoolValuesGet
@@ -2154,19 +2154,19 @@ paths:
           in: path
           required: true
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
       responses:
-        '200':
+        "200":
           description: Service pool value retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServicePoolValueRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
+                $ref: "#/components/schemas/ServicePoolValueRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
           description: Service pool value not found
     delete:
       operationId: servicePoolValuesDelete
@@ -2184,21 +2184,21 @@ paths:
           in: path
           required: true
           schema:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
       responses:
-        '204':
+        "204":
           description: Service pool value deleted successfully
-        '400':
+        "400":
           description: Cannot delete allocated value
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
+                $ref: "#/components/schemas/ErrorRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
           description: Service pool value not found
   /service-types:
     get:
@@ -2226,23 +2226,23 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of service types
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/ServiceTypeRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/ServiceTypeRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: serviceTypesCreate
       summary: Create a service type
@@ -2257,39 +2257,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateServiceTypeReq'
+              $ref: "#/components/schemas/CreateServiceTypeReq"
       responses:
-        '201':
+        "201":
           description: Service type created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceTypeRes'
-        '400':
+                $ref: "#/components/schemas/ServiceTypeRes"
+        "400":
           description: Invalid request body or validation errors
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '403':
+                $ref: "#/components/schemas/ErrorRes"
+        "403":
           description: Insufficient permissions (admin required)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '409':
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
           description: Service type with this name already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /service-types/{id}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     get:
       operationId: serviceTypesGet
       summary: Get a service type
@@ -2304,18 +2304,18 @@ paths:
         - role: agent
           permission: all service types
       responses:
-        '200':
+        "200":
           description: The service type details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceTypeRes'
-        '404':
+                $ref: "#/components/schemas/ServiceTypeRes"
+        "404":
           description: Service type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       operationId: serviceTypesUpdate
       summary: Update a service type
@@ -2330,38 +2330,38 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateServiceTypeReq'
+              $ref: "#/components/schemas/UpdateServiceTypeReq"
       responses:
-        '200':
+        "200":
           description: Service type updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceTypeRes'
-        '400':
+                $ref: "#/components/schemas/ServiceTypeRes"
+        "400":
           description: Invalid request body or validation errors
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '403':
+                $ref: "#/components/schemas/ErrorRes"
+        "403":
           description: Insufficient permissions (admin required)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '404':
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
           description: Service type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '409':
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
           description: Service type name already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       operationId: serviceTypesDelete
       summary: Delete a service type
@@ -2372,71 +2372,26 @@ paths:
         - role: admin
           permission: all service types
       responses:
-        '204':
+        "204":
           description: Service type deleted successfully
-        '403':
+        "403":
           description: Insufficient permissions (admin required)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '404':
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
           description: Service type not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '409':
+                $ref: "#/components/schemas/ErrorRes"
+        "409":
           description: Cannot delete service type with dependent services
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-  /service-types/{id}/validate:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          $ref: '#/components/schemas/properties.UUID'
-    post:
-      operationId: serviceTypesValidate
-      summary: Validate service properties
-      tags:
-        - Services
-      description: Validates service properties against the service type's property schema
-      x-auth-permissions:
-        - role: admin
-          permission: all service types
-        - role: participant
-          permission: all service types
-        - role: agent
-          permission: all service types
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ValidatePropertiesReq'
-      responses:
-        '200':
-          description: Validation results
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidatePropertiesRes'
-        '400':
-          description: Bad request (e.g., service type has no property schema)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '404':
-          description: Service type not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /services:
     get:
       operationId: servicesList
@@ -2463,23 +2418,23 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of services
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/ServiceRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/ServiceRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: servicesCreate
       summary: Create a service
@@ -2498,29 +2453,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ServiceReq'
+              $ref: "#/components/schemas/ServiceReq"
       responses:
-        '201':
+        "201":
           description: Service created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceRes'
-        '400':
+                $ref: "#/components/schemas/ServiceRes"
+        "400":
           description: Invalid request or validation failed
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/ErrorRes'
-                  - $ref: '#/components/schemas/ValidatePropertiesRes'
+                $ref: "#/components/schemas/ErrorRes"
   /services/{id}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     get:
       operationId: servicesGet
       summary: Get a service
@@ -2535,18 +2488,18 @@ paths:
         - role: agent
           permission: services assigned to the agent
       responses:
-        '200':
+        "200":
           description: The service details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceRes'
-        '404':
+                $ref: "#/components/schemas/ServiceRes"
+        "404":
           description: Service not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       operationId: servicesUpdate
       summary: Update a service
@@ -2583,31 +2536,29 @@ paths:
                   description: Service name. Only provided if updating the name.
                   example: web-server-01
                 properties:
-                  $ref: '#/components/schemas/JSONObject'
+                  $ref: "#/components/schemas/JSONObject"
                   description: |
                     Service properties. These are merged with existing properties.
                     Only provided properties are updated. Nested objects are deep merged.
       responses:
-        '200':
+        "200":
           description: Service updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceRes'
-        '400':
+                $ref: "#/components/schemas/ServiceRes"
+        "400":
           description: Invalid request or validation failed
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/ErrorRes'
-                  - $ref: '#/components/schemas/ValidatePropertiesRes'
-        '404':
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
           description: Service not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       operationId: servicesDelete
       summary: Delete a service
@@ -2622,21 +2573,21 @@ paths:
         - role: agent
           permission: not authorized
       responses:
-        '204':
+        "204":
           description: Service deleted successfully
-        '404':
+        "404":
           description: Service not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /services/{id}/{action}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
       - name: action
         in: path
         required: true
@@ -2674,24 +2625,24 @@ paths:
                   additionalProperties: true
                   description: Action-specific properties
       responses:
-        '200':
+        "200":
           description: Service action initiated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceRes'
-        '400':
+                $ref: "#/components/schemas/ServiceRes"
+        "400":
           description: Invalid action or service state does not allow this action
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '404':
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
           description: Service not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /tokens:
     get:
       operationId: tokensList
@@ -2718,23 +2669,23 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A paginated list of tokens
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PageRes'
+                  - $ref: "#/components/schemas/PageRes"
                   - type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/TokenRes'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                          $ref: "#/components/schemas/TokenRes"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: tokensCreate
       summary: Create a token
@@ -2753,27 +2704,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenReq'
+              $ref: "#/components/schemas/TokenReq"
       responses:
-        '201':
+        "201":
           description: Token created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenRes'
-        '400':
+                $ref: "#/components/schemas/TokenRes"
+        "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /tokens/{id}:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     get:
       operationId: tokensGet
       summary: Get a token
@@ -2788,18 +2739,18 @@ paths:
         - role: agent
           permission: not authorized
       responses:
-        '200':
+        "200":
           description: The token details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenRes'
-        '404':
+                $ref: "#/components/schemas/TokenRes"
+        "404":
           description: Token not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     patch:
       operationId: tokensUpdate
       summary: Update a token
@@ -2824,25 +2775,25 @@ paths:
                   type: string
                   example: Updated Token Name
                 role:
-                  $ref: '#/components/schemas/AuthRole'
+                  $ref: "#/components/schemas/AuthRole"
                 expireAt:
                   type: string
                   format: date-time
                 scopeId:
-                  $ref: '#/components/schemas/properties.UUID'
+                  $ref: "#/components/schemas/properties.UUID"
       responses:
-        '200':
+        "200":
           description: Token updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenRes'
-        '404':
+                $ref: "#/components/schemas/TokenRes"
+        "404":
           description: Token not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
     delete:
       operationId: tokensDelete
       summary: Delete a token
@@ -2857,21 +2808,21 @@ paths:
         - role: agent
           permission: not authorized
       responses:
-        '204':
+        "204":
           description: Token deleted successfully
-        '404':
+        "404":
           description: Token not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /tokens/{id}/regenerate:
     parameters:
       - name: id
         in: path
         required: true
         schema:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     post:
       operationId: tokensRegenerate
       summary: Regenerate token value
@@ -2886,18 +2837,18 @@ paths:
         - role: agent
           permission: not authorized
       responses:
-        '200':
+        "200":
           description: Token value regenerated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenRes'
-        '404':
+                $ref: "#/components/schemas/TokenRes"
+        "404":
           description: Token not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
   /vault/secrets/{reference}:
     get:
       tags:
@@ -2919,7 +2870,7 @@ paths:
             type: string
             example: abc123def456
       responses:
-        '200':
+        "200":
           description: Secret value retrieved successfully
           content:
             application/json:
@@ -2946,27 +2897,27 @@ paths:
                   summary: Number secret
                   value:
                     value: 12345
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
           description: Forbidden - only agents can access vault secrets
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
-        '404':
+                $ref: "#/components/schemas/ErrorRes"
+        "404":
           description: Secret not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorRes'
+                $ref: "#/components/schemas/ErrorRes"
               example:
                 status: Not found
                 message: Secret with reference 'abc123' not found
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 components:
   securitySchemes:
     BearerAuth:
@@ -2982,26 +2933,26 @@ components:
   schemas:
     AgentCreateRes:
       allOf:
-        - $ref: '#/components/schemas/AgentRes'
+        - $ref: "#/components/schemas/AgentRes"
         - type: object
           properties:
             token:
-              $ref: '#/components/schemas/TokenRes'
+              $ref: "#/components/schemas/TokenRes"
               description: The agent authentication token
     AgentRes:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: aws-agent-01
         status:
-          $ref: '#/components/schemas/AgentStatus'
+          $ref: "#/components/schemas/AgentStatus"
         providerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         agentTypeId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         tags:
           type: array
           items:
@@ -3011,19 +2962,19 @@ components:
             - high-memory
             - ssd
         configuration:
-          $ref: '#/components/schemas/JSONObject'
+          $ref: "#/components/schemas/JSONObject"
           description: Agent-specific configuration parameters
           example:
             timeout: 30
             retries: 3
             environment: production
         servicePoolSetId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: Optional service pool set for automatic resource allocation
         participant:
-          $ref: '#/components/schemas/ParticipantRes'
+          $ref: "#/components/schemas/ParticipantRes"
         agentType:
-          $ref: '#/components/schemas/AgentTypeRes'
+          $ref: "#/components/schemas/AgentTypeRes"
         createdAt:
           type: string
           format: date-time
@@ -3042,14 +2993,14 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: Participant VM Agent
         serviceTypeIds:
           type: array
           items:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
           description: IDs of service types that this agent type can provide
         createdAt:
           type: string
@@ -3072,7 +3023,7 @@ components:
           description: Agent's native instance identifier for the provisioned resource
           example: i-1234567890abcdef0
         agentInstanceData:
-          $ref: '#/components/schemas/JSONObject'
+          $ref: "#/components/schemas/JSONObject"
           description: Agent-owned runtime data about the provisioned service
         properties:
           type: object
@@ -3092,10 +3043,10 @@ components:
           type: string
           example: aws-agent-01
         providerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: The participant ID that owns this agent
         agentTypeId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: The agent type ID
         tags:
           type: array
@@ -3107,14 +3058,14 @@ components:
             - ssd
           description: Tags representing capabilities or certifications of this agent
         configuration:
-          $ref: '#/components/schemas/JSONObject'
+          $ref: "#/components/schemas/JSONObject"
           description: Agent-specific configuration parameters
           example:
             timeout: 30
             retries: 3
             environment: production
         servicePoolSetId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: Optional service pool set for automatic resource allocation
     CreateAgentTypeReq:
       type: object
@@ -3130,7 +3081,7 @@ components:
           type: array
           description: Optional list of service type IDs that this agent type can manage
           items:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
           example:
             - 550e8400-e29b-41d4-a716-446655440000
             - 550e8400-e29b-41d4-a716-446655440001
@@ -3145,10 +3096,10 @@ components:
           example: VM Instance
           minLength: 1
         propertySchema:
-          $ref: '#/components/schemas/PropertySchema'
+          $ref: "#/components/schemas/PropertySchema"
           description: Optional property schema defining the structure and validation rules for service properties
         lifecycleSchema:
-          $ref: '#/components/schemas/LifecycleSchema'
+          $ref: "#/components/schemas/LifecycleSchema"
           description: Optional lifecycle schema defining states, actions, and transitions for services of this type
     ErrorRes:
       type: object
@@ -3224,7 +3175,7 @@ components:
         events:
           type: array
           items:
-            $ref: '#/components/schemas/EventRes'
+            $ref: "#/components/schemas/EventRes"
           description: Array of events fetched in chronological order
         leaseExpiresAt:
           type: string
@@ -3239,7 +3190,7 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         sequenceNumber:
           type: integer
           format: int64
@@ -3254,14 +3205,14 @@ components:
           type: string
           example: service.created
         properties:
-          $ref: '#/components/schemas/JSONObject'
+          $ref: "#/components/schemas/JSONObject"
           description: Event payload data
         providerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         agentId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         consumerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         createdAt:
           type: string
           format: date-time
@@ -3278,7 +3229,7 @@ components:
           description: |
             Error message describing the failure. This message is matched against
             lifecycle transition regexps to determine the next service state.
-          example: 'Failed to create VM: insufficient resources'
+          example: "Failed to create VM: insufficient resources"
     JSONObject:
       type: object
       additionalProperties: true
@@ -3287,40 +3238,40 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         providerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: ID of the participant that provides the service
         consumerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: ID of the participant that consumes the service
         agentId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         serviceId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         action:
-          $ref: '#/components/schemas/ServiceAction'
+          $ref: "#/components/schemas/ServiceAction"
         params:
-          $ref: '#/components/schemas/JSONObject'
+          $ref: "#/components/schemas/JSONObject"
           description: Parameters for the job action
         status:
-          $ref: '#/components/schemas/JobStatus'
+          $ref: "#/components/schemas/JobStatus"
         priority:
           type: integer
           example: 1
         errorMessage:
           type: string
-          example: 'Failed to create VM: insufficient resources'
+          example: "Failed to create VM: insufficient resources"
         claimedAt:
           anyOf:
             - type: string
               format: date-time
-            - type: 'null'
+            - type: "null"
         completedAt:
           anyOf:
             - type: string
               format: date-time
-            - type: 'null'
+            - type: "null"
         createdAt:
           type: string
           format: date-time
@@ -3328,7 +3279,7 @@ components:
           type: string
           format: date-time
         service:
-          $ref: '#/components/schemas/ServiceRes'
+          $ref: "#/components/schemas/ServiceRes"
           description: Associated service details (optional)
     JobStatus:
       type: string
@@ -3366,7 +3317,7 @@ components:
           type: array
           description: State transitions for this action
           items:
-            $ref: '#/components/schemas/LifecycleTransition'
+            $ref: "#/components/schemas/LifecycleTransition"
     LifecycleSchema:
       type: object
       description: |
@@ -3381,7 +3332,7 @@ components:
           type: array
           description: List of possible service states
           items:
-            $ref: '#/components/schemas/LifecycleState'
+            $ref: "#/components/schemas/LifecycleState"
           example:
             - name: New
             - name: Stopped
@@ -3391,7 +3342,7 @@ components:
           type: array
           description: List of available actions that can be performed on services
           items:
-            $ref: '#/components/schemas/LifecycleAction'
+            $ref: "#/components/schemas/LifecycleAction"
         initialState:
           type: string
           description: Initial state for new services
@@ -3458,7 +3409,7 @@ components:
         - value
       properties:
         serviceId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: ID of the service associated with this metric
         agentInstanceId:
           type: string
@@ -3479,15 +3430,15 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         providerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         consumerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         agentId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         serviceId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         resourceId:
           type: string
           example: cpu-1
@@ -3514,14 +3465,14 @@ components:
           type: string
           example: cpu_usage
         entityType:
-          $ref: '#/components/schemas/MetricEntityType'
+          $ref: "#/components/schemas/MetricEntityType"
     MetricTypeRes:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         entityType:
-          $ref: '#/components/schemas/MetricEntityType'
+          $ref: "#/components/schemas/MetricEntityType"
         name:
           type: string
           example: cpu_usage
@@ -3564,17 +3515,17 @@ components:
           type: string
           example: Test Participant
         status:
-          $ref: '#/components/schemas/ParticipantStatus'
+          $ref: "#/components/schemas/ParticipantStatus"
     ParticipantRes:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: Test Participant
         status:
-          $ref: '#/components/schemas/ParticipantStatus'
+          $ref: "#/components/schemas/ParticipantStatus"
         createdAt:
           type: string
           format: date-time
@@ -3613,15 +3564,15 @@ components:
         validators:
           type: array
           items:
-            $ref: '#/components/schemas/ValidatorDefinition'
+            $ref: "#/components/schemas/ValidatorDefinition"
           description: Array of validation rules
         properties:
           type: object
           additionalProperties:
-            $ref: '#/components/schemas/PropertyDefinition'
+            $ref: "#/components/schemas/PropertyDefinition"
           description: Nested properties for object types
         items:
-          $ref: '#/components/schemas/PropertyDefinition'
+          $ref: "#/components/schemas/PropertyDefinition"
           description: Schema for array items
         source:
           type: string
@@ -3654,7 +3605,7 @@ components:
       type: object
       description: properties.JSON schema defining validation rules for service properties
       additionalProperties:
-        $ref: '#/components/schemas/PropertyDefinition'
+        $ref: "#/components/schemas/PropertyDefinition"
     ServiceAction:
       type: string
       description: Lifecycle action to perform on the service. Valid values are defined by the service type's lifecycle schema
@@ -3669,18 +3620,18 @@ components:
           type: string
           example: Web Servers
         consumerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: ID of the consumer participant that owns this service group
     ServiceGroupRes:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: Web Servers
         consumerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: ID of the consumer participant that owns this service group
         createdAt:
           type: string
@@ -3697,9 +3648,9 @@ components:
         - value
       properties:
         providerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         serviceOptionTypeId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: Ubuntu 22.04 LTS
@@ -3716,11 +3667,11 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         providerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         serviceOptionTypeId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: Ubuntu 22.04 LTS
@@ -3757,7 +3708,7 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: Operating System
@@ -3777,7 +3728,7 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: Public IP Pool
@@ -3805,7 +3756,7 @@ components:
           example:
             cidr: 192.168.1.0/24
         servicePoolSetId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         createdAt:
           type: string
           format: date-time
@@ -3816,12 +3767,12 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: Production Pools
         providerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         createdAt:
           type: string
           format: date-time
@@ -3832,7 +3783,7 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: 192.168.1.10
@@ -3840,9 +3791,9 @@ components:
           description: Any JSON value (string, number, object, array)
           example: 192.168.1.10
         servicePoolId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         serviceId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: Service this value is allocated to (null if available)
         propertyName:
           type: string
@@ -3891,7 +3842,7 @@ components:
             - list
             - subnet
           example: list
-          description: 'Allocation strategy: ''list'' for pre-configured values, ''subnet'' for IP ranges'
+          description: "Allocation strategy: 'list' for pre-configured values, 'subnet' for IP ranges"
         generatorConfig:
           type: object
           description: Generator-specific configuration (required for subnet)
@@ -3900,7 +3851,7 @@ components:
             excludeFirst: 1
             excludeLast: 1
         servicePoolSetId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     CreateServicePoolSetReq:
       type: object
       required:
@@ -3912,7 +3863,7 @@ components:
           example: Production Pools
           description: Name of the pool set
         providerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     CreateServicePoolValueReq:
       type: object
       required:
@@ -3921,7 +3872,7 @@ components:
         - value
       properties:
         servicePoolId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: 192.168.1.10
@@ -3955,7 +3906,7 @@ components:
           type: string
           example: web-server-01
         properties:
-          $ref: '#/components/schemas/JSONObject'
+          $ref: "#/components/schemas/JSONObject"
         agentTags:
           type: array
           items:
@@ -3965,17 +3916,17 @@ components:
             - high-memory
           description: Tags used for agent discovery when agentId is not specified
         agentId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: Specific agent ID (optional - if not provided, agent discovery will use agentTags)
         serviceTypeId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         groupId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
     ServiceRes:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: web-server-01
@@ -3984,23 +3935,23 @@ components:
           description: Current lifecycle state. Valid values are defined by the service type's lifecycle schema
           example: Started
         properties:
-          $ref: '#/components/schemas/JSONObject'
+          $ref: "#/components/schemas/JSONObject"
         agentInstanceData:
-          $ref: '#/components/schemas/JSONObject'
+          $ref: "#/components/schemas/JSONObject"
         agentInstanceId:
           anyOf:
             - type: string
-            - type: 'null'
+            - type: "null"
         providerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         consumerId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         agentId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         serviceTypeId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         groupId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         createdAt:
           type: string
           format: date-time
@@ -4011,14 +3962,14 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: VM
         propertySchema:
-          $ref: '#/components/schemas/PropertySchema'
+          $ref: "#/components/schemas/PropertySchema"
         lifecycleSchema:
-          $ref: '#/components/schemas/LifecycleSchema'
+          $ref: "#/components/schemas/LifecycleSchema"
         createdAt:
           type: string
           format: date-time
@@ -4036,32 +3987,32 @@ components:
           type: string
           example: API Access Token
         role:
-          $ref: '#/components/schemas/AuthRole'
+          $ref: "#/components/schemas/AuthRole"
         expireAt:
           type: string
           format: date-time
-          example: '2025-12-31T23:59:59Z'
+          example: "2025-12-31T23:59:59Z"
         scopeId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: Required for participant and agent roles. For participant role - the participant ID; for agent role - the agent ID
     TokenRes:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
         name:
           type: string
           example: API Access Token
         role:
-          $ref: '#/components/schemas/AuthRole'
+          $ref: "#/components/schemas/AuthRole"
         expireAt:
           type: string
           format: date-time
         participantId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: For participant role tokens - the participant ID
         agentId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: For agent role tokens - the agent ID
         createdAt:
           type: string
@@ -4080,7 +4031,7 @@ components:
           type: string
           example: aws-agent-01
         status:
-          $ref: '#/components/schemas/AgentStatus'
+          $ref: "#/components/schemas/AgentStatus"
         tags:
           type: array
           items:
@@ -4091,14 +4042,14 @@ components:
             - ssd
           description: Tags representing capabilities or certifications of this agent
         configuration:
-          $ref: '#/components/schemas/JSONObject'
+          $ref: "#/components/schemas/JSONObject"
           description: Agent-specific configuration parameters
           example:
             timeout: 60
             retries: 5
             environment: staging
         servicePoolSetId:
-          $ref: '#/components/schemas/properties.UUID'
+          $ref: "#/components/schemas/properties.UUID"
           description: Optional service pool set for automatic resource allocation
     UpdateAgentTypeReq:
       type: object
@@ -4112,7 +4063,7 @@ components:
           type: array
           description: Updated list of service type IDs that this agent type can manage
           items:
-            $ref: '#/components/schemas/properties.UUID'
+            $ref: "#/components/schemas/properties.UUID"
           example:
             - 550e8400-e29b-41d4-a716-446655440000
             - 550e8400-e29b-41d4-a716-446655440002
@@ -4125,37 +4076,11 @@ components:
           example: Updated VM Instance
           minLength: 1
         propertySchema:
-          $ref: '#/components/schemas/PropertySchema'
+          $ref: "#/components/schemas/PropertySchema"
           description: Updated property schema defining the structure and validation rules for service properties
         lifecycleSchema:
-          $ref: '#/components/schemas/LifecycleSchema'
+          $ref: "#/components/schemas/LifecycleSchema"
           description: Updated lifecycle schema defining states, actions, and transitions for services of this type
-    ValidatePropertiesReq:
-      type: object
-      required:
-        - properties
-      properties:
-        groupId:
-          $ref: '#/components/schemas/properties.UUID'
-          description: Service group ID for context
-        providerId:
-          $ref: '#/components/schemas/properties.UUID'
-          description: Provider ID for service option validation
-        properties:
-          type: object
-          description: Properties to validate against the schema
-          additionalProperties: true
-    ValidatePropertiesRes:
-      type: object
-      properties:
-        valid:
-          type: boolean
-          description: Whether the properties are valid
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          description: Array of validation errors (empty if valid)
     ValidationError:
       type: object
       properties:
@@ -4166,14 +4091,14 @@ components:
         message:
           type: string
           description: Error message describing the validation failure
-          example: 'property ''cpu'' cannot be updated in status ''Started'' (allowed statuses: [Stopped])'
+          example: "property 'cpu' cannot be updated in status 'Started' (allowed statuses: [Stopped])"
       examples:
         - path: ipAddress
-          message: 'property ''ipAddress'' cannot be updated by user (source: agent)'
+          message: "property 'ipAddress' cannot be updated by user (source: agent)"
         - path: region
-          message: 'property ''region'' cannot be updated (updatable: never)'
+          message: "property 'region' cannot be updated (updatable: never)"
         - path: diskSize
-          message: 'property ''diskSize'' cannot be updated in status ''Started'' (allowed statuses: [Stopped])'
+          message: "property 'diskSize' cannot be updated in status 'Started' (allowed statuses: [Stopped])"
     ValidatorDefinition:
       type: object
       required:
@@ -4206,22 +4131,22 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorRes'
+            $ref: "#/components/schemas/ErrorRes"
     Unauthorized:
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorRes'
+            $ref: "#/components/schemas/ErrorRes"
     Forbidden:
       description: Forbidden
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorRes'
+            $ref: "#/components/schemas/ErrorRes"
     InternalServerError:
       description: Internal Server Error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorRes'
+            $ref: "#/components/schemas/ErrorRes"

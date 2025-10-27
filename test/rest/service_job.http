@@ -349,40 +349,8 @@ Content-Type: application/json
 }
 
 ###############################################################################
-### PART 2: SERVICE OPTION VALIDATION TESTING
+### PART 2: SERVICE CREATION & INITIAL JOB
 ###############################################################################
-
-### ✅ TEST: Validate properties with valid image (should return valid: true)
-POST {{baseUrl}}/service-types/{{createVMServiceType.response.body.id}}/validate
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "groupId": "{{createServiceGroup.response.body.id}}",
-    "providerId": "{{createProvider.response.body.id}}",
-    "properties": {
-        "cpu": 4,
-        "memory": 8192,
-        "disk": 128,
-        "image": "ubuntu:20.04"
-    }
-}
-
-### ❌ TEST: Validate properties with invalid image (should return valid: false)
-POST {{baseUrl}}/service-types/{{createVMServiceType.response.body.id}}/validate
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "groupId": "{{createServiceGroup.response.body.id}}",
-    "providerId": "{{createProvider.response.body.id}}",
-    "properties": {
-        "cpu": 4,
-        "memory": 8192,
-        "disk": 128,
-        "image": "invalid-os:999"
-    }
-}
 
 ### ❌ TEST: Try to create service with invalid image (not in service options - should fail with 400)
 POST {{baseUrl}}/services
@@ -401,10 +369,6 @@ Content-Type: application/json
     "serviceTypeId": "{{createVMServiceType.response.body.id}}",
     "groupId": "{{createServiceGroup.response.body.id}}"
 }
-
-###############################################################################
-### PART 3: SERVICE CREATION & INITIAL JOB
-###############################################################################
 
 ### Create VM Service (user sets input properties, agent will set internalIp)
 # @name createService
@@ -466,7 +430,7 @@ GET {{baseUrl}}/service-pool-values?servicePoolId={{createIPPool.response.body.i
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 4: PROPERTY UPDATE VALIDATION TESTS (Expected Failures)
+### PART 3: PROPERTY UPDATE VALIDATION TESTS (Expected Failures)
 ###############################################################################
 
 ### ❌ TEST 1: Try to update immutable property (should fail with 400)
@@ -492,7 +456,7 @@ Content-Type: application/json
 }
 
 ###############################################################################
-### PART 5: START SERVICE
+### PART 4: START SERVICE
 ###############################################################################
 
 ### Start service (creates Start job)
@@ -530,7 +494,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 6: AGENT IMMUTABLE PROPERTY UPDATE TEST
+### PART 5: AGENT IMMUTABLE PROPERTY UPDATE TEST
 ###############################################################################
 
 ### ❌ TEST: Try to update immutable agent property during job completion (should fail with 400)
@@ -611,7 +575,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 7: STATE-CONDITIONAL UPDATE TEST WHILE STARTED
+### PART 6: STATE-CONDITIONAL UPDATE TEST WHILE STARTED
 ###############################################################################
 
 ### ❌ TEST 4: Try to update state-conditional property while Started (should fail with 400)
@@ -626,7 +590,7 @@ Content-Type: application/json
 }
 
 ###############################################################################
-### PART 8: STOP SERVICE
+### PART 7: STOP SERVICE
 ###############################################################################
 
 ### Stop service (creates Stop job)
@@ -664,7 +628,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 9: SUCCESSFUL STATE-CONDITIONAL UPDATE WHILE STOPPED
+### PART 8: SUCCESSFUL STATE-CONDITIONAL UPDATE WHILE STOPPED
 ###############################################################################
 
 ### ✅ TEST 5: Update state-conditional properties while Stopped (should succeed)
@@ -714,7 +678,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 10: RESTART WITH UPDATED PROPERTIES
+### PART 9: RESTART WITH UPDATED PROPERTIES
 ###############################################################################
 
 ### Start service again with updated properties (creates Start job)
@@ -755,7 +719,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 11: JOB FAILURE TESTING
+### PART 10: JOB FAILURE TESTING
 ###############################################################################
 
 ### Stop service for failure test
@@ -821,7 +785,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 12: MAINTENANCE MODE TESTING (Non-Standard State)
+### PART 11: MAINTENANCE MODE TESTING (Non-Standard State)
 ###############################################################################
 
 ### Enter maintenance mode from Stopped state
@@ -895,7 +859,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 13: SERVICE DELETION & POOL VALUE RELEASE
+### PART 12: SERVICE DELETION & POOL VALUE RELEASE
 ###############################################################################
 
 ### Delete the service (creates Delete job, will release publicIp back to pool after completion)
