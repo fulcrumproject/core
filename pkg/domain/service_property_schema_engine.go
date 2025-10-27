@@ -5,7 +5,7 @@ import "github.com/fulcrumproject/core/pkg/schema"
 
 // buildServicePropertyValidatorRegistry creates a registry of property validators
 // combining generic validators from pkg/schema with domain-specific validators
-func buildServicePropertyValidatorRegistry() map[string]schema.PropertyValidator[ServicePropertyContext] {
+func buildServicePropertyValidatorRegistry(store Store) map[string]schema.PropertyValidator[ServicePropertyContext] {
 	return map[string]schema.PropertyValidator[ServicePropertyContext]{
 		// Generic validators from pkg/schema
 		"minLength": &schema.MinLengthValidator[ServicePropertyContext]{},
@@ -18,8 +18,9 @@ func buildServicePropertyValidatorRegistry() map[string]schema.PropertyValidator
 		"maxItems":  &schema.MaxItemsValidator[ServicePropertyContext]{},
 
 		// Domain-specific validators
-		"source":  &SourceValidator{},
-		"mutable": &MutableValidator{},
+		"source":        &SourceValidator{},
+		"mutable":       &MutableValidator{},
+		"serviceOption": NewServiceOptionValidator(store),
 	}
 }
 
@@ -41,7 +42,7 @@ func buildServicePropertyGeneratorRegistry(store Store) map[string]schema.Genera
 // It composes generic validators, domain validators, and domain generators with vault integration.
 func NewServicePropertyEngine(store Store, vault schema.Vault) *schema.Engine[ServicePropertyContext] {
 	return schema.NewEngine(
-		buildServicePropertyValidatorRegistry(),
+		buildServicePropertyValidatorRegistry(store),
 		buildServicePropertySchemaValidatorRegistry(),
 		buildServicePropertyGeneratorRegistry(store),
 		vault,
