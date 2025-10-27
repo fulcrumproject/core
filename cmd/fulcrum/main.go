@@ -116,7 +116,7 @@ func main() {
 	}
 
 	// Initialize schema engine for service property validation
-	propertyEngine := domain.NewServicePropertyEngine(store, vault)
+	propertyEngine := domain.NewServicePropertyEngine(vault)
 
 	// Initialize commanders
 	serviceCmd := domain.NewServiceCommander(store, propertyEngine)

@@ -283,10 +283,10 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create engine with validators
 			mockStore := NewMockStore(t)
-			engine := NewServicePropertyEngine(mockStore, nil)
+			engine := NewServicePropertyEngine(nil)
 
 			// Apply updates
-			err := ApplyAgentPropertyUpdates(ctx, engine, tt.service, serviceType, tt.updates)
+			err := ApplyAgentPropertyUpdates(ctx, mockStore, engine, tt.service, serviceType, tt.updates)
 
 			if tt.expectError {
 				assert.Error(t, err)

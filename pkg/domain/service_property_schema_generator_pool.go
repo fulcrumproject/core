@@ -11,18 +11,14 @@ import (
 
 // SchemaPoolGenerator implements schema.Generator for pool-based value allocation.
 // It adapts the existing pool allocation infrastructure to the schema package's generator interface.
-type SchemaPoolGenerator struct {
-	store Store
-}
+type SchemaPoolGenerator struct{}
 
 // Compile-time check that SchemaPoolGenerator implements schema.Generator
 var _ schema.Generator[ServicePropertyContext] = (*SchemaPoolGenerator)(nil)
 
 // NewSchemaPoolGenerator creates a new pool generator
-func NewSchemaPoolGenerator(store Store) *SchemaPoolGenerator {
-	return &SchemaPoolGenerator{
-		store: store,
-	}
+func NewSchemaPoolGenerator() *SchemaPoolGenerator {
+	return &SchemaPoolGenerator{}
 }
 
 // Generate allocates a value from a service pool.
@@ -46,28 +42,19 @@ func (g *SchemaPoolGenerator) Generate(
 		return nil, false, fmt.Errorf("%s: pool generator config 'poolType' must be a string", propPath)
 	}
 
-	// Service must exist and have a pool set
-	if schemaCtx.Service == nil {
-		return nil, false, fmt.Errorf("%s: pool generator requires service context", propPath)
-	}
-
-	// Get the agent to access pool set ID
-	if schemaCtx.Service.Agent == nil {
-		// Lazy load agent if not already loaded
-		agent, err := g.store.AgentRepo().Get(ctx, schemaCtx.Service.AgentID)
-		if err != nil {
-			return nil, false, fmt.Errorf("%s: failed to load service agent: %w", propPath, err)
-		}
-		schemaCtx.Service.Agent = agent
-	}
-
-	poolSetID := schemaCtx.Service.Agent.ServicePoolSetID
+	// Pool set ID must be configured
+	poolSetID := schemaCtx.ServicePoolSetID
 	if poolSetID == nil || *poolSetID == uuid.Nil {
 		return nil, false, fmt.Errorf("%s: agent does not have a pool set configured", propPath)
 	}
 
+	// Service ID must exist for pool allocation
+	if schemaCtx.ServiceID == nil {
+		return nil, false, fmt.Errorf("%s: service ID required for pool allocation", propPath)
+	}
+
 	// Find the pool with matching type in the pool set
-	pools, err := g.store.ServicePoolRepo().ListByPoolSet(ctx, *poolSetID)
+	pools, err := schemaCtx.Store.ServicePoolRepo().ListByPoolSet(ctx, *poolSetID)
 	if err != nil {
 		return nil, false, fmt.Errorf("%s: failed to list pools for pool set: %w", propPath, err)
 	}
@@ -85,14 +72,14 @@ func (g *SchemaPoolGenerator) Generate(
 	}
 
 	// Create generator and allocate
-	factory := NewDefaultGeneratorFactory(g.store.ServicePoolValueRepo())
+	factory := NewDefaultGeneratorFactory(schemaCtx.Store.ServicePoolValueRepo())
 	generator, err := factory.CreateGenerator(targetPool)
 	if err != nil {
 		return nil, false, fmt.Errorf("%s: failed to create generator for pool: %w", propPath, err)
 	}
 
 	// Allocate value from pool
-	allocatedValue, err := generator.Allocate(ctx, targetPool.ID, schemaCtx.Service.ID, propPath)
+	allocatedValue, err := generator.Allocate(ctx, targetPool.ID, *schemaCtx.ServiceID, propPath)
 	if err != nil {
 		return nil, false, fmt.Errorf("%s: failed to allocate from pool: %w", propPath, err)
 	}

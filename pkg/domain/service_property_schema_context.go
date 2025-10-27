@@ -1,7 +1,10 @@
 // Context type for service property schema validation and processing
 package domain
 
-import "github.com/fulcrumproject/core/pkg/auth"
+import (
+	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/properties"
+)
 
 // ActorType identifies the type of actor performing an operation
 type ActorType string
@@ -25,13 +28,28 @@ func ActorTypeFromAuthRole(role auth.Role) ActorType {
 }
 
 // ServicePropertyContext provides runtime context for service property validation and generation.
-// It contains the actor performing the operation and the service entity being operated on.
+// It contains the actor performing the operation and essential service context information.
 type ServicePropertyContext struct {
 	// Actor identifies who is performing the operation (user, agent, system)
 	Actor ActorType
 
-	// Service is the service entity being operated on.
-	// Nil during create operations, populated during update operations.
-	// Validators can access service state, group ID, provider ID, etc.
-	Service *Service
+	// Store provides access to repositories within the current transaction.
+	// Validators and generators use this to make DB calls within the same transaction.
+	Store Store
+
+	// ProviderID is the ID of the provider participant.
+	// Required for validators like serviceOption that need to look up provider-specific options.
+	ProviderID properties.UUID
+
+	// ServicePoolSetID is the pool set for resource allocation (optional).
+	// Required by pool generators to allocate values from pools.
+	ServicePoolSetID *properties.UUID
+
+	// ServiceID is the ID of the service being updated (nil during create).
+	// Used by validators that need to check current service state.
+	ServiceID *properties.UUID
+
+	// ServiceStatus is the current status of the service (empty during create).
+	// Used by validators like mutable that check if properties can be updated in current status.
+	ServiceStatus string
 }

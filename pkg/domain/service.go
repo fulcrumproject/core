@@ -107,6 +107,7 @@ func (s *Service) Update(name *string, properties *properties.JSON) (update bool
 // ApplyAgentPropertyUpdates applies property updates from an agent using the schema engine
 func ApplyAgentPropertyUpdates(
 	ctx context.Context,
+	store Store,
 	engine *schema.Engine[ServicePropertyContext],
 	svc *Service,
 	serviceType *ServiceType,
@@ -129,8 +130,15 @@ func ApplyAgentPropertyUpdates(
 
 	// Create context for agent property updates
 	schemaCtx := ServicePropertyContext{
-		Actor:   ActorAgent,
-		Service: svc,
+		Actor:         ActorAgent,
+		Store:         store,
+		ProviderID:    svc.ProviderID,
+		ServiceID:     &svc.ID,
+		ServiceStatus: svc.Status,
+	}
+	// Set pool set ID if agent is loaded (needed for pool generators)
+	if svc.Agent != nil {
+		schemaCtx.ServicePoolSetID = svc.Agent.ServicePoolSetID
 	}
 
 	// Use engine to validate and process the updates
@@ -292,20 +300,8 @@ func CreateServiceWithAgent(
 	identity := auth.MustGetIdentity(ctx)
 	actor := ActorTypeFromAuthRole(identity.Role)
 
-	// Validate and process properties using schema engine
-	schemaCtx := ServicePropertyContext{
-		Actor:   actor,
-		Service: nil, // nil for create
-	}
-
-	validatedProperties, err := engine.ApplyCreate(ctx, schemaCtx, *serviceType.PropertySchema, params.Properties)
-	if err != nil {
-		return nil, err
-	}
-	params.Properties = validatedProperties
-
-	// Note: Pool allocation will happen inside the transaction after service creation
-	// This ensures we have a service ID for tracking allocations
+	// Generate service ID upfront so pool generators can use it for allocation tracking
+	serviceID := properties.UUID(uuid.New())
 
 	// Check if the agent's type supports the requested service type
 	supported := false
@@ -333,17 +329,38 @@ func CreateServiceWithAgent(
 		params,
 		initialState,
 	)
+	// Set the pre-generated ID
+	svc.ID = serviceID
+
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
-	err = store.Atomic(ctx, func(store Store) error {
-		// Create service first to get ID
-		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
-			return err
+	err = store.Atomic(ctx, func(txStore Store) error {
+		// Validate and process properties using schema engine WITHIN transaction
+		// This ensures pool allocations happen within the same transaction
+		schemaCtx := ServicePropertyContext{
+			Actor:            actor,
+			Store:            txStore, // Use transactional store
+			ProviderID:       agent.ProviderID,
+			ServicePoolSetID: agent.ServicePoolSetID,
+			ServiceID:        &serviceID,
+			ServiceStatus:    "", // empty during create
 		}
 
-		// Pool allocation is now handled by the schema engine during ApplyCreate
+		validatedProperties, err := engine.ApplyCreate(ctx, schemaCtx, *serviceType.PropertySchema, params.Properties)
+		if err != nil {
+			return err
+		}
+		params.Properties = validatedProperties
+
+		// Update service with validated/generated properties
+		svc.Properties = &params.Properties
+
+		// Create service with pre-generated ID
+		if err := txStore.ServiceRepo().Create(ctx, svc); err != nil {
+			return err
+		}
 
 		// Create job with final properties (including allocated pool values)
 		finalProps := params.Properties
@@ -354,7 +371,7 @@ func CreateServiceWithAgent(
 		if err := job.Validate(); err != nil {
 			return err
 		}
-		if err := store.JobRepo().Create(ctx, job); err != nil {
+		if err := txStore.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
 
@@ -362,7 +379,7 @@ func CreateServiceWithAgent(
 		if err != nil {
 			return err
 		}
-		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
+		if err := txStore.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 
@@ -392,29 +409,15 @@ func UpdateService(ctx context.Context, store Store, engine *schema.Engine[Servi
 		return nil, err
 	}
 
-	// Validate and process properties if provided
-	if params.Properties != nil {
-		// Extract actor from auth context
-		identity := auth.MustGetIdentity(ctx)
-		actor := ActorTypeFromAuthRole(identity.Role)
-
-		// Build schema context
-		schemaCtx := ServicePropertyContext{
-			Actor:   actor,
-			Service: svc, // Pass service for update operation
-		}
-
-		// Convert existing properties to map
-		oldProperties := map[string]any(*svc.Properties)
-
-		// Engine handles merging: takes old properties and partial new properties
-		validatedProperties, err := engine.ApplyUpdate(ctx, schemaCtx, *serviceType.PropertySchema, oldProperties, *params.Properties)
-		if err != nil {
-			return nil, err
-		}
-		convertedProperties := properties.JSON(validatedProperties)
-		params.Properties = &convertedProperties
+	// Load agent to get pool set (needed for context, even if not updating properties)
+	agent, err := store.AgentRepo().Get(ctx, svc.AgentID)
+	if err != nil {
+		return nil, err
 	}
+
+	// Extract actor from auth context (needed for context)
+	identity := auth.MustGetIdentity(ctx)
+	actor := ActorTypeFromAuthRole(identity.Role)
 
 	// Update, if needed
 	originalSvc := *svc
@@ -427,16 +430,42 @@ func UpdateService(ctx context.Context, store Store, engine *schema.Engine[Servi
 	}
 
 	// Save, event and create job
-	err = store.Atomic(ctx, func(store Store) error {
+	err = store.Atomic(ctx, func(txStore Store) error {
+		// Validate and process properties if provided WITHIN transaction
+		if params.Properties != nil {
+			// Build schema context with transactional store
+			schemaCtx := ServicePropertyContext{
+				Actor:            actor,
+				Store:            txStore, // Use transactional store
+				ProviderID:       svc.ProviderID,
+				ServicePoolSetID: agent.ServicePoolSetID,
+				ServiceID:        &svc.ID,
+				ServiceStatus:    svc.Status,
+			}
+
+			// Convert existing properties to map
+			oldProperties := map[string]any(*svc.Properties)
+
+			// Engine handles merging: takes old properties and partial new properties
+			validatedProperties, err := engine.ApplyUpdate(ctx, schemaCtx, *serviceType.PropertySchema, oldProperties, *params.Properties)
+			if err != nil {
+				return err
+			}
+			convertedProperties := properties.JSON(validatedProperties)
+			params.Properties = &convertedProperties
+
+			// Update service with validated properties
+			svc.Properties = params.Properties
+		}
 		if update {
-			if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+			if err := txStore.ServiceRepo().Save(ctx, svc); err != nil {
 				return err
 			}
 			eventEntry, err := NewEvent(EventTypeServiceUpdated, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
 			if err != nil {
 				return err
 			}
-			if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
+			if err := txStore.EventRepo().Create(ctx, eventEntry); err != nil {
 				return err
 			}
 		}
@@ -457,7 +486,7 @@ func UpdateService(ctx context.Context, store Store, engine *schema.Engine[Servi
 			}
 
 			// If pending job exists, fail it
-			err = checkHasNotActiveJob(ctx, store, svc)
+			err = checkHasNotActiveJob(ctx, txStore, svc)
 			if err != nil {
 				return err
 			}
@@ -467,7 +496,7 @@ func UpdateService(ctx context.Context, store Store, engine *schema.Engine[Servi
 			if err := job.Validate(); err != nil {
 				return err
 			}
-			if err := store.JobRepo().Create(ctx, job); err != nil {
+			if err := txStore.JobRepo().Create(ctx, job); err != nil {
 				return err
 			}
 		}

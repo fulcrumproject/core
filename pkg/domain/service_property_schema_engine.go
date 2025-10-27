@@ -5,7 +5,7 @@ import "github.com/fulcrumproject/core/pkg/schema"
 
 // buildServicePropertyValidatorRegistry creates a registry of property validators
 // combining generic validators from pkg/schema with domain-specific validators
-func buildServicePropertyValidatorRegistry(store Store) map[string]schema.PropertyValidator[ServicePropertyContext] {
+func buildServicePropertyValidatorRegistry() map[string]schema.PropertyValidator[ServicePropertyContext] {
 	return map[string]schema.PropertyValidator[ServicePropertyContext]{
 		// Generic validators from pkg/schema
 		"minLength": &schema.MinLengthValidator[ServicePropertyContext]{},
@@ -20,7 +20,7 @@ func buildServicePropertyValidatorRegistry(store Store) map[string]schema.Proper
 		// Domain-specific validators
 		"source":        &SourceValidator{},
 		"mutable":       &MutableValidator{},
-		"serviceOption": NewServiceOptionValidator(store),
+		"serviceOption": NewServiceOptionValidator(),
 	}
 }
 
@@ -32,19 +32,20 @@ func buildServicePropertySchemaValidatorRegistry() map[string]schema.SchemaValid
 }
 
 // buildServicePropertyGeneratorRegistry creates a registry of generators
-func buildServicePropertyGeneratorRegistry(store Store) map[string]schema.Generator[ServicePropertyContext] {
+func buildServicePropertyGeneratorRegistry() map[string]schema.Generator[ServicePropertyContext] {
 	return map[string]schema.Generator[ServicePropertyContext]{
-		"pool": NewSchemaPoolGenerator(store),
+		"pool": NewSchemaPoolGenerator(),
 	}
 }
 
 // NewServicePropertyEngine creates a new schema engine configured for service property validation.
 // It composes generic validators, domain validators, and domain generators with vault integration.
-func NewServicePropertyEngine(store Store, vault schema.Vault) *schema.Engine[ServicePropertyContext] {
+// Note: Store is no longer passed here - validators/generators access it via ServicePropertyContext.
+func NewServicePropertyEngine(vault schema.Vault) *schema.Engine[ServicePropertyContext] {
 	return schema.NewEngine(
-		buildServicePropertyValidatorRegistry(store),
+		buildServicePropertyValidatorRegistry(),
 		buildServicePropertySchemaValidatorRegistry(),
-		buildServicePropertyGeneratorRegistry(store),
+		buildServicePropertyGeneratorRegistry(),
 		vault,
 	)
 }

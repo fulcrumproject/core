@@ -230,7 +230,7 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 
 		// Apply agent property updates if provided
 		if len(params.Properties) > 0 {
-			if err := ApplyAgentPropertyUpdates(ctx, s.engine, svc, serviceType, params.Properties); err != nil {
+			if err := ApplyAgentPropertyUpdates(ctx, store, s.engine, svc, serviceType, params.Properties); err != nil {
 				return InvalidInputError{Err: err}
 			}
 		}

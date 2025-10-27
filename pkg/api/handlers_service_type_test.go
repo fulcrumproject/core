@@ -20,7 +20,7 @@ func TestNewServiceTypeHandler(t *testing.T) {
 	querier := domain.NewMockServiceTypeQuerier(t)
 	commander := domain.NewMockServiceTypeCommander(t)
 	authz := auth.NewMockAuthorizer(t)
-	engine := domain.NewServicePropertyEngine(domain.NewMockStore(t), nil)
+	engine := domain.NewServicePropertyEngine(nil)
 
 	handler := NewServiceTypeHandler(querier, commander, authz, engine)
 	assert.NotNil(t, handler)
@@ -36,7 +36,7 @@ func TestServiceTypeHandlerRoutes(t *testing.T) {
 	querier := domain.NewMockServiceTypeQuerier(t)
 	commander := domain.NewMockServiceTypeCommander(t)
 	authz := auth.NewMockAuthorizer(t)
-	engine := domain.NewServicePropertyEngine(domain.NewMockStore(t), nil)
+	engine := domain.NewServicePropertyEngine(nil)
 
 	// Create the handler
 	handler := NewServiceTypeHandler(querier, commander, authz, engine)

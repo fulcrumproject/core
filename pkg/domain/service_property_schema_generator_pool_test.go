@@ -14,30 +14,24 @@ func TestSchemaPoolGenerator_Generate(t *testing.T) {
 
 	poolSetID := uuid.New()
 	serviceID := uuid.New()
-	agentID := uuid.New()
 	poolID := uuid.New()
 
 	tests := []struct {
-		name      string
-		config    map[string]any
-		setupMock func(*MockStore)
-		service   *Service
-		wantValue any
-		wantGen   bool
-		wantErr   bool
-		errSubstr string
+		name             string
+		config           map[string]any
+		setupMock        func(*MockStore)
+		servicePoolSetID *uuid.UUID
+		serviceID        *uuid.UUID
+		wantValue        any
+		wantGen          bool
+		wantErr          bool
+		errSubstr        string
 	}{
 		{
-			name:   "successful allocation",
-			config: map[string]any{"poolType": "public_ip"},
-			service: &Service{
-				BaseEntity: BaseEntity{ID: serviceID},
-				AgentID:    agentID,
-				Agent: &Agent{
-					BaseEntity:       BaseEntity{ID: agentID},
-					ServicePoolSetID: &poolSetID,
-				},
-			},
+			name:             "successful allocation",
+			config:           map[string]any{"poolType": "public_ip"},
+			servicePoolSetID: &poolSetID,
+			serviceID:        &serviceID,
 			setupMock: func(store *MockStore) {
 				poolRepo := NewMockServicePoolRepository(t)
 				valueRepo := NewMockServicePoolValueRepository(t)
@@ -63,95 +57,46 @@ func TestSchemaPoolGenerator_Generate(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name:      "missing poolType config",
-			config:    map[string]any{},
-			service:   &Service{BaseEntity: BaseEntity{ID: serviceID}},
-			setupMock: func(store *MockStore) {},
-			wantErr:   true,
-			errSubstr: "missing 'poolType'",
+			name:             "missing poolType config",
+			config:           map[string]any{},
+			servicePoolSetID: &poolSetID,
+			serviceID:        &serviceID,
+			setupMock:        func(store *MockStore) {},
+			wantErr:          true,
+			errSubstr:        "missing 'poolType'",
 		},
 		{
-			name:      "poolType not a string",
-			config:    map[string]any{"poolType": 123},
-			service:   &Service{BaseEntity: BaseEntity{ID: serviceID}},
-			setupMock: func(store *MockStore) {},
-			wantErr:   true,
-			errSubstr: "must be a string",
+			name:             "poolType not a string",
+			config:           map[string]any{"poolType": 123},
+			servicePoolSetID: &poolSetID,
+			serviceID:        &serviceID,
+			setupMock:        func(store *MockStore) {},
+			wantErr:          true,
+			errSubstr:        "must be a string",
 		},
 		{
-			name:      "service context required",
-			config:    map[string]any{"poolType": "public_ip"},
-			service:   nil,
-			setupMock: func(store *MockStore) {},
-			wantErr:   true,
-			errSubstr: "requires service context",
+			name:             "service ID required",
+			config:           map[string]any{"poolType": "public_ip"},
+			servicePoolSetID: &poolSetID,
+			serviceID:        nil,
+			setupMock:        func(store *MockStore) {},
+			wantErr:          true,
+			errSubstr:        "service ID required",
 		},
 		{
-			name:   "agent lazy loading",
-			config: map[string]any{"poolType": "public_ip"},
-			service: &Service{
-				BaseEntity: BaseEntity{ID: serviceID},
-				AgentID:    agentID,
-				Agent:      nil, // Not loaded yet
-			},
-			setupMock: func(store *MockStore) {
-				agentRepo := NewMockAgentRepository(t)
-				poolRepo := NewMockServicePoolRepository(t)
-				valueRepo := NewMockServicePoolValueRepository(t)
-
-				agent := &Agent{
-					BaseEntity:       BaseEntity{ID: agentID},
-					ServicePoolSetID: &poolSetID,
-				}
-
-				pool := &ServicePool{
-					BaseEntity:    BaseEntity{ID: poolID},
-					Type:          "public_ip",
-					PropertyType:  "string",
-					GeneratorType: PoolGeneratorList,
-				}
-
-				agentRepo.On("Get", ctx, agentID).Return(agent, nil)
-				poolRepo.On("ListByPoolSet", ctx, poolSetID).Return([]*ServicePool{pool}, nil)
-				valueRepo.On("FindAvailable", ctx, poolID).Return([]*ServicePoolValue{
-					{BaseEntity: BaseEntity{ID: uuid.New()}, Value: "10.0.0.1"},
-				}, nil)
-				valueRepo.On("Update", ctx, mock.AnythingOfType("*domain.ServicePoolValue")).Return(nil)
-
-				store.On("AgentRepo").Return(agentRepo)
-				store.On("ServicePoolRepo").Return(poolRepo)
-				store.On("ServicePoolValueRepo").Return(valueRepo)
-			},
-			wantValue: "10.0.0.1",
-			wantGen:   true,
-			wantErr:   false,
+			name:             "agent without pool set",
+			config:           map[string]any{"poolType": "public_ip"},
+			servicePoolSetID: nil,
+			serviceID:        &serviceID,
+			setupMock:        func(store *MockStore) {},
+			wantErr:          true,
+			errSubstr:        "does not have a pool set",
 		},
 		{
-			name:   "agent without pool set",
-			config: map[string]any{"poolType": "public_ip"},
-			service: &Service{
-				BaseEntity: BaseEntity{ID: serviceID},
-				AgentID:    agentID,
-				Agent: &Agent{
-					BaseEntity:       BaseEntity{ID: agentID},
-					ServicePoolSetID: nil,
-				},
-			},
-			setupMock: func(store *MockStore) {},
-			wantErr:   true,
-			errSubstr: "does not have a pool set",
-		},
-		{
-			name:   "pool type not found in pool set",
-			config: map[string]any{"poolType": "nonexistent"},
-			service: &Service{
-				BaseEntity: BaseEntity{ID: serviceID},
-				AgentID:    agentID,
-				Agent: &Agent{
-					BaseEntity:       BaseEntity{ID: agentID},
-					ServicePoolSetID: &poolSetID,
-				},
-			},
+			name:             "pool type not found in pool set",
+			config:           map[string]any{"poolType": "nonexistent"},
+			servicePoolSetID: &poolSetID,
+			serviceID:        &serviceID,
 			setupMock: func(store *MockStore) {
 				poolRepo := NewMockServicePoolRepository(t)
 
@@ -175,11 +120,13 @@ func TestSchemaPoolGenerator_Generate(t *testing.T) {
 			store := NewMockStore(t)
 			tt.setupMock(store)
 
-			generator := NewSchemaPoolGenerator(store)
+			generator := NewSchemaPoolGenerator()
 
 			schemaCtx := ServicePropertyContext{
-				Actor:   ActorUser,
-				Service: tt.service,
+				Actor:            ActorUser,
+				Store:            store,
+				ServicePoolSetID: tt.servicePoolSetID,
+				ServiceID:        tt.serviceID,
 			}
 
 			value, generated, err := generator.Generate(ctx, schemaCtx, "testProp", nil, tt.config)

@@ -107,8 +107,8 @@ func (v *MutableValidator) Validate(
 		return nil
 	}
 
-	// Service must exist for update operations
-	if schemaCtx.Service == nil {
+	// Service status must exist for update operations
+	if schemaCtx.ServiceStatus == "" {
 		return fmt.Errorf("%s: mutable validator requires service context for update operations", propPath)
 	}
 
@@ -124,7 +124,7 @@ func (v *MutableValidator) Validate(
 	}
 
 	// Check if current status is in the allowed states
-	currentStatus := schemaCtx.Service.Status
+	currentStatus := schemaCtx.ServiceStatus
 	for _, stateRaw := range updatableIn {
 		state, ok := stateRaw.(string)
 		if !ok {
@@ -171,15 +171,11 @@ func (v *MutableValidator) ValidateConfig(propPath string, config map[string]any
 
 // ServiceOptionValidator validates that a property value matches one of the enabled service options
 // for a specific service option type and provider.
-type ServiceOptionValidator struct {
-	store Store
-}
+type ServiceOptionValidator struct{}
 
 // NewServiceOptionValidator creates a new service option validator
-func NewServiceOptionValidator(store Store) *ServiceOptionValidator {
-	return &ServiceOptionValidator{
-		store: store,
-	}
+func NewServiceOptionValidator() *ServiceOptionValidator {
+	return &ServiceOptionValidator{}
 }
 
 // Validate checks if the property value matches an enabled service option.
@@ -208,21 +204,17 @@ func (v *ServiceOptionValidator) Validate(
 		return fmt.Errorf("%s: serviceOption validator config 'value' must be a string", propPath)
 	}
 
-	// Service context must exist to get provider ID
-	if schemaCtx.Service == nil {
-		return fmt.Errorf("%s: serviceOption validator requires service context", propPath)
-	}
-
-	providerID := schemaCtx.Service.ProviderID
+	// Use provider ID from context
+	providerID := schemaCtx.ProviderID
 
 	// Get the service option type to find its ID
-	optionType, err := v.store.ServiceOptionTypeRepo().FindByType(ctx, serviceOptionType)
+	optionType, err := schemaCtx.Store.ServiceOptionTypeRepo().FindByType(ctx, serviceOptionType)
 	if err != nil {
 		return fmt.Errorf("%s: failed to find service option type '%s': %w", propPath, serviceOptionType, err)
 	}
 
 	// Get all enabled service options for this provider and option type
-	options, err := v.store.ServiceOptionRepo().ListByProviderAndType(ctx, providerID, optionType.ID)
+	options, err := schemaCtx.Store.ServiceOptionRepo().ListByProviderAndType(ctx, providerID, optionType.ID)
 	if err != nil {
 		return fmt.Errorf("%s: failed to retrieve service options: %w", propPath, err)
 	}
@@ -289,12 +281,8 @@ func valuesEqual(a, b any) bool {
 		return false
 	}
 
-	// Try direct equality first (works for simple types)
-	if a == b {
-		return true
-	}
-
-	// For complex types, marshal to JSON and compare
+	// Marshal both values to JSON for comparison
+	// This handles all types consistently without panic on non-comparable types
 	aJSON, err := json.Marshal(a)
 	if err != nil {
 		return false
