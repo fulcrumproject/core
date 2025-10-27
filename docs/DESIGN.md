@@ -376,7 +376,8 @@ classDiagram
       * list: Pre-configured values (manually added)
       * subnet: IP ranges with automatic CIDR allocation
     - Generator config stores type-specific settings (e.g., CIDR)
-    - Referenced via servicePoolType field in property definitions
+    - Referenced via pool generator in property definitions
+    - Properties using pools require actor: [system] authorizer
     - Values stored as individual ServicePoolValue records"
     
     note for ServicePoolValue "Pool values are allocatable resources:
@@ -532,7 +533,7 @@ classDiagram
      * `list`: Pre-configured values manually added as ServicePoolValue records
      * `subnet`: IP ranges with automatic CIDR-based allocation
    - Generator config stores type-specific configuration (e.g., CIDR, excludeFirst, excludeLast for subnets)
-   - Referenced in property definitions via `servicePoolType` field (requires `source: "system"`)
+   - Referenced via pool generator in property definitions
    - Type validation ensures property type matches pool's propertyType
    - Values stored as individual ServicePoolValue records (not JSON arrays)
 
@@ -660,46 +661,8 @@ See [SERVICE_TYPE.md](SERVICE_TYPE.md) for comprehensive lifecycle schema docume
 
 Fulcrum Core provides a flexible properties.JSON-based validation system for service properties through the Service Property Schema feature. This system ensures data integrity and consistency for service configurations while providing dynamic validation without requiring application recompilation.
 
-##### Schema Structure
+See [SERVICE_TYPE.md](SERVICE_TYPE.md) for comprehensive property schema documentation and examples.
 
-Each ServiceType can have an optional `propertySchema` field that defines validation rules for service properties. The schema supports:
-
-- **Primitive Types**: string, integer, number, boolean
-- **Complex Types**: object (with nested properties), array (with item schemas)
-- **Validation Rules**: minLength, maxLength, pattern, enum, min, max, minItems, maxItems, uniqueItems
-- **Nested Validation**: Recursive validation for objects and arrays
-- **Default Values**: Automatic application of default values for missing properties
-
-##### Validation Flow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API as Fulcrum Core API
-    participant Schema as Schema Validator
-    participant DB as Database
-    
-    Client->>API: POST /api/v1/services (with properties)
-    API->>DB: Fetch ServiceType
-    DB-->>API: ServiceType with propertySchema
-    
-    alt propertySchema exists
-        API->>Schema: Validate properties against schema
-        Schema-->>API: Validation results
-        
-        alt validation passes
-            API->>DB: Create service with validated properties
-            DB-->>API: Service created
-            API-->>Client: 201 Created
-        else validation fails
-            API-->>Client: 400 Bad Request (validation errors)
-        end
-    else no propertySchema
-        API->>DB: Create service without validation
-        DB-->>API: Service created
-        API-->>Client: 201 Created
-    end
-```
 
 For detailed schema syntax and examples, see [SERVICE_TYPE.md](SERVICE_TYPE.md).
 

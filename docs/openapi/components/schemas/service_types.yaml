@@ -82,11 +82,26 @@ PropertyDefinition:
       default: false
     default:
       description: Default value for the property
+    immutable:
+      type: boolean
+      description: If true, property cannot be changed after creation
+      default: false
+    authorizers:
+      type: array
+      items:
+        $ref: "./service_types.yaml#/AuthorizerDefinition"
+      description: Authorization rules controlling who can set/update and when updates are allowed (all must pass - AND logic)
+    secret:
+      $ref: "./service_types.yaml#/SecretDefinition"
+      description: Configuration for secure vault storage of sensitive values
+    generator:
+      $ref: "./service_types.yaml#/GeneratorDefinition"
+      description: Configuration for automatic value generation (e.g., pool allocation)
     validators:
       type: array
       items:
         $ref: "./service_types.yaml#/ValidatorDefinition"
-      description: Array of validation rules
+      description: Validation rules for value correctness (pattern, enum, min, max, etc.)
     properties:
       type: object
       additionalProperties:
@@ -95,32 +110,64 @@ PropertyDefinition:
     items:
       $ref: "./service_types.yaml#/PropertyDefinition"
       description: Schema for array items
-    source:
+
+AuthorizerDefinition:
+  type: object
+  required:
+    - type
+    - config
+  properties:
+    type:
       type: string
-      enum: [input, agent, system]
-      description: Who can set and update this property (input = users, agent = agents, system = automatic allocation)
-      default: input
-    updatable:
+      enum: [actor, state]
+      description: Type of authorizer
+    config:
+      type: object
+      description: Configuration for the authorizer
+      additionalProperties: true
+  example:
+    type: "actor"
+    config:
+      actors: ["agent"]
+
+SecretDefinition:
+  type: object
+  required:
+    - type
+  properties:
+    type:
       type: string
-      enum: [always, never, statuses]
-      description: When the property can be updated (always = any time, never = immutable, statuses = only in specific statuses)
-      default: always
-    updatableIn:
-      type: array
-      items:
-        type: string
-      description: List of service statuses when property can be updated (required when updatable=statuses)
-      example: ["Stopped"]
-    servicePoolType:
+      enum: [persistent, ephemeral]
+      description: |
+        Secret type:
+        - persistent: Cleaned up when service reaches terminal state
+        - ephemeral: Cleaned up after each job completion
+      example: "persistent"
+
+GeneratorDefinition:
+  type: object
+  required:
+    - type
+    - config
+  properties:
+    type:
       type: string
-      description: Pool type to allocate from (requires source=system). Must match a ServicePool.type in the agent's ServicePoolSet
-      example: "public_ip"
+      enum: [pool]
+      description: Type of generator
+    config:
+      type: object
+      description: Configuration for the generator
+      additionalProperties: true
+  example:
+    type: "pool"
+    config:
+      poolType: "public_ip"
 
 ValidatorDefinition:
   type: object
   required:
     - type
-    - value
+    - config
   properties:
     type:
       type: string
@@ -136,38 +183,14 @@ ValidatorDefinition:
           maxItems,
           uniqueItems,
           sameOrigin,
+          serviceType,
+          serviceOption,
         ]
       description: Type of validator
-    value:
-      description: Value for the validator (type depends on validator type)
-
-ValidatePropertiesReq:
-  type: object
-  required:
-    - properties
-  properties:
-    groupId:
-      $ref: "./common.yaml#/properties.UUID"
-      description: Service group ID for context
-    providerId:
-      $ref: "./common.yaml#/properties.UUID"
-      description: Provider ID for service option validation
-    properties:
+    config:
       type: object
-      description: Properties to validate against the schema
+      description: Configuration for the validator (structure depends on validator type)
       additionalProperties: true
-
-ValidatePropertiesRes:
-  type: object
-  properties:
-    valid:
-      type: boolean
-      description: Whether the properties are valid
-    errors:
-      type: array
-      items:
-        $ref: "./service_types.yaml#/ValidationError"
-      description: Array of validation errors (empty if valid)
 
 ValidationError:
   type: object
@@ -179,14 +202,16 @@ ValidationError:
     message:
       type: string
       description: Error message describing the validation failure
-      example: "property 'cpu' cannot be updated in status 'Started' (allowed statuses: [Stopped])"
+      example: "cpu: value must be one of: [1, 2, 4, 8, 16, 32]"
   examples:
     - path: "ipAddress"
-      message: "property 'ipAddress' cannot be updated by user (source: agent)"
+      message: "ipAddress: property can only be set by: [agent]"
     - path: "region"
-      message: "property 'region' cannot be updated (updatable: never)"
+      message: "region: property is immutable and cannot be changed"
     - path: "diskSize"
-      message: "property 'diskSize' cannot be updated in status 'Started' (allowed statuses: [Stopped])"
+      message: "diskSize: property cannot be updated in state 'Started'"
+    - path: "cpu"
+      message: "cpu: value must be one of: [1, 2, 4, 8, 16, 32]"
 
 # Lifecycle Schema
 LifecycleSchema:

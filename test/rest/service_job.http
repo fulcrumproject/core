@@ -113,13 +113,15 @@ Content-Type: application/json
                 "type": "integer",
                 "label": "CPU Cores",
                 "required": true,
-                "validators": [
+                "authorizers": [
                     {
-                        "type": "mutable",
+                        "type": "state",
                         "config": {
-                            "updatableIn": ["Stopped"]
+                            "allowedStates": ["Stopped"]
                         }
-                    },
+                    }
+                ],
+                "validators": [
                     {
                         "type": "enum",
                         "config": {
@@ -132,13 +134,15 @@ Content-Type: application/json
                 "type": "integer",
                 "label": "Memory (MB)",
                 "required": true,
-                "validators": [
+                "authorizers": [
                     {
-                        "type": "mutable",
+                        "type": "state",
                         "config": {
-                            "updatableIn": ["Stopped"]
+                            "allowedStates": ["Stopped"]
                         }
-                    },
+                    }
+                ],
+                "validators": [
                     {
                         "type": "enum",
                         "config": {
@@ -151,13 +155,15 @@ Content-Type: application/json
                 "type": "integer",
                 "label": "Disk (GB)",
                 "required": true,
-                "validators": [
+                "authorizers": [
                     {
-                        "type": "mutable",
+                        "type": "state",
                         "config": {
-                            "updatableIn": ["Stopped"]
+                            "allowedStates": ["Stopped"]
                         }
-                    },
+                    }
+                ],
+                "validators": [
                     {
                         "type": "enum",
                         "config": {
@@ -184,11 +190,11 @@ Content-Type: application/json
                 "type": "string",
                 "label": "Internal IP",
                 "immutable": true,
-                "validators": [
+                "authorizers": [
                     {
-                        "type": "source",
+                        "type": "actor",
                         "config": {
-                            "source": "agent"
+                            "actors": ["agent"]
                         }
                     }
                 ]
@@ -197,20 +203,20 @@ Content-Type: application/json
                 "type": "string",
                 "label": "Public IP",
                 "immutable": true,
+                "authorizers": [
+                    {
+                        "type": "actor",
+                        "config": {
+                            "actors": ["system"]
+                        }
+                    }
+                ],
                 "generator": {
                     "type": "pool",
                     "config": {
                         "poolType": "public_ip"
                     }
-                },
-                "validators": [
-                    {
-                        "type": "source",
-                        "config": {
-                            "source": "system"
-                        }
-                    }
-                ]
+                }
             }
         }
     },

@@ -34,7 +34,9 @@ func newTestEngine() *Engine[TestContext] {
 
 	generators := map[string]Generator[TestContext]{}
 
-	return NewEngine(validators, schemaValidators, generators, nil)
+	authorizers := map[string]Authorizer[TestContext]{}
+
+	return NewEngine(authorizers, validators, schemaValidators, generators, nil)
 }
 
 func TestEngine_ApplyCreate_BasicTypes(t *testing.T) {
@@ -369,7 +371,7 @@ func TestEngine_ApplyCreate_WithSecrets(t *testing.T) {
 		"minLength": &MinLengthValidator[TestContext]{},
 	}
 
-	engine := NewEngine(validators, nil, nil, vault)
+	engine := NewEngine(nil, validators, nil, nil, vault)
 	ctx := context.Background()
 	testCtx := TestContext{Actor: "user"}
 
@@ -562,7 +564,7 @@ func TestEngine_WithMockValidator(t *testing.T) {
 		"custom": mockValidator,
 	}
 
-	engine := NewEngine(validators, nil, nil, nil)
+	engine := NewEngine(nil, validators, nil, nil, nil)
 
 	// First validate the schema (calls ValidateConfig)
 	schema := Schema{
@@ -609,7 +611,7 @@ func TestEngine_WithMockGenerator(t *testing.T) {
 		"testGen": mockGenerator,
 	}
 
-	engine := NewEngine(nil, nil, generators, nil)
+	engine := NewEngine(nil, nil, nil, generators, nil)
 
 	// First validate the schema (calls ValidateConfig)
 	schema := Schema{
@@ -770,7 +772,7 @@ func TestExtractVaultReferences_EmptyPrefix(t *testing.T) {
 
 func TestEngine_CleanupVaultSecrets(t *testing.T) {
 	mockVault := NewMockVault(t)
-	engine := NewEngine[TestContext](nil, nil, nil, mockVault)
+	engine := NewEngine[TestContext](nil, nil, nil, nil, mockVault)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -839,7 +841,7 @@ func TestEngine_CleanupVaultSecrets(t *testing.T) {
 
 func TestEngine_CleanupVaultSecrets_WithErrors(t *testing.T) {
 	mockVault := NewMockVault(t)
-	engine := NewEngine[TestContext](nil, nil, nil, mockVault)
+	engine := NewEngine[TestContext](nil, nil, nil, nil, mockVault)
 	ctx := context.Background()
 
 	properties := map[string]any{
@@ -858,7 +860,7 @@ func TestEngine_CleanupVaultSecrets_WithErrors(t *testing.T) {
 }
 
 func TestEngine_CleanupVaultSecrets_NilVault(t *testing.T) {
-	engine := NewEngine[TestContext](nil, nil, nil, nil)
+	engine := NewEngine[TestContext](nil, nil, nil, nil, nil)
 	ctx := context.Background()
 
 	properties := map[string]any{
@@ -871,7 +873,7 @@ func TestEngine_CleanupVaultSecrets_NilVault(t *testing.T) {
 
 func TestEngine_CleanupVaultSecrets_NilProperties(t *testing.T) {
 	mockVault := NewMockVault(t)
-	engine := NewEngine[TestContext](nil, nil, nil, mockVault)
+	engine := NewEngine[TestContext](nil, nil, nil, nil, mockVault)
 	ctx := context.Background()
 
 	// Should not panic or call vault when properties is nil
@@ -1053,7 +1055,7 @@ func TestExtractEphemeralSecretProperties(t *testing.T) {
 
 func TestEngine_CleanupEphemeralSecrets(t *testing.T) {
 	mockVault := NewMockVault(t)
-	engine := NewEngine[TestContext](nil, nil, nil, mockVault)
+	engine := NewEngine[TestContext](nil, nil, nil, nil, mockVault)
 	ctx := context.Background()
 
 	schema := Schema{
@@ -1091,7 +1093,7 @@ func TestEngine_CleanupEphemeralSecrets(t *testing.T) {
 
 func TestEngine_CleanupEphemeralSecrets_NoEphemeral(t *testing.T) {
 	mockVault := NewMockVault(t)
-	engine := NewEngine[TestContext](nil, nil, nil, mockVault)
+	engine := NewEngine[TestContext](nil, nil, nil, nil, mockVault)
 	ctx := context.Background()
 
 	schema := Schema{

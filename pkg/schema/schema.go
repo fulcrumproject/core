@@ -60,6 +60,9 @@ type PropertyDefinition struct {
 	Required  bool   `json:"required"`  // Must be present
 	Immutable bool   `json:"immutable"` // Cannot be updated after creation
 
+	// Authorization rules (all must pass - AND logic)
+	Authorizers []AuthorizerConfig `json:"authorizers,omitempty"`
+
 	// Default value (applied when no value provided)
 	Default any `json:"default,omitempty"`
 
@@ -92,6 +95,23 @@ type GeneratorConfig struct {
 type ValidatorConfig struct {
 	Type   string         `json:"type"`   // "source", "mutable", "minLength", "pattern", etc.
 	Config map[string]any `json:"config"` // Type-specific configuration
+}
+
+// AuthorizerConfig defines an authorization rule configuration
+type AuthorizerConfig struct {
+	Type   string         `json:"type"`   // "actor", "state", etc.
+	Config map[string]any `json:"config"` // Type-specific configuration
+}
+
+// Authorizer checks if an operation is authorized
+// C is the context type specific to the domain (e.g., ServicePropertyContext)
+type Authorizer[C any] interface {
+	// Authorize checks if the actor can perform the operation
+	// hasNewValue: true if a new value is being provided
+	Authorize(ctx context.Context, schemaCtx C, operation Operation, propPath string, hasNewValue bool, config map[string]any) error
+
+	// ValidateConfig checks if the authorizer configuration is valid
+	ValidateConfig(propPath string, config map[string]any) error
 }
 
 // PropertyValidator validates property values and operations

@@ -69,7 +69,7 @@ CompleteJobReq:
     properties:
       type: object
       additionalProperties: true
-      description: Agent-discovered property values to update on the service (only agent-source properties)
+      description: Agent-discovered property values to update on the service (only properties with actor authorizer allowing "agent")
       example:
         ipAddress: "192.168.1.100"
         port: 8080
@@ -85,5 +85,4 @@ FailJobReq:
         Error message describing the failure. This message is matched against
         lifecycle transition regexps to determine the next service state.
       example: "Failed to create VM: insufficient resources"
-
 # Metric schemas

@@ -164,10 +164,6 @@ components:
       $ref: ./components/schemas/agent_types.yaml#/UpdateAgentTypeReq
     UpdateServiceTypeReq:
       $ref: ./components/schemas/service_types.yaml#/UpdateServiceTypeReq
-    ValidatePropertiesReq:
-      $ref: ./components/schemas/service_types.yaml#/ValidatePropertiesReq
-    ValidatePropertiesRes:
-      $ref: ./components/schemas/service_types.yaml#/ValidatePropertiesRes
     ValidationError:
       $ref: ./components/schemas/service_types.yaml#/ValidationError
     ValidatorDefinition:
@@ -254,8 +250,6 @@ paths:
     $ref: ./paths/service-types.yaml
   /service-types/{id}:
     $ref: ./paths/service-types@{id}.yaml
-  /service-types/{id}/validate:
-    $ref: ./paths/service-types@{id}@validate.yaml
   /services:
     $ref: ./paths/services.yaml
   /services/{id}:

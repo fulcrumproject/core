@@ -385,9 +385,10 @@ State transitions are driven by the lifecycle schema, not hardcoded. Common patt
 The actual states and transitions depend on the ServiceType's lifecycle schema.
 
 #### Properties vs Attributes vs AgentInstanceData
-- **Properties**: Service configuration with source control and updatability constraints
-  - `source`: Who can set/update (`input` = users, `agent` = agents)
-  - `updatable`: When it can be updated (`always`, `never`, `statuses` with `updatableIn` array)
+- **Properties**: Service configuration with authorization and updatability constraints
+  - **Actor authorizers**: Control who can set/update (defaults to user, explicit for agent/system)
+  - **State authorizers**: Control when properties can be updated (based on service state)
+  - **Immutable**: Boolean flag to prevent any updates after creation
 - **Attributes**: Static metadata set during creation (for selection/filtering)
 - **AgentInstanceData**: Agent-owned runtime data and technical infrastructure info
 
@@ -419,8 +420,10 @@ Properties can have validators including:
   - Provides dynamic dropdowns and validation
 
 #### Property Pool Allocation
-Properties with `source: "system"` can use automatic pool allocation:
-- **servicePoolType** field: Specifies which pool type to allocate from (matches ServicePool.Type)
+Properties with `actor: ["system"]` authorizer can use automatic pool allocation via generators:
+- **Generator**: Automatic value generation (e.g., pool allocation)
+- **Actor authorizer**: Restricts property to system-only (prevents manual setting)
+- **servicePoolType** in generator config: Specifies which pool type to allocate from (matches ServicePool.Type)
   - Property type must match pool's propertyType (e.g., string property → string pool)
   - System validates type compatibility during service creation
   - Actual values copied directly into properties during service creation
@@ -432,8 +435,21 @@ Properties with `source: "system"` can use automatic pool allocation:
 {
   "publicIp": {
     "type": "string",
-    "source": "system",
-    "servicePoolType": "public_ip"
+    "immutable": true,
+    "authorizers": [
+      {
+        "type": "actor",
+        "config": {
+          "actors": ["system"]
+        }
+      }
+    ],
+    "generator": {
+      "type": "pool",
+      "config": {
+        "poolType": "public_ip"
+      }
+    }
   }
 }
 ```
@@ -466,10 +482,10 @@ Agents can update service properties when completing a job by including a `prope
 **When to Use `properties` vs `agentInstanceData`:**
 - **`properties`**: Configuration values that are part of the service schema
   - Validated against the ServiceType's property schema
-  - Subject to source and updatability constraints
+  - Subject to actor and state authorization constraints
   - Become part of the service's configuration
   - Examples: ipAddress, port, instanceId, hostname
-  - Use when: The value is defined in the service type's property schema with `source: "agent"`
+  - Use when: The value is defined in the service type's property schema with `actor: ["agent"]` authorizer
 
 - **`agentInstanceData`**: Technical infrastructure information
   - Not validated against property schema
@@ -479,9 +495,9 @@ Agents can update service properties when completing a job by including a `prope
   - Use when: Reporting runtime metrics or technical details not in the schema
 
 **Property Validation:**
-- Agents can only set/update properties with `source: "agent"`
-- During initial service creation (ServiceNew status): Only source is validated (agents can set immutable properties)
-- During subsequent updates: Both source and updatability constraints are validated
+- Agents can only set/update properties with `actor: ["agent"]` authorizer
+- During initial service creation: Agents can set immutable properties marked for agent access
+- During subsequent updates: Both actor and state authorization constraints are validated
 - Validation errors return HTTP 400 and roll back the entire job completion
 - See `docs/SERVICE_TYPE.md` for detailed examples and error messages
 

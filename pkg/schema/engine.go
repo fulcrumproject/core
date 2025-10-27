@@ -22,20 +22,23 @@ type Vault interface {
 // Engine orchestrates schema processing
 // C is the context type specific to the domain (e.g., ServicePropertyContext)
 type Engine[C any] struct {
+	authorizers      map[string]Authorizer[C]
 	validators       map[string]PropertyValidator[C]
 	schemaValidators map[string]SchemaValidator[C]
 	generators       map[string]Generator[C]
 	vault            Vault // For secret processing
 }
 
-// NewEngine creates a new engine with validators, generators, and vault
+// NewEngine creates a new engine with authorizers, validators, generators, and vault
 func NewEngine[C any](
+	authorizers map[string]Authorizer[C],
 	validators map[string]PropertyValidator[C],
 	schemaValidators map[string]SchemaValidator[C],
 	generators map[string]Generator[C],
 	vault Vault,
 ) *Engine[C] {
 	return &Engine[C]{
+		authorizers:      authorizers,
 		validators:       validators,
 		schemaValidators: schemaValidators,
 		generators:       generators,
@@ -252,23 +255,25 @@ func (e *Engine[C]) processProperty(
 	propDef PropertyDefinition,
 	oldValue, newValue any,
 ) (any, error) {
-	// 1. Check if generator property can be set manually
-	if propDef.Generator != nil && newValue != nil {
-		return nil, fmt.Errorf("%s: property is system-generated", propName)
-	}
+	hasNewValue := newValue != nil
 
-	// 2. Handle vault references early (skip validation for secret properties)
+	// 1. Handle vault references early (skip validation for secret properties)
 	if isVaultReference(newValue, propDef.Secret) {
 		return newValue, nil
 	}
 
-	// 3. Check immutability
+	// 2. Check immutability (hard constraint on property itself)
 	if err := e.checkImmutability(operation, propName, propDef, oldValue, newValue); err != nil {
 		return nil, err
 	}
 
+	// 3. Run authorizers (who/when can set this property)
+	if err := e.runAuthorizers(ctx, schemaCtx, operation, propName, propDef, hasNewValue); err != nil {
+		return nil, err
+	}
+
 	// 4. Validate and process user-provided value
-	if newValue != nil {
+	if hasNewValue {
 		if err := e.validatePropertyValue(ctx, schemaCtx, operation, propName, propDef, oldValue, newValue); err != nil {
 			return nil, err
 		}
@@ -321,6 +326,27 @@ func (e *Engine[C]) checkImmutability(
 			return fmt.Errorf("%s: property is immutable and cannot be changed", propName)
 		}
 		// If values are equal, allow it (no-op update)
+	}
+	return nil
+}
+
+// runAuthorizers executes all authorizers for a property (all must pass - AND logic)
+func (e *Engine[C]) runAuthorizers(
+	ctx context.Context,
+	schemaCtx C,
+	operation Operation,
+	propName string,
+	propDef PropertyDefinition,
+	hasNewValue bool,
+) error {
+	for _, authConfig := range propDef.Authorizers {
+		authorizer, ok := e.authorizers[authConfig.Type]
+		if !ok {
+			return fmt.Errorf("%s: unknown authorizer type '%s'", propName, authConfig.Type)
+		}
+		if err := authorizer.Authorize(ctx, schemaCtx, operation, propName, hasNewValue, authConfig.Config); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -634,7 +660,18 @@ func (e *Engine[C]) validatePropertyDefinition(propPath string, propDef Property
 		}
 	}
 
-	// 8. Validate validators exist and have valid config
+	// 8. Validate authorizers exist and have valid config
+	for _, authorizerCfg := range propDef.Authorizers {
+		authorizer, ok := e.authorizers[authorizerCfg.Type]
+		if !ok {
+			return fmt.Errorf("%s: unknown authorizer '%s'", propPath, authorizerCfg.Type)
+		}
+		if err := authorizer.ValidateConfig(propPath, authorizerCfg.Config); err != nil {
+			return err
+		}
+	}
+
+	// 9. Validate validators exist and have valid config
 	for _, validatorCfg := range propDef.Validators {
 		validator, ok := e.validators[validatorCfg.Type]
 		if !ok {
@@ -645,7 +682,7 @@ func (e *Engine[C]) validatePropertyDefinition(propPath string, propDef Property
 		}
 	}
 
-	// 9. Validate generator exists and has valid config
+	// 10. Validate generator exists and has valid config
 	if propDef.Generator != nil {
 		generator, ok := e.generators[propDef.Generator.Type]
 		if !ok {
@@ -656,7 +693,7 @@ func (e *Engine[C]) validatePropertyDefinition(propPath string, propDef Property
 		}
 	}
 
-	// 10. Secret type must be valid
+	// 11. Secret type must be valid
 	if propDef.Secret != nil {
 		if propDef.Secret.Type != "persistent" && propDef.Secret.Type != "ephemeral" {
 			return fmt.Errorf("%s: secret type must be 'persistent' or 'ephemeral'", propPath)

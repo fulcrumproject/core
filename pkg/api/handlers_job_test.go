@@ -271,7 +271,7 @@ func TestJobHandleCompleteJob(t *testing.T) {
 
 				commander.EXPECT().
 					Complete(mock.Anything, mock.Anything).
-					Return(domain.NewInvalidInputErrorf("property 'instanceName' cannot be updated by agent (source: input)"))
+					Return(domain.NewInvalidInputErrorf("instanceName: property can only be set by: [user]"))
 			},
 			expectedStatus: http.StatusBadRequest,
 		},

@@ -3,6 +3,14 @@ package domain
 
 import "github.com/fulcrumproject/core/pkg/schema"
 
+// buildServicePropertyAuthorizerRegistry creates a registry of property authorizers
+func buildServicePropertyAuthorizerRegistry() map[string]schema.Authorizer[ServicePropertyContext] {
+	return map[string]schema.Authorizer[ServicePropertyContext]{
+		"actor": &ActorAuthorizer{},
+		"state": &StateAuthorizer{},
+	}
+}
+
 // buildServicePropertyValidatorRegistry creates a registry of property validators
 // combining generic validators from pkg/schema with domain-specific validators
 func buildServicePropertyValidatorRegistry() map[string]schema.PropertyValidator[ServicePropertyContext] {
@@ -18,8 +26,6 @@ func buildServicePropertyValidatorRegistry() map[string]schema.PropertyValidator
 		"maxItems":  &schema.MaxItemsValidator[ServicePropertyContext]{},
 
 		// Domain-specific validators
-		"source":        &SourceValidator{},
-		"mutable":       &MutableValidator{},
 		"serviceOption": NewServiceOptionValidator(),
 	}
 }
@@ -39,10 +45,11 @@ func buildServicePropertyGeneratorRegistry() map[string]schema.Generator[Service
 }
 
 // NewServicePropertyEngine creates a new schema engine configured for service property validation.
-// It composes generic validators, domain validators, and domain generators with vault integration.
-// Note: Store is no longer passed here - validators/generators access it via ServicePropertyContext.
+// It composes authorizers, validators, and generators with vault integration.
+// Note: Store is no longer passed here - authorizers/validators/generators access it via ServicePropertyContext.
 func NewServicePropertyEngine(vault schema.Vault) *schema.Engine[ServicePropertyContext] {
 	return schema.NewEngine(
+		buildServicePropertyAuthorizerRegistry(),
 		buildServicePropertyValidatorRegistry(),
 		buildServicePropertySchemaValidatorRegistry(),
 		buildServicePropertyGeneratorRegistry(),

@@ -29,6 +29,7 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
     "required": true|false,
     "default": "default value (optional)",
     "immutable": true|false,                 // optional, if true property cannot be changed after creation
+    "authorizers": [...],                    // authorization rules (who/when can set - actor, state)
     "secret": {                              // optional, for sensitive values
       "type": "persistent|ephemeral"
     },
@@ -36,7 +37,7 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
       "type": "pool|custom",
       "config": {...}                        // generator-specific configuration
     },
-    "validators": [...],                     // property-level validators (source, mutable, etc.)
+    "validators": [...],                     // validation rules (value correctness - pattern, enum, etc.)
     "properties": {...},                     // for object types
     "items": {...}                           // for array types
   }
@@ -49,9 +50,10 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
 - **required**: Whether the property must be provided
 - **default**: Default value if not provided
 - **immutable**: If `true`, property cannot be changed after creation (defaults to `false`)
+- **authorizers**: Array of authorization rules that control who can set/update (actor) and when updates are allowed (state)
 - **secret**: Configuration for secure vault storage (persistent or ephemeral secrets)
 - **generator**: Configuration for automatic value generation (e.g., pool allocation)
-- **validators**: Array of validation rules to apply to the property value (includes `source`, `mutable`, etc.)
+- **validators**: Array of validation rules for value correctness (pattern, enum, min, max, etc.)
 - **properties**: Schema for nested object properties (only for `type: "object"`)
 - **items**: Schema for array elements (only for `type: "array"`)
 
@@ -196,9 +198,206 @@ For array properties, use the `items` field to define the schema for array eleme
 }
 ```
 
+### Authorizers
+
+Authorizers control **who** can set or update a property and **when** updates are allowed. They enforce authorization rules before any value generation or validation occurs.
+
+#### Authorization Concepts
+
+- **Actor Authorization**: Controls which actor (user, agent, system) can provide values
+- **State Authorization**: Controls in which service states updates are allowed
+- **Execution Order**: Authorizers run before defaults, generators, and validators
+
+#### Actor Authorizer
+
+The `actor` authorizer restricts who can set or update a property value. **If no actor authorizer is specified, the property defaults to user access.**
+
+**Configuration:**
+```json
+{
+  "type": "actor",
+  "config": {
+    "actors": ["agent", "system"]
+  }
+}
+```
+
+**Actor Types:**
+- **`user`**: End users calling the API (default when no actor authorizer specified)
+- **`agent`**: Agents completing jobs and reporting back
+- **`system`**: System-generated values (via generators)
+
+**Example - User Input (Default - No Authorizer Needed):**
+```json
+{
+  "instanceName": {
+    "type": "string",
+    "label": "Instance Name",
+    "required": true
+  }
+}
+```
+
+**Example - Agent-Discovered Value:**
+```json
+{
+  "ipAddress": {
+    "type": "string",
+    "label": "Assigned IP Address",
+    "authorizers": [
+      {
+        "type": "actor",
+        "config": {
+          "actors": ["agent"]
+        }
+      }
+    ]
+  }
+}
+```
+
+**Example - System-Generated Value:**
+```json
+{
+  "publicIp": {
+    "type": "string",
+    "label": "Public IP",
+    "immutable": true,
+    "authorizers": [
+      {
+        "type": "actor",
+        "config": {
+          "actors": ["system"]
+        }
+      }
+    ],
+    "generator": {
+      "type": "pool",
+      "config": {
+        "poolType": "public_ip"
+      }
+    }
+  }
+}
+```
+
+**Example - Multiple Actors (User or Agent):**
+```json
+{
+  "hostname": {
+    "type": "string",
+    "label": "Hostname",
+    "authorizers": [
+      {
+        "type": "actor",
+        "config": {
+          "actors": ["user", "agent"]
+        }
+      }
+    ]
+  }
+}
+```
+
+#### State Authorizer
+
+The `state` authorizer restricts when properties can be updated based on the service's current state. This only applies to update operations (not creation).
+
+**Configuration:**
+```json
+{
+  "type": "state",
+  "config": {
+    "allowedStates": ["Stopped", "Maintenance"]
+  }
+}
+```
+
+**Example - Update Only When Stopped:**
+```json
+{
+  "diskSize": {
+    "type": "integer",
+    "label": "Disk Size (GB)",
+    "required": true,
+    "authorizers": [
+      {
+        "type": "state",
+        "config": {
+          "allowedStates": ["Stopped"]
+        }
+      }
+    ]
+  }
+}
+```
+
+**Example - Hot-Updatable Configuration:**
+```json
+{
+  "maxConnections": {
+    "type": "integer",
+    "label": "Max Connections",
+    "authorizers": [
+      {
+        "type": "state",
+        "config": {
+          "allowedStates": ["Started", "Stopped"]
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Combining Authorizers
+
+Multiple authorizers can be combined using AND logic - all must pass for the operation to be authorized.
+
+**Example - User Property, Only Updatable When Stopped:**
+```json
+{
+  "cpu": {
+    "type": "integer",
+    "label": "CPU Cores",
+    "required": true,
+    "authorizers": [
+      {
+        "type": "state",
+        "config": {
+          "allowedStates": ["Stopped"]
+        }
+      }
+    ]
+  }
+}
+```
+Note: No `actor` authorizer needed - defaults to user access, but `state` authorizer restricts when updates are allowed.
+
+**Example - Agent-Reported, Immutable:**
+```json
+{
+  "instanceId": {
+    "type": "string",
+    "label": "Cloud Instance ID",
+    "immutable": true,
+    "authorizers": [
+      {
+        "type": "actor",
+        "config": {
+          "actors": ["agent"]
+        }
+      }
+    ]
+  }
+}
+```
+
 ### Validators
 
-Validators provide additional constraints beyond basic type checking. Fulcrum Core supports two types of validators:
+Validators check the **correctness** of property values. They verify that values meet specific constraints like format, range, or allowed values. Validators run after authorization and value generation.
+
+Fulcrum Core supports two types of validators:
 
 1. **Property Validators**: Applied to individual properties to validate their values
 2. **Schema Validators**: Applied at the schema level to validate relationships between properties
@@ -759,20 +958,20 @@ Properties can use automatic pool allocation via the `pool` generator. Service p
     "type": "string",
     "label": "Public IP Address",
     "immutable": true,
+    "authorizers": [
+      {
+        "type": "actor",
+        "config": {
+          "actors": ["system"]
+        }
+      }
+    ],
     "generator": {
       "type": "pool",
       "config": {
         "poolType": "public_ip"
       }
-    },
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "system"
-        }
-      }
-    ]
+    }
   }
 }
 ```
@@ -781,7 +980,7 @@ This configures the `publicIp` property for automatic allocation from a pool wit
 
 **How it works:**
 1. The generator `config.poolType` field specifies which pool type to allocate from (e.g., "public_ip", "hostname", "port")
-2. The `source` validator marks the property as system-generated (preventing manual user/agent input)
+2. The `actor` authorizer restricts the property to system-only (preventing manual user/agent input)
 3. The agent must have a `servicePoolSetId` configured
 4. During service creation, the system finds a pool with the matching type in the agent's pool set
 5. The property type must match the pool's `propertyType` (e.g., string property → string pool)
@@ -794,7 +993,7 @@ This configures the `publicIp` property for automatic allocation from a pool wit
 - **Exclusive access**: Each value can only be allocated to one service at a time
 - **Lifecycle management**: Values automatically released on service deletion
 - **Direct storage**: Actual values copied into properties (no dereferencing needed)
-- **System-source**: Use `source` validator to prevent manual setting
+- **System-only authorization**: Use `actor` authorizer with `system` to prevent manual setting
 
 **Pool Types:**
 
@@ -805,20 +1004,20 @@ List pools (pre-configured values):
     "type": "string",
     "label": "IP Address",
     "immutable": true,
+    "authorizers": [
+      {
+        "type": "actor",
+        "config": {
+          "actors": ["system"]
+        }
+      }
+    ],
     "generator": {
       "type": "pool",
       "config": {
         "poolType": "public_ip"
       }
-    },
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "system"
-        }
-      }
-    ]
+    }
   }
 }
 ```
@@ -830,20 +1029,20 @@ Subnet pools (automatic CIDR allocation):
     "type": "string",
     "label": "Private IP Address",
     "immutable": true,
+    "authorizers": [
+      {
+        "type": "actor",
+        "config": {
+          "actors": ["system"]
+        }
+      }
+    ],
     "generator": {
       "type": "pool",
       "config": {
         "poolType": "private_ip"
       }
-    },
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "system"
-        }
-      }
-    ]
+    }
   }
 }
 ```
@@ -855,20 +1054,20 @@ JSON type for complex values:
     "type": "json",
     "label": "Hostname Configuration",
     "immutable": true,
+    "authorizers": [
+      {
+        "type": "actor",
+        "config": {
+          "actors": ["system"]
+        }
+      }
+    ],
     "generator": {
       "type": "pool",
       "config": {
         "poolType": "hostname"
       }
-    },
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "system"
-        }
-      }
-    ]
+    }
   }
 }
 ```
@@ -958,58 +1157,58 @@ Service type schema:
       "type": "string",
       "label": "Public IP",
       "immutable": true,
+      "authorizers": [
+        {
+          "type": "actor",
+          "config": {
+            "actors": ["system"]
+          }
+        }
+      ],
       "generator": {
         "type": "pool",
         "config": {
           "poolType": "public_ip"
         }
-      },
-      "validators": [
-        {
-          "type": "source",
-          "config": {
-            "source": "system"
-          }
-        }
-      ]
+      }
     },
     "privateIp": {
       "type": "string",
       "label": "Private IP",
       "immutable": true,
+      "authorizers": [
+        {
+          "type": "actor",
+          "config": {
+            "actors": ["system"]
+          }
+        }
+      ],
       "generator": {
         "type": "pool",
         "config": {
           "poolType": "private_ip"
         }
-      },
-      "validators": [
-        {
-          "type": "source",
-          "config": {
-            "source": "system"
-          }
-        }
-      ]
+      }
     },
     "hostname": {
       "type": "json",
       "label": "Hostname Config",
       "immutable": true,
+      "authorizers": [
+        {
+          "type": "actor",
+          "config": {
+            "actors": ["system"]
+          }
+        }
+      ],
       "generator": {
         "type": "pool",
         "config": {
           "poolType": "hostname"
         }
-      },
-      "validators": [
-        {
-          "type": "source",
-          "config": {
-            "source": "system"
-          }
-        }
-      ]
+      }
     }
   }
 }
@@ -1512,464 +1711,10 @@ After first job completes:
 - `initialPassword` (ephemeral): Reference deleted from vault ❌
 - `databaseConfig.password` (persistent): Still `vault://i9j0k1l2` ✅
 
-### Property Source
-
-The `source` validator controls who can set and update a property value. This enables proper separation between user-provided configuration, agent-discovered information, and system-generated values.
-
-**Implementation:** The source control is enforced through the `source` validator in the property's validators array, not through a dedicated `source` field.
-
-#### Source Values
-
-##### input (default)
-Properties set by users through the API. These represent the desired configuration.
-
-```json
-{
-  "instanceName": {
-    "type": "string",
-    "label": "Instance Name",
-    "required": true,
-    "validators": []
-  }
-}
-```
-
-**Behavior:**
-- Users can set this property when creating a service
-- Users can update this property (subject to immutability and mutable validator rules)
-- Agents cannot modify this property
-- If no `source` validator is specified, properties default to user input
-
-##### agent
-Properties set by agents after provisioning resources. These represent actual provisioned values.
-
-```json
-{
-  "ipAddress": {
-    "type": "string",
-    "label": "Assigned IP Address",
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "agent"
-        }
-      }
-    ]
-  }
-}
-```
-
-**Behavior:**
-- Users cannot set or update this property
-- Agents can set this property when completing a job
-- Agents can update this property (subject to immutability and mutable validator rules)
-- Typically used for discovered values like IP addresses, ports, UUIDs
-
-##### system
-Properties automatically generated by the system through generators. Users and agents cannot set these manually.
-
-```json
-{
-  "publicIp": {
-    "type": "string",
-    "label": "Public IP Address",
-    "immutable": true,
-    "generator": {
-      "type": "pool",
-      "config": {
-        "poolType": "public_ip"
-      }
-    },
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "system"
-        }
-      }
-    ]
-  }
-}
-```
-
-**Behavior:**
-- System generates the value automatically via the configured generator
-- Users and agents cannot set or modify this property manually
-- Typically used with pool allocation or computed values
-
-#### Source Usage Patterns
-
-**Configuration vs Discovery**
-```json
-{
-  "diskSize": {
-    "type": "integer",
-    "label": "Disk Size (GB)",
-    "required": true
-  },
-  "actualDiskPath": {
-    "type": "string",
-    "label": "Disk Path",
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "agent"
-        }
-      }
-    ]
-  }
-}
-```
-
-User specifies `diskSize`, agent reports back `actualDiskPath` after provisioning.
-
-**System-Generated with Pool**
-```json
-{
-  "ipAddress": {
-    "type": "string",
-    "label": "IP Address",
-    "immutable": true,
-    "generator": {
-      "type": "pool",
-      "config": {
-        "poolType": "public_ip"
-      }
-    },
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "system"
-        }
-      }
-    ]
-  }
-}
-```
-
-System automatically allocates from pool, preventing manual setting.
-
-### Property Updatability
-
-Properties can be controlled for mutability in two ways:
-
-1. **`immutable` field**: Simple flag to prevent any updates after creation
-2. **`mutable` validator**: State-specific mutability control for complex workflows
-
-#### Immutable Properties
-
-Use the `immutable: true` field to mark properties that cannot be changed after initial creation. This is enforced at the schema engine level.
-
-```json
-{
-  "uuid": {
-    "type": "string",
-    "label": "Instance UUID",
-    "immutable": true,
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "agent"
-        }
-      }
-    ]
-  }
-}
-```
-
-**Behavior:**
-- Can be set during initial service creation (for user properties) or first job completion (for agent properties)
-- Cannot be changed after initial creation
-- Any attempt to update returns a validation error: `"property is immutable and cannot be changed"`
-- Suitable for identifiers, region selection, and other immutable configuration
-- Default is `false` (mutable)
-
-**Examples:**
-
-System-generated immutable identifier:
-```json
-{
-  "publicIp": {
-    "type": "string",
-    "label": "Public IP",
-    "immutable": true,
-    "generator": {
-      "type": "pool",
-      "config": {
-        "poolType": "public_ip"
-      }
-    },
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "system"
-        }
-      }
-    ]
-  }
-}
-```
-
-Agent-discovered immutable value:
-```json
-{
-  "instanceId": {
-    "type": "string",
-    "label": "Cloud Instance ID",
-    "immutable": true,
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "agent"
-        }
-      }
-    ]
-  }
-}
-```
-
-User-configured immutable value:
-```json
-{
-  "region": {
-    "type": "string",
-    "label": "Cloud Region",
-    "immutable": true,
-    "required": true,
-    "validators": [
-      {
-        "type": "enum",
-        "config": {
-          "values": ["us-east-1", "us-west-2", "eu-west-1"]
-        }
-      }
-    ]
-  }
-}
-```
-
-#### State-Specific Mutability
-
-Use the `mutable` validator to control when properties can be updated based on service state. This is useful for properties that can only be changed in specific lifecycle states.
-
-```json
-{
-  "diskSize": {
-    "type": "integer",
-    "label": "Disk Size (GB)",
-    "required": true,
-    "validators": [
-      {
-        "type": "mutable",
-        "config": {
-          "updatableIn": ["Stopped"]
-        }
-      },
-      {
-        "type": "min",
-        "config": {
-          "value": 10
-        }
-      },
-      {
-        "type": "max",
-        "config": {
-          "value": 1000
-        }
-      }
-    ]
-  }
-}
-```
-
-**Behavior:**
-- Only applies to update operations (not create)
-- Checks if service is in one of the allowed states before allowing update
-- Error message: `"property cannot be updated in state 'CurrentState'"`
-- Suitable for properties that require service to be in a safe state for modification
-
-**Validator Configuration:**
-- `updatableIn`: Array of service status strings when updates are allowed
-- Must contain at least one status
-- Statuses should match those defined in the service type's lifecycle schema
-
-**Examples:**
-
-Hardware changes requiring stopped state:
-```json
-{
-  "cpu": {
-    "type": "integer",
-    "label": "CPU Cores",
-    "validators": [
-      {
-        "type": "mutable",
-        "config": {
-          "updatableIn": ["Stopped"]
-        }
-      },
-      {
-        "type": "enum",
-        "config": {
-          "values": [1, 2, 4, 8, 16, 32]
-        }
-      }
-    ]
-  },
-  "memory": {
-    "type": "integer",
-    "label": "Memory (GB)",
-    "validators": [
-      {
-        "type": "mutable",
-        "config": {
-          "updatableIn": ["Stopped"]
-        }
-      },
-      {
-        "type": "enum",
-        "config": {
-          "values": [1, 2, 4, 8, 16, 32, 64]
-        }
-      }
-    ]
-  }
-}
-```
-
-Hot-updatable configuration:
-```json
-{
-  "maxConnections": {
-    "type": "integer",
-    "label": "Max Connections",
-    "validators": [
-      {
-        "type": "mutable",
-        "config": {
-          "updatableIn": ["Started", "Stopped"]
-        }
-      }
-    ]
-  }
-}
-```
-
-Configuration updatable only during maintenance:
-```json
-{
-  "databaseConfig": {
-    "type": "object",
-    "properties": {
-      "host": {
-        "type": "string"
-      },
-      "port": {
-        "type": "integer"
-      }
-    },
-    "validators": [
-      {
-        "type": "mutable",
-        "config": {
-          "updatableIn": ["Maintenance"]
-        }
-      }
-    ]
-  }
-}
-```
-
-#### Combined Mutability Patterns
-
-**Always Mutable (default)**
-```json
-{
-  "description": {
-    "type": "string",
-    "label": "Description"
-  }
-}
-```
-No immutable field and no mutable validator = always updatable.
-
-**Completely Immutable**
-```json
-{
-  "createdDate": {
-    "type": "string",
-    "label": "Creation Date",
-    "immutable": true
-  }
-}
-```
-Cannot be changed after creation in any state.
-
-**State-Conditional Mutability**
-```json
-{
-  "diskSize": {
-    "type": "integer",
-    "label": "Disk Size (GB)",
-    "validators": [
-      {
-        "type": "mutable",
-        "config": {
-          "updatableIn": ["Stopped"]
-        }
-      }
-    ]
-  }
-}
-```
-Can be updated, but only when service is in Stopped state.
-
-**Combining with Source Control**
-```json
-{
-  "healthStatus": {
-    "type": "string",
-    "label": "Health Status",
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "agent"
-        }
-      }
-    ]
-  }
-}
-```
-Agent can update in any state (no immutable or mutable validator).
-
-```json
-{
-  "maintenanceMode": {
-    "type": "boolean",
-    "label": "Maintenance Mode",
-    "validators": [
-      {
-        "type": "mutable",
-        "config": {
-          "updatableIn": ["Stopped", "Started"]
-        }
-      }
-    ]
-  }
-}
-```
-User can update, but only in specific states.
 
 ### Complete Examples
 
-#### VM Service Type with Mixed Sources
+#### VM Service Type with Mixed Authorizers
 
 Here's a comprehensive example for a VM service type with user configuration, agent-discovered properties, and system-generated values:
 
@@ -2018,13 +1763,15 @@ Here's a comprehensive example for a VM service type with user configuration, ag
     "type": "integer",
     "label": "CPU Cores",
     "required": true,
-    "validators": [
+    "authorizers": [
       {
-        "type": "mutable",
+        "type": "state",
         "config": {
-          "updatableIn": ["Stopped"]
+          "allowedStates": ["Stopped"]
         }
-      },
+      }
+    ],
+    "validators": [
       {
         "type": "enum",
         "config": {
@@ -2037,13 +1784,15 @@ Here's a comprehensive example for a VM service type with user configuration, ag
     "type": "integer",
     "label": "Memory (GB)",
     "required": true,
-    "validators": [
+    "authorizers": [
       {
-        "type": "mutable",
+        "type": "state",
         "config": {
-          "updatableIn": ["Stopped"]
+          "allowedStates": ["Stopped"]
         }
-      },
+      }
+    ],
+    "validators": [
       {
         "type": "enum",
         "config": {
@@ -2056,13 +1805,15 @@ Here's a comprehensive example for a VM service type with user configuration, ag
     "type": "integer",
     "label": "Disk Size (GB)",
     "required": true,
-    "validators": [
+    "authorizers": [
       {
-        "type": "mutable",
+        "type": "state",
         "config": {
-          "updatableIn": ["Stopped"]
+          "allowedStates": ["Stopped"]
         }
-      },
+      }
+    ],
+    "validators": [
       {
         "type": "min",
         "config": {
@@ -2087,30 +1838,30 @@ Here's a comprehensive example for a VM service type with user configuration, ag
     "type": "string",
     "label": "Public IP Address",
     "immutable": true,
+    "authorizers": [
+      {
+        "type": "actor",
+        "config": {
+          "actors": ["system"]
+        }
+      }
+    ],
     "generator": {
       "type": "pool",
       "config": {
         "poolType": "public_ip"
       }
-    },
-    "validators": [
-      {
-        "type": "source",
-        "config": {
-          "source": "system"
-        }
-      }
-    ]
+    }
   },
   "instanceId": {
     "type": "string",
     "label": "Cloud Instance ID",
     "immutable": true,
-    "validators": [
+    "authorizers": [
       {
-        "type": "source",
+        "type": "actor",
         "config": {
-          "source": "agent"
+          "actors": ["agent"]
         }
       }
     ]
@@ -2119,11 +1870,11 @@ Here's a comprehensive example for a VM service type with user configuration, ag
     "type": "string",
     "label": "Private IP Address",
     "immutable": true,
-    "validators": [
+    "authorizers": [
       {
-        "type": "source",
+        "type": "actor",
         "config": {
-          "source": "agent"
+          "actors": ["agent"]
         }
       }
     ]
@@ -2132,11 +1883,11 @@ Here's a comprehensive example for a VM service type with user configuration, ag
     "type": "string",
     "label": "Hostname",
     "immutable": true,
-    "validators": [
+    "authorizers": [
       {
-        "type": "source",
+        "type": "actor",
         "config": {
-          "source": "agent"
+          "actors": ["agent"]
         }
       }
     ]
@@ -2179,13 +1930,15 @@ Example for a managed disk with state-conditional resizing:
     "type": "integer",
     "label": "Size (GB)",
     "required": true,
-    "validators": [
+    "authorizers": [
       {
-        "type": "mutable",
+        "type": "state",
         "config": {
-          "updatableIn": ["Stopped"]
+          "allowedStates": ["Stopped"]
         }
-      },
+      }
+    ],
+    "validators": [
       {
         "type": "min",
         "config": {
@@ -2218,11 +1971,11 @@ Example for a managed disk with state-conditional resizing:
     "type": "string",
     "label": "Cloud Disk ID",
     "immutable": true,
-    "validators": [
+    "authorizers": [
       {
-        "type": "source",
+        "type": "actor",
         "config": {
-          "source": "agent"
+          "actors": ["agent"]
         }
       }
     ]
@@ -2230,11 +1983,11 @@ Example for a managed disk with state-conditional resizing:
   "actualSizeGb": {
     "type": "integer",
     "label": "Actual Size (GB)",
-    "validators": [
+    "authorizers": [
       {
-        "type": "source",
+        "type": "actor",
         "config": {
-          "source": "agent"
+          "actors": ["agent"]
         }
       }
     ]
@@ -2243,11 +1996,11 @@ Example for a managed disk with state-conditional resizing:
     "type": "string",
     "label": "Device Path",
     "immutable": true,
-    "validators": [
+    "authorizers": [
       {
-        "type": "source",
+        "type": "actor",
         "config": {
-          "source": "agent"
+          "actors": ["agent"]
         }
       }
     ]
@@ -2358,12 +2111,11 @@ The validation system provides detailed error messages with path information:
 - `"referenced service is not of the allowed service type"` - Service type constraint violation  
 - `"serviceType validator value must be a string or array of strings"` - Invalid validator configuration
 
-### Property Source and Updatability Error Messages
+### Authorization Error Messages
 
-- `"property 'propertyName' cannot be updated by user (source: agent)"` - User attempted to update an agent-source property
-- `"property 'propertyName' cannot be updated by agent (source: input)"` - Agent attempted to update a user-input property  
-- `"property 'propertyName' cannot be updated (updatable: never)"` - Attempted to update an immutable property
-- `"property 'propertyName' cannot be updated in status 'StatusName' (allowed statuses: [Status1, Status2])"` - Attempted to update a property in a disallowed status
+- `"propertyName: property can only be set by: [user, agent, system]"` - Actor attempted to set a property they're not authorized to set
+- `"propertyName: property cannot be updated in state 'CurrentState'"` - Attempted to update a property in a disallowed state
+- `"propertyName: property is immutable and cannot be changed"` - Attempted to update an immutable property
 
 ### Migration and Updates
 

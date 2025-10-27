@@ -190,25 +190,25 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 		Properties: map[string]schema.PropertyDefinition{
 			"ipAddress": {
 				Type: "string",
-				Validators: []schema.ValidatorConfig{
+				Authorizers: []schema.AuthorizerConfig{
 					{
-						Type:   "source",
-						Config: map[string]any{"source": "agent"},
+						Type:   "actor",
+						Config: map[string]any{"actors": []any{"agent"}},
 					},
 				},
 			},
 			"port": {
 				Type: "integer",
-				Validators: []schema.ValidatorConfig{
+				Authorizers: []schema.AuthorizerConfig{
 					{
-						Type:   "source",
-						Config: map[string]any{"source": "agent"},
+						Type:   "actor",
+						Config: map[string]any{"actors": []any{"agent"}},
 					},
 				},
 			},
 			"hostname": {
 				Type: "string",
-				// No source validator means default = user input
+				// No actor authorizer means default = user input
 			},
 		},
 	}

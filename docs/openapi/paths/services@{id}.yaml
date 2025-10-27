@@ -1,115 +1,113 @@
-  parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        $ref: "../components/schemas/common.yaml#/properties.UUID"
-  get:
-    operationId: servicesGet
-    summary: Get a service
-    tags:
-      - Services
-    description: Retrieves a specific service by ID
-    x-auth-permissions:
-      - role: admin
-        permission: all services
-      - role: participant
-        permission: services associated with its participant (as provider or consumer)
-      - role: agent
-        permission: services assigned to the agent
-    responses:
-      "200":
-        description: The service details
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/services.yaml#/ServiceRes"
-      "404":
-        description: Service not found
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/common.yaml#/ErrorRes"
-  patch:
-    operationId: servicesUpdate
-    summary: Update a service
-    tags:
-      - Services
-    description: |
-      Updates an existing service using PATCH semantics. Only provided fields are updated.
-      Properties are merged with existing properties for partial updates.
-      **Property Merging Behavior:**
-      - Only provided properties are updated
-      - Existing properties not included in the request remain unchanged
-      - Nested objects are deep merged (existing nested properties are preserved)
-      - Properties are validated against the complete merged result
-      **Examples:**
-      - To update only the service name: `{"name": "new-name"}`
-      - To update specific database config: `{"properties": {"database": {"port": 3306}}}`
-      - To add new API config: `{"properties": {"api": {"version": "v2"}}}`
-    x-auth-permissions:
-      - role: admin
-        permission: always
-      - role: participant
-        permission: services where it is the consumer participant
-      - role: agent
-        permission: not authorized
-    requestBody:
-      required: true
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      $ref: "../components/schemas/common.yaml#/properties.UUID"
+get:
+  operationId: servicesGet
+  summary: Get a service
+  tags:
+    - Services
+  description: Retrieves a specific service by ID
+  x-auth-permissions:
+    - role: admin
+      permission: all services
+    - role: participant
+      permission: services associated with its participant (as provider or consumer)
+    - role: agent
+      permission: services assigned to the agent
+  responses:
+    "200":
+      description: The service details
       content:
         application/json:
           schema:
-            type: object
+            $ref: "../components/schemas/services.yaml#/ServiceRes"
+    "404":
+      description: Service not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+patch:
+  operationId: servicesUpdate
+  summary: Update a service
+  tags:
+    - Services
+  description: |
+    Updates an existing service using PATCH semantics. Only provided fields are updated.
+    Properties are merged with existing properties for partial updates.
+    **Property Merging Behavior:**
+    - Only provided properties are updated
+    - Existing properties not included in the request remain unchanged
+    - Nested objects are deep merged (existing nested properties are preserved)
+    - Properties are validated against the complete merged result
+    **Examples:**
+    - To update only the service name: `{"name": "new-name"}`
+    - To update specific database config: `{"properties": {"database": {"port": 3306}}}`
+    - To add new API config: `{"properties": {"api": {"version": "v2"}}}`
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: services where it is the consumer participant
+    - role: agent
+      permission: not authorized
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: "Service name. Only provided if updating the name."
+              example: "web-server-01"
             properties:
-              name:
-                type: string
-                description: "Service name. Only provided if updating the name."
-                example: "web-server-01"
-              properties:
-                $ref: "../components/schemas/common.yaml#/JSONObject"
-                description: |
-                  Service properties. These are merged with existing properties.
-                  Only provided properties are updated. Nested objects are deep merged.
-    responses:
-      "200":
-        description: Service updated successfully
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/services.yaml#/ServiceRes"
-      "400":
-        description: Invalid request or validation failed
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - $ref: "../components/schemas/common.yaml#/ErrorRes"
-                - $ref: "../components/schemas/service_types.yaml#/ValidatePropertiesRes"
-      "404":
-        description: Service not found
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/common.yaml#/ErrorRes"
-  delete:
-    operationId: servicesDelete
-    summary: Delete a service
-    tags:
-      - Services
-    description: Deletes a service by ID
-    x-auth-permissions:
-      - role: admin
-        permission: always
-      - role: participant
-        permission: services where it is the consumer participant
-      - role: agent
-        permission: not authorized
-    responses:
-      "204":
-        description: Service deleted successfully
-      "404":
-        description: Service not found
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/common.yaml#/ErrorRes"
+              $ref: "../components/schemas/common.yaml#/JSONObject"
+              description: |
+                Service properties. These are merged with existing properties.
+                Only provided properties are updated. Nested objects are deep merged.
+  responses:
+    "200":
+      description: Service updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/services.yaml#/ServiceRes"
+    "400":
+      description: Invalid request or validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "404":
+      description: Service not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+delete:
+  operationId: servicesDelete
+  summary: Delete a service
+  tags:
+    - Services
+  description: Deletes a service by ID
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: services where it is the consumer participant
+    - role: agent
+      permission: not authorized
+  responses:
+    "204":
+      description: Service deleted successfully
+    "404":
+      description: Service not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

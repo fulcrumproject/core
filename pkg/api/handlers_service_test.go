@@ -562,13 +562,13 @@ func TestServicePropertyValidation(t *testing.T) {
 			mockSetup: func(commander *domain.MockServiceCommander) {
 				commander.EXPECT().
 					Update(mock.Anything, mock.Anything).
-					Return(nil, domain.NewInvalidInputErrorf("property 'ipAddress' cannot be updated by user (source: agent)"))
+					Return(nil, domain.NewInvalidInputErrorf("ipAddress: property can only be set by: [agent]"))
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkError: func(t *testing.T, errorText string) {
 				assert.Contains(t, errorText, "ipAddress")
-				assert.Contains(t, errorText, "cannot be updated by user")
-				assert.Contains(t, errorText, "source: agent")
+				assert.Contains(t, errorText, "can only be set by")
+				assert.Contains(t, errorText, "agent")
 			},
 		},
 		{
@@ -584,13 +584,13 @@ func TestServicePropertyValidation(t *testing.T) {
 			mockSetup: func(commander *domain.MockServiceCommander) {
 				commander.EXPECT().
 					Create(mock.Anything, mock.Anything).
-					Return(nil, domain.NewInvalidInputErrorf("property 'ipAddress' cannot be updated by user (source: agent)"))
+					Return(nil, domain.NewInvalidInputErrorf("ipAddress: property can only be set by: [agent]"))
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkError: func(t *testing.T, errorText string) {
 				assert.Contains(t, errorText, "ipAddress")
-				assert.Contains(t, errorText, "cannot be updated by user")
-				assert.Contains(t, errorText, "source: agent")
+				assert.Contains(t, errorText, "can only be set by")
+				assert.Contains(t, errorText, "agent")
 			},
 		},
 		{
