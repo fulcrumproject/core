@@ -31,6 +31,11 @@ func (g *SchemaPoolGenerator) Generate(
 	currentValue any,
 	config map[string]any,
 ) (value any, generated bool, err error) {
+	// Skip generation if value already exists (e.g., on update operations)
+	if currentValue != nil {
+		return currentValue, false, nil
+	}
+
 	// Get pool type from config
 	poolTypeRaw, hasPoolType := config["poolType"]
 	if !hasPoolType {

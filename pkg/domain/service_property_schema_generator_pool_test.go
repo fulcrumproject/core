@@ -19,6 +19,7 @@ func TestSchemaPoolGenerator_Generate(t *testing.T) {
 	tests := []struct {
 		name             string
 		config           map[string]any
+		currentValue     any
 		setupMock        func(*MockStore)
 		servicePoolSetID *uuid.UUID
 		serviceID        *uuid.UUID
@@ -30,6 +31,7 @@ func TestSchemaPoolGenerator_Generate(t *testing.T) {
 		{
 			name:             "successful allocation",
 			config:           map[string]any{"poolType": "public_ip"},
+			currentValue:     nil,
 			servicePoolSetID: &poolSetID,
 			serviceID:        &serviceID,
 			setupMock: func(store *MockStore) {
@@ -57,8 +59,20 @@ func TestSchemaPoolGenerator_Generate(t *testing.T) {
 			wantErr:   false,
 		},
 		{
+			name:             "skip generation when value exists",
+			config:           map[string]any{"poolType": "public_ip"},
+			currentValue:     "192.168.1.10",
+			servicePoolSetID: &poolSetID,
+			serviceID:        &serviceID,
+			setupMock:        func(store *MockStore) {}, // No mock calls expected
+			wantValue:        "192.168.1.10",
+			wantGen:          false,
+			wantErr:          false,
+		},
+		{
 			name:             "missing poolType config",
 			config:           map[string]any{},
+			currentValue:     nil,
 			servicePoolSetID: &poolSetID,
 			serviceID:        &serviceID,
 			setupMock:        func(store *MockStore) {},
@@ -68,6 +82,7 @@ func TestSchemaPoolGenerator_Generate(t *testing.T) {
 		{
 			name:             "poolType not a string",
 			config:           map[string]any{"poolType": 123},
+			currentValue:     nil,
 			servicePoolSetID: &poolSetID,
 			serviceID:        &serviceID,
 			setupMock:        func(store *MockStore) {},
@@ -77,6 +92,7 @@ func TestSchemaPoolGenerator_Generate(t *testing.T) {
 		{
 			name:             "service ID required",
 			config:           map[string]any{"poolType": "public_ip"},
+			currentValue:     nil,
 			servicePoolSetID: &poolSetID,
 			serviceID:        nil,
 			setupMock:        func(store *MockStore) {},
@@ -86,6 +102,7 @@ func TestSchemaPoolGenerator_Generate(t *testing.T) {
 		{
 			name:             "agent without pool set",
 			config:           map[string]any{"poolType": "public_ip"},
+			currentValue:     nil,
 			servicePoolSetID: nil,
 			serviceID:        &serviceID,
 			setupMock:        func(store *MockStore) {},
@@ -95,6 +112,7 @@ func TestSchemaPoolGenerator_Generate(t *testing.T) {
 		{
 			name:             "pool type not found in pool set",
 			config:           map[string]any{"poolType": "nonexistent"},
+			currentValue:     nil,
 			servicePoolSetID: &poolSetID,
 			serviceID:        &serviceID,
 			setupMock: func(store *MockStore) {
@@ -129,7 +147,7 @@ func TestSchemaPoolGenerator_Generate(t *testing.T) {
 				ServiceID:        tt.serviceID,
 			}
 
-			value, generated, err := generator.Generate(ctx, schemaCtx, "testProp", nil, tt.config)
+			value, generated, err := generator.Generate(ctx, schemaCtx, "testProp", tt.currentValue, tt.config)
 
 			if tt.wantErr {
 				if err == nil {
