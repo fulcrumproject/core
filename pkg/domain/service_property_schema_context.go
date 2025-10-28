@@ -41,11 +41,19 @@ type ServicePropertyContext struct {
 	// Required for validators like serviceOption that need to look up provider-specific options.
 	ProviderID properties.UUID
 
+	// ConsumerID is the ID of the consumer participant.
+	// Used by validators like serviceReference for origin validation.
+	ConsumerID properties.UUID
+
+	// GroupID is the ID of the service group.
+	// Used by validators like serviceReference for origin validation.
+	GroupID properties.UUID
+
 	// ServicePoolSetID is the pool set for resource allocation (optional).
 	// Required by pool generators to allocate values from pools.
 	ServicePoolSetID *properties.UUID
 
-	// ServiceID is the ID of the service being updated (nil during create).
+	// ServiceID is the ID of the service being updated (nil during create for some contexts).
 	// Used by validators that need to check current service state.
 	ServiceID *properties.UUID
 

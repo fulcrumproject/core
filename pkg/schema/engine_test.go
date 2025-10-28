@@ -131,6 +131,36 @@ func TestEngine_ApplyCreate_BasicTypes(t *testing.T) {
 			wantErr:    false,
 		},
 		{
+			name: "uuid property - valid",
+			schema: Schema{
+				Properties: map[string]PropertyDefinition{
+					"serviceId": {Type: "uuid", Required: true},
+				},
+			},
+			properties: map[string]any{"serviceId": "550e8400-e29b-41d4-a716-446655440000"},
+			wantErr:    false,
+		},
+		{
+			name: "uuid property - invalid format",
+			schema: Schema{
+				Properties: map[string]PropertyDefinition{
+					"serviceId": {Type: "uuid", Required: true},
+				},
+			},
+			properties: map[string]any{"serviceId": "not-a-uuid"},
+			wantErr:    true,
+		},
+		{
+			name: "uuid property - wrong type",
+			schema: Schema{
+				Properties: map[string]PropertyDefinition{
+					"serviceId": {Type: "uuid", Required: true},
+				},
+			},
+			properties: map[string]any{"serviceId": 12345},
+			wantErr:    true,
+		},
+		{
 			name: "invalid type",
 			schema: Schema{
 				Properties: map[string]PropertyDefinition{

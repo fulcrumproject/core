@@ -382,6 +382,357 @@ func TestValuesEqual(t *testing.T) {
 	}
 }
 
+func TestServiceReferenceValidator_Validate(t *testing.T) {
+	ctx := context.Background()
+
+	currentServiceID := uuid.New()
+	referencedServiceID := uuid.New()
+	consumerID := uuid.New()
+	groupID := uuid.New()
+	serviceTypeID := uuid.New()
+
+	tests := []struct {
+		name       string
+		newValue   any
+		config     map[string]any
+		setupMocks func(*MockStore, *MockServiceRepository, *MockServiceTypeRepository)
+		wantErr    bool
+		errSubstr  string
+	}{
+		{
+			name:     "nil value always passes",
+			newValue: nil,
+			config:   map[string]any{},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				// No mocks needed - nil value should pass without DB calls
+			},
+			wantErr: false,
+		},
+		{
+			name:     "valid service reference without constraints",
+			newValue: referencedServiceID.String(),
+			config:   map[string]any{},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				store.EXPECT().ServiceRepo().Return(serviceRepo)
+				serviceRepo.EXPECT().Get(ctx, properties.UUID(referencedServiceID)).Return(&Service{
+					BaseEntity:    BaseEntity{ID: referencedServiceID},
+					ServiceTypeID: serviceTypeID,
+					ConsumerID:    consumerID,
+					GroupID:       groupID,
+				}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:     "valid service reference with matching type",
+			newValue: referencedServiceID.String(),
+			config:   map[string]any{"types": []any{"disk"}},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				store.EXPECT().ServiceRepo().Return(serviceRepo)
+				serviceRepo.EXPECT().Get(ctx, properties.UUID(referencedServiceID)).Return(&Service{
+					BaseEntity:    BaseEntity{ID: referencedServiceID},
+					ServiceTypeID: serviceTypeID,
+					ConsumerID:    consumerID,
+					GroupID:       groupID,
+				}, nil)
+				store.EXPECT().ServiceTypeRepo().Return(serviceTypeRepo)
+				serviceTypeRepo.EXPECT().Get(ctx, serviceTypeID).Return(&ServiceType{
+					BaseEntity: BaseEntity{ID: serviceTypeID},
+					Name:       "disk",
+				}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:     "valid service reference with one of multiple types",
+			newValue: referencedServiceID.String(),
+			config:   map[string]any{"types": []any{"disk", "block-storage", "nfs"}},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				store.EXPECT().ServiceRepo().Return(serviceRepo)
+				serviceRepo.EXPECT().Get(ctx, properties.UUID(referencedServiceID)).Return(&Service{
+					BaseEntity:    BaseEntity{ID: referencedServiceID},
+					ServiceTypeID: serviceTypeID,
+					ConsumerID:    consumerID,
+					GroupID:       groupID,
+				}, nil)
+				store.EXPECT().ServiceTypeRepo().Return(serviceTypeRepo)
+				serviceTypeRepo.EXPECT().Get(ctx, serviceTypeID).Return(&ServiceType{
+					BaseEntity: BaseEntity{ID: serviceTypeID},
+					Name:       "block-storage",
+				}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:     "valid service reference with same consumer",
+			newValue: referencedServiceID.String(),
+			config:   map[string]any{"origin": "consumer"},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				store.EXPECT().ServiceRepo().Return(serviceRepo)
+				serviceRepo.EXPECT().Get(ctx, properties.UUID(referencedServiceID)).Return(&Service{
+					BaseEntity: BaseEntity{ID: referencedServiceID},
+					ConsumerID: consumerID,
+					GroupID:    uuid.New(), // Different group, but same consumer
+				}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:     "valid service reference with same group",
+			newValue: referencedServiceID.String(),
+			config:   map[string]any{"origin": "group"},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				store.EXPECT().ServiceRepo().Return(serviceRepo)
+				serviceRepo.EXPECT().Get(ctx, properties.UUID(referencedServiceID)).Return(&Service{
+					BaseEntity: BaseEntity{ID: referencedServiceID},
+					ConsumerID: uuid.New(), // Different consumer, but same group
+					GroupID:    groupID,
+				}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:     "service not found",
+			newValue: referencedServiceID.String(),
+			config:   map[string]any{},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				store.EXPECT().ServiceRepo().Return(serviceRepo)
+				serviceRepo.EXPECT().Get(ctx, properties.UUID(referencedServiceID)).Return(nil, errors.New("not found"))
+			},
+			wantErr:   true,
+			errSubstr: "referenced service not found",
+		},
+		{
+			name:     "invalid UUID format",
+			newValue: "not-a-uuid",
+			config:   map[string]any{},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				// No mocks needed - should fail before DB calls
+			},
+			wantErr:   true,
+			errSubstr: "invalid service uuid",
+		},
+		{
+			name:     "wrong type - not string",
+			newValue: 12345,
+			config:   map[string]any{},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				// No mocks needed - should fail before DB calls
+			},
+			wantErr:   true,
+			errSubstr: "expected string uuid",
+		},
+		{
+			name:     "service type does not match",
+			newValue: referencedServiceID.String(),
+			config:   map[string]any{"types": []any{"disk"}},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				store.EXPECT().ServiceRepo().Return(serviceRepo)
+				serviceRepo.EXPECT().Get(ctx, properties.UUID(referencedServiceID)).Return(&Service{
+					BaseEntity:    BaseEntity{ID: referencedServiceID},
+					ServiceTypeID: serviceTypeID,
+				}, nil)
+				store.EXPECT().ServiceTypeRepo().Return(serviceTypeRepo)
+				serviceTypeRepo.EXPECT().Get(ctx, serviceTypeID).Return(&ServiceType{
+					BaseEntity: BaseEntity{ID: serviceTypeID},
+					Name:       "vm",
+				}, nil)
+			},
+			wantErr:   true,
+			errSubstr: "service must be one of types",
+		},
+		{
+			name:     "different consumer when origin=consumer",
+			newValue: referencedServiceID.String(),
+			config:   map[string]any{"origin": "consumer"},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				store.EXPECT().ServiceRepo().Return(serviceRepo)
+				serviceRepo.EXPECT().Get(ctx, properties.UUID(referencedServiceID)).Return(&Service{
+					BaseEntity: BaseEntity{ID: referencedServiceID},
+					ConsumerID: uuid.New(), // Different from context consumerID
+				}, nil)
+			},
+			wantErr:   true,
+			errSubstr: "must belong to the same consumer",
+		},
+		{
+			name:     "different group when origin=group",
+			newValue: referencedServiceID.String(),
+			config:   map[string]any{"origin": "group"},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				store.EXPECT().ServiceRepo().Return(serviceRepo)
+				serviceRepo.EXPECT().Get(ctx, properties.UUID(referencedServiceID)).Return(&Service{
+					BaseEntity: BaseEntity{ID: referencedServiceID},
+					GroupID:    uuid.New(), // Different from context groupID
+				}, nil)
+			},
+			wantErr:   true,
+			errSubstr: "must belong to the same service group",
+		},
+		{
+			name:     "types config not an array",
+			newValue: referencedServiceID.String(),
+			config:   map[string]any{"types": "disk"},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				store.EXPECT().ServiceRepo().Return(serviceRepo)
+				serviceRepo.EXPECT().Get(ctx, properties.UUID(referencedServiceID)).Return(&Service{
+					BaseEntity:    BaseEntity{ID: referencedServiceID},
+					ServiceTypeID: serviceTypeID,
+				}, nil)
+				store.EXPECT().ServiceTypeRepo().Return(serviceTypeRepo)
+				serviceTypeRepo.EXPECT().Get(ctx, serviceTypeID).Return(&ServiceType{
+					BaseEntity: BaseEntity{ID: serviceTypeID},
+					Name:       "disk",
+				}, nil)
+			},
+			wantErr:   true,
+			errSubstr: "types config must be an array",
+		},
+		{
+			name:     "origin config not a string",
+			newValue: referencedServiceID.String(),
+			config:   map[string]any{"origin": 123},
+			setupMocks: func(store *MockStore, serviceRepo *MockServiceRepository, serviceTypeRepo *MockServiceTypeRepository) {
+				store.EXPECT().ServiceRepo().Return(serviceRepo)
+				serviceRepo.EXPECT().Get(ctx, properties.UUID(referencedServiceID)).Return(&Service{
+					BaseEntity: BaseEntity{ID: referencedServiceID},
+				}, nil)
+			},
+			wantErr:   true,
+			errSubstr: "origin config must be a string",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockStore := NewMockStore(t)
+			mockServiceRepo := NewMockServiceRepository(t)
+			mockServiceTypeRepo := NewMockServiceTypeRepository(t)
+
+			tt.setupMocks(mockStore, mockServiceRepo, mockServiceTypeRepo)
+
+			validator := NewServiceReferenceValidator()
+			schemaCtx := ServicePropertyContext{
+				Actor:      ActorUser,
+				Store:      mockStore,
+				ConsumerID: consumerID,
+				GroupID:    groupID,
+				ServiceID:  &currentServiceID,
+			}
+
+			err := validator.Validate(ctx, schemaCtx, schema.OperationCreate, "testProp", nil, tt.newValue, tt.config)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error containing %q, got nil", tt.errSubstr)
+				} else if tt.errSubstr != "" && !contains(err.Error(), tt.errSubstr) {
+					t.Errorf("expected error containing %q, got %q", tt.errSubstr, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestServiceReferenceValidator_ValidateConfig(t *testing.T) {
+	validator := &ServiceReferenceValidator{}
+
+	tests := []struct {
+		name      string
+		config    map[string]any
+		wantErr   bool
+		errSubstr string
+	}{
+		{
+			name:    "empty config is valid",
+			config:  map[string]any{},
+			wantErr: false,
+		},
+		{
+			name:    "valid config with single type",
+			config:  map[string]any{"types": []any{"disk"}},
+			wantErr: false,
+		},
+		{
+			name:    "valid config with multiple types",
+			config:  map[string]any{"types": []any{"disk", "block-storage", "nfs"}},
+			wantErr: false,
+		},
+		{
+			name:    "valid config with origin consumer",
+			config:  map[string]any{"origin": "consumer"},
+			wantErr: false,
+		},
+		{
+			name:    "valid config with origin group",
+			config:  map[string]any{"origin": "group"},
+			wantErr: false,
+		},
+		{
+			name:    "valid config with types and origin",
+			config:  map[string]any{"types": []any{"disk"}, "origin": "consumer"},
+			wantErr: false,
+		},
+		{
+			name:      "types not an array",
+			config:    map[string]any{"types": "disk"},
+			wantErr:   true,
+			errSubstr: "must be an array",
+		},
+		{
+			name:      "types empty array",
+			config:    map[string]any{"types": []any{}},
+			wantErr:   true,
+			errSubstr: "array cannot be empty",
+		},
+		{
+			name:      "types array contains non-string",
+			config:    map[string]any{"types": []any{"disk", 123}},
+			wantErr:   true,
+			errSubstr: "must contain only strings",
+		},
+		{
+			name:      "origin not a string",
+			config:    map[string]any{"origin": 123},
+			wantErr:   true,
+			errSubstr: "must be a string",
+		},
+		{
+			name:      "origin invalid value",
+			config:    map[string]any{"origin": "invalid"},
+			wantErr:   true,
+			errSubstr: "must be 'consumer' or 'group'",
+		},
+		{
+			name:      "origin null",
+			config:    map[string]any{"origin": nil},
+			wantErr:   true,
+			errSubstr: "must be a string",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator.ValidateConfig("testProp", tt.config)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error containing %q, got nil", tt.errSubstr)
+				} else if tt.errSubstr != "" && !contains(err.Error(), tt.errSubstr) {
+					t.Errorf("expected error containing %q, got %q", tt.errSubstr, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
 // Helper function to check if a string contains a substring
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||

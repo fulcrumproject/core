@@ -26,7 +26,8 @@ func buildServicePropertyValidatorRegistry() map[string]schema.PropertyValidator
 		"maxItems":  &schema.MaxItemsValidator[ServicePropertyContext]{},
 
 		// Domain-specific validators
-		"serviceOption": NewServiceOptionValidator(),
+		"serviceOption":    NewServiceOptionValidator(),
+		"serviceReference": NewServiceReferenceValidator(),
 	}
 }
 

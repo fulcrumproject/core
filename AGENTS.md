@@ -394,9 +394,11 @@ The actual states and transitions depend on the ServiceType's lifecycle schema.
 
 #### Property Types
 Service properties support multiple types including:
-- Basic types: `string`, `integer`, `number`, `boolean`
+- Basic types: `string`, `integer`, `number`, `boolean`, `uuid`
 - Complex types: `object`, `array`, `json`
-- Special types: `serviceReference`
+- **UUID type**: String in UUID format (validated)
+  - Used for service references and unique identifiers
+  - Format: `550e8400-e29b-41d4-a716-446655440000`
 - **JSON type**: Accepts any valid JSON value without schema validation
   - Used for pool values and options that can be strings, objects, or arrays
   - Backend validation ensures valid JSON structure
@@ -418,6 +420,10 @@ Properties can have validators including:
 - **serviceOption**: Validates against provider-managed option lists
   - Requires ServiceOptionType in validator value
   - Provides dynamic dropdowns and validation
+- **serviceReference**: Validates service references (UUID type properties)
+  - Checks that referenced service exists
+  - Optional `types` array: Validates service type (e.g., `["disk", "block-storage"]`)
+  - Optional `origin` constraint: Validates same consumer or group (`"consumer"` or `"group"`)
 
 #### Property Pool Allocation
 Properties with `actor: ["system"]` authorizer can use automatic pool allocation via generators:

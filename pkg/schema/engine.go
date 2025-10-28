@@ -616,7 +616,7 @@ func (e *Engine[C]) validatePropertyDefinition(propPath string, propDef Property
 	// 1. Validate type is known
 	validTypes := map[string]bool{
 		"string": true, "integer": true, "number": true, "boolean": true,
-		"object": true, "array": true, "json": true,
+		"object": true, "array": true, "json": true, "uuid": true,
 	}
 	if !validTypes[propDef.Type] {
 		return fmt.Errorf("%s: invalid type '%s'", propPath, propDef.Type)
@@ -775,6 +775,15 @@ func (e *Engine[C]) validateType(propName string, value any, expectedType string
 	case "array":
 		if _, ok := value.([]any); !ok {
 			return fmt.Errorf("%s: expected array, got %T", propName, value)
+		}
+	case "uuid":
+		strVal, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("%s: expected uuid string, got %T", propName, value)
+		}
+		// Validate UUID format
+		if _, err := uuid.Parse(strVal); err != nil {
+			return fmt.Errorf("%s: invalid uuid format: %w", propName, err)
 		}
 	case "json":
 		// Any valid JSON value is acceptable

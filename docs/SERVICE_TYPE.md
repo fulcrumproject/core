@@ -24,7 +24,7 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
 ```json
 {
   "propertyName": {
-    "type": "string|integer|number|boolean|object|array|json",
+    "type": "string|integer|number|boolean|uuid|object|array|json",
     "label": "Human-readable label (optional)",
     "required": true|false,
     "default": "default value (optional)",
@@ -104,6 +104,24 @@ Each ServiceType can have an optional `propertySchema` field that defines valida
   }
 }
 ```
+
+##### UUID
+For properties that require UUID format validation:
+
+```json
+{
+  "serviceId": {
+    "type": "uuid",
+    "label": "Referenced Service ID",
+    "required": true
+  }
+}
+```
+
+**Note:** The `uuid` type validates that the value is a properly formatted UUID string (e.g., `550e8400-e29b-41d4-a716-446655440000`). It's commonly used for:
+- Service references (linking to other services)
+- External resource identifiers
+- Unique correlation IDs
 
 ##### JSON
 For properties that accept any valid JSON value without schema validation:
@@ -564,23 +582,41 @@ Ensure all items are unique:
 }
 ```
 
-#### Reference Validators (for type "reference")
+#### Service Reference Validator (for type "uuid")
 
-##### serviceType
-Validates that a referenced service is of a specific service type or one of multiple allowed types:
+##### serviceReference
+Validates service references and ensures the referenced service exists with optional constraints on service type and origin.
 
-Single service type:
+**Basic Usage - No Constraints:**
 ```json
 {
-  "database_service": {
-    "type": "reference",
-    "label": "Database Service",
+  "relatedService": {
+    "type": "uuid",
+    "label": "Related Service",
     "required": true,
     "validators": [
       {
-        "type": "serviceType",
+        "type": "serviceReference"
+      }
+    ]
+  }
+}
+```
+
+**Service Type Constraint:**
+
+Single allowed service type:
+```json
+{
+  "dataDisk": {
+    "type": "uuid",
+    "label": "Data Disk Service",
+    "required": true,
+    "validators": [
+      {
+        "type": "serviceReference",
         "config": {
-          "value": "MySQL"
+          "types": ["disk"]
         }
       }
     ]
@@ -591,15 +627,15 @@ Single service type:
 Multiple allowed service types:
 ```json
 {
-  "storage_service": {
-    "type": "reference", 
+  "storageService": {
+    "type": "uuid", 
     "label": "Storage Service",
     "required": true,
     "validators": [
       {
-        "type": "serviceType",
+        "type": "serviceReference",
         "config": {
-          "value": ["MySQL", "PostgreSQL", "MongoDB"]
+          "types": ["disk", "block-storage", "nfs"]
         }
       }
     ]
@@ -607,19 +643,19 @@ Multiple allowed service types:
 }
 ```
 
-##### sameOrigin
-Validates that a referenced service belongs to the same consumer or service group:
+**Origin Constraint:**
 
-Same consumer constraint:
+Same consumer:
 ```json
 {
-  "related_service": {
-    "type": "reference",
+  "relatedService": {
+    "type": "uuid",
+    "label": "Related Service",
     "validators": [
       {
-        "type": "sameOrigin",
+        "type": "serviceReference",
         "config": {
-          "value": "consumer"
+          "origin": "consumer"
         }
       }
     ]
@@ -627,16 +663,17 @@ Same consumer constraint:
 }
 ```
 
-Same service group constraint:
+Same service group:
 ```json
 {
-  "dependent_service": {
-    "type": "reference", 
+  "dependentService": {
+    "type": "uuid",
+    "label": "Dependent Service",
     "validators": [
       {
-        "type": "sameOrigin",
+        "type": "serviceReference",
         "config": {
-          "value": "group"
+          "origin": "group"
         }
       }
     ]
@@ -644,30 +681,43 @@ Same service group constraint:
 }
 ```
 
-Combined validators example:
+**Combined Constraints:**
 ```json
 {
-  "backend_service": {
-    "type": "reference",
+  "backendService": {
+    "type": "uuid",
     "label": "Backend API Service", 
     "required": true,
     "validators": [
       {
-        "type": "serviceType",
+        "type": "serviceReference",
         "config": {
-          "value": ["NodeJS-API", "Python-API"]
-        }
-      },
-      {
-        "type": "sameOrigin",
-        "config": {
-          "value": "consumer"
+          "types": ["nodejs-api", "python-api"],
+          "origin": "consumer"
         }
       }
     ]
   }
 }
 ```
+
+**Configuration Options:**
+- **`types`** (optional): Array of service type names. Referenced service must be one of these types.
+- **`origin`** (optional): Origin constraint, either `"consumer"` or `"group"`:
+  - `"consumer"`: Referenced service must belong to the same consumer participant
+  - `"group"`: Referenced service must belong to the same service group
+
+**How it works:**
+1. Validates that the UUID is properly formatted
+2. Checks that a service with that ID exists in the database
+3. If `types` is specified, validates the service type matches one of the allowed types
+4. If `origin` is specified, validates the referenced service shares the same consumer or group
+
+**Use Cases:**
+- **Disk Attachment**: VM references a disk service
+- **Network Dependencies**: Service references a VPN or network service
+- **Application Stack**: Frontend references backend API service
+- **Resource Hierarchy**: Child services reference parent services
 
 ##### serviceOption
 Validates that a value is one of the enabled service options for a specific service option type. Service options are provider-specific, dynamically managed validation lists.
@@ -2102,14 +2152,17 @@ The validation system provides detailed error messages with path information:
 - `"array length {actual} exceeds maximum {max}"` - Array too long
 - `"array contains duplicate items"` - Duplicate items when uniqueItems is true
 
-### Reference Type Error Messages
+### Service Reference Validator Error Messages
 
-- `"invalid service ID format"` - Invalid UUID format for service reference
-- `"referenced service does not exist"` - Referenced service not found in database
-- `"referenced service must belong to the same consumer"` - Consumer constraint violation
-- `"referenced service must belong to the same service group"` - Group constraint violation
-- `"referenced service is not of the allowed service type"` - Service type constraint violation  
-- `"serviceType validator value must be a string or array of strings"` - Invalid validator configuration
+- `"propertyName: expected string uuid, got {type}"` - Value is not a string
+- `"propertyName: invalid service uuid: {error}"` - Invalid UUID format
+- `"propertyName: referenced service not found: {error}"` - Referenced service does not exist
+- `"propertyName: service must be one of types [{types}], got '{actualType}'"` - Service type mismatch
+- `"propertyName: referenced service must belong to the same consumer"` - Consumer origin constraint violation
+- `"propertyName: referenced service must belong to the same service group"` - Group origin constraint violation
+- `"propertyName: types config must be an array of strings"` - Invalid types configuration
+- `"propertyName: origin config must be a string"` - Invalid origin configuration
+- `"propertyName: unknown origin type '{value}', must be 'consumer' or 'group'"` - Invalid origin value
 
 ### Authorization Error Messages
 

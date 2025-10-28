@@ -128,6 +128,8 @@ func ApplyAgentPropertyUpdates(
 		Actor:         ActorAgent,
 		Store:         store,
 		ProviderID:    svc.ProviderID,
+		ConsumerID:    svc.ConsumerID,
+		GroupID:       svc.GroupID,
 		ServiceID:     &svc.ID,
 		ServiceStatus: svc.Status,
 	}
@@ -333,6 +335,8 @@ func CreateServiceWithAgent(
 			Actor:            actor,
 			Store:            txStore, // Use transactional store
 			ProviderID:       agent.ProviderID,
+			ConsumerID:       svc.ConsumerID,
+			GroupID:          svc.GroupID,
 			ServicePoolSetID: agent.ServicePoolSetID,
 			ServiceID:        &serviceID,
 			ServiceStatus:    "", // empty during create
@@ -428,6 +432,8 @@ func UpdateService(ctx context.Context, store Store, engine *schema.Engine[Servi
 				Actor:            actor,
 				Store:            txStore, // Use transactional store
 				ProviderID:       svc.ProviderID,
+				ConsumerID:       svc.ConsumerID,
+				GroupID:          svc.GroupID,
 				ServicePoolSetID: agent.ServicePoolSetID,
 				ServiceID:        &svc.ID,
 				ServiceStatus:    svc.Status,

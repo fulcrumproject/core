@@ -61,17 +61,7 @@ PropertyDefinition:
   properties:
     type:
       type: string
-      enum:
-        [
-          string,
-          integer,
-          number,
-          boolean,
-          object,
-          array,
-          serviceReference,
-          json,
-        ]
+      enum: [string, integer, number, boolean, uuid, object, array, json]
       description: The data type of the property
     label:
       type: string
@@ -182,9 +172,8 @@ ValidatorDefinition:
           minItems,
           maxItems,
           uniqueItems,
-          sameOrigin,
-          serviceType,
           serviceOption,
+          serviceReference,
         ]
       description: Type of validator
     config:
