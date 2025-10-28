@@ -44,9 +44,7 @@ func TestServiceRepository(t *testing.T) {
 	require.NoError(t, agentRepo.Create(context.Background(), agent))
 
 	serviceTypeRepo := NewServiceTypeRepository(testDB.DB)
-	serviceType := &domain.ServiceType{
-		Name: "Test Service Type",
-	}
+	serviceType := createTestServiceType(t)
 	require.NoError(t, serviceTypeRepo.Create(context.Background(), serviceType))
 
 	serviceGroupRepo := NewServiceGroupRepository(testDB.DB)

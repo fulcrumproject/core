@@ -66,7 +66,7 @@ func NewService(
 }
 
 // HandleJobComplete handles the completion of a job
-func (s *Service) HandleJobComplete(lifecycle *LifecycleSchema, action string, errorCode *string, params *properties.JSON, agentInstanceData *properties.JSON, agentInstanceID *string) error {
+func (s *Service) HandleJobComplete(lifecycle LifecycleSchema, action string, errorCode *string, params *properties.JSON, agentInstanceData *properties.JSON, agentInstanceID *string) error {
 	// Update status using lifecycle schema
 	nextStatus, err := lifecycle.ResolveNextState(s.Status, action, errorCode)
 	if err != nil {
@@ -117,11 +117,6 @@ func ApplyAgentPropertyUpdates(
 		return nil
 	}
 
-	// Validate schema exists
-	if serviceType.PropertySchema == nil {
-		return fmt.Errorf("service type %s does not have a property schema", serviceType.Name)
-	}
-
 	// Ensure properties map exists
 	if svc.Properties == nil {
 		props := make(properties.JSON)
@@ -143,7 +138,7 @@ func ApplyAgentPropertyUpdates(
 
 	// Use engine to validate and process the updates
 	oldProperties := map[string]any(*svc.Properties)
-	validatedProperties, err := engine.ApplyUpdate(ctx, schemaCtx, *serviceType.PropertySchema, oldProperties, updates)
+	validatedProperties, err := engine.ApplyUpdate(ctx, schemaCtx, serviceType.PropertySchema, oldProperties, updates)
 	if err != nil {
 		return err
 	}
@@ -315,12 +310,7 @@ func CreateServiceWithAgent(
 		return nil, NewInvalidInputErrorf("agent type %s does not support service type %s", agent.AgentType.Name, params.ServiceTypeID)
 	}
 
-	// Validate lifecycle schema exists
-	if serviceType.LifecycleSchema == nil {
-		return nil, NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
-	}
-
-	// Get initial state from lifecycle schema
+	// Get initial state from lifecycle schema (always present)
 	initialState := serviceType.LifecycleSchema.InitialState
 
 	svc := NewService(
@@ -348,7 +338,7 @@ func CreateServiceWithAgent(
 			ServiceStatus:    "", // empty during create
 		}
 
-		validatedProperties, err := engine.ApplyCreate(ctx, schemaCtx, *serviceType.PropertySchema, params.Properties)
+		validatedProperties, err := engine.ApplyCreate(ctx, schemaCtx, serviceType.PropertySchema, params.Properties)
 		if err != nil {
 			return err
 		}
@@ -447,7 +437,7 @@ func UpdateService(ctx context.Context, store Store, engine *schema.Engine[Servi
 			oldProperties := map[string]any(*svc.Properties)
 
 			// Engine handles merging: takes old properties and partial new properties
-			validatedProperties, err := engine.ApplyUpdate(ctx, schemaCtx, *serviceType.PropertySchema, oldProperties, *params.Properties)
+			validatedProperties, err := engine.ApplyUpdate(ctx, schemaCtx, serviceType.PropertySchema, oldProperties, *params.Properties)
 			if err != nil {
 				return err
 			}
@@ -470,12 +460,7 @@ func UpdateService(ctx context.Context, store Store, engine *schema.Engine[Servi
 			}
 		}
 		if action {
-			// Validate lifecycle schema exists
-			if serviceType.LifecycleSchema == nil {
-				return NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
-			}
-
-			// Check if service is in a terminal state
+			// Check if service is in a terminal state (lifecycle always present)
 			if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
 				return NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
 			}
@@ -526,12 +511,7 @@ func DoServiceAction(ctx context.Context, store Store, params DoServiceActionPar
 		return nil, err
 	}
 
-	// Validate lifecycle schema exists
-	if serviceType.LifecycleSchema == nil {
-		return nil, NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
-	}
-
-	// Check if service is in a terminal state
+	// Check if service is in a terminal state (lifecycle always present)
 	if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
 		return nil, NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
 	}

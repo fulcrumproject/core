@@ -216,7 +216,7 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 	serviceType := &ServiceType{
 		BaseEntity:     BaseEntity{ID: uuid.New()},
 		Name:           "test-service",
-		PropertySchema: testSchema,
+		PropertySchema: *testSchema,
 	}
 
 	tests := []struct {

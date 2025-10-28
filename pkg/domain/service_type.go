@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
@@ -18,9 +17,9 @@ const (
 // ServiceType represents a type of service that can be provided
 type ServiceType struct {
 	BaseEntity
-	Name            string           `json:"name" gorm:"not null;unique"`
-	PropertySchema  *schema.Schema   `json:"propertySchema,omitempty" gorm:"type:jsonb"`
-	LifecycleSchema *LifecycleSchema `json:"lifecycleSchema,omitempty" gorm:"type:jsonb"`
+	Name            string          `json:"name" gorm:"not null;unique"`
+	PropertySchema  schema.Schema   `json:"propertySchema" gorm:"type:jsonb;not null"`
+	LifecycleSchema LifecycleSchema `json:"lifecycleSchema" gorm:"type:jsonb;not null"`
 }
 
 // NewServiceType creates a new service type without validation
@@ -42,97 +41,10 @@ func (st *ServiceType) Validate() error {
 	if st.Name == "" {
 		return fmt.Errorf("service type name cannot be empty")
 	}
-	if st.LifecycleSchema != nil {
-		if err := st.ValidateLifecycle(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
-// ValidateLifecycle validates the lifecycle schema structure and rules
-func (st *ServiceType) ValidateLifecycle() error {
-	if st.LifecycleSchema == nil {
-		return nil
-	}
-
-	lc := st.LifecycleSchema
-
-	// Validate we have at least one state
-	if len(lc.States) == 0 {
-		return fmt.Errorf("lifecycle must have at least one state")
-	}
-
-	// Build a set of valid state names for quick lookup
-	stateNames := make(map[string]bool)
-	for _, state := range lc.States {
-		if state.Name == "" {
-			return fmt.Errorf("lifecycle state name cannot be empty")
-		}
-		if stateNames[state.Name] {
-			return fmt.Errorf("duplicate lifecycle state name: %s", state.Name)
-		}
-		stateNames[state.Name] = true
-	}
-
-	// Validate initial state exists
-	if lc.InitialState == "" {
-		return fmt.Errorf("lifecycle must have an initial state")
-	}
-	if !stateNames[lc.InitialState] {
-		return fmt.Errorf("lifecycle initial state %q does not exist in states list", lc.InitialState)
-	}
-
-	// Validate terminal states exist
-	for _, terminalState := range lc.TerminalStates {
-		if !stateNames[terminalState] {
-			return fmt.Errorf("lifecycle terminal state %q does not exist in states list", terminalState)
-		}
-	}
-
-	// Validate running states exist
-	for _, runningState := range lc.RunningStates {
-		if !stateNames[runningState] {
-			return fmt.Errorf("lifecycle running state %q does not exist in states list", runningState)
-		}
-	}
-
-	// Validate actions
-	if len(lc.Actions) == 0 {
-		return fmt.Errorf("lifecycle must have at least one action")
-	}
-
-	actionNames := make(map[string]bool)
-	for _, action := range lc.Actions {
-		if action.Name == "" {
-			return fmt.Errorf("lifecycle action name cannot be empty")
-		}
-		if actionNames[action.Name] {
-			return fmt.Errorf("duplicate lifecycle action name: %s", action.Name)
-		}
-		actionNames[action.Name] = true
-
-		// Validate action has at least one transition
-		if len(action.Transitions) == 0 {
-			return fmt.Errorf("lifecycle action %q must have at least one transition", action.Name)
-		}
-
-		// Validate transitions
-		for _, transition := range action.Transitions {
-			if !stateNames[transition.From] {
-				return fmt.Errorf("lifecycle action %q transition references invalid from state %q", action.Name, transition.From)
-			}
-			if !stateNames[transition.To] {
-				return fmt.Errorf("lifecycle action %q transition references invalid to state %q", action.Name, transition.To)
-			}
-
-			// Validate error regexp if provided
-			if transition.OnErrorRegexp != "" {
-				if _, err := regexp.Compile(transition.OnErrorRegexp); err != nil {
-					return fmt.Errorf("lifecycle action %q transition has invalid error regexp %q: %w", action.Name, transition.OnErrorRegexp, err)
-				}
-			}
-		}
+	// Validate lifecycle schema
+	if err := st.LifecycleSchema.Validate(); err != nil {
+		return fmt.Errorf("lifecycle schema validation failed: %w", err)
 	}
 
 	return nil
@@ -144,10 +56,10 @@ func (st *ServiceType) Update(params UpdateServiceTypeParams) {
 		st.Name = *params.Name
 	}
 	if params.PropertySchema != nil {
-		st.PropertySchema = params.PropertySchema
+		st.PropertySchema = *params.PropertySchema
 	}
 	if params.LifecycleSchema != nil {
-		st.LifecycleSchema = params.LifecycleSchema
+		st.LifecycleSchema = *params.LifecycleSchema
 	}
 }
 
@@ -175,9 +87,9 @@ type ServiceTypeCommander interface {
 }
 
 type CreateServiceTypeParams struct {
-	Name            string           `json:"name"`
-	PropertySchema  *schema.Schema   `json:"propertySchema,omitempty"`
-	LifecycleSchema *LifecycleSchema `json:"lifecycleSchema,omitempty"`
+	Name            string          `json:"name"`
+	PropertySchema  schema.Schema   `json:"propertySchema"`
+	LifecycleSchema LifecycleSchema `json:"lifecycleSchema"`
 }
 
 type UpdateServiceTypeParams struct {
@@ -189,12 +101,16 @@ type UpdateServiceTypeParams struct {
 
 // serviceTypeCommander is the concrete implementation of ServiceTypeCommander
 type serviceTypeCommander struct {
-	store Store
+	store  Store
+	engine *schema.Engine[ServicePropertyContext]
 }
 
 // NewServiceTypeCommander creates a new ServiceTypeCommander
-func NewServiceTypeCommander(store Store) ServiceTypeCommander {
-	return &serviceTypeCommander{store: store}
+func NewServiceTypeCommander(store Store, engine *schema.Engine[ServicePropertyContext]) ServiceTypeCommander {
+	return &serviceTypeCommander{
+		store:  store,
+		engine: engine,
+	}
 }
 
 // Create creates a new service type
@@ -205,6 +121,13 @@ func (c *serviceTypeCommander) Create(
 	var serviceType *ServiceType
 	err := c.store.Atomic(ctx, func(store Store) error {
 		serviceType = NewServiceType(params)
+
+		// Validate property schema using engine
+		if err := c.engine.ValidateSchema(serviceType.PropertySchema); err != nil {
+			return InvalidInputError{Err: fmt.Errorf("invalid property schema: %w", err)}
+		}
+
+		// Validate service type (includes lifecycle validation)
 		if err := serviceType.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -243,8 +166,15 @@ func (c *serviceTypeCommander) Update(
 	// Store a copy of the service type before modifications for event diff
 	beforeServiceType := *serviceType
 
-	// Update and validate
+	// Update
 	serviceType.Update(params)
+
+	// Validate property schema using engine
+	if err := c.engine.ValidateSchema(serviceType.PropertySchema); err != nil {
+		return nil, InvalidInputError{Err: fmt.Errorf("invalid property schema: %w", err)}
+	}
+
+	// Validate service type (includes lifecycle validation)
 	if err := serviceType.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}

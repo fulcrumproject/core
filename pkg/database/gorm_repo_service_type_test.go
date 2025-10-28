@@ -60,7 +60,7 @@ func TestServiceTypeRepository(t *testing.T) {
 					},
 				},
 			}
-			serviceType.PropertySchema = propertySchema
+			serviceType.PropertySchema = *propertySchema
 
 			// Execute
 			err := repo.Create(ctx, serviceType)
@@ -102,7 +102,7 @@ func TestServiceTypeRepository(t *testing.T) {
 					},
 				},
 			}
-			serviceType.PropertySchema = propertySchema
+			serviceType.PropertySchema = *propertySchema
 
 			// Execute
 			err := repo.Create(ctx, serviceType)
@@ -172,7 +172,7 @@ func TestServiceTypeRepository(t *testing.T) {
 				TerminalStates: []string{"Deleted"},
 				RunningStates:  []string{"Started"},
 			}
-			serviceType.LifecycleSchema = lifecycle
+			serviceType.LifecycleSchema = *lifecycle
 
 			// Execute
 			err := repo.Create(ctx, serviceType)

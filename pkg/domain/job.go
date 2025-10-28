@@ -215,11 +215,6 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 	}
 
 	return s.store.Atomic(ctx, func(store Store) error {
-		// Validate lifecycle schema exists
-		if serviceType.LifecycleSchema == nil {
-			return NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
-		}
-
 		// Update job
 		if err := job.Complete(); err != nil {
 			return InvalidInputError{Err: err}
@@ -253,8 +248,8 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 		}
 
 		// Clean up ephemeral secrets after job completion (best-effort)
-		if svc.Properties != nil && serviceType.PropertySchema != nil {
-			s.engine.CleanupEphemeralSecrets(ctx, *serviceType.PropertySchema, map[string]any(*svc.Properties))
+		if svc.Properties != nil {
+			s.engine.CleanupEphemeralSecrets(ctx, serviceType.PropertySchema, map[string]any(*svc.Properties))
 		}
 
 		// Release pool allocations if service reached a terminal state
@@ -313,11 +308,6 @@ func (s *jobCommander) Fail(ctx context.Context, params FailJobParams) error {
 	}
 
 	return s.store.Atomic(ctx, func(store Store) error {
-		// Validate lifecycle schema exists
-		if serviceType.LifecycleSchema == nil {
-			return NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
-		}
-
 		// Update job
 		if err := job.Fail(params.ErrorMessage); err != nil {
 			return InvalidInputError{Err: err}
@@ -340,8 +330,8 @@ func (s *jobCommander) Fail(ctx context.Context, params FailJobParams) error {
 
 		// Clean up ephemeral secrets after job failure (best-effort)
 		// Even if the job failed, ephemeral secrets should be cleaned up
-		if svc.Properties != nil && serviceType.PropertySchema != nil {
-			s.engine.CleanupEphemeralSecrets(ctx, *serviceType.PropertySchema, map[string]any(*svc.Properties))
+		if svc.Properties != nil {
+			s.engine.CleanupEphemeralSecrets(ctx, serviceType.PropertySchema, map[string]any(*svc.Properties))
 		}
 
 		// Create event for the updated service

@@ -120,7 +120,7 @@ func main() {
 
 	// Initialize commanders
 	serviceCmd := domain.NewServiceCommander(store, propertyEngine)
-	serviceTypeCmd := domain.NewServiceTypeCommander(store)
+	serviceTypeCmd := domain.NewServiceTypeCommander(store, propertyEngine)
 	serviceGroupCmd := domain.NewServiceGroupCommander(store)
 	serviceOptionTypeCmd := domain.NewServiceOptionTypeCommander(store)
 	serviceOptionCmd := domain.NewServiceOptionCommander(store)

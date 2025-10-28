@@ -3,10 +3,12 @@ package domain
 
 import (
 	"testing"
+
+	"github.com/fulcrumproject/core/pkg/schema"
 )
 
 func TestServiceType_ValidateLifecycle_Valid(t *testing.T) {
-	validLifecycle := &LifecycleSchema{
+	validLifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -37,31 +39,14 @@ func TestServiceType_ValidateLifecycle_Valid(t *testing.T) {
 		TerminalStates: []string{"Deleted"},
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: validLifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := validLifecycle.Validate()
 	if err != nil {
-		t.Errorf("ValidateLifecycle() failed for valid lifecycle: %v", err)
-	}
-}
-
-func TestServiceType_ValidateLifecycle_NilLifecycle(t *testing.T) {
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: nil,
-	}
-
-	err := st.ValidateLifecycle()
-	if err != nil {
-		t.Errorf("ValidateLifecycle() should not fail for nil lifecycle: %v", err)
+		t.Errorf("Validate() failed for valid lifecycle: %v", err)
 	}
 }
 
 func TestServiceType_ValidateLifecycle_EmptyStates(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{},
 		Actions: []LifecycleAction{
 			{
@@ -74,12 +59,7 @@ func TestServiceType_ValidateLifecycle_EmptyStates(t *testing.T) {
 		InitialState: "New",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for empty states")
 	}
@@ -89,7 +69,7 @@ func TestServiceType_ValidateLifecycle_EmptyStates(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_EmptyStateName(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: ""},
@@ -105,12 +85,7 @@ func TestServiceType_ValidateLifecycle_EmptyStateName(t *testing.T) {
 		InitialState: "New",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for empty state name")
 	}
@@ -120,7 +95,7 @@ func TestServiceType_ValidateLifecycle_EmptyStateName(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_DuplicateStateName(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -137,12 +112,7 @@ func TestServiceType_ValidateLifecycle_DuplicateStateName(t *testing.T) {
 		InitialState: "New",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for duplicate state name")
 	}
@@ -152,7 +122,7 @@ func TestServiceType_ValidateLifecycle_DuplicateStateName(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_EmptyInitialState(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -168,12 +138,7 @@ func TestServiceType_ValidateLifecycle_EmptyInitialState(t *testing.T) {
 		InitialState: "",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for empty initial state")
 	}
@@ -183,7 +148,7 @@ func TestServiceType_ValidateLifecycle_EmptyInitialState(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_InvalidInitialState(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -199,12 +164,7 @@ func TestServiceType_ValidateLifecycle_InvalidInitialState(t *testing.T) {
 		InitialState: "NonExistent",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for invalid initial state")
 	}
@@ -215,7 +175,7 @@ func TestServiceType_ValidateLifecycle_InvalidInitialState(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_InvalidTerminalState(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -233,12 +193,7 @@ func TestServiceType_ValidateLifecycle_InvalidTerminalState(t *testing.T) {
 		TerminalStates: []string{"Deleted"},
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for invalid terminal state")
 	}
@@ -249,7 +204,7 @@ func TestServiceType_ValidateLifecycle_InvalidTerminalState(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_EmptyActions(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -258,12 +213,7 @@ func TestServiceType_ValidateLifecycle_EmptyActions(t *testing.T) {
 		InitialState: "New",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for empty actions")
 	}
@@ -273,7 +223,7 @@ func TestServiceType_ValidateLifecycle_EmptyActions(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_EmptyActionName(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -289,12 +239,7 @@ func TestServiceType_ValidateLifecycle_EmptyActionName(t *testing.T) {
 		InitialState: "New",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for empty action name")
 	}
@@ -304,7 +249,7 @@ func TestServiceType_ValidateLifecycle_EmptyActionName(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_DuplicateActionName(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -327,12 +272,7 @@ func TestServiceType_ValidateLifecycle_DuplicateActionName(t *testing.T) {
 		InitialState: "New",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for duplicate action name")
 	}
@@ -342,7 +282,7 @@ func TestServiceType_ValidateLifecycle_DuplicateActionName(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_EmptyTransitions(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -356,12 +296,7 @@ func TestServiceType_ValidateLifecycle_EmptyTransitions(t *testing.T) {
 		InitialState: "New",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for empty transitions")
 	}
@@ -371,7 +306,7 @@ func TestServiceType_ValidateLifecycle_EmptyTransitions(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_InvalidTransitionFromState(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -387,12 +322,7 @@ func TestServiceType_ValidateLifecycle_InvalidTransitionFromState(t *testing.T) 
 		InitialState: "New",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for invalid from state")
 	}
@@ -403,7 +333,7 @@ func TestServiceType_ValidateLifecycle_InvalidTransitionFromState(t *testing.T) 
 }
 
 func TestServiceType_ValidateLifecycle_InvalidTransitionToState(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -419,12 +349,7 @@ func TestServiceType_ValidateLifecycle_InvalidTransitionToState(t *testing.T) {
 		InitialState: "New",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for invalid to state")
 	}
@@ -435,7 +360,7 @@ func TestServiceType_ValidateLifecycle_InvalidTransitionToState(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_InvalidErrorRegexp(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -453,12 +378,7 @@ func TestServiceType_ValidateLifecycle_InvalidErrorRegexp(t *testing.T) {
 		InitialState: "New",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err == nil {
 		t.Error("ValidateLifecycle() should fail for invalid error regexp")
 	}
@@ -469,7 +389,7 @@ func TestServiceType_ValidateLifecycle_InvalidErrorRegexp(t *testing.T) {
 }
 
 func TestServiceType_ValidateLifecycle_ValidErrorRegexp(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -487,19 +407,14 @@ func TestServiceType_ValidateLifecycle_ValidErrorRegexp(t *testing.T) {
 		InitialState: "New",
 	}
 
-	st := &ServiceType{
-		Name:            "TestService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err != nil {
 		t.Errorf("ValidateLifecycle() should not fail for valid error regexp: %v", err)
 	}
 }
 
 func TestServiceType_ValidateLifecycle_ComplexLifecycle(t *testing.T) {
-	lifecycle := &LifecycleSchema{
+	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Creating"},
@@ -560,19 +475,14 @@ func TestServiceType_ValidateLifecycle_ComplexLifecycle(t *testing.T) {
 		TerminalStates: []string{"Deleted", "Failed"},
 	}
 
-	st := &ServiceType{
-		Name:            "ComplexService",
-		LifecycleSchema: lifecycle,
-	}
-
-	err := st.ValidateLifecycle()
+	err := lifecycle.Validate()
 	if err != nil {
 		t.Errorf("ValidateLifecycle() should not fail for complex valid lifecycle: %v", err)
 	}
 }
 
 func TestServiceType_Validate_WithLifecycle(t *testing.T) {
-	validLifecycle := &LifecycleSchema{
+	validLifecycle := LifecycleSchema{
 		States: []LifecycleState{
 			{Name: "New"},
 			{Name: "Running"},
@@ -590,6 +500,7 @@ func TestServiceType_Validate_WithLifecycle(t *testing.T) {
 
 	st := &ServiceType{
 		Name:            "TestService",
+		PropertySchema:  schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
 		LifecycleSchema: validLifecycle,
 	}
 
@@ -600,7 +511,7 @@ func TestServiceType_Validate_WithLifecycle(t *testing.T) {
 }
 
 func TestServiceType_Validate_WithInvalidLifecycle(t *testing.T) {
-	invalidLifecycle := &LifecycleSchema{
+	invalidLifecycle := LifecycleSchema{
 		States: []LifecycleState{},
 		Actions: []LifecycleAction{
 			{
@@ -615,6 +526,7 @@ func TestServiceType_Validate_WithInvalidLifecycle(t *testing.T) {
 
 	st := &ServiceType{
 		Name:            "TestService",
+		PropertySchema:  schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
 		LifecycleSchema: invalidLifecycle,
 	}
 

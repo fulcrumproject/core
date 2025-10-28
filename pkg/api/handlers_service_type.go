@@ -72,9 +72,9 @@ func (h *ServiceTypeHandler) Routes() func(r chi.Router) {
 
 // CreateServiceTypeReq represents the request body for creating service types
 type CreateServiceTypeReq struct {
-	Name            string                  `json:"name"`
-	PropertySchema  *schema.Schema          `json:"propertySchema,omitempty"`
-	LifecycleSchema *domain.LifecycleSchema `json:"lifecycleSchema,omitempty"`
+	Name            string                 `json:"name"`
+	PropertySchema  schema.Schema          `json:"propertySchema"`
+	LifecycleSchema domain.LifecycleSchema `json:"lifecycleSchema"`
 }
 
 // UpdateServiceTypeReq represents the request body for updating service types
@@ -86,12 +86,12 @@ type UpdateServiceTypeReq struct {
 
 // ServiceTypeRes represents the response body for service type operations
 type ServiceTypeRes struct {
-	ID              properties.UUID         `json:"id"`
-	Name            string                  `json:"name"`
-	PropertySchema  *schema.Schema          `json:"propertySchema,omitempty"`
-	LifecycleSchema *domain.LifecycleSchema `json:"lifecycleSchema,omitempty"`
-	CreatedAt       JSONUTCTime             `json:"createdAt"`
-	UpdatedAt       JSONUTCTime             `json:"updatedAt"`
+	ID              properties.UUID        `json:"id"`
+	Name            string                 `json:"name"`
+	PropertySchema  schema.Schema          `json:"propertySchema"`
+	LifecycleSchema domain.LifecycleSchema `json:"lifecycleSchema"`
+	CreatedAt       JSONUTCTime            `json:"createdAt"`
+	UpdatedAt       JSONUTCTime            `json:"updatedAt"`
 }
 
 // ServiceTypeToRes converts a domain.ServiceType to a ServiceTypeResponse

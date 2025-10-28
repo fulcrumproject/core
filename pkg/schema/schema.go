@@ -25,9 +25,7 @@ type Schema struct {
 
 // Value implements driver.Valuer interface for database serialization
 func (s Schema) Value() (driver.Value, error) {
-	if s.Properties == nil && s.Validators == nil {
-		return nil, nil
-	}
+	// Always marshal, even if empty - this ensures non-null JSON in DB
 	return json.Marshal(s)
 }
 
