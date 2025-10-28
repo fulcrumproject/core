@@ -3,6 +3,7 @@
 ### - Service pool setup and automatic resource allocation
 ### - Agent-set properties during job completion
 ### - Pool-allocated properties (publicIp from pool)
+### - Ephemeral secret properties with vault storage and automatic cleanup
 ### - Immutable property validation
 ### - State-conditional property updates
 ### - Source-based property access control
@@ -217,6 +218,15 @@ Content-Type: application/json
                         "poolType": "public_ip"
                     }
                 }
+            },
+            "password": {
+                "type": "string",
+                "label": "Root Password",
+                "required": true,
+                "immutable": true,
+                "secret": {
+                    "type": "ephemeral"
+                }
             }
         }
     },
@@ -355,7 +365,7 @@ Content-Type: application/json
 }
 
 ###############################################################################
-### PART 2: SERVICE CREATION & INITIAL JOB
+### PART 2: SERVICE CREATION & INITIAL JOB (with ephemeral secret)
 ###############################################################################
 
 ### ❌ TEST: Try to create service with invalid image (not in service options - should fail with 400)
@@ -376,7 +386,8 @@ Content-Type: application/json
     "groupId": "{{createServiceGroup.response.body.id}}"
 }
 
-### Create VM Service (user sets input properties, agent will set internalIp)
+### Create VM Service (user provides password as ephemeral secret, agent will set internalIp)
+### Password will be stored as vault://reference and cleaned up after job completion
 # @name createService
 POST {{baseUrl}}/services
 Authorization: Bearer {{adminToken}}
@@ -388,7 +399,8 @@ Content-Type: application/json
         "cpu": 4,
         "memory": 8192,
         "disk": 128,
-        "image": "ubuntu:20.04"
+        "image": "ubuntu:20.04",
+        "password": "SuperSecret123!@#"
     },
     "agentId": "{{agentId}}",
     "serviceTypeId": "{{createVMServiceType.response.body.id}}",
@@ -396,6 +408,29 @@ Content-Type: application/json
 }
 
 @serviceId = {{createService.response.body.id}}
+
+###############################################################################
+### EPHEMERAL SECRET TESTING - BEFORE JOB COMPLETION
+###############################################################################
+
+### Get service after creation (password should be vault://reference)
+# @name getServiceAfterCreate
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+### MANUAL STEP: Look at the response above and find the password property
+### It will show something like: "password": "vault://a1b2c3d4e5f6"
+### Copy the reference part (everything AFTER "vault://") 
+### Replace 'PASTE_REFERENCE_HERE' below with that value
+
+### ✅ TEST: Resolve secret BEFORE job completion (should return actual password)
+GET {{baseUrl}}/vault/secrets/d14fb557-7ecb-469c-991e-69137166b808
+Authorization: Bearer {{agentToken}}
+# Expected response: { "value": "SuperSecret123!@#" }
+
+###############################################################################
+### CONTINUE WITH JOB PROCESSING
+###############################################################################
 
 ### Get pending jobs (should have a Create job)
 # @name pendingCreateJobs
@@ -427,9 +462,24 @@ Content-Type: application/json
     }
 }
 
+###############################################################################
+### EPHEMERAL SECRET TESTING - AFTER JOB COMPLETION
+###############################################################################
+
 ### Get service (verify internalIp and publicIp are now set - publicIp auto-allocated from pool)
 GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
+
+### ❌ TEST: Try to resolve secret AFTER job completion (should fail - 404)
+### Use the SAME reference you copied earlier (PASTE_REFERENCE_HERE)
+GET {{baseUrl}}/vault/secrets/d14fb557-7ecb-469c-991e-69137166b808
+Authorization: Bearer {{agentToken}}
+# Expected: 404 Not Found - ephemeral secret cleaned up after job completion!
+# The password property still shows "vault://..." in service, but the secret is deleted from vault
+
+###############################################################################
+### PART 2A: CONTINUE WITH POOL VERIFICATION
+###############################################################################
 
 ### View pool allocation status (should show one IP allocated to our service)
 GET {{baseUrl}}/service-pool-values?servicePoolId={{createIPPool.response.body.id}}
