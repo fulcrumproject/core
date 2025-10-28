@@ -515,6 +515,20 @@ func TestEngine_ValidateSchema(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "nil properties map",
+			schema: Schema{
+				Properties: nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty properties map",
+			schema: Schema{
+				Properties: map[string]PropertyDefinition{},
+			},
+			wantErr: true,
+		},
+		{
 			name: "both default and generator",
 			schema: Schema{
 				Properties: map[string]PropertyDefinition{

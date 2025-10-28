@@ -582,6 +582,11 @@ func (e *Engine[C]) validateSchema(
 
 // ValidateSchema validates that the schema definition is valid
 func (e *Engine[C]) ValidateSchema(schema Schema) error {
+	// Validate that schema has at least one property
+	if len(schema.Properties) == 0 {
+		return fmt.Errorf("schema must have at least one property defined")
+	}
+
 	// Validate each property definition
 	for propName, propDef := range schema.Properties {
 		if propName == "" {
