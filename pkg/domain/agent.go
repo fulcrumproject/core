@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -208,15 +209,18 @@ type UpdateAgentStatusParams struct {
 
 // agentCommander is the concrete implementation of AgentCommander
 type agentCommander struct {
-	store Store
+	store        Store
+	configEngine *schema.Engine[AgentConfigContext]
 }
 
 // NewAgentCommander creates a new default AgentCommander
 func NewAgentCommander(
 	store Store,
+	configEngine *schema.Engine[AgentConfigContext],
 ) *agentCommander {
 	return &agentCommander{
-		store: store,
+		store:        store,
+		configEngine: configEngine,
 	}
 }
 
