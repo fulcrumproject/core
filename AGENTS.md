@@ -201,11 +201,20 @@ Fulcrum Core is a comprehensive cloud infrastructure management system designed 
 - Can consume services (via Service.ConsumerParticipantID)
 - The functional role (provider/consumer) is determined by context and relationships
 
+#### AgentType
+- Defines a category of agents with specific capabilities
+- Has a name and list of service types it can provide
+- Contains a required `configurationSchema` that defines structure and validation rules for agent configuration
+- Configuration schema uses the same property definition system as service properties (see `pkg/schema`)
+- Schema supports property types, validators (minLength, pattern, enum, min, max, etc.), default values, and secrets
+
 #### Agent
 - Deployed software component that manages services
 - Belongs to a specific Participant (acting as provider) and AgentType
 - Tracks connectivity state (New, Connected, Disconnected, Error, Disabled)
 - Uses secure token-based authentication
+- Has optional `configuration` field (JSONB) validated against its AgentType's configurationSchema
+- Configuration is validated on agent creation and update using schema engine
 - Processes jobs from the job queue to perform service operations
 
 #### Service
@@ -520,4 +529,171 @@ Agents can update service properties when completing a job by including a `prope
 - Created automatically by the backend (not a user action)
 - Includes authority type, ID, operation type, and properties
 - Created within the same transaction as data changes
+
+---
+
+## Agent Configuration Schema
+
+### Overview
+
+Agent configuration provides a type-safe, validated way to configure agent instances. Each `AgentType` defines a `configurationSchema` that specifies the structure, types, validation rules, and default values for agent configuration.
+
+### Schema Structure
+
+Agent configuration schemas use the same property definition system as service properties (see `pkg/schema`). The schema is a JSON object where keys are property names and values are property definitions.
+
+**Property Definition Fields:**
+- `type`: Data type (string, integer, number, boolean, json)
+- `label`: Human-readable label
+- `required`: Whether the property is required (default: false)
+- `default`: Default value to apply if not provided
+- `validators`: Array of validation rules (minLength, maxLength, pattern, enum, min, max, etc.)
+- `secret`: Configuration for secure vault storage (type: persistent or ephemeral)
+
+### Examples
+
+#### Basic Configuration Schema
+
+```json
+{
+  "apiEndpoint": {
+    "type": "string",
+    "label": "API Endpoint",
+    "required": true,
+    "validators": [
+      {
+        "name": "pattern",
+        "value": "^https?://"
+      }
+    ]
+  },
+  "maxRetries": {
+    "type": "integer",
+    "label": "Maximum Retries",
+    "default": 3,
+    "validators": [
+      {
+        "name": "min",
+        "value": 0
+      },
+      {
+        "name": "max",
+        "value": 10
+      }
+    ]
+  }
+}
+```
+
+#### Configuration with Secrets
+
+```json
+{
+  "apiKey": {
+    "type": "string",
+    "label": "API Key",
+    "required": true,
+    "secret": {
+      "type": "persistent"
+    }
+  },
+  "region": {
+    "type": "string",
+    "label": "Deployment Region",
+    "required": true,
+    "validators": [
+      {
+        "name": "enum",
+        "value": ["us-east-1", "us-west-2", "eu-central-1"]
+      }
+    ]
+  }
+}
+```
+
+#### Configuration with Defaults and Validation
+
+```json
+{
+  "pollingInterval": {
+    "type": "integer",
+    "label": "Polling Interval (seconds)",
+    "default": 30,
+    "validators": [
+      {
+        "name": "min",
+        "value": 5
+      }
+    ]
+  },
+  "enableMetrics": {
+    "type": "boolean",
+    "label": "Enable Metrics Collection",
+    "default": true
+  },
+  "logLevel": {
+    "type": "string",
+    "label": "Log Level",
+    "default": "info",
+    "validators": [
+      {
+        "name": "enum",
+        "value": ["debug", "info", "warn", "error"]
+      }
+    ]
+  }
+}
+```
+
+### Validation
+
+Configuration is validated:
+1. **On AgentType creation/update**: Schema structure is validated
+2. **On Agent creation**: Configuration is validated against the schema, defaults are applied
+3. **On Agent update**: Updated configuration is validated and merged with existing configuration
+
+**Validation Rules:**
+- Required properties must be provided
+- Property types must match the schema
+- Validator constraints must be satisfied (minLength, pattern, enum, min, max, etc.)
+- Secret values are automatically stored in the vault and replaced with references
+
+### Schema Engine
+
+The configuration schema engine is built in `pkg/domain/agent_config_schema_engine.go` and includes:
+- **Validators**: minLength, maxLength, pattern, enum, min, max, minItems, maxItems
+- **Schema Validators**: exactlyOne (for mutual exclusivity)
+- **Secret Support**: Persistent and ephemeral secrets via vault integration
+- **Default Values**: Automatically applied when properties are not provided
+
+### Implementation Details
+
+**Domain Layer:**
+- `AgentType.ConfigurationSchema`: Required field storing the schema (JSONB in database)
+- `Agent.Configuration`: Optional field storing the actual configuration (JSONB in database)
+- `AgentConfigContext`: Empty context type for the schema engine (no additional context needed)
+- Schema engine injected into `AgentTypeCommander` and `AgentCommander` via `main.go`
+
+**API Layer:**
+- `POST /api/v1/agent-types`: Create agent type with configurationSchema (required)
+- `PATCH /api/v1/agent-types/{id}`: Update configurationSchema (optional)
+- `GET /api/v1/agent-types`: Returns configurationSchema in response
+- `POST /api/v1/agents`: Create agent with configuration (validated against schema)
+- `PATCH /api/v1/agents/{id}`: Update agent configuration (validated against schema)
+
+**Error Messages:**
+Validation errors include clear messages:
+- `property 'apiEndpoint' is required`
+- `property 'maxRetries' must be of type integer, got string`
+- `property 'logLevel' must be one of [debug, info, warn, error], got trace`
+- `property 'apiEndpoint' must match pattern ^https?://`
+
+### Best Practices
+
+1. **Use Required Fields Sparingly**: Mark only truly essential configuration as required
+2. **Provide Sensible Defaults**: Set default values for optional configuration
+3. **Use Enums for Fixed Sets**: Use enum validators for properties with fixed allowed values
+4. **Validate Formats**: Use pattern validators for URLs, email addresses, etc.
+5. **Secure Sensitive Data**: Mark API keys, passwords, and tokens as secrets
+6. **Document Labels**: Use clear, descriptive labels for all properties
 

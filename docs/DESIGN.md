@@ -157,6 +157,7 @@ classDiagram
         class AgentType {
             id : properties.UUID
             name : string
+            configurationSchema : CustomSchema
             createdAt : datetime
             updatedAt : datetime
         }
@@ -338,6 +339,15 @@ classDiagram
     - Properties field for configuration
     - Jobs handle status transitions based on lifecycle schema"
 
+    note for AgentType "Agent types define configuration schemas:
+    - configurationSchema is a required field
+    - Uses same property definition system as service properties
+    - Supports validators: minLength, pattern, enum, min, max, etc.
+    - Supports default values and secret handling
+    - Agent configuration validated against this schema
+    - Schema validated on AgentType creation/update
+    - Examples: API endpoints, credentials, polling intervals"
+    
     note for ServiceType "Service types include:
     - VM
     - Kubernetes Node
@@ -440,10 +450,12 @@ classDiagram
    
    **Configuration Field:**
    - Optional JSON field that stores agent-specific configuration parameters
-   - Allows agents to maintain instance-specific settings (timeouts, retries, environment variables, etc.)
-   - Can be set during agent creation and updated via the REST API
-   - Enables flexible agent behavior customization without code changes
-   - Examples: connection timeouts, retry policies, environment-specific settings, feature flags
+   - Validated against the AgentType's configurationSchema during creation and updates
+   - Schema defines structure, types, validation rules, default values, and secret handling
+   - Uses the same property definition system as service properties (see `pkg/schema`)
+   - Supports validators (minLength, pattern, enum, min, max, etc.) and secret storage
+   - Default values automatically applied when properties are not provided
+   - Examples: API endpoints, retry policies, credentials, feature flags, polling intervals
 
 3. **Service**
    - Cloud resource managed by an agent
@@ -464,6 +476,10 @@ classDiagram
    - Defines the type classification for agents
    - Many-to-many relationship with ServiceTypes
    - Determines which types of services an agent can manage
+   - Contains required `configurationSchema` defining structure and validation for agent configuration
+   - Configuration schema uses the same property definition system as service properties
+   - Supports property types, validators, default values, and secret handling
+   - Schema validated on creation/update; agents validate their configuration against this schema
 
 5. **ServiceType**
    - Defines the type classification for services
