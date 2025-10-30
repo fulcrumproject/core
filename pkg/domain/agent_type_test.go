@@ -311,4 +311,3 @@ func TestAgentType_Update(t *testing.T) {
 		}
 	})
 }
-
