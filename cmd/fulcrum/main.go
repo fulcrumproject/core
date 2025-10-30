@@ -124,6 +124,9 @@ func main() {
 	serviceGroupCmd := domain.NewServiceGroupCommander(store)
 	serviceOptionTypeCmd := domain.NewServiceOptionTypeCommander(store)
 	serviceOptionCmd := domain.NewServiceOptionCommander(store)
+	servicePoolSetCmd := domain.NewServicePoolSetCommander(store)
+	servicePoolCmd := domain.NewServicePoolCommander(store)
+	servicePoolValueCmd := domain.NewServicePoolValueCommander(store)
 	participantCmd := domain.NewParticipantCommander(store)
 	agentTypeCmd := domain.NewAgentTypeCommander(store)
 	jobCmd := domain.NewJobCommander(store, propertyEngine)
@@ -164,11 +167,6 @@ func main() {
 
 	athz := auth.NewRuleBasedAuthorizer(authz.Rules)
 
-	// Initialize commanders for service pools
-	servicePoolSetCmd := domain.NewServicePoolSetCommander(store)
-	servicePoolCmd := domain.NewServicePoolCommander(store)
-	servicePoolValueCmd := domain.NewServicePoolValueCommander(store)
-
 	// Initialize handlers
 	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz)
 	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz, propertyEngine)
@@ -187,12 +185,7 @@ func main() {
 	eventSubscriptionCmd := domain.NewEventSubscriptionCommander(store)
 	eventHandler := api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz)
 	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz)
-
-	// Initialize vault handler only if vault is configured
-	var vaultHandler *api.VaultHandler
-	if vault != nil {
-		vaultHandler = api.NewVaultHandler(vault)
-	}
+	vaultHandler := api.NewVaultHandler(vault)
 
 	serverError := make(chan error, 1)
 
@@ -365,11 +358,7 @@ func BuildHttpServer(
 		r.Route("/events", eventHandler.Routes())
 		r.Route("/jobs", jobHandler.Routes())
 		r.Route("/tokens", tokenHandler.Routes())
-
-		// Register vault routes only if vault is configured
-		if vaultHandler != nil {
-			r.Route("/vault/secrets", vaultHandler.Routes())
-		}
+		r.Route("/vault/secrets", vaultHandler.Routes())
 	})
 
 	return &http.Server{

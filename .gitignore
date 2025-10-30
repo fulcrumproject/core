@@ -30,6 +30,6 @@ coverage/
 .cursor/
 specs/
 
-# Project-specific directories
-fulcrum
+# Project-specific binaries
+/fulcrum
 generated-client/

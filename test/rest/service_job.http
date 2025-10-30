@@ -424,7 +424,7 @@ Authorization: Bearer {{adminToken}}
 ### Replace 'PASTE_REFERENCE_HERE' below with that value
 
 ### ✅ TEST: Resolve secret BEFORE job completion (should return actual password)
-GET {{baseUrl}}/vault/secrets/d14fb557-7ecb-469c-991e-69137166b808
+GET {{baseUrl}}/vault/secrets/PASTE_REFERENCE_HERE
 Authorization: Bearer {{agentToken}}
 # Expected response: { "value": "SuperSecret123!@#" }
 
@@ -472,7 +472,7 @@ Authorization: Bearer {{adminToken}}
 
 ### ❌ TEST: Try to resolve secret AFTER job completion (should fail - 404)
 ### Use the SAME reference you copied earlier (PASTE_REFERENCE_HERE)
-GET {{baseUrl}}/vault/secrets/d14fb557-7ecb-469c-991e-69137166b808
+GET {{baseUrl}}/vault/secrets/PASTE_REFERENCE_HERE
 Authorization: Bearer {{agentToken}}
 # Expected: 404 Not Found - ephemeral secret cleaned up after job completion!
 # The password property still shows "vault://..." in service, but the secret is deleted from vault
