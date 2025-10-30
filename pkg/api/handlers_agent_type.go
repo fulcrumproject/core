@@ -8,6 +8,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -68,33 +69,37 @@ func (h *AgentTypeHandler) Routes() func(r chi.Router) {
 
 // CreateAgentTypeReq represents the request body for creating agent types
 type CreateAgentTypeReq struct {
-	Name           string            `json:"name"`
-	ServiceTypeIds []properties.UUID `json:"serviceTypeIds,omitempty"`
+	Name                string            `json:"name"`
+	ServiceTypeIds      []properties.UUID `json:"serviceTypeIds,omitempty"`
+	ConfigurationSchema schema.Schema     `json:"configurationSchema"`
 }
 
 // UpdateAgentTypeReq represents the request body for updating agent types
 type UpdateAgentTypeReq struct {
-	Name           *string            `json:"name"`
-	ServiceTypeIds *[]properties.UUID `json:"serviceTypeIds,omitempty"`
+	Name                *string            `json:"name"`
+	ServiceTypeIds      *[]properties.UUID `json:"serviceTypeIds,omitempty"`
+	ConfigurationSchema *schema.Schema     `json:"configurationSchema,omitempty"`
 }
 
 // AgentTypeRes represents the response body for agent type operations
 type AgentTypeRes struct {
-	ID             properties.UUID   `json:"id"`
-	Name           string            `json:"name"`
-	CreatedAt      JSONUTCTime       `json:"createdAt"`
-	UpdatedAt      JSONUTCTime       `json:"updatedAt"`
-	ServiceTypeIds []properties.UUID `json:"serviceTypeIds"`
+	ID                  properties.UUID   `json:"id"`
+	Name                string            `json:"name"`
+	CreatedAt           JSONUTCTime       `json:"createdAt"`
+	UpdatedAt           JSONUTCTime       `json:"updatedAt"`
+	ServiceTypeIds      []properties.UUID `json:"serviceTypeIds"`
+	ConfigurationSchema schema.Schema     `json:"configurationSchema"`
 }
 
 // AgentTypeToRes converts a domain.AgentType to an AgentTypeResponse
 func AgentTypeToRes(at *domain.AgentType) *AgentTypeRes {
 	response := &AgentTypeRes{
-		ID:             at.ID,
-		Name:           at.Name,
-		CreatedAt:      JSONUTCTime(at.CreatedAt),
-		UpdatedAt:      JSONUTCTime(at.UpdatedAt),
-		ServiceTypeIds: make([]properties.UUID, 0),
+		ID:                  at.ID,
+		Name:                at.Name,
+		CreatedAt:           JSONUTCTime(at.CreatedAt),
+		UpdatedAt:           JSONUTCTime(at.UpdatedAt),
+		ServiceTypeIds:      make([]properties.UUID, 0),
+		ConfigurationSchema: at.ConfigurationSchema,
 	}
 	for _, st := range at.ServiceTypes {
 		response.ServiceTypeIds = append(response.ServiceTypeIds, st.ID)
@@ -106,17 +111,19 @@ func AgentTypeToRes(at *domain.AgentType) *AgentTypeRes {
 
 func (h *AgentTypeHandler) Create(ctx context.Context, req *CreateAgentTypeReq) (*domain.AgentType, error) {
 	params := domain.CreateAgentTypeParams{
-		Name:           req.Name,
-		ServiceTypeIds: req.ServiceTypeIds,
+		Name:                req.Name,
+		ServiceTypeIds:      req.ServiceTypeIds,
+		ConfigurationSchema: req.ConfigurationSchema,
 	}
 	return h.commander.Create(ctx, params)
 }
 
 func (h *AgentTypeHandler) Update(ctx context.Context, id properties.UUID, req *UpdateAgentTypeReq) (*domain.AgentType, error) {
 	params := domain.UpdateAgentTypeParams{
-		ID:             id,
-		Name:           req.Name,
-		ServiceTypeIds: req.ServiceTypeIds,
+		ID:                  id,
+		Name:                req.Name,
+		ServiceTypeIds:      req.ServiceTypeIds,
+		ConfigurationSchema: req.ConfigurationSchema,
 	}
 	return h.commander.Update(ctx, params)
 }

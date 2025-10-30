@@ -68,7 +68,7 @@ func TestAgentCommander_CreateWithConfiguration(t *testing.T) {
 
 	engine := NewAgentConfigSchemaEngine(nil)
 	commander := NewAgentCommander(ms, engine)
-	
+
 	// Create context with mock identity for event creation
 	identity := &auth.Identity{
 		Role: auth.RoleAdmin,
@@ -164,8 +164,8 @@ func TestAgentCommander_CreateWithConfiguration(t *testing.T) {
 
 func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 	existingAgent := &Agent{
-		BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())},
-		Name:       "Existing Agent",
+		BaseEntity:  BaseEntity{ID: properties.UUID(uuid.New())},
+		Name:        "Existing Agent",
 		AgentTypeID: properties.UUID(uuid.New()),
 		ProviderID:  properties.UUID(uuid.New()),
 		Configuration: &properties.JSON{
@@ -220,7 +220,7 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 
 	engine := NewAgentConfigSchemaEngine(nil)
 	commander := NewAgentCommander(ms, engine)
-	
+
 	// Create context with mock identity for event creation
 	identity := &auth.Identity{
 		Role: auth.RoleAdmin,
@@ -284,23 +284,23 @@ type mockStore struct {
 	atomicFunc      func(context.Context, func(Store) error) error
 }
 
-func (m *mockStore) ParticipantRepo() ParticipantRepository { return m.participantRepo }
-func (m *mockStore) AgentTypeRepo() AgentTypeRepository     { return m.agentTypeRepo }
-func (m *mockStore) AgentRepo() AgentRepository             { return m.agentRepo }
-func (m *mockStore) ServiceTypeRepo() ServiceTypeRepository { return nil }
-func (m *mockStore) ServiceRepo() ServiceRepository         { return nil }
-func (m *mockStore) ServiceGroupRepo() ServiceGroupRepository { return nil }
+func (m *mockStore) ParticipantRepo() ParticipantRepository             { return m.participantRepo }
+func (m *mockStore) AgentTypeRepo() AgentTypeRepository                 { return m.agentTypeRepo }
+func (m *mockStore) AgentRepo() AgentRepository                         { return m.agentRepo }
+func (m *mockStore) ServiceTypeRepo() ServiceTypeRepository             { return nil }
+func (m *mockStore) ServiceRepo() ServiceRepository                     { return nil }
+func (m *mockStore) ServiceGroupRepo() ServiceGroupRepository           { return nil }
 func (m *mockStore) ServiceOptionTypeRepo() ServiceOptionTypeRepository { return nil }
-func (m *mockStore) ServiceOptionRepo() ServiceOptionRepository { return nil }
-func (m *mockStore) ServicePoolSetRepo() ServicePoolSetRepository { return nil }
-func (m *mockStore) ServicePoolRepo() ServicePoolRepository { return nil }
-func (m *mockStore) ServicePoolValueRepo() ServicePoolValueRepository { return nil }
-func (m *mockStore) JobRepo() JobRepository                 { return nil }
-func (m *mockStore) MetricTypeRepo() MetricTypeRepository   { return nil }
-func (m *mockStore) MetricEntryRepo() MetricEntryRepository { return nil }
-func (m *mockStore) EventRepo() EventRepository             { return m.eventRepo }
+func (m *mockStore) ServiceOptionRepo() ServiceOptionRepository         { return nil }
+func (m *mockStore) ServicePoolSetRepo() ServicePoolSetRepository       { return nil }
+func (m *mockStore) ServicePoolRepo() ServicePoolRepository             { return nil }
+func (m *mockStore) ServicePoolValueRepo() ServicePoolValueRepository   { return nil }
+func (m *mockStore) JobRepo() JobRepository                             { return nil }
+func (m *mockStore) MetricTypeRepo() MetricTypeRepository               { return nil }
+func (m *mockStore) MetricEntryRepo() MetricEntryRepository             { return nil }
+func (m *mockStore) EventRepo() EventRepository                         { return m.eventRepo }
 func (m *mockStore) EventSubscriptionRepo() EventSubscriptionRepository { return nil }
-func (m *mockStore) TokenRepo() TokenRepository             { return nil }
+func (m *mockStore) TokenRepo() TokenRepository                         { return nil }
 func (m *mockStore) Atomic(ctx context.Context, fn func(Store) error) error {
 	if m.atomicFunc != nil {
 		return m.atomicFunc(ctx, fn)
@@ -322,7 +322,7 @@ func (m *mockParticipantRepository) Create(context.Context, *Participant) error 
 func (m *mockParticipantRepository) Get(context.Context, properties.UUID) (*Participant, error) {
 	return nil, nil
 }
-func (m *mockParticipantRepository) Save(context.Context, *Participant) error { return nil }
+func (m *mockParticipantRepository) Save(context.Context, *Participant) error      { return nil }
 func (m *mockParticipantRepository) Delete(context.Context, properties.UUID) error { return nil }
 func (m *mockParticipantRepository) AuthScope(context.Context, properties.UUID) (auth.ObjectScope, error) {
 	return nil, nil
@@ -345,8 +345,8 @@ func (m *mockAgentTypeRepository) Get(ctx context.Context, id properties.UUID) (
 func (m *mockAgentTypeRepository) Exists(context.Context, properties.UUID) (bool, error) {
 	return false, nil
 }
-func (m *mockAgentTypeRepository) Create(context.Context, *AgentType) error { return nil }
-func (m *mockAgentTypeRepository) Save(context.Context, *AgentType) error { return nil }
+func (m *mockAgentTypeRepository) Create(context.Context, *AgentType) error      { return nil }
+func (m *mockAgentTypeRepository) Save(context.Context, *AgentType) error        { return nil }
 func (m *mockAgentTypeRepository) Delete(context.Context, properties.UUID) error { return nil }
 func (m *mockAgentTypeRepository) AuthScope(context.Context, properties.UUID) (auth.ObjectScope, error) {
 	return nil, nil
@@ -418,7 +418,7 @@ func (m *mockEventRepository) Get(context.Context, properties.UUID) (*Event, err
 func (m *mockEventRepository) AuthScope(context.Context, properties.UUID) (auth.ObjectScope, error) {
 	return nil, nil
 }
-func (m *mockEventRepository) Count(context.Context) (int64, error) { return 0, nil }
+func (m *mockEventRepository) Count(context.Context) (int64, error)          { return 0, nil }
 func (m *mockEventRepository) Delete(context.Context, properties.UUID) error { return nil }
 func (m *mockEventRepository) Exists(context.Context, properties.UUID) (bool, error) {
 	return false, nil

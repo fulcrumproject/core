@@ -237,7 +237,7 @@ func (s *agentCommander) Create(
 	if !providerExists {
 		return nil, NewInvalidInputErrorf("provider with ID %s does not exist", params.ProviderID)
 	}
-	
+
 	// Get agent type to access configuration schema
 	agentType, err := s.store.AgentTypeRepo().Get(ctx, params.AgentTypeID)
 	if err != nil {
@@ -248,15 +248,15 @@ func (s *agentCommander) Create(
 	var agent *Agent
 	err = s.store.Atomic(ctx, func(store Store) error {
 		agent = NewAgent(params)
-		
+
 		// Validate and process configuration against schema
 		if agent.Configuration != nil {
 			// Build schema context (empty for agents)
 			schemaCtx := AgentConfigContext{}
-			
+
 			// Convert configuration to map
 			configMap := map[string]any(*agent.Configuration)
-			
+
 			// Use injected engine to process configuration
 			// This validates types, runs validators, applies defaults, processes secrets
 			processedConfig, err := s.configEngine.ApplyCreate(
@@ -268,12 +268,12 @@ func (s *agentCommander) Create(
 			if err != nil {
 				return InvalidInputError{Err: fmt.Errorf("configuration: %w", err)}
 			}
-			
+
 			// Update agent with processed configuration (secrets replaced with vault:// refs)
 			processedJSON := properties.JSON(processedConfig)
 			agent.Configuration = &processedJSON
 		}
-		
+
 		if err := agent.Validate(); err != nil {
 			return InvalidInputError{Err: err}
 		}
@@ -316,19 +316,19 @@ func (s *agentCommander) Update(ctx context.Context,
 		agent.UpdateStatus(*params.Status)
 	}
 	agent.Update(params.Name, params.Tags, params.Configuration, params.ServicePoolSetID)
-	
+
 	// Validate and process configuration against schema if configuration is being updated
 	if params.Configuration != nil && agent.Configuration != nil {
 		// Build schema context (empty for agents)
 		schemaCtx := AgentConfigContext{}
-		
+
 		// Convert configurations to maps
 		var oldConfigMap map[string]any
 		if beforeAgent.Configuration != nil {
 			oldConfigMap = map[string]any(*beforeAgent.Configuration)
 		}
 		newConfigMap := map[string]any(*agent.Configuration)
-		
+
 		// Use injected engine to process configuration
 		processedConfig, err := s.configEngine.ApplyUpdate(
 			ctx,
@@ -340,12 +340,12 @@ func (s *agentCommander) Update(ctx context.Context,
 		if err != nil {
 			return nil, InvalidInputError{Err: fmt.Errorf("configuration: %w", err)}
 		}
-		
+
 		// Update agent with processed configuration
 		processedJSON := properties.JSON(processedConfig)
 		agent.Configuration = &processedJSON
 	}
-	
+
 	if err := agent.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
