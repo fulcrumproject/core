@@ -10,14 +10,89 @@
 GET {{baseUrl}}/agent-types
 Authorization: Bearer {{adminToken}}
 
-### Create a new agent type
+### Create a new agent type with configuration schema
 # @name createAgentType
 POST {{baseUrl}}/agent-types
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-    "name": "Test Agent Type"
+    "name": "Test Agent Type",
+    "configurationSchema": {
+        "properties": {
+            "apiEndpoint": {
+                "type": "string",
+                "label": "API Endpoint",
+                "required": true,
+            "validators": [
+                {
+                    "type": "pattern",
+                    "config": {
+                        "pattern": "^https?://"
+                    }
+                }
+            ]
+            },
+            "apiKey": {
+                "type": "string",
+                "label": "API Key",
+                "required": true,
+                "secret": {
+                    "type": "persistent"
+                }
+            },
+            "maxRetries": {
+                "type": "integer",
+                "label": "Maximum Retries",
+                "default": 3,
+            "validators": [
+                {
+                    "type": "min",
+                    "config": {
+                        "value": 0
+                    }
+                },
+                {
+                    "type": "max",
+                    "config": {
+                        "value": 10
+                    }
+                }
+            ]
+            },
+            "pollingInterval": {
+                "type": "integer",
+                "label": "Polling Interval (seconds)",
+                "default": 30,
+            "validators": [
+                {
+                    "type": "min",
+                    "config": {
+                        "value": 5
+                    }
+                }
+            ]
+            },
+            "enableMetrics": {
+                "type": "boolean",
+                "label": "Enable Metrics Collection",
+                "default": true
+            },
+            "logLevel": {
+                "type": "string",
+                "label": "Log Level",
+                "default": "info",
+            "validators": [
+                {
+                    "type": "enum",
+                    "config": {
+                        "values": ["debug", "info", "warn", "error"]
+                    }
+                }
+            ]
+            }
+        }
+    }
 }
 
 @createdAgentTypeId = {{createAgentType.response.body.id}}
@@ -33,7 +108,87 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-    "name": "Updated Test Agent Type"
+    "name": "Updated Test Agent Type",
+    "configurationSchema": {
+        "properties": {
+            "apiEndpoint": {
+                "type": "string",
+                "label": "API Endpoint",
+                "required": true,
+            "validators": [
+                {
+                    "type": "pattern",
+                    "config": {
+                        "pattern": "^https?://"
+                    }
+                }
+            ]
+            },
+            "apiKey": {
+                "type": "string",
+                "label": "API Key",
+                "required": true,
+                "secret": {
+                    "type": "persistent"
+                }
+            },
+            "maxRetries": {
+                "type": "integer",
+                "label": "Maximum Retries",
+                "default": 5,
+                "validators": [
+                    {
+                        "type": "min",
+                        "config": {
+                            "value": 0
+                        }
+                    },
+                    {
+                        "type": "max",
+                        "config": {
+                            "value": 20
+                        }
+                    }
+                ]
+            },
+            "pollingInterval": {
+                "type": "integer",
+                "label": "Polling Interval (seconds)",
+                "default": 60,
+                "validators": [
+                    {
+                        "type": "min",
+                        "config": {
+                            "value": 10
+                        }
+                    }
+                ]
+            },
+            "enableMetrics": {
+                "type": "boolean",
+                "label": "Enable Metrics Collection",
+                "default": true
+            },
+            "enableTracing": {
+                "type": "boolean",
+                "label": "Enable Distributed Tracing",
+                "default": false
+            },
+            "logLevel": {
+                "type": "string",
+                "label": "Log Level",
+                "default": "warn",
+            "validators": [
+                {
+                    "type": "enum",
+                    "config": {
+                        "values": ["debug", "info", "warn", "error"]
+                    }
+                }
+            ]
+            }
+        }
+    }
 }
 
 ### Get the updated agent type
