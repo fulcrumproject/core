@@ -20,12 +20,14 @@ func TestNewServiceTypeHandler(t *testing.T) {
 	querier := domain.NewMockServiceTypeQuerier(t)
 	commander := domain.NewMockServiceTypeCommander(t)
 	authz := auth.NewMockAuthorizer(t)
+	engine := domain.NewServicePropertyEngine(nil)
 
-	handler := NewServiceTypeHandler(querier, commander, authz)
+	handler := NewServiceTypeHandler(querier, commander, authz, engine)
 	assert.NotNil(t, handler)
 	assert.Equal(t, querier, handler.querier)
 	assert.Equal(t, commander, handler.commander)
 	assert.Equal(t, authz, handler.authz)
+	assert.Equal(t, engine, handler.engine)
 }
 
 // TestServiceTypeHandlerRoutes tests that routes are properly registered
@@ -34,9 +36,10 @@ func TestServiceTypeHandlerRoutes(t *testing.T) {
 	querier := domain.NewMockServiceTypeQuerier(t)
 	commander := domain.NewMockServiceTypeCommander(t)
 	authz := auth.NewMockAuthorizer(t)
+	engine := domain.NewServicePropertyEngine(nil)
 
 	// Create the handler
-	handler := NewServiceTypeHandler(querier, commander, authz)
+	handler := NewServiceTypeHandler(querier, commander, authz, engine)
 
 	// Execute
 	routeFunc := handler.Routes()

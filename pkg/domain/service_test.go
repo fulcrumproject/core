@@ -1,10 +1,12 @@
 package domain
 
 import (
+	"context"
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -177,538 +179,114 @@ func TestService_Validate(t *testing.T) {
 	}
 }
 
-func TestMergeServiceProperties(t *testing.T) {
-	tests := []struct {
-		name     string
-		existing *properties.JSON
-		partial  properties.JSON
-		expected properties.JSON
-	}{
-		{
-			name:     "merge with existing properties",
-			existing: &properties.JSON{"a": "1", "b": "2"},
-			partial:  properties.JSON{"b": "3", "c": "4"},
-			expected: properties.JSON{"a": "1", "b": "3", "c": "4"},
-		},
-		{
-			name:     "merge with nil existing properties",
-			existing: nil,
-			partial:  properties.JSON{"a": "1", "b": "2"},
-			expected: properties.JSON{"a": "1", "b": "2"},
-		},
-		{
-			name:     "merge with empty partial properties",
-			existing: &properties.JSON{"a": "1", "b": "2"},
-			partial:  properties.JSON{},
-			expected: properties.JSON{"a": "1", "b": "2"},
-		},
-		{
-			name:     "merge with empty existing and partial",
-			existing: &properties.JSON{},
-			partial:  properties.JSON{},
-			expected: properties.JSON{},
-		},
-		{
-			name:     "deep merge nested objects",
-			existing: &properties.JSON{"config": map[string]any{"host": "localhost", "port": 8080}},
-			partial:  properties.JSON{"config": map[string]any{"port": 9090, "ssl": true}},
-			expected: properties.JSON{"config": map[string]any{"host": "localhost", "port": 9090, "ssl": true}},
-		},
-		{
-			name:     "replace non-object with object",
-			existing: &properties.JSON{"config": "simple"},
-			partial:  properties.JSON{"config": map[string]any{"host": "localhost"}},
-			expected: properties.JSON{"config": map[string]any{"host": "localhost"}},
-		},
-		{
-			name:     "replace object with non-object",
-			existing: &properties.JSON{"config": map[string]any{"host": "localhost"}},
-			partial:  properties.JSON{"config": "simple"},
-			expected: properties.JSON{"config": "simple"},
-		},
-		{
-			name: "deep merge multiple levels",
-			existing: &properties.JSON{
-				"database": map[string]any{
-					"host": "localhost",
-					"config": map[string]any{
-						"pool_size": 10,
-						"timeout":   30,
+// Property merging tests removed - merging is now handled by the schema engine
+// The engine's ApplyUpdate method handles merging old and new properties
+
+func TestApplyAgentPropertyUpdates(t *testing.T) {
+	ctx := context.Background()
+
+	// Create a simple schema for testing
+	testSchema := &schema.Schema{
+		Properties: map[string]schema.PropertyDefinition{
+			"ipAddress": {
+				Type: "string",
+				Authorizers: []schema.AuthorizerConfig{
+					{
+						Type:   "actor",
+						Config: map[string]any{"actors": []any{"agent"}},
 					},
 				},
 			},
-			partial: properties.JSON{
-				"database": map[string]any{
-					"port": 5432,
-					"config": map[string]any{
-						"timeout": 60,
-						"ssl":     true,
+			"port": {
+				Type: "integer",
+				Authorizers: []schema.AuthorizerConfig{
+					{
+						Type:   "actor",
+						Config: map[string]any{"actors": []any{"agent"}},
 					},
 				},
 			},
-			expected: properties.JSON{
-				"database": map[string]any{
-					"host": "localhost",
-					"port": 5432,
-					"config": map[string]any{
-						"pool_size": 10,
-						"timeout":   60,
-						"ssl":       true,
-					},
-				},
+			"hostname": {
+				Type: "string",
+				// No actor authorizer means default = user input
 			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := mergeServiceProperties(tt.existing, tt.partial)
-			assert.Equal(t, tt.expected, result)
-		})
+	serviceType := &ServiceType{
+		BaseEntity:     BaseEntity{ID: uuid.New()},
+		Name:           "test-service",
+		PropertySchema: *testSchema,
 	}
-}
-
-func TestMergeNestedObjects(t *testing.T) {
-	tests := []struct {
-		name     string
-		existing map[string]any
-		partial  map[string]any
-		expected map[string]any
-	}{
-		{
-			name:     "merge simple objects",
-			existing: map[string]any{"a": "1", "b": "2"},
-			partial:  map[string]any{"b": "3", "c": "4"},
-			expected: map[string]any{"a": "1", "b": "3", "c": "4"},
-		},
-		{
-			name:     "merge with empty existing",
-			existing: map[string]any{},
-			partial:  map[string]any{"a": "1"},
-			expected: map[string]any{"a": "1"},
-		},
-		{
-			name:     "merge with empty partial",
-			existing: map[string]any{"a": "1"},
-			partial:  map[string]any{},
-			expected: map[string]any{"a": "1"},
-		},
-		{
-			name: "deep merge nested objects",
-			existing: map[string]any{
-				"level1": map[string]any{
-					"level2": map[string]any{"a": "1", "b": "2"},
-				},
-			},
-			partial: map[string]any{
-				"level1": map[string]any{
-					"level2": map[string]any{"b": "3", "c": "4"},
-				},
-			},
-			expected: map[string]any{
-				"level1": map[string]any{
-					"level2": map[string]any{"a": "1", "b": "3", "c": "4"},
-				},
-			},
-		},
-		{
-			name:     "replace nested object with non-object",
-			existing: map[string]any{"nested": map[string]any{"a": "1"}},
-			partial:  map[string]any{"nested": "simple"},
-			expected: map[string]any{"nested": "simple"},
-		},
-		{
-			name:     "replace non-object with nested object",
-			existing: map[string]any{"nested": "simple"},
-			partial:  map[string]any{"nested": map[string]any{"a": "1"}},
-			expected: map[string]any{"nested": map[string]any{"a": "1"}},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := mergeNestedObjects(tt.existing, tt.partial)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestServiceUpdate_PartialProperties(t *testing.T) {
-	// This test verifies that the UpdateService function properly merges partial properties
-	// with existing service properties before validation and update
 
 	tests := []struct {
 		name          string
-		existingProps *properties.JSON
-		partialProps  properties.JSON
-		expectedProps properties.JSON
+		service       *Service
+		updates       map[string]any
 		expectError   bool
-		errorMessage  string
+		expectedProps map[string]any
+		errorContains string
 	}{
 		{
-			name:          "partial update preserves existing properties",
-			existingProps: &properties.JSON{"database": map[string]any{"host": "localhost", "port": 5432}, "cache": map[string]any{"enabled": true}},
-			partialProps:  properties.JSON{"database": map[string]any{"port": 3306}},
-			expectedProps: properties.JSON{"database": map[string]any{"host": "localhost", "port": 3306}, "cache": map[string]any{"enabled": true}},
-			expectError:   false,
-		},
-		{
-			name:          "add new properties to existing",
-			existingProps: &properties.JSON{"database": map[string]any{"host": "localhost"}},
-			partialProps:  properties.JSON{"api": map[string]any{"version": "v2", "timeout": 30}},
-			expectedProps: properties.JSON{"database": map[string]any{"host": "localhost"}, "api": map[string]any{"version": "v2", "timeout": 30}},
-			expectError:   false,
-		},
-		{
-			name: "deep merge nested objects",
-			existingProps: &properties.JSON{
-				"config": map[string]any{
-					"database": map[string]any{"host": "localhost", "port": 5432},
-					"cache":    map[string]any{"enabled": true, "size": 100},
+			name: "Agent can update agent-source properties",
+			service: &Service{
+				BaseEntity: BaseEntity{ID: uuid.New()},
+				Status:     "Running",
+				Properties: &properties.JSON{
+					"hostname": "test-host",
 				},
 			},
-			partialProps: properties.JSON{
-				"config": map[string]any{
-					"database": map[string]any{"port": 3306, "ssl": true},
-					"api":      map[string]any{"version": "v2"},
-				},
-			},
-			expectedProps: properties.JSON{
-				"config": map[string]any{
-					"database": map[string]any{"host": "localhost", "port": 3306, "ssl": true},
-					"cache":    map[string]any{"enabled": true, "size": 100},
-					"api":      map[string]any{"version": "v2"},
-				},
+			updates: map[string]any{
+				"ipAddress": "192.168.1.100",
+				"port":      8080,
 			},
 			expectError: false,
-		},
-		{
-			name:          "replace entire nested object",
-			existingProps: &properties.JSON{"config": map[string]any{"database": map[string]any{"host": "localhost"}}},
-			partialProps:  properties.JSON{"config": "simple"},
-			expectedProps: properties.JSON{"config": "simple"},
-			expectError:   false,
-		},
-		{
-			name:          "merge with nil existing properties",
-			existingProps: nil,
-			partialProps:  properties.JSON{"new": "value"},
-			expectedProps: properties.JSON{"new": "value"},
-			expectError:   false,
-		},
-		{
-			name:          "empty partial update preserves existing",
-			existingProps: &properties.JSON{"existing": "value"},
-			partialProps:  properties.JSON{},
-			expectedProps: properties.JSON{"existing": "value"},
-			expectError:   false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Test the mergeServiceProperties function directly
-			result := mergeServiceProperties(tt.existingProps, tt.partialProps)
-			assert.Equal(t, tt.expectedProps, result)
-		})
-	}
-}
-
-func TestServiceUpdate_IntegrationFlow(t *testing.T) {
-	// This test simulates the full integration flow of service update with property merging
-	// It verifies that the merging happens before validation and that the complete merged
-	// properties are used for the update
-
-	// Test data setup
-	existingProps := &properties.JSON{
-		"database": map[string]any{
-			"host": "localhost",
-			"port": 5432,
-			"config": map[string]any{
-				"pool_size": 10,
-				"timeout":   30,
+			expectedProps: map[string]any{
+				"hostname":  "test-host",
+				"ipAddress": "192.168.1.100",
+				"port":      8080, // Integers are preserved as int
 			},
 		},
-		"cache": map[string]any{
-			"enabled": true,
-			"size":    100,
-		},
-	}
-
-	partialUpdate := properties.JSON{
-		"database": map[string]any{
-			"port": 3306,
-			"config": map[string]any{
-				"timeout": 60,
-				"ssl":     true,
-			},
-		},
-		"api": map[string]any{
-			"version": "v2",
-		},
-	}
-
-	expectedMerged := properties.JSON{
-		"database": map[string]any{
-			"host": "localhost", // preserved from existing
-			"port": 3306,        // updated from partial
-			"config": map[string]any{
-				"pool_size": 10,   // preserved from existing
-				"timeout":   60,   // updated from partial
-				"ssl":       true, // added from partial
-			},
-		},
-		"cache": map[string]any{
-			"enabled": true, // preserved from existing
-			"size":    100,  // preserved from existing
-		},
-		"api": map[string]any{
-			"version": "v2", // added from partial
-		},
-	}
-
-	// Test the merge function
-	merged := mergeServiceProperties(existingProps, partialUpdate)
-	assert.Equal(t, expectedMerged, merged)
-
-	// Verify that the merge preserves existing properties that weren't touched
-	assert.Equal(t, "localhost", merged["database"].(map[string]any)["host"])
-	assert.Equal(t, true, merged["cache"].(map[string]any)["enabled"])
-	assert.Equal(t, 100, merged["cache"].(map[string]any)["size"])
-
-	// Verify that the merge updates provided properties
-	assert.Equal(t, 3306, merged["database"].(map[string]any)["port"])
-	assert.Equal(t, 60, merged["database"].(map[string]any)["config"].(map[string]any)["timeout"])
-	assert.Equal(t, true, merged["database"].(map[string]any)["config"].(map[string]any)["ssl"])
-
-	// Verify that the merge adds new properties
-	assert.Equal(t, "v2", merged["api"].(map[string]any)["version"])
-}
-
-// TestApplyAgentPropertyUpdates tests the ApplyAgentPropertyUpdates method
-func TestApplyAgentPropertyUpdates(t *testing.T) {
-	tests := []struct {
-		name               string
-		initialProperties  *properties.JSON
-		updates            map[string]any
-		serviceStatus      string
-		schema             *ServicePropertySchema
-		expectError        bool
-		errorContains      string
-		expectedProperties *properties.JSON
-	}{
 		{
-			name:              "Valid agent properties are applied",
-			initialProperties: &properties.JSON{"user_prop": "value1"},
-			updates:           map[string]any{"agent_prop": "192.168.1.1"},
-			serviceStatus:     "Started",
-			schema: &ServicePropertySchema{
-				"user_prop": ServicePropertyDefinition{
-					Type:   "string",
-					Source: "input",
+			name: "Empty updates do nothing",
+			service: &Service{
+				BaseEntity: BaseEntity{ID: uuid.New()},
+				Status:     "Running",
+				Properties: &properties.JSON{
+					"hostname": "test-host",
 				},
-				"agent_prop": ServicePropertyDefinition{
-					Type:   "string",
-					Source: "agent",
-				},
+			},
+			updates:     map[string]any{},
+			expectError: false,
+			expectedProps: map[string]any{
+				"hostname": "test-host",
+			},
+		},
+		{
+			name: "Service with nil properties",
+			service: &Service{
+				BaseEntity: BaseEntity{ID: uuid.New()},
+				Status:     "New",
+				Properties: nil,
+			},
+			updates: map[string]any{
+				"ipAddress": "192.168.1.100",
 			},
 			expectError: false,
-			expectedProperties: &properties.JSON{
-				"user_prop":  "value1",
-				"agent_prop": "192.168.1.1",
-			},
-		},
-		{
-			name:              "Non-agent properties return error",
-			initialProperties: &properties.JSON{"user_prop": "value1"},
-			updates:           map[string]any{"user_prop": "newvalue"},
-			serviceStatus:     "Started",
-			schema: &ServicePropertySchema{
-				"user_prop": ServicePropertyDefinition{
-					Type:   "string",
-					Source: "input",
-				},
-			},
-			expectError:   true,
-			errorContains: "cannot be updated by agent",
-		},
-		{
-			name:              "Properties validated against updatability - never",
-			initialProperties: &properties.JSON{},
-			updates:           map[string]any{"immutable_agent": "value"},
-			serviceStatus:     "Started",
-			schema: &ServicePropertySchema{
-				"immutable_agent": ServicePropertyDefinition{
-					Type:      "string",
-					Source:    "agent",
-					Updatable: "never",
-				},
-			},
-			expectError:   true,
-			errorContains: "cannot be updated (updatable: never)",
-		},
-		{
-			name:              "Properties validated against updatability - statuses allowed",
-			initialProperties: &properties.JSON{},
-			updates:           map[string]any{"state_dep": "value"},
-			serviceStatus:     "Stopped",
-			schema: &ServicePropertySchema{
-				"state_dep": ServicePropertyDefinition{
-					Type:        "string",
-					Source:      "agent",
-					Updatable:   "statuses",
-					UpdatableIn: []string{"Stopped"},
-				},
-			},
-			expectError: false,
-			expectedProperties: &properties.JSON{
-				"state_dep": "value",
-			},
-		},
-		{
-			name:              "Properties validated against updatability - statuses disallowed",
-			initialProperties: &properties.JSON{},
-			updates:           map[string]any{"state_dep": "value"},
-			serviceStatus:     "Started",
-			schema: &ServicePropertySchema{
-				"state_dep": ServicePropertyDefinition{
-					Type:        "string",
-					Source:      "agent",
-					Updatable:   "statuses",
-					UpdatableIn: []string{"Stopped"},
-				},
-			},
-			expectError:   true,
-			errorContains: "cannot be updated in status 'Started'",
-		},
-		{
-			name:              "Empty properties are no-op",
-			initialProperties: &properties.JSON{"existing": "value"},
-			updates:           map[string]any{},
-			serviceStatus:     "Started",
-			schema: &ServicePropertySchema{
-				"existing": ServicePropertyDefinition{
-					Type:   "string",
-					Source: "input",
-				},
-			},
-			expectError: false,
-			expectedProperties: &properties.JSON{
-				"existing": "value",
-			},
-		},
-		{
-			name:              "Nil properties are no-op",
-			initialProperties: &properties.JSON{"existing": "value"},
-			updates:           nil,
-			serviceStatus:     "Started",
-			schema: &ServicePropertySchema{
-				"existing": ServicePropertyDefinition{
-					Type:   "string",
-					Source: "input",
-				},
-			},
-			expectError: false,
-			expectedProperties: &properties.JSON{
-				"existing": "value",
-			},
-		},
-		{
-			name:              "Properties merged into existing properties",
-			initialProperties: &properties.JSON{"existing": "value1", "agent_prop": "old"},
-			updates:           map[string]any{"agent_prop": "new", "agent_prop2": "value2"},
-			serviceStatus:     "Started",
-			schema: &ServicePropertySchema{
-				"existing": ServicePropertyDefinition{
-					Type:   "string",
-					Source: "input",
-				},
-				"agent_prop": ServicePropertyDefinition{
-					Type:   "string",
-					Source: "agent",
-				},
-				"agent_prop2": ServicePropertyDefinition{
-					Type:   "string",
-					Source: "agent",
-				},
-			},
-			expectError: false,
-			expectedProperties: &properties.JSON{
-				"existing":    "value1",
-				"agent_prop":  "new",
-				"agent_prop2": "value2",
-			},
-		},
-		{
-			name:              "Initialize properties if nil",
-			initialProperties: nil,
-			updates:           map[string]any{"agent_prop": "value"},
-			serviceStatus:     "Started",
-			schema: &ServicePropertySchema{
-				"agent_prop": ServicePropertyDefinition{
-					Type:   "string",
-					Source: "agent",
-				},
-			},
-			expectError: false,
-			expectedProperties: &properties.JSON{
-				"agent_prop": "value",
-			},
-		},
-		{
-			name:              "Immutable agent properties can be set during creation (New)",
-			initialProperties: nil,
-			updates:           map[string]any{"immutable_agent": "10.0.0.1"},
-			serviceStatus:     "New",
-			schema: &ServicePropertySchema{
-				"immutable_agent": ServicePropertyDefinition{
-					Type:      "string",
-					Source:    "agent",
-					Updatable: "never",
-				},
-			},
-			expectError: false,
-			expectedProperties: &properties.JSON{
-				"immutable_agent": "10.0.0.1",
-			},
-		},
-		{
-			name:              "State-conditional agent properties can be set during creation (New)",
-			initialProperties: nil,
-			updates:           map[string]any{"state_dep": "value"},
-			serviceStatus:     "New",
-			schema: &ServicePropertySchema{
-				"state_dep": ServicePropertyDefinition{
-					Type:        "string",
-					Source:      "agent",
-					Updatable:   "statuses",
-					UpdatableIn: []string{"Stopped"},
-				},
-			},
-			expectError: false,
-			expectedProperties: &properties.JSON{
-				"state_dep": "value",
+			expectedProps: map[string]any{
+				"ipAddress": "192.168.1.100",
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create service with initial properties
-			service := &Service{
-				Name:       "test-service",
-				Status:     tt.serviceStatus,
-				Properties: tt.initialProperties,
-			}
+			// Create engine with validators
+			mockStore := NewMockStore(t)
+			engine := NewServicePropertyEngine(nil)
 
-			// Create service type with schema
-			serviceType := &ServiceType{
-				Name:           "test-type",
-				PropertySchema: tt.schema,
-			}
-
-			// Apply agent property updates
-			err := service.ApplyAgentPropertyUpdates(serviceType, tt.updates)
+			// Apply updates
+			err := ApplyAgentPropertyUpdates(ctx, mockStore, engine, tt.service, serviceType, tt.updates)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -717,8 +295,11 @@ func TestApplyAgentPropertyUpdates(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
-				if tt.expectedProperties != nil {
-					assert.Equal(t, tt.expectedProperties, service.Properties)
+				if tt.expectedProps != nil {
+					assert.NotNil(t, tt.service.Properties)
+					for k, v := range tt.expectedProps {
+						assert.Equal(t, v, (*tt.service.Properties)[k], "Property %s mismatch", k)
+					}
 				}
 			}
 		})

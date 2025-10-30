@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -29,6 +30,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/health"
 	"github.com/fulcrumproject/core/pkg/keycloak"
 	"github.com/fulcrumproject/core/pkg/middlewares"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/fulcrumproject/utils/confbuilder"
 	"github.com/fulcrumproject/utils/logging"
 )
@@ -95,15 +97,39 @@ func main() {
 	store := database.NewGormStore(db)
 	metricEntryRepo := database.NewMetricEntryRepository(metricDb)
 
+	// Initialize vault for secret storage (optional)
+	var vault schema.Vault
+	if cfg.VaultEncryptionKey != "" {
+		vaultKey, err := hex.DecodeString(cfg.VaultEncryptionKey)
+		if err != nil {
+			slog.Error("Invalid vault encryption key (must be 64-character hex string)", "error", err)
+			os.Exit(1)
+		}
+		vault, err = database.NewVault(db, vaultKey)
+		if err != nil {
+			slog.Error("Failed to initialize vault", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("Vault initialized for secret storage")
+	} else {
+		slog.Warn("Vault encryption key not configured - secret properties will not work")
+	}
+
+	// Initialize schema engine for service property validation
+	propertyEngine := domain.NewServicePropertyEngine(vault)
+
 	// Initialize commanders
-	serviceCmd := domain.NewServiceCommander(store)
-	serviceTypeCmd := domain.NewServiceTypeCommander(store)
+	serviceCmd := domain.NewServiceCommander(store, propertyEngine)
+	serviceTypeCmd := domain.NewServiceTypeCommander(store, propertyEngine)
 	serviceGroupCmd := domain.NewServiceGroupCommander(store)
 	serviceOptionTypeCmd := domain.NewServiceOptionTypeCommander(store)
 	serviceOptionCmd := domain.NewServiceOptionCommander(store)
+	servicePoolSetCmd := domain.NewServicePoolSetCommander(store)
+	servicePoolCmd := domain.NewServicePoolCommander(store)
+	servicePoolValueCmd := domain.NewServicePoolValueCommander(store)
 	participantCmd := domain.NewParticipantCommander(store)
 	agentTypeCmd := domain.NewAgentTypeCommander(store)
-	jobCmd := domain.NewJobCommander(store)
+	jobCmd := domain.NewJobCommander(store, propertyEngine)
 	metricEntryCmd := domain.NewMetricEntryCommander(store, metricEntryRepo)
 	metricTypeCmd := domain.NewMetricTypeCommander(store, metricEntryRepo)
 	agentCmd := domain.NewAgentCommander(store)
@@ -141,14 +167,9 @@ func main() {
 
 	athz := auth.NewRuleBasedAuthorizer(authz.Rules)
 
-	// Initialize commanders for service pools
-	servicePoolSetCmd := domain.NewServicePoolSetCommander(store)
-	servicePoolCmd := domain.NewServicePoolCommander(store)
-	servicePoolValueCmd := domain.NewServicePoolValueCommander(store)
-
 	// Initialize handlers
 	agentTypeHandler := api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz)
-	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz)
+	serviceTypeHandler := api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz, propertyEngine)
 	serviceOptionTypeHandler := api.NewServiceOptionTypeHandler(store.ServiceOptionTypeRepo(), serviceOptionTypeCmd, athz)
 	serviceOptionHandler := api.NewServiceOptionHandler(store.ServiceOptionRepo(), serviceOptionCmd, athz)
 	servicePoolSetHandler := api.NewServicePoolSetHandler(store.ServicePoolSetRepo(), servicePoolSetCmd, athz)
@@ -164,13 +185,14 @@ func main() {
 	eventSubscriptionCmd := domain.NewEventSubscriptionCommander(store)
 	eventHandler := api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz)
 	tokenHandler := api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz)
+	vaultHandler := api.NewVaultHandler(vault)
 
 	serverError := make(chan error, 1)
 
 	var server *http.Server
 	var healthServer *http.Server
 	if cfg.ApiServer {
-		server = BuildHttpServer(&cfg, ath, agentTypeHandler, serviceTypeHandler, serviceOptionTypeHandler, serviceOptionHandler, servicePoolSetHandler, servicePoolHandler, servicePoolValueHandler, participantHandler, agentHandler, serviceGroupHandler, serviceHandler, metricTypeHandler, metricEntryHandler, eventHandler, jobHandler, tokenHandler, logger)
+		server = BuildHttpServer(&cfg, ath, agentTypeHandler, serviceTypeHandler, serviceOptionTypeHandler, serviceOptionHandler, servicePoolSetHandler, servicePoolHandler, servicePoolValueHandler, participantHandler, agentHandler, serviceGroupHandler, serviceHandler, metricTypeHandler, metricEntryHandler, eventHandler, jobHandler, tokenHandler, vaultHandler, logger)
 		// Start main API server
 		go func() {
 			slog.Info("Server starting", "port", cfg.Port)
@@ -300,6 +322,7 @@ func BuildHttpServer(
 	eventHandler *api.EventHandler,
 	jobHandler *api.JobHandler,
 	tokenHandler *api.TokenHandler,
+	vaultHandler *api.VaultHandler,
 	logger *slog.Logger,
 ) *http.Server {
 	// Initialize router
@@ -335,6 +358,7 @@ func BuildHttpServer(
 		r.Route("/events", eventHandler.Routes())
 		r.Route("/jobs", jobHandler.Routes())
 		r.Route("/tokens", tokenHandler.Routes())
+		r.Route("/vault/secrets", vaultHandler.Routes())
 	})
 
 	return &http.Server{

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
 )
 
@@ -170,15 +171,18 @@ type FailJobParams struct {
 
 // jobCommander is the concrete implementation of JobCommander
 type jobCommander struct {
-	store Store
+	store  Store
+	engine *schema.Engine[ServicePropertyContext]
 }
 
 // NewJobCommander creates a new command executor
 func NewJobCommander(
 	store Store,
+	engine *schema.Engine[ServicePropertyContext],
 ) *jobCommander {
 	return &jobCommander{
-		store: store,
+		store:  store,
+		engine: engine,
 	}
 }
 
@@ -211,11 +215,6 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 	}
 
 	return s.store.Atomic(ctx, func(store Store) error {
-		// Validate lifecycle schema exists
-		if serviceType.LifecycleSchema == nil {
-			return NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
-		}
-
 		// Update job
 		if err := job.Complete(); err != nil {
 			return InvalidInputError{Err: err}
@@ -226,7 +225,7 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 
 		// Apply agent property updates if provided
 		if len(params.Properties) > 0 {
-			if err := svc.ApplyAgentPropertyUpdates(serviceType, params.Properties); err != nil {
+			if err := ApplyAgentPropertyUpdates(ctx, store, s.engine, svc, serviceType, params.Properties); err != nil {
 				return InvalidInputError{Err: err}
 			}
 		}
@@ -248,10 +247,34 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 			return err
 		}
 
+		// Clean up ephemeral secrets after job completion (best-effort)
+		if svc.Properties != nil {
+			s.engine.CleanupEphemeralSecrets(ctx, serviceType.PropertySchema, map[string]any(*svc.Properties))
+		}
+
 		// Release pool allocations if service reached a terminal state
 		if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
-			if err := ReleaseServicePoolAllocations(ctx, store, svc.ID); err != nil {
-				return fmt.Errorf("failed to release pool allocations: %w", err)
+			// Find all ServicePoolValues allocated to this service and release them
+			allocatedValues, err := store.ServicePoolValueRepo().FindByService(ctx, svc.ID)
+			if err != nil {
+				return fmt.Errorf("failed to find allocated pool values: %w", err)
+			}
+
+			// Release each value
+			for _, value := range allocatedValues {
+				value.ServiceID = nil
+				value.PropertyName = nil
+				value.AllocatedAt = nil
+
+				if err := store.ServicePoolValueRepo().Update(ctx, value); err != nil {
+					return fmt.Errorf("failed to release pool value %s: %w", value.ID, err)
+				}
+			}
+
+			// Clean up ALL remaining vault secrets from service properties (best-effort)
+			// This includes persistent secrets and any ephemeral secrets that weren't already cleaned up
+			if svc.Properties != nil {
+				s.engine.CleanupVaultSecrets(ctx, map[string]any(*svc.Properties))
 			}
 		}
 
@@ -285,11 +308,6 @@ func (s *jobCommander) Fail(ctx context.Context, params FailJobParams) error {
 	}
 
 	return s.store.Atomic(ctx, func(store Store) error {
-		// Validate lifecycle schema exists
-		if serviceType.LifecycleSchema == nil {
-			return NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
-		}
-
 		// Update job
 		if err := job.Fail(params.ErrorMessage); err != nil {
 			return InvalidInputError{Err: err}
@@ -308,6 +326,12 @@ func (s *jobCommander) Fail(ctx context.Context, params FailJobParams) error {
 		}
 		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
 			return err
+		}
+
+		// Clean up ephemeral secrets after job failure (best-effort)
+		// Even if the job failed, ephemeral secrets should be cleaned up
+		if svc.Properties != nil {
+			s.engine.CleanupEphemeralSecrets(ctx, serviceType.PropertySchema, map[string]any(*svc.Properties))
 		}
 
 		// Create event for the updated service

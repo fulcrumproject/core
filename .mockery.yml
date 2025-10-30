@@ -17,3 +17,7 @@ packages:
   github.com/fulcrumproject/core/pkg/auth:
     config:
       all: true
+
+  github.com/fulcrumproject/core/pkg/schema:
+    config:
+      all: true

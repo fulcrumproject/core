@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
 )
 
@@ -65,7 +66,7 @@ func NewService(
 }
 
 // HandleJobComplete handles the completion of a job
-func (s *Service) HandleJobComplete(lifecycle *LifecycleSchema, action string, errorCode *string, params *properties.JSON, agentInstanceData *properties.JSON, agentInstanceID *string) error {
+func (s *Service) HandleJobComplete(lifecycle LifecycleSchema, action string, errorCode *string, params *properties.JSON, agentInstanceData *properties.JSON, agentInstanceID *string) error {
 	// Update status using lifecycle schema
 	nextStatus, err := lifecycle.ResolveNextState(s.Status, action, errorCode)
 	if err != nil {
@@ -103,8 +104,12 @@ func (s *Service) Update(name *string, properties *properties.JSON) (update bool
 	return update, action, nil
 }
 
-// ApplyAgentPropertyUpdates applies property updates from an agent
-func (s *Service) ApplyAgentPropertyUpdates(
+// ApplyAgentPropertyUpdates applies property updates from an agent using the schema engine
+func ApplyAgentPropertyUpdates(
+	ctx context.Context,
+	store Store,
+	engine *schema.Engine[ServicePropertyContext],
+	svc *Service,
 	serviceType *ServiceType,
 	updates map[string]any,
 ) error {
@@ -112,34 +117,37 @@ func (s *Service) ApplyAgentPropertyUpdates(
 		return nil
 	}
 
-	// Validate based on whether this is initial creation or an update
-	var err error
-	// Determine if this is the initial state
-	initialState := "New" // Default for backward compatibility
-	if serviceType.LifecycleSchema != nil {
-		initialState = serviceType.LifecycleSchema.InitialState
-	}
-	isInitialState := s.Status == initialState
-
-	if isInitialState {
-		// During creation: only validate source (updatability doesn't apply to initial values)
-		err = ValidatePropertiesForCreation(updates, serviceType.PropertySchema, "agent")
-	} else {
-		// During updates: validate both source and updatability
-		err = ValidatePropertiesForUpdate(updates, s.Status, serviceType.PropertySchema, "agent")
-	}
-
-	if err != nil {
-		return fmt.Errorf("invalid agent property updates: %w", err)
-	}
-
-	// Apply updates
-	if s.Properties == nil {
+	// Ensure properties map exists
+	if svc.Properties == nil {
 		props := make(properties.JSON)
-		s.Properties = &props
+		svc.Properties = &props
 	}
-	for k, v := range updates {
-		(*s.Properties)[k] = v
+
+	// Create context for agent property updates
+	schemaCtx := ServicePropertyContext{
+		Actor:         ActorAgent,
+		Store:         store,
+		ProviderID:    svc.ProviderID,
+		ConsumerID:    svc.ConsumerID,
+		GroupID:       svc.GroupID,
+		ServiceID:     &svc.ID,
+		ServiceStatus: svc.Status,
+	}
+	// Set pool set ID if agent is loaded (needed for pool generators)
+	if svc.Agent != nil {
+		schemaCtx.ServicePoolSetID = svc.Agent.ServicePoolSetID
+	}
+
+	// Use engine to validate and process the updates
+	oldProperties := map[string]any(*svc.Properties)
+	validatedProperties, err := engine.ApplyUpdate(ctx, schemaCtx, serviceType.PropertySchema, oldProperties, updates)
+	if err != nil {
+		return err
+	}
+
+	// Merge validated properties
+	for k, v := range validatedProperties {
+		(*svc.Properties)[k] = v
 	}
 
 	return nil
@@ -190,15 +198,18 @@ type ServiceCommander interface {
 
 // serviceCommander is the concrete implementation of ServiceCommander
 type serviceCommander struct {
-	store Store
+	store  Store
+	engine *schema.Engine[ServicePropertyContext]
 }
 
 // NewServiceCommander creates a new commander for services
 func NewServiceCommander(
 	store Store,
+	engine *schema.Engine[ServicePropertyContext],
 ) *serviceCommander {
 	return &serviceCommander{
-		store: store,
+		store:  store,
+		engine: engine,
 	}
 }
 
@@ -235,19 +246,20 @@ func (s *serviceCommander) Create(
 		return nil, NewInvalidInputErrorf("agent with ID %s does not exist", params.AgentID)
 	}
 
-	return CreateServiceWithAgent(ctx, s.store, agent, params)
+	return CreateServiceWithAgent(ctx, s.store, s.engine, agent, params)
 }
 
 func (s *serviceCommander) CreateWithTags(
 	ctx context.Context,
 	params CreateServiceWithTagsParams,
 ) (*Service, error) {
-	return CreateServiceWithTags(ctx, s.store, params)
+	return CreateServiceWithTags(ctx, s.store, s.engine, params)
 }
 
 func CreateServiceWithTags(
 	ctx context.Context,
 	store Store,
+	engine *schema.Engine[ServicePropertyContext],
 	params CreateServiceWithTagsParams,
 ) (*Service, error) {
 	agents, err := store.AgentRepo().FindByServiceTypeAndTags(ctx, params.ServiceTypeID, params.ServiceTags)
@@ -260,12 +272,13 @@ func CreateServiceWithTags(
 	}
 
 	agent := agents[0]
-	return CreateServiceWithAgent(ctx, store, agent, params.CreateServiceParams)
+	return CreateServiceWithAgent(ctx, store, engine, agent, params.CreateServiceParams)
 }
 
 func CreateServiceWithAgent(
 	ctx context.Context,
 	store Store,
+	engine *schema.Engine[ServicePropertyContext],
 	agent *Agent,
 	params CreateServiceParams,
 ) (*Service, error) {
@@ -280,26 +293,12 @@ func CreateServiceWithAgent(
 		return nil, err
 	}
 
-	// Validate property source (user cannot set agent-source properties during creation)
-	if err := ValidatePropertiesForCreation(params.Properties, serviceType.PropertySchema, "user"); err != nil {
-		return nil, InvalidInputError{Err: err}
-	}
+	// Extract actor from auth context
+	identity := auth.MustGetIdentity(ctx)
+	actor := ActorTypeFromAuthRole(identity.Role)
 
-	// Validate properties against schema
-	validationParams := &ServicePropertyValidationParams{
-		ServiceTypeID: params.ServiceTypeID,
-		GroupID:       params.GroupID,
-		ProviderID:    agent.ProviderID,
-		Properties:    params.Properties,
-	}
-	validatedProperties, err := ValidateServiceProperties(ctx, store, validationParams)
-	if err != nil {
-		return nil, err
-	}
-	params.Properties = validatedProperties
-
-	// Note: Pool allocation will happen inside the transaction after service creation
-	// This ensures we have a service ID for tracking allocations
+	// Generate service ID upfront so pool generators can use it for allocation tracking
+	serviceID := properties.UUID(uuid.New())
 
 	// Check if the agent's type supports the requested service type
 	supported := false
@@ -313,12 +312,7 @@ func CreateServiceWithAgent(
 		return nil, NewInvalidInputErrorf("agent type %s does not support service type %s", agent.AgentType.Name, params.ServiceTypeID)
 	}
 
-	// Validate lifecycle schema exists
-	if serviceType.LifecycleSchema == nil {
-		return nil, NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
-	}
-
-	// Get initial state from lifecycle schema
+	// Get initial state from lifecycle schema (always present)
 	initialState := serviceType.LifecycleSchema.InitialState
 
 	svc := NewService(
@@ -327,38 +321,39 @@ func CreateServiceWithAgent(
 		params,
 		initialState,
 	)
+	// Set the pre-generated ID
+	svc.ID = serviceID
+
 	if err := svc.Validate(); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
-	err = store.Atomic(ctx, func(store Store) error {
-		// Create service first to get ID
-		if err := store.ServiceRepo().Create(ctx, svc); err != nil {
-			return err
+	err = store.Atomic(ctx, func(txStore Store) error {
+		// Validate and process properties using schema engine WITHIN transaction
+		// This ensures pool allocations happen within the same transaction
+		schemaCtx := ServicePropertyContext{
+			Actor:            actor,
+			Store:            txStore, // Use transactional store
+			ProviderID:       agent.ProviderID,
+			ConsumerID:       svc.ConsumerID,
+			GroupID:          svc.GroupID,
+			ServicePoolSetID: agent.ServicePoolSetID,
+			ServiceID:        &serviceID,
+			ServiceStatus:    "", // empty during create
 		}
 
-		// Allocate pool properties if agent has a pool set and service type has a property schema
-		if agent.ServicePoolSetID != nil && *agent.ServicePoolSetID != uuid.Nil && serviceType.PropertySchema != nil {
-			allocatedProperties, err := AllocateServicePoolProperties(
-				ctx,
-				store,
-				svc.ID,
-				*agent.ServicePoolSetID,
-				*serviceType.PropertySchema,
-				params.Properties,
-			)
-			if err != nil {
-				return fmt.Errorf("failed to allocate pool properties: %w", err)
-			}
+		validatedProperties, err := engine.ApplyCreate(ctx, schemaCtx, serviceType.PropertySchema, params.Properties)
+		if err != nil {
+			return err
+		}
+		params.Properties = validatedProperties
 
-			// Update service properties with allocated values
-			if len(allocatedProperties) > 0 {
-				props := properties.JSON(allocatedProperties)
-				svc.Properties = &props
-				if err := store.ServiceRepo().Save(ctx, svc); err != nil {
-					return err
-				}
-			}
+		// Update service with validated/generated properties
+		svc.Properties = &params.Properties
+
+		// Create service with pre-generated ID
+		if err := txStore.ServiceRepo().Create(ctx, svc); err != nil {
+			return err
 		}
 
 		// Create job with final properties (including allocated pool values)
@@ -370,7 +365,7 @@ func CreateServiceWithAgent(
 		if err := job.Validate(); err != nil {
 			return err
 		}
-		if err := store.JobRepo().Create(ctx, job); err != nil {
+		if err := txStore.JobRepo().Create(ctx, job); err != nil {
 			return err
 		}
 
@@ -378,7 +373,7 @@ func CreateServiceWithAgent(
 		if err != nil {
 			return err
 		}
-		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
+		if err := txStore.EventRepo().Create(ctx, eventEntry); err != nil {
 			return err
 		}
 
@@ -392,10 +387,10 @@ func CreateServiceWithAgent(
 }
 
 func (s *serviceCommander) Update(ctx context.Context, params UpdateServiceParams) (*Service, error) {
-	return UpdateService(ctx, s.store, params)
+	return UpdateService(ctx, s.store, s.engine, params)
 }
 
-func UpdateService(ctx context.Context, store Store, params UpdateServiceParams) (*Service, error) {
+func UpdateService(ctx context.Context, store Store, engine *schema.Engine[ServicePropertyContext], params UpdateServiceParams) (*Service, error) {
 	// Find it
 	svc, err := store.ServiceRepo().Get(ctx, params.ID)
 	if err != nil {
@@ -408,30 +403,15 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 		return nil, err
 	}
 
-	// Merge and validate properties if provided
-	if params.Properties != nil {
-		// Validate property source and updatability
-		if err := ValidatePropertiesForUpdate(*params.Properties, svc.Status, serviceType.PropertySchema, "user"); err != nil {
-			return nil, InvalidInputError{Err: err}
-		}
-
-		// Merge partial properties with existing properties
-		mergedProperties := mergeServiceProperties(svc.Properties, *params.Properties)
-
-		// Validate merged properties against schema
-		validationParams := &ServicePropertyValidationParams{
-			ServiceTypeID: svc.ServiceTypeID,
-			GroupID:       svc.GroupID,
-			ProviderID:    svc.ProviderID,
-			Properties:    mergedProperties,
-		}
-		validatedProperties, err := ValidateServiceProperties(ctx, store, validationParams)
-		if err != nil {
-			return nil, err
-		}
-		convertedProperties := properties.JSON(validatedProperties)
-		params.Properties = &convertedProperties
+	// Load agent to get pool set (needed for context, even if not updating properties)
+	agent, err := store.AgentRepo().Get(ctx, svc.AgentID)
+	if err != nil {
+		return nil, err
 	}
+
+	// Extract actor from auth context (needed for context)
+	identity := auth.MustGetIdentity(ctx)
+	actor := ActorTypeFromAuthRole(identity.Role)
 
 	// Update, if needed
 	originalSvc := *svc
@@ -444,26 +424,49 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 	}
 
 	// Save, event and create job
-	err = store.Atomic(ctx, func(store Store) error {
+	err = store.Atomic(ctx, func(txStore Store) error {
+		// Validate and process properties if provided WITHIN transaction
+		if params.Properties != nil {
+			// Build schema context with transactional store
+			schemaCtx := ServicePropertyContext{
+				Actor:            actor,
+				Store:            txStore, // Use transactional store
+				ProviderID:       svc.ProviderID,
+				ConsumerID:       svc.ConsumerID,
+				GroupID:          svc.GroupID,
+				ServicePoolSetID: agent.ServicePoolSetID,
+				ServiceID:        &svc.ID,
+				ServiceStatus:    svc.Status,
+			}
+
+			// Convert existing properties to map
+			oldProperties := map[string]any(*svc.Properties)
+
+			// Engine handles merging: takes old properties and partial new properties
+			validatedProperties, err := engine.ApplyUpdate(ctx, schemaCtx, serviceType.PropertySchema, oldProperties, *params.Properties)
+			if err != nil {
+				return err
+			}
+			convertedProperties := properties.JSON(validatedProperties)
+			params.Properties = &convertedProperties
+
+			// Update service with validated properties
+			svc.Properties = params.Properties
+		}
 		if update {
-			if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+			if err := txStore.ServiceRepo().Save(ctx, svc); err != nil {
 				return err
 			}
 			eventEntry, err := NewEvent(EventTypeServiceUpdated, WithInitiatorCtx(ctx), WithDiff(&originalSvc, svc), WithService(svc))
 			if err != nil {
 				return err
 			}
-			if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
+			if err := txStore.EventRepo().Create(ctx, eventEntry); err != nil {
 				return err
 			}
 		}
 		if action {
-			// Validate lifecycle schema exists
-			if serviceType.LifecycleSchema == nil {
-				return NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
-			}
-
-			// Check if service is in a terminal state
+			// Check if service is in a terminal state (lifecycle always present)
 			if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
 				return NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
 			}
@@ -474,7 +477,7 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 			}
 
 			// If pending job exists, fail it
-			err = checkHasNotActiveJob(ctx, store, svc)
+			err = checkHasNotActiveJob(ctx, txStore, svc)
 			if err != nil {
 				return err
 			}
@@ -484,7 +487,7 @@ func UpdateService(ctx context.Context, store Store, params UpdateServiceParams)
 			if err := job.Validate(); err != nil {
 				return err
 			}
-			if err := store.JobRepo().Create(ctx, job); err != nil {
+			if err := txStore.JobRepo().Create(ctx, job); err != nil {
 				return err
 			}
 		}
@@ -514,12 +517,7 @@ func DoServiceAction(ctx context.Context, store Store, params DoServiceActionPar
 		return nil, err
 	}
 
-	// Validate lifecycle schema exists
-	if serviceType.LifecycleSchema == nil {
-		return nil, NewInvalidInputErrorf("service type %s does not have a lifecycle schema", serviceType.Name)
-	}
-
-	// Check if service is in a terminal state
+	// Check if service is in a terminal state (lifecycle always present)
 	if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
 		return nil, NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
 	}
@@ -608,55 +606,4 @@ type ServiceQuerier interface {
 
 	// CountByServiceType returns the number of services of a specific type
 	CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error)
-}
-
-// mergeServiceProperties merges partial properties with existing properties
-func mergeServiceProperties(existing *properties.JSON, partial properties.JSON) properties.JSON {
-	// Start with existing properties
-	merged := make(map[string]any)
-	if existing != nil {
-		maps.Copy(merged, *existing)
-	}
-
-	// Overlay partial properties with deep merge for objects
-	for k, v := range partial {
-		if existingObj, exists := merged[k].(map[string]any); exists {
-			if partialObj, ok := v.(map[string]any); ok {
-				// Deep merge nested objects
-				merged[k] = mergeNestedObjects(existingObj, partialObj)
-			} else {
-				// Replace with new value
-				merged[k] = v
-			}
-		} else {
-			// New key or non-object value
-			merged[k] = v
-		}
-	}
-
-	return properties.JSON(merged)
-}
-
-// mergeNestedObjects performs deep merge of nested objects
-func mergeNestedObjects(existing, partial map[string]any) map[string]any {
-	result := make(map[string]any)
-
-	// Copy existing values
-	maps.Copy(result, existing)
-
-	// Overlay partial values
-	for k, v := range partial {
-		if existingObj, exists := result[k].(map[string]any); exists {
-			if partialObj, ok := v.(map[string]any); ok {
-				// Recursively merge nested objects
-				result[k] = mergeNestedObjects(existingObj, partialObj)
-			} else {
-				result[k] = v
-			}
-		} else {
-			result[k] = v
-		}
-	}
-
-	return result
 }

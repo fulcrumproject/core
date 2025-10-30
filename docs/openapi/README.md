@@ -32,10 +32,10 @@ Validate with Redocly CLI:
 npx @redocly/cli lint docs/openapi/openapi.yaml
 ```
 
-Then validate with swagger-cli:
+Or validate with swagger-cli:
 
 ```bash
-npx swagger-cli validate docs/openapi-bundled.yaml
+npx swagger-cli validate docs/openapi.yaml
 ```
 
 ### Bundling (Optional)

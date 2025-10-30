@@ -334,6 +334,13 @@ Fulcrum Core uses a role-based authorization system where permissions are define
   - participant: none (not authorized)
   - agent: none (not authorized)
 
+### Vault Secrets
+- **resolve** (get secret value):
+  - admin: none (not authorized)
+  - participant: none (not authorized)
+  - agent: secrets referenced in services assigned to the agent
+
 ## Notes
 - Creation of events is handled automatically by the backend and is not exposed as a user action.
 - Agent types and service types are pre-provisioned in the system. While create/update/delete operations exist for administrators, these operations are primarily intended for system initialization and maintenance rather than regular use.
+- Vault secrets are only accessible by agents for security reasons. The vault resolution endpoint is used by agents to retrieve actual secret values when processing jobs.

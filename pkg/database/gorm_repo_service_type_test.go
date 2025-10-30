@@ -6,6 +6,7 @@ import (
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,34 +41,26 @@ func TestServiceTypeRepository(t *testing.T) {
 			assert.Equal(t, serviceType.Name, found.Name)
 		})
 
-		t.Run("success - with property schema including source and updatable", func(t *testing.T) {
+		t.Run("success - with property schema", func(t *testing.T) {
 			ctx := context.Background()
 
-			// Setup - ServiceType with property schema containing new fields
+			// Setup - ServiceType with property schema
 			serviceType := createTestServiceType(t)
-			schema := &domain.ServicePropertySchema{
-				"instanceName": domain.ServicePropertyDefinition{
-					Type:      "string",
-					Label:     "Instance Name",
-					Required:  true,
-					Source:    "input",
-					Updatable: "always",
-				},
-				"ipAddress": domain.ServicePropertyDefinition{
-					Type:      "string",
-					Label:     "IP Address",
-					Source:    "agent",
-					Updatable: "never",
-				},
-				"diskSize": domain.ServicePropertyDefinition{
-					Type:        "integer",
-					Label:       "Disk Size (GB)",
-					Source:      "input",
-					Updatable:   "statuses",
-					UpdatableIn: []string{"Stopped"},
+			propertySchema := &schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"instanceName": {
+						Type:     "string",
+						Required: true,
+					},
+					"ipAddress": {
+						Type: "string",
+					},
+					"diskSize": {
+						Type: "integer",
+					},
 				},
 			}
-			serviceType.PropertySchema = schema
+			serviceType.PropertySchema = *propertySchema
 
 			// Execute
 			err := repo.Create(ctx, serviceType)
@@ -81,25 +74,12 @@ func TestServiceTypeRepository(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, found.PropertySchema)
 
-			// Verify instanceName property
-			instanceName := (*found.PropertySchema)["instanceName"]
-			assert.Equal(t, "string", instanceName.Type)
-			assert.Equal(t, "input", instanceName.Source)
-			assert.Equal(t, "always", instanceName.Updatable)
-			assert.Empty(t, instanceName.UpdatableIn)
-
-			// Verify ipAddress property
-			ipAddress := (*found.PropertySchema)["ipAddress"]
-			assert.Equal(t, "string", ipAddress.Type)
-			assert.Equal(t, "agent", ipAddress.Source)
-			assert.Equal(t, "never", ipAddress.Updatable)
-
-			// Verify diskSize property
-			diskSize := (*found.PropertySchema)["diskSize"]
-			assert.Equal(t, "integer", diskSize.Type)
-			assert.Equal(t, "input", diskSize.Source)
-			assert.Equal(t, "statuses", diskSize.Updatable)
-			assert.Equal(t, []string{"Stopped"}, diskSize.UpdatableIn)
+			// Verify properties exist and basic types are preserved
+			assert.Contains(t, found.PropertySchema.Properties, "instanceName")
+			assert.Contains(t, found.PropertySchema.Properties, "ipAddress")
+			assert.Contains(t, found.PropertySchema.Properties, "diskSize")
+			assert.Equal(t, "string", found.PropertySchema.Properties["instanceName"].Type)
+			assert.Equal(t, "integer", found.PropertySchema.Properties["diskSize"].Type)
 		})
 
 		t.Run("success - with nested property schema", func(t *testing.T) {
@@ -107,27 +87,22 @@ func TestServiceTypeRepository(t *testing.T) {
 
 			// Setup - ServiceType with nested property schema
 			serviceType := createTestServiceType(t)
-			schema := &domain.ServicePropertySchema{
-				"config": domain.ServicePropertyDefinition{
-					Type:  "object",
-					Label: "Configuration",
-					Properties: map[string]domain.ServicePropertyDefinition{
-						"name": {
-							Type:      "string",
-							Source:    "input",
-							Updatable: "always",
-						},
-						"port": {
-							Type:      "integer",
-							Source:    "agent",
-							Updatable: "never",
+			propertySchema := &schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"config": {
+						Type: "object",
+						Properties: map[string]schema.PropertyDefinition{
+							"name": {
+								Type: "string",
+							},
+							"port": {
+								Type: "integer",
+							},
 						},
 					},
-					Source:    "input",
-					Updatable: "always",
 				},
 			}
-			serviceType.PropertySchema = schema
+			serviceType.PropertySchema = *propertySchema
 
 			// Execute
 			err := repo.Create(ctx, serviceType)
@@ -139,18 +114,12 @@ func TestServiceTypeRepository(t *testing.T) {
 			found, err := repo.Get(ctx, serviceType.ID)
 			require.NoError(t, err)
 
-			config := (*found.PropertySchema)["config"]
+			config := found.PropertySchema.Properties["config"]
 			assert.Equal(t, "object", config.Type)
-			assert.Equal(t, "input", config.Source)
-			assert.Equal(t, "always", config.Updatable)
-
+			assert.Contains(t, config.Properties, "name")
+			assert.Contains(t, config.Properties, "port")
 			assert.Equal(t, "string", config.Properties["name"].Type)
-			assert.Equal(t, "input", config.Properties["name"].Source)
-			assert.Equal(t, "always", config.Properties["name"].Updatable)
-
 			assert.Equal(t, "integer", config.Properties["port"].Type)
-			assert.Equal(t, "agent", config.Properties["port"].Source)
-			assert.Equal(t, "never", config.Properties["port"].Updatable)
 		})
 
 		t.Run("success - with lifecycle schema", func(t *testing.T) {
@@ -203,7 +172,7 @@ func TestServiceTypeRepository(t *testing.T) {
 				TerminalStates: []string{"Deleted"},
 				RunningStates:  []string{"Started"},
 			}
-			serviceType.LifecycleSchema = lifecycle
+			serviceType.LifecycleSchema = *lifecycle
 
 			// Execute
 			err := repo.Create(ctx, serviceType)
@@ -450,77 +419,4 @@ func TestServiceTypeRepository(t *testing.T) {
 		})
 	})
 
-	t.Run("PropertySchemaFieldCombinations", func(t *testing.T) {
-		t.Run("success - source field variations", func(t *testing.T) {
-			ctx := context.Background()
-
-			testCases := []struct {
-				name           string
-				source         string
-				expectedSource string
-			}{
-				{"input source", "input", "input"},
-				{"agent source", "agent", "agent"},
-				{"empty source", "", ""}, // Empty preserved for defaults
-			}
-
-			for _, tc := range testCases {
-				t.Run(tc.name, func(t *testing.T) {
-					st := createTestServiceType(t)
-					st.PropertySchema = &domain.ServicePropertySchema{
-						"testProp": domain.ServicePropertyDefinition{
-							Type:   "string",
-							Source: tc.source,
-						},
-					}
-					require.NoError(t, repo.Create(ctx, st))
-
-					found, err := repo.Get(ctx, st.ID)
-					require.NoError(t, err)
-					assert.Equal(t, tc.expectedSource, (*found.PropertySchema)["testProp"].Source)
-				})
-			}
-		})
-
-		t.Run("success - updatable field variations", func(t *testing.T) {
-			ctx := context.Background()
-
-			testCases := []struct {
-				name              string
-				updatable         string
-				updatableIn       []string
-				expectedUpdatable string
-				expectedIn        []string
-			}{
-				{"always updatable", "always", nil, "always", nil},
-				{"never updatable", "never", nil, "never", nil},
-				{"statuses updatable", "statuses", []string{"Stopped"}, "statuses", []string{"Stopped"}},
-				{"statuses with multiple", "statuses", []string{"Stopped", "Started"}, "statuses", []string{"Stopped", "Started"}},
-				{"empty updatable", "", nil, "", nil}, // Empty preserved for defaults
-			}
-
-			for _, tc := range testCases {
-				t.Run(tc.name, func(t *testing.T) {
-					st := createTestServiceType(t)
-					st.PropertySchema = &domain.ServicePropertySchema{
-						"testProp": domain.ServicePropertyDefinition{
-							Type:        "string",
-							Updatable:   tc.updatable,
-							UpdatableIn: tc.updatableIn,
-						},
-					}
-					require.NoError(t, repo.Create(ctx, st))
-
-					found, err := repo.Get(ctx, st.ID)
-					require.NoError(t, err)
-					assert.Equal(t, tc.expectedUpdatable, (*found.PropertySchema)["testProp"].Updatable)
-					if tc.expectedIn != nil {
-						assert.Equal(t, tc.expectedIn, (*found.PropertySchema)["testProp"].UpdatableIn)
-					} else {
-						assert.Empty(t, (*found.PropertySchema)["testProp"].UpdatableIn)
-					}
-				})
-			}
-		})
-	})
 }

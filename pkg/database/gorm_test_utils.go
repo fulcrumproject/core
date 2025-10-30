@@ -8,6 +8,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
 )
 
@@ -17,7 +18,10 @@ func createTestServiceType(t *testing.T) *domain.ServiceType {
 
 	return &domain.ServiceType{
 		Name: fmt.Sprintf("Test Service Type %s", randomSuffix),
-		LifecycleSchema: &domain.LifecycleSchema{
+		PropertySchema: schema.Schema{
+			Properties: map[string]schema.PropertyDefinition{},
+		},
+		LifecycleSchema: domain.LifecycleSchema{
 			States: []domain.LifecycleState{
 				{Name: "New"},
 				{Name: "Started"},

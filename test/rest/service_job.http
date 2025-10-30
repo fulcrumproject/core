@@ -3,6 +3,7 @@
 ### - Service pool setup and automatic resource allocation
 ### - Agent-set properties during job completion
 ### - Pool-allocated properties (publicIp from pool)
+### - Ephemeral secret properties with vault storage and automatic cleanup
 ### - Immutable property validation
 ### - State-conditional property updates
 ### - Source-based property access control
@@ -108,73 +109,125 @@ Content-Type: application/json
 {
     "name": "vm {{$guid}}",
     "propertySchema": {
-        "cpu": {
-            "type": "integer",
-            "label": "CPU Cores",
-            "source": "input",
-            "updatable": "statuses",
-            "updatableIn": ["Stopped"],
-            "required": true,
-            "validators": [
-                {
-                    "type": "enum",
-                    "value": [1, 2, 4, 8, 16, 32]
+        "properties": {
+            "cpu": {
+                "type": "integer",
+                "label": "CPU Cores",
+                "required": true,
+                "authorizers": [
+                    {
+                        "type": "state",
+                        "config": {
+                            "allowedStates": ["Stopped"]
+                        }
+                    }
+                ],
+                "validators": [
+                    {
+                        "type": "enum",
+                        "config": {
+                            "values": [1, 2, 4, 8, 16, 32]
+                        }
+                    }
+                ]
+            },
+            "memory": {
+                "type": "integer",
+                "label": "Memory (MB)",
+                "required": true,
+                "authorizers": [
+                    {
+                        "type": "state",
+                        "config": {
+                            "allowedStates": ["Stopped"]
+                        }
+                    }
+                ],
+                "validators": [
+                    {
+                        "type": "enum",
+                        "config": {
+                            "values": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
+                        }
+                    }
+                ]
+            },
+            "disk": {
+                "type": "integer",
+                "label": "Disk (GB)",
+                "required": true,
+                "authorizers": [
+                    {
+                        "type": "state",
+                        "config": {
+                            "allowedStates": ["Stopped"]
+                        }
+                    }
+                ],
+                "validators": [
+                    {
+                        "type": "enum",
+                        "config": {
+                            "values": [8, 16, 32, 64, 128, 256, 512, 1024]
+                        }
+                    }
+                ]
+            },
+            "image": {
+                "type": "string",
+                "label": "Image",
+                "required": true,
+                "immutable": true,
+                "validators": [
+                    {
+                        "type": "serviceOption",
+                        "config": {
+                            "value": "{{createOSOptionType.response.body.type}}"
+                        }
+                    }
+                ]
+            },
+            "internalIp": {
+                "type": "string",
+                "label": "Internal IP",
+                "immutable": true,
+                "authorizers": [
+                    {
+                        "type": "actor",
+                        "config": {
+                            "actors": ["agent"]
+                        }
+                    }
+                ]
+            },
+            "publicIp": {
+                "type": "string",
+                "label": "Public IP",
+                "immutable": true,
+                "authorizers": [
+                    {
+                        "type": "actor",
+                        "config": {
+                            "actors": ["system"]
+                        }
+                    }
+                ],
+                "generator": {
+                    "type": "pool",
+                    "config": {
+                        "poolType": "public_ip"
+                    }
                 }
-            ]
-        },
-        "memory": {
-            "type": "integer",
-            "label": "Memory (MB)",
-            "source": "input",
-            "updatable": "statuses",
-            "updatableIn": ["Stopped"],
-            "required": true,
-            "validators": [
-                {
-                    "type": "enum",
-                    "value": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
+            },
+            "password": {
+                "type": "string",
+                "label": "Root Password",
+                "required": true,
+                "immutable": true,
+                "secret": {
+                    "type": "ephemeral"
                 }
-            ]
-        },
-        "disk": {
-            "type": "integer",
-            "label": "Disk (GB)",
-            "source": "input",
-            "updatable": "statuses",
-            "updatableIn": ["Stopped"],
-            "required": true,
-            "validators": [
-                {
-                    "type": "enum",
-                    "value": [8, 16, 32, 64, 128, 256, 512, 1024]
-                }
-            ]
-        },
-        "image": {
-            "type": "string",
-            "label": "Image",
-            "source": "input",
-            "updatable": "never",
-            "required": true,
-            "validators": [
-                {
-                    "type": "serviceOption",
-                    "value": "{{createOSOptionType.response.body.type}}"
-                }
-            ]
-        },
-        "internalIp": {
-            "type": "string",
-            "label": "Internal IP",
-            "source": "agent",
-            "updatable": "never"
-        },
-        "publicIp": {
-            "type": "string",
-            "label": "Public IP",
-            "source": "system",
-            "updatable": "never",
-            "servicePoolType": "public_ip"
+            }
         }
     },
     "lifecycleSchema": {
@@ -312,40 +365,8 @@ Content-Type: application/json
 }
 
 ###############################################################################
-### PART 2: SERVICE OPTION VALIDATION TESTING
+### PART 2: SERVICE CREATION & INITIAL JOB (with ephemeral secret)
 ###############################################################################
-
-### ✅ TEST: Validate properties with valid image (should return valid: true)
-POST {{baseUrl}}/service-types/{{createVMServiceType.response.body.id}}/validate
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "groupId": "{{createServiceGroup.response.body.id}}",
-    "providerId": "{{createProvider.response.body.id}}",
-    "properties": {
-        "cpu": 4,
-        "memory": 8192,
-        "disk": 128,
-        "image": "ubuntu:20.04"
-    }
-}
-
-### ❌ TEST: Validate properties with invalid image (should return valid: false)
-POST {{baseUrl}}/service-types/{{createVMServiceType.response.body.id}}/validate
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "groupId": "{{createServiceGroup.response.body.id}}",
-    "providerId": "{{createProvider.response.body.id}}",
-    "properties": {
-        "cpu": 4,
-        "memory": 8192,
-        "disk": 128,
-        "image": "invalid-os:999"
-    }
-}
 
 ### ❌ TEST: Try to create service with invalid image (not in service options - should fail with 400)
 POST {{baseUrl}}/services
@@ -365,11 +386,8 @@ Content-Type: application/json
     "groupId": "{{createServiceGroup.response.body.id}}"
 }
 
-###############################################################################
-### PART 3: SERVICE CREATION & INITIAL JOB
-###############################################################################
-
-### Create VM Service (user sets input properties, agent will set internalIp)
+### Create VM Service (user provides password as ephemeral secret, agent will set internalIp)
+### Password will be stored as vault://reference and cleaned up after job completion
 # @name createService
 POST {{baseUrl}}/services
 Authorization: Bearer {{adminToken}}
@@ -381,7 +399,8 @@ Content-Type: application/json
         "cpu": 4,
         "memory": 8192,
         "disk": 128,
-        "image": "ubuntu:20.04"
+        "image": "ubuntu:20.04",
+        "password": "SuperSecret123!@#"
     },
     "agentId": "{{agentId}}",
     "serviceTypeId": "{{createVMServiceType.response.body.id}}",
@@ -389,6 +408,29 @@ Content-Type: application/json
 }
 
 @serviceId = {{createService.response.body.id}}
+
+###############################################################################
+### EPHEMERAL SECRET TESTING - BEFORE JOB COMPLETION
+###############################################################################
+
+### Get service after creation (password should be vault://reference)
+# @name getServiceAfterCreate
+GET {{baseUrl}}/services/{{serviceId}}
+Authorization: Bearer {{adminToken}}
+
+### MANUAL STEP: Look at the response above and find the password property
+### It will show something like: "password": "vault://a1b2c3d4e5f6"
+### Copy the reference part (everything AFTER "vault://") 
+### Replace 'PASTE_REFERENCE_HERE' below with that value
+
+### ✅ TEST: Resolve secret BEFORE job completion (should return actual password)
+GET {{baseUrl}}/vault/secrets/PASTE_REFERENCE_HERE
+Authorization: Bearer {{agentToken}}
+# Expected response: { "value": "SuperSecret123!@#" }
+
+###############################################################################
+### CONTINUE WITH JOB PROCESSING
+###############################################################################
 
 ### Get pending jobs (should have a Create job)
 # @name pendingCreateJobs
@@ -420,16 +462,31 @@ Content-Type: application/json
     }
 }
 
+###############################################################################
+### EPHEMERAL SECRET TESTING - AFTER JOB COMPLETION
+###############################################################################
+
 ### Get service (verify internalIp and publicIp are now set - publicIp auto-allocated from pool)
 GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
+
+### ❌ TEST: Try to resolve secret AFTER job completion (should fail - 404)
+### Use the SAME reference you copied earlier (PASTE_REFERENCE_HERE)
+GET {{baseUrl}}/vault/secrets/PASTE_REFERENCE_HERE
+Authorization: Bearer {{agentToken}}
+# Expected: 404 Not Found - ephemeral secret cleaned up after job completion!
+# The password property still shows "vault://..." in service, but the secret is deleted from vault
+
+###############################################################################
+### PART 2A: CONTINUE WITH POOL VERIFICATION
+###############################################################################
 
 ### View pool allocation status (should show one IP allocated to our service)
 GET {{baseUrl}}/service-pool-values?servicePoolId={{createIPPool.response.body.id}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 4: PROPERTY UPDATE VALIDATION TESTS (Expected Failures)
+### PART 3: PROPERTY UPDATE VALIDATION TESTS (Expected Failures)
 ###############################################################################
 
 ### ❌ TEST 1: Try to update immutable property (should fail with 400)
@@ -455,7 +512,7 @@ Content-Type: application/json
 }
 
 ###############################################################################
-### PART 5: START SERVICE
+### PART 4: START SERVICE
 ###############################################################################
 
 ### Start service (creates Start job)
@@ -493,7 +550,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 6: AGENT IMMUTABLE PROPERTY UPDATE TEST
+### PART 5: AGENT IMMUTABLE PROPERTY UPDATE TEST
 ###############################################################################
 
 ### ❌ TEST: Try to update immutable agent property during job completion (should fail with 400)
@@ -574,7 +631,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 7: STATE-CONDITIONAL UPDATE TEST WHILE STARTED
+### PART 6: STATE-CONDITIONAL UPDATE TEST WHILE STARTED
 ###############################################################################
 
 ### ❌ TEST 4: Try to update state-conditional property while Started (should fail with 400)
@@ -589,7 +646,7 @@ Content-Type: application/json
 }
 
 ###############################################################################
-### PART 8: STOP SERVICE
+### PART 7: STOP SERVICE
 ###############################################################################
 
 ### Stop service (creates Stop job)
@@ -627,7 +684,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 9: SUCCESSFUL STATE-CONDITIONAL UPDATE WHILE STOPPED
+### PART 8: SUCCESSFUL STATE-CONDITIONAL UPDATE WHILE STOPPED
 ###############################################################################
 
 ### ✅ TEST 5: Update state-conditional properties while Stopped (should succeed)
@@ -677,7 +734,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 10: RESTART WITH UPDATED PROPERTIES
+### PART 9: RESTART WITH UPDATED PROPERTIES
 ###############################################################################
 
 ### Start service again with updated properties (creates Start job)
@@ -718,7 +775,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 11: JOB FAILURE TESTING
+### PART 10: JOB FAILURE TESTING
 ###############################################################################
 
 ### Stop service for failure test
@@ -784,7 +841,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 12: MAINTENANCE MODE TESTING (Non-Standard State)
+### PART 11: MAINTENANCE MODE TESTING (Non-Standard State)
 ###############################################################################
 
 ### Enter maintenance mode from Stopped state
@@ -858,7 +915,7 @@ GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### PART 13: SERVICE DELETION & POOL VALUE RELEASE
+### PART 12: SERVICE DELETION & POOL VALUE RELEASE
 ###############################################################################
 
 ### Delete the service (creates Delete job, will release publicIp back to pool after completion)

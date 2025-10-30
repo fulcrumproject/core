@@ -144,3 +144,85 @@ func (ls *LifecycleSchema) IsTerminalState(state string) bool {
 func (ls *LifecycleSchema) IsRunningStatus(status string) bool {
 	return slices.Contains(ls.RunningStates, status)
 }
+
+// Validate validates the lifecycle schema structure and rules
+func (ls *LifecycleSchema) Validate() error {
+	// Validate we have at least one state
+	if len(ls.States) == 0 {
+		return fmt.Errorf("lifecycle must have at least one state")
+	}
+
+	// Build a set of valid state names for quick lookup
+	stateNames := make(map[string]bool)
+	for _, state := range ls.States {
+		if state.Name == "" {
+			return fmt.Errorf("lifecycle state name cannot be empty")
+		}
+		if stateNames[state.Name] {
+			return fmt.Errorf("duplicate lifecycle state name: %s", state.Name)
+		}
+		stateNames[state.Name] = true
+	}
+
+	// Validate initial state exists
+	if ls.InitialState == "" {
+		return fmt.Errorf("lifecycle must have an initial state")
+	}
+	if !stateNames[ls.InitialState] {
+		return fmt.Errorf("lifecycle initial state %q does not exist in states list", ls.InitialState)
+	}
+
+	// Validate terminal states exist
+	for _, terminalState := range ls.TerminalStates {
+		if !stateNames[terminalState] {
+			return fmt.Errorf("lifecycle terminal state %q does not exist in states list", terminalState)
+		}
+	}
+
+	// Validate running states exist
+	for _, runningState := range ls.RunningStates {
+		if !stateNames[runningState] {
+			return fmt.Errorf("lifecycle running state %q does not exist in states list", runningState)
+		}
+	}
+
+	// Validate actions
+	if len(ls.Actions) == 0 {
+		return fmt.Errorf("lifecycle must have at least one action")
+	}
+
+	actionNames := make(map[string]bool)
+	for _, action := range ls.Actions {
+		if action.Name == "" {
+			return fmt.Errorf("lifecycle action name cannot be empty")
+		}
+		if actionNames[action.Name] {
+			return fmt.Errorf("duplicate lifecycle action name: %s", action.Name)
+		}
+		actionNames[action.Name] = true
+
+		// Validate action has at least one transition
+		if len(action.Transitions) == 0 {
+			return fmt.Errorf("lifecycle action %q must have at least one transition", action.Name)
+		}
+
+		// Validate transitions
+		for _, transition := range action.Transitions {
+			if !stateNames[transition.From] {
+				return fmt.Errorf("lifecycle action %q transition references invalid from state %q", action.Name, transition.From)
+			}
+			if !stateNames[transition.To] {
+				return fmt.Errorf("lifecycle action %q transition references invalid to state %q", action.Name, transition.To)
+			}
+
+			// Validate error regexp if provided
+			if transition.OnErrorRegexp != "" {
+				if _, err := regexp.Compile(transition.OnErrorRegexp); err != nil {
+					return fmt.Errorf("lifecycle action %q transition has invalid error regexp %q: %w", action.Name, transition.OnErrorRegexp, err)
+				}
+			}
+		}
+	}
+
+	return nil
+}

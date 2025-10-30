@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/go-chi/render"
 )
 
@@ -24,12 +25,12 @@ type ValidationErrRes struct {
 	HTTPStatusCode int                            `json:"-"` // http response status code
 	StatusText     string                         `json:"status"`
 	Valid          bool                           `json:"valid"`
-	Errors         []domain.ValidationErrorDetail `json:"errors"`
+	Errors         []schema.ValidationErrorDetail `json:"errors"`
 }
 
 func ErrDomain(err error) render.Renderer {
 	slog.Error("API domain error", "error", err)
-	if validationErr, ok := err.(domain.ValidationError); ok {
+	if validationErr, ok := err.(schema.ValidationError); ok {
 		return ErrValidation(validationErr)
 	}
 	if errors.As(err, &domain.InvalidInputError{}) {
@@ -85,7 +86,7 @@ func ErrUnauthorized(err error) render.Renderer {
 	}
 }
 
-func ErrValidation(err domain.ValidationError) render.Renderer {
+func ErrValidation(err schema.ValidationError) render.Renderer {
 	return &ValidationErrRes{
 		Err:            err,
 		HTTPStatusCode: http.StatusBadRequest,
