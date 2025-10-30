@@ -118,6 +118,9 @@ func main() {
 	// Initialize schema engine for service property validation
 	propertyEngine := domain.NewServicePropertyEngine(vault)
 
+	// Initialize schema engine for agent configuration validation
+	agentConfigEngine := domain.NewAgentConfigSchemaEngine(vault)
+
 	// Initialize commanders
 	serviceCmd := domain.NewServiceCommander(store, propertyEngine)
 	serviceTypeCmd := domain.NewServiceTypeCommander(store, propertyEngine)
@@ -128,11 +131,11 @@ func main() {
 	servicePoolCmd := domain.NewServicePoolCommander(store)
 	servicePoolValueCmd := domain.NewServicePoolValueCommander(store)
 	participantCmd := domain.NewParticipantCommander(store)
-	agentTypeCmd := domain.NewAgentTypeCommander(store)
+	agentTypeCmd := domain.NewAgentTypeCommander(store, agentConfigEngine)
 	jobCmd := domain.NewJobCommander(store, propertyEngine)
 	metricEntryCmd := domain.NewMetricEntryCommander(store, metricEntryRepo)
 	metricTypeCmd := domain.NewMetricTypeCommander(store, metricEntryRepo)
-	agentCmd := domain.NewAgentCommander(store)
+	agentCmd := domain.NewAgentCommander(store, agentConfigEngine)
 	tokenCmd := domain.NewTokenCommander(store)
 
 	// Initialize authenticators

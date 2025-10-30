@@ -11,6 +11,9 @@ AgentTypeRes:
       items:
         $ref: "./common.yaml#/properties.UUID"
       description: "IDs of service types that this agent type can provide"
+    configurationSchema:
+      $ref: "./agent_types.yaml#/ConfigurationSchema"
+      description: "Schema defining the structure and validation rules for agent configuration"
     createdAt:
       type: string
       format: date-time
@@ -23,6 +26,7 @@ CreateAgentTypeReq:
   type: object
   required:
     - name
+    - configurationSchema
   properties:
     name:
       type: string
@@ -39,6 +43,9 @@ CreateAgentTypeReq:
           "550e8400-e29b-41d4-a716-446655440000",
           "550e8400-e29b-41d4-a716-446655440001",
         ]
+    configurationSchema:
+      $ref: "./agent_types.yaml#/ConfigurationSchema"
+      description: "Schema defining the structure and validation rules for agent configuration"
 
 UpdateAgentTypeReq:
   type: object
@@ -58,5 +65,23 @@ UpdateAgentTypeReq:
           "550e8400-e29b-41d4-a716-446655440000",
           "550e8400-e29b-41d4-a716-446655440002",
         ]
+    configurationSchema:
+      $ref: "./agent_types.yaml#/ConfigurationSchema"
+      description: "Updated configuration schema"
+
+ConfigurationSchema:
+  type: object
+  description: Schema defining validation rules and structure for agent configuration properties
+  additionalProperties:
+    $ref: "./service_types.yaml#/PropertyDefinition"
+  example:
+    apiEndpoint:
+      type: "string"
+      label: "API Endpoint"
+      required: true
+    maxRetries:
+      type: "integer"
+      label: "Max Retries"
+      default: 3
 
 # Service Group schemas

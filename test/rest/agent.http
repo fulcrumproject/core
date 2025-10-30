@@ -16,42 +16,202 @@ Authorization: Bearer {{adminToken}}
 
 @providerId = {{createProvider.response.body.$.id}}
 
-### Create a new agent
+### Create agent type with configuration schema
+# @name createAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "VM Agent {{$timestamp}}",
+    "configurationSchema": {
+        "properties": {
+            "apiEndpoint": {
+                "type": "string",
+                "label": "API Endpoint",
+                "required": true,
+            "validators": [
+                {
+                    "type": "pattern",
+                    "config": {
+                        "pattern": "^https?://"
+                    }
+                }
+            ]
+            },
+            "apiKey": {
+                "type": "string",
+                "label": "API Key",
+                "required": true,
+                "secret": {
+                    "type": "persistent"
+                }
+            },
+            "maxRetries": {
+                "type": "integer",
+                "label": "Maximum Retries",
+                "default": 3,
+            "validators": [
+                {
+                    "type": "min",
+                    "config": {
+                        "value": 0
+                    }
+                },
+                {
+                    "type": "max",
+                    "config": {
+                        "value": 10
+                    }
+                }
+            ]
+            },
+            "pollingInterval": {
+                "type": "integer",
+                "label": "Polling Interval (seconds)",
+                "default": 30,
+            "validators": [
+                {
+                    "type": "min",
+                    "config": {
+                        "value": 5
+                    }
+                }
+            ]
+            },
+            "enableMetrics": {
+                "type": "boolean",
+                "label": "Enable Metrics Collection",
+                "default": true
+            },
+            "logLevel": {
+                "type": "string",
+                "label": "Log Level",
+                "default": "info",
+            "validators": [
+                {
+                    "type": "enum",
+                    "config": {
+                        "values": ["debug", "info", "warn", "error"]
+                    }
+                }
+            ]
+            }
+        }
+    }
+}
+
+@agentTypeId = {{createAgentType.response.body.id}}
+
+### Create a new agent with validated configuration
 # @name createAgent
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
 {
     "name": "Test Agent",
     "providerId": "{{providerId}}",
-    "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
+    "agentTypeId": "{{agentTypeId}}",
     "tags": ["test-agent-{{$timestamp}}", "high-performance", "ssd-storage"],
     "configuration": {
-        "timeout": 30,
-        "retries": 3,
-        "environment": "development",
-        "features": {
-            "monitoring": true,
-            "logging": false
-        }
+        "apiEndpoint": "https://api.provider.example.com",
+        "apiKey": "secret-key-12345",
+        "maxRetries": 5,
+        "pollingInterval": 60,
+        "logLevel": "debug"
     }
 }
 
 @agentId = {{createAgent.response.body.$.id}}
 
-### Create another agent without configuration (optional field)
-# @name createAgentNoConfig
+### ❌ TEST: Create agent with missing required field (should fail with 400)
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
 {
-    "name": "Test Agent No Config",
+    "name": "Test Agent Missing Field",
     "providerId": "{{providerId}}",
-    "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
-    "tags": ["minimal-agent", "test"]
+    "agentTypeId": "{{agentTypeId}}",
+    "tags": ["test"],
+    "configuration": {
+        "apiEndpoint": "https://api.provider.example.com"
+    }
 }
 
-@agentIdNoConfig = {{createAgentNoConfig.response.body.$.id}}
+### ❌ TEST: Create agent with invalid pattern (should fail with 400)
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test Agent Invalid Pattern",
+    "providerId": "{{providerId}}",
+    "agentTypeId": "{{agentTypeId}}",
+    "tags": ["test"],
+    "configuration": {
+        "apiEndpoint": "not-a-url",
+        "apiKey": "secret-key-12345"
+    }
+}
+
+### ❌ TEST: Create agent with invalid enum value (should fail with 400)
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test Agent Invalid Enum",
+    "providerId": "{{providerId}}",
+    "agentTypeId": "{{agentTypeId}}",
+    "tags": ["test"],
+    "configuration": {
+        "apiEndpoint": "https://api.provider.example.com",
+        "apiKey": "secret-key-12345",
+        "logLevel": "trace"
+    }
+}
+
+### ❌ TEST: Create agent with out of range value (should fail with 400)
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test Agent Out of Range",
+    "providerId": "{{providerId}}",
+    "agentTypeId": "{{agentTypeId}}",
+    "tags": ["test"],
+    "configuration": {
+        "apiEndpoint": "https://api.provider.example.com",
+        "apiKey": "secret-key-12345",
+        "maxRetries": 50
+    }
+}
+
+### ✅ Create agent with only required fields (defaults applied)
+# @name createAgentWithDefaults
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Test Agent Defaults",
+    "providerId": "{{providerId}}",
+    "agentTypeId": "{{agentTypeId}}",
+    "tags": ["minimal-agent", "test"],
+    "configuration": {
+        "apiEndpoint": "https://api.provider.example.com",
+        "apiKey": "secret-key-67890"
+    }
+}
+
+@agentIdWithDefaults = {{createAgentWithDefaults.response.body.$.id}}
+
+### Get agent to see defaults applied
+GET {{baseUrl}}/agents/{{agentIdWithDefaults}}
+Authorization: Bearer {{adminToken}}
 
 ### Create a new agent token
 # @name createToken
@@ -100,22 +260,35 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/agents?providerId={{providerId}}
 Authorization: Bearer {{adminToken}}
 
-### Update an agent
+### Update an agent with validated configuration
 PATCH {{baseUrl}}/agents/{{agentId}}
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
 {
     "name": "Test Agent Updated",
     "status": "Disconnected",
     "tags": ["updated-agent", "high-performance"],
     "configuration": {
-        "timeout": 60,
-        "retries": 5,
-        "environment": "production",
-        "features": {
-            "monitoring": true,
-            "logging": true
-        }
+        "apiEndpoint": "https://api-v2.provider.example.com",
+        "apiKey": "updated-secret-key-99999",
+        "maxRetries": 10,
+        "pollingInterval": 120,
+        "enableMetrics": false,
+        "logLevel": "error"
+    }
+}
+
+### ❌ TEST: Update agent with invalid configuration (should fail with 400)
+PATCH {{baseUrl}}/agents/{{agentId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "configuration": {
+        "apiEndpoint": "https://api.provider.example.com",
+        "apiKey": "secret-key-12345",
+        "pollingInterval": 2
     }
 }
 

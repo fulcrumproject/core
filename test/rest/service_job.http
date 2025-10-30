@@ -298,7 +298,7 @@ Content-Type: application/json
     }
 }
 
-### Create Agent Type
+### Create Agent Type with configuration schema
 # @name createAgentType
 POST {{baseUrl}}/agent-types
 Authorization: Bearer {{adminToken}}
@@ -308,10 +308,77 @@ Content-Type: application/json
     "name": "vm-agent {{$guid}}",
     "serviceTypeIds": [
         "{{createVMServiceType.response.body.id}}"
-    ]
+    ],
+    "configurationSchema": {
+        "properties": {
+            "hypervisorEndpoint": {
+                "type": "string",
+                "label": "Hypervisor API Endpoint",
+                "required": true,
+            "validators": [
+                {
+                    "type": "pattern",
+                    "config": {
+                        "pattern": "^https?://"
+                    }
+                }
+            ]
+            },
+            "hypervisorUsername": {
+                "type": "string",
+                "label": "Hypervisor Username",
+                "required": true
+            },
+            "hypervisorPassword": {
+                "type": "string",
+                "label": "Hypervisor Password",
+                "required": true,
+                "secret": {
+                    "type": "persistent"
+                }
+            },
+            "maxConcurrentJobs": {
+                "type": "integer",
+                "label": "Maximum Concurrent Jobs",
+                "default": 5,
+            "validators": [
+                {
+                    "type": "min",
+                    "config": {
+                        "value": 1
+                    }
+                },
+                {
+                    "type": "max",
+                    "config": {
+                        "value": 20
+                    }
+                }
+            ]
+            },
+            "jobPollingInterval": {
+                "type": "integer",
+                "label": "Job Polling Interval (seconds)",
+                "default": 10,
+            "validators": [
+                {
+                    "type": "min",
+                    "config": {
+                        "value": 5
+                    }
+                }
+            ]
+            },
+            "enableDetailedLogging": {
+                "type": "boolean",
+                "label": "Enable Detailed Logging",
+                "default": false
+            }
+        }
+    }
 }
 
-### Create Agent (with pool set reference for automatic pool allocation)
+### Create Agent with configuration (and pool set reference for automatic pool allocation)
 # @name createAgent
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
@@ -322,7 +389,15 @@ Content-Type: application/json
     "agentTypeId": "{{createAgentType.response.body.id}}",
     "providerId": "{{createProvider.response.body.id}}",
     "servicePoolSetId": "{{createPoolSet.response.body.id}}",
-    "tags": ["test-agent", "property-testing"]
+    "tags": ["test-agent", "property-testing"],
+    "configuration": {
+        "hypervisorEndpoint": "https://hypervisor.provider.example.com",
+        "hypervisorUsername": "admin",
+        "hypervisorPassword": "SuperSecretHypervisorPass123!",
+        "maxConcurrentJobs": 10,
+        "jobPollingInterval": 15,
+        "enableDetailedLogging": true
+    }
 }
 
 @agentId = {{createAgent.response.body.id}}

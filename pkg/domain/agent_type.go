@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
 )
 
 const (
@@ -16,8 +17,9 @@ const (
 // AgentType represents a type of service manager agent
 type AgentType struct {
 	BaseEntity
-	Name         string        `json:"name" gorm:"not null;unique"`
-	ServiceTypes []ServiceType `json:"-" gorm:"many2many:agent_type_service_types;"`
+	Name                string        `json:"name" gorm:"not null;unique"`
+	ServiceTypes        []ServiceType `json:"-" gorm:"many2many:agent_type_service_types;"`
+	ConfigurationSchema schema.Schema `json:"configurationSchema" gorm:"type:jsonb;not null"`
 }
 
 // NewAgentType creates a new agent type without validation
@@ -31,8 +33,9 @@ func NewAgentType(params CreateAgentTypeParams) *AgentType {
 	}
 
 	return &AgentType{
-		Name:         params.Name,
-		ServiceTypes: serviceTypes,
+		Name:                params.Name,
+		ServiceTypes:        serviceTypes,
+		ConfigurationSchema: params.ConfigurationSchema,
 	}
 }
 
@@ -41,11 +44,25 @@ func (AgentType) TableName() string {
 	return "agent_types"
 }
 
-// Validate ensures all AgentType fields are valid
+// Validate ensures all AgentType fields are valid (without schema validation)
 func (at *AgentType) Validate() error {
 	if at.Name == "" {
 		return fmt.Errorf("agent type name cannot be empty")
 	}
+	return nil
+}
+
+// ValidateWithEngine validates the agent type including its configuration schema
+func (at *AgentType) ValidateWithEngine(engine *schema.Engine[AgentConfigContext]) error {
+	if at.Name == "" {
+		return fmt.Errorf("agent type name cannot be empty")
+	}
+
+	// Always validate schema (required, not nullable)
+	if err := engine.ValidateSchema(at.ConfigurationSchema); err != nil {
+		return fmt.Errorf("configurationSchema: %w", err)
+	}
+
 	return nil
 }
 
@@ -64,6 +81,9 @@ func (at *AgentType) Update(params UpdateAgentTypeParams) {
 		}
 		at.ServiceTypes = serviceTypes
 	}
+	if params.ConfigurationSchema != nil {
+		at.ConfigurationSchema = *params.ConfigurationSchema
+	}
 }
 
 // AgentTypeCommander defines the interface for agent type command operations
@@ -79,24 +99,33 @@ type AgentTypeCommander interface {
 }
 
 type CreateAgentTypeParams struct {
-	Name           string            `json:"name"`
-	ServiceTypeIds []properties.UUID `json:"serviceTypeIds,omitempty"`
+	Name                string            `json:"name"`
+	ServiceTypeIds      []properties.UUID `json:"serviceTypeIds,omitempty"`
+	ConfigurationSchema schema.Schema     `json:"configurationSchema"`
 }
 
 type UpdateAgentTypeParams struct {
-	ID             properties.UUID    `json:"id"`
-	Name           *string            `json:"name"`
-	ServiceTypeIds *[]properties.UUID `json:"serviceTypeIds,omitempty"`
+	ID                  properties.UUID    `json:"id"`
+	Name                *string            `json:"name"`
+	ServiceTypeIds      *[]properties.UUID `json:"serviceTypeIds,omitempty"`
+	ConfigurationSchema *schema.Schema     `json:"configurationSchema,omitempty"`
 }
 
 // agentTypeCommander is the concrete implementation of AgentTypeCommander
 type agentTypeCommander struct {
-	store Store
+	store        Store
+	configEngine *schema.Engine[AgentConfigContext]
 }
 
 // NewAgentTypeCommander creates a new AgentTypeCommander
-func NewAgentTypeCommander(store Store) AgentTypeCommander {
-	return &agentTypeCommander{store: store}
+func NewAgentTypeCommander(
+	store Store,
+	configEngine *schema.Engine[AgentConfigContext],
+) AgentTypeCommander {
+	return &agentTypeCommander{
+		store:        store,
+		configEngine: configEngine,
+	}
 }
 
 // Create creates a new agent type
@@ -107,7 +136,9 @@ func (c *agentTypeCommander) Create(
 	var agentType *AgentType
 	err := c.store.Atomic(ctx, func(store Store) error {
 		agentType = NewAgentType(params)
-		if err := agentType.Validate(); err != nil {
+
+		// Use engine to validate (includes schema validation)
+		if err := agentType.ValidateWithEngine(c.configEngine); err != nil {
 			return InvalidInputError{Err: err}
 		}
 
@@ -147,7 +178,7 @@ func (c *agentTypeCommander) Update(
 
 	// Update and validate
 	agentType.Update(params)
-	if err := agentType.Validate(); err != nil {
+	if err := agentType.ValidateWithEngine(c.configEngine); err != nil {
 		return nil, InvalidInputError{Err: err}
 	}
 
