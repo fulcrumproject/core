@@ -90,28 +90,28 @@ func (s *GormStore) ServiceGroupRepo() domain.ServiceGroupRepository {
 
 func (s *GormStore) ServiceRepo() domain.ServiceRepository {
 	if s.serviceRepo == nil {
-		s.serviceRepo = NewServiceRepository(s.db)
+		s.serviceRepo = NewGenServiceRepository(s.db)
 	}
 	return s.serviceRepo
 }
 
 func (s *GormStore) JobRepo() domain.JobRepository {
 	if s.jobRepo == nil {
-		s.jobRepo = NewJobRepository(s.db)
+		s.jobRepo = NewGenJobRepository(s.db)
 	}
 	return s.jobRepo
 }
 
 func (s *GormStore) EventRepo() domain.EventRepository {
 	if s.eventEntryRepo == nil {
-		s.eventEntryRepo = NewEventRepository(s.db)
+		s.eventEntryRepo = NewGenEventRepository(s.db)
 	}
 	return s.eventEntryRepo
 }
 
 func (s *GormStore) EventSubscriptionRepo() domain.EventSubscriptionRepository {
 	if s.eventSubscriptionRepo == nil {
-		s.eventSubscriptionRepo = NewEventSubscriptionRepository(s.db)
+		s.eventSubscriptionRepo = NewGenEventSubscriptionRepository(s.db)
 	}
 	return s.eventSubscriptionRepo
 }
@@ -187,11 +187,11 @@ func (s *GormReadOnlyStore) ServiceTypeQuerier() domain.ServiceTypeQuerier {
 }
 
 func (s *GormReadOnlyStore) EventQuerier() domain.EventQuerier {
-	return NewEventRepository(s.db)
+	return NewGenEventRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) EventSubscriptionQuerier() domain.EventSubscriptionQuerier {
-	return NewEventSubscriptionRepository(s.db)
+	return NewGenEventSubscriptionRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) MetricTypeQuerier() domain.MetricTypeQuerier {
@@ -207,11 +207,11 @@ func (s *GormReadOnlyStore) ServiceGroupQuerier() domain.ServiceGroupQuerier {
 }
 
 func (s *GormReadOnlyStore) ServiceQuerier() domain.ServiceQuerier {
-	return NewServiceRepository(s.db)
+	return NewGenServiceRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) JobQuerier() domain.JobQuerier {
-	return NewJobRepository(s.db)
+	return NewGenJobRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) ServiceOptionTypeQuerier() domain.ServiceOptionTypeQuerier {
