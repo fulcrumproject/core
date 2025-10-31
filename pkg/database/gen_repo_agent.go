@@ -100,7 +100,7 @@ func (r *GenAgentRepository) List(ctx context.Context, scope *auth.IdentityScope
 	query := r.q.Agent.WithContext(ctx).Preload(r.q.Agent.Provider)
 	query = applyGenAgentAuthz(query, scope)
 
-	result, err := PaginateQuery[domain.Agent, IAgentDo](
+	result, err := PaginateQuery(
 		ctx,
 		query,
 		pageReq,

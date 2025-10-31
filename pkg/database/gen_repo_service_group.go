@@ -71,7 +71,7 @@ func (r *GenServiceGroupRepository) List(ctx context.Context, scope *auth.Identi
 	query := r.q.ServiceGroup.WithContext(ctx).Preload(r.q.ServiceGroup.Participant)
 	query = applyGenServiceGroupAuthz(query, scope)
 
-	result, err := PaginateQuery[domain.ServiceGroup, IServiceGroupDo](ctx, query, pageReq,
+	result, err := PaginateQuery(ctx, query, pageReq,
 		func(q IServiceGroupDo, pr *domain.PageReq) IServiceGroupDo {
 			qt := Use(nil).ServiceGroup
 			if values, ok := pr.Filters["name"]; ok && len(values) > 0 {

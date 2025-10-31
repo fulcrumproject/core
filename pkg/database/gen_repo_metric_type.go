@@ -4,7 +4,7 @@ package database
 
 import (
 	"context"
-	
+
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -66,7 +66,7 @@ func (r *GenMetricTypeRepository) Count(ctx context.Context) (int64, error) {
 }
 
 func (r *GenMetricTypeRepository) List(ctx context.Context, scope *auth.IdentityScope, pageReq *domain.PageReq) (*domain.PageRes[domain.MetricType], error) {
-	result, err := PaginateQuery[domain.MetricType, IMetricTypeDo](ctx, r.q.MetricType.WithContext(ctx), pageReq,
+	result, err := PaginateQuery(ctx, r.q.MetricType.WithContext(ctx), pageReq,
 		func(q IMetricTypeDo, pr *domain.PageReq) IMetricTypeDo {
 			qt := Use(nil).MetricType
 			if values, ok := pr.Filters["name"]; ok && len(values) > 0 {
@@ -122,4 +122,3 @@ func (r *GenMetricTypeRepository) AuthScope(ctx context.Context, id properties.U
 	}
 	return &auth.AllwaysMatchObjectScope{}, nil
 }
-

@@ -5,7 +5,7 @@ package database
 import (
 	"context"
 	"log/slog"
-	
+
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -92,7 +92,7 @@ func (r *GenTokenRepository) List(ctx context.Context, scope *auth.IdentityScope
 	query := r.q.Token.WithContext(ctx)
 	query = applyGenTokenAuthz(query, scope)
 
-	result, err := PaginateQuery[domain.Token, ITokenDo](
+	result, err := PaginateQuery(
 		ctx,
 		query,
 		pageReq,

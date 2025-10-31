@@ -139,21 +139,21 @@ func (s *GormStore) ServiceOptionRepo() domain.ServiceOptionRepository {
 
 func (s *GormStore) ServicePoolSetRepo() domain.ServicePoolSetRepository {
 	if s.servicePoolSetRepo == nil {
-		s.servicePoolSetRepo = NewServicePoolSetRepository(s.db)
+		s.servicePoolSetRepo = NewGenServicePoolSetRepository(s.db)
 	}
 	return s.servicePoolSetRepo
 }
 
 func (s *GormStore) ServicePoolRepo() domain.ServicePoolRepository {
 	if s.servicePoolRepo == nil {
-		s.servicePoolRepo = NewServicePoolRepository(s.db)
+		s.servicePoolRepo = NewGenServicePoolRepository(s.db)
 	}
 	return s.servicePoolRepo
 }
 
 func (s *GormStore) ServicePoolValueRepo() domain.ServicePoolValueRepository {
 	if s.servicePoolValueRepo == nil {
-		s.servicePoolValueRepo = NewServicePoolValueRepository(s.db)
+		s.servicePoolValueRepo = NewGenServicePoolValueRepository(s.db)
 	}
 	return s.servicePoolValueRepo
 }
@@ -223,13 +223,13 @@ func (s *GormReadOnlyStore) ServiceOptionQuerier() domain.ServiceOptionQuerier {
 }
 
 func (s *GormReadOnlyStore) ServicePoolSetQuerier() domain.ServicePoolSetQuerier {
-	return NewServicePoolSetRepository(s.db)
+	return NewGenServicePoolSetRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) ServicePoolQuerier() domain.ServicePoolQuerier {
-	return NewServicePoolRepository(s.db)
+	return NewGenServicePoolRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) ServicePoolValueQuerier() domain.ServicePoolValueQuerier {
-	return NewServicePoolValueRepository(s.db)
+	return NewGenServicePoolValueRepository(s.db)
 }

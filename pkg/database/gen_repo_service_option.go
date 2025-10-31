@@ -5,7 +5,7 @@ package database
 import (
 	"context"
 	"encoding/json"
-	
+
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -71,7 +71,7 @@ func (r *GenServiceOptionRepository) List(ctx context.Context, scope *auth.Ident
 	query := r.q.ServiceOption.WithContext(ctx)
 	query = applyGenServiceOptionAuthz(query, scope)
 
-	result, err := PaginateQuery[domain.ServiceOption, IServiceOptionDo](ctx, query, pageReq,
+	result, err := PaginateQuery(ctx, query, pageReq,
 		applyGenServiceOptionFilters,
 		applyGenServiceOptionSort,
 	)
@@ -226,4 +226,3 @@ func applyGenServiceOptionSort(query IServiceOptionDo, pageReq *domain.PageReq) 
 	}
 	return query
 }
-

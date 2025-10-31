@@ -91,7 +91,7 @@ func (r *GenAgentTypeRepository) Count(ctx context.Context) (int64, error) {
 func (r *GenAgentTypeRepository) List(ctx context.Context, scope *auth.IdentityScope, pageReq *domain.PageReq) (*domain.PageRes[domain.AgentType], error) {
 	query := r.q.AgentType.WithContext(ctx).Preload(r.q.AgentType.ServiceTypes)
 
-	result, err := PaginateQuery[domain.AgentType, IAgentTypeDo](
+	result, err := PaginateQuery(
 		ctx,
 		query,
 		pageReq,

@@ -91,7 +91,7 @@ func (r *GenParticipantRepository) List(ctx context.Context, scope *auth.Identit
 	query := r.q.Participant.WithContext(ctx)
 	query = applyGenParticipantAuthz(query, scope)
 
-	result, err := PaginateQuery[domain.Participant, IParticipantDo](
+	result, err := PaginateQuery(
 		ctx,
 		query,
 		pageReq,

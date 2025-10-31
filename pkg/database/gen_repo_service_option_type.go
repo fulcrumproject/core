@@ -4,7 +4,7 @@ package database
 
 import (
 	"context"
-	
+
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -66,7 +66,7 @@ func (r *GenServiceOptionTypeRepository) Count(ctx context.Context) (int64, erro
 }
 
 func (r *GenServiceOptionTypeRepository) List(ctx context.Context, scope *auth.IdentityScope, pageReq *domain.PageReq) (*domain.PageRes[domain.ServiceOptionType], error) {
-	result, err := PaginateQuery[domain.ServiceOptionType, IServiceOptionTypeDo](ctx, r.q.ServiceOptionType.WithContext(ctx), pageReq,
+	result, err := PaginateQuery(ctx, r.q.ServiceOptionType.WithContext(ctx), pageReq,
 		func(q IServiceOptionTypeDo, pr *domain.PageReq) IServiceOptionTypeDo {
 			qt := Use(nil).ServiceOptionType
 			if values, ok := pr.Filters["name"]; ok && len(values) > 0 {
@@ -131,4 +131,3 @@ func (r *GenServiceOptionTypeRepository) AuthScope(ctx context.Context, id prope
 	}
 	return &auth.AllwaysMatchObjectScope{}, nil
 }
-

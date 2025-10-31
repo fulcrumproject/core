@@ -4,7 +4,7 @@ package database
 
 import (
 	"context"
-	
+
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -81,7 +81,7 @@ func (r *GenServiceTypeRepository) Count(ctx context.Context) (int64, error) {
 func (r *GenServiceTypeRepository) List(ctx context.Context, scope *auth.IdentityScope, pageReq *domain.PageReq) (*domain.PageRes[domain.ServiceType], error) {
 	query := r.q.ServiceType.WithContext(ctx)
 
-	result, err := PaginateQuery[domain.ServiceType, IServiceTypeDo](
+	result, err := PaginateQuery(
 		ctx,
 		query,
 		pageReq,
@@ -135,4 +135,3 @@ func (r *GenServiceTypeRepository) AuthScope(ctx context.Context, id properties.
 	}
 	return &auth.AllwaysMatchObjectScope{}, nil
 }
-
