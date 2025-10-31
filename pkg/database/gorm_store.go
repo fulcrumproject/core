@@ -48,21 +48,21 @@ func (s *GormStore) Atomic(ctx context.Context, fn func(domain.Store) error) err
 
 func (s *GormStore) ParticipantRepo() domain.ParticipantRepository {
 	if s.participantRepo == nil {
-		s.participantRepo = NewParticipantRepository(s.db)
+		s.participantRepo = NewGenParticipantRepository(s.db)
 	}
 	return s.participantRepo
 }
 
 func (s *GormStore) TokenRepo() domain.TokenRepository {
 	if s.tokenRepo == nil {
-		s.tokenRepo = NewTokenRepository(s.db)
+		s.tokenRepo = NewGenTokenRepository(s.db)
 	}
 	return s.tokenRepo
 }
 
 func (s *GormStore) AgentTypeRepo() domain.AgentTypeRepository {
 	if s.agentTypeRepo == nil {
-		s.agentTypeRepo = NewAgentTypeRepository(s.db)
+		s.agentTypeRepo = NewGenAgentTypeRepository(s.db)
 	}
 	return s.agentTypeRepo
 }
@@ -76,14 +76,14 @@ func (s *GormStore) AgentRepo() domain.AgentRepository {
 
 func (s *GormStore) ServiceTypeRepo() domain.ServiceTypeRepository {
 	if s.serviceTypeRepo == nil {
-		s.serviceTypeRepo = NewServiceTypeRepository(s.db)
+		s.serviceTypeRepo = NewGenServiceTypeRepository(s.db)
 	}
 	return s.serviceTypeRepo
 }
 
 func (s *GormStore) ServiceGroupRepo() domain.ServiceGroupRepository {
 	if s.serviceGroupRepo == nil {
-		s.serviceGroupRepo = NewServiceGroupRepository(s.db)
+		s.serviceGroupRepo = NewGenServiceGroupRepository(s.db)
 	}
 	return s.serviceGroupRepo
 }
@@ -118,14 +118,14 @@ func (s *GormStore) EventSubscriptionRepo() domain.EventSubscriptionRepository {
 
 func (s *GormStore) MetricTypeRepo() domain.MetricTypeRepository {
 	if s.metricTypeRepo == nil {
-		s.metricTypeRepo = NewMetricTypeRepository(s.db)
+		s.metricTypeRepo = NewGenMetricTypeRepository(s.db)
 	}
 	return s.metricTypeRepo
 }
 
 func (s *GormStore) ServiceOptionTypeRepo() domain.ServiceOptionTypeRepository {
 	if s.serviceOptionTypeRepo == nil {
-		s.serviceOptionTypeRepo = NewServiceOptionTypeRepository(s.db)
+		s.serviceOptionTypeRepo = NewGenServiceOptionTypeRepository(s.db)
 	}
 	return s.serviceOptionTypeRepo
 }
@@ -171,7 +171,7 @@ func NewGormReadOnlyStore(db *gorm.DB) *GormReadOnlyStore {
 }
 
 func (s *GormReadOnlyStore) AgentTypeQuerier() domain.AgentTypeQuerier {
-	return NewAgentTypeRepository(s.db)
+	return NewGenAgentTypeRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) AgentQuerier() domain.AgentQuerier {
@@ -179,11 +179,11 @@ func (s *GormReadOnlyStore) AgentQuerier() domain.AgentQuerier {
 }
 
 func (s *GormReadOnlyStore) TokenQuerier() domain.TokenQuerier {
-	return NewTokenRepository(s.db)
+	return NewGenTokenRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) ServiceTypeQuerier() domain.ServiceTypeQuerier {
-	return NewServiceTypeRepository(s.db)
+	return NewGenServiceTypeRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) EventQuerier() domain.EventQuerier {
@@ -195,15 +195,15 @@ func (s *GormReadOnlyStore) EventSubscriptionQuerier() domain.EventSubscriptionQ
 }
 
 func (s *GormReadOnlyStore) MetricTypeQuerier() domain.MetricTypeQuerier {
-	return NewMetricTypeRepository(s.db)
+	return NewGenMetricTypeRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) ParticipantQuerier() domain.ParticipantQuerier {
-	return NewParticipantRepository(s.db)
+	return NewGenParticipantRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) ServiceGroupQuerier() domain.ServiceGroupQuerier {
-	return NewServiceGroupRepository(s.db)
+	return NewGenServiceGroupRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) ServiceQuerier() domain.ServiceQuerier {
@@ -215,7 +215,7 @@ func (s *GormReadOnlyStore) JobQuerier() domain.JobQuerier {
 }
 
 func (s *GormReadOnlyStore) ServiceOptionTypeQuerier() domain.ServiceOptionTypeQuerier {
-	return NewServiceOptionTypeRepository(s.db)
+	return NewGenServiceOptionTypeRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) ServiceOptionQuerier() domain.ServiceOptionQuerier {
