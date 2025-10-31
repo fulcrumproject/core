@@ -15,17 +15,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// vaultSecret entity (private, internal to this file)
-type vaultSecret struct {
-	domain.BaseEntity
-	Reference      string `gorm:"uniqueIndex;not null"`
-	EncryptedValue []byte `gorm:"not null"`
-}
-
-func (vaultSecret) TableName() string {
-	return "vault_secrets"
-}
-
 // vaultEncryption handles AES-256-GCM encryption/decryption
 type vaultEncryption struct {
 	key []byte // 32 bytes for AES-256
@@ -122,7 +111,7 @@ func (v *gormVault) Save(ctx context.Context, reference string, value any, metad
 	}
 
 	// Create secret entity
-	secret := &vaultSecret{
+	secret := &domain.VaultSecret{
 		Reference:      reference,
 		EncryptedValue: encrypted,
 	}
@@ -138,7 +127,7 @@ func (v *gormVault) Save(ctx context.Context, reference string, value any, metad
 // Get retrieves and decrypts a secret from the vault
 func (v *gormVault) Get(ctx context.Context, reference string) (any, error) {
 	// Get secret from database
-	var secret vaultSecret
+	var secret domain.VaultSecret
 	if err := v.db.WithContext(ctx).Where("reference = ?", reference).First(&secret).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, fmt.Errorf("secret not found: %s", reference)
@@ -163,7 +152,7 @@ func (v *gormVault) Get(ctx context.Context, reference string) (any, error) {
 
 // Delete permanently removes a secret from the vault
 func (v *gormVault) Delete(ctx context.Context, reference string) error {
-	result := v.db.WithContext(ctx).Where("reference = ?", reference).Delete(&vaultSecret{})
+	result := v.db.WithContext(ctx).Where("reference = ?", reference).Delete(&domain.VaultSecret{})
 	if result.Error != nil {
 		return fmt.Errorf("failed to delete secret: %w", result.Error)
 	}

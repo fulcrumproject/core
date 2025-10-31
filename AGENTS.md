@@ -52,7 +52,20 @@ This document contains project-specific guidelines and technical context for wor
 
 ## Database Management
 
-- We don't need database migrations - we use GORM migration
+- We don't need database migrations - we use GORM AutoMigrate
+- Database layer uses GORM Gen for type-safe query generation
+- Generated DAOs are in `pkg/database/*.gen.go` (generated files, do not edit manually)
+- To regenerate after domain model changes: `make gen-query`
+
+---
+
+## Code Generation
+
+- Use `make generate` to regenerate all code (GORM Gen + Mockery)
+- Use `make gen-query` to regenerate only GORM Gen DAOs
+- Use `make gen-mocks` to regenerate only mocks
+- GORM Gen generator is in `cmd/gormgen/main.go`
+- Generated code should never be edited manually - always regenerate
 
 ---
 

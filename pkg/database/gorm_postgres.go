@@ -67,7 +67,7 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.MetricType{},
 		&domain.Event{},
 		&domain.EventSubscription{},
-		&vaultSecret{},
+		&domain.VaultSecret{},
 	)
 }
 

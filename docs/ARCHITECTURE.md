@@ -120,12 +120,20 @@ The database layer implements the repository interfaces defined in the domain la
 - Handles database-specific concerns and transactions
 - Performs ORM mapping between domain entities and database models
 - Manages database queries and optimizations
+- Uses GORM Gen for type-safe, code-generated data access objects (DAOs)
 
 The layer employs a Command-Query Responsibility Separation (CQRS) inspired approach:
 
 - **Querier interfaces** define read-only operations (queries)
 - **Repository interfaces** embed queriers and add command (write) operations
 - This separation allows for more focused and optimized read operations
+
+The database layer uses GORM Gen for type-safe database operations:
+
+- **GORM Gen**: Code generation tool that creates type-safe DAOs from domain models
+- **Generated queries**: Located in `pkg/database/*.gen.go` (never edit manually)
+- **Code regeneration**: Run `make gen-query` after domain model changes
+- **Type safety**: 100% compile-time verification of database queries
 
 The database layer uses a repository pattern with a store interface managing transaction boundaries:
 
