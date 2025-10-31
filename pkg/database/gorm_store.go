@@ -69,7 +69,7 @@ func (s *GormStore) AgentTypeRepo() domain.AgentTypeRepository {
 
 func (s *GormStore) AgentRepo() domain.AgentRepository {
 	if s.agentRepo == nil {
-		s.agentRepo = NewAgentRepository(s.db)
+		s.agentRepo = NewGenAgentRepository(s.db)
 	}
 	return s.agentRepo
 }
@@ -175,7 +175,7 @@ func (s *GormReadOnlyStore) AgentTypeQuerier() domain.AgentTypeQuerier {
 }
 
 func (s *GormReadOnlyStore) AgentQuerier() domain.AgentQuerier {
-	return NewAgentRepository(s.db)
+	return NewGenAgentRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) TokenQuerier() domain.TokenQuerier {

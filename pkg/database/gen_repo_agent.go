@@ -90,30 +90,41 @@ func (r *GenAgentRepository) Exists(ctx context.Context, id properties.UUID) (bo
 	return count > 0, nil
 }
 
-// Count returns total count with authorization and filters
-func (r *GenAgentRepository) Count(ctx context.Context, scope *auth.IdentityScope, filters map[string][]string) (int64, error) {
-	query := r.q.Agent.WithContext(ctx)
-	query = applyGenAgentAuthz(query, scope)
-
-	// Convert filters map to PageReq for reuse
-	pageReq := &domain.PageReq{Filters: filters}
-	query = applyGenAgentFilters(query, pageReq)
-
-	return query.Count()
+// Count returns total count of all agents
+func (r *GenAgentRepository) Count(ctx context.Context) (int64, error) {
+	return r.q.Agent.WithContext(ctx).Count()
 }
 
 // List returns paginated agents with authorization, filters, and sorting
-func (r *GenAgentRepository) List(ctx context.Context, scope *auth.IdentityScope, pageReq *domain.PageReq) (*domain.PageRes[*domain.Agent], error) {
+func (r *GenAgentRepository) List(ctx context.Context, scope *auth.IdentityScope, pageReq *domain.PageReq) (*domain.PageRes[domain.Agent], error) {
 	query := r.q.Agent.WithContext(ctx).Preload(r.q.Agent.Provider)
 	query = applyGenAgentAuthz(query, scope)
 
-	return PaginateQuery[domain.Agent, IAgentDo](
+	result, err := PaginateQuery[domain.Agent, IAgentDo](
 		ctx,
 		query,
 		pageReq,
 		applyGenAgentFilters,
 		applyGenAgentSort,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert []*Agent to []Agent to match interface
+	items := make([]domain.Agent, len(result.Items))
+	for i, item := range result.Items {
+		items[i] = *item
+	}
+
+	return &domain.PageRes[domain.Agent]{
+		Items:       items,
+		TotalItems:  result.TotalItems,
+		TotalPages:  result.TotalPages,
+		CurrentPage: result.CurrentPage,
+		HasNext:     result.HasNext,
+		HasPrev:     result.HasPrev,
+	}, nil
 }
 
 // CountByProvider returns the number of agents for a specific provider
