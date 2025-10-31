@@ -132,7 +132,7 @@ func (s *GormStore) ServiceOptionTypeRepo() domain.ServiceOptionTypeRepository {
 
 func (s *GormStore) ServiceOptionRepo() domain.ServiceOptionRepository {
 	if s.serviceOptionRepo == nil {
-		s.serviceOptionRepo = NewServiceOptionRepository(s.db)
+		s.serviceOptionRepo = NewGenServiceOptionRepository(s.db)
 	}
 	return s.serviceOptionRepo
 }
@@ -219,7 +219,7 @@ func (s *GormReadOnlyStore) ServiceOptionTypeQuerier() domain.ServiceOptionTypeQ
 }
 
 func (s *GormReadOnlyStore) ServiceOptionQuerier() domain.ServiceOptionQuerier {
-	return NewServiceOptionRepository(s.db)
+	return NewGenServiceOptionRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) ServicePoolSetQuerier() domain.ServicePoolSetQuerier {
