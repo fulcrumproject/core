@@ -144,6 +144,12 @@ func NewApp() *App {
 		return nil
 	}
 
+	// Seed the database with initial data
+	if err := database.Seed(db); err != nil {
+		slog.Error("Failed to seed database", "error", err)
+		return nil
+	}
+
 	metricDb, err := initMetricDatabase(cfg)
 	if err != nil {
 		slog.Error("Failed to initialize metric database", "error", err)
