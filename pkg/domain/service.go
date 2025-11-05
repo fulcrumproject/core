@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
@@ -146,9 +147,7 @@ func ApplyAgentPropertyUpdates(
 	}
 
 	// Merge validated properties
-	for k, v := range validatedProperties {
-		(*svc.Properties)[k] = v
-	}
+	maps.Copy((*svc.Properties), validatedProperties)
 
 	return nil
 }
@@ -449,9 +448,6 @@ func UpdateService(ctx context.Context, store Store, engine *schema.Engine[Servi
 			}
 			convertedProperties := properties.JSON(validatedProperties)
 			params.Properties = &convertedProperties
-
-			// Update service with validated properties
-			svc.Properties = params.Properties
 		}
 		if update {
 			if err := txStore.ServiceRepo().Save(ctx, svc); err != nil {
