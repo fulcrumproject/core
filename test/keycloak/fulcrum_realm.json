@@ -35,7 +35,7 @@
       ],
       "realmRoles": ["participant"],
       "attributes": {
-        "participant_id": "participant1-id"
+        "participant_id": ["participant1-id"]
       }
     },
     {
@@ -70,6 +70,25 @@
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
       "defaultClientScopes": ["fulcrum_ids", "profile", "roles", "basic"]
+    },
+    {
+      "clientId": "fulcrum-ui",
+      "name": "fulcrum-ui",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "baseUrl": "http://localhost:5173",
+      "redirectUris": ["http://localhost:5173/*"],
+      "webOrigins": ["*"],
+      "defaultClientScopes": [
+        "fulcrum_ids",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ]
     }
   ],
   "roles": {
