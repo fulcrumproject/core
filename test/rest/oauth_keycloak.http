@@ -36,6 +36,35 @@ Content-Type: application/json
 ### SET IT IN KEYCLOAK USER ATTRIBUTES
 @participantId = {{createParticipant.response.body.$.id}}
 
+### Create an Agent Type (required for creating agents)
+# @name createAgentType
+POST {{baseURL}}/agent-types
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+    "name": "OAuth Test Agent Type",
+    "configurationSchema": {
+        "properties": {
+            "apiEndpoint": {
+                "type": "string",
+                "label": "API Endpoint",
+                "required": true,
+                "validators": [
+                    {
+                        "type": "pattern",
+                        "config": {
+                            "pattern": "^https?://"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}
+
+@agentTypeId = {{createAgentType.response.body.$.id}}
+
 ### Login as participant user
 # @name participantLogin
 POST {{kcBaseURL}}/protocol/openid-connect/token
@@ -60,7 +89,7 @@ Content-Type: application/json
 {
     "name": "OAuth Test Agent",
     "providerId": "{{participantId}}",
-    "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
+    "agentTypeId": "{{agentTypeId}}",
     "tags": ["test-agent-{{$timestamp}}", "high-performance", "ssd-storage"]
 }
 

@@ -22,22 +22,34 @@ get:
       schema:
         type: integer
         default: 20
+    - name: sort
+      in: query
+      schema:
+        type: string
+      description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: name, type, createdAt"
+      example: "+name"
     - name: servicePoolSetId
       in: query
       schema:
-        $ref: "../components/schemas/common.yaml#/properties.UUID"
-      description: Filter by service pool set ID
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by service pool set ID (can specify multiple values)
     - name: type
       in: query
       schema:
-        type: string
-      description: Filter by pool type
+        type: array
+        items:
+          type: string
+      description: Filter by pool type (can specify multiple values)
     - name: generatorType
       in: query
       schema:
-        type: string
-        enum: [list, subnet]
-      description: Filter by generator type
+        type: array
+        items:
+          type: string
+          enum: [list, subnet]
+      description: Filter by generator type (can specify multiple values)
   responses:
     "200":
       description: A paginated list of service pools

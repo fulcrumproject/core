@@ -15,6 +15,33 @@
         schema:
           type: integer
           default: 20
+      - name: sort
+        in: query
+        schema:
+          type: string
+        description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: createdAt, value"
+        example: "+createdAt"
+      - name: agentId
+        in: query
+        schema:
+          type: array
+          items:
+            $ref: "../components/schemas/common.yaml#/properties.UUID"
+        description: Filter by agent ID (can specify multiple values)
+      - name: serviceId
+        in: query
+        schema:
+          type: array
+          items:
+            $ref: "../components/schemas/common.yaml#/properties.UUID"
+        description: Filter by service ID (can specify multiple values)
+      - name: typeId
+        in: query
+        schema:
+          type: array
+          items:
+            $ref: "../components/schemas/common.yaml#/properties.UUID"
+        description: Filter by metric type ID (can specify multiple values)
     responses:
       "200":
         description: A paginated list of metric entries
