@@ -22,6 +22,41 @@ get:
       schema:
         type: integer
         default: 20
+    - name: sort
+      in: query
+      schema:
+        type: string
+      description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: name"
+      example: "+name"
+    - name: name
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+      description: Filter by agent name (can specify multiple values)
+    - name: status
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+          enum: [New, Connected, Disconnected, Error, Disabled]
+      description: Filter by agent status (can specify multiple values)
+    - name: providerId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by provider ID (can specify multiple values)
+    - name: agentTypeId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by agent type ID (can specify multiple values)
   responses:
     "200":
       description: A paginated list of agents
