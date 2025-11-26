@@ -22,6 +22,33 @@
         schema:
           type: integer
           default: 20
+      - name: sort
+        in: query
+        schema:
+          type: string
+        description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: createdAt"
+        example: "+createdAt"
+      - name: initiatorType
+        in: query
+        schema:
+          type: array
+          items:
+            type: string
+        description: Filter by initiator type (can specify multiple values)
+      - name: initiatorId
+        in: query
+        schema:
+          type: array
+          items:
+            $ref: "../components/schemas/common.yaml#/properties.UUID"
+        description: Filter by initiator ID (can specify multiple values)
+      - name: type
+        in: query
+        schema:
+          type: array
+          items:
+            type: string
+        description: Filter by event type (can specify multiple values)
     responses:
       "200":
         description: A paginated list of events
