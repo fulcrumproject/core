@@ -22,16 +22,33 @@
         schema:
           type: integer
           default: 20
+      - name: sort
+        in: query
+        schema:
+          type: string
+        description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: name, displayOrder"
+        example: "+name"
       - name: providerId
         in: query
         schema:
-          $ref: "../components/schemas/common.yaml#/properties.UUID"
-        description: Filter by provider ID
+          type: array
+          items:
+            $ref: "../components/schemas/common.yaml#/properties.UUID"
+        description: Filter by provider ID (can specify multiple values)
       - name: serviceOptionTypeId
         in: query
         schema:
-          $ref: "../components/schemas/common.yaml#/properties.UUID"
-        description: Filter by service option type ID
+          type: array
+          items:
+            $ref: "../components/schemas/common.yaml#/properties.UUID"
+        description: Filter by service option type ID (can specify multiple values)
+      - name: enabled
+        in: query
+        schema:
+          type: array
+          items:
+            type: boolean
+        description: Filter by enabled status (can specify multiple values)
     responses:
       "200":
         description: A paginated list of service options

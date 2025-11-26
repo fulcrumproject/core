@@ -22,21 +22,26 @@ get:
       schema:
         type: integer
         default: 20
-    - name: servicePoolId
-      in: query
-      schema:
-        $ref: "../components/schemas/common.yaml#/properties.UUID"
-      description: Filter by service pool ID
-    - name: serviceId
-      in: query
-      schema:
-        $ref: "../components/schemas/common.yaml#/properties.UUID"
-      description: Filter by allocated service ID
-    - name: propertyName
+    - name: sort
       in: query
       schema:
         type: string
-      description: Filter by property name
+      description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: name, createdAt"
+      example: "+name"
+    - name: servicePoolId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by service pool ID (can specify multiple values)
+    - name: serviceId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by allocated service ID (can specify multiple values)
   responses:
     "200":
       description: A paginated list of service pool values

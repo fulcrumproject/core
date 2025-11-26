@@ -22,6 +22,41 @@ get:
       schema:
         type: integer
         default: 20
+    - name: sort
+      in: query
+      schema:
+        type: string
+      description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: priority, createdAt, claimedAt, completedAt"
+      example: "+priority"
+    - name: action
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+      description: Filter by job action (can specify multiple values)
+    - name: status
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+          enum: [Pending, Processing, Completed, Failed]
+      description: Filter by job status (can specify multiple values)
+    - name: agentId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by agent ID (can specify multiple values)
+    - name: serviceId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by service ID (can specify multiple values)
   responses:
     "200":
       description: A paginated list of jobs
