@@ -16,7 +16,7 @@ type GormTokenRepository struct {
 }
 
 var applyTokenFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"name": StringInFilterFieldApplier("name"),
+	"name": StringContainsInsensitiveFilterFieldApplier("name"),
 	"role": StringInFilterFieldApplier("role"),
 })
 
