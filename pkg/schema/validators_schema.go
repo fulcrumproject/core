@@ -2,6 +2,7 @@ package schema
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 )
 
@@ -65,6 +66,92 @@ func (v *ExactlyOneValidator[C]) ValidateConfig(config map[string]any) error {
 
 	if len(props) < 2 {
 		return fmt.Errorf("exactlyOne validator requires at least 2 properties")
+	}
+
+	return nil
+}
+
+// UniqueValuesValidator ensures all specified properties have unique (different) values.
+type UniqueValuesValidator[C any] struct{}
+
+func (v *UniqueValuesValidator[C]) Validate(ctx context.Context, schemaCtx C, operation Operation, oldProperties, newProperties map[string]any, config map[string]any) error {
+	// Extract property names from config
+	propsRaw, ok := config["properties"].([]any)
+	if !ok {
+		return fmt.Errorf("uniqueValues validator requires 'properties' config")
+	}
+
+	// Container for seen values for uniqueness check
+	// Key: JSON-serialized value, Value: property name
+	seenValues := make(map[string]string)
+
+	// Individual property validation
+	for _, p := range propsRaw {
+		// Type assertion to string
+		propStr, ok := p.(string)
+
+		// Skip non-string property names
+		if !ok {
+			continue
+		}
+
+		val, exists := newProperties[propStr]
+
+		// Skip nil or missing properties - only validate provided values
+		if !exists || val == nil {
+			continue
+		}
+
+		// Try JSON serialization for consistent comparison between different types
+		jsonBytes, err := json.Marshal(val)
+		// Fallback for non-JSON-serializable values
+		if err != nil {
+			valueStr := fmt.Sprintf("%v", val)
+			jsonBytes = []byte(valueStr)
+		}
+
+		valueKey := string(jsonBytes)
+
+		// Check if this value was already seen
+		if existingProp, found := seenValues[valueKey]; found {
+			return fmt.Errorf(
+				"properties %s and %s must have unique values, both have: %v",
+				existingProp,
+				propStr,
+				val,
+			)
+		}
+
+		// Record this value as seen
+		seenValues[valueKey] = propStr
+	}
+
+	return nil
+}
+
+func (v *UniqueValuesValidator[C]) ValidateConfig(config map[string]any) error {
+	propsRaw, ok := config["properties"].([]any)
+
+	// Malformed config
+	if !ok {
+		return fmt.Errorf("uniqueValues validator requires 'properties' config as array")
+	}
+
+	// Convert to string slice
+	props := make([]string, 0, len(propsRaw))
+
+	// Validate all entries are strings
+	for _, p := range propsRaw {
+		propStr, ok := p.(string)
+		if !ok {
+			return fmt.Errorf("uniqueValues validator: all properties must be strings, got %T", p)
+		}
+		props = append(props, propStr)
+	}
+
+	// Need at least 2 properties to compare
+	if len(props) < 2 {
+		return fmt.Errorf("uniqueValues validator requires at least 2 properties")
 	}
 
 	return nil
