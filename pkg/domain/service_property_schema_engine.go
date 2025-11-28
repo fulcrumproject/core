@@ -34,7 +34,8 @@ func buildServicePropertyValidatorRegistry() map[string]schema.PropertyValidator
 // buildServicePropertySchemaValidatorRegistry creates a registry of schema-level validators
 func buildServicePropertySchemaValidatorRegistry() map[string]schema.SchemaValidator[ServicePropertyContext] {
 	return map[string]schema.SchemaValidator[ServicePropertyContext]{
-		"exactlyOne": &schema.ExactlyOneValidator[ServicePropertyContext]{},
+		"exactlyOne":   &schema.ExactlyOneValidator[ServicePropertyContext]{},
+		"uniqueValues": &schema.UniqueValuesValidator[ServicePropertyContext]{},
 	}
 }
 
