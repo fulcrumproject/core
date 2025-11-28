@@ -183,6 +183,40 @@ func TestAgentRepository(t *testing.T) {
 			}
 		})
 
+		t.Run("success - list with name substring filter", func(t *testing.T) {
+			ctx := context.Background()
+
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
+
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+
+			doe := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
+			doe.Name = "John Doe"
+			require.NoError(t, agentRepo.Create(ctx, doe))
+
+			johnny := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
+			johnny.Name = "Johnny Smith"
+			require.NoError(t, agentRepo.Create(ctx, johnny))
+
+			other := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
+			other.Name = "Alice Stone"
+			require.NoError(t, agentRepo.Create(ctx, other))
+
+			page := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"name": {"JOHN"}},
+			}
+
+			result, err := agentRepo.List(ctx, &auth.IdentityScope{}, page)
+			require.NoError(t, err)
+			require.Len(t, result.Items, 2)
+			names := []string{result.Items[0].Name, result.Items[1].Name}
+			assert.ElementsMatch(t, []string{"John Doe", "Johnny Smith"}, names)
+		})
+
 		t.Run("success - list with sorting", func(t *testing.T) {
 			ctx := context.Background()
 

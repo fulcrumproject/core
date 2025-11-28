@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
@@ -66,6 +67,39 @@ func ParserInFilterFieldApplier[T any](f string, t func(string) (T, error)) Filt
 
 func StringInFilterFieldApplier(f string) FilterFieldApplier {
 	return ParserInFilterFieldApplier(f, func(v string) (string, error) { return v, nil })
+}
+
+func StringContainsInsensitiveFilterFieldApplier(field string) FilterFieldApplier {
+	return func(db *gorm.DB, vv []string) (*gorm.DB, error) {
+		if len(vv) == 0 {
+			return db, nil
+		}
+
+		var (
+			q   *gorm.DB
+			set bool
+		)
+
+		for _, raw := range vv {
+			value := strings.TrimSpace(raw)
+			if value == "" {
+				continue
+			}
+
+			pattern := "%" + strings.ToLower(value) + "%"
+			if !set {
+				q = db.Where(fmt.Sprintf("LOWER(%s) LIKE ?", field), pattern)
+				set = true
+				continue
+			}
+			q = q.Or(fmt.Sprintf("LOWER(%s) LIKE ?", field), pattern)
+		}
+
+		if !set {
+			return db, nil
+		}
+		return q, nil
+	}
 }
 
 // listPaginated implements a generic listPaginated operation for any model type
