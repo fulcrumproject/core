@@ -69,6 +69,16 @@ func StringInFilterFieldApplier(f string) FilterFieldApplier {
 	return ParserInFilterFieldApplier(f, func(v string) (string, error) { return v, nil })
 }
 
+// escapeLikePattern escapes SQL LIKE wildcard characters (%, _, \) in the input string
+// to ensure they are treated as literal characters rather than wildcards
+func escapeLikePattern(s string) string {
+	// Replace backslash first to avoid double-escaping
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "%", "\\%")
+	s = strings.ReplaceAll(s, "_", "\\_")
+	return s
+}
+
 func StringContainsInsensitiveFilterFieldApplier(field string) FilterFieldApplier {
 	return func(db *gorm.DB, vv []string) (*gorm.DB, error) {
 		if len(vv) == 0 {
@@ -86,13 +96,15 @@ func StringContainsInsensitiveFilterFieldApplier(field string) FilterFieldApplie
 				continue
 			}
 
-			pattern := "%" + strings.ToLower(value) + "%"
+			// Escape LIKE wildcard characters before building the pattern
+			escapedValue := escapeLikePattern(strings.ToLower(value))
+			pattern := "%" + escapedValue + "%"
 			if !set {
-				q = db.Where(fmt.Sprintf("LOWER(%s) LIKE ?", field), pattern)
+				q = db.Where(fmt.Sprintf("LOWER(%s) LIKE ? ESCAPE '\\'", field), pattern)
 				set = true
 				continue
 			}
-			q = q.Or(fmt.Sprintf("LOWER(%s) LIKE ?", field), pattern)
+			q = q.Or(fmt.Sprintf("LOWER(%s) LIKE ? ESCAPE '\\'", field), pattern)
 		}
 
 		if !set {

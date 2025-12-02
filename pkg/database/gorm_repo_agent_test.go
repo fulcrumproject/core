@@ -217,6 +217,70 @@ func TestAgentRepository(t *testing.T) {
 			assert.ElementsMatch(t, []string{"John Doe", "Johnny Smith"}, names)
 		})
 
+		t.Run("success - list with name filter escaping LIKE wildcards", func(t *testing.T) {
+			ctx := context.Background()
+
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
+
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+
+			// Create agents with names containing LIKE wildcard characters
+			percentAgent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
+			percentAgent.Name = "50% discount"
+			require.NoError(t, agentRepo.Create(ctx, percentAgent))
+
+			underscoreAgent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
+			underscoreAgent.Name = "user_name"
+			require.NoError(t, agentRepo.Create(ctx, underscoreAgent))
+
+			backslashAgent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
+			backslashAgent.Name = "path\\to\\file"
+			require.NoError(t, agentRepo.Create(ctx, backslashAgent))
+
+			// Create an agent that would match if wildcards weren't escaped
+			otherAgent := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
+			otherAgent.Name = "50 discount" // This should NOT match "50% discount"
+			require.NoError(t, agentRepo.Create(ctx, otherAgent))
+
+			// Test searching for "50% discount" - should only match the exact name
+			page := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"name": {"50% discount"}},
+			}
+
+			result, err := agentRepo.List(ctx, &auth.IdentityScope{}, page)
+			require.NoError(t, err)
+			require.Len(t, result.Items, 1)
+			assert.Equal(t, "50% discount", result.Items[0].Name)
+
+			// Test searching for "user_name" - should only match the exact name
+			page = &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"name": {"user_name"}},
+			}
+
+			result, err = agentRepo.List(ctx, &auth.IdentityScope{}, page)
+			require.NoError(t, err)
+			require.Len(t, result.Items, 1)
+			assert.Equal(t, "user_name", result.Items[0].Name)
+
+			// Test searching for "path\\to\\file" - should only match the exact name
+			page = &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"name": {"path\\to\\file"}},
+			}
+
+			result, err = agentRepo.List(ctx, &auth.IdentityScope{}, page)
+			require.NoError(t, err)
+			require.Len(t, result.Items, 1)
+			assert.Equal(t, "path\\to\\file", result.Items[0].Name)
+		})
+
 		t.Run("success - list with sorting", func(t *testing.T) {
 			ctx := context.Background()
 
