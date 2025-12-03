@@ -15,7 +15,7 @@ type GormParticipantRepository struct {
 }
 
 var applyParticipantFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"name":   StringInFilterFieldApplier("name"),
+	"name":   StringContainsInsensitiveFilterFieldApplier("name"),
 	"status": ParserInFilterFieldApplier("status", domain.ParseParticipantStatus),
 })
 
