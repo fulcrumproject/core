@@ -168,6 +168,8 @@ components:
       $ref: ./components/schemas/service_types.yaml#/ValidationError
     ValidatorDefinition:
       $ref: ./components/schemas/service_types.yaml#/ValidatorDefinition
+    SchemaValidatorConfig:
+      $ref: ./components/schemas/service_types.yaml#/SchemaValidatorConfig
     properties.UUID:
       $ref: ./components/schemas/common.yaml#/properties.UUID
 

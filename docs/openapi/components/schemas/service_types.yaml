@@ -181,6 +181,25 @@ ValidatorDefinition:
       description: Configuration for the validator (structure depends on validator type)
       additionalProperties: true
 
+SchemaValidatorConfig:
+  type: object
+  required:
+    - type
+    - config
+  properties:
+    type:
+      type: string
+      enum: [exactlyOne]
+      description: Type of schema-level validator
+    config:
+      type: object
+      description: Configuration for the schema validator
+      additionalProperties: true
+  example:
+    type: "exactlyOne"
+    config:
+      properties: ["option1", "option2"]
+
 ValidationError:
   type: object
   properties:
