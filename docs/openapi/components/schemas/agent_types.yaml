@@ -72,16 +72,36 @@ UpdateAgentTypeReq:
 ConfigurationSchema:
   type: object
   description: Schema defining validation rules and structure for agent configuration properties
-  additionalProperties:
-    $ref: "./service_types.yaml#/PropertyDefinition"
+  properties:
+    properties:
+      type: object
+      description: Property definitions keyed by property name
+      additionalProperties:
+        $ref: "./service_types.yaml#/PropertyDefinition"
+    validators:
+      type: array
+      description: Schema-level validators (e.g., exactlyOne)
+      items:
+        $ref: "./service_types.yaml#/SchemaValidatorConfig"
   example:
-    apiEndpoint:
-      type: "string"
-      label: "API Endpoint"
-      required: true
-    maxRetries:
-      type: "integer"
-      label: "Max Retries"
-      default: 3
-
+    properties:
+      apiEndpoint:
+        type: "string"
+        label: "API Endpoint"
+        required: true
+        validators:
+          - type: "pattern"
+            config:
+              pattern: "^https?://"
+      maxRetries:
+        type: "integer"
+        label: "Max Retries"
+        default: 3
+        validators:
+          - type: "min"
+            config:
+              value: 0
+          - type: "max"
+            config:
+              value: 10
 # Service Group schemas
