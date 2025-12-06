@@ -6,6 +6,7 @@ import (
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -224,6 +225,51 @@ func TestAgentTypeRepository(t *testing.T) {
 			count, err := repo.Count(ctx)
 			require.NoError(t, err)
 			assert.Equal(t, result.TotalItems, count)
+		})
+	})
+
+	t.Run("Save", func(t *testing.T) {
+		t.Run("replaces service type associations", func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup: Create initial service types
+			serviceType1 := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType1))
+			serviceType2 := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType2))
+			serviceType3 := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType3))
+
+			// Create agent type with initial service types (1 and 2)
+			agentType := createTestAgentType(t)
+			agentType.ServiceTypes = []domain.ServiceType{*serviceType1, *serviceType2}
+			require.NoError(t, repo.Create(ctx, agentType))
+
+			// Verify initial associations
+			found, err := repo.Get(ctx, agentType.ID)
+			require.NoError(t, err)
+			require.Len(t, found.ServiceTypes, 2)
+			assert.Equal(t, serviceType1.ID, found.ServiceTypes[0].ID)
+			assert.Equal(t, serviceType2.ID, found.ServiceTypes[1].ID)
+
+			// Update agent type to replace associations with new service types (2 and 3)
+			agentType.ServiceTypes = []domain.ServiceType{*serviceType2, *serviceType3}
+			err = repo.Save(ctx, agentType)
+			require.NoError(t, err)
+
+			// Verify associations were replaced
+			found, err = repo.Get(ctx, agentType.ID)
+			require.NoError(t, err)
+			require.Len(t, found.ServiceTypes, 2, "Should have exactly 2 service types after replacement")
+
+			// Verify old association (serviceType1) is gone
+			foundIDs := make(map[properties.UUID]bool)
+			for _, st := range found.ServiceTypes {
+				foundIDs[st.ID] = true
+			}
+			assert.False(t, foundIDs[serviceType1.ID], "Old service type 1 should be removed")
+			assert.True(t, foundIDs[serviceType2.ID], "Service type 2 should still be present")
+			assert.True(t, foundIDs[serviceType3.ID], "New service type 3 should be present")
 		})
 	})
 
