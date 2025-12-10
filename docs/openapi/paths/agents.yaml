@@ -21,7 +21,7 @@ get:
       in: query
       schema:
         type: integer
-        default: 20
+        default: 10
     - name: sort
       in: query
       schema:

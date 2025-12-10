@@ -1,74 +1,74 @@
-  get:
-    operationId: tokensList
-    summary: List tokens
-    tags:
-      - Tokens
-    description: Retrieves a paginated list of tokens
-    x-auth-permissions:
-      - role: admin
-        permission: all tokens
-      - role: participant
-        permission: tokens for its participant and associated agents
-      - role: agent
-        permission: not authorized
-    parameters:
-      - name: page
-        in: query
-        schema:
-          type: integer
-          default: 1
-      - name: pageSize
-        in: query
-        schema:
-          type: integer
-          default: 20
-    responses:
-      "200":
-        description: A paginated list of tokens
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: "../components/schemas/common.yaml#/PageRes"
-                - type: object
-                  properties:
-                    items:
-                      type: array
-                      items:
-                        $ref: "../components/schemas/tokens.yaml#/TokenRes"
-      "401":
-        $ref: "../components/responses.yaml#/Unauthorized"
-      "403":
-        $ref: "../components/responses.yaml#/Forbidden"
-  post:
-    operationId: tokensCreate
-    summary: Create a token
-    tags:
-      - Tokens
-    description: Creates a new authentication token. The plain token value is only returned in this response and cannot be retrieved later.
-    x-auth-permissions:
-      - role: admin
-        permission: always
-      - role: participant
-        permission: for itself and for its agents
-      - role: agent
-        permission: not authorized
-    requestBody:
-      required: true
+get:
+  operationId: tokensList
+  summary: List tokens
+  tags:
+    - Tokens
+  description: Retrieves a paginated list of tokens
+  x-auth-permissions:
+    - role: admin
+      permission: all tokens
+    - role: participant
+      permission: tokens for its participant and associated agents
+    - role: agent
+      permission: not authorized
+  parameters:
+    - name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    - name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 10
+  responses:
+    "200":
+      description: A paginated list of tokens
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/tokens.yaml#/TokenReq"
-    responses:
-      "201":
-        description: Token created successfully
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/tokens.yaml#/TokenRes"
-      "400":
-        description: Invalid request
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/common.yaml#/ErrorRes"
+            allOf:
+              - $ref: "../components/schemas/common.yaml#/PageRes"
+              - type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/tokens.yaml#/TokenRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+post:
+  operationId: tokensCreate
+  summary: Create a token
+  tags:
+    - Tokens
+  description: Creates a new authentication token. The plain token value is only returned in this response and cannot be retrieved later.
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: for itself and for its agents
+    - role: agent
+      permission: not authorized
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/tokens.yaml#/TokenReq"
+  responses:
+    "201":
+      description: Token created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/tokens.yaml#/TokenRes"
+    "400":
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

@@ -1,74 +1,74 @@
-  get:
-    operationId: metricTypesList
-    summary: List metric types
-    tags:
-      - Metrics
-    description: Retrieves a paginated list of metric types
-    x-auth-permissions:
-      - role: admin
-        permission: all metric types
-      - role: participant
-        permission: all metric types
-      - role: agent
-        permission: all metric types
-    parameters:
-      - name: page
-        in: query
-        schema:
-          type: integer
-          default: 1
-      - name: pageSize
-        in: query
-        schema:
-          type: integer
-          default: 20
-    responses:
-      "200":
-        description: A paginated list of metric types
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: "../components/schemas/common.yaml#/PageRes"
-                - type: object
-                  properties:
-                    items:
-                      type: array
-                      items:
-                        $ref: "../components/schemas/metric_types.yaml#/MetricTypeRes"
-      "401":
-        $ref: "../components/responses.yaml#/Unauthorized"
-      "403":
-        $ref: "../components/responses.yaml#/Forbidden"
-  post:
-    operationId: metricTypesCreate
-    summary: Create a metric type
-    tags:
-      - Metrics
-    description: Creates a new metric type
-    x-auth-permissions:
-      - role: admin
-        permission: always
-      - role: participant
-        permission: not authorized
-      - role: agent
-        permission: not authorized
-    requestBody:
-      required: true
+get:
+  operationId: metricTypesList
+  summary: List metric types
+  tags:
+    - Metrics
+  description: Retrieves a paginated list of metric types
+  x-auth-permissions:
+    - role: admin
+      permission: all metric types
+    - role: participant
+      permission: all metric types
+    - role: agent
+      permission: all metric types
+  parameters:
+    - name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    - name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 10
+  responses:
+    "200":
+      description: A paginated list of metric types
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/metric_types.yaml#/MetricTypeReq"
-    responses:
-      "201":
-        description: Metric type created successfully
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/metric_types.yaml#/MetricTypeRes"
-      "400":
-        description: Invalid request
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/common.yaml#/ErrorRes"
+            allOf:
+              - $ref: "../components/schemas/common.yaml#/PageRes"
+              - type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/metric_types.yaml#/MetricTypeRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+post:
+  operationId: metricTypesCreate
+  summary: Create a metric type
+  tags:
+    - Metrics
+  description: Creates a new metric type
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: not authorized
+    - role: agent
+      permission: not authorized
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/metric_types.yaml#/MetricTypeReq"
+  responses:
+    "201":
+      description: Metric type created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/metric_types.yaml#/MetricTypeRes"
+    "400":
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

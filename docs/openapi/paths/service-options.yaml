@@ -1,101 +1,101 @@
-  get:
-    operationId: serviceOptionsList
-    summary: List service options
-    tags:
-      - Service Options
-    description: Retrieves a paginated list of service options
-    x-auth-permissions:
-      - role: admin
-        permission: all service options
-      - role: participant
-        permission: service options for its provider
-      - role: agent
-        permission: service options for its provider
-    parameters:
-      - name: page
-        in: query
-        schema:
-          type: integer
-          default: 1
-      - name: pageSize
-        in: query
-        schema:
-          type: integer
-          default: 20
-      - name: sort
-        in: query
-        schema:
-          type: string
-        description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: name, displayOrder"
-        example: "+name"
-      - name: providerId
-        in: query
-        schema:
-          type: array
-          items:
-            $ref: "../components/schemas/common.yaml#/properties.UUID"
-        description: Filter by provider ID (can specify multiple values)
-      - name: serviceOptionTypeId
-        in: query
-        schema:
-          type: array
-          items:
-            $ref: "../components/schemas/common.yaml#/properties.UUID"
-        description: Filter by service option type ID (can specify multiple values)
-      - name: enabled
-        in: query
-        schema:
-          type: array
-          items:
-            type: boolean
-        description: Filter by enabled status (can specify multiple values)
-    responses:
-      "200":
-        description: A paginated list of service options
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: "../components/schemas/common.yaml#/PageRes"
-                - type: object
-                  properties:
-                    items:
-                      type: array
-                      items:
-                        $ref: "../components/schemas/service_options.yaml#/ServiceOptionRes"
-      "401":
-        $ref: "../components/responses.yaml#/Unauthorized"
-      "403":
-        $ref: "../components/responses.yaml#/Forbidden"
-  post:
-    operationId: serviceOptionsCreate
-    summary: Create a service option
-    tags:
-      - Service Options
-    description: Creates a new service option
-    x-auth-permissions:
-      - role: admin
-        permission: always
-      - role: participant
-        permission: for its participant as provider
-      - role: agent
-        permission: for its participant as provider
-    requestBody:
-      required: true
+get:
+  operationId: serviceOptionsList
+  summary: List service options
+  tags:
+    - Service Options
+  description: Retrieves a paginated list of service options
+  x-auth-permissions:
+    - role: admin
+      permission: all service options
+    - role: participant
+      permission: service options for its provider
+    - role: agent
+      permission: service options for its provider
+  parameters:
+    - name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    - name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 10
+    - name: sort
+      in: query
+      schema:
+        type: string
+      description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: name, displayOrder"
+      example: "+name"
+    - name: providerId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by provider ID (can specify multiple values)
+    - name: serviceOptionTypeId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by service option type ID (can specify multiple values)
+    - name: enabled
+      in: query
+      schema:
+        type: array
+        items:
+          type: boolean
+      description: Filter by enabled status (can specify multiple values)
+  responses:
+    "200":
+      description: A paginated list of service options
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/service_options.yaml#/ServiceOptionReq"
-    responses:
-      "201":
-        description: Service option created successfully
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/service_options.yaml#/ServiceOptionRes"
-      "400":
-        $ref: "../components/responses.yaml#/BadRequest"
-      "401":
-        $ref: "../components/responses.yaml#/Unauthorized"
-      "403":
-        $ref: "../components/responses.yaml#/Forbidden"
+            allOf:
+              - $ref: "../components/schemas/common.yaml#/PageRes"
+              - type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/service_options.yaml#/ServiceOptionRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+post:
+  operationId: serviceOptionsCreate
+  summary: Create a service option
+  tags:
+    - Service Options
+  description: Creates a new service option
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: for its participant as provider
+    - role: agent
+      permission: for its participant as provider
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/service_options.yaml#/ServiceOptionReq"
+  responses:
+    "201":
+      description: Service option created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/service_options.yaml#/ServiceOptionRes"
+    "400":
+      $ref: "../components/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
