@@ -14,7 +14,7 @@ type GormServiceOptionTypeRepository struct {
 }
 
 var applyServiceOptionTypeFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"name": StringInFilterFieldApplier("name"),
+	"name": StringContainsInsensitiveFilterFieldApplier("name"),
 	"type": StringInFilterFieldApplier("type"),
 })
 

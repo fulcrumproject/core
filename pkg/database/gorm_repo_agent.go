@@ -17,7 +17,7 @@ type GormAgentRepository struct {
 }
 
 var applyAgentFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"name":        StringInFilterFieldApplier("name"),
+	"name":        StringContainsInsensitiveFilterFieldApplier("name"),
 	"status":      ParserInFilterFieldApplier("status", domain.ParseAgentStatus),
 	"providerId":  ParserInFilterFieldApplier("provider_id", properties.ParseUUID),
 	"agentTypeId": ParserInFilterFieldApplier("agent_type_id", properties.ParseUUID),

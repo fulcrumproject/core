@@ -15,7 +15,7 @@ type GormServiceGroupRepository struct {
 }
 
 var applyServiceGroupFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"name": StringInFilterFieldApplier("name"),
+	"name": StringContainsInsensitiveFilterFieldApplier("name"),
 })
 
 var applyServiceGroupSort = MapSortApplier(map[string]string{

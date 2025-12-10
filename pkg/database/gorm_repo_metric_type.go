@@ -15,7 +15,7 @@ type GormMetricTypeRepository struct {
 }
 
 var applyMetricTypeFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"name": StringInFilterFieldApplier("name"),
+	"name": StringContainsInsensitiveFilterFieldApplier("name"),
 })
 
 var applyMetricTypeSort = MapSortApplier(map[string]string{

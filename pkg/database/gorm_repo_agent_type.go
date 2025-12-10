@@ -15,7 +15,7 @@ type GormAgentTypeRepository struct {
 }
 
 var applyAgentTypeFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"name": StringInFilterFieldApplier("name"),
+	"name": StringContainsInsensitiveFilterFieldApplier("name"),
 })
 
 var applyAgentTypeSort = MapSortApplier(map[string]string{

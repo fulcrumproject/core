@@ -15,7 +15,7 @@ type GormServicePoolSetRepository struct {
 
 var applyServicePoolSetFilter = MapFilterApplier(map[string]FilterFieldApplier{
 	"providerId": ParserInFilterFieldApplier("provider_id", properties.ParseUUID),
-	"name":       StringInFilterFieldApplier("name"),
+	"name":       StringContainsInsensitiveFilterFieldApplier("name"),
 })
 
 var applyServicePoolSetSort = MapSortApplier(map[string]string{
