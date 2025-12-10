@@ -49,12 +49,49 @@ UpdateServiceTypeReq:
       $ref: "./service_types.yaml#/LifecycleSchema"
       description: Updated lifecycle schema defining states, actions, and transitions for services of this type
 
-# Agent Type schemas
 PropertySchema:
   type: object
-  description: properties.JSON schema defining validation rules for service properties
-  additionalProperties:
-    $ref: "./service_types.yaml#/PropertyDefinition"
+  description: Schema defining validation rules and structure for service properties
+  properties:
+    properties:
+      type: object
+      description: Property definitions keyed by property name
+      additionalProperties:
+        $ref: "./service_types.yaml#/PropertyDefinition"
+    validators:
+      type: array
+      description: Schema-level validators (e.g., exactlyOne)
+      items:
+        $ref: "./service_types.yaml#/SchemaValidatorConfig"
+  example:
+    properties:
+      cpu:
+        type: "integer"
+        label: "CPU Cores"
+        required: true
+        validators:
+          - type: "min"
+            config:
+              value: 1
+          - type: "max"
+            config:
+              value: 32
+      memory:
+        type: "integer"
+        label: "Memory (MB)"
+        required: true
+        validators:
+          - type: "min"
+            config:
+              value: 512
+      environment:
+        type: "string"
+        label: "Environment"
+        default: "development"
+        validators:
+          - type: "enum"
+            config:
+              values: ["development", "staging", "production"]
 
 PropertyDefinition:
   type: object

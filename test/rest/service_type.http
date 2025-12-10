@@ -23,47 +23,101 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-    "name": "VM Instance Test",
+    "name": "VM Instance Test1234",
     "propertySchema": {
-        "cpu": {
-            "type": "integer",
-            "label": "CPU Cores",
-            "required": true,
-            "validators": [
-                {
-                    "type": "min",
-                    "value": 1
-                },
-                {
-                    "type": "max", 
-                    "value": 32
-                }
-            ]
-        },
-        "memory": {
-            "type": "integer",
-            "label": "Memory (MB)",
-            "required": true,
-            "validators": [
-                {
-                    "type": "min",
-                    "value": 512
-                }
-            ]
-        },
-        "environment": {
-            "type": "string",
-            "label": "Environment",
-            "default": "development",
-            "validators": [
-                {
-                    "type": "enum",
-                    "value": ["development", "staging", "production"]
-                }
-            ]
+        "properties": {
+            "cpu": {
+                "type": "integer",
+                "label": "CPU Cores",
+                "required": true,
+                "validators": [
+                    {
+                        "type": "min",
+                        "config": {
+                            "value": 1
+                        }
+                    },
+                    {
+                        "type": "max",
+                        "config": {
+                            "value": 32
+                        }
+                    }
+                ]
+            },
+            "memory": {
+                "type": "integer",
+                "label": "Memory (MB)",
+                "required": true,
+                "validators": [
+                    {
+                        "type": "min",
+                        "config": {
+                            "value": 512
+                        }
+                    }
+                ]
+            },
+            "environment": {
+                "type": "string",
+                "label": "Environment",
+                "default": "development",
+                "validators": [
+                    {
+                        "type": "enum",
+                        "config": {
+                            "values": ["development", "staging", "production"]
+                        }
+                    }
+                ]
+            }
         }
+    },
+    "lifecycleSchema": {
+        "states": [
+            {"name": "New"},
+            {"name": "Creating"},
+            {"name": "Created"},
+            {"name": "Started"},
+            {"name": "Stopped"},
+            {"name": "Deleted"}
+        ],
+        "actions": [
+            {
+                "name": "create",
+                "transitions": [
+                    {"from": "New", "to": "Creating"},
+                    {"from": "Creating", "to": "Created"}
+                ]
+            },
+            {
+                "name": "start",
+                "transitions": [
+                    {"from": "Created", "to": "Started"},
+                    {"from": "Stopped", "to": "Started"}
+                ]
+            },
+            {
+                "name": "stop",
+                "transitions": [
+                    {"from": "Started", "to": "Stopped"}
+                ]
+            },
+            {
+                "name": "delete",
+                "transitions": [
+                    {"from": "Stopped", "to": "Deleted"},
+                    {"from": "Created", "to": "Deleted"}
+                ]
+            }
+        ],
+        "initialState": "New",
+        "terminalStates": ["Deleted"],
+        "runningStates": ["Started"]
     }
+
 }
+
 
 @createdServiceTypeId = {{createServiceType.response.body.id}}
 
