@@ -1,70 +1,70 @@
-  get:
-    operationId: serviceOptionTypesList
-    summary: List service option types
-    tags:
-      - Service Options
-    description: Retrieves a paginated list of service option types
-    x-auth-permissions:
-      - role: admin
-        permission: all service option types
-      - role: participant
-        permission: all service option types
-      - role: agent
-        permission: all service option types
-    parameters:
-      - name: page
-        in: query
-        schema:
-          type: integer
-          default: 1
-      - name: pageSize
-        in: query
-        schema:
-          type: integer
-          default: 20
-    responses:
-      "200":
-        description: A paginated list of service option types
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: "../components/schemas/common.yaml#/PageRes"
-                - type: object
-                  properties:
-                    items:
-                      type: array
-                      items:
-                        $ref: "../components/schemas/service_option_types.yaml#/ServiceOptionTypeRes"
-      "401":
-        $ref: "../components/responses.yaml#/Unauthorized"
-      "403":
-        $ref: "../components/responses.yaml#/Forbidden"
-  post:
-    operationId: serviceOptionTypesCreate
-    summary: Create a service option type
-    tags:
-      - Service Options
-    description: Creates a new service option type
-    x-auth-permissions:
-      - role: admin
-        permission: always
-    requestBody:
-      required: true
+get:
+  operationId: serviceOptionTypesList
+  summary: List service option types
+  tags:
+    - Service Options
+  description: Retrieves a paginated list of service option types
+  x-auth-permissions:
+    - role: admin
+      permission: all service option types
+    - role: participant
+      permission: all service option types
+    - role: agent
+      permission: all service option types
+  parameters:
+    - name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    - name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 10
+  responses:
+    "200":
+      description: A paginated list of service option types
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/service_option_types.yaml#/ServiceOptionTypeReq"
-    responses:
-      "201":
-        description: Service option type created successfully
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/service_option_types.yaml#/ServiceOptionTypeRes"
-      "400":
-        $ref: "../components/responses.yaml#/BadRequest"
-      "401":
-        $ref: "../components/responses.yaml#/Unauthorized"
-      "403":
-        $ref: "../components/responses.yaml#/Forbidden"
+            allOf:
+              - $ref: "../components/schemas/common.yaml#/PageRes"
+              - type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/service_option_types.yaml#/ServiceOptionTypeRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+post:
+  operationId: serviceOptionTypesCreate
+  summary: Create a service option type
+  tags:
+    - Service Options
+  description: Creates a new service option type
+  x-auth-permissions:
+    - role: admin
+      permission: always
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/service_option_types.yaml#/ServiceOptionTypeReq"
+  responses:
+    "201":
+      description: Service option type created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/service_option_types.yaml#/ServiceOptionTypeRes"
+    "400":
+      $ref: "../components/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
