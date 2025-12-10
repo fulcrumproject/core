@@ -42,6 +42,22 @@ func (r *GormAgentTypeRepository) Count(ctx context.Context) (int64, error) {
 	return r.GormRepository.Count(ctx)
 }
 
+// Save overrides the base Save method to handle many-to-many association replacement
+func (r *GormAgentTypeRepository) Save(ctx context.Context, agentType *domain.AgentType) error {
+	if err := r.GormRepository.Save(ctx, agentType); err != nil {
+		return err
+	}
+
+	if agentType.ServiceTypes != nil {
+		err := r.GormRepository.db.WithContext(ctx).Model(agentType).Association("ServiceTypes").Replace(agentType.ServiceTypes)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // AuthScope returns the auth scope for the agent type
 func (r *GormAgentTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
 	// Agent types don't have scoping IDs as they are global resources
