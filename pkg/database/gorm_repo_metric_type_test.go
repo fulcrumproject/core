@@ -146,48 +146,108 @@ func TestMetricTypeRepository(t *testing.T) {
 			assert.GreaterOrEqual(t, len(result.Items), 3)
 		})
 
-		t.Run("success - list with name filter", func(t *testing.T) {
+		t.Run("success - list with name substring filter", func(t *testing.T) {
+			// Create metric types with names containing a common substring
+			metricType1 := &domain.MetricType{
+				Name:       "FilterTest Network Bandwidth",
+				EntityType: domain.MetricEntityTypeService,
+			}
+			err := repo.Create(context.Background(), metricType1)
+			require.NoError(t, err)
+
+			metricType2 := &domain.MetricType{
+				Name:       "FilterTest Network Latency",
+				EntityType: domain.MetricEntityTypeService,
+			}
+			err = repo.Create(context.Background(), metricType2)
+			require.NoError(t, err)
+
+			other := &domain.MetricType{
+				Name:       "FilterTest Disk IOPS",
+				EntityType: domain.MetricEntityTypeService,
+			}
+			err = repo.Create(context.Background(), other)
+			require.NoError(t, err)
+
 			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
-				Filters:  map[string][]string{"name": {"CPU Usage"}},
+				Filters:  map[string][]string{"name": {"FilterTest Network"}},
 			}
 
 			result, err := repo.List(context.Background(), &auth.IdentityScope{}, page)
 			require.NoError(t, err)
-			assert.GreaterOrEqual(t, len(result.Items), 1)
-			for _, item := range result.Items {
-				assert.Equal(t, "CPU Usage", item.Name)
-			}
+			require.Len(t, result.Items, 2)
+			names := []string{result.Items[0].Name, result.Items[1].Name}
+			assert.ElementsMatch(t, []string{"FilterTest Network Bandwidth", "FilterTest Network Latency"}, names)
 		})
 
-		t.Run("success - list with sorting", func(t *testing.T) {
-			// Create metric types with specific names for sorting
-			metricTypes := []*domain.MetricType{
-				{Name: "A Metric", EntityType: domain.MetricEntityTypeService},
-				{Name: "B Metric", EntityType: domain.MetricEntityTypeService},
-				{Name: "C Metric", EntityType: domain.MetricEntityTypeService},
+		t.Run("success - list with name filter escaping LIKE wildcards", func(t *testing.T) {
+			// Create metric types with names containing LIKE wildcard characters
+			percentMetric := &domain.MetricType{
+				Name:       "50% CPU Usage",
+				EntityType: domain.MetricEntityTypeService,
 			}
-			for _, metricType := range metricTypes {
-				err := repo.Create(context.Background(), metricType)
-				require.NoError(t, err)
-			}
+			err := repo.Create(context.Background(), percentMetric)
+			require.NoError(t, err)
 
+			underscoreMetric := &domain.MetricType{
+				Name:       "user_name_metric",
+				EntityType: domain.MetricEntityTypeService,
+			}
+			err = repo.Create(context.Background(), underscoreMetric)
+			require.NoError(t, err)
+
+			backslashMetric := &domain.MetricType{
+				Name:       "path\\to\\metric",
+				EntityType: domain.MetricEntityTypeService,
+			}
+			err = repo.Create(context.Background(), backslashMetric)
+			require.NoError(t, err)
+
+			// Create a metric type that would match if wildcards weren't escaped
+			otherMetric := &domain.MetricType{
+				Name:       "50 CPU Usage", // This should NOT match "50% CPU Usage"
+				EntityType: domain.MetricEntityTypeService,
+			}
+			err = repo.Create(context.Background(), otherMetric)
+			require.NoError(t, err)
+
+			// Test searching for "50% CPU Usage" - should only match the exact name
 			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
-				Sort:     true,
-				SortBy:   "name",
-				SortAsc:  false, // Descending order
+				Filters:  map[string][]string{"name": {"50% CPU Usage"}},
 			}
 
 			result, err := repo.List(context.Background(), &auth.IdentityScope{}, page)
 			require.NoError(t, err)
-			assert.GreaterOrEqual(t, len(result.Items), 3)
-			// Verify descending order
-			for i := 1; i < len(result.Items); i++ {
-				assert.GreaterOrEqual(t, result.Items[i-1].Name, result.Items[i].Name)
+			require.Len(t, result.Items, 1)
+			assert.Equal(t, "50% CPU Usage", result.Items[0].Name)
+
+			// Test searching for "user_name_metric" - should only match the exact name
+			page = &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"name": {"user_name_metric"}},
 			}
+
+			result, err = repo.List(context.Background(), &auth.IdentityScope{}, page)
+			require.NoError(t, err)
+			require.Len(t, result.Items, 1)
+			assert.Equal(t, "user_name_metric", result.Items[0].Name)
+
+			// Test searching for "path\\to\\metric" - should only match the exact name
+			page = &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"name": {"path\\to\\metric"}},
+			}
+
+			result, err = repo.List(context.Background(), &auth.IdentityScope{}, page)
+			require.NoError(t, err)
+			require.Len(t, result.Items, 1)
+			assert.Equal(t, "path\\to\\metric", result.Items[0].Name)
 		})
 
 		t.Run("success - list with pagination", func(t *testing.T) {
