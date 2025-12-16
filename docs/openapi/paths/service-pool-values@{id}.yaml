@@ -2,7 +2,7 @@ get:
   operationId: servicePoolValuesGet
   summary: Get a service pool value by ID
   tags:
-    - Service Pools
+    - Services
   description: Retrieves details of a specific service pool value including allocation status
   x-auth-permissions:
     - role: admin

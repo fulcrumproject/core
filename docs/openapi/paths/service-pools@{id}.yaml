@@ -2,7 +2,7 @@ get:
   operationId: servicePoolsGet
   summary: Get a service pool by ID
   tags:
-    - Service Pools
+    - Services
   description: Retrieves details of a specific service pool
   x-auth-permissions:
     - role: admin
