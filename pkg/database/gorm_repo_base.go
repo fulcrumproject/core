@@ -143,6 +143,13 @@ func participantAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) *gorm.DB {
 	return q
 }
 
+func participantSelfAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) *gorm.DB {
+	if s.ParticipantID != nil {
+		return q.Where("id = ?", s.ParticipantID)
+	}
+	return q
+}
+
 func providerConsumerAgentAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) *gorm.DB {
 	if s.ParticipantID != nil {
 		return q.Where("consumer_id = ? OR provider_id = ?", s.ParticipantID, s.ParticipantID)
