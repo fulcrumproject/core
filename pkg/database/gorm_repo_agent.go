@@ -36,7 +36,7 @@ func NewAgentRepository(db *gorm.DB) *GormAgentRepository {
 			applyAgentSort,
 			agentAuthzFilterApplier,
 			[]string{"Provider", "AgentType", "AgentType.ServiceTypes", "ServicePoolSet"}, // Find preload paths
-			[]string{"Provider"}, // List preload paths (only Provider for list operations)
+			[]string{"Provider", "AgentType"}, // List preload paths 
 		),
 	}
 	return repo
