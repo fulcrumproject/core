@@ -34,7 +34,7 @@ delete:
   operationId: servicePoolValuesDelete
   summary: Delete a service pool value
   tags:
-    - Service Pools
+    - Services
   description: Deletes an existing service pool value (only if not allocated)
   x-auth-permissions:
     - role: admin

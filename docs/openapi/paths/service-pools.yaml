@@ -72,7 +72,7 @@ post:
   operationId: servicePoolsCreate
   summary: Create a service pool
   tags:
-    - Service Pools
+    - Services
   description: Creates a new service pool
   x-auth-permissions:
     - role: admin

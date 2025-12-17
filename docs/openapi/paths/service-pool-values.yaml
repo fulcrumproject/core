@@ -64,7 +64,7 @@ post:
   operationId: servicePoolValuesCreate
   summary: Create a service pool value
   tags:
-    - Service Pools
+    - Services
   description: Creates a new service pool value (for list generators only)
   x-auth-permissions:
     - role: admin
