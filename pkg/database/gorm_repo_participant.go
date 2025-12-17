@@ -30,7 +30,7 @@ func NewParticipantRepository(db *gorm.DB) *GormParticipantRepository {
 			db,
 			applyParticipantFilter,
 			applyParticipantSort,
-			participantAuthzFilterApplier,
+			participantSelfAuthzFilterApplier,
 			[]string{}, // Find preload paths - no specific preloads required for participants
 			[]string{}, // List preload paths - no specific preloads required for participants
 		),
