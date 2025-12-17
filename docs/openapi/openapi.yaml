@@ -16,7 +16,7 @@ tags:
   - name: Agents
     description: Agent and agent type management
   - name: Services
-    description: Service, service type, and service group management
+    description: Service, service type, service group management and service pools
   - name: Jobs
     description: Job queue and processing
   - name: Metrics

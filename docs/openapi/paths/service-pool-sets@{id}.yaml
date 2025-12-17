@@ -32,7 +32,7 @@ patch:
   operationId: servicePoolSetsUpdate
   summary: Update a service pool set
   tags:
-    - Service Pools
+    - Services
   description: Updates an existing service pool set
   x-auth-permissions:
     - role: admin
@@ -70,7 +70,7 @@ delete:
   operationId: servicePoolSetsDelete
   summary: Delete a service pool set
   tags:
-    - Service Pools
+    - Services
   description: Deletes an existing service pool set
   x-auth-permissions:
     - role: admin
