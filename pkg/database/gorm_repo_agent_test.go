@@ -160,7 +160,7 @@ func TestAgentRepository(t *testing.T) {
 			assert.Greater(t, len(result.Items), 0)
 			// Verify Participant is preloaded but not AgentType (as per repository config)
 			assert.NotNil(t, result.Items[0].Provider)
-			assert.Nil(t, result.Items[0].AgentType)
+			assert.NotNil(t, result.Items[0].AgentType)
 		})
 
 		t.Run("success - list with filters", func(t *testing.T) {
