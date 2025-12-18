@@ -163,6 +163,7 @@ func (a *Agent) Update(name *string, tags *[]string, configuration *properties.J
 
 	if servicePoolSetID != nil {
 		a.ServicePoolSetID = servicePoolSetID
+		a.ServicePoolSet = nil
 		updated = true
 	}
 

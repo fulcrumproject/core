@@ -292,6 +292,66 @@ Content-Type: application/json
     }
 }
 
+
+### Create a service pool set for testing
+# @name createPoolSet1
+POST {{baseUrl}}/service-pool-sets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Pool Set 1",
+    "providerId": "{{providerId}}"
+}
+
+@poolSetId1 = {{createPoolSet1.response.body.$.id}}
+
+### Create another service pool set for testing
+# @name createPoolSet2
+POST {{baseUrl}}/service-pool-sets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Pool Set 2",
+    "providerId": "{{providerId}}"
+}
+
+@poolSetId2 = {{createPoolSet2.response.body.$.id}}
+
+### Create agent with initial pool set
+# @name createAgentWithPoolSet
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Agent With Pool Set",
+    "providerId": "{{providerId}}",
+    "agentTypeId": "{{agentTypeId}}",
+    "servicePoolSetId": "{{poolSetId1}}",
+    "tags": ["test"]
+}
+
+@agentWithPoolSetId = {{createAgentWithPoolSet.response.body.$.id}}
+
+### Verify agent has initial pool set
+GET {{baseUrl}}/agents/{{agentWithPoolSetId}}
+Authorization: Bearer {{adminToken}}
+
+### ✅ TEST: Update agent's servicePoolSetId
+PATCH {{baseUrl}}/agents/{{agentWithPoolSetId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "servicePoolSetId": "{{poolSetId2}}"
+}
+
+### Verify agent's servicePoolSetId was updated
+GET {{baseUrl}}/agents/{{agentWithPoolSetId}}
+Authorization: Bearer {{adminToken}}
+
 ### Create a new token for the agent
 # @name createNewToken
 POST {{baseUrl}}/tokens
