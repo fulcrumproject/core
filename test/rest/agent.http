@@ -2,7 +2,7 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
-@adminToken = change-me
+@adminToken = eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI5b1VqclNXTGxRRWtrWnVQay1jSFZPZzVLdjVLV0tRNkpaWlRuM0ptbE9BIn0.eyJleHAiOjE3NjYwNzUyMDIsImlhdCI6MTc2NjA3NDkwMiwianRpIjoib25ydHJvOmM4MDQ3NWJlLWRiNmYtNGEzOC1hZjZiLTEyM2ViZTIzN2VhNCIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MC9yZWFsbXMvZnVsY3J1bSIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI4OGFmNDhhNC1jZDg5LTRjNGEtODQxZi1kOTBkYjE3YTVlODQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJmdWxjcnVtLWFwaSIsInNpZCI6IjkyOThhY2Y3LWQ0NDEtNDcxOC1iZGUzLTY2OGRhZmNiN2FjMiIsInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsImFkbWluIiwiZGVmYXVsdC1yb2xlcy1mdWxjcnVtIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6Im9wZW5pZCBmdWxjcnVtX2lkcyBwcm9maWxlIiwibmFtZSI6IkZ1bGNydW0gQWRtaW4gMSIsInByZWZlcnJlZF91c2VybmFtZSI6ImFkbWluMSIsImdpdmVuX25hbWUiOiJGdWxjcnVtIiwiZmFtaWx5X25hbWUiOiJBZG1pbiAxIn0.ZhINeYzAz3ldmpXyUOkLH-nnP1NNZU9yzrG__R3__fB8hef61fSy6Cupz3ft21i5o4s_kHZ52CVS_qaKwakpDnUAcZMropj6APO52QK1pFfOUGT6kIcNeF2PWUMbKPguh-jGo7bEWr-0JE8PfdcT-_761F3jg5LncpoFETwAogOV9AMQfUwX1DG7IjvDO99swKFeuQh13AbnbrpmLZmXlZ6a8tyPLDWVsj8PGFSp1y5CYKFhVtXetRxrQP-3-flOfz6TY4K1HuIxsGbP1q_L1zHQVrP3QtZhPj4hBdkrbvsAqt_LwFY7ZKXmioUYVcE1sJekXt1znqzZvgLBPCj9pw
 
 ### Create a provider for testing
 # @name createProvider
@@ -291,6 +291,66 @@ Content-Type: application/json
         "pollingInterval": 2
     }
 }
+
+
+### Create a service pool set for testing
+# @name createPoolSet1
+POST {{baseUrl}}/service-pool-sets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Pool Set 1",
+    "providerId": "{{providerId}}"
+}
+
+@poolSetId1 = {{createPoolSet1.response.body.$.id}}
+
+### Create another service pool set for testing
+# @name createPoolSet2
+POST {{baseUrl}}/service-pool-sets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Pool Set 2",
+    "providerId": "{{providerId}}"
+}
+
+@poolSetId2 = {{createPoolSet2.response.body.$.id}}
+
+### Create agent with initial pool set
+# @name createAgentWithPoolSet
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Agent With Pool Set",
+    "providerId": "{{providerId}}",
+    "agentTypeId": "{{agentTypeId}}",
+    "servicePoolSetId": "{{poolSetId1}}",
+    "tags": ["test"]
+}
+
+@agentWithPoolSetId = {{createAgentWithPoolSet.response.body.$.id}}
+
+### Verify agent has initial pool set
+GET {{baseUrl}}/agents/{{agentWithPoolSetId}}
+Authorization: Bearer {{adminToken}}
+
+### ✅ TEST: Update agent's servicePoolSetId
+PATCH {{baseUrl}}/agents/{{agentWithPoolSetId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "servicePoolSetId": "{{poolSetId2}}"
+}
+
+### Verify agent's servicePoolSetId was updated
+GET {{baseUrl}}/agents/{{agentWithPoolSetId}}
+Authorization: Bearer {{adminToken}}
 
 ### Create a new token for the agent
 # @name createNewToken
