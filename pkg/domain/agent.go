@@ -244,6 +244,17 @@ func (s *agentCommander) Create(
 		return nil, NewInvalidInputErrorf("agent type with ID %s does not exist", params.AgentTypeID)
 	}
 
+	if params.ServicePoolSetID != nil {
+    servicePoolSet, err := s.store.ServicePoolSetRepo().Get(ctx, *params.ServicePoolSetID)
+    if err != nil {
+      return nil, NewInvalidInputErrorf("service pool set with ID %s does not exist", params.ServicePoolSetID)
+    }
+
+    if servicePoolSet.ProviderID != params.ProviderID {
+      return nil, NewInvalidInputErrorf("service pool set with ID %s does not belong to provider %s", *params.ServicePoolSetID, params.ProviderID)
+    }
+  }
+
 	// Create and save
 	var agent *Agent
 	err = s.store.Atomic(ctx, func(store Store) error {
@@ -310,6 +321,17 @@ func (s *agentCommander) Update(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+
+  if params.ServicePoolSetID != nil {
+    servicePoolSet, err := s.store.ServicePoolSetRepo().Get(ctx, *params.ServicePoolSetID)
+    if err != nil {
+      return nil, err
+    }
+  
+    if servicePoolSet.ProviderID != agent.ProviderID {
+      return nil, NewInvalidInputErrorf("service pool set with ID %s does not belong to provider %s", params.ServicePoolSetID, agent.ProviderID)
+    }
+  }
 
 	// Update and validate
 	if params.Status != nil {
