@@ -1,97 +1,112 @@
-  parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        $ref: "../components/schemas/common.yaml#/properties.UUID"
-  get:
-    operationId: tokensGet
-    summary: Get a token
-    tags:
-      - Tokens
-    description: Retrieves a specific token by ID. Note that the plain token value is not returned in this endpoint.
-    x-auth-permissions:
-      - role: admin
-        permission: all tokens
-      - role: participant
-        permission: its own tokens and those of its agents
-      - role: agent
-        permission: not authorized
-    responses:
-      "200":
-        description: The token details
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/tokens.yaml#/TokenRes"
-      "404":
-        description: Token not found
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/common.yaml#/ErrorRes"
-  patch:
-    operationId: tokensUpdate
-    summary: Update a token
-    tags:
-      - Tokens
-    description: Updates an existing token
-    x-auth-permissions:
-      - role: admin
-        permission: always
-      - role: participant
-        permission: its own tokens and those of its agents
-      - role: agent
-        permission: not authorized
-    requestBody:
-      required: true
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      $ref: "../components/schemas/common.yaml#/properties.UUID"
+get:
+  operationId: tokensGet
+  summary: Get a token
+  tags:
+    - Tokens
+  description: Retrieves a specific token by ID. Note that the plain token value is not returned in this endpoint.
+  x-auth-permissions:
+    - role: admin
+      permission: all tokens
+    - role: participant
+      permission: its own tokens and those of its agents
+    - role: agent
+      permission: not authorized
+  responses:
+    "200":
+      description: The token details
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              name:
-                type: string
-                example: "Updated Token Name"
-              role:
-                $ref: "../components/schemas/tokens.yaml#/AuthRole"
-              expireAt:
-                type: string
-                format: date-time
-              scopeId:
-                $ref: "../components/schemas/common.yaml#/properties.UUID"
-    responses:
-      "200":
-        description: Token updated successfully
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/tokens.yaml#/TokenRes"
-      "404":
-        description: Token not found
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/common.yaml#/ErrorRes"
-  delete:
-    operationId: tokensDelete
-    summary: Delete a token
-    tags:
-      - Tokens
-    description: Deletes a token by ID
-    x-auth-permissions:
-      - role: admin
-        permission: always
-      - role: participant
-        permission: its own tokens and those of its agents
-      - role: agent
-        permission: not authorized
-    responses:
-      "204":
-        description: Token deleted successfully
-      "404":
-        description: Token not found
-        content:
-          application/json:
-            schema:
-              $ref: "../components/schemas/common.yaml#/ErrorRes"
+            $ref: "../components/schemas/tokens.yaml#/TokenRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Token not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+patch:
+  operationId: tokensUpdate
+  summary: Update a token
+  tags:
+    - Tokens
+  description: Updates an existing token
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: its own tokens and those of its agents
+    - role: agent
+      permission: not authorized
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              example: "Updated Token Name"
+            expireAt:
+              type: string
+              format: date-time
+              example: "2025-12-31T23:59:59Z"
+  responses:
+    "200":
+      description: Token updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/tokens.yaml#/TokenRes"
+    "400":
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Token not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+delete:
+  operationId: tokensDelete
+  summary: Delete a token
+  tags:
+    - Tokens
+  description: Deletes a token by ID
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: its own tokens and those of its agents
+    - role: agent
+      permission: not authorized
+  responses:
+    "204":
+      description: Token deleted successfully
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Token not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
