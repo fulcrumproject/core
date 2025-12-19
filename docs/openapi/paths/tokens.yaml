@@ -22,6 +22,41 @@ get:
       schema:
         type: integer
         default: 10
+    - name: sort
+      in: query
+      schema:
+        type: string
+      description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: name, expireAt, createdAt"
+      example: "+name"
+    - name: name
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+      description: Filter by token name (can specify multiple values)
+    - name: role
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+          enum: [admin, participant, agent]
+      description: Filter by token role (can specify multiple values)
+    - name: participantId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by participant ID (can specify multiple values)
+    - name: agentId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by agent ID (can specify multiple values)
   responses:
     "200":
       description: A paginated list of tokens
@@ -72,3 +107,7 @@ post:
         application/json:
           schema:
             $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"

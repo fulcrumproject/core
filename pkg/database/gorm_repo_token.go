@@ -18,6 +18,8 @@ type GormTokenRepository struct {
 var applyTokenFilter = MapFilterApplier(map[string]FilterFieldApplier{
 	"name": StringContainsInsensitiveFilterFieldApplier("name"),
 	"role": StringInFilterFieldApplier("role"),
+	"participantId": ParserInFilterFieldApplier("participant_id", properties.ParseUUID),
+	"agentId": ParserInFilterFieldApplier("agent_id", properties.ParseUUID),
 })
 
 var applyTokenSort = MapSortApplier(map[string]string{

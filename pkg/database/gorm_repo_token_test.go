@@ -178,6 +178,83 @@ func TestTokenRepository(t *testing.T) {
 			}
 		})
 
+		t.Run("success - list with agent_id filter", func(t *testing.T){
+			ctx := context.Background()
+
+			agentToken := &domain.Token{
+				Name: "Agent Token for Filter Test",
+				Role: auth.RoleAgent,
+				ExpireAt: time.Now().Add(24 * time.Hour),
+				AgentID: &agent.ID,
+				ParticipantID: &participant.ID,
+			}
+
+			require.NoError(t, agentToken.GenerateTokenValue())
+			require.NoError(t, repo.Create(ctx, agentToken))
+
+
+			otherAgentToken := createTestToken(t, auth.RoleAgent, nil)
+			require.NoError(t, repo.Create(ctx, otherAgentToken))
+
+			page := &domain.PageReq{
+				Page: 1,
+				PageSize: 10,
+				Filters: map[string][]string{"agentId": {agent.ID.String()}},
+			}
+
+			result, err := repo.List(ctx, &auth.IdentityScope{}, page)
+
+			require.NoError(t, err)
+			found := false 
+
+			for _, item := range result.Items {
+				if item.ID == agentToken.ID {
+					found = true
+					assert.Equal(t, agent.ID, *item.AgentID)
+					break
+				}
+			}
+			assert.True(t, found, "Expected to find the token with the filtered agent ID")
+			
+			// Verify other token is not in results
+			for _, item := range result.Items {
+				assert.NotEqual(t, otherAgentToken.ID, item.ID, "Should not include tokens from other agents")
+			}
+		})
+
+		t.Run("success - list with participantId filter", func(t *testing.T) {
+			ctx := context.Background()
+		
+			// Setup - create participant token
+			participantToken := createTestToken(t, auth.RoleParticipant, &participant.ID)
+			require.NoError(t, repo.Create(ctx, participantToken))
+		
+			// Create another token with different participant to ensure filter works
+			otherToken := createTestToken(t, auth.RoleAdmin, nil)
+			require.NoError(t, repo.Create(ctx, otherToken))
+		
+			page := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"participantId": {participant.ID.String()}},
+			}
+		
+			// Execute
+			result, err := repo.List(ctx, &auth.IdentityScope{}, page)
+		
+			// Assert
+			require.NoError(t, err)
+			found := false
+			for _, item := range result.Items {
+				if item.ID == participantToken.ID {
+					found = true
+					assert.Equal(t, participant.ID, *item.ParticipantID)
+					break
+				}
+			}
+			assert.True(t, found, "Expected to find the token with the filtered participant ID")
+		})
+
 		t.Run("success - list with sorting", func(t *testing.T) {
 			ctx := context.Background()
 
