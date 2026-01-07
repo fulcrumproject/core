@@ -234,9 +234,32 @@ func (s *tokenCommander) Create(
 ) (*Token, error) {
 	// Validate permissions
 	id := auth.MustGetIdentity(ctx)
-	if !id.HasRole(auth.RoleAdmin) && params.Role != id.Role {
-		return nil, NewInvalidInputErrorf("role %s not allowed", params.Role)
-	}
+
+	// Only Admin can create Admin token
+	if !id.HasRole(auth.RoleAdmin) {
+    if params.Role == auth.RoleAdmin {
+      return nil, NewInvalidInputErrorf("role %s not allowed", params.Role)
+    }
+
+		// Non-admin participants should only be able to create tokens for their agent
+		if params.Role == auth.RoleAgent && params.ScopeID != nil {
+			agent, err := s.store.AgentRepo().Get(ctx, *params.ScopeID)
+			if err != nil {
+				return nil, NewInvalidInputErrorf("invalid agent ID: %v", err)
+			}
+
+			if id.Scope.ParticipantID != nil && agent.ProviderID != *id.Scope.ParticipantID {
+				return nil, NewUnauthorizedErrorf("cannot create token for agent belonging to another participant")
+			}
+		}
+
+		// Non admin participants should only be able to create tokens for itself
+		if params.Role == auth.RoleParticipant && params.ScopeID != nil {
+			if id.Scope.ParticipantID != nil && *params.ScopeID != *id.Scope.ParticipantID {
+				return nil, NewUnauthorizedErrorf("cannot create token for another participant")
+			}
+		}
+  }
 
 	// Create, save and event
 	var token *Token

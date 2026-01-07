@@ -97,3 +97,165 @@ Authorization: Bearer {{providerToken}}
   "expireAt": "{{$datetime iso8601 1 y}}",
   "scopeId": "{{providerId}}"
 }
+
+### Create agent type
+# @name createAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminTokenNew}}
+Content-Type: application/json
+
+{
+  "name": "Test Agent Type Token",
+     "configurationSchema": {
+        "properties": {
+            "apiEndpoint": {
+                "type": "string",
+                "label": "API Endpoint",
+                "required": true,
+            "validators": [
+                {
+                    "type": "pattern",
+                    "config": {
+                        "pattern": "^https?://"
+                    }
+                }
+            ]
+            },
+            "apiKey": {
+                "type": "string",
+                "label": "API Key",
+                "required": true,
+                "secret": {
+                    "type": "persistent"
+                }
+            },
+            "maxRetries": {
+                "type": "integer",
+                "label": "Maximum Retries",
+                "default": 3,
+            "validators": [
+                {
+                    "type": "min",
+                    "config": {
+                        "value": 0
+                    }
+                },
+                {
+                    "type": "max",
+                    "config": {
+                        "value": 10
+                    }
+                }
+            ]
+            },
+            "pollingInterval": {
+                "type": "integer",
+                "label": "Polling Interval (seconds)",
+                "default": 30,
+            "validators": [
+                {
+                    "type": "min",
+                    "config": {
+                        "value": 5
+                    }
+                }
+            ]
+            },
+            "enableMetrics": {
+                "type": "boolean",
+                "label": "Enable Metrics Collection",
+                "default": true
+            },
+            "logLevel": {
+                "type": "string",
+                "label": "Log Level",
+                "default": "info",
+            "validators": [
+                {
+                    "type": "enum",
+                    "config": {
+                        "values": ["debug", "info", "warn", "error"]
+                    }
+                }
+            ]
+            }
+        }
+    }
+}
+
+@agentTypeId = {{createAgentType.response.body.$.id}}
+
+### Create agent for Provider 1
+# @name createAgent
+POST {{baseUrl}}/agents
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Agent",
+  "providerId": "{{providerId}}",
+  "agentTypeId": "{{agentTypeId}}"
+}
+
+@agentId = {{createAgent.response.body.$.id}}
+
+### TEST 1: Participant creates agent token ✅ (Should succeed)
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "name": "Agent Token",
+  "role": "agent",
+  "scopeId": "{{agentId}}"
+}
+
+### TEST 2: Participant tries to create admin token ❌ (Should fail)
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "name": "Admin Token Attempt",
+  "role": "admin"
+}
+
+### Create a new provider token for Provider 2
+# @name createProviderToken2
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminTokenNew}}
+
+{
+  "name": "Test Provider 2 Token",
+  "role": "participant",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{providerId2}}"
+}
+
+@providerTokenId2 = {{createProviderToken2.response.body.$.id}}
+@providerToken2 = {{createProviderToken2.response.body.$.value}}
+
+### Create agent for Provider 2
+# @name createAgent2
+POST {{baseUrl}}/agents
+Authorization: Bearer {{providerToken2}}
+Content-Type: application/json
+
+{
+  "name": "Test Agent Provider 2",
+  "providerId": "{{providerId2}}",
+  "agentTypeId": "{{agentTypeId}}"
+}
+
+@agentId2 = {{createAgent2.response.body.$.id}}
+
+### TEST 3: Participant 1 tries to create agent token for Participant 2's agent ❌ (Should fail - 403 Forbidden)
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "name": "Agent Token for Provider 2's Agent",
+  "role": "agent",
+  "scopeId": "{{agentId2}}"
+}
