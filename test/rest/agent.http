@@ -381,3 +381,102 @@ Authorization: Bearer {{newAgentToken}}
 ### Delete an agent
 DELETE {{baseUrl}}/agents/{{agentId}}
 Authorization: Bearer {{adminToken}}
+
+### Create a service pool set for provider 1
+# @name createPoolSet1
+POST {{baseUrl}}/service-pool-sets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Pool Set 1",
+    "providerId": "{{providerId}}"
+}
+
+@poolSetId1 = {{createPoolSet1.response.body.$.id}}
+
+### Create a second provider for cross-provider testing
+# @name createProvider2
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Test Provider 2",
+    "status": "Enabled"
+}
+
+@providerId2 = {{createProvider2.response.body.$.id}}
+
+### Create a service pool set for provider 2
+# @name createPoolSetProvider2
+POST {{baseUrl}}/service-pool-sets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Pool Set Provider 2",
+    "providerId": "{{providerId2}}"
+}
+
+@poolSetIdProvider2 = {{createPoolSetProvider2.response.body.$.id}}
+
+
+### Create agent with initial pool set
+# @name createAgentWithPoolSet
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Agent With Pool Set",
+    "providerId": "{{providerId}}",
+    "agentTypeId": "{{agentTypeId}}",
+    "servicePoolSetId": "{{poolSetId1}}",
+    "tags": ["test"]
+}
+
+@agentWithPoolSetId = {{createAgentWithPoolSet.response.body.$.id}}
+
+### Verify agent has initial pool set
+GET {{baseUrl}}/agents/{{agentWithPoolSetId}}
+Authorization: Bearer {{adminToken}}
+
+### ❌ TEST: Create agent with servicePoolSetId from different provider (should fail with 400)
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Agent With Wrong Pool Set",
+    "providerId": "{{providerId}}",
+    "agentTypeId": "{{agentTypeId}}",
+    "servicePoolSetId": "{{poolSetIdProvider2}}",
+    "tags": ["test"]
+}
+
+### ❌ TEST: Update agent with servicePoolSetId from different provider (should fail with 400)
+PATCH {{baseUrl}}/agents/{{agentWithPoolSetId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "servicePoolSetId": "{{poolSetIdProvider2}}"
+}
+
+### ✅ TEST: Update agent with servicePoolSetId from same provider (should succeed)
+PATCH {{baseUrl}}/agents/{{agentWithPoolSetId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "servicePoolSetId": "{{poolSetId1}}"
+}
+
+### ✅ TEST: Update agent without servicePoolSetId (should succeed - clears it)
+PATCH {{baseUrl}}/agents/{{agentWithPoolSetId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Updated Name"
+}

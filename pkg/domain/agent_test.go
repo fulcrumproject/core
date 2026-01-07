@@ -275,6 +275,103 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 	})
 }
 
+func TestAgentCommander_ServicePoolSetValidation(t *testing.T) {
+  providerID := properties.UUID(uuid.New())
+  otherProviderID := properties.UUID(uuid.New())
+  agentTypeID := properties.UUID(uuid.New())
+  validPoolSetID := properties.UUID(uuid.New())
+  invalidPoolSetID := properties.UUID(uuid.New())
+
+  existingAgent := &Agent{
+    BaseEntity:       BaseEntity{ID: properties.UUID(uuid.New())},
+    Name:             "Test Agent",
+    AgentTypeID:      agentTypeID,
+    ProviderID:       providerID,
+    Status:           AgentNew,
+    LastStatusUpdate: time.Now(),
+  }
+
+  var ms *mockStore
+  ms = &mockStore{
+    participantRepo: &mockParticipantRepository{
+      existsFunc: func(ctx context.Context, id properties.UUID) (bool, error) {
+        return id == providerID, nil
+      },
+    },
+    agentTypeRepo: &mockAgentTypeRepository{
+      getFunc: func(ctx context.Context, id properties.UUID) (*AgentType, error) {
+        return &AgentType{
+          BaseEntity: BaseEntity{ID: id},
+          ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+        }, nil
+      },
+    },
+    agentRepo: &mockAgentRepository{
+      getFunc: func(ctx context.Context, id properties.UUID) (*Agent, error) {
+        return existingAgent, nil
+      },
+      createFunc: func(ctx context.Context, agent *Agent) error { return nil },
+      saveFunc:   func(ctx context.Context, agent *Agent) error { return nil },
+    },
+    eventRepo: &mockEventRepository{
+      createFunc: func(ctx context.Context, event *Event) error { return nil },
+    },
+    servicePoolSetRepo: &mockServicePoolSetRepository{
+      getFunc: func(ctx context.Context, id properties.UUID) (*ServicePoolSet, error) {
+        if id == validPoolSetID {
+          return &ServicePoolSet{BaseEntity: BaseEntity{ID: id}, ProviderID: providerID}, nil
+        }
+        if id == invalidPoolSetID {
+          return &ServicePoolSet{BaseEntity: BaseEntity{ID: id}, ProviderID: otherProviderID}, nil
+        }
+        return nil, NewNotFoundErrorf("not found")
+      },
+    },
+    atomicFunc: func(ctx context.Context, fn func(Store) error) error { return fn(ms) },
+  }
+
+  commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil))
+  ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
+
+  t.Run("create with valid pool set", func(t *testing.T) {
+    _, err := commander.Create(ctx, CreateAgentParams{
+      Name:             "Agent",
+      ProviderID:       providerID,
+      AgentTypeID:      agentTypeID,
+      ServicePoolSetID: &validPoolSetID,
+    })
+    if err != nil {
+      t.Errorf("Create() error = %v, expected success", err)
+    }
+  })
+
+  t.Run("create with invalid pool set should fail", func(t *testing.T) {
+    _, err := commander.Create(ctx, CreateAgentParams{
+      Name:             "Agent",
+      ProviderID:       providerID,
+      AgentTypeID:      agentTypeID,
+      ServicePoolSetID: &invalidPoolSetID,
+    })
+    if err == nil {
+      t.Error("Create() expected error for pool set from different provider")
+    }
+    if err != nil && !strings.Contains(err.Error(), "does not belong to provider") {
+      t.Errorf("Create() error = %v, expected 'does not belong to provider'", err)
+    }
+  })
+
+  t.Run("update with invalid pool set should fail", func(t *testing.T) {
+    _, err := commander.Update(ctx, UpdateAgentParams{
+      ID:               existingAgent.ID,
+      ServicePoolSetID: &invalidPoolSetID,
+    })
+    if err == nil {
+      t.Error("Update() expected error for pool set from different provider")
+    }
+    if err != nil && !strings.Contains(err.Error(), "does not belong to provider") {
+      t.Errorf("Update() error = %v, expected 'does not belong to provider'", err)
+    }
+  })
 func TestAgent_Update_ServicePoolSetID(t *testing.T) {
 	t.Run("updating ServicePoolSetID clears ServicePoolSet association", func(t *testing.T) {
 		oldPoolSetID := properties.UUID(uuid.New())
@@ -353,12 +450,14 @@ func TestAgent_Update_ServicePoolSetID(t *testing.T) {
 
 // Mock implementations
 type mockStore struct {
-	participantRepo ParticipantRepository
-	agentTypeRepo   AgentTypeRepository
-	agentRepo       AgentRepository
-	eventRepo       EventRepository
-	atomicFunc      func(context.Context, func(Store) error) error
+  participantRepo     ParticipantRepository
+  agentTypeRepo       AgentTypeRepository
+  agentRepo           AgentRepository
+  eventRepo           EventRepository
+  servicePoolSetRepo  ServicePoolSetRepository 
+  atomicFunc          func(context.Context, func(Store) error) error
 }
+
 
 func (m *mockStore) ParticipantRepo() ParticipantRepository             { return m.participantRepo }
 func (m *mockStore) AgentTypeRepo() AgentTypeRepository                 { return m.agentTypeRepo }
@@ -368,7 +467,7 @@ func (m *mockStore) ServiceRepo() ServiceRepository                     { return
 func (m *mockStore) ServiceGroupRepo() ServiceGroupRepository           { return nil }
 func (m *mockStore) ServiceOptionTypeRepo() ServiceOptionTypeRepository { return nil }
 func (m *mockStore) ServiceOptionRepo() ServiceOptionRepository         { return nil }
-func (m *mockStore) ServicePoolSetRepo() ServicePoolSetRepository       { return nil }
+func (m *mockStore) ServicePoolSetRepo() ServicePoolSetRepository       { return m.servicePoolSetRepo }
 func (m *mockStore) ServicePoolRepo() ServicePoolRepository             { return nil }
 func (m *mockStore) ServicePoolValueRepo() ServicePoolValueRepository   { return nil }
 func (m *mockStore) JobRepo() JobRepository                             { return nil }
@@ -509,3 +608,32 @@ func (m *mockEventRepository) Save(context.Context, *Event) error { return nil }
 func (m *mockEventRepository) ServiceUptime(context.Context, properties.UUID, time.Time, time.Time) (uint64, uint64, error) {
 	return 0, 0, nil
 }
+
+type mockServicePoolSetRepository struct {
+  getFunc func(context.Context, properties.UUID) (*ServicePoolSet, error)
+}
+
+func (m *mockServicePoolSetRepository) Get(ctx context.Context, id properties.UUID) (*ServicePoolSet, error) {
+  if m.getFunc != nil {
+    return m.getFunc(ctx, id)
+  }
+  return nil, nil
+}
+func (m *mockServicePoolSetRepository) Create(context.Context, *ServicePoolSet) error { return nil }
+func (m *mockServicePoolSetRepository) Update(context.Context, *ServicePoolSet) error { return nil }
+func (m *mockServicePoolSetRepository) Delete(context.Context, properties.UUID) error { return nil }
+func (m *mockServicePoolSetRepository) AuthScope(context.Context, properties.UUID) (auth.ObjectScope, error) {
+  return nil, nil
+}
+func (m *mockServicePoolSetRepository) Exists(context.Context, properties.UUID) (bool, error) { return false, nil }
+func (m *mockServicePoolSetRepository) Count(context.Context) (int64, error) { return 0, nil }
+func (m *mockServicePoolSetRepository) List(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[ServicePoolSet], error) {
+  return nil, nil
+}
+func (m *mockServicePoolSetRepository) FindByProvider(context.Context, properties.UUID) ([]*ServicePoolSet, error) {
+  return nil, nil
+}
+func (m *mockServicePoolSetRepository) FindByProviderAndName(context.Context, properties.UUID, string) (*ServicePoolSet, error) {
+  return nil, nil
+}
+
