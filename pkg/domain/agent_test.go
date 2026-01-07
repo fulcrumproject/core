@@ -372,6 +372,7 @@ func TestAgentCommander_ServicePoolSetValidation(t *testing.T) {
       t.Errorf("Update() error = %v, expected 'does not belong to provider'", err)
     }
   })
+}
 func TestAgent_Update_ServicePoolSetID(t *testing.T) {
 	t.Run("updating ServicePoolSetID clears ServicePoolSet association", func(t *testing.T) {
 		oldPoolSetID := properties.UUID(uuid.New())
