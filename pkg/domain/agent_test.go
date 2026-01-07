@@ -275,6 +275,82 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 	})
 }
 
+func TestAgent_Update_ServicePoolSetID(t *testing.T) {
+	t.Run("updating ServicePoolSetID clears ServicePoolSet association", func(t *testing.T) {
+		oldPoolSetID := properties.UUID(uuid.New())
+		newPoolSetID := properties.UUID(uuid.New())
+		
+		// Create agent with old ServicePoolSetID and simulate a preloaded association
+		agent := &Agent{
+			BaseEntity:       BaseEntity{ID: properties.UUID(uuid.New())},
+			Name:             "Test Agent",
+			AgentTypeID:      properties.UUID(uuid.New()),
+			ProviderID:       properties.UUID(uuid.New()),
+			Status:           AgentNew,
+			LastStatusUpdate: time.Now(),
+			ServicePoolSetID: &oldPoolSetID,
+			ServicePoolSet: &ServicePoolSet{
+				BaseEntity: BaseEntity{ID: oldPoolSetID},
+				Name:       "Old Pool Set",
+			},
+		}
+		
+		// Verify initial state
+		if agent.ServicePoolSetID == nil || *agent.ServicePoolSetID != oldPoolSetID {
+			t.Error("Expected agent to have old ServicePoolSetID")
+		}
+		if agent.ServicePoolSet == nil || agent.ServicePoolSet.ID != oldPoolSetID {
+			t.Error("Expected agent to have old ServicePoolSet association")
+		}
+		
+		// Update ServicePoolSetID
+		updated := agent.Update(nil, nil, nil, &newPoolSetID)
+		
+		// Verify update was applied
+		if !updated {
+			t.Error("Expected Update() to return true")
+		}
+		if agent.ServicePoolSetID == nil || *agent.ServicePoolSetID != newPoolSetID {
+			t.Errorf("Expected ServicePoolSetID to be updated to %v, got %v", newPoolSetID, agent.ServicePoolSetID)
+		}
+		
+		// Verify ServicePoolSet association was cleared (this is the fix)
+		if agent.ServicePoolSet != nil {
+			t.Errorf("Expected ServicePoolSet to be nil after update, but got %v", agent.ServicePoolSet)
+		}
+	})
+	
+	t.Run("updating ServicePoolSetID when association is nil", func(t *testing.T) {
+		newPoolSetID := properties.UUID(uuid.New())
+		
+		// Create agent without ServicePoolSet association (like in Create)
+		agent := &Agent{
+			BaseEntity:       BaseEntity{ID: properties.UUID(uuid.New())},
+			Name:             "Test Agent",
+			AgentTypeID:      properties.UUID(uuid.New()),
+			ProviderID:       properties.UUID(uuid.New()),
+			Status:           AgentNew,
+			LastStatusUpdate: time.Now(),
+			ServicePoolSetID: nil,
+			ServicePoolSet:   nil,
+		}
+		
+		// Update ServicePoolSetID
+		updated := agent.Update(nil, nil, nil, &newPoolSetID)
+		
+		// Verify update was applied
+		if !updated {
+			t.Error("Expected Update() to return true")
+		}
+		if agent.ServicePoolSetID == nil || *agent.ServicePoolSetID != newPoolSetID {
+			t.Errorf("Expected ServicePoolSetID to be set to %v, got %v", newPoolSetID, agent.ServicePoolSetID)
+		}
+		if agent.ServicePoolSet != nil {
+			t.Error("Expected ServicePoolSet to remain nil")
+		}
+	})
+}
+
 // Mock implementations
 type mockStore struct {
 	participantRepo ParticipantRepository
