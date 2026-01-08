@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
@@ -94,6 +95,6 @@ func (r *GormServicePoolSetRepository) Update(ctx context.Context, poolSet *doma
 }
 
 // AuthScope returns the authorization scope for a service pool set
-func (r *GormServicePoolSetRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormServicePoolSetRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	return r.AuthScopeByFields(ctx, id, "provider_id")
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -17,7 +17,7 @@ import (
 func TestNewServiceGroupHandler(t *testing.T) {
 	querier := domain.NewMockServiceGroupQuerier(t)
 	commander := domain.NewMockServiceGroupCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	handler := NewServiceGroupHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -31,7 +31,7 @@ func TestServiceGroupHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := domain.NewMockServiceGroupQuerier(t)
 	commander := domain.NewMockServiceGroupCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewServiceGroupHandler(querier, commander, authz)

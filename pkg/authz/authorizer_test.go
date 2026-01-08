@@ -1,8 +1,9 @@
-package auth
+package authz
 
 import (
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,19 +15,19 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 	testUUID2 := properties.NewUUID()
 
 	rules := []AuthorizationRule{
-		{Roles: []Role{RoleAdmin}, Action: "read", Object: "user"},
-		{Roles: []Role{RoleAdmin}, Action: "write", Object: "user"},
-		{Roles: []Role{RoleParticipant}, Action: "read", Object: "data"},
-		{Roles: []Role{RoleAgent}, Action: "write", Object: "agent_data"},
-		{Roles: []Role{RoleAdmin, RoleParticipant}, Action: "read", Object: "shared_data"},
-		{Roles: []Role{RoleParticipant, RoleAgent}, Action: "write", Object: "participant_data"},
+		{Roles: []auth.Role{auth.RoleAdmin}, Action: "read", Object: "user"},
+		{Roles: []auth.Role{auth.RoleAdmin}, Action: "write", Object: "user"},
+		{Roles: []auth.Role{auth.RoleParticipant}, Action: "read", Object: "data"},
+		{Roles: []auth.Role{auth.RoleAgent}, Action: "write", Object: "agent_data"},
+		{Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}, Action: "read", Object: "shared_data"},
+		{Roles: []auth.Role{auth.RoleParticipant, auth.RoleAgent}, Action: "write", Object: "participant_data"},
 	}
 
 	authorizer := NewRuleBasedAuthorizer(rules)
 
 	tests := []struct {
 		name          string
-		identity      *Identity
+		identity      *auth.Identity
 		action        Action
 		object        ObjectType
 		objectContext ObjectScope
@@ -35,9 +36,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 	}{
 		{
 			name: "Admin can read user",
-			identity: &Identity{
-				Role: RoleAdmin,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleAdmin,
+				Scope: auth.IdentityScope{
 					ParticipantID: nil,
 					AgentID:       nil,
 				},
@@ -49,9 +50,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Admin can write user",
-			identity: &Identity{
-				Role: RoleAdmin,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleAdmin,
+				Scope: auth.IdentityScope{
 					ParticipantID: nil,
 					AgentID:       nil,
 				},
@@ -63,9 +64,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Participant can read data",
-			identity: &Identity{
-				Role: RoleParticipant,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleParticipant,
+				Scope: auth.IdentityScope{
 					ParticipantID: &testUUID,
 					AgentID:       nil,
 				},
@@ -77,9 +78,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Agent can write agent_data",
-			identity: &Identity{
-				Role: RoleAgent,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleAgent,
+				Scope: auth.IdentityScope{
 					ParticipantID: &testUUID,
 					AgentID:       &testUUID2,
 				},
@@ -91,9 +92,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Participant cannot write user",
-			identity: &Identity{
-				Role: RoleParticipant,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleParticipant,
+				Scope: auth.IdentityScope{
 					ParticipantID: &testUUID,
 					AgentID:       nil,
 				},
@@ -106,9 +107,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Agent cannot read user",
-			identity: &Identity{
-				Role: RoleAgent,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleAgent,
+				Scope: auth.IdentityScope{
 					ParticipantID: &testUUID,
 					AgentID:       &testUUID2,
 				},
@@ -121,9 +122,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Unknown action denied",
-			identity: &Identity{
-				Role: RoleAdmin,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleAdmin,
+				Scope: auth.IdentityScope{
 					ParticipantID: nil,
 					AgentID:       nil,
 				},
@@ -136,9 +137,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Unknown object denied",
-			identity: &Identity{
-				Role: RoleAdmin,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleAdmin,
+				Scope: auth.IdentityScope{
 					ParticipantID: nil,
 					AgentID:       nil,
 				},
@@ -151,9 +152,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Admin can read shared_data (multiple roles rule)",
-			identity: &Identity{
-				Role: RoleAdmin,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleAdmin,
+				Scope: auth.IdentityScope{
 					ParticipantID: nil,
 					AgentID:       nil,
 				},
@@ -165,9 +166,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Participant can read shared_data (multiple roles rule)",
-			identity: &Identity{
-				Role: RoleParticipant,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleParticipant,
+				Scope: auth.IdentityScope{
 					ParticipantID: &testUUID,
 					AgentID:       nil,
 				},
@@ -179,9 +180,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Agent cannot read shared_data (not in multiple roles rule)",
-			identity: &Identity{
-				Role: RoleAgent,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleAgent,
+				Scope: auth.IdentityScope{
 					ParticipantID: &testUUID,
 					AgentID:       &testUUID2,
 				},
@@ -194,9 +195,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Participant can write participant_data (multiple roles rule)",
-			identity: &Identity{
-				Role: RoleParticipant,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleParticipant,
+				Scope: auth.IdentityScope{
 					ParticipantID: &testUUID,
 					AgentID:       nil,
 				},
@@ -208,9 +209,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Agent can write participant_data (multiple roles rule)",
-			identity: &Identity{
-				Role: RoleAgent,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleAgent,
+				Scope: auth.IdentityScope{
 					ParticipantID: &testUUID,
 					AgentID:       &testUUID2,
 				},
@@ -222,9 +223,9 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 		},
 		{
 			name: "Admin cannot write participant_data (not in multiple roles rule)",
-			identity: &Identity{
-				Role: RoleAdmin,
-				Scope: IdentityScope{
+			identity: &auth.Identity{
+				Role: auth.RoleAdmin,
+				Scope: auth.IdentityScope{
 					ParticipantID: nil,
 					AgentID:       nil,
 				},
@@ -253,7 +254,7 @@ func TestRuleBasedAuthorizer_Authorize(t *testing.T) {
 
 func TestRuleBasedAuthorizer_Authorize_ObjectContextMismatch(t *testing.T) {
 	rules := []AuthorizationRule{
-		{Roles: []Role{RoleAdmin}, Action: "read", Object: "user"},
+		{Roles: []auth.Role{auth.RoleAdmin}, Action: "read", Object: "user"},
 	}
 
 	authorizer := NewRuleBasedAuthorizer(rules)
@@ -261,9 +262,9 @@ func TestRuleBasedAuthorizer_Authorize_ObjectContextMismatch(t *testing.T) {
 	// Create a mock ObjectScope that never matches
 	mockObjectScope := &mockObjectScope{shouldMatch: false}
 
-	identity := &Identity{
-		Role: RoleAdmin,
-		Scope: IdentityScope{
+	identity := &auth.Identity{
+		Role: auth.RoleAdmin,
+		Scope: auth.IdentityScope{
 			ParticipantID: nil,
 			AgentID:       nil,
 		},
@@ -277,14 +278,14 @@ func TestRuleBasedAuthorizer_Authorize_ObjectContextMismatch(t *testing.T) {
 
 func TestRuleBasedAuthorizer_Authorize_NilObjectContext(t *testing.T) {
 	rules := []AuthorizationRule{
-		{Roles: []Role{RoleAdmin}, Action: "read", Object: "user"},
+		{Roles: []auth.Role{auth.RoleAdmin}, Action: "read", Object: "user"},
 	}
 
 	authorizer := NewRuleBasedAuthorizer(rules)
 
-	identity := &Identity{
-		Role: RoleAdmin,
-		Scope: IdentityScope{
+	identity := &auth.Identity{
+		Role: auth.RoleAdmin,
+		Scope: auth.IdentityScope{
 			ParticipantID: nil,
 			AgentID:       nil,
 		},
@@ -300,6 +301,6 @@ type mockObjectScope struct {
 	shouldMatch bool
 }
 
-func (m *mockObjectScope) Matches(identity *Identity) bool {
+func (m *mockObjectScope) Matches(identity *auth.Identity) bool {
 	return m.shouldMatch
 }

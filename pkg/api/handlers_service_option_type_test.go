@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -17,7 +17,7 @@ import (
 func TestNewServiceOptionTypeHandler(t *testing.T) {
 	querier := domain.NewMockServiceOptionTypeQuerier(t)
 	commander := domain.NewMockServiceOptionTypeCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	handler := NewServiceOptionTypeHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -31,7 +31,7 @@ func TestServiceOptionTypeHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := domain.NewMockServiceOptionTypeQuerier(t)
 	commander := domain.NewMockServiceOptionTypeCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewServiceOptionTypeHandler(querier, commander, authz)

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/assert"
@@ -443,7 +444,7 @@ func TestServiceOptionRepository(t *testing.T) {
 			// Execute with existing ID
 			scope, err := repo.AuthScope(ctx, option.ID)
 			require.NoError(t, err)
-			defaultScope, ok := scope.(*auth.DefaultObjectScope)
+			defaultScope, ok := scope.(*authz.DefaultObjectScope)
 			require.True(t, ok, "Should return DefaultObjectScope")
 			assert.Equal(t, participant.ID, *defaultScope.ProviderID, "Should return provider ID in scope")
 		})

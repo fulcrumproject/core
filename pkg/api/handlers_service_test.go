@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -28,7 +29,7 @@ func TestNewServiceHandler(t *testing.T) {
 	agentQuerier := domain.NewMockAgentQuerier(t)
 	serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
 	commander := domain.NewMockServiceCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
 	assert.NotNil(t, handler)
@@ -46,7 +47,7 @@ func TestServiceHandlerRoutes(t *testing.T) {
 	agentQuerier := domain.NewMockAgentQuerier(t)
 	serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
 	commander := domain.NewMockServiceCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewServiceHandler(serviceQuerier, agentQuerier, serviceGroupQuerier, commander, authz)
@@ -168,7 +169,7 @@ func TestServiceHandleCreate(t *testing.T) {
 			agentQuerier := domain.NewMockAgentQuerier(t)
 			serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
 			commander := domain.NewMockServiceCommander(t)
-			authz := auth.NewMockAuthorizer(t) // Not used in handler tests
+			authz := authz.NewMockAuthorizer(t) // Not used in handler tests
 			tc.mockSetup(commander)
 
 			// Create the handler
@@ -289,7 +290,7 @@ func TestServiceHandleUpdate(t *testing.T) {
 			agentQuerier := domain.NewMockAgentQuerier(t)
 			serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
 			commander := domain.NewMockServiceCommander(t)
-			authz := auth.NewMockAuthorizer(t) // Not used in handler tests
+			authz := authz.NewMockAuthorizer(t) // Not used in handler tests
 			tc.mockSetup(commander)
 
 			// Create the handler
@@ -437,7 +438,7 @@ func TestServiceHandleTransition(t *testing.T) {
 			agentQuerier := domain.NewMockAgentQuerier(t)
 			serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
 			commander := domain.NewMockServiceCommander(t)
-			authz := auth.NewMockAuthorizer(t) // Not used in handler tests
+			authz := authz.NewMockAuthorizer(t) // Not used in handler tests
 			tc.mockSetup(commander)
 
 			// Create the handler
@@ -626,7 +627,7 @@ func TestServicePropertyValidation(t *testing.T) {
 			agentQuerier := domain.NewMockAgentQuerier(t)
 			serviceGroupQuerier := domain.NewMockServiceGroupQuerier(t)
 			commander := domain.NewMockServiceCommander(t)
-			authz := auth.NewMockAuthorizer(t)
+			authz := authz.NewMockAuthorizer(t)
 			tc.mockSetup(commander)
 
 			// Create the handler

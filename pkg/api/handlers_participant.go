@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -24,13 +23,13 @@ type UpdateParticipantReq struct {
 type ParticipantHandler struct {
 	querier   domain.ParticipantQuerier
 	commander domain.ParticipantCommander
-	authz     auth.Authorizer
+	authz     authz.Authorizer
 }
 
 func NewParticipantHandler(
 	querier domain.ParticipantQuerier,
 	commander domain.ParticipantCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *ParticipantHandler {
 	return &ParticipantHandler{
 		querier:   querier,

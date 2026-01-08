@@ -232,12 +232,6 @@ func (s *tokenCommander) Create(
 	ctx context.Context,
 	params CreateTokenParams,
 ) (*Token, error) {
-	// Validate permissions
-	id := auth.MustGetIdentity(ctx)
-	if !id.HasRole(auth.RoleAdmin) && params.Role != id.Role {
-		return nil, NewInvalidInputErrorf("role %s not allowed", params.Role)
-	}
-
 	// Create, save and event
 	var token *Token
 	err := s.store.Atomic(ctx, func(store Store) error {

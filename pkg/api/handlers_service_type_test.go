@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -19,7 +20,7 @@ import (
 func TestNewServiceTypeHandler(t *testing.T) {
 	querier := domain.NewMockServiceTypeQuerier(t)
 	commander := domain.NewMockServiceTypeCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 	engine := domain.NewServicePropertyEngine(nil)
 
 	handler := NewServiceTypeHandler(querier, commander, authz, engine)
@@ -35,7 +36,7 @@ func TestServiceTypeHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := domain.NewMockServiceTypeQuerier(t)
 	commander := domain.NewMockServiceTypeCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 	engine := domain.NewServicePropertyEngine(nil)
 
 	// Create the handler

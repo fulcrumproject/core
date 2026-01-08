@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
 
@@ -57,6 +58,6 @@ func serviceGroupAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) *gorm.DB 
 	return q
 }
 
-func (r *GormServiceGroupRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormServiceGroupRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	return r.AuthScopeByFields(ctx, id, "null", "null", "null", "consumer_id")
 }

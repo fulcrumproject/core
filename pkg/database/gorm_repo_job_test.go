@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -483,9 +484,9 @@ func TestJobRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, scope, "AuthScope should not return nil")
 
-			// Check that the returned scope is a auth.DefaultObjectScope
-			defaultScope, ok := scope.(*auth.DefaultObjectScope)
-			require.True(t, ok, "AuthScope should return a auth.DefaultObjectScope")
+			// Check that the returned scope is a authz.DefaultObjectScope
+			defaultScope, ok := scope.(*authz.DefaultObjectScope)
+			require.True(t, ok, "AuthScope should return a authz.DefaultObjectScope")
 
 			// Verify auth scope contains the correct IDs
 			assert.NotNil(t, defaultScope.ProviderID, "ProviderID should not be nil")

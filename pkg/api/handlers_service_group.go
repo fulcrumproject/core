@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -16,8 +15,8 @@ type CreateServiceGroupReq struct {
 	ConsumerID properties.UUID `json:"consumerId"`
 }
 
-func (r CreateServiceGroupReq) ObjectScope() (auth.ObjectScope, error) {
-	return &auth.DefaultObjectScope{ConsumerID: &r.ConsumerID}, nil
+func (r CreateServiceGroupReq) ObjectScope() (authz.ObjectScope, error) {
+	return &authz.DefaultObjectScope{ConsumerID: &r.ConsumerID}, nil
 }
 
 type UpdateServiceGroupReq struct {
@@ -27,13 +26,13 @@ type UpdateServiceGroupReq struct {
 type ServiceGroupHandler struct {
 	querier   domain.ServiceGroupQuerier
 	commander domain.ServiceGroupCommander
-	authz     auth.Authorizer
+	authz     authz.Authorizer
 }
 
 func NewServiceGroupHandler(
 	querier domain.ServiceGroupQuerier,
 	commander domain.ServiceGroupCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *ServiceGroupHandler {
 	return &ServiceGroupHandler{
 		commander: commander,

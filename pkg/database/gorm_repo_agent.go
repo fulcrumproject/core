@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
@@ -36,7 +37,7 @@ func NewAgentRepository(db *gorm.DB) *GormAgentRepository {
 			applyAgentSort,
 			agentAuthzFilterApplier,
 			[]string{"Provider", "AgentType", "AgentType.ServiceTypes", "ServicePoolSet"}, // Find preload paths
-			[]string{"Provider", "AgentType"}, // List preload paths 
+			[]string{"Provider", "AgentType"},                                             // List preload paths
 		),
 	}
 	return repo
@@ -106,6 +107,6 @@ func agentAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) *gorm.DB {
 }
 
 // AuthScope returns the auth scope for the agent
-func (r *GormAgentRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormAgentRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	return r.AuthScopeByFields(ctx, id, "null", "provider_id", "id as agent_id", "null")
 }

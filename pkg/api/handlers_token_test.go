@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -18,14 +19,15 @@ func TestNewTokenHandler(t *testing.T) {
 	tokenQuerier := domain.NewMockTokenQuerier(t)
 	agentQuerier := domain.NewMockAgentQuerier(t)
 	commander := domain.NewMockTokenCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	mockAuthz := authz.NewMockAuthorizer(t)
 
-	handler := NewTokenHandler(tokenQuerier, commander, agentQuerier, authz)
+	handler := NewTokenHandler(tokenQuerier, commander, agentQuerier, mockAuthz)
 	assert.NotNil(t, handler)
 	assert.Equal(t, tokenQuerier, handler.querier)
 	assert.Equal(t, commander, handler.commander)
 	assert.Equal(t, agentQuerier, handler.agentQuerier)
-	assert.Equal(t, authz, handler.authz)
+	// Verify authz is wrapped with TokenCreationAuthorizer
+	assert.IsType(t, &authz.TokenAuthorizer{}, handler.authz)
 }
 
 // TestTokenHandlerRoutes tests that routes are properly registered
@@ -34,7 +36,7 @@ func TestTokenHandlerRoutes(t *testing.T) {
 	tokenQuerier := domain.NewMockTokenQuerier(t)
 	agentQuerier := domain.NewMockAgentQuerier(t)
 	commander := domain.NewMockTokenCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewTokenHandler(tokenQuerier, commander, agentQuerier, authz)

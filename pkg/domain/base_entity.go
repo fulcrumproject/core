@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 )
 
@@ -55,5 +56,5 @@ type BaseEntityQuerier[T Entity] interface {
 	Count(ctx context.Context) (int64, error)
 
 	// AuthScope returns the authorization scope for the entity
-	AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
+	AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)
 }

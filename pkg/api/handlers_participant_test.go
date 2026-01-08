@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +15,7 @@ import (
 func TestNewParticipantHandler(t *testing.T) {
 	querier := domain.NewMockParticipantQuerier(t)
 	commander := domain.NewMockParticipantCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	handler := NewParticipantHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -29,7 +29,7 @@ func TestParticipantHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := domain.NewMockParticipantQuerier(t)
 	commander := domain.NewMockParticipantCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewParticipantHandler(querier, commander, authz)

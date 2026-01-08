@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -178,34 +179,33 @@ func TestTokenRepository(t *testing.T) {
 			}
 		})
 
-		t.Run("success - list with agent_id filter", func(t *testing.T){
+		t.Run("success - list with agent_id filter", func(t *testing.T) {
 			ctx := context.Background()
 
 			agentToken := &domain.Token{
-				Name: "Agent Token for Filter Test",
-				Role: auth.RoleAgent,
-				ExpireAt: time.Now().Add(24 * time.Hour),
-				AgentID: &agent.ID,
+				Name:          "Agent Token for Filter Test",
+				Role:          auth.RoleAgent,
+				ExpireAt:      time.Now().Add(24 * time.Hour),
+				AgentID:       &agent.ID,
 				ParticipantID: &participant.ID,
 			}
 
 			require.NoError(t, agentToken.GenerateTokenValue())
 			require.NoError(t, repo.Create(ctx, agentToken))
 
-
 			otherAgentToken := createTestToken(t, auth.RoleAgent, nil)
 			require.NoError(t, repo.Create(ctx, otherAgentToken))
 
 			page := &domain.PageReq{
-				Page: 1,
+				Page:     1,
 				PageSize: 10,
-				Filters: map[string][]string{"agentId": {agent.ID.String()}},
+				Filters:  map[string][]string{"agentId": {agent.ID.String()}},
 			}
 
 			result, err := repo.List(ctx, &auth.IdentityScope{}, page)
 
 			require.NoError(t, err)
-			found := false 
+			found := false
 
 			for _, item := range result.Items {
 				if item.ID == agentToken.ID {
@@ -215,7 +215,7 @@ func TestTokenRepository(t *testing.T) {
 				}
 			}
 			assert.True(t, found, "Expected to find the token with the filtered agent ID")
-			
+
 			// Verify other token is not in results
 			for _, item := range result.Items {
 				assert.NotEqual(t, otherAgentToken.ID, item.ID, "Should not include tokens from other agents")
@@ -224,24 +224,24 @@ func TestTokenRepository(t *testing.T) {
 
 		t.Run("success - list with participantId filter", func(t *testing.T) {
 			ctx := context.Background()
-		
+
 			// Setup - create participant token
 			participantToken := createTestToken(t, auth.RoleParticipant, &participant.ID)
 			require.NoError(t, repo.Create(ctx, participantToken))
-		
+
 			// Create another token with different participant to ensure filter works
 			otherToken := createTestToken(t, auth.RoleAdmin, nil)
 			require.NoError(t, repo.Create(ctx, otherToken))
-		
+
 			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
 				Filters:  map[string][]string{"participantId": {participant.ID.String()}},
 			}
-		
+
 			// Execute
 			result, err := repo.List(ctx, &auth.IdentityScope{}, page)
-		
+
 			// Assert
 			require.NoError(t, err)
 			found := false
@@ -542,9 +542,9 @@ func TestTokenRepository(t *testing.T) {
 			adminScope, err := repo.AuthScope(ctx, adminToken.ID)
 			require.NoError(t, err)
 
-			// Check that the returned scope is a auth.DefaultObjectScope
-			defaultAdminScope, ok := adminScope.(*auth.DefaultObjectScope)
-			require.True(t, ok, "AuthScope should return a auth.DefaultObjectScope")
+			// Check that the returned scope is a authz.DefaultObjectScope
+			defaultAdminScope, ok := adminScope.(*authz.DefaultObjectScope)
+			require.True(t, ok, "AuthScope should return a authz.DefaultObjectScope")
 			assert.Nil(t, defaultAdminScope.ParticipantID, "Admin token should have nil participant ID")
 			assert.Nil(t, defaultAdminScope.AgentID, "Admin token should have nil agent ID")
 
@@ -552,9 +552,9 @@ func TestTokenRepository(t *testing.T) {
 			participantScope, err := repo.AuthScope(ctx, participantToken.ID)
 			require.NoError(t, err)
 
-			// Check that the returned scope is a auth.DefaultObjectScope
-			defaultParticipantScope, ok := participantScope.(*auth.DefaultObjectScope)
-			require.True(t, ok, "AuthScope should return a auth.DefaultObjectScope")
+			// Check that the returned scope is a authz.DefaultObjectScope
+			defaultParticipantScope, ok := participantScope.(*authz.DefaultObjectScope)
+			require.True(t, ok, "AuthScope should return a authz.DefaultObjectScope")
 			assert.NotNil(t, defaultParticipantScope.ParticipantID, "Participant token should have participant ID")
 			assert.Equal(t, participant.ID, *defaultParticipantScope.ParticipantID, "Participant ID should match")
 			assert.Nil(t, defaultParticipantScope.AgentID, "Participant token should have nil agent ID")

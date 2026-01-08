@@ -3,7 +3,7 @@ package database
 import (
 	"context"
 
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
 
@@ -39,6 +39,6 @@ func NewParticipantRepository(db *gorm.DB) *GormParticipantRepository {
 }
 
 // AuthScope returns the auth scope for the participant
-func (r *GormParticipantRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormParticipantRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	return r.AuthScopeByFields(ctx, id, "id as participant_id", "null", "null", "null")
 }

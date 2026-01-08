@@ -3,7 +3,7 @@ package database
 import (
 	"context"
 
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
 
@@ -59,7 +59,7 @@ func (r *GormAgentTypeRepository) Save(ctx context.Context, agentType *domain.Ag
 }
 
 // AuthScope returns the auth scope for the agent type
-func (r *GormAgentTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormAgentTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	// Agent types don't have scoping IDs as they are global resources
-	return &auth.AllwaysMatchObjectScope{}, nil
+	return &authz.AllwaysMatchObjectScope{}, nil
 }

@@ -22,9 +22,9 @@ type CreateAgentReq struct {
 	ServicePoolSetID *properties.UUID `json:"servicePoolSetId,omitempty"`
 }
 
-// auth.ObjectScope implements auth.ObjectScopeProvider interface
-func (r CreateAgentReq) ObjectScope() (auth.ObjectScope, error) {
-	return &auth.DefaultObjectScope{ParticipantID: &r.ProviderID}, nil
+// authz.ObjectScope implements authz.ObjectScopeProvider interface
+func (r CreateAgentReq) ObjectScope() (authz.ObjectScope, error) {
+	return &authz.DefaultObjectScope{ParticipantID: &r.ProviderID}, nil
 }
 
 type UpdateAgentReq struct {
@@ -42,13 +42,13 @@ type UpdateAgentStatusReq struct {
 type AgentHandler struct {
 	querier   domain.AgentQuerier
 	commander domain.AgentCommander
-	authz     auth.Authorizer
+	authz     authz.Authorizer
 }
 
 func NewAgentHandler(
 	querier domain.AgentQuerier,
 	commander domain.AgentCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *AgentHandler {
 	return &AgentHandler{
 		querier:   querier,

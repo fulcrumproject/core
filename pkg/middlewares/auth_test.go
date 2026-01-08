@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -161,8 +162,8 @@ func TestAuthzFromExtractor(t *testing.T) {
 		{
 			name: "Successful authorization",
 			extractorSetup: func() ObjectScopeExtractor {
-				return func(r *http.Request) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
+				return func(r *http.Request) (authz.ObjectScope, error) {
+					return &authz.AllwaysMatchObjectScope{}, nil
 				}
 			},
 			authorizerSetup: func() *mockAuthorizer {
@@ -175,7 +176,7 @@ func TestAuthzFromExtractor(t *testing.T) {
 		{
 			name: "Extractor error",
 			extractorSetup: func() ObjectScopeExtractor {
-				return func(r *http.Request) (auth.ObjectScope, error) {
+				return func(r *http.Request) (authz.ObjectScope, error) {
 					return nil, errors.New("extraction failed")
 				}
 			},
@@ -187,8 +188,8 @@ func TestAuthzFromExtractor(t *testing.T) {
 		{
 			name: "Authorization denied",
 			extractorSetup: func() ObjectScopeExtractor {
-				return func(r *http.Request) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
+				return func(r *http.Request) (authz.ObjectScope, error) {
+					return &authz.AllwaysMatchObjectScope{}, nil
 				}
 			},
 			authorizerSetup: func() *mockAuthorizer {
@@ -230,7 +231,7 @@ func TestAuthzFromExtractor(t *testing.T) {
 
 func TestIDScopeExtractor(t *testing.T) {
 	testUUID := properties.NewUUID()
-	testScope := &auth.AllwaysMatchObjectScope{}
+	testScope := &authz.AllwaysMatchObjectScope{}
 
 	tests := []struct {
 		name        string
@@ -241,7 +242,7 @@ func TestIDScopeExtractor(t *testing.T) {
 		{
 			name: "Successful scope loading",
 			loaderSetup: func() ObjectScopeLoader {
-				return func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				return func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 					return testScope, nil
 				}
 			},
@@ -250,7 +251,7 @@ func TestIDScopeExtractor(t *testing.T) {
 		{
 			name: "Loader error",
 			loaderSetup: func() ObjectScopeLoader {
-				return func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				return func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 					return nil, errors.New("resource not found")
 				}
 			},
@@ -300,8 +301,8 @@ func TestAuthzFromID(t *testing.T) {
 		{
 			name: "Successful authorization with ID",
 			loaderSetup: func() ObjectScopeLoader {
-				return func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
-					return &auth.AllwaysMatchObjectScope{}, nil
+				return func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
+					return &authz.AllwaysMatchObjectScope{}, nil
 				}
 			},
 			authorizerSetup: func() *mockAuthorizer {
@@ -312,7 +313,7 @@ func TestAuthzFromID(t *testing.T) {
 		{
 			name: "Loader fails",
 			loaderSetup: func() ObjectScopeLoader {
-				return func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+				return func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 					return nil, errors.New("resource not found")
 				}
 			},
@@ -360,7 +361,7 @@ func TestSimpleScopeExtractor(t *testing.T) {
 
 	assert.NoError(t, err, "Should not return an error")
 	assert.NotNil(t, scope, "Scope should not be nil")
-	assert.IsType(t, &auth.AllwaysMatchObjectScope{}, scope, "Should return AllwaysMatchObjectScope")
+	assert.IsType(t, &authz.AllwaysMatchObjectScope{}, scope, "Should return AllwaysMatchObjectScope")
 }
 
 func TestAuthzSimple(t *testing.T) {
@@ -420,7 +421,7 @@ func TestAuthzSimple(t *testing.T) {
 }
 
 func TestBodyScopeExtractor(t *testing.T) {
-	testScope := &auth.AllwaysMatchObjectScope{}
+	testScope := &authz.AllwaysMatchObjectScope{}
 
 	tests := []struct {
 		name        string
@@ -493,7 +494,7 @@ func TestAuthzFromBody(t *testing.T) {
 			name: "Successful authorization from body",
 			bodySetup: func() *mockObjectScopeProvider {
 				return &mockObjectScopeProvider{
-					scope: &auth.AllwaysMatchObjectScope{},
+					scope: &authz.AllwaysMatchObjectScope{},
 					err:   nil,
 				}
 			},
@@ -755,15 +756,15 @@ type mockAuthorizer struct {
 	err error
 }
 
-func (m *mockAuthorizer) Authorize(identity *auth.Identity, action auth.Action, object auth.ObjectType, objectScope auth.ObjectScope) error {
+func (m *mockAuthorizer) Authorize(identity *auth.Identity, action authz.Action, object authz.ObjectType, objectScope authz.ObjectScope) error {
 	return m.err
 }
 
 type mockObjectScopeProvider struct {
-	scope auth.ObjectScope
+	scope authz.ObjectScope
 	err   error
 }
 
-func (m *mockObjectScopeProvider) ObjectScope() (auth.ObjectScope, error) {
+func (m *mockObjectScopeProvider) ObjectScope() (authz.ObjectScope, error) {
 	return m.scope, m.err
 }

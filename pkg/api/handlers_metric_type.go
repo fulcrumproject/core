@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -23,13 +22,13 @@ type UpdateMetricTypeReq struct {
 type MetricTypeHandler struct {
 	querier   domain.MetricTypeQuerier
 	commander domain.MetricTypeCommander
-	authz     auth.Authorizer
+	authz     authz.Authorizer
 }
 
 func NewMetricTypeHandler(
 	querier domain.MetricTypeQuerier,
 	commander domain.MetricTypeCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *MetricTypeHandler {
 	return &MetricTypeHandler{
 		querier:   querier,

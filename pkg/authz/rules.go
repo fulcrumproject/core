@@ -5,44 +5,44 @@ import (
 )
 
 const (
-	ObjectTypeParticipant       auth.ObjectType = "participant"
-	ObjectTypeAgent             auth.ObjectType = "agent"
-	ObjectTypeAgentType         auth.ObjectType = "agent_type"
-	ObjectTypeService           auth.ObjectType = "service"
-	ObjectTypeServiceType       auth.ObjectType = "service_type"
-	ObjectTypeServiceGroup      auth.ObjectType = "service_group"
-	ObjectTypeServiceOptionType auth.ObjectType = "service_option_type"
-	ObjectTypeServiceOption     auth.ObjectType = "service_option"
-	ObjectTypeServicePoolSet    auth.ObjectType = "service_pool_set"
-	ObjectTypeServicePool       auth.ObjectType = "service_pool"
-	ObjectTypeServicePoolValue  auth.ObjectType = "service_pool_value"
-	ObjectTypeJob               auth.ObjectType = "job"
-	ObjectTypeMetricType        auth.ObjectType = "metric_type"
-	ObjectTypeMetricEntry       auth.ObjectType = "metric_entry"
-	ObjectTypeEvent             auth.ObjectType = "event_entry"
-	ObjectTypeToken             auth.ObjectType = "token"
+	ObjectTypeParticipant       ObjectType = "participant"
+	ObjectTypeAgent             ObjectType = "agent"
+	ObjectTypeAgentType         ObjectType = "agent_type"
+	ObjectTypeService           ObjectType = "service"
+	ObjectTypeServiceType       ObjectType = "service_type"
+	ObjectTypeServiceGroup      ObjectType = "service_group"
+	ObjectTypeServiceOptionType ObjectType = "service_option_type"
+	ObjectTypeServiceOption     ObjectType = "service_option"
+	ObjectTypeServicePoolSet    ObjectType = "service_pool_set"
+	ObjectTypeServicePool       ObjectType = "service_pool"
+	ObjectTypeServicePoolValue  ObjectType = "service_pool_value"
+	ObjectTypeJob               ObjectType = "job"
+	ObjectTypeMetricType        ObjectType = "metric_type"
+	ObjectTypeMetricEntry       ObjectType = "metric_entry"
+	ObjectTypeEvent             ObjectType = "event_entry"
+	ObjectTypeToken             ObjectType = "token"
 )
 
 const (
 	// Standard CRUD actions
-	ActionCreate auth.Action = "create"
-	ActionRead   auth.Action = "read"
-	ActionUpdate auth.Action = "update"
-	ActionDelete auth.Action = "delete"
+	ActionCreate Action = "create"
+	ActionRead   Action = "read"
+	ActionUpdate Action = "update"
+	ActionDelete Action = "delete"
 
 	// Special actions
-	ActionUpdateStatus  auth.Action = "update_status"
-	ActionGenerateToken auth.Action = "generate_token"
-	ActionClaim         auth.Action = "claim"
-	ActionComplete      auth.Action = "complete"
-	ActionFail          auth.Action = "fail"
-	ActionListPending   auth.Action = "list_pending"
-	ActionLease         auth.Action = "lease"
-	ActionAck           auth.Action = "ack"
+	ActionUpdateStatus  Action = "update_status"
+	ActionGenerateToken Action = "generate_token"
+	ActionClaim         Action = "claim"
+	ActionComplete      Action = "complete"
+	ActionFail          Action = "fail"
+	ActionListPending   Action = "list_pending"
+	ActionLease         Action = "lease"
+	ActionAck           Action = "ack"
 )
 
 // Default authorization rules for the system
-var Rules = []auth.AuthorizationRule{
+var Rules = []AuthorizationRule{
 	// Participant permissions
 	{Object: ObjectTypeParticipant, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 	{Object: ObjectTypeParticipant, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},

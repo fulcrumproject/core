@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
@@ -144,12 +145,12 @@ func (r *GormServicePoolValueRepository) Update(ctx context.Context, value *doma
 }
 
 // AuthScope returns the authorization scope for a service pool value (via pool -> pool set -> provider)
-func (r *GormServicePoolValueRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormServicePoolValueRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	// Join through service_pools and service_pool_sets to get provider_id
 	var result struct {
 		ProviderID properties.UUID `gorm:"column:provider_id"`
 	}
-	
+
 	err := r.db.WithContext(ctx).
 		Table("service_pool_values").
 		Select("service_pool_sets.provider_id").
@@ -157,13 +158,13 @@ func (r *GormServicePoolValueRepository) AuthScope(ctx context.Context, id prope
 		Joins("JOIN service_pool_sets ON service_pool_sets.id = service_pools.service_pool_set_id").
 		Where("service_pool_values.id = ?", id).
 		First(&result).Error
-	
+
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, domain.NotFoundError{Err: err}
 		}
 		return nil, err
 	}
-	
-	return &auth.DefaultObjectScope{ProviderID: &result.ProviderID}, nil
+
+	return &authz.DefaultObjectScope{ProviderID: &result.ProviderID}, nil
 }

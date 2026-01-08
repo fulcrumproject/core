@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
 
@@ -16,10 +16,10 @@ type GormTokenRepository struct {
 }
 
 var applyTokenFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"name": StringContainsInsensitiveFilterFieldApplier("name"),
-	"role": StringInFilterFieldApplier("role"),
+	"name":          StringContainsInsensitiveFilterFieldApplier("name"),
+	"role":          StringInFilterFieldApplier("role"),
 	"participantId": ParserInFilterFieldApplier("participant_id", properties.ParseUUID),
-	"agentId": ParserInFilterFieldApplier("agent_id", properties.ParseUUID),
+	"agentId":       ParserInFilterFieldApplier("agent_id", properties.ParseUUID),
 })
 
 var applyTokenSort = MapSortApplier(map[string]string{
@@ -83,6 +83,6 @@ func (r *GormTokenRepository) DeleteByParticipantID(ctx context.Context, partici
 }
 
 // AuthScope returns the auth scope for the token
-func (r *GormTokenRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormTokenRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	return r.AuthScopeByFields(ctx, id, "participant_id", "null", "agent_id", "null")
 }

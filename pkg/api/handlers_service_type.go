@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -15,14 +14,14 @@ import (
 type ServiceTypeHandler struct {
 	querier   domain.ServiceTypeQuerier
 	commander domain.ServiceTypeCommander
-	authz     auth.Authorizer
+	authz     authz.Authorizer
 	engine    *schema.Engine[domain.ServicePropertyContext]
 }
 
 func NewServiceTypeHandler(
 	querier domain.ServiceTypeQuerier,
 	commander domain.ServiceTypeCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 	engine *schema.Engine[domain.ServicePropertyContext],
 ) *ServiceTypeHandler {
 	return &ServiceTypeHandler{

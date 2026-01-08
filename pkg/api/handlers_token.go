@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -20,7 +21,6 @@ type CreateTokenReq struct {
 	Name     string           `json:"name"`
 	Role     auth.Role        `json:"role"`
 	ScopeID  *properties.UUID `json:"scopeId,omitempty"`
-	AgentID  *properties.UUID `json:"agentId,omitempty"`
 	ExpireAt *time.Time       `json:"expireAt,omitempty"` // Match the original field name in tests
 }
 
@@ -31,22 +31,38 @@ type UpdateTokenReq struct {
 }
 
 // CreateTokenScopeExtractor creates an extractor that sets the target scope based on token role
-func CreateTokenScopeExtractor() middlewares.ObjectScopeExtractor {
-	return func(r *http.Request) (auth.ObjectScope, error) {
+func CreateTokenScopeExtractor(agentQuerier domain.AgentQuerier) middlewares.ObjectScopeExtractor {
+	return func(r *http.Request) (authz.ObjectScope, error) {
 		// Get decoded body from context
 		body := middlewares.MustGetBody[CreateTokenReq](r.Context())
 
 		// Determine scope based on role
-		scope := &auth.DefaultObjectScope{}
-
+		var wrappedScope authz.ObjectScope
 		switch body.Role {
 		case auth.RoleParticipant:
-			scope.ParticipantID = body.ScopeID
+			if body.ScopeID == nil {
+				return nil, errors.New("scopeId required for participant tokens")
+			}
+			wrappedScope = &authz.DefaultObjectScope{
+				ParticipantID: body.ScopeID,
+			}
 		case auth.RoleAgent:
-			scope.AgentID = body.AgentID
+			if body.ScopeID == nil {
+				return nil, errors.New("scopeId required for agent tokens")
+			}
+			agentScope, err := agentQuerier.AuthScope(r.Context(), *body.ScopeID)
+			if err != nil {
+				return nil, err
+			}
+			wrappedScope = agentScope
+		case auth.RoleAdmin:
+			wrappedScope = &authz.AllwaysMatchObjectScope{}
+		default:
+			return nil, errors.New("invalid role")
 		}
 
-		return scope, nil
+		// Wrap the scope with TokenCreationScope to include target role info
+		return authz.NewTokenCreationScope(body.Role, wrappedScope), nil
 	}
 }
 
@@ -54,20 +70,23 @@ type TokenHandler struct {
 	querier      domain.TokenQuerier
 	commander    domain.TokenCommander
 	agentQuerier domain.AgentQuerier
-	authz        auth.Authorizer
+	authz        authz.Authorizer
 }
 
 func NewTokenHandler(
 	querier domain.TokenQuerier,
 	commander domain.TokenCommander,
 	agentQuerier domain.AgentQuerier,
-	authz auth.Authorizer,
+	baseAuthz authz.Authorizer,
 ) *TokenHandler {
+	// Wrap the authorizer with token-specific logic
+	tokenAuthz := authz.NewTokenAuthorizer(baseAuthz)
+
 	return &TokenHandler{
 		querier:      querier,
 		commander:    commander,
 		agentQuerier: agentQuerier,
-		authz:        authz,
+		authz:        tokenAuthz,
 	}
 }
 
@@ -86,7 +105,7 @@ func (h *TokenHandler) Routes() func(r chi.Router) {
 				authz.ObjectTypeToken,
 				authz.ActionCreate,
 				h.authz,
-				CreateTokenScopeExtractor(),
+				CreateTokenScopeExtractor(h.agentQuerier),
 			),
 		).Post("/", Create(h.Create, TokenToRes))
 

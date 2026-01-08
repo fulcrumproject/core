@@ -18,6 +18,10 @@ packages:
     config:
       all: true
 
+  github.com/fulcrumproject/core/pkg/authz:
+    config:
+      all: true
+
   github.com/fulcrumproject/core/pkg/schema:
     config:
       all: true

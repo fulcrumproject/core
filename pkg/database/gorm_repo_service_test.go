@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -380,9 +381,9 @@ func TestServiceRepository(t *testing.T) {
 		scope, err := repo.AuthScope(context.Background(), service.ID)
 		require.NoError(t, err)
 
-		// Check that the returned scope is a auth.DefaultObjectScope
-		defaultScope, ok := scope.(*auth.DefaultObjectScope)
-		require.True(t, ok, "AuthScope should return a auth.DefaultObjectScope")
+		// Check that the returned scope is a authz.DefaultObjectScope
+		defaultScope, ok := scope.(*authz.DefaultObjectScope)
+		require.True(t, ok, "AuthScope should return a authz.DefaultObjectScope")
 		assert.Equal(t, provider.ID, *defaultScope.ProviderID, "Provider ID should match")
 		assert.Equal(t, consumer.ID, *defaultScope.ConsumerID, "Consumer ID should match")
 		assert.Equal(t, agent.ID, *defaultScope.AgentID, "Agent ID should match")

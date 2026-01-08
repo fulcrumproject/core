@@ -30,14 +30,14 @@ type MetricEntryHandler struct {
 	querier        domain.MetricEntryQuerier
 	serviceQuerier domain.ServiceQuerier
 	commander      domain.MetricEntryCommander
-	authz          auth.Authorizer
+	authz          authz.Authorizer
 }
 
 func NewMetricEntryHandler(
 	querier domain.MetricEntryQuerier,
 	serviceQuerier domain.ServiceQuerier,
 	commander domain.MetricEntryCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *MetricEntryHandler {
 	return &MetricEntryHandler{
 		querier:        querier,

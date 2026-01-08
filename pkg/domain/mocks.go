@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -329,23 +330,23 @@ func (_m *MockAgentRepository) EXPECT() *MockAgentRepository_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockAgentRepository
-func (_mock *MockAgentRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockAgentRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -386,12 +387,12 @@ func (_c *MockAgentRepository_AuthScope_Call) Run(run func(ctx context.Context, 
 	return _c
 }
 
-func (_c *MockAgentRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockAgentRepository_AuthScope_Call {
+func (_c *MockAgentRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockAgentRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockAgentRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockAgentRepository_AuthScope_Call {
+func (_c *MockAgentRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockAgentRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1135,23 +1136,23 @@ func (_m *MockAgentQuerier) EXPECT() *MockAgentQuerier_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockAgentQuerier
-func (_mock *MockAgentQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockAgentQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -1192,12 +1193,12 @@ func (_c *MockAgentQuerier_AuthScope_Call) Run(run func(ctx context.Context, id 
 	return _c
 }
 
-func (_c *MockAgentQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockAgentQuerier_AuthScope_Call {
+func (_c *MockAgentQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockAgentQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockAgentQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockAgentQuerier_AuthScope_Call {
+func (_c *MockAgentQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockAgentQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1924,23 +1925,23 @@ func (_m *MockAgentTypeRepository) EXPECT() *MockAgentTypeRepository_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockAgentTypeRepository
-func (_mock *MockAgentTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockAgentTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -1981,12 +1982,12 @@ func (_c *MockAgentTypeRepository_AuthScope_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *MockAgentTypeRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockAgentTypeRepository_AuthScope_Call {
+func (_c *MockAgentTypeRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockAgentTypeRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockAgentTypeRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockAgentTypeRepository_AuthScope_Call {
+func (_c *MockAgentTypeRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockAgentTypeRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2458,23 +2459,23 @@ func (_m *MockAgentTypeQuerier) EXPECT() *MockAgentTypeQuerier_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockAgentTypeQuerier
-func (_mock *MockAgentTypeQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockAgentTypeQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -2515,12 +2516,12 @@ func (_c *MockAgentTypeQuerier_AuthScope_Call) Run(run func(ctx context.Context,
 	return _c
 }
 
-func (_c *MockAgentTypeQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockAgentTypeQuerier_AuthScope_Call {
+func (_c *MockAgentTypeQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockAgentTypeQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockAgentTypeQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockAgentTypeQuerier_AuthScope_Call {
+func (_c *MockAgentTypeQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockAgentTypeQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2894,23 +2895,23 @@ func (_m *MockBaseEntityRepository[T]) EXPECT() *MockBaseEntityRepository_Expect
 }
 
 // AuthScope provides a mock function for the type MockBaseEntityRepository
-func (_mock *MockBaseEntityRepository[T]) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockBaseEntityRepository[T]) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -2951,12 +2952,12 @@ func (_c *MockBaseEntityRepository_AuthScope_Call[T]) Run(run func(ctx context.C
 	return _c
 }
 
-func (_c *MockBaseEntityRepository_AuthScope_Call[T]) Return(objectScope auth.ObjectScope, err error) *MockBaseEntityRepository_AuthScope_Call[T] {
+func (_c *MockBaseEntityRepository_AuthScope_Call[T]) Return(objectScope authz.ObjectScope, err error) *MockBaseEntityRepository_AuthScope_Call[T] {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockBaseEntityRepository_AuthScope_Call[T]) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockBaseEntityRepository_AuthScope_Call[T] {
+func (_c *MockBaseEntityRepository_AuthScope_Call[T]) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockBaseEntityRepository_AuthScope_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
@@ -3428,23 +3429,23 @@ func (_m *MockBaseEntityQuerier[T]) EXPECT() *MockBaseEntityQuerier_Expecter[T] 
 }
 
 // AuthScope provides a mock function for the type MockBaseEntityQuerier
-func (_mock *MockBaseEntityQuerier[T]) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockBaseEntityQuerier[T]) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -3485,12 +3486,12 @@ func (_c *MockBaseEntityQuerier_AuthScope_Call[T]) Run(run func(ctx context.Cont
 	return _c
 }
 
-func (_c *MockBaseEntityQuerier_AuthScope_Call[T]) Return(objectScope auth.ObjectScope, err error) *MockBaseEntityQuerier_AuthScope_Call[T] {
+func (_c *MockBaseEntityQuerier_AuthScope_Call[T]) Return(objectScope authz.ObjectScope, err error) *MockBaseEntityQuerier_AuthScope_Call[T] {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockBaseEntityQuerier_AuthScope_Call[T]) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockBaseEntityQuerier_AuthScope_Call[T] {
+func (_c *MockBaseEntityQuerier_AuthScope_Call[T]) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockBaseEntityQuerier_AuthScope_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
@@ -3791,23 +3792,23 @@ func (_m *MockEventRepository) EXPECT() *MockEventRepository_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockEventRepository
-func (_mock *MockEventRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockEventRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -3848,12 +3849,12 @@ func (_c *MockEventRepository_AuthScope_Call) Run(run func(ctx context.Context, 
 	return _c
 }
 
-func (_c *MockEventRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockEventRepository_AuthScope_Call {
+func (_c *MockEventRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockEventRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockEventRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockEventRepository_AuthScope_Call {
+func (_c *MockEventRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockEventRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -4483,23 +4484,23 @@ func (_m *MockEventQuerier) EXPECT() *MockEventQuerier_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockEventQuerier
-func (_mock *MockEventQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockEventQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -4540,12 +4541,12 @@ func (_c *MockEventQuerier_AuthScope_Call) Run(run func(ctx context.Context, id 
 	return _c
 }
 
-func (_c *MockEventQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockEventQuerier_AuthScope_Call {
+func (_c *MockEventQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockEventQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockEventQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockEventQuerier_AuthScope_Call {
+func (_c *MockEventQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockEventQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5496,23 +5497,23 @@ func (_m *MockEventSubscriptionRepository) EXPECT() *MockEventSubscriptionReposi
 }
 
 // AuthScope provides a mock function for the type MockEventSubscriptionRepository
-func (_mock *MockEventSubscriptionRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockEventSubscriptionRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -5553,12 +5554,12 @@ func (_c *MockEventSubscriptionRepository_AuthScope_Call) Run(run func(ctx conte
 	return _c
 }
 
-func (_c *MockEventSubscriptionRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockEventSubscriptionRepository_AuthScope_Call {
+func (_c *MockEventSubscriptionRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockEventSubscriptionRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockEventSubscriptionRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockEventSubscriptionRepository_AuthScope_Call {
+func (_c *MockEventSubscriptionRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockEventSubscriptionRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6283,23 +6284,23 @@ func (_m *MockEventSubscriptionQuerier) EXPECT() *MockEventSubscriptionQuerier_E
 }
 
 // AuthScope provides a mock function for the type MockEventSubscriptionQuerier
-func (_mock *MockEventSubscriptionQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockEventSubscriptionQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -6340,12 +6341,12 @@ func (_c *MockEventSubscriptionQuerier_AuthScope_Call) Run(run func(ctx context.
 	return _c
 }
 
-func (_c *MockEventSubscriptionQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockEventSubscriptionQuerier_AuthScope_Call {
+func (_c *MockEventSubscriptionQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockEventSubscriptionQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockEventSubscriptionQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockEventSubscriptionQuerier_AuthScope_Call {
+func (_c *MockEventSubscriptionQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockEventSubscriptionQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -7211,23 +7212,23 @@ func (_m *MockJobRepository) EXPECT() *MockJobRepository_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockJobRepository
-func (_mock *MockJobRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockJobRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -7268,12 +7269,12 @@ func (_c *MockJobRepository_AuthScope_Call) Run(run func(ctx context.Context, id
 	return _c
 }
 
-func (_c *MockJobRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockJobRepository_AuthScope_Call {
+func (_c *MockJobRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockJobRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockJobRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockJobRepository_AuthScope_Call {
+func (_c *MockJobRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockJobRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -8021,23 +8022,23 @@ func (_m *MockJobQuerier) EXPECT() *MockJobQuerier_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockJobQuerier
-func (_mock *MockJobQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockJobQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -8078,12 +8079,12 @@ func (_c *MockJobQuerier_AuthScope_Call) Run(run func(ctx context.Context, id pr
 	return _c
 }
 
-func (_c *MockJobQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockJobQuerier_AuthScope_Call {
+func (_c *MockJobQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockJobQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockJobQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockJobQuerier_AuthScope_Call {
+func (_c *MockJobQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockJobQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -8847,23 +8848,23 @@ func (_c *MockMetricEntryRepository_Aggregate_Call) RunAndReturn(run func(ctx co
 }
 
 // AuthScope provides a mock function for the type MockMetricEntryRepository
-func (_mock *MockMetricEntryRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockMetricEntryRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -8904,12 +8905,12 @@ func (_c *MockMetricEntryRepository_AuthScope_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockMetricEntryRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockMetricEntryRepository_AuthScope_Call {
+func (_c *MockMetricEntryRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockMetricEntryRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockMetricEntryRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockMetricEntryRepository_AuthScope_Call {
+func (_c *MockMetricEntryRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockMetricEntryRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -9537,23 +9538,23 @@ func (_c *MockMetricEntryQuerier_Aggregate_Call) RunAndReturn(run func(ctx conte
 }
 
 // AuthScope provides a mock function for the type MockMetricEntryQuerier
-func (_mock *MockMetricEntryQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockMetricEntryQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -9594,12 +9595,12 @@ func (_c *MockMetricEntryQuerier_AuthScope_Call) Run(run func(ctx context.Contex
 	return _c
 }
 
-func (_c *MockMetricEntryQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockMetricEntryQuerier_AuthScope_Call {
+func (_c *MockMetricEntryQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockMetricEntryQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockMetricEntryQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockMetricEntryQuerier_AuthScope_Call {
+func (_c *MockMetricEntryQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockMetricEntryQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -10186,23 +10187,23 @@ func (_m *MockMetricTypeRepository) EXPECT() *MockMetricTypeRepository_Expecter 
 }
 
 // AuthScope provides a mock function for the type MockMetricTypeRepository
-func (_mock *MockMetricTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockMetricTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -10243,12 +10244,12 @@ func (_c *MockMetricTypeRepository_AuthScope_Call) Run(run func(ctx context.Cont
 	return _c
 }
 
-func (_c *MockMetricTypeRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockMetricTypeRepository_AuthScope_Call {
+func (_c *MockMetricTypeRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockMetricTypeRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockMetricTypeRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockMetricTypeRepository_AuthScope_Call {
+func (_c *MockMetricTypeRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockMetricTypeRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -10788,23 +10789,23 @@ func (_m *MockMetricTypeQuerier) EXPECT() *MockMetricTypeQuerier_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockMetricTypeQuerier
-func (_mock *MockMetricTypeQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockMetricTypeQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -10845,12 +10846,12 @@ func (_c *MockMetricTypeQuerier_AuthScope_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockMetricTypeQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockMetricTypeQuerier_AuthScope_Call {
+func (_c *MockMetricTypeQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockMetricTypeQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockMetricTypeQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockMetricTypeQuerier_AuthScope_Call {
+func (_c *MockMetricTypeQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockMetricTypeQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -11439,23 +11440,23 @@ func (_m *MockParticipantRepository) EXPECT() *MockParticipantRepository_Expecte
 }
 
 // AuthScope provides a mock function for the type MockParticipantRepository
-func (_mock *MockParticipantRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockParticipantRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -11496,12 +11497,12 @@ func (_c *MockParticipantRepository_AuthScope_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockParticipantRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockParticipantRepository_AuthScope_Call {
+func (_c *MockParticipantRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockParticipantRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockParticipantRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockParticipantRepository_AuthScope_Call {
+func (_c *MockParticipantRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockParticipantRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -11973,23 +11974,23 @@ func (_m *MockParticipantQuerier) EXPECT() *MockParticipantQuerier_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockParticipantQuerier
-func (_mock *MockParticipantQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockParticipantQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -12030,12 +12031,12 @@ func (_c *MockParticipantQuerier_AuthScope_Call) Run(run func(ctx context.Contex
 	return _c
 }
 
-func (_c *MockParticipantQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockParticipantQuerier_AuthScope_Call {
+func (_c *MockParticipantQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockParticipantQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockParticipantQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockParticipantQuerier_AuthScope_Call {
+func (_c *MockParticipantQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockParticipantQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -12701,23 +12702,23 @@ func (_m *MockServiceRepository) EXPECT() *MockServiceRepository_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockServiceRepository
-func (_mock *MockServiceRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServiceRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -12758,12 +12759,12 @@ func (_c *MockServiceRepository_AuthScope_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockServiceRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServiceRepository_AuthScope_Call {
+func (_c *MockServiceRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServiceRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServiceRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServiceRepository_AuthScope_Call {
+func (_c *MockServiceRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServiceRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -13507,23 +13508,23 @@ func (_m *MockServiceQuerier) EXPECT() *MockServiceQuerier_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockServiceQuerier
-func (_mock *MockServiceQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServiceQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -13564,12 +13565,12 @@ func (_c *MockServiceQuerier_AuthScope_Call) Run(run func(ctx context.Context, i
 	return _c
 }
 
-func (_c *MockServiceQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServiceQuerier_AuthScope_Call {
+func (_c *MockServiceQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServiceQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServiceQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServiceQuerier_AuthScope_Call {
+func (_c *MockServiceQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServiceQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -14362,23 +14363,23 @@ func (_m *MockServiceGroupRepository) EXPECT() *MockServiceGroupRepository_Expec
 }
 
 // AuthScope provides a mock function for the type MockServiceGroupRepository
-func (_mock *MockServiceGroupRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServiceGroupRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -14419,12 +14420,12 @@ func (_c *MockServiceGroupRepository_AuthScope_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *MockServiceGroupRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServiceGroupRepository_AuthScope_Call {
+func (_c *MockServiceGroupRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServiceGroupRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServiceGroupRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServiceGroupRepository_AuthScope_Call {
+func (_c *MockServiceGroupRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServiceGroupRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -14896,23 +14897,23 @@ func (_m *MockServiceGroupQuerier) EXPECT() *MockServiceGroupQuerier_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockServiceGroupQuerier
-func (_mock *MockServiceGroupQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServiceGroupQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -14953,12 +14954,12 @@ func (_c *MockServiceGroupQuerier_AuthScope_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *MockServiceGroupQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServiceGroupQuerier_AuthScope_Call {
+func (_c *MockServiceGroupQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServiceGroupQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServiceGroupQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServiceGroupQuerier_AuthScope_Call {
+func (_c *MockServiceGroupQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServiceGroupQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -15259,23 +15260,23 @@ func (_m *MockServiceOptionRepository) EXPECT() *MockServiceOptionRepository_Exp
 }
 
 // AuthScope provides a mock function for the type MockServiceOptionRepository
-func (_mock *MockServiceOptionRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServiceOptionRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -15316,12 +15317,12 @@ func (_c *MockServiceOptionRepository_AuthScope_Call) Run(run func(ctx context.C
 	return _c
 }
 
-func (_c *MockServiceOptionRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServiceOptionRepository_AuthScope_Call {
+func (_c *MockServiceOptionRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServiceOptionRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServiceOptionRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServiceOptionRepository_AuthScope_Call {
+func (_c *MockServiceOptionRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServiceOptionRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -16155,23 +16156,23 @@ func (_m *MockServiceOptionQuerier) EXPECT() *MockServiceOptionQuerier_Expecter 
 }
 
 // AuthScope provides a mock function for the type MockServiceOptionQuerier
-func (_mock *MockServiceOptionQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServiceOptionQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -16212,12 +16213,12 @@ func (_c *MockServiceOptionQuerier_AuthScope_Call) Run(run func(ctx context.Cont
 	return _c
 }
 
-func (_c *MockServiceOptionQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServiceOptionQuerier_AuthScope_Call {
+func (_c *MockServiceOptionQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServiceOptionQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServiceOptionQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServiceOptionQuerier_AuthScope_Call {
+func (_c *MockServiceOptionQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServiceOptionQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -17034,23 +17035,23 @@ func (_m *MockServiceOptionTypeRepository) EXPECT() *MockServiceOptionTypeReposi
 }
 
 // AuthScope provides a mock function for the type MockServiceOptionTypeRepository
-func (_mock *MockServiceOptionTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServiceOptionTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -17091,12 +17092,12 @@ func (_c *MockServiceOptionTypeRepository_AuthScope_Call) Run(run func(ctx conte
 	return _c
 }
 
-func (_c *MockServiceOptionTypeRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServiceOptionTypeRepository_AuthScope_Call {
+func (_c *MockServiceOptionTypeRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServiceOptionTypeRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServiceOptionTypeRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServiceOptionTypeRepository_AuthScope_Call {
+func (_c *MockServiceOptionTypeRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServiceOptionTypeRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -17636,23 +17637,23 @@ func (_m *MockServiceOptionTypeQuerier) EXPECT() *MockServiceOptionTypeQuerier_E
 }
 
 // AuthScope provides a mock function for the type MockServiceOptionTypeQuerier
-func (_mock *MockServiceOptionTypeQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServiceOptionTypeQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -17693,12 +17694,12 @@ func (_c *MockServiceOptionTypeQuerier_AuthScope_Call) Run(run func(ctx context.
 	return _c
 }
 
-func (_c *MockServiceOptionTypeQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServiceOptionTypeQuerier_AuthScope_Call {
+func (_c *MockServiceOptionTypeQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServiceOptionTypeQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServiceOptionTypeQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServiceOptionTypeQuerier_AuthScope_Call {
+func (_c *MockServiceOptionTypeQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServiceOptionTypeQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -18287,23 +18288,23 @@ func (_m *MockServicePoolRepository) EXPECT() *MockServicePoolRepository_Expecte
 }
 
 // AuthScope provides a mock function for the type MockServicePoolRepository
-func (_mock *MockServicePoolRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServicePoolRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -18344,12 +18345,12 @@ func (_c *MockServicePoolRepository_AuthScope_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockServicePoolRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolRepository_AuthScope_Call {
+func (_c *MockServicePoolRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServicePoolRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServicePoolRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolRepository_AuthScope_Call {
+func (_c *MockServicePoolRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServicePoolRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -18963,23 +18964,23 @@ func (_m *MockServicePoolQuerier) EXPECT() *MockServicePoolQuerier_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockServicePoolQuerier
-func (_mock *MockServicePoolQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServicePoolQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -19020,12 +19021,12 @@ func (_c *MockServicePoolQuerier_AuthScope_Call) Run(run func(ctx context.Contex
 	return _c
 }
 
-func (_c *MockServicePoolQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolQuerier_AuthScope_Call {
+func (_c *MockServicePoolQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServicePoolQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServicePoolQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolQuerier_AuthScope_Call {
+func (_c *MockServicePoolQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServicePoolQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -19947,23 +19948,23 @@ func (_m *MockServicePoolSetRepository) EXPECT() *MockServicePoolSetRepository_E
 }
 
 // AuthScope provides a mock function for the type MockServicePoolSetRepository
-func (_mock *MockServicePoolSetRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServicePoolSetRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -20004,12 +20005,12 @@ func (_c *MockServicePoolSetRepository_AuthScope_Call) Run(run func(ctx context.
 	return _c
 }
 
-func (_c *MockServicePoolSetRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolSetRepository_AuthScope_Call {
+func (_c *MockServicePoolSetRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServicePoolSetRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServicePoolSetRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolSetRepository_AuthScope_Call {
+func (_c *MockServicePoolSetRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServicePoolSetRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -20623,23 +20624,23 @@ func (_m *MockServicePoolSetQuerier) EXPECT() *MockServicePoolSetQuerier_Expecte
 }
 
 // AuthScope provides a mock function for the type MockServicePoolSetQuerier
-func (_mock *MockServicePoolSetQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServicePoolSetQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -20680,12 +20681,12 @@ func (_c *MockServicePoolSetQuerier_AuthScope_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockServicePoolSetQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolSetQuerier_AuthScope_Call {
+func (_c *MockServicePoolSetQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServicePoolSetQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServicePoolSetQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolSetQuerier_AuthScope_Call {
+func (_c *MockServicePoolSetQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServicePoolSetQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -21354,23 +21355,23 @@ func (_m *MockServicePoolValueRepository) EXPECT() *MockServicePoolValueReposito
 }
 
 // AuthScope provides a mock function for the type MockServicePoolValueRepository
-func (_mock *MockServicePoolValueRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServicePoolValueRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -21411,12 +21412,12 @@ func (_c *MockServicePoolValueRepository_AuthScope_Call) Run(run func(ctx contex
 	return _c
 }
 
-func (_c *MockServicePoolValueRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolValueRepository_AuthScope_Call {
+func (_c *MockServicePoolValueRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServicePoolValueRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServicePoolValueRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolValueRepository_AuthScope_Call {
+func (_c *MockServicePoolValueRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServicePoolValueRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -22228,23 +22229,23 @@ func (_m *MockServicePoolValueQuerier) EXPECT() *MockServicePoolValueQuerier_Exp
 }
 
 // AuthScope provides a mock function for the type MockServicePoolValueQuerier
-func (_mock *MockServicePoolValueQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServicePoolValueQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -22285,12 +22286,12 @@ func (_c *MockServicePoolValueQuerier_AuthScope_Call) Run(run func(ctx context.C
 	return _c
 }
 
-func (_c *MockServicePoolValueQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServicePoolValueQuerier_AuthScope_Call {
+func (_c *MockServicePoolValueQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServicePoolValueQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServicePoolValueQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServicePoolValueQuerier_AuthScope_Call {
+func (_c *MockServicePoolValueQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServicePoolValueQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -23083,23 +23084,23 @@ func (_m *MockServiceTypeRepository) EXPECT() *MockServiceTypeRepository_Expecte
 }
 
 // AuthScope provides a mock function for the type MockServiceTypeRepository
-func (_mock *MockServiceTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServiceTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -23140,12 +23141,12 @@ func (_c *MockServiceTypeRepository_AuthScope_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockServiceTypeRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServiceTypeRepository_AuthScope_Call {
+func (_c *MockServiceTypeRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServiceTypeRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServiceTypeRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServiceTypeRepository_AuthScope_Call {
+func (_c *MockServiceTypeRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServiceTypeRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -23617,23 +23618,23 @@ func (_m *MockServiceTypeQuerier) EXPECT() *MockServiceTypeQuerier_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockServiceTypeQuerier
-func (_mock *MockServiceTypeQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockServiceTypeQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -23674,12 +23675,12 @@ func (_c *MockServiceTypeQuerier_AuthScope_Call) Run(run func(ctx context.Contex
 	return _c
 }
 
-func (_c *MockServiceTypeQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockServiceTypeQuerier_AuthScope_Call {
+func (_c *MockServiceTypeQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockServiceTypeQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockServiceTypeQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockServiceTypeQuerier_AuthScope_Call {
+func (_c *MockServiceTypeQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockServiceTypeQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -26071,23 +26072,23 @@ func (_m *MockTokenRepository) EXPECT() *MockTokenRepository_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockTokenRepository
-func (_mock *MockTokenRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockTokenRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -26128,12 +26129,12 @@ func (_c *MockTokenRepository_AuthScope_Call) Run(run func(ctx context.Context, 
 	return _c
 }
 
-func (_c *MockTokenRepository_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockTokenRepository_AuthScope_Call {
+func (_c *MockTokenRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockTokenRepository_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockTokenRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockTokenRepository_AuthScope_Call {
+func (_c *MockTokenRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockTokenRepository_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -26787,23 +26788,23 @@ func (_m *MockTokenQuerier) EXPECT() *MockTokenQuerier_Expecter {
 }
 
 // AuthScope provides a mock function for the type MockTokenQuerier
-func (_mock *MockTokenQuerier) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (_mock *MockTokenQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthScope")
 	}
 
-	var r0 auth.ObjectScope
+	var r0 authz.ObjectScope
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (auth.ObjectScope, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) auth.ObjectScope); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(auth.ObjectScope)
+			r0 = ret.Get(0).(authz.ObjectScope)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
@@ -26844,12 +26845,12 @@ func (_c *MockTokenQuerier_AuthScope_Call) Run(run func(ctx context.Context, id 
 	return _c
 }
 
-func (_c *MockTokenQuerier_AuthScope_Call) Return(objectScope auth.ObjectScope, err error) *MockTokenQuerier_AuthScope_Call {
+func (_c *MockTokenQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockTokenQuerier_AuthScope_Call {
 	_c.Call.Return(objectScope, err)
 	return _c
 }
 
-func (_c *MockTokenQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)) *MockTokenQuerier_AuthScope_Call {
+func (_c *MockTokenQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockTokenQuerier_AuthScope_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
@@ -18,7 +18,7 @@ import (
 func TestNewServiceOptionHandler(t *testing.T) {
 	querier := domain.NewMockServiceOptionQuerier(t)
 	commander := domain.NewMockServiceOptionCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	handler := NewServiceOptionHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -32,7 +32,7 @@ func TestServiceOptionHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := domain.NewMockServiceOptionQuerier(t)
 	commander := domain.NewMockServiceOptionCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewServiceOptionHandler(querier, commander, authz)
@@ -115,7 +115,7 @@ func TestCreateServiceOptionReq_ObjectScope(t *testing.T) {
 	assert.NotNil(t, scope)
 
 	// Verify it's a DefaultObjectScope with provider ID
-	defaultScope, ok := scope.(*auth.DefaultObjectScope)
+	defaultScope, ok := scope.(*authz.DefaultObjectScope)
 	assert.True(t, ok, "Should return DefaultObjectScope")
 	assert.NotNil(t, defaultScope.ProviderID)
 	assert.Equal(t, properties.UUID(providerID), *defaultScope.ProviderID)
