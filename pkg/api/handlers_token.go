@@ -31,22 +31,17 @@ type UpdateTokenReq struct {
 }
 
 // CreateTokenScopeExtractor creates an extractor that sets the target scope based on token role
-func CreateTokenScopeExtractor() middlewares.ObjectScopeExtractor {
+func CreateTokenScopeExtractor(store domain.Store) middlewares.ObjectScopeExtractor {
 	return func(r *http.Request) (auth.ObjectScope, error) {
 		// Get decoded body from context
 		body := middlewares.MustGetBody[CreateTokenReq](r.Context())
 
-		// Determine scope based on role
-		scope := &auth.DefaultObjectScope{}
-
-		switch body.Role {
-		case auth.RoleParticipant:
-			scope.ParticipantID = body.ScopeID
-		case auth.RoleAgent:
-			scope.AgentID = body.AgentID
-		}
-
-		return scope, nil
+		return authz.NewTokenCreationScope(
+			r.Context(),
+			store,
+			body.Role,
+			body.ScopeID,
+		), nil
 	}
 }
 
@@ -54,6 +49,7 @@ type TokenHandler struct {
 	querier      domain.TokenQuerier
 	commander    domain.TokenCommander
 	agentQuerier domain.AgentQuerier
+	store				 domain.Store
 	authz        auth.Authorizer
 }
 
@@ -61,12 +57,14 @@ func NewTokenHandler(
 	querier domain.TokenQuerier,
 	commander domain.TokenCommander,
 	agentQuerier domain.AgentQuerier,
+	store domain.Store,
 	authz auth.Authorizer,
 ) *TokenHandler {
 	return &TokenHandler{
 		querier:      querier,
 		commander:    commander,
 		agentQuerier: agentQuerier,
+		store: 				store,
 		authz:        authz,
 	}
 }
@@ -86,7 +84,7 @@ func (h *TokenHandler) Routes() func(r chi.Router) {
 				authz.ObjectTypeToken,
 				authz.ActionCreate,
 				h.authz,
-				CreateTokenScopeExtractor(),
+				CreateTokenScopeExtractor(h.store),
 			),
 		).Post("/", Create(h.Create, TokenToRes))
 
