@@ -18,10 +18,9 @@ func TestNewTokenHandler(t *testing.T) {
 	tokenQuerier := domain.NewMockTokenQuerier(t)
 	agentQuerier := domain.NewMockAgentQuerier(t)
 	commander := domain.NewMockTokenCommander(t)
-	store := domain.NewMockStore(t)
 	authz := auth.NewMockAuthorizer(t)
 
-	handler := NewTokenHandler(tokenQuerier, commander, agentQuerier, store, authz)
+	handler := NewTokenHandler(tokenQuerier, commander, agentQuerier, authz)
 	assert.NotNil(t, handler)
 	assert.Equal(t, tokenQuerier, handler.querier)
 	assert.Equal(t, commander, handler.commander)
@@ -35,11 +34,10 @@ func TestTokenHandlerRoutes(t *testing.T) {
 	tokenQuerier := domain.NewMockTokenQuerier(t)
 	agentQuerier := domain.NewMockAgentQuerier(t)
 	commander := domain.NewMockTokenCommander(t)
-	store := domain.NewMockStore(t)
 	authz := auth.NewMockAuthorizer(t)
 
 	// Create the handler
-	handler := NewTokenHandler(tokenQuerier, commander, agentQuerier, store, authz)
+	handler := NewTokenHandler(tokenQuerier, commander, agentQuerier, authz)
 
 	// Execute
 	routeFunc := handler.Routes()

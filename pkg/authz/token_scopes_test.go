@@ -18,20 +18,18 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 	agent1ID := properties.UUID(uuid.New())
 	agent2ID := properties.UUID(uuid.New())
 
-	// Setup mock store
-	mockStore := &mockTokenScopeStore{
-		agentRepo: &mockAgentRepo{
-			agents: map[properties.UUID]*domain.Agent{
-				agent1ID: {
-					BaseEntity: domain.BaseEntity{ID: agent1ID},
-					Name:       "Agent 1",
-					ProviderID: provider1ID, // Agent 1 belongs to Provider 1
-				},
-				agent2ID: {
-					BaseEntity: domain.BaseEntity{ID: agent2ID},
-					Name:       "Agent 2",
-					ProviderID: provider2ID, // Agent 2 belongs to Provider 2
-				},
+	// Setup mock agent querier
+	mockAgentQuerier := &mockAgentRepo{
+		agents: map[properties.UUID]*domain.Agent{
+			agent1ID: {
+				BaseEntity: domain.BaseEntity{ID: agent1ID},
+				Name:       "Agent 1",
+				ProviderID: provider1ID, // Agent 1 belongs to Provider 1
+			},
+			agent2ID: {
+				BaseEntity: domain.BaseEntity{ID: agent2ID},
+				Name:       "Agent 2",
+				ProviderID: provider2ID, // Agent 2 belongs to Provider 2
 			},
 		},
 	}
@@ -47,7 +45,7 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 			name: "admin can create admin token",
 			scope: NewTokenCreationScope(
 				context.Background(),
-				mockStore,
+				mockAgentQuerier,
 				auth.RoleAdmin,
 				nil,
 			),
@@ -64,7 +62,7 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 			name: "admin can create participant token",
 			scope: NewTokenCreationScope(
 				context.Background(),
-				mockStore,
+				mockAgentQuerier,
 				auth.RoleParticipant,
 				&provider1ID,
 			),
@@ -81,7 +79,7 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 			name: "admin can create agent token for any agent",
 			scope: NewTokenCreationScope(
 				context.Background(),
-				mockStore,
+				mockAgentQuerier,
 				auth.RoleAgent,
 				&agent2ID,
 			),
@@ -100,7 +98,7 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 			name: "participant CANNOT create admin token",
 			scope: NewTokenCreationScope(
 				context.Background(),
-				mockStore,
+				mockAgentQuerier,
 				auth.RoleAdmin,
 				nil,
 			),
@@ -118,7 +116,7 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 			name: "participant can create token for itself",
 			scope: NewTokenCreationScope(
 				context.Background(),
-				mockStore,
+				mockAgentQuerier,
 				auth.RoleParticipant,
 				&provider1ID,
 			),
@@ -134,7 +132,7 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 			name: "participant CANNOT create token for another participant",
 			scope: NewTokenCreationScope(
 				context.Background(),
-				mockStore,
+				mockAgentQuerier,
 				auth.RoleParticipant,
 				&provider2ID,
 			),
@@ -152,7 +150,7 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 			name: "participant can create token for its own agent",
 			scope: NewTokenCreationScope(
 				context.Background(),
-				mockStore,
+				mockAgentQuerier,
 				auth.RoleAgent,
 				&agent1ID,
 			),
@@ -168,7 +166,7 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 			name: "participant CANNOT create token for another participant's agent",
 			scope: NewTokenCreationScope(
 				context.Background(),
-				mockStore,
+				mockAgentQuerier,
 				auth.RoleAgent,
 				&agent2ID, // Agent 2 belongs to Provider 2
 			),
@@ -184,7 +182,7 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 			name: "participant creating agent token with invalid agent ID",
 			scope: NewTokenCreationScope(
 				context.Background(),
-				mockStore,
+				mockAgentQuerier,
 				auth.RoleAgent,
 				func() *properties.UUID { id := properties.UUID(uuid.New()); return &id }(), // Non-existent agent
 			),
@@ -202,7 +200,7 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 			name: "nil identity",
 			scope: NewTokenCreationScope(
 				context.Background(),
-				mockStore,
+				mockAgentQuerier,
 				auth.RoleParticipant,
 				&provider1ID,
 			),
@@ -220,33 +218,6 @@ func TestTokenCreationScope_Matches(t *testing.T) {
 }
 
 // Mock implementations for testing
-
-type mockTokenScopeStore struct {
-	agentRepo domain.AgentRepository
-}
-
-func (m *mockTokenScopeStore) AgentRepo() domain.AgentRepository { return m.agentRepo }
-
-// Implement other Store methods (not used in these tests)
-func (m *mockTokenScopeStore) ParticipantRepo() domain.ParticipantRepository             { return nil }
-func (m *mockTokenScopeStore) TokenRepo() domain.TokenRepository                         { return nil }
-func (m *mockTokenScopeStore) EventRepo() domain.EventRepository                         { return nil }
-func (m *mockTokenScopeStore) AgentTypeRepo() domain.AgentTypeRepository                 { return nil }
-func (m *mockTokenScopeStore) ServiceTypeRepo() domain.ServiceTypeRepository             { return nil }
-func (m *mockTokenScopeStore) ServiceRepo() domain.ServiceRepository                     { return nil }
-func (m *mockTokenScopeStore) ServiceGroupRepo() domain.ServiceGroupRepository           { return nil }
-func (m *mockTokenScopeStore) ServiceOptionTypeRepo() domain.ServiceOptionTypeRepository { return nil }
-func (m *mockTokenScopeStore) ServiceOptionRepo() domain.ServiceOptionRepository         { return nil }
-func (m *mockTokenScopeStore) ServicePoolSetRepo() domain.ServicePoolSetRepository       { return nil }
-func (m *mockTokenScopeStore) ServicePoolRepo() domain.ServicePoolRepository             { return nil }
-func (m *mockTokenScopeStore) ServicePoolValueRepo() domain.ServicePoolValueRepository   { return nil }
-func (m *mockTokenScopeStore) JobRepo() domain.JobRepository                             { return nil }
-func (m *mockTokenScopeStore) MetricTypeRepo() domain.MetricTypeRepository               { return nil }
-func (m *mockTokenScopeStore) MetricEntryRepo() domain.MetricEntryRepository             { return nil }
-func (m *mockTokenScopeStore) EventSubscriptionRepo() domain.EventSubscriptionRepository { return nil }
-func (m *mockTokenScopeStore) Atomic(ctx context.Context, fn func(domain.Store) error) error {
-	return fn(m)
-}
 
 type mockAgentRepo struct {
 	agents map[properties.UUID]*domain.Agent

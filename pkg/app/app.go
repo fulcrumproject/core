@@ -274,7 +274,7 @@ func NewApp() *App {
 		MetricEntryHandler:       api.NewMetricEntryHandler(metricEntryRepo, store.ServiceRepo(), metricEntryCmd, athz),
 		MetricEntryRepo:          metricEntryRepo,
 		EventHandler:             api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz),
-		TokenHandler:             api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), store, athz),
+		TokenHandler:             api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz),
 		VaultHandler:             api.NewVaultHandler(vault),
 		ServiceCmd:               serviceCmd,
 		PropertyEngine:           propertyEngine,

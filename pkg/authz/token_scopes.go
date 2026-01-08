@@ -10,25 +10,25 @@ import (
 
 // TokenCreationScope represents the authorization context for creating a new token
 type TokenCreationScope struct {
-	ctx 				 context.Context
-	store 			 domain.Store
-	tokenRole 	 auth.Role
+	ctx          context.Context
+	agentQuerier domain.AgentQuerier
+	tokenRole    auth.Role
 	tokenScopeId *properties.UUID
 }
 
 // NewTokenCreationScope creates a new TokenCreationScope for authorization checks.
 func NewTokenCreationScope(
 	ctx context.Context,
-	store domain.Store,
+	agentQuerier domain.AgentQuerier,
 	tokenRole auth.Role,
 	tokenScopeId *properties.UUID,
 ) *TokenCreationScope {
 	return &TokenCreationScope{
-		ctx: ctx,
-		store: store,
-		tokenRole: tokenRole,
+		ctx:          ctx,
+		agentQuerier: agentQuerier,
+		tokenRole:    tokenRole,
 		tokenScopeId: tokenScopeId,
-	} 
+	}
 }
 
 // Matches checks if the given identity has permission to create the token.
@@ -37,7 +37,7 @@ func NewTokenCreationScope(
 //   - Non-admins cannot create admin tokens
 //   - Participants can create agent tokens only for agents they own
 //   - Participants can create participant tokens only for themselves
-func(s *TokenCreationScope) Matches(id *auth.Identity) bool {
+func (s *TokenCreationScope) Matches(id *auth.Identity) bool {
 
 	// Reject if no identity provided
 	if id == nil {
@@ -56,8 +56,8 @@ func(s *TokenCreationScope) Matches(id *auth.Identity) bool {
 
 	// For agent tokens: verify the caller owns the agent's provider
 	if s.tokenRole == auth.RoleAgent && s.tokenScopeId != nil {
-		agent, err := s.store.AgentRepo().Get(s.ctx, *s.tokenScopeId)
-		
+		agent, err := s.agentQuerier.Get(s.ctx, *s.tokenScopeId)
+
 		// Reject if agent not found or database error
 		if err != nil {
 			return false
@@ -71,11 +71,11 @@ func(s *TokenCreationScope) Matches(id *auth.Identity) bool {
 
 	// For participant tokens: verify the caller is creating a token for themselves
 	if s.tokenRole == auth.RoleParticipant && s.tokenScopeId != nil {
-		if id.Scope.ParticipantID != nil && *s.tokenScopeId != *id.Scope.ParticipantID{
+		if id.Scope.ParticipantID != nil && *s.tokenScopeId != *id.Scope.ParticipantID {
 			return false
 		}
 	}
 
-	// All checks passed	
+	// All checks passed
 	return true
 }
