@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/response"
 	"github.com/go-chi/render"
@@ -44,22 +45,22 @@ func Auth(authenticator auth.Authenticator) func(http.Handler) http.Handler {
 }
 
 // ObjectScopeExtractor defines a function type that extracts the auth target scope from a request
-type ObjectScopeExtractor func(r *http.Request) (auth.ObjectScope, error)
+type ObjectScopeExtractor func(r *http.Request) (authz.ObjectScope, error)
 
 // ObjectScopeLoader defines a function type that  retrieves the authorization scope for a resource ID
-type ObjectScopeLoader func(ctx context.Context, id properties.UUID) (auth.ObjectScope, error)
+type ObjectScopeLoader func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)
 
 // ObjectScopeProvider defines an interface for types that can provide their own auth target scope
 type ObjectScopeProvider interface {
-	ObjectScope() (auth.ObjectScope, error)
+	ObjectScope() (authz.ObjectScope, error)
 }
 
 // AuthzFromExtractor is the base authorization middleware that uses a scope extractor function
 // to get the authorization target scope from the request
 func AuthzFromExtractor(
-	object auth.ObjectType,
-	action auth.Action,
-	authorizer auth.Authorizer,
+	object authz.ObjectType,
+	action authz.Action,
+	authorizer authz.Authorizer,
 	extractor ObjectScopeExtractor,
 ) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -89,7 +90,7 @@ func AuthzFromExtractor(
 
 // IDScopeExtractor creates an extractor that gets scope from a resource ID using a retriever
 func IDScopeExtractor(loader ObjectScopeLoader) ObjectScopeExtractor {
-	return func(r *http.Request) (auth.ObjectScope, error) {
+	return func(r *http.Request) (authz.ObjectScope, error) {
 		// Get resource ID from URL
 		id := MustGetID(r.Context())
 
@@ -105,9 +106,9 @@ func IDScopeExtractor(loader ObjectScopeLoader) ObjectScopeExtractor {
 
 // AuthzFromID authorizes using a resource ID through the extractor pattern
 func AuthzFromID(
-	object auth.ObjectType,
-	action auth.Action,
-	authorizer auth.Authorizer,
+	object authz.ObjectType,
+	action authz.Action,
+	authorizer authz.Authorizer,
 	loader ObjectScopeLoader,
 ) func(http.Handler) http.Handler {
 	// Create an extractor that gets scope from the resource ID
@@ -119,17 +120,17 @@ func AuthzFromID(
 
 // SimpleScopeExtractor creates an extractor that always returns empty scope
 func SimpleScopeExtractor() ObjectScopeExtractor {
-	return func(r *http.Request) (auth.ObjectScope, error) {
+	return func(r *http.Request) (authz.ObjectScope, error) {
 		// Use empty scope for simple operations
-		return &auth.AllwaysMatchObjectScope{}, nil
+		return &authz.AllwaysMatchObjectScope{}, nil
 	}
 }
 
 // AuthzSimple authorizes without resource-specific scope through the extractor pattern
 func AuthzSimple(
-	object auth.ObjectType,
-	action auth.Action,
-	authorizer auth.Authorizer,
+	object authz.ObjectType,
+	action authz.Action,
+	authorizer authz.Authorizer,
 ) func(http.Handler) http.Handler {
 	// Create an extractor that always returns empty scope
 	extractor := SimpleScopeExtractor()
@@ -140,7 +141,7 @@ func AuthzSimple(
 
 // BodyScopeExtractor creates an extractor that gets scope from the request body
 func BodyScopeExtractor[T ObjectScopeProvider]() ObjectScopeExtractor {
-	return func(r *http.Request) (auth.ObjectScope, error) {
+	return func(r *http.Request) (authz.ObjectScope, error) {
 		// Get decoded body from context
 		body := MustGetBody[T](r.Context())
 
@@ -157,9 +158,9 @@ func BodyScopeExtractor[T ObjectScopeProvider]() ObjectScopeExtractor {
 // AuthzFromBody middleware authorizes using the decoded body through the extractor pattern
 // T must implement AuthTargetScopeProvider to provide its own target scope
 func AuthzFromBody[T ObjectScopeProvider](
-	object auth.ObjectType,
-	action auth.Action,
-	authorizer auth.Authorizer,
+	object authz.ObjectType,
+	action authz.Action,
+	authorizer authz.Authorizer,
 ) func(http.Handler) http.Handler {
 	// Create an extractor that gets scope from the request body
 	extractor := BodyScopeExtractor[T]()

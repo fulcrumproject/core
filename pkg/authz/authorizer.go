@@ -1,12 +1,15 @@
-package auth
+// Rule-based authorizer implementation
+package authz
 
 import (
 	"fmt"
+
+	"github.com/fulcrumproject/core/pkg/auth"
 )
 
 // AuthorizationRule represents a single authorization rule with roles, action, and object
 type AuthorizationRule struct {
-	Roles  []Role
+	Roles  []auth.Role
 	Action Action
 	Object ObjectType
 }
@@ -25,7 +28,7 @@ func NewRuleBasedAuthorizer(rules []AuthorizationRule) *RuleBasedAuthorizer {
 
 // Authorize checks if the given identity is authorized to perform the action on the object
 // It matches against the predefined rules based on the identity's roles
-func (a *RuleBasedAuthorizer) Authorize(identity *Identity, action Action, object ObjectType, objectContext ObjectScope) error {
+func (a *RuleBasedAuthorizer) Authorize(identity *auth.Identity, action Action, object ObjectType, objectContext ObjectScope) error {
 	// Check if the object context matches the identity (for context-specific authorization)
 	if objectContext != nil && !objectContext.Matches(identity) {
 		return fmt.Errorf("access denied: object context does not match identity")

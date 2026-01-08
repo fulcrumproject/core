@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -25,7 +26,7 @@ func TestNewMetricEntryHandler(t *testing.T) {
 	querier := domain.NewMockMetricEntryQuerier(t)
 	serviceQuerier := domain.NewMockServiceQuerier(t)
 	commander := domain.NewMockMetricEntryCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authz)
 	assert.NotNil(t, handler)
@@ -41,7 +42,7 @@ func TestMetricEntryHandlerRoutes(t *testing.T) {
 	querier := domain.NewMockMetricEntryQuerier(t)
 	serviceQuerier := domain.NewMockServiceQuerier(t)
 	commander := domain.NewMockMetricEntryCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authz)
@@ -239,7 +240,7 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 			querier := domain.NewMockMetricEntryQuerier(t)
 			serviceQuerier := domain.NewMockServiceQuerier(t)
 			commander := domain.NewMockMetricEntryCommander(t)
-			authz := auth.NewMockAuthorizer(t)
+			authz := authz.NewMockAuthorizer(t)
 			tc.mockSetup(serviceQuerier, commander)
 
 			// Create the handler

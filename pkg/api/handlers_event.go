@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -29,13 +28,13 @@ const (
 type EventHandler struct {
 	querier                    domain.EventQuerier
 	eventSubscriptionCommander domain.EventSubscriptionCommander
-	authz                      auth.Authorizer
+	authz                      authz.Authorizer
 }
 
 func NewEventHandler(
 	querier domain.EventQuerier,
 	eventSubscriptionCommander domain.EventSubscriptionCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *EventHandler {
 	return &EventHandler{
 		querier:                    querier,

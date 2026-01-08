@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
 
@@ -128,6 +128,6 @@ func (r *GormJobRepository) GetLastJobForService(ctx context.Context, serviceID 
 	return &job, nil
 }
 
-func (r *GormJobRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormJobRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	return r.AuthScopeByFields(ctx, id, "null", "provider_id", "agent_id", "consumer_id")
 }

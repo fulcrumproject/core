@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -17,7 +17,7 @@ import (
 func TestNewMetricTypeHandler(t *testing.T) {
 	querier := domain.NewMockMetricTypeQuerier(t)
 	commander := domain.NewMockMetricTypeCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	handler := NewMetricTypeHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -31,7 +31,7 @@ func TestMetricTypeHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := domain.NewMockMetricTypeQuerier(t)
 	commander := domain.NewMockMetricTypeCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewMetricTypeHandler(querier, commander, authz)

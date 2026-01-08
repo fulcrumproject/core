@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
@@ -20,7 +21,7 @@ import (
 func TestNewAgentTypeHandler(t *testing.T) {
 	querier := domain.NewMockAgentTypeQuerier(t)
 	commander := domain.NewMockAgentTypeCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	handler := NewAgentTypeHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -34,7 +35,7 @@ func TestAgentTypeHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := domain.NewMockAgentTypeQuerier(t)
 	commander := domain.NewMockAgentTypeCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewAgentTypeHandler(querier, commander, authz)

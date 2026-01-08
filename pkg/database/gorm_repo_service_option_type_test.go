@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/assert"
@@ -189,7 +190,7 @@ func TestServiceOptionTypeRepository(t *testing.T) {
 			// Execute with existing ID
 			scope, err := repo.AuthScope(ctx, optionType.ID)
 			require.NoError(t, err)
-			assert.Equal(t, &auth.AllwaysMatchObjectScope{}, scope, "Should return empty auth scope for service option types")
+			assert.Equal(t, &authz.AllwaysMatchObjectScope{}, scope, "Should return empty auth scope for service option types")
 		})
 	})
 }

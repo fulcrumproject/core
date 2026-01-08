@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
@@ -155,7 +156,7 @@ func (r *GormServiceOptionRepository) CountByServiceOptionType(
 	return count, nil
 }
 
-func (r *GormServiceOptionRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormServiceOptionRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	var entity domain.ServiceOption
 	result := r.db.WithContext(ctx).Select("provider_id").Where("id = ?", id).First(&entity)
 	if result.Error != nil {
@@ -165,7 +166,7 @@ func (r *GormServiceOptionRepository) AuthScope(ctx context.Context, id properti
 		return nil, result.Error
 	}
 
-	return &auth.DefaultObjectScope{
+	return &authz.DefaultObjectScope{
 		ProviderID: &entity.ProviderID,
 	}, nil
 }

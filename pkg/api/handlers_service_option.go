@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -20,8 +19,8 @@ type CreateServiceOptionReq struct {
 	DisplayOrder        int             `json:"displayOrder"`
 }
 
-func (r CreateServiceOptionReq) ObjectScope() (auth.ObjectScope, error) {
-	return &auth.DefaultObjectScope{
+func (r CreateServiceOptionReq) ObjectScope() (authz.ObjectScope, error) {
+	return &authz.DefaultObjectScope{
 		ProviderID: &r.ProviderID,
 	}, nil
 }
@@ -36,13 +35,13 @@ type UpdateServiceOptionReq struct {
 type ServiceOptionHandler struct {
 	querier   domain.ServiceOptionQuerier
 	commander domain.ServiceOptionCommander
-	authz     auth.Authorizer
+	authz     authz.Authorizer
 }
 
 func NewServiceOptionHandler(
 	querier domain.ServiceOptionQuerier,
 	commander domain.ServiceOptionCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *ServiceOptionHandler {
 	return &ServiceOptionHandler{
 		querier:   querier,

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
 
@@ -161,8 +162,8 @@ func providerConsumerAgentAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) 
 }
 
 // AuthScopeByFields retrieves auth scope for an entity with specified scope fields
-func (r *GormRepository[T]) AuthScopeByFields(ctx context.Context, id properties.UUID, scopeFields ...string) (auth.ObjectScope, error) {
-	var scope auth.DefaultObjectScope
+func (r *GormRepository[T]) AuthScopeByFields(ctx context.Context, id properties.UUID, scopeFields ...string) (authz.ObjectScope, error) {
+	var scope authz.DefaultObjectScope
 	entity := new(T)
 	entityValue := *entity
 

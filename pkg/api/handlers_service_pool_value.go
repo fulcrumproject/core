@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -20,13 +19,13 @@ type CreateServicePoolValueReq struct {
 type ServicePoolValueHandler struct {
 	querier   domain.ServicePoolValueQuerier
 	commander domain.ServicePoolValueCommander
-	authz     auth.Authorizer
+	authz     authz.Authorizer
 }
 
 func NewServicePoolValueHandler(
 	querier domain.ServicePoolValueQuerier,
 	commander domain.ServicePoolValueCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *ServicePoolValueHandler {
 	return &ServicePoolValueHandler{
 		querier:   querier,

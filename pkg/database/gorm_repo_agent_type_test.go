@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
@@ -287,7 +288,7 @@ func TestAgentTypeRepository(t *testing.T) {
 			// Assert - should return empty scope for any ID since agent types are global resources
 			require.NoError(t, err)
 			assert.NotNil(t, scope)
-			assert.Equal(t, &auth.AllwaysMatchObjectScope{}, scope, "Should return empty auth scope for agent types")
+			assert.Equal(t, &authz.AllwaysMatchObjectScope{}, scope, "Should return empty auth scope for agent types")
 		})
 	})
 

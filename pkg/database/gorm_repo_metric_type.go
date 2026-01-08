@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
 
@@ -50,7 +50,7 @@ func (r *GormMetricTypeRepository) FindByName(ctx context.Context, name string) 
 	return &entity, nil
 }
 
-func (r *GormMetricTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormMetricTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	// Metric types don't have scoping IDs as they are global resources
-	return &auth.AllwaysMatchObjectScope{}, nil
+	return &authz.AllwaysMatchObjectScope{}, nil
 }

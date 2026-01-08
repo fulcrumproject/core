@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
@@ -18,7 +18,7 @@ import (
 func TestNewServicePoolHandler(t *testing.T) {
 	querier := domain.NewMockServicePoolQuerier(t)
 	commander := domain.NewMockServicePoolCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	handler := NewServicePoolHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
@@ -32,7 +32,7 @@ func TestServicePoolHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := domain.NewMockServicePoolQuerier(t)
 	commander := domain.NewMockServicePoolCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewServicePoolHandler(querier, commander, authz)

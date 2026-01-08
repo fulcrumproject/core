@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -18,7 +17,7 @@ type ServiceHandler struct {
 	agentQuerier        domain.AgentQuerier
 	serviceGroupQuerier domain.ServiceGroupQuerier
 	commander           domain.ServiceCommander
-	authz               auth.Authorizer
+	authz               authz.Authorizer
 }
 
 func NewServiceHandler(
@@ -26,7 +25,7 @@ func NewServiceHandler(
 	agentQuerier domain.AgentQuerier,
 	serviceGroupQuerier domain.ServiceGroupQuerier,
 	commander domain.ServiceCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *ServiceHandler {
 	return &ServiceHandler{
 		querier:             querier,
@@ -73,7 +72,7 @@ func CreateServiceScopeExtractor(
 	serviceGroupQuerier domain.ServiceGroupQuerier,
 	agentQuerier domain.AgentQuerier,
 ) middlewares.ObjectScopeExtractor {
-	return func(r *http.Request) (auth.ObjectScope, error) {
+	return func(r *http.Request) (authz.ObjectScope, error) {
 		// Get decoded body from context
 		body := middlewares.MustGetBody[CreateServiceReq](r.Context())
 

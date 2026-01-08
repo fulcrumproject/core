@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -15,13 +14,13 @@ import (
 type AgentTypeHandler struct {
 	querier   domain.AgentTypeQuerier
 	commander domain.AgentTypeCommander
-	authz     auth.Authorizer
+	authz     authz.Authorizer
 }
 
 func NewAgentTypeHandler(
 	querier domain.AgentTypeQuerier,
 	commander domain.AgentTypeCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *AgentTypeHandler {
 	return &AgentTypeHandler{
 		querier:   querier,

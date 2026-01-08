@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
 
@@ -112,7 +113,7 @@ func (r *GormEventSubscriptionRepository) ListExpiredLeases(ctx context.Context)
 }
 
 // AuthScope returns the auth scope for the event subscription
-func (r *GormEventSubscriptionRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormEventSubscriptionRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	// Event subscriptions are system-level resources, no specific participant scope
-	return &auth.AllwaysMatchObjectScope{}, nil
+	return &authz.AllwaysMatchObjectScope{}, nil
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -298,7 +299,7 @@ func TestMetricTypeRepository(t *testing.T) {
 			// Execute with existing metric type ID
 			scope, err := repo.AuthScope(ctx, metricType.ID)
 			require.NoError(t, err)
-			assert.Equal(t, &auth.AllwaysMatchObjectScope{}, scope, "Should return empty auth scope for metric types")
+			assert.Equal(t, &authz.AllwaysMatchObjectScope{}, scope, "Should return empty auth scope for metric types")
 		})
 	})
 }

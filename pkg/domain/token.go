@@ -232,8 +232,6 @@ func (s *tokenCommander) Create(
 	ctx context.Context,
 	params CreateTokenParams,
 ) (*Token, error) {
-
-
 	// Create, save and event
 	var token *Token
 	err := s.store.Atomic(ctx, func(store Store) error {

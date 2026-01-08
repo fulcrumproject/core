@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
@@ -415,7 +416,7 @@ func TestServiceTypeRepository(t *testing.T) {
 			// Execute with existing service type ID
 			scope, err := repo.AuthScope(ctx, serviceType.ID)
 			require.NoError(t, err)
-			assert.Equal(t, &auth.AllwaysMatchObjectScope{}, scope, "Should return empty auth scope for service types")
+			assert.Equal(t, &authz.AllwaysMatchObjectScope{}, scope, "Should return empty auth scope for service types")
 		})
 	})
 

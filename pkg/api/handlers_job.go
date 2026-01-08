@@ -29,14 +29,14 @@ type FailJobReq struct {
 type JobHandler struct {
 	querier   domain.JobQuerier
 	commander domain.JobCommander
-	authz     auth.Authorizer
+	authz     authz.Authorizer
 }
 
 // NewJobHandler creates a new JobHandler
 func NewJobHandler(
 	querier domain.JobQuerier,
 	commander domain.JobCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *JobHandler {
 	return &JobHandler{
 		querier:   querier,

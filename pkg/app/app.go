@@ -52,7 +52,7 @@ type App struct {
 	Logger                   *slog.Logger
 	PropertyEngine           *schema.Engine[domain.ServicePropertyContext]
 	CompositeAuthenticator   *auth.CompositeAuthenticator
-	RuleBasedAuthorizer      *auth.RuleBasedAuthorizer
+	RuleBasedAuthorizer      *authz.RuleBasedAuthorizer
 	Store                    domain.Store
 	ServiceCmd               domain.ServiceCommander
 	Scheduler                *gocron.Scheduler
@@ -239,7 +239,7 @@ func NewApp() *App {
 
 	ath := auth.NewCompositeAuthenticator(authenticators...)
 
-	athz := auth.NewRuleBasedAuthorizer(authz.Rules)
+	athz := authz.NewRuleBasedAuthorizer(authz.Rules)
 
 	// Initialize commanders for service pools
 	servicePoolSetCmd := domain.NewServicePoolSetCommander(store)

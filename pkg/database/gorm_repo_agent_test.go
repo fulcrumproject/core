@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/assert"
@@ -621,9 +622,9 @@ func TestAgentRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, scope, "AuthScope should not return nil")
 
-			// Check that the returned scope is a auth.DefaultObjectScope
-			defaultScope, ok := scope.(*auth.DefaultObjectScope)
-			require.True(t, ok, "AuthScope should return a auth.DefaultObjectScope")
+			// Check that the returned scope is a authz.DefaultObjectScope
+			defaultScope, ok := scope.(*authz.DefaultObjectScope)
+			require.True(t, ok, "AuthScope should return a authz.DefaultObjectScope")
 			assert.NotNil(t, defaultScope.ProviderID, "ProviderID should not be nil")
 			assert.Equal(t, participant.ID, *defaultScope.ProviderID, "Should return the participant ID in the scope")
 			assert.NotNil(t, defaultScope.AgentID, "AgentID should not be nil")

@@ -3,7 +3,7 @@ package database
 import (
 	"context"
 
-	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
@@ -51,7 +51,7 @@ func (r *GormServiceOptionTypeRepository) FindByType(ctx context.Context, typeSt
 	return &entity, nil
 }
 
-func (r *GormServiceOptionTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (auth.ObjectScope, error) {
+func (r *GormServiceOptionTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	// Service option types are global resources
-	return &auth.AllwaysMatchObjectScope{}, nil
+	return &authz.AllwaysMatchObjectScope{}, nil
 }

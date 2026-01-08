@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
@@ -67,11 +68,11 @@ func TestHandleGetMe(t *testing.T) {
 			// Setup mocks
 			querier := domain.NewMockAgentQuerier(t)
 			commander := domain.NewMockAgentCommander(t)
-			authz := auth.NewMockAuthorizer(t)
+			mockAuthz := authz.NewMockAuthorizer(t)
 			tc.mockSetup(querier)
 
 			// Create the handler
-			handler := NewAgentHandler(querier, commander, authz)
+			handler := NewAgentHandler(querier, commander, mockAuthz)
 
 			// Create request
 			req := httptest.NewRequest("GET", "/agents/me", nil)
@@ -95,7 +96,7 @@ func TestHandleGetMe(t *testing.T) {
 func TestNewAgentHandler(t *testing.T) {
 	querier := domain.NewMockAgentQuerier(t)
 	commander := domain.NewMockAgentCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	handler := NewAgentHandler(querier, commander, authz)
 	assert.NotNil(t, handler)

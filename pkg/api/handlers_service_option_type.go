@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
@@ -25,13 +24,13 @@ type UpdateServiceOptionTypeReq struct {
 type ServiceOptionTypeHandler struct {
 	querier   domain.ServiceOptionTypeQuerier
 	commander domain.ServiceOptionTypeCommander
-	authz     auth.Authorizer
+	authz     authz.Authorizer
 }
 
 func NewServiceOptionTypeHandler(
 	querier domain.ServiceOptionTypeQuerier,
 	commander domain.ServiceOptionTypeCommander,
-	authz auth.Authorizer,
+	authz authz.Authorizer,
 ) *ServiceOptionTypeHandler {
 	return &ServiceOptionTypeHandler{
 		querier:   querier,

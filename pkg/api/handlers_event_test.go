@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
@@ -23,7 +24,7 @@ import (
 func TestNewEventyHandler(t *testing.T) {
 	querier := domain.NewMockEventQuerier(t)
 	eventSubscriptionCmd := domain.NewMockEventSubscriptionCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	handler := NewEventHandler(querier, eventSubscriptionCmd, authz)
 	assert.NotNil(t, handler)
@@ -37,7 +38,7 @@ func TestEventyHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := domain.NewMockEventQuerier(t)
 	eventSubscriptionCmd := domain.NewMockEventSubscriptionCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	authz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
 	handler := NewEventHandler(querier, eventSubscriptionCmd, authz)
@@ -217,7 +218,7 @@ func TestEventHandleLease(t *testing.T) {
 			// Setup mocks
 			querier := domain.NewMockEventQuerier(t)
 			eventSubscriptionCmd := domain.NewMockEventSubscriptionCommander(t)
-			authz := auth.NewMockAuthorizer(t)
+			authz := authz.NewMockAuthorizer(t)
 			tc.mockEventSetup(querier)
 			tc.mockSubscriptionSetup(eventSubscriptionCmd)
 
@@ -425,7 +426,7 @@ func TestEventHandleAcknowledge(t *testing.T) {
 			querier := domain.NewMockEventQuerier(t)
 			eventSubscriptionCmd := domain.NewMockEventSubscriptionCommander(t)
 			tc.setupMock(eventSubscriptionCmd)
-			authz := auth.NewMockAuthorizer(t)
+			authz := authz.NewMockAuthorizer(t)
 
 			handler := NewEventHandler(querier, eventSubscriptionCmd, authz)
 

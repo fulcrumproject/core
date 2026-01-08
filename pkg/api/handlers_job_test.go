@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/go-chi/chi/v5"
@@ -25,12 +26,12 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 	// Setup test cases
 	testCases := []struct {
 		name           string
-		mockSetup      func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer)
+		mockSetup      func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
-			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer) {
+			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer) {
 				// Setup the mock to return pending jobs
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 				updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -78,11 +79,11 @@ func TestJobHandleGetPendingJobs(t *testing.T) {
 			// Setup mocks
 			querier := domain.NewMockJobQuerier(t)
 			commander := domain.NewMockJobCommander(t)
-			authz := auth.NewMockAuthorizer(t)
-			tc.mockSetup(querier, commander, authz)
+			mockAuthz := authz.NewMockAuthorizer(t)
+			tc.mockSetup(querier, commander, mockAuthz)
 
 			// Create the handler
-			handler := NewJobHandler(querier, commander, authz)
+			handler := NewJobHandler(querier, commander, mockAuthz)
 
 			// Create request
 			req := httptest.NewRequest("GET", "/jobs/pending?limit=10", nil)
@@ -114,16 +115,16 @@ func TestJobHandleClaimJob(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             string
-		mockSetup      func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer)
+		mockSetup      func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer)
 		expectedStatus int
 	}{
 		{
 			name: "Success",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer) {
+			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer) {
 				querier.EXPECT().
 					AuthScope(mock.Anything, mock.Anything).
-					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Return(&authz.AllwaysMatchObjectScope{}, nil).
 					Maybe()
 
 				commander.EXPECT().
@@ -135,10 +136,10 @@ func TestJobHandleClaimJob(t *testing.T) {
 		{
 			name: "ClaimError",
 			id:   "550e8400-e29b-41d4-a716-446655440000",
-			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer) {
+			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer) {
 				querier.EXPECT().
 					AuthScope(mock.Anything, mock.Anything).
-					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Return(&authz.AllwaysMatchObjectScope{}, nil).
 					Maybe()
 
 				commander.EXPECT().
@@ -154,11 +155,11 @@ func TestJobHandleClaimJob(t *testing.T) {
 			// Setup mocks
 			querier := domain.NewMockJobQuerier(t)
 			commander := domain.NewMockJobCommander(t)
-			authz := auth.NewMockAuthorizer(t)
-			tc.mockSetup(querier, commander, authz)
+			mockAuthz := authz.NewMockAuthorizer(t)
+			tc.mockSetup(querier, commander, mockAuthz)
 
 			// Create the handler
-			handler := NewJobHandler(querier, commander, authz)
+			handler := NewJobHandler(querier, commander, mockAuthz)
 
 			// Create request
 			req := httptest.NewRequest("POST", "/jobs/"+tc.id+"/claim", nil)
@@ -190,7 +191,7 @@ func TestJobHandleCompleteJob(t *testing.T) {
 		name           string
 		id             string
 		requestBody    string
-		mockSetup      func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer)
+		mockSetup      func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer)
 		expectedStatus int
 	}{
 		{
@@ -200,10 +201,10 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				"agentInstanceData": {"cpu": 2, "memory": 4},
 				"agentInstanceID": "ext-123"
 			}`,
-			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer) {
+			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer) {
 				querier.EXPECT().
 					AuthScope(mock.Anything, mock.Anything).
-					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Return(&authz.AllwaysMatchObjectScope{}, nil).
 					Maybe()
 
 				commander.EXPECT().
@@ -219,10 +220,10 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				"agentInstanceData": {"cpu": 2, "memory": 4},
 				"agentInstanceID": "ext-123"
 			}`,
-			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer) {
+			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer) {
 				querier.EXPECT().
 					AuthScope(mock.Anything, mock.Anything).
-					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Return(&authz.AllwaysMatchObjectScope{}, nil).
 					Maybe()
 
 				commander.EXPECT().
@@ -239,10 +240,10 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				"agentInstanceID": "ext-123",
 				"properties": {"ipAddress": "192.168.1.100", "port": 8080}
 			}`,
-			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer) {
+			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer) {
 				querier.EXPECT().
 					AuthScope(mock.Anything, mock.Anything).
-					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Return(&authz.AllwaysMatchObjectScope{}, nil).
 					Maybe()
 
 				commander.EXPECT().
@@ -263,10 +264,10 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				"agentInstanceID": "ext-123",
 				"properties": {"instanceName": "new-name"}
 			}`,
-			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer) {
+			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer) {
 				querier.EXPECT().
 					AuthScope(mock.Anything, mock.Anything).
-					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Return(&authz.AllwaysMatchObjectScope{}, nil).
 					Maybe()
 
 				commander.EXPECT().
@@ -282,10 +283,10 @@ func TestJobHandleCompleteJob(t *testing.T) {
 				"agentInstanceData": {"cpu": 2, "memory": 4},
 				"agentInstanceID": "ext-123"
 			}`,
-			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer) {
+			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer) {
 				querier.EXPECT().
 					AuthScope(mock.Anything, mock.Anything).
-					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Return(&authz.AllwaysMatchObjectScope{}, nil).
 					Maybe()
 
 				commander.EXPECT().
@@ -303,11 +304,11 @@ func TestJobHandleCompleteJob(t *testing.T) {
 			// Setup mocks
 			querier := domain.NewMockJobQuerier(t)
 			commander := domain.NewMockJobCommander(t)
-			authz := auth.NewMockAuthorizer(t)
-			tc.mockSetup(querier, commander, authz)
+			mockAuthz := authz.NewMockAuthorizer(t)
+			tc.mockSetup(querier, commander, mockAuthz)
 
 			// Create the handler
-			handler := NewJobHandler(querier, commander, authz)
+			handler := NewJobHandler(querier, commander, mockAuthz)
 
 			// Create request
 			req := httptest.NewRequest("POST", "/jobs/"+tc.id+"/complete", strings.NewReader(tc.requestBody))
@@ -340,7 +341,7 @@ func TestJobHandleFailJob(t *testing.T) {
 		name           string
 		id             string
 		requestBody    string
-		mockSetup      func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer)
+		mockSetup      func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer)
 		expectedStatus int
 	}{
 		{
@@ -349,10 +350,10 @@ func TestJobHandleFailJob(t *testing.T) {
 			requestBody: `{
 				"errorMessage": "Resource allocation failed"
 			}`,
-			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer) {
+			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer) {
 				querier.EXPECT().
 					AuthScope(mock.Anything, mock.Anything).
-					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Return(&authz.AllwaysMatchObjectScope{}, nil).
 					Maybe()
 
 				commander.EXPECT().
@@ -367,10 +368,10 @@ func TestJobHandleFailJob(t *testing.T) {
 			requestBody: `{
 				"errorMessage": "Resource allocation failed"
 			}`,
-			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, authz *auth.MockAuthorizer) {
+			mockSetup: func(querier *domain.MockJobQuerier, commander *domain.MockJobCommander, mockAuthz *authz.MockAuthorizer) {
 				querier.EXPECT().
 					AuthScope(mock.Anything, mock.Anything).
-					Return(&auth.AllwaysMatchObjectScope{}, nil).
+					Return(&authz.AllwaysMatchObjectScope{}, nil).
 					Maybe()
 
 				commander.EXPECT().
@@ -386,11 +387,11 @@ func TestJobHandleFailJob(t *testing.T) {
 			// Setup mocks
 			querier := domain.NewMockJobQuerier(t)
 			commander := domain.NewMockJobCommander(t)
-			authz := auth.NewMockAuthorizer(t)
-			tc.mockSetup(querier, commander, authz)
+			mockAuthz := authz.NewMockAuthorizer(t)
+			tc.mockSetup(querier, commander, mockAuthz)
 
 			// Create the handler
-			handler := NewJobHandler(querier, commander, authz)
+			handler := NewJobHandler(querier, commander, mockAuthz)
 
 			// Create request
 			req := httptest.NewRequest("POST", "/jobs/"+tc.id+"/fail", strings.NewReader(tc.requestBody))
@@ -463,16 +464,16 @@ func TestNewJobHandler(t *testing.T) {
 	// Create mocks
 	querier := domain.NewMockJobQuerier(t)
 	commander := domain.NewMockJobCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	mockAuthz := authz.NewMockAuthorizer(t)
 
 	// Execute
-	handler := NewJobHandler(querier, commander, authz)
+	handler := NewJobHandler(querier, commander, mockAuthz)
 
 	// Assert
 	assert.NotNil(t, handler)
 	assert.Equal(t, querier, handler.querier)
 	assert.Equal(t, commander, handler.commander)
-	assert.Equal(t, authz, handler.authz)
+	assert.Equal(t, mockAuthz, handler.authz)
 }
 
 // TestJobHandlerRoutes tests the Routes function
@@ -480,10 +481,10 @@ func TestJobHandlerRoutes(t *testing.T) {
 	// Create mocks
 	querier := domain.NewMockJobQuerier(t)
 	commander := domain.NewMockJobCommander(t)
-	authz := auth.NewMockAuthorizer(t)
+	mockAuthz := authz.NewMockAuthorizer(t)
 
 	// Create the handler
-	handler := NewJobHandler(querier, commander, authz)
+	handler := NewJobHandler(querier, commander, mockAuthz)
 
 	// Execute
 	routeFunc := handler.Routes()
