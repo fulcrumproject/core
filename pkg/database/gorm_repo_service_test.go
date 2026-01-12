@@ -212,6 +212,56 @@ func TestServiceRepository(t *testing.T) {
 			assert.Equal(t, "Service A", result.Items[0].Name)
 		})
 
+		t.Run("success - list with name matching", func(t *testing.T){
+			firstService := &domain.Service{
+				Name: "VM Doe", 
+        Status: "Started", 
+        AgentID: agent.ID, 
+        ProviderID: provider.ID, 
+        ConsumerID: consumer.ID, 
+        ServiceTypeID: serviceType.ID, 
+        GroupID: serviceGroup.ID,
+			}
+
+			require.NoError(t, repo.Create(context.Background(), firstService))
+
+			secondService := &domain.Service{
+				Name: "VM Johnny Smith", 
+        Status: "Started", 
+        AgentID: agent.ID, 
+        ProviderID: provider.ID, 
+        ConsumerID: consumer.ID, 
+        ServiceTypeID: serviceType.ID, 
+        GroupID: serviceGroup.ID,
+			}
+
+			require.NoError(t, repo.Create(context.Background(), secondService))
+
+			thirdService := &domain.Service{
+				Name: "Container Alice", 
+        Status: "Started", 
+        AgentID: agent.ID, 
+        ProviderID: provider.ID, 
+        ConsumerID: consumer.ID, 
+        ServiceTypeID: serviceType.ID, 
+        GroupID: serviceGroup.ID,
+			}
+
+			require.NoError(t, repo.Create(context.Background(), thirdService))
+
+			page := &domain.PageReq{
+				Page: 1,
+				PageSize: 10,
+				Filters: map[string][]string{"name": {"VM"}},
+			}
+
+			result, err := repo.List(context.Background(), &auth.IdentityScope{}, page)
+			require.NoError(t, err)
+			require.Len(t, result.Items, 2)
+			names := []string{result.Items[0].Name, result.Items[1].Name}
+			assert.ElementsMatch(t, []string{firstService.Name, secondService.Name}, names)
+		})
+
 		t.Run("success - list with status filter", func(t *testing.T) {
 			page := &domain.PageReq{
 				Page:     1,
