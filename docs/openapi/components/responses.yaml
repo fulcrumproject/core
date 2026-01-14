@@ -4,6 +4,20 @@ BadRequest:
     application/json:
       schema:
         $ref: "./schemas/common.yaml#/ErrorRes"
+ValidationErrors:
+  description: Validation errors - request contains invalid or missing required fields
+  content:
+    application/json:
+      schema:
+        $ref: "./schemas/common.yaml#/ValidationErrRes"
+      example:
+        status: "Validation failed"
+        valid: false
+        errors:
+          - path: "cpu"
+            message: "cpu: value must be one of: [1, 2, 4, 8, 16, 32]"
+          - path: "memory"
+            message: "memory: property is required"
 Unauthorized:
   description: Unauthorized
   content:
@@ -22,4 +36,3 @@ InternalServerError:
     application/json:
       schema:
         $ref: "./schemas/common.yaml#/ErrorRes"
-
