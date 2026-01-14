@@ -78,11 +78,7 @@ patch:
           schema:
             $ref: "../components/schemas/services.yaml#/ServiceRes"
     "400":
-      description: Invalid request or validation failed
-      content:
-        application/json:
-          schema:
-            $ref: "../components/schemas/common.yaml#/ErrorRes"
+      $ref: "../components/responses.yaml#/ValidationErrors"
     "404":
       description: Service not found
       content:

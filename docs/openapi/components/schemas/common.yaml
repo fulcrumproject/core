@@ -43,3 +43,40 @@ PageRes:
     hasPrev:
       type: boolean
       description: Whether there is a previous page
+
+ValidationErrorDetail:
+  type: object
+  required:
+    - path
+    - message
+  properties:
+    path:
+      type: string
+      description: The property path that failed validation
+      example: "cpu"
+    message:
+      type: string
+      description: The validation error message
+      example: "cpu: value must be one of: [1, 2, 4, 8, 16, 32]"
+
+ValidationErrRes:
+  type: object
+  required:
+    - status
+    - valid
+    - errors
+  properties:
+    status:
+      type: string
+      description: User-level status message
+      example: "Validation failed"
+    valid:
+      type: boolean
+      description: Whether the validation passed
+      example: false
+    errors:
+      type: array
+      items:
+        $ref: "#/ValidationErrorDetail"
+      description: Array of validation errors with detailed information about each failure
+      minItems: 1
