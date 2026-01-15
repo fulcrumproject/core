@@ -60,16 +60,37 @@ func TestCompositeAuthenticator_Authenticate(t *testing.T) {
 			expectedCallCount: []bool{true, true},
 		},
 		{
-			name: "First authenticator fails with error",
+			name: "First authenticator fails with error, second succeeds (fallback)",
 			authenticators: []*mockAuthenticator{
-				{identity: nil, err: authError},
-				{identity: nil, err: errors.New("should not be called")},
+					{identity: nil, err: authError},
+					{identity: participantIdentity, err: nil},
+			},
+			expectedIdentity:  participantIdentity,
+			expectError:       false,
+			expectedCallCount: []bool{true, true},
+	},
+	{
+			name: "Both authenticators fail with error",
+			authenticators: []*mockAuthenticator{
+					{identity: nil, err: errors.New("first auth failed")},
+					{identity: nil, err: errors.New("second auth failed")},
 			},
 			expectedIdentity:  nil,
 			expectError:       true,
-			errorContains:     "authentication failed",
-			expectedCallCount: []bool{true, false},
-		},
+			errorContains:     "second auth failed", // Should return last error
+			expectedCallCount: []bool{true, true},
+	},
+	{
+			name: "First succeeds after second returned nil (mixed scenarios)",
+			authenticators: []*mockAuthenticator{
+					{identity: nil, err: nil}, // Returns nil (not an error, just no match)
+					{identity: nil, err: authError}, // Returns error
+					{identity: adminIdentity, err: nil}, // Succeeds
+			},
+			expectedIdentity:  adminIdentity,
+			expectError:       false,
+			expectedCallCount: []bool{true, true, true},
+	},
 		{
 			name: "All authenticators return nil identity",
 			authenticators: []*mockAuthenticator{
