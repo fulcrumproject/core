@@ -68,8 +68,8 @@ func TestCompositeAuthenticator_Authenticate(t *testing.T) {
 			expectedIdentity:  participantIdentity,
 			expectError:       false,
 			expectedCallCount: []bool{true, true},
-	},
-	{
+		},
+		{
 			name: "Both authenticators fail with error",
 			authenticators: []*mockAuthenticator{
 					{identity: nil, err: errors.New("first auth failed")},
@@ -79,8 +79,8 @@ func TestCompositeAuthenticator_Authenticate(t *testing.T) {
 			expectError:       true,
 			errorContains:     "second auth failed", // Should return last error
 			expectedCallCount: []bool{true, true},
-	},
-	{
+		},
+		{
 			name: "First succeeds after second returned nil (mixed scenarios)",
 			authenticators: []*mockAuthenticator{
 					{identity: nil, err: nil}, // Returns nil (not an error, just no match)
@@ -90,7 +90,7 @@ func TestCompositeAuthenticator_Authenticate(t *testing.T) {
 			expectedIdentity:  adminIdentity,
 			expectError:       false,
 			expectedCallCount: []bool{true, true, true},
-	},
+		},
 		{
 			name: "All authenticators return nil identity",
 			authenticators: []*mockAuthenticator{
