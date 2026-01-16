@@ -25,7 +25,7 @@ func (c *CompositeAuthenticator) Authenticate(ctx context.Context, token string)
 	for _, authenticator := range c.authenticators {
 		identity, err := authenticator.Authenticate(ctx, token)
 		if err != nil {
-			return nil, err
+			continue
 		}
 		if identity != nil {
 			return identity, nil
