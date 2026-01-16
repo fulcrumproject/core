@@ -220,19 +220,21 @@ func (h *ServiceHandler) Delete(ctx context.Context, id properties.UUID) error {
 
 // ServiceRes represents the response body for service operations
 type ServiceRes struct {
-	ID                properties.UUID  `json:"id"`
-	ProviderID        properties.UUID  `json:"providerId"`
-	ConsumerID        properties.UUID  `json:"consumerId"`
-	AgentID           properties.UUID  `json:"agentId"`
-	ServiceTypeID     properties.UUID  `json:"serviceTypeId"`
-	GroupID           properties.UUID  `json:"groupId"`
-	AgentInstanceID   *string          `json:"agentInstanceId,omitempty"`
-	Name              string           `json:"name"`
-	Status            string           `json:"status"`
-	Properties        *properties.JSON `json:"properties,omitempty"`
-	AgentInstanceData *properties.JSON `json:"agentInstanceData,omitempty"`
-	CreatedAt         JSONUTCTime      `json:"createdAt"`
-	UpdatedAt         JSONUTCTime      `json:"updatedAt"`
+	ID                properties.UUID  	 `json:"id"`
+	ProviderID        properties.UUID  	 `json:"providerId"`
+	ConsumerID        properties.UUID  	 `json:"consumerId"`
+	AgentID           properties.UUID  	 `json:"agentId"`
+	Agent 						*AgentRes		 	     `json:"agent,omitempty"`
+	ServiceTypeID     properties.UUID  	 `json:"serviceTypeId"`
+	ServiceType 			*ServiceTypeRes    `json:"serviceType,omitempty"`
+	GroupID           properties.UUID  	 `json:"groupId"`
+	AgentInstanceID   *string          	 `json:"agentInstanceId,omitempty"`
+	Name              string           	 `json:"name"`
+	Status            string           	 `json:"status"`
+	Properties        *properties.JSON 	 `json:"properties,omitempty"`
+	AgentInstanceData *properties.JSON 	 `json:"agentInstanceData,omitempty"`
+	CreatedAt         JSONUTCTime      	 `json:"createdAt"`
+	UpdatedAt         JSONUTCTime      	 `json:"updatedAt"`
 }
 
 // ServiceToRes converts a domain.Service to a ServiceResponse
@@ -252,5 +254,14 @@ func ServiceToRes(s *domain.Service) *ServiceRes {
 		CreatedAt:         JSONUTCTime(s.CreatedAt),
 		UpdatedAt:         JSONUTCTime(s.UpdatedAt),
 	}
+
+	if s.Agent != nil {
+		resp.Agent = AgentToRes(s.Agent)
+	}
+
+	if s.ServiceType != nil {
+		resp.ServiceType = ServiceTypeToRes(s.ServiceType)
+	}
+
 	return resp
 }
