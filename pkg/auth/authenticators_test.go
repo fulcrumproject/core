@@ -77,7 +77,7 @@ func TestCompositeAuthenticator_Authenticate(t *testing.T) {
 			},
 			expectedIdentity:  nil,
 			expectError:       true,
-			errorContains:     "second auth failed", // Should return last error
+			errorContains:     "authentication failed: no valid identity found", 
 			expectedCallCount: []bool{true, true},
 		},
 		{

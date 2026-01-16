@@ -21,22 +21,15 @@ func NewCompositeAuthenticator(authenticators ...Authenticator) *CompositeAuthen
 // Authenticate tries each authenticator in order until one succeeds
 // Returns nil if all authenticators fail
 func (c *CompositeAuthenticator) Authenticate(ctx context.Context, token string) (*Identity, error) {
-	var lastErr error
 	// Try each authenticator in order
 	for _, authenticator := range c.authenticators {
 		identity, err := authenticator.Authenticate(ctx, token)
 		if err != nil {
-			lastErr = err
 			continue
 		}
 		if identity != nil {
 			return identity, nil
 		}
-	}
-
-	// All authenticators failed
-	if lastErr != nil {
-		return nil, lastErr
 	}
 
 	// All authenticators failed
