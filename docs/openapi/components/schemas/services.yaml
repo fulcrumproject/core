@@ -50,8 +50,12 @@ ServiceRes:
       $ref: "./common.yaml#/properties.UUID"
     agentId:
       $ref: "./common.yaml#/properties.UUID"
+    agent:
+      $ref: "./agents.yaml#/AgentRes"
     serviceTypeId:
       $ref: "./common.yaml#/properties.UUID"
+    serviceType:
+      $ref: "./service_types.yaml#/ServiceTypeRes"
     groupId:
       $ref: "./common.yaml#/properties.UUID"
     createdAt:

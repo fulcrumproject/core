@@ -743,3 +743,88 @@ func TestServiceToResponse(t *testing.T) {
 	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(updatedAt), response.UpdatedAt)
 }
+
+func TestServiceToRes_WithNestedObjects(t *testing.T) {
+	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+	
+	agentTypeID := uuid.MustParse("111e8400-e29b-41d4-a716-446655440000")
+	providerID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
+	agentID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+	serviceTypeID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
+	
+	// Create service with nested objects
+	service := &domain.Service{
+		BaseEntity: domain.BaseEntity{
+			ID:        uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
+			CreatedAt: createdAt,
+			UpdatedAt: updatedAt,
+		},
+		Name:          "Test Service",
+		AgentID:       agentID,
+		ServiceTypeID: serviceTypeID,
+		Status:        "Started",
+		Agent: &domain.Agent{
+			BaseEntity: domain.BaseEntity{
+				ID:        agentID,
+				CreatedAt: createdAt,
+				UpdatedAt: updatedAt,
+			},
+			Name:        "Test Agent",
+			Status:      domain.AgentConnected,
+			ProviderID:  providerID,
+			AgentTypeID: agentTypeID,
+		},
+		ServiceType: &domain.ServiceType{
+			BaseEntity: domain.BaseEntity{
+				ID:        serviceTypeID,
+				CreatedAt: createdAt,
+				UpdatedAt: updatedAt,
+			},
+			Name: "Test Service Type",
+		},
+	}
+	
+	// Convert to response
+	response := ServiceToRes(service)
+	
+	// Verify nested objects are populated
+	assert.NotNil(t, response.Agent, "Agent should be populated")
+	assert.Equal(t, agentID, response.Agent.ID)
+	assert.Equal(t, "Test Agent", response.Agent.Name)
+	
+	assert.NotNil(t, response.ServiceType, "ServiceType should be populated")
+	assert.Equal(t, serviceTypeID, response.ServiceType.ID)
+	assert.Equal(t, "Test Service Type", response.ServiceType.Name)
+}
+
+func TestServiceToRes_WithoutNestedObjects(t *testing.T) {
+	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+	
+	// Create service without nested objects (nil Agent and ServiceType)
+	service := &domain.Service{
+		BaseEntity: domain.BaseEntity{
+			ID:        uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
+			CreatedAt: createdAt,
+			UpdatedAt: updatedAt,
+		},
+		Name:          "Test Service",
+		AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+		ServiceTypeID: uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
+		Status:        "Started",
+		Agent:         nil, // Not preloaded
+		ServiceType:   nil, // Not preloaded
+	}
+	
+	// Convert to response - should not panic
+	response := ServiceToRes(service)
+	
+	// Verify nested objects are nil
+	assert.Nil(t, response.Agent, "Agent should be nil when not preloaded")
+	assert.Nil(t, response.ServiceType, "ServiceType should be nil when not preloaded")
+	
+	// But IDs should still be present
+	assert.Equal(t, service.AgentID, response.AgentID)
+	assert.Equal(t, service.ServiceTypeID, response.ServiceTypeID)
+}
