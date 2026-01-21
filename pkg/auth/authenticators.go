@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 )
 
 // CompositeAuthenticator implements Authenticator by trying multiple authenticators in order
@@ -25,7 +26,8 @@ func (c *CompositeAuthenticator) Authenticate(ctx context.Context, token string)
 	for _, authenticator := range c.authenticators {
 		identity, err := authenticator.Authenticate(ctx, token)
 		if err != nil {
-			return nil, err
+			slog.Error("Authentication error", "error", err)
+			continue
 		}
 		if identity != nil {
 			return identity, nil
