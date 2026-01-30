@@ -2,8 +2,10 @@ package keycloak
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/fulcrumproject/core/pkg/auth"
@@ -34,6 +36,19 @@ type Authenticator struct {
 
 // NewAuthenticator creates a new OIDC JWT authenticator for Keycloak
 func NewAuthenticator(ctx context.Context, cfg *Config) (*Authenticator, error) {
+
+	if cfg.InsecureSkipVerify {
+		customClient := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		}
+
+		ctx = oidc.ClientContext(ctx, customClient)
+	}
+
 	// Create OIDC provider
 	provider, err := oidc.NewProvider(ctx, cfg.GetIssuer())
 	if err != nil {
