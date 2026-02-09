@@ -49,6 +49,10 @@ func NewAuthenticator(ctx context.Context, cfg *Config) (*Authenticator, error) 
 		ctx = oidc.ClientContext(ctx, customClient)
 	}
 
+	if !cfg.ValidateIssuer {
+		ctx = oidc.InsecureIssuerURLContext(ctx, cfg.GetIssuer())
+	}
+
 	// Create OIDC provider
 	provider, err := oidc.NewProvider(ctx, cfg.GetIssuer())
 	if err != nil {
