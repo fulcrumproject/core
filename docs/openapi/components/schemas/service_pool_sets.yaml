@@ -28,6 +28,8 @@ ServicePoolSetRes:
       example: "Production Pools"
     providerId:
       $ref: "./common.yaml#/properties.UUID"
+    provider:
+      $ref: "./participants.yaml#/ParticipantRes"
     createdAt:
       type: string
       format: date-time
