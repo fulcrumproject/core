@@ -98,7 +98,7 @@ func TestServicePoolSetToRes(t *testing.T) {
 	// Verify
 	assert.Equal(t, properties.UUID(id), res.ID)
 	assert.Equal(t, "Production Pools", res.Name)
-	assert.Equal(t, properties.UUID(providerID), res.ProviderId)
+	assert.Equal(t, properties.UUID(providerID), res.ProviderID)
 	assert.Equal(t, properties.UUID(providerID), res.Provider.ID)
 	assert.Equal(t, "Test participant", res.Provider.Name)
 	assert.Equal(t, JSONUTCTime(createdAt), res.CreatedAt)

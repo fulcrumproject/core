@@ -95,7 +95,7 @@ func (h *ServicePoolSetHandler) Update(ctx context.Context, id properties.UUID, 
 type ServicePoolSetRes struct {
 	ID         properties.UUID `json:"id"`
 	Name       string          `json:"name"`
-	ProviderId properties.UUID `json:"providerID"`
+	ProviderID properties.UUID `json:"providerID"`
 	Provider	 *ParticipantRes `json:"provider,omitempty"`
 	CreatedAt  JSONUTCTime     `json:"createdAt"`
 	UpdatedAt  JSONUTCTime     `json:"updatedAt"`
@@ -106,7 +106,7 @@ func ServicePoolSetToRes(ps *domain.ServicePoolSet) *ServicePoolSetRes {
 	response := &ServicePoolSetRes{
 		ID:         ps.ID,
 		Name:       ps.Name,
-		ProviderId: ps.ProviderID,
+		ProviderID: ps.ProviderID,
 		CreatedAt:  JSONUTCTime(ps.CreatedAt),
 		UpdatedAt:  JSONUTCTime(ps.UpdatedAt),
 	}
