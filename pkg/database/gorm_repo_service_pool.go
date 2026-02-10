@@ -111,7 +111,7 @@ func (r *GormServicePoolRepository) AuthScope(ctx context.Context, id properties
 		Select("service_pool_sets.provider_id").
 		Joins("JOIN service_pool_sets ON service_pool_sets.id = service_pools.service_pool_set_id").
 		Where("service_pools.id = ?", id).
-		First(&result).Error
+		Scan(&result).Error
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
