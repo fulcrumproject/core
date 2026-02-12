@@ -31,8 +31,10 @@ get:
     - name: name
       in: query
       schema:
-        type: string
-      description: Filter by name (case-insensitive substring match)
+        type: array
+        items:
+          type: string
+      description: Filter by name (case-insensitive substring match, can specify multiple values)
     - name: servicePoolSetId
       in: query
       schema:
