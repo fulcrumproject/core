@@ -79,15 +79,17 @@ func (h *ServicePoolValueHandler) Create(ctx context.Context, req *CreateService
 
 // ServicePoolValueRes represents the response body for service pool value operations
 type ServicePoolValueRes struct {
-	ID            properties.UUID  `json:"id"`
-	Name          string           `json:"name"`
-	Value         any              `json:"value"`
-	ServicePoolID properties.UUID  `json:"servicePoolId"`
-	ServiceID     *properties.UUID `json:"serviceId,omitempty"`
-	PropertyName  *string          `json:"propertyName,omitempty"`
-	AllocatedAt   *JSONUTCTime     `json:"allocatedAt,omitempty"`
-	CreatedAt     JSONUTCTime      `json:"createdAt"`
-	UpdatedAt     JSONUTCTime      `json:"updatedAt"`
+	ID            properties.UUID  	`json:"id"`
+	Name          string           	`json:"name"`
+	Value         any              	`json:"value"`
+	ServicePoolID properties.UUID  	`json:"servicePoolId"`
+	ServicePool		*ServicePoolRes 	`json:"servicePool,omitempty"`
+	ServiceID     *properties.UUID 	`json:"serviceId,omitempty"`
+	Service				*ServiceRes				`json:"service,omitempty"`
+	PropertyName  *string          	`json:"propertyName,omitempty"`
+	AllocatedAt   *JSONUTCTime     	`json:"allocatedAt,omitempty"`
+	CreatedAt     JSONUTCTime      	`json:"createdAt"`
+	UpdatedAt     JSONUTCTime      	`json:"updatedAt"`
 }
 
 // ServicePoolValueToRes converts a domain.ServicePoolValue to a ServicePoolValueRes
@@ -106,6 +108,14 @@ func ServicePoolValueToRes(v *domain.ServicePoolValue) *ServicePoolValueRes {
 	if v.AllocatedAt != nil {
 		allocated := JSONUTCTime(*v.AllocatedAt)
 		res.AllocatedAt = &allocated
+	}
+
+	if v.ServicePool != nil {
+		res.ServicePool = ServicePoolToRes(v.ServicePool)
+	}
+
+	if v.Service != nil {
+		res.Service = ServiceToRes(v.Service)
 	}
 
 	return res
