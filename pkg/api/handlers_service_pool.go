@@ -109,14 +109,15 @@ type ServicePoolRes struct {
 	PropertyType     string                   `json:"propertyType"`
 	GeneratorType    domain.PoolGeneratorType `json:"generatorType"`
 	GeneratorConfig  *properties.JSON         `json:"generatorConfig,omitempty"`
-	ServicePoolSetID properties.UUID          `json:"servicePoolSetId"`
-	CreatedAt        JSONUTCTime              `json:"createdAt"`
-	UpdatedAt        JSONUTCTime              `json:"updatedAt"`
+	ServicePoolSetID   properties.UUID          `json:"servicePoolSetId"`
+	ServicePoolSetName string                   `json:"servicePoolSetName,omitempty"`
+	CreatedAt          JSONUTCTime              `json:"createdAt"`
+	UpdatedAt          JSONUTCTime              `json:"updatedAt"`
 }
 
 // ServicePoolToRes converts a domain.ServicePool to a ServicePoolRes
 func ServicePoolToRes(p *domain.ServicePool) *ServicePoolRes {
-	return &ServicePoolRes{
+	res := &ServicePoolRes{
 		ID:               p.ID,
 		Name:             p.Name,
 		Type:             p.Type,
@@ -127,4 +128,8 @@ func ServicePoolToRes(p *domain.ServicePool) *ServicePoolRes {
 		CreatedAt:        JSONUTCTime(p.CreatedAt),
 		UpdatedAt:        JSONUTCTime(p.UpdatedAt),
 	}
+	if p.ServicePoolSet != nil {
+		res.ServicePoolSetName = p.ServicePoolSet.Name
+	}
+	return res
 }

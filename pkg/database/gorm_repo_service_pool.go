@@ -15,6 +15,7 @@ type GormServicePoolRepository struct {
 }
 
 var applyServicePoolFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"name":							StringContainsInsensitiveFilterFieldApplier("name"),
 	"servicePoolSetId": ParserInFilterFieldApplier("service_pool_set_id", properties.ParseUUID),
 	"type":             StringInFilterFieldApplier("type"),
 	"generatorType":    StringInFilterFieldApplier("generator_type"),
@@ -50,8 +51,8 @@ func NewServicePoolRepository(db *gorm.DB) *GormServicePoolRepository {
 			applyServicePoolFilter,
 			applyServicePoolSort,
 			servicePoolAuthzFilterApplier,
-			[]string{}, // No preload paths needed
-			[]string{}, // No preload paths needed
+			[]string{"ServicePoolSet"}, // Find preload paths
+			[]string{"ServicePoolSet"}, // List preload paths
 		),
 	}
 	return repo
@@ -111,7 +112,7 @@ func (r *GormServicePoolRepository) AuthScope(ctx context.Context, id properties
 		Select("service_pool_sets.provider_id").
 		Joins("JOIN service_pool_sets ON service_pool_sets.id = service_pools.service_pool_set_id").
 		Where("service_pools.id = ?", id).
-		First(&result).Error
+		Scan(&result).Error
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {

@@ -67,6 +67,10 @@ ServicePoolRes:
       example: { "cidr": "192.168.1.0/24" }
     servicePoolSetId:
       $ref: "./common.yaml#/properties.UUID"
+    servicePoolSetName:
+      type: string
+      example: "My Pool Set"
+      description: "Name of the associated service pool set"
     createdAt:
       type: string
       format: date-time
