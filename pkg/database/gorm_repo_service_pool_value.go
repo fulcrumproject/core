@@ -15,6 +15,7 @@ type GormServicePoolValueRepository struct {
 }
 
 var applyServicePoolValueFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"name":          StringContainsInsensitiveFilterFieldApplier("name"),
 	"servicePoolId": ParserInFilterFieldApplier("service_pool_id", properties.ParseUUID),
 	"serviceId":     ParserInFilterFieldApplier("service_id", properties.ParseUUID),
 })
@@ -50,8 +51,8 @@ func NewServicePoolValueRepository(db *gorm.DB) *GormServicePoolValueRepository 
 			applyServicePoolValueFilter,
 			applyServicePoolValueSort,
 			servicePoolValueAuthzFilterApplier,
-			[]string{}, // No preload paths needed
-			[]string{}, // No preload paths needed
+			[]string{"ServicePool", "Service"}, 
+			[]string{"ServicePool", "Service"}, 
 		),
 	}
 	return repo

@@ -28,9 +28,15 @@ ServicePoolValueRes:
       example: "192.168.1.10"
     servicePoolId:
       $ref: "./common.yaml#/properties.UUID"
+    servicePool:
+      $ref: "./service_pools.yaml#/ServicePoolRes"
+      description: "The service pool this value belongs to"
     serviceId:
       $ref: "./common.yaml#/properties.UUID"
       description: "Service this value is allocated to (null if available)"
+    service:
+      $ref: "./services.yaml#/ServiceRes"
+      description: "The service this value is allocated to (only present if allocated)"
     propertyName:
       type: string
       example: "ipAddress"
