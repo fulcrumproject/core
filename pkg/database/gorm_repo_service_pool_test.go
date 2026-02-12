@@ -14,15 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createTestServicePoolSet(t *testing.T, providerID properties.UUID) *domain.ServicePoolSet {
-	t.Helper()
-	randomSuffix := uuid.New().String()
-	return &domain.ServicePoolSet{
-		Name:       fmt.Sprintf("Test Pool Set %s", randomSuffix),
-		ProviderID: providerID,
-	}
-}
-
 func createTestServicePool(t *testing.T, poolSetID properties.UUID) *domain.ServicePool {
 	t.Helper()
 	randomSuffix := uuid.New().String()
