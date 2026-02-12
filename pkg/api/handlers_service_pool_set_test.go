@@ -71,6 +71,15 @@ func TestServicePoolSetToRes(t *testing.T) {
 	providerID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+	provider := &domain.Participant{
+		Name: "Test participant",
+		BaseEntity: domain.BaseEntity{
+			ID: providerID,
+			CreatedAt: createdAt,
+			UpdatedAt: updatedAt,
+		},
+		Status: "Enabled",
+	}
 
 	poolSet := &domain.ServicePoolSet{
 		BaseEntity: domain.BaseEntity{
@@ -80,6 +89,7 @@ func TestServicePoolSetToRes(t *testing.T) {
 		},
 		Name:       "Production Pools",
 		ProviderID: properties.UUID(providerID),
+		Provider: provider,
 	}
 
 	// Convert to response
@@ -89,6 +99,8 @@ func TestServicePoolSetToRes(t *testing.T) {
 	assert.Equal(t, properties.UUID(id), res.ID)
 	assert.Equal(t, "Production Pools", res.Name)
 	assert.Equal(t, properties.UUID(providerID), res.ProviderID)
+	assert.Equal(t, properties.UUID(providerID), res.Provider.ID)
+	assert.Equal(t, "Test participant", res.Provider.Name)
 	assert.Equal(t, JSONUTCTime(createdAt), res.CreatedAt)
 	assert.Equal(t, JSONUTCTime(updatedAt), res.UpdatedAt)
 }

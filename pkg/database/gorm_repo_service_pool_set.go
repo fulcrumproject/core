@@ -45,8 +45,8 @@ func NewServicePoolSetRepository(db *gorm.DB) *GormServicePoolSetRepository {
 			applyServicePoolSetFilter,
 			applyServicePoolSetSort,
 			servicePoolSetAuthzFilterApplier,
-			[]string{}, // No preload paths needed
-			[]string{}, // No preload paths needed
+			[]string{"Provider"}, // No preload paths needed
+			[]string{"Provider"}, // No preload paths needed
 		),
 	}
 	return repo
