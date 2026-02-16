@@ -22,6 +22,9 @@ ServiceGroupRes:
     consumerId:
       $ref: "./common.yaml#/properties.UUID"
       description: "ID of the consumer participant that owns this service group"
+    consumer:
+      $ref: "./participants.yaml#/ParticipantRes"
+      description: "Consumer participant details (populated when available)"
     createdAt:
       type: string
       format: date-time

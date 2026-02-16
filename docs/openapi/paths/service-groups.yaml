@@ -35,6 +35,14 @@ get:
         items:
           type: string
       description: Filter by service group name (can specify multiple values)
+    - name: consumerId
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+          format: uuid
+      description: Filter by consumer participant ID (can specify multiple values)
   responses:
     "200":
       description: A paginated list of service groups
