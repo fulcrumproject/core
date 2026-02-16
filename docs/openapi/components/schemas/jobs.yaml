@@ -55,6 +55,15 @@ JobRes:
     service:
       $ref: "./services.yaml#/ServiceRes"
       description: "Associated service details (optional)"
+    agent:
+      $ref: "./agents.yaml#/AgentRes"
+      description: "Associated agent details (optional)"
+    provider:
+      $ref: "./participants.yaml#/ParticipantRes"
+      description: "Provider participant details (optional)"
+    consumer:
+      $ref: "./participants.yaml#/ParticipantRes"
+      description: "Consumer participant details (optional)"
 
 CompleteJobReq:
   type: object
