@@ -79,7 +79,7 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../components/schemas/service_groups.yaml#/ServiceGroupReq"
+          $ref: "../components/schemas/service_groups.yaml#/CreateServiceGroupReq"
   responses:
     "201":
       description: Service group created successfully

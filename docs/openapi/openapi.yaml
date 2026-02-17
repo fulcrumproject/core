@@ -120,8 +120,10 @@ components:
       $ref: ./components/schemas/service_types.yaml#/PropertySchema
     ServiceAction:
       $ref: ./components/schemas/services.yaml#/ServiceAction
-    ServiceGroupReq:
-      $ref: ./components/schemas/service_groups.yaml#/ServiceGroupReq
+    CreateServiceGroupReq:
+      $ref: ./components/schemas/service_groups.yaml#/CreateServiceGroupReq
+    UpdateServiceGroupReq:
+      $ref: ./components/schemas/service_groups.yaml#/UpdateServiceGroupReq
     ServiceGroupRes:
       $ref: ./components/schemas/service_groups.yaml#/ServiceGroupRes
     ServiceOptionReq:
