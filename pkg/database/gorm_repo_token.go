@@ -36,8 +36,8 @@ func NewTokenRepository(db *gorm.DB) *GormTokenRepository {
 			applyTokenFilter,
 			applyTokenSort,
 			participantAuthzFilterApplier,
-			[]string{}, // No preload paths needed for finding by ID
-			[]string{}, // No preload paths needed for list
+			[]string{"Participant", "Agent"}, // No preload paths needed for finding by ID
+			[]string{"Participant", "Agent"}, // No preload paths needed for list
 		),
 	}
 	return repo
