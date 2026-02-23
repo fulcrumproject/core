@@ -162,6 +162,9 @@ type JobRes struct {
 	CreatedAt    JSONUTCTime      `json:"createdAt"`
 	UpdatedAt    JSONUTCTime      `json:"updatedAt"`
 	Service      *ServiceRes      `json:"service,omitempty"`
+	Agent        *AgentRes        `json:"agent,omitempty"`
+	Provider     *ParticipantRes  `json:"provider,omitempty"`
+	Consumer     *ParticipantRes  `json:"consumer,omitempty"`
 }
 
 // JobToRes converts a job entity to a response
@@ -188,6 +191,15 @@ func JobToRes(job *domain.Job) *JobRes {
 	}
 	if job.Service != nil {
 		resp.Service = ServiceToRes(job.Service)
+	}
+	if job.Agent != nil {
+		resp.Agent = AgentToRes(job.Agent)
+	}
+	if job.Provider != nil {
+		resp.Provider = ParticipantToRes(job.Provider)
+	}
+	if job.Consumer != nil {
+		resp.Consumer = ParticipantToRes(job.Consumer)
 	}
 	return resp
 }

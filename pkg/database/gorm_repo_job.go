@@ -37,8 +37,8 @@ func NewJobRepository(db *gorm.DB) *GormJobRepository {
 			applyJobFilter,
 			applyJobSort,
 			providerConsumerAgentAuthzFilterApplier,
-			[]string{"Agent", "Service"}, // Find preload paths
-			[]string{"Agent", "Service"}, // List preload paths - empty for performance reasons
+			[]string{"Agent", "Service", "Provider", "Consumer"}, // Find preload paths
+			[]string{"Agent", "Service", "Provider", "Consumer"}, // List preload paths
 		),
 	}
 	return repo

@@ -439,12 +439,41 @@ func TestJobToResponse(t *testing.T) {
 		Priority:     1,
 		ClaimedAt:    &claimedAt,
 		ErrorMessage: "",
+		Agent: &domain.Agent{
+			BaseEntity: domain.BaseEntity{
+				ID:        uuid.MustParse("850e8400-e29b-41d4-a716-446655440000"),
+				CreatedAt: createdAt,
+				UpdatedAt: updatedAt,
+			},
+			Name:        "Test Agent",
+			Status:      domain.AgentConnected,
+			ProviderID:  uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
+			AgentTypeID: uuid.MustParse("a50e8400-e29b-41d4-a716-446655440000"),
+		},
+		Provider: &domain.Participant{
+			BaseEntity: domain.BaseEntity{
+				ID:        uuid.MustParse("650e8400-e29b-41d4-a716-446655440000"),
+				CreatedAt: createdAt,
+				UpdatedAt: updatedAt,
+			},
+			Name:   "Test Provider",
+			Status: domain.ParticipantEnabled,
+		},
+		Consumer: &domain.Participant{
+			BaseEntity: domain.BaseEntity{
+				ID:        uuid.MustParse("750e8400-e29b-41d4-a716-446655440000"),
+				CreatedAt: createdAt,
+				UpdatedAt: updatedAt,
+			},
+			Name:   "Test Consumer",
+			Status: domain.ParticipantEnabled,
+		},
 	}
 
 	// Execute
 	response := JobToRes(job)
 
-	// Assert
+	// Assert basic fields
 	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", response.ID.String())
 	assert.Equal(t, "650e8400-e29b-41d4-a716-446655440000", response.ProviderID.String())
 	assert.Equal(t, "750e8400-e29b-41d4-a716-446655440000", response.ConsumerID.String())
@@ -457,6 +486,19 @@ func TestJobToResponse(t *testing.T) {
 	assert.Equal(t, JSONUTCTime(updatedAt), response.UpdatedAt)
 	assert.Equal(t, (*JSONUTCTime)(&claimedAt), response.ClaimedAt)
 	assert.Nil(t, response.CompletedAt)
+
+	// Assert relationships
+	require.NotNil(t, response.Agent)
+	assert.Equal(t, "850e8400-e29b-41d4-a716-446655440000", response.Agent.ID.String())
+	assert.Equal(t, "Test Agent", response.Agent.Name)
+
+	require.NotNil(t, response.Provider)
+	assert.Equal(t, "650e8400-e29b-41d4-a716-446655440000", response.Provider.ID.String())
+	assert.Equal(t, "Test Provider", response.Provider.Name)
+
+	require.NotNil(t, response.Consumer)
+	assert.Equal(t, "750e8400-e29b-41d4-a716-446655440000", response.Consumer.ID.String())
+	assert.Equal(t, "Test Consumer", response.Consumer.Name)
 }
 
 // TestNewJobHandler tests the NewJobHandler function
