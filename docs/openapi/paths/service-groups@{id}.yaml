@@ -48,7 +48,7 @@
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/service_groups.yaml#/ServiceGroupReq"
+            $ref: "../components/schemas/service_groups.yaml#/UpdateServiceGroupReq"
     responses:
       "200":
         description: Service group updated successfully

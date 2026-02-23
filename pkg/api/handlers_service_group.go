@@ -101,17 +101,24 @@ type ServiceGroupRes struct {
 	ID         properties.UUID `json:"id"`
 	Name       string          `json:"name"`
 	ConsumerID properties.UUID `json:"consumerId"`
+	Consumer	 *ParticipantRes `json:"consumer,omitempty"`
 	CreatedAt  JSONUTCTime     `json:"createdAt"`
 	UpdatedAt  JSONUTCTime     `json:"updatedAt"`
 }
 
 // ServiceGroupToRes converts a domain.ServiceGroup to a ServiceGroupResponse
 func ServiceGroupToRes(sg *domain.ServiceGroup) *ServiceGroupRes {
-	return &ServiceGroupRes{
+	res := &ServiceGroupRes{
 		ID:         sg.ID,
 		Name:       sg.Name,
 		ConsumerID: sg.ConsumerID,
 		CreatedAt:  JSONUTCTime(sg.CreatedAt),
 		UpdatedAt:  JSONUTCTime(sg.UpdatedAt),
 	}
+
+	if sg.Participant != nil {
+		res.Consumer = ParticipantToRes(sg.Participant)
+	}
+
+	return res
 }

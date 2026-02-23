@@ -1,4 +1,4 @@
-ServiceGroupReq:
+CreateServiceGroupReq:
   type: object
   required:
     - name
@@ -11,6 +11,13 @@ ServiceGroupReq:
       $ref: "./common.yaml#/properties.UUID"
       description: "ID of the consumer participant that owns this service group"
 
+UpdateServiceGroupReq:
+  type: object
+  properties:
+    name:
+      type: string
+      example: "Web Servers"
+
 ServiceGroupRes:
   type: object
   properties:
@@ -22,6 +29,9 @@ ServiceGroupRes:
     consumerId:
       $ref: "./common.yaml#/properties.UUID"
       description: "ID of the consumer participant that owns this service group"
+    consumer:
+      $ref: "./participants.yaml#/ParticipantRes"
+      description: "Consumer participant details (populated when available)"
     createdAt:
       type: string
       format: date-time

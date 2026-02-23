@@ -17,6 +17,7 @@ type GormServiceGroupRepository struct {
 
 var applyServiceGroupFilter = MapFilterApplier(map[string]FilterFieldApplier{
 	"name": StringContainsInsensitiveFilterFieldApplier("name"),
+	"consumerId": ParserInFilterFieldApplier("consumer_id", properties.ParseUUID),
 })
 
 var applyServiceGroupSort = MapSortApplier(map[string]string{

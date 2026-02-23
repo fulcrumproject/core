@@ -119,6 +119,31 @@ func TestServiceGroupRepository(t *testing.T) {
 			assert.Equal(t, serviceGroup.Name, result.Items[0].Name)
 		})
 
+		t.Run("success - list with consumer id", func(t *testing.T) {
+			ctx := context.Background()
+	
+			newParticipant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, newParticipant)) 
+			
+			serviceGroup := createTestServiceGroup(t, newParticipant.ID)
+			require.NoError(t, repo.Create(ctx, serviceGroup))
+	
+			// Filter by first participant only
+			page := &domain.PageReq{
+					Page: 1,
+					PageSize: 10,
+					Filters: map[string][]string{"consumerId": {newParticipant.ID.String()}},
+			}
+	
+			result, err := repo.List(ctx, &auth.IdentityScope{}, page)
+	
+			// Assertions
+			require.NoError(t, err)
+			assert.Len(t, result.Items, 1)  
+			assert.Equal(t, newParticipant.ID, result.Items[0].ConsumerID) 
+			assert.NotEmpty(t, result.Items[0].Participant.Name)
+	})
+
 		t.Run("success - list with sorting", func(t *testing.T) {
 			ctx := context.Background()
 

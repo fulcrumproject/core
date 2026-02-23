@@ -36,6 +36,10 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/service-groups?name=Database
 Authorization: Bearer {{adminToken}}
 
+### List all service groups for that consumer
+GET {{baseUrl}}/service-groups?name=Database&consumerId={{consumerId}}
+Authorization: Bearer {{adminToken}}
+
 ### Update a service group
 PATCH {{baseUrl}}/service-groups/{{serviceGroupId}}
 Authorization: Bearer {{adminToken}}
