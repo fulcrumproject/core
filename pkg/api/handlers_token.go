@@ -165,7 +165,9 @@ type TokenRes struct {
 	Role          auth.Role        `json:"role"`
 	ExpireAt      JSONUTCTime      `json:"expireAt"`
 	ParticipantID *properties.UUID `json:"participantId,omitempty"`
+	Participant   *ParticipantRes	 `json:"participant,omitempty"`
 	AgentID       *properties.UUID `json:"agentId,omitempty"`
+	Agent					*AgentRes				 `json:"agent,omitempty"`
 	CreatedAt     JSONUTCTime      `json:"createdAt"`
 	UpdatedAt     JSONUTCTime      `json:"updatedAt"`
 	Value         string           `json:"value,omitempty"`
@@ -173,7 +175,7 @@ type TokenRes struct {
 
 // TokenToRes converts a domain.Token to a TokenResponse
 func TokenToRes(t *domain.Token) *TokenRes {
-	return &TokenRes{
+	res := &TokenRes{
 		ID:            t.ID,
 		Name:          t.Name,
 		Role:          t.Role,
@@ -184,4 +186,14 @@ func TokenToRes(t *domain.Token) *TokenRes {
 		UpdatedAt:     JSONUTCTime(t.UpdatedAt),
 		Value:         t.PlainValue, // Only populated on create/regenerate
 	}
+
+	if t.Participant != nil {
+		res.Participant = ParticipantToRes(t.Participant)
+	}
+
+	if t.Agent != nil {
+		res.Agent = AgentToRes(t.Agent)
+	}
+
+	return res
 }

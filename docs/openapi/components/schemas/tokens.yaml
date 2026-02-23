@@ -39,9 +39,15 @@ TokenRes:
     participantId:
       $ref: "./common.yaml#/properties.UUID"
       description: "For participant role tokens - the participant ID"
+    participant:
+      $ref: "./participants.yaml#/ParticipantRes"
+      description: "For participant role tokens - the full participant object"
     agentId:
       $ref: "./common.yaml#/properties.UUID"
       description: "For agent role tokens - the agent ID"
+    agent:
+      $ref: "./agents.yaml#/AgentRes"
+      description: "For agent role tokens - the full agent object"
     createdAt:
       type: string
       format: date-time
