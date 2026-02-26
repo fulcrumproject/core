@@ -19,8 +19,9 @@ var applyServiceOptionTypeFilter = MapFilterApplier(map[string]FilterFieldApplie
 })
 
 var applyServiceOptionTypeSort = MapSortApplier(map[string]string{
-	"name": "name",
-	"type": "type",
+	"name":      "name",
+	"type":      "type",
+	"createdAt": "created_at",
 })
 
 // NewServiceOptionTypeRepository creates a new instance of ServiceOptionTypeRepository
