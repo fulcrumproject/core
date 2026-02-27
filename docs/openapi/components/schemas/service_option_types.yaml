@@ -15,6 +15,16 @@ ServiceOptionTypeReq:
       type: string
       example: "Available operating systems for VMs"
 
+UpdateServiceOptionTypeReq:
+  type: object
+  properties:
+    name:
+      type: string
+      example: "Operating System"
+    description:
+      type: string
+      example: "Available operating systems for VMs"
+
 ServiceOptionTypeRes:
   type: object
   properties:

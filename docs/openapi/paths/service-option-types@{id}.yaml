@@ -44,7 +44,7 @@
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/service_option_types.yaml#/ServiceOptionTypeReq"
+            $ref: "../components/schemas/service_option_types.yaml#/UpdateServiceOptionTypeReq"
     responses:
       "200":
         description: Service option type updated successfully
