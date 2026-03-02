@@ -23,6 +23,20 @@ ServiceOptionReq:
       type: integer
       default: 0
 
+ServiceOptionUpdateReq:
+  type: object
+  properties:
+    name:
+      type: string
+      example: "Ubuntu 22.04 LTS"
+    value:
+      description: "Any JSON value (string, number, object, array)"
+      example: "ubuntu-22.04"
+    enabled:
+      type: boolean
+    displayOrder:
+      type: integer
+
 ServiceOptionRes:
   type: object
   properties:
