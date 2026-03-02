@@ -16,6 +16,7 @@ type GormServiceOptionRepository struct {
 }
 
 var applyServiceOptionFilter = MapFilterApplier(map[string]FilterFieldApplier{
+	"name":								 StringContainsInsensitiveFilterFieldApplier("name"),
 	"providerId":          ParserInFilterFieldApplier("provider_id", properties.ParseUUID),
 	"serviceOptionTypeId": ParserInFilterFieldApplier("service_option_type_id", properties.ParseUUID),
 	"enabled":             ParserInFilterFieldApplier("enabled", parseBool),

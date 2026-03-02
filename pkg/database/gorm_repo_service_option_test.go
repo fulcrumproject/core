@@ -424,6 +424,33 @@ func TestServiceOptionRepository(t *testing.T) {
 				assert.Equal(t, provider3.ID, item.ProviderID)
 			}
 		})
+
+		t.Run("success - list with name filter", func(t *testing.T) {
+			ctx := context.Background()
+
+			uniqueName := "UniqueNameFilterOption-" + properties.NewUUID().String()
+			option := &domain.ServiceOption{
+				ProviderID:          participant.ID,
+				ServiceOptionTypeID: optionType.ID,
+				Name:                uniqueName,
+				Value:               map[string]string{"filter": "name"},
+				Enabled:             true,
+				DisplayOrder:        200,
+			}
+			err := repo.Create(ctx, option)
+			require.NoError(t, err)
+
+			page := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"name": {uniqueName}},
+			}
+
+			result, err := repo.List(ctx, &auth.IdentityScope{}, page)
+			require.NoError(t, err)
+			require.Len(t, result.Items, 1)
+			assert.Equal(t, uniqueName, result.Items[0].Name)
+		})
 	})
 
 	t.Run("AuthScope", func(t *testing.T) {
