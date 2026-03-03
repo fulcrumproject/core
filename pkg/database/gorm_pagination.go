@@ -53,7 +53,7 @@ func ParserInFilterFieldApplier[T any](f string, t func(string) (T, error)) Filt
 		if len(vv) == 0 {
 			return db, nil
 		}
-		values := make([]T, len(vv))
+		values := make([]T, 0, len(vv))
 		for _, v := range vv {
 			value, err := t(v)
 			if err != nil {
