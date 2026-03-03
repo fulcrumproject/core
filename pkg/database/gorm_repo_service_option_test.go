@@ -53,6 +53,25 @@ func TestServiceOptionRepository(t *testing.T) {
 		assert.NotZero(t, option.UpdatedAt)
 	})
 
+	t.Run("Create_WithEnabledFalse", func(t *testing.T) {
+		option := &domain.ServiceOption{
+			ProviderID:          participant.ID,
+			ServiceOptionTypeID: optionType.ID,
+			Name:                "Disabled Option",
+			Value:               map[string]any{"image": "disabled"},
+			Enabled:             helpers.BoolPtr(false),
+			DisplayOrder:        0,
+		}
+
+		err := repo.Create(context.Background(), option)
+		require.NoError(t, err)
+
+		// Read back and verify GORM did not override false with DB default true
+		found, err := repo.Get(context.Background(), option.ID)
+		require.NoError(t, err)
+		assert.Equal(t, helpers.BoolPtr(false), found.Enabled)
+	})
+
 	t.Run("Get", func(t *testing.T) {
 		// Create a service option
 		option := &domain.ServiceOption{
