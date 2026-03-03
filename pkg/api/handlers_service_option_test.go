@@ -8,6 +8,7 @@ import (
 
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -83,7 +84,7 @@ func TestServiceOptionToRes(t *testing.T) {
 		ServiceOptionTypeID: properties.UUID(typeID),
 		Name:                "Ubuntu 20.04",
 		Value:               map[string]any{"image": "ubuntu-20.04"},
-		Enabled:             true,
+		Enabled:             helpers.BoolPtr(true),
 		DisplayOrder:        1,
 	}
 

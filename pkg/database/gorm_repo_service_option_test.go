@@ -7,6 +7,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,7 +42,7 @@ func TestServiceOptionRepository(t *testing.T) {
 			ServiceOptionTypeID: optionType.ID,
 			Name:                "Ubuntu 20.04",
 			Value:               map[string]any{"image": "ubuntu-20.04"},
-			Enabled:             true,
+			Enabled:             helpers.BoolPtr(true),
 			DisplayOrder:        1,
 		}
 
@@ -59,7 +60,7 @@ func TestServiceOptionRepository(t *testing.T) {
 			ServiceOptionTypeID: optionType.ID,
 			Name:                "Ubuntu 22.04",
 			Value:               map[string]any{"image": "ubuntu-22.04", "version": "22.04"},
-			Enabled:             true,
+			Enabled:             helpers.BoolPtr(true),
 			DisplayOrder:        2,
 		}
 		err := repo.Create(context.Background(), option)
@@ -154,7 +155,7 @@ func TestServiceOptionRepository(t *testing.T) {
 					ServiceOptionTypeID: optionType.ID,
 					Name:                tt.name,
 					Value:               tt.value,
-					Enabled:             true,
+					Enabled:             helpers.BoolPtr(true),
 					DisplayOrder:        tt.displayOrder,
 				}
 
@@ -181,7 +182,7 @@ func TestServiceOptionRepository(t *testing.T) {
 			ServiceOptionTypeID: optionType.ID,
 			Name:                "Debian 11",
 			Value:               testValue,
-			Enabled:             true,
+			Enabled:             helpers.BoolPtr(true),
 			DisplayOrder:        3,
 		}
 		err := repo.Create(context.Background(), option)
@@ -220,14 +221,14 @@ func TestServiceOptionRepository(t *testing.T) {
 			ServiceOptionTypeID: optionType.ID,
 			Name:                "Disabled OS",
 			Value:               disabledValue,
-			Enabled:             false,
+			Enabled:             helpers.BoolPtr(false),
 			DisplayOrder:        99,
 		}
 		err := repo.Create(context.Background(), disabledOption)
 		require.NoError(t, err)
 
 		// Disable it by updating it (to test the filter)
-		disabledOption.Enabled = false
+		disabledOption.Enabled = helpers.BoolPtr(false)
 		err = repo.Save(context.Background(), disabledOption)
 		require.NoError(t, err)
 
@@ -258,7 +259,7 @@ func TestServiceOptionRepository(t *testing.T) {
 				ServiceOptionTypeID: optionType.ID,
 				Name:                "Provider 2 Option",
 				Value:               map[string]any{"id": i},
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 				DisplayOrder:        i,
 			}
 			err := repo.Create(context.Background(), option)
@@ -290,7 +291,7 @@ func TestServiceOptionRepository(t *testing.T) {
 			ServiceOptionTypeID: optionType2.ID,
 			Name:                "Type 2 Option 1",
 			Value:               map[string]any{"key": "value1"},
-			Enabled:             true,
+			Enabled:             helpers.BoolPtr(true),
 			DisplayOrder:        1,
 		}
 		err = repo.Create(context.Background(), option1)
@@ -301,7 +302,7 @@ func TestServiceOptionRepository(t *testing.T) {
 			ServiceOptionTypeID: optionType2.ID,
 			Name:                "Type 2 Option 2",
 			Value:               map[string]any{"key": "value2"},
-			Enabled:             true,
+			Enabled:             helpers.BoolPtr(true),
 			DisplayOrder:        2,
 		}
 		err = repo.Create(context.Background(), option2)
@@ -324,7 +325,7 @@ func TestServiceOptionRepository(t *testing.T) {
 			ServiceOptionTypeID: optionType.ID,
 			Name:                "Original Name",
 			Value:               map[string]any{"original": "value"},
-			Enabled:             true,
+			Enabled:             helpers.BoolPtr(true),
 			DisplayOrder:        10,
 		}
 		err := repo.Create(context.Background(), option)
@@ -337,7 +338,7 @@ func TestServiceOptionRepository(t *testing.T) {
 		// Update the service option
 		fetched.Name = "Updated Name"
 		fetched.Value = map[string]any{"updated": "value"}
-		fetched.Enabled = false
+		fetched.Enabled = helpers.BoolPtr(false)
 		fetched.DisplayOrder = 20
 
 		err = repo.Save(context.Background(), fetched)
@@ -348,7 +349,7 @@ func TestServiceOptionRepository(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "Updated Name", found.Name)
 		assert.NotNil(t, found.Value, "Value should not be nil after update")
-		assert.False(t, found.Enabled)
+		assert.Equal(t, helpers.BoolPtr(false), found.Enabled)
 		assert.Equal(t, 20, found.DisplayOrder)
 	})
 
@@ -359,7 +360,7 @@ func TestServiceOptionRepository(t *testing.T) {
 			ServiceOptionTypeID: optionType.ID,
 			Name:                "To Delete",
 			Value:               map[string]any{"delete": "me"},
-			Enabled:             true,
+			Enabled:             helpers.BoolPtr(true),
 			DisplayOrder:        100,
 		}
 		err := repo.Create(context.Background(), option)
@@ -402,7 +403,7 @@ func TestServiceOptionRepository(t *testing.T) {
 				ServiceOptionTypeID: optionType.ID,
 				Name:                "Provider 3 Option",
 				Value:               map[string]any{"filter": "test"},
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 				DisplayOrder:        1,
 			}
 			err = repo.Create(context.Background(), option)
@@ -436,7 +437,7 @@ func TestServiceOptionRepository(t *testing.T) {
 				ServiceOptionTypeID: optionType.ID,
 				Name:                "Scope Test Option",
 				Value:               map[string]any{"scope": "test"},
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 				DisplayOrder:        1,
 			}
 			require.NoError(t, repo.Create(ctx, option))

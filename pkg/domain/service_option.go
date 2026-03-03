@@ -22,7 +22,7 @@ type ServiceOption struct {
 	ServiceOptionTypeID properties.UUID `json:"serviceOptionTypeId" gorm:"type:uuid;not null;index:idx_service_option_type"`
 	Name                string          `json:"name" gorm:"not null"`
 	Value               any             `json:"value" gorm:"type:jsonb;serializer:json;not null"`
-	Enabled             bool            `json:"enabled" gorm:"not null;default:true"`
+	Enabled             *bool           `json:"enabled" gorm:"not null;default:true"`
 	DisplayOrder        int             `json:"displayOrder" gorm:"default:0"`
 }
 
@@ -69,7 +69,7 @@ func (so *ServiceOption) Update(params UpdateServiceOptionParams) {
 		so.Value = *params.Value
 	}
 	if params.Enabled != nil {
-		so.Enabled = *params.Enabled
+		so.Enabled = params.Enabled
 	}
 	if params.DisplayOrder != nil {
 		so.DisplayOrder = *params.DisplayOrder
@@ -120,7 +120,7 @@ type CreateServiceOptionParams struct {
 	ServiceOptionTypeID properties.UUID `json:"serviceOptionTypeId"`
 	Name                string          `json:"name"`
 	Value               any             `json:"value"`
-	Enabled             bool            `json:"enabled"`
+	Enabled             *bool           `json:"enabled"`
 	DisplayOrder        int             `json:"displayOrder"`
 }
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
@@ -51,8 +52,8 @@ func TestServiceOptionValidator_Validate(t *testing.T) {
 
 				store.EXPECT().ServiceOptionRepo().Return(optionRepo)
 				optionRepo.EXPECT().ListByProviderAndType(ctx, providerID, optionTypeID).Return([]*ServiceOption{
-					{Enabled: true, Value: "ubuntu:20.04"},
-					{Enabled: false, Value: "ubuntu:22.04"}, // Disabled option
+					{Enabled: helpers.BoolPtr(true), Value: "ubuntu:20.04"},
+					{Enabled: helpers.BoolPtr(false), Value: "ubuntu:22.04"}, // Disabled option
 				}, nil)
 			},
 			wantErr: false,
@@ -71,8 +72,8 @@ func TestServiceOptionValidator_Validate(t *testing.T) {
 
 				store.EXPECT().ServiceOptionRepo().Return(optionRepo)
 				optionRepo.EXPECT().ListByProviderAndType(ctx, providerID, optionTypeID).Return([]*ServiceOption{
-					{Enabled: true, Value: map[string]any{"image": "ubuntu:20.04", "arch": "amd64"}},
-					{Enabled: true, Value: "simple-value"},
+					{Enabled: helpers.BoolPtr(true), Value: map[string]any{"image": "ubuntu:20.04", "arch": "amd64"}},
+					{Enabled: helpers.BoolPtr(true), Value: "simple-value"},
 				}, nil)
 			},
 			wantErr: false,
@@ -91,8 +92,8 @@ func TestServiceOptionValidator_Validate(t *testing.T) {
 
 				store.EXPECT().ServiceOptionRepo().Return(optionRepo)
 				optionRepo.EXPECT().ListByProviderAndType(ctx, providerID, optionTypeID).Return([]*ServiceOption{
-					{Enabled: true, Value: "ubuntu:20.04"},
-					{Enabled: true, Value: "ubuntu:22.04"},
+					{Enabled: helpers.BoolPtr(true), Value: "ubuntu:20.04"},
+					{Enabled: helpers.BoolPtr(true), Value: "ubuntu:22.04"},
 				}, nil)
 			},
 			wantErr:   true,
@@ -112,8 +113,8 @@ func TestServiceOptionValidator_Validate(t *testing.T) {
 
 				store.EXPECT().ServiceOptionRepo().Return(optionRepo)
 				optionRepo.EXPECT().ListByProviderAndType(ctx, providerID, optionTypeID).Return([]*ServiceOption{
-					{Enabled: false, Value: "ubuntu:20.04"},
-					{Enabled: false, Value: "ubuntu:22.04"},
+					{Enabled: helpers.BoolPtr(false), Value: "ubuntu:20.04"},
+					{Enabled: helpers.BoolPtr(false), Value: "ubuntu:22.04"},
 				}, nil)
 			},
 			wantErr:   true,
@@ -185,8 +186,8 @@ func TestServiceOptionValidator_Validate(t *testing.T) {
 
 				store.EXPECT().ServiceOptionRepo().Return(optionRepo)
 				optionRepo.EXPECT().ListByProviderAndType(ctx, providerID, optionTypeID).Return([]*ServiceOption{
-					{Enabled: true, Value: nil}, // Should be skipped
-					{Enabled: true, Value: "ubuntu:20.04"},
+					{Enabled: helpers.BoolPtr(true), Value: nil}, // Should be skipped
+					{Enabled: helpers.BoolPtr(true), Value: "ubuntu:20.04"},
 				}, nil)
 			},
 			wantErr: false,

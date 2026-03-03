@@ -4,6 +4,7 @@ package domain
 import (
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,7 @@ func TestServiceOption_Validate(t *testing.T) {
 				ServiceOptionTypeID: optionTypeID,
 				Name:                "Ubuntu 22.04",
 				Value:               map[string]any{"image": "ubuntu-22.04"},
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 			},
 			wantErr: false,
 		},
@@ -42,7 +43,7 @@ func TestServiceOption_Validate(t *testing.T) {
 				ServiceOptionTypeID: optionTypeID,
 				Name:                "Ubuntu 22.04",
 				Value:               "ubuntu-22.04",
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 			},
 			wantErr: false,
 		},
@@ -53,7 +54,7 @@ func TestServiceOption_Validate(t *testing.T) {
 				ServiceOptionTypeID: optionTypeID,
 				Name:                "Ubuntu 20.04",
 				Value:               "ubuntu-20.04",
-				Enabled:             false,
+				Enabled:             helpers.BoolPtr(false),
 			},
 			wantErr: false,
 		},
@@ -64,7 +65,7 @@ func TestServiceOption_Validate(t *testing.T) {
 				ServiceOptionTypeID: optionTypeID,
 				Name:                "Ubuntu 22.04",
 				Value:               "ubuntu-22.04",
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 			},
 			wantErr:    true,
 			errMessage: "providerId cannot be empty",
@@ -76,7 +77,7 @@ func TestServiceOption_Validate(t *testing.T) {
 				ServiceOptionTypeID: properties.UUID(uuid.Nil),
 				Name:                "Ubuntu 22.04",
 				Value:               "ubuntu-22.04",
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 			},
 			wantErr:    true,
 			errMessage: "serviceOptionTypeId cannot be empty",
@@ -88,7 +89,7 @@ func TestServiceOption_Validate(t *testing.T) {
 				ServiceOptionTypeID: optionTypeID,
 				Name:                "",
 				Value:               "ubuntu-22.04",
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 			},
 			wantErr:    true,
 			errMessage: "name cannot be empty",
@@ -100,7 +101,7 @@ func TestServiceOption_Validate(t *testing.T) {
 				ServiceOptionTypeID: optionTypeID,
 				Name:                "Ubuntu 22.04",
 				Value:               nil,
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 			},
 			wantErr:    true,
 			errMessage: "value cannot be nil",
@@ -112,7 +113,7 @@ func TestServiceOption_Validate(t *testing.T) {
 				ServiceOptionTypeID: optionTypeID,
 				Name:                "Ubuntu 22.04",
 				Value:               "ubuntu-22.04",
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 				DisplayOrder:        10,
 			},
 			wantErr: false,
@@ -143,7 +144,7 @@ func TestNewServiceOption(t *testing.T) {
 		ServiceOptionTypeID: optionTypeID,
 		Name:                "Ubuntu 22.04",
 		Value:               map[string]any{"image": "ubuntu-22.04"},
-		Enabled:             true,
+		Enabled:             helpers.BoolPtr(true),
 		DisplayOrder:        5,
 	}
 
@@ -154,7 +155,7 @@ func TestNewServiceOption(t *testing.T) {
 	assert.Equal(t, optionTypeID, option.ServiceOptionTypeID)
 	assert.Equal(t, "Ubuntu 22.04", option.Name)
 	assert.Equal(t, map[string]any{"image": "ubuntu-22.04"}, option.Value)
-	assert.True(t, option.Enabled)
+	assert.Equal(t, helpers.BoolPtr(true), option.Enabled)
 	assert.Equal(t, 5, option.DisplayOrder)
 }
 
@@ -167,7 +168,7 @@ func TestServiceOption_Update(t *testing.T) {
 		ServiceOptionTypeID: optionTypeID,
 		Name:                "Ubuntu 22.04",
 		Value:               "ubuntu-22.04",
-		Enabled:             true,
+		Enabled:             helpers.BoolPtr(true),
 		DisplayOrder:        0,
 	}
 
@@ -185,7 +186,7 @@ func TestServiceOption_Update(t *testing.T) {
 
 	assert.Equal(t, "Ubuntu 22.04 LTS", option.Name)
 	assert.Equal(t, map[string]any{"image": "ubuntu-22.04-lts"}, option.Value)
-	assert.False(t, option.Enabled)
+	assert.Equal(t, helpers.BoolPtr(false), option.Enabled)
 	assert.Equal(t, 10, option.DisplayOrder)
 
 	// IDs should not change
@@ -202,7 +203,7 @@ func TestServiceOption_Update_Partial(t *testing.T) {
 		ServiceOptionTypeID: optionTypeID,
 		Name:                "Ubuntu 22.04",
 		Value:               "ubuntu-22.04",
-		Enabled:             true,
+		Enabled:             helpers.BoolPtr(true),
 		DisplayOrder:        5,
 	}
 
@@ -215,7 +216,7 @@ func TestServiceOption_Update_Partial(t *testing.T) {
 
 	assert.Equal(t, "Ubuntu 22.04", option.Name)
 	assert.Equal(t, "ubuntu-22.04", option.Value)
-	assert.False(t, option.Enabled)
+	assert.Equal(t, helpers.BoolPtr(false), option.Enabled)
 	assert.Equal(t, 5, option.DisplayOrder)
 }
 

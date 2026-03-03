@@ -64,7 +64,7 @@ func (v *ServiceOptionValidator) Validate(
 	// Filter to only enabled options
 	var enabledOptions []*ServiceOption
 	for _, opt := range options {
-		if opt.Enabled {
+		if opt.Enabled != nil && *opt.Enabled {
 			enabledOptions = append(enabledOptions, opt)
 		}
 	}
