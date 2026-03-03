@@ -422,7 +422,7 @@ func TestServiceOptionRepository(t *testing.T) {
 				ServiceOptionTypeID: optionType.ID,
 				Name:                "Enabled Option",
 				Value:               map[string]any{"status": "enabled"},
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 				DisplayOrder:        1,
 			}
 			err = repo.Create(context.Background(), enabledOption)
@@ -435,12 +435,12 @@ func TestServiceOptionRepository(t *testing.T) {
 				ServiceOptionTypeID: optionType.ID,
 				Name:                "Disabled Option",
 				Value:               map[string]any{"status": "disabled"},
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 				DisplayOrder:        2,
 			}
 			err = repo.Create(context.Background(), disabledOption)
 			require.NoError(t, err)
-			disabledOption.Enabled = false
+			disabledOption.Enabled = helpers.BoolPtr(false)
 			err = repo.Save(context.Background(), disabledOption)
 			require.NoError(t, err)
 
@@ -458,7 +458,7 @@ func TestServiceOptionRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 1)
 			for _, item := range result.Items {
-				assert.True(t, item.Enabled, "expected only enabled items when filtering enabled=true")
+				assert.True(t, *item.Enabled, "expected only enabled items when filtering enabled=true")
 			}
 
 			// Filter by enabled=false
@@ -471,7 +471,7 @@ func TestServiceOptionRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.GreaterOrEqual(t, len(result.Items), 1)
 			for _, item := range result.Items {
-				assert.False(t, item.Enabled, "expected only disabled items when filtering enabled=false")
+				assert.False(t, *item.Enabled, "expected only disabled items when filtering enabled=false")
 			}
 		})
 
@@ -521,7 +521,7 @@ func TestServiceOptionRepository(t *testing.T) {
 				ServiceOptionTypeID: optionType.ID,
 				Name:                uniqueName,
 				Value:               map[string]string{"filter": "name"},
-				Enabled:             true,
+				Enabled:             helpers.BoolPtr(true),
 				DisplayOrder:        200,
 			}
 			err := repo.Create(ctx, option)
