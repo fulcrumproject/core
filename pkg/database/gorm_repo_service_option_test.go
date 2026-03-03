@@ -388,6 +388,73 @@ func TestServiceOptionRepository(t *testing.T) {
 			assert.GreaterOrEqual(t, len(result.Items), 1)
 		})
 
+		t.Run("success - filter by enabled", func(t *testing.T) {
+			// Create a dedicated provider for this test
+			enabledProvider := domain.NewParticipant(domain.CreateParticipantParams{
+				Name: "Enabled Filter Provider",
+			})
+			err := participantRepo.Create(context.Background(), enabledProvider)
+			require.NoError(t, err)
+
+			// Create an enabled option
+			enabledOption := &domain.ServiceOption{
+				ProviderID:          enabledProvider.ID,
+				ServiceOptionTypeID: optionType.ID,
+				Name:                "Enabled Option",
+				Value:               map[string]any{"status": "enabled"},
+				Enabled:             true,
+				DisplayOrder:        1,
+			}
+			err = repo.Create(context.Background(), enabledOption)
+			require.NoError(t, err)
+
+			// Create a disabled option (create first, then save with Enabled=false
+			// because GORM skips zero-value bools during Create)
+			disabledOption := &domain.ServiceOption{
+				ProviderID:          enabledProvider.ID,
+				ServiceOptionTypeID: optionType.ID,
+				Name:                "Disabled Option",
+				Value:               map[string]any{"status": "disabled"},
+				Enabled:             true,
+				DisplayOrder:        2,
+			}
+			err = repo.Create(context.Background(), disabledOption)
+			require.NoError(t, err)
+			disabledOption.Enabled = false
+			err = repo.Save(context.Background(), disabledOption)
+			require.NoError(t, err)
+
+			scope := &auth.IdentityScope{
+				ParticipantID: &enabledProvider.ID,
+			}
+
+			// Filter by enabled=true
+			pageEnabled := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"enabled": {"true"}},
+			}
+			result, err := repo.List(context.Background(), scope, pageEnabled)
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 1)
+			for _, item := range result.Items {
+				assert.True(t, item.Enabled, "expected only enabled items when filtering enabled=true")
+			}
+
+			// Filter by enabled=false
+			pageDisabled := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"enabled": {"false"}},
+			}
+			result, err = repo.List(context.Background(), scope, pageDisabled)
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 1)
+			for _, item := range result.Items {
+				assert.False(t, item.Enabled, "expected only disabled items when filtering enabled=false")
+			}
+		})
+
 		t.Run("success - list with participant filter", func(t *testing.T) {
 			// Create a third provider for filtering
 			provider3 := domain.NewParticipant(domain.CreateParticipantParams{
