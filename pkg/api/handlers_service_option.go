@@ -15,7 +15,7 @@ type CreateServiceOptionReq struct {
 	ServiceOptionTypeID properties.UUID `json:"serviceOptionTypeId"`
 	Name                string          `json:"name"`
 	Value               any             `json:"value"`
-	Enabled             bool            `json:"enabled"`
+	Enabled             *bool           `json:"enabled"`
 	DisplayOrder        int             `json:"displayOrder"`
 }
 
@@ -133,7 +133,7 @@ func ServiceOptionToRes(so *domain.ServiceOption) *ServiceOptionRes {
 		ServiceOptionTypeID: so.ServiceOptionTypeID,
 		Name:                so.Name,
 		Value:               so.Value,
-		Enabled:             so.Enabled,
+		Enabled:             so.Enabled != nil && *so.Enabled,
 		DisplayOrder:        so.DisplayOrder,
 		CreatedAt:           JSONUTCTime(so.CreatedAt),
 		UpdatedAt:           JSONUTCTime(so.UpdatedAt),
