@@ -19,7 +19,8 @@ var applyMetricTypeFilter = MapFilterApplier(map[string]FilterFieldApplier{
 })
 
 var applyMetricTypeSort = MapSortApplier(map[string]string{
-	"name": "name",
+	"name":      "name",
+	"createdAt": "created_at",
 })
 
 // NewMetricTypeRepository creates a new instance of MetricTypeRepository
