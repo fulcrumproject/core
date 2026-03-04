@@ -251,6 +251,35 @@ func TestMetricTypeRepository(t *testing.T) {
 			assert.Equal(t, "path\\to\\metric", result.Items[0].Name)
 		})
 
+		t.Run("success - list with createdAt sorting", func(t *testing.T) {
+			// Create multiple metric types
+			metricTypes := []*domain.MetricType{
+				{Name: "SortCreatedAt A", EntityType: domain.MetricEntityTypeService},
+				{Name: "SortCreatedAt B", EntityType: domain.MetricEntityTypeAgent},
+				{Name: "SortCreatedAt C", EntityType: domain.MetricEntityTypeResource},
+			}
+			for _, metricType := range metricTypes {
+				err := repo.Create(context.Background(), metricType)
+				require.NoError(t, err)
+			}
+
+			page := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Sort:     true,
+				SortBy:   "createdAt",
+				SortAsc:  false, // Descending order
+			}
+
+			result, err := repo.List(context.Background(), &auth.IdentityScope{}, page)
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 3)
+			// Verify descending order
+			for i := 1; i < len(result.Items); i++ {
+				assert.GreaterOrEqual(t, result.Items[i-1].CreatedAt, result.Items[i].CreatedAt)
+			}
+		})
+
 		t.Run("success - list with pagination", func(t *testing.T) {
 			// Create multiple metric types
 			for i := 0; i < 5; i++ {
