@@ -125,6 +125,31 @@ func WithServiceType(t *ServiceType) EventOption {
 	}
 }
 
+// WithServicePool sets the entity ID for the event
+func WithServicePool(t *ServicePool) EventOption {
+	return func(e *Event) error {
+		e.EntityID = &t.ID
+		return nil
+	}
+}
+
+// WithServicePoolSet sets the entity ID and provider ID for the event
+func WithServicePoolSet(t *ServicePoolSet) EventOption {
+	return func(e *Event) error {
+		e.EntityID = &t.ID
+		e.ProviderID = &t.ProviderID
+		return nil
+	}
+}
+
+// WithServicePoolValue sets the entity ID for the event
+func WithServicePoolValue(t *ServicePoolValue) EventOption {
+	return func(e *Event) error {
+		e.EntityID = &t.ID
+		return nil
+	}
+}
+
 // WithAgentType sets the entity ID for the event
 func WithAgentType(t *AgentType) EventOption {
 	return func(e *Event) error {

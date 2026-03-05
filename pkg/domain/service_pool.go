@@ -173,6 +173,15 @@ func (c *servicePoolCommander) Create(
 			return err
 		}
 
+		eventEntity, err := NewEvent(EventTypeServicePoolCreated, WithInitiatorCtx(ctx), WithServicePool(pool))
+		if err != nil {
+			return err
+		}
+
+		if err := store.EventRepo().Create(ctx, eventEntity); err != nil {
+			return err
+		}
+
 		return nil
 	})
 
@@ -198,6 +207,8 @@ func (c *servicePoolCommander) Update(
 			return err
 		}
 
+		beforeServicePool := *pool
+
 		// Update fields
 		pool.Update(params)
 
@@ -208,6 +219,15 @@ func (c *servicePoolCommander) Update(
 
 		// Save changes
 		if err := store.ServicePoolRepo().Update(ctx, pool); err != nil {
+			return err
+		}
+
+		eventEntity, err := NewEvent(EventTypeServicePoolUpdated, WithInitiatorCtx(ctx), WithDiff(&beforeServicePool, pool), WithServicePool(pool))
+		if err != nil {
+			return err
+		}
+
+		if err := store.EventRepo().Create(ctx, eventEntity); err != nil {
 			return err
 		}
 
@@ -228,15 +248,28 @@ func (c *servicePoolCommander) Delete(
 ) error {
 	return c.store.Atomic(ctx, func(store Store) error {
 		// Check if the pool exists
-		exists, err := store.ServicePoolRepo().Exists(ctx, id)
+		pool, err := store.ServicePoolRepo().Get(ctx, id)
 		if err != nil {
 			return err
 		}
-		if !exists {
+		if pool.ID != id {
 			return NewNotFoundErrorf("service pool with id %s not found", id)
 		}
 
+		eventEntity, err := NewEvent(EventTypeServicePoolDeleted, WithInitiatorCtx(ctx), WithServicePool(pool))
+		if err != nil {
+			return err
+		}
+
+		if err := store.EventRepo().Create(ctx, eventEntity); err != nil {
+			return err
+		}
+
 		// Delete the pool
-		return store.ServicePoolRepo().Delete(ctx, id)
+		if err := store.ServicePoolRepo().Delete(ctx, id); err != nil {
+			return err
+		}
+
+		return nil
 	})
 }

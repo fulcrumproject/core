@@ -151,6 +151,14 @@ func (c *servicePoolValueCommander) Create(
 			return err
 		}
 
+		eventEntry, err := NewEvent(EventTypeServicePoolValueCreated, WithInitiatorCtx(ctx), WithServicePoolValue(value))
+		if err != nil {
+			return err
+		}
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
+			return err
+		}
+
 		return nil
 	})
 
@@ -176,6 +184,14 @@ func (c *servicePoolValueCommander) Delete(
 		// Check if it's allocated
 		if value.IsAllocated() {
 			return NewInvalidInputErrorf("cannot delete allocated pool value")
+		}
+
+		eventEntry, err := NewEvent(EventTypeServicePoolValueDeleted, WithInitiatorCtx(ctx), WithServicePoolValue(value))
+		if err != nil {
+			return err
+		}
+		if err := store.EventRepo().Create(ctx, eventEntry); err != nil {
+			return err
 		}
 
 		// Delete the pool value
