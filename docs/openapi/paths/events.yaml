@@ -26,7 +26,7 @@ get:
       in: query
       schema:
         type: string
-      description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: createdAt"
+      description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: createdAt, sequenceNumber"
       example: "+createdAt"
     - name: initiatorType
       in: query

@@ -19,11 +19,12 @@ type GormEventRepository struct {
 var applyEventFilter = MapFilterApplier(map[string]FilterFieldApplier{
 	"initiatorType": StringInFilterFieldApplier("initiator_type"),
 	"initiatorId":   ParserInFilterFieldApplier("initiator_id", properties.ParseUUID),
-	"type":          StringInFilterFieldApplier("type"),
+	"type":          StringContainsInsensitiveFilterFieldApplier("type"),
 })
 
 var applyEventSort = MapSortApplier(map[string]string{
-	"createdAt": "created_at",
+	"createdAt":      "created_at",
+	"sequenceNumber": "sequence_number",
 })
 
 // NewEventRepository creates a new instance of EventRepository
@@ -34,8 +35,8 @@ func NewEventRepository(db *gorm.DB) *GormEventRepository {
 			applyEventFilter,
 			applyEventSort,
 			providerConsumerAgentAuthzFilterApplier,
-			[]string{}, // No preload paths needed
-			[]string{}, // No preload paths needed
+			[]string{"Participant", "Provider", "Agent", "Consumer"},
+			[]string{"Participant", "Provider", "Agent", "Consumer"},
 		),
 	}
 	return repo

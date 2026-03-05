@@ -125,6 +125,49 @@ func TestEventRepository(t *testing.T) {
 			}
 		})
 
+		t.Run("success - list with case insensitive type filter", func(t *testing.T) {
+			ctx := context.Background()
+
+			page := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"type": {"Agent.Updated"}},
+			}
+
+			// Execute
+			result, err := repo.List(ctx, &auth.IdentityScope{}, page)
+
+			// Assert
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 2)
+			for _, item := range result.Items {
+				assert.Equal(t, domain.EventTypeAgentUpdated, item.Type)
+			}
+		})
+
+		t.Run("success - list with sorting by sequence_number", func(t *testing.T) {
+			ctx := context.Background()
+
+			page := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Sort:     true,
+				SortBy:   "sequenceNumber",
+				SortAsc:  false, // Descending order
+			}
+
+			// Execute
+			result, err := repo.List(ctx, &auth.IdentityScope{}, page)
+
+			// Assert
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(result.Items), 3)
+			// Verify descending order by sequence number
+			for i := 1; i < len(result.Items); i++ {
+				assert.Greater(t, result.Items[i-1].SequenceNumber, result.Items[i].SequenceNumber)
+			}
+		})
+
 		t.Run("success - list with sorting by created_at", func(t *testing.T) {
 			ctx := context.Background()
 

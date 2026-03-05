@@ -41,9 +41,13 @@ type Event struct {
 
 	// Optional IDs for related entities and filtering
 	ParticipantID *properties.UUID `gorm:"type:uuid"`
+	Participant   *Participant     `json:"participant,omitempty" gorm:"foreignKey:ParticipantID"`
 	ProviderID    *properties.UUID `gorm:"type:uuid"`
+	Provider      *Participant     `json:"provider,omitempty" gorm:"foreignKey:ProviderID"`
 	AgentID       *properties.UUID `gorm:"type:uuid"`
+	Agent         *Agent           `json:"agent,omitempty" gorm:"foreignKey:AgentID"`
 	ConsumerID    *properties.UUID `gorm:"type:uuid"`
+	Consumer      *Participant     `json:"consumer,omitempty" gorm:"foreignKey:ConsumerID"`
 }
 
 // EventOption defines a function that configures an EventEntry
