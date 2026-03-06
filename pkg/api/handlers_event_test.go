@@ -77,6 +77,24 @@ func TestEventyToResponse(t *testing.T) {
 	consumerID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
 	entityID := uuid.MustParse("880e8400-e29b-41d4-a716-446655440000")
 
+	provider := &domain.Participant{
+		BaseEntity: domain.BaseEntity{ID: providerID, CreatedAt: createdAt, UpdatedAt: updatedAt},
+		Name:       "Test Provider",
+		Status:     domain.ParticipantEnabled,
+	}
+	agent := &domain.Agent{
+		BaseEntity:  domain.BaseEntity{ID: agentID, CreatedAt: createdAt, UpdatedAt: updatedAt},
+		Name:        "Test Agent",
+		Status:      domain.AgentConnected,
+		ProviderID:  providerID,
+		AgentTypeID: uuid.MustParse("aa0e8400-e29b-41d4-a716-446655440000"),
+	}
+	consumer := &domain.Participant{
+		BaseEntity: domain.BaseEntity{ID: consumerID, CreatedAt: createdAt, UpdatedAt: updatedAt},
+		Name:       "Test Consumer",
+		Status:     domain.ParticipantEnabled,
+	}
+
 	eventEntry := &domain.Event{
 		BaseEntity: domain.BaseEntity{
 			ID:        uuid.MustParse("990e8400-e29b-41d4-a716-446655440000"),
@@ -89,8 +107,11 @@ func TestEventyToResponse(t *testing.T) {
 		Payload:       properties.JSON{"key": "value"},
 		EntityID:      &entityID,
 		ProviderID:    &providerID,
+		Provider:      provider,
 		AgentID:       &agentID,
+		Agent:         agent,
 		ConsumerID:    &consumerID,
+		Consumer:      consumer,
 	}
 
 	response := EventToRes(eventEntry)
@@ -105,6 +126,36 @@ func TestEventyToResponse(t *testing.T) {
 	assert.Equal(t, eventEntry.ConsumerID, response.ConsumerID)
 	assert.Equal(t, JSONUTCTime(eventEntry.CreatedAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(eventEntry.UpdatedAt), response.UpdatedAt)
+
+	// Assert relationships are loaded
+	require.NotNil(t, response.Provider)
+	assert.Equal(t, provider.Name, response.Provider.Name)
+	require.NotNil(t, response.Agent)
+	assert.Equal(t, agent.Name, response.Agent.Name)
+	require.NotNil(t, response.Consumer)
+	assert.Equal(t, consumer.Name, response.Consumer.Name)
+}
+
+func TestEventyToResponse_NilRelationships(t *testing.T) {
+	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	eventEntry := &domain.Event{
+		BaseEntity: domain.BaseEntity{
+			ID:        uuid.MustParse("990e8400-e29b-41d4-a716-446655440000"),
+			CreatedAt: createdAt,
+			UpdatedAt: updatedAt,
+		},
+		InitiatorType: domain.InitiatorTypeUser,
+		InitiatorID:   "test-id",
+		Type:          domain.EventTypeAgentCreated,
+	}
+
+	response := EventToRes(eventEntry)
+
+	assert.Nil(t, response.Provider)
+	assert.Nil(t, response.Agent)
+	assert.Nil(t, response.Consumer)
 }
 
 // TestEventHandleLease tests the handleLease method

@@ -21,10 +21,16 @@ EventRes:
       description: "Event payload data"
     providerId:
       $ref: "./common.yaml#/properties.UUID"
+    provider:
+      $ref: "./participants.yaml#/ParticipantRes"
     agentId:
       $ref: "./common.yaml#/properties.UUID"
+    agent:
+      $ref: "./agents.yaml#/AgentRes"
     consumerId:
       $ref: "./common.yaml#/properties.UUID"
+    consumer:
+      $ref: "./participants.yaml#/ParticipantRes"
     createdAt:
       type: string
       format: date-time

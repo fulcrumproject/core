@@ -72,15 +72,18 @@ type EventRes struct {
 	Type           domain.EventType     `json:"type"`
 	Properties     properties.JSON      `json:"properties"`
 	ProviderID     *properties.UUID     `json:"providerId,omitempty"`
+	Provider       *ParticipantRes      `json:"provider,omitempty"`
 	AgentID        *properties.UUID     `json:"agentId,omitempty"`
+	Agent          *AgentRes            `json:"agent,omitempty"`
 	ConsumerID     *properties.UUID     `json:"consumerId,omitempty"`
+	Consumer       *ParticipantRes      `json:"consumer,omitempty"`
 	CreatedAt      JSONUTCTime          `json:"createdAt"`
 	UpdatedAt      JSONUTCTime          `json:"updatedAt"`
 }
 
 // EventToRes converts a domain.Event to an EventResponse
 func EventToRes(ae *domain.Event) *EventRes {
-	return &EventRes{
+	res := &EventRes{
 		ID:             ae.ID,
 		SequenceNumber: ae.SequenceNumber,
 		InitiatorType:  ae.InitiatorType,
@@ -93,6 +96,18 @@ func EventToRes(ae *domain.Event) *EventRes {
 		CreatedAt:      JSONUTCTime(ae.CreatedAt),
 		UpdatedAt:      JSONUTCTime(ae.UpdatedAt),
 	}
+
+	if ae.Provider != nil {
+		res.Provider = ParticipantToRes(ae.Provider)
+	}
+	if ae.Agent != nil {
+		res.Agent = AgentToRes(ae.Agent)
+	}
+	if ae.Consumer != nil {
+		res.Consumer = ParticipantToRes(ae.Consumer)
+	}
+
+	return res
 }
 
 // EventLeaseReq represents the request body for event lease operations
