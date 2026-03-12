@@ -53,4 +53,10 @@ MetricEntryRes:
     updatedAt:
       type: string
       format: date-time
+    agent:
+      $ref: "./agents.yaml#/AgentRes"
+    service:
+      $ref: "./services.yaml#/ServiceRes"
+    type:
+      $ref: "./metric_types.yaml#/MetricTypeRes"
 # Event schemas
