@@ -52,6 +52,51 @@ const (
 	AggregateBucketMonth  AggregateBucket = "month"
 )
 
+func (b AggregateBucket) MaxDuration() time.Duration {
+	switch b {
+	case AggregateBucketMinute:
+		return 24 * time.Hour
+	case AggregateBucketHour:
+		return 7 * 24 * time.Hour
+	case AggregateBucketDay:
+		return 90 * 24 * time.Hour
+	case AggregateBucketMonth:
+		return 365 * 24 * time.Hour
+	default:
+		return 0
+	}
+}
+
+func (b AggregateBucket) DefaultStart(end time.Time) time.Time {
+	return end.Add(-b.MaxDuration())
+}
+
+func (b AggregateBucket) MaxDurationLabel() string {
+	switch b {
+	case AggregateBucketMinute:
+		return "24 hours"
+	case AggregateBucketHour:
+		return "7 days"
+	case AggregateBucketDay:
+		return "90 days"
+	case AggregateBucketMonth:
+		return "1 year"
+	default:
+		return "unknown"
+	}
+}
+
+func (b AggregateBucket) ValidateTimeRange(start, end time.Time) error {
+	if end.Before(start) {
+		return fmt.Errorf("end time must be after start time")
+	}
+
+	if end.Sub(start) > b.MaxDuration() {
+		return fmt.Errorf("time range exceeds maximum for bucket %s (max: %s)", b, b.MaxDurationLabel())
+	}
+	return nil
+}
+
 func (s AggregateBucket) Validate() error {
 	switch s {
 	case AggregateBucketMinute, AggregateBucketHour, AggregateBucketDay, AggregateBucketMonth:

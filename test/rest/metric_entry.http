@@ -284,8 +284,8 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}
 Authorization: Bearer {{adminToken}}
 
-### Aggregate with explicit params
-GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?aggregateType=max&bucket=hour&start=2026-03-01T00:00:00Z&end=2026-03-13T23:59:59Z
+### Aggregate with explicit params (hour bucket, 7 day max range)
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?aggregateType=max&bucket=hour&start=2026-03-07T00:00:00Z&end=2026-03-13T23:59:59Z
 Authorization: Bearer {{adminToken}}
 
 ### Aggregate with avg and day bucket
@@ -294,4 +294,48 @@ Authorization: Bearer {{adminToken}}
 
 ### Aggregate with sum and minute bucket
 GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?aggregateType=sum&bucket=minute
+Authorization: Bearer {{adminToken}}
+
+### Aggregate with month bucket
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?aggregateType=min&bucket=month
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### TIME RANGE VALIDATION TESTING
+###############################################################################
+
+### ERROR: end time before start time (expect 400)
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?start=2026-03-13T00:00:00Z&end=2026-03-01T00:00:00Z
+Authorization: Bearer {{adminToken}}
+
+### ERROR: minute bucket exceeds 24h max range (expect 400)
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?bucket=minute&start=2026-03-01T00:00:00Z&end=2026-03-13T00:00:00Z
+Authorization: Bearer {{adminToken}}
+
+### ERROR: hour bucket exceeds 7 day max range (expect 400)
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?bucket=hour&start=2026-01-01T00:00:00Z&end=2026-03-13T00:00:00Z
+Authorization: Bearer {{adminToken}}
+
+### ERROR: day bucket exceeds 3 month max range (expect 400)
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?bucket=day&start=2025-01-01T00:00:00Z&end=2026-03-13T00:00:00Z
+Authorization: Bearer {{adminToken}}
+
+### ERROR: month bucket exceeds 1 year max range (expect 400)
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?bucket=month&start=2024-01-01T00:00:00Z&end=2026-03-13T00:00:00Z
+Authorization: Bearer {{adminToken}}
+
+### OK: minute bucket within 24h range (expect 200)
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?bucket=minute&start=2026-03-12T12:00:00Z&end=2026-03-13T00:00:00Z
+Authorization: Bearer {{adminToken}}
+
+### OK: hour bucket within 7 day range (expect 200)
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?bucket=hour&start=2026-03-07T00:00:00Z&end=2026-03-13T00:00:00Z
+Authorization: Bearer {{adminToken}}
+
+### OK: day bucket within 3 month range (expect 200)
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?bucket=day&start=2026-01-01T00:00:00Z&end=2026-03-13T00:00:00Z
+Authorization: Bearer {{adminToken}}
+
+### OK: month bucket within 1 year range (expect 200)
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?bucket=month&start=2025-06-01T00:00:00Z&end=2026-03-13T00:00:00Z
 Authorization: Bearer {{adminToken}}

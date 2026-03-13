@@ -1,0 +1,64 @@
+get:
+  operationId: metricEntriesAggregate
+  summary: Aggregate metric entries
+  tags:
+    - Metrics
+  description: Returns time-bucketed aggregated metric values for a specific service, resource, and metric type
+  parameters:
+    - name: serviceId
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: ID of the service
+    - name: resourceId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Resource identifier
+    - name: typeId
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: ID of the metric type
+    - name: aggregateType
+      in: query
+      schema:
+        type: string
+        enum: [min, max, sum, avg]
+        default: "min"
+      description: Aggregation function to apply
+    - name: bucket
+      in: query
+      schema:
+        type: string
+        enum: [minute, hour, day, month]
+        default: "hour"
+      description: Time bucket size for aggregation
+    - name: start
+      in: query
+      schema:
+        type: string
+        format: date-time
+      description: Start of the time range (defaults based on bucket size)
+    - name: end
+      in: query
+      schema:
+        type: string
+        format: date-time
+      description: End of the time range (defaults to now)
+  responses:
+    "200":
+      description: Aggregated metric data
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/metric_entries.yaml#/AggregationResult"
+    "400":
+      $ref: "../components/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"

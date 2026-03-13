@@ -2,6 +2,7 @@ package domain
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -105,4 +106,42 @@ func TestMetricEntry_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAggregateBucket_MaxDuration(t *testing.T) {
+	assert.Equal(t, 24*time.Hour, AggregateBucketMinute.MaxDuration())
+	assert.Equal(t, 7*24*time.Hour, AggregateBucketHour.MaxDuration())
+	assert.Equal(t, 90*24*time.Hour, AggregateBucketDay.MaxDuration())
+	assert.Equal(t, 365*24*time.Hour, AggregateBucketMonth.MaxDuration())
+}
+
+func TestAggregateBucket_ValidateTimeRange(t *testing.T) {
+	end := time.Date(2026, 3, 13, 0, 0, 0, 0, time.UTC)
+
+	t.Run("Valid range for minute bucket", func(t *testing.T) {
+		start := end.Add(-12 * time.Hour)
+		assert.NoError(t, AggregateBucketMinute.ValidateTimeRange(start, end))
+	})
+
+	t.Run("Exceeds max for minute bucket", func(t *testing.T) {
+		start := end.Add(-48 * time.Hour)
+		assert.Error(t, AggregateBucketMinute.ValidateTimeRange(start, end))
+	})
+
+	t.Run("End before start", func(t *testing.T) {
+		start := end.Add(1 * time.Hour)
+		assert.Error(t, AggregateBucketMinute.ValidateTimeRange(start, end))
+	})
+
+	t.Run("Exact max duration is valid", func(t *testing.T) {
+		start := end.Add(-24 * time.Hour)
+		assert.NoError(t, AggregateBucketMinute.ValidateTimeRange(start, end))
+	})
+}
+
+func TestAggregateBucket_DefaultStart(t *testing.T) {
+	end := time.Date(2026, 3, 13, 0, 0, 0, 0, time.UTC)
+
+	assert.Equal(t, end.Add(-24*time.Hour), AggregateBucketMinute.DefaultStart(end))
+	assert.Equal(t, end.Add(-7*24*time.Hour), AggregateBucketHour.DefaultStart(end))
 }

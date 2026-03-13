@@ -615,6 +615,45 @@ func TestMetricEntryHandlerAggregate(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
+	t.Run("Time range exceeds max for bucket", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		// minute bucket with > 24h range
+		url := fmt.Sprintf("/aggregate/%s/%s/%s?bucket=minute&start=2026-03-01T00:00:00Z&end=2026-03-13T00:00:00Z", serviceID, resourceID, typeID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("End time before start time", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		url := fmt.Sprintf("/aggregate/%s/%s/%s?start=2026-03-13T00:00:00Z&end=2026-03-01T00:00:00Z", serviceID, resourceID, typeID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
 	t.Run("Querier error", func(t *testing.T) {
 		querier := domain.NewMockMetricEntryQuerier(t)
 		serviceQuerier := domain.NewMockServiceQuerier(t)

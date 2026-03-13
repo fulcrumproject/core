@@ -205,13 +205,18 @@ func (h *MetricEntryHandler) Aggregate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	start := end.AddDate(0, 0, -7)
+	start := aggBucket.DefaultStart(end)
 	if startStr := q.Get("start"); startStr != "" {
 		start, err = time.Parse(time.RFC3339, startStr)
 		if err != nil {
 			render.Render(w, r, ErrInvalidRequest(err))
 			return
 		}
+	}
+
+	if err := aggBucket.ValidateTimeRange(start, end); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
 	}
 
 	result, err := h.querier.Aggregate(r.Context(), aggType, aggBucket, serviceId, resourceId, typeId, start, end)
