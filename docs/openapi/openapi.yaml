@@ -218,6 +218,8 @@ paths:
     $ref: ./paths/jobs@{id}@fail.yaml
   /metric-entries:
     $ref: ./paths/metric-entries.yaml
+  /metric-entries/resource-ids:
+    $ref: ./paths/metric-entries@resource-ids.yaml
   /metric-types:
     $ref: ./paths/metric-types.yaml
   /metric-types/{id}:

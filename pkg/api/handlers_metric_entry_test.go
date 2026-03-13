@@ -61,6 +61,7 @@ func TestMetricEntryHandlerRoutes(t *testing.T) {
 		switch {
 		case method == "GET" && route == "/":
 		case method == "POST" && route == "/":
+		case method == "GET" && route == "/resource-ids":
 		default:
 			return fmt.Errorf("unexpected route: %s %s", method, route)
 		}
@@ -273,6 +274,64 @@ func TestMetricEntryHandleCreate(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestMetricEntryHandlerListResourceIDs tests the ListResourceIDs handler
+func TestMetricEntryHandlerListResourceIDs(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		querier.EXPECT().
+			ListResourceIDs(mock.Anything, mock.AnythingOfType("*domain.PageReq")).
+			Return(&domain.PageRes[string]{
+				Items:       []string{"resource-a", "resource-b"},
+				TotalItems:  2,
+				TotalPages:  1,
+				CurrentPage: 1,
+				HasNext:     false,
+				HasPrev:     false,
+			}, nil)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+
+		req := httptest.NewRequest("GET", "/metric-entries/resource-ids?serviceId=svc-1&typeId=type-1&agentId=agent-1&page=1&pageSize=10", nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		handler.ListResourceIDs(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response map[string]any
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		items := response["items"].([]any)
+		assert.Len(t, items, 2)
+	})
+
+	t.Run("QuerierError", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		querier.EXPECT().
+			ListResourceIDs(mock.Anything, mock.Anything).
+			Return(nil, fmt.Errorf("database error"))
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+
+		req := httptest.NewRequest("GET", "/metric-entries/resource-ids?serviceId=svc-1&typeId=type-1&agentId=agent-1&page=1&pageSize=10", nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		handler.ListResourceIDs(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
 }
 
 // TestMetricEntryToResponse tests the metricEntryToResponse function

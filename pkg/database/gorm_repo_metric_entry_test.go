@@ -404,6 +404,57 @@ func TestMetricEntryRepository(t *testing.T) {
 		})
 	})
 
+	t.Run("ListResourceIDs", func(t *testing.T) {
+		t.Run("success - returns distinct resource IDs", func(t *testing.T) {
+			testDB.DB.Exec("DELETE FROM metric_entries")
+
+			// Create entries with different resource IDs
+			resourceIDs := []string{"res-a", "res-b", "res-c", "res-a"} // res-a duplicated
+			for _, rid := range resourceIDs {
+				entry := &domain.MetricEntry{
+					AgentID:    agent.ID,
+					ServiceID:  service.ID,
+					ResourceID: rid,
+					ProviderID: provider.ID,
+					ConsumerID: consumer.ID,
+					Value:      1.0,
+					TypeID:     metricTypeService.ID,
+				}
+				err := repo.Create(context.Background(), entry)
+				require.NoError(t, err)
+			}
+
+			page := &domain.PageReq{Page: 1, PageSize: 10}
+			result, err := repo.ListResourceIDs(
+				context.Background(),
+				page,
+			)
+			require.NoError(t, err)
+			assert.Equal(t, int64(3), result.TotalItems, "Should return 3 distinct resource IDs")
+			assert.Len(t, result.Items, 3)
+		})
+
+		t.Run("success - pagination", func(t *testing.T) {
+			page1 := &domain.PageReq{Page: 1, PageSize: 2}
+			result1, err := repo.ListResourceIDs(
+				context.Background(),
+				page1,
+			)
+			require.NoError(t, err)
+			assert.Len(t, result1.Items, 2)
+			assert.True(t, result1.HasNext)
+
+			page2 := &domain.PageReq{Page: 2, PageSize: 2}
+			result2, err := repo.ListResourceIDs(
+				context.Background(),
+				page2,
+			)
+			require.NoError(t, err)
+			assert.Len(t, result2.Items, 1)
+			assert.False(t, result2.HasNext)
+		})
+	})
+
 	t.Run("AuthScope", func(t *testing.T) {
 		t.Run("success - returns correct auth scope", func(t *testing.T) {
 			// Create a metric entry with all scope fields set

@@ -60,6 +60,11 @@ func (h *MetricEntryHandler) Routes() func(r chi.Router) {
 			middlewares.DecodeBody[CreateMetricEntryReq](),
 			middlewares.AuthzSimple(authz.ObjectTypeMetricEntry, authz.ActionCreate, h.authz),
 		).Post("/", h.Create)
+
+		// List distinct resource IDs
+		r.With(
+			middlewares.AuthzSimple(authz.ObjectTypeMetricEntry, authz.ActionRead, h.authz),
+		).Get("/resource-ids", h.ListResourceIDs)
 	}
 }
 
@@ -115,6 +120,23 @@ func (h *MetricEntryHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, MetricEntryToRes(metricEntry))
+}
+
+func (h *MetricEntryHandler) ListResourceIDs(w http.ResponseWriter, r *http.Request) {
+	pag, err := ParsePageRequest(r)
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	result, err := h.querier.ListResourceIDs(r.Context(), pag)
+	if err != nil {
+		render.Render(w, r, ErrDomain(err))
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, NewPageResponse(result, func(s *string) *string { return s }))
 }
 
 // MetricEntryRes represents the response body for metric entry operations

@@ -9363,6 +9363,74 @@ func (_c *MockMetricEntryRepository_List_Call) RunAndReturn(run func(ctx context
 	return _c
 }
 
+// ListResourceIDs provides a mock function for the type MockMetricEntryRepository
+func (_mock *MockMetricEntryRepository) ListResourceIDs(ctx context.Context, page *PageReq) (*PageRes[string], error) {
+	ret := _mock.Called(ctx, page)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListResourceIDs")
+	}
+
+	var r0 *PageRes[string]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PageReq) (*PageRes[string], error)); ok {
+		return returnFunc(ctx, page)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PageReq) *PageRes[string]); ok {
+		r0 = returnFunc(ctx, page)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[string])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *PageReq) error); ok {
+		r1 = returnFunc(ctx, page)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMetricEntryRepository_ListResourceIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListResourceIDs'
+type MockMetricEntryRepository_ListResourceIDs_Call struct {
+	*mock.Call
+}
+
+// ListResourceIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - page *PageReq
+func (_e *MockMetricEntryRepository_Expecter) ListResourceIDs(ctx interface{}, page interface{}) *MockMetricEntryRepository_ListResourceIDs_Call {
+	return &MockMetricEntryRepository_ListResourceIDs_Call{Call: _e.mock.On("ListResourceIDs", ctx, page)}
+}
+
+func (_c *MockMetricEntryRepository_ListResourceIDs_Call) Run(run func(ctx context.Context, page *PageReq)) *MockMetricEntryRepository_ListResourceIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *PageReq
+		if args[1] != nil {
+			arg1 = args[1].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMetricEntryRepository_ListResourceIDs_Call) Return(pageRes *PageRes[string], err error) *MockMetricEntryRepository_ListResourceIDs_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockMetricEntryRepository_ListResourceIDs_Call) RunAndReturn(run func(ctx context.Context, page *PageReq) (*PageRes[string], error)) *MockMetricEntryRepository_ListResourceIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Save provides a mock function for the type MockMetricEntryRepository
 func (_mock *MockMetricEntryRepository) Save(ctx context.Context, entity *MetricEntry) error {
 	ret := _mock.Called(ctx, entity)
@@ -9935,6 +10003,74 @@ func (_c *MockMetricEntryQuerier_List_Call) Return(pageRes *PageRes[MetricEntry]
 }
 
 func (_c *MockMetricEntryQuerier_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[MetricEntry], error)) *MockMetricEntryQuerier_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListResourceIDs provides a mock function for the type MockMetricEntryQuerier
+func (_mock *MockMetricEntryQuerier) ListResourceIDs(ctx context.Context, page *PageReq) (*PageRes[string], error) {
+	ret := _mock.Called(ctx, page)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListResourceIDs")
+	}
+
+	var r0 *PageRes[string]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PageReq) (*PageRes[string], error)); ok {
+		return returnFunc(ctx, page)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PageReq) *PageRes[string]); ok {
+		r0 = returnFunc(ctx, page)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[string])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *PageReq) error); ok {
+		r1 = returnFunc(ctx, page)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMetricEntryQuerier_ListResourceIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListResourceIDs'
+type MockMetricEntryQuerier_ListResourceIDs_Call struct {
+	*mock.Call
+}
+
+// ListResourceIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - page *PageReq
+func (_e *MockMetricEntryQuerier_Expecter) ListResourceIDs(ctx interface{}, page interface{}) *MockMetricEntryQuerier_ListResourceIDs_Call {
+	return &MockMetricEntryQuerier_ListResourceIDs_Call{Call: _e.mock.On("ListResourceIDs", ctx, page)}
+}
+
+func (_c *MockMetricEntryQuerier_ListResourceIDs_Call) Run(run func(ctx context.Context, page *PageReq)) *MockMetricEntryQuerier_ListResourceIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *PageReq
+		if args[1] != nil {
+			arg1 = args[1].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMetricEntryQuerier_ListResourceIDs_Call) Return(pageRes *PageRes[string], err error) *MockMetricEntryQuerier_ListResourceIDs_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockMetricEntryQuerier_ListResourceIDs_Call) RunAndReturn(run func(ctx context.Context, page *PageReq) (*PageRes[string], error)) *MockMetricEntryQuerier_ListResourceIDs_Call {
 	_c.Call.Return(run)
 	return _c
 }

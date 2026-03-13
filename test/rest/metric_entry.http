@@ -3,109 +3,204 @@
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
 @adminToken = change-me
+###############################################################################
+### SETUP: Create all dependent entities
+###############################################################################
 
-### Create a provider for testing
+### Create a service type
+# @name createServiceType
+POST {{baseUrl}}/service-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Metric Test Service Type {{$guid}}",
+    "propertySchema": {
+        "properties": {
+            "cpu": {
+                "type": "integer",
+                "label": "CPU Cores",
+                "required": true
+            },
+            "memory": {
+                "type": "integer",
+                "label": "Memory (MB)",
+                "required": true
+            }
+        }
+    },
+    "lifecycleSchema": {
+        "states": [
+            {"name": "New"},
+            {"name": "Created"},
+            {"name": "Started"},
+            {"name": "Stopped"},
+            {"name": "Deleted"}
+        ],
+        "actions": [
+            {
+                "name": "create",
+                "requestSchemaType": "properties",
+                "transitions": [
+                    {"from": "New", "to": "Created"}
+                ]
+            },
+            {
+                "name": "start",
+                "transitions": [
+                    {"from": "Created", "to": "Started"},
+                    {"from": "Stopped", "to": "Started"}
+                ]
+            },
+            {
+                "name": "stop",
+                "transitions": [
+                    {"from": "Started", "to": "Stopped"}
+                ]
+            },
+            {
+                "name": "delete",
+                "transitions": [
+                    {"from": "Stopped", "to": "Deleted"},
+                    {"from": "Created", "to": "Deleted"}
+                ]
+            }
+        ],
+        "initialState": "New",
+        "terminalStates": ["Deleted"],
+        "runningStates": ["Started"]
+    }
+}
+
+### Create an agent type
+# @name createAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Metric Test Agent Type {{$guid}}",
+    "serviceTypeIds": [
+        "{{createServiceType.response.body.id}}"
+    ],
+    "configurationSchema": {
+        "properties": {
+            "endpoint": {
+                "type": "string",
+                "label": "Endpoint",
+                "required": true
+            }
+        }
+    }
+}
+
+### Create a provider
 # @name createProvider
 POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
 {
-    "name": "Test Provider",
+    "name": "Test Provider {{$guid}}",
     "status": "Enabled",
     "attributes": {
         "type": ["test"]
     }
 }
 
-@providerId = {{createProvider.response.body.$.id}}
-
 ### Create an agent
 # @name createAgent
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
 {
-    "name": "Test Agent",
-    "status": "Connected",
-    "agentTypeId": "0195c3c6-4c7d-7e3c-b481-f276e17a7bec",
-    "providerId": "{{providerId}}"
+    "name": "Test Agent {{$guid}}",
+    "agentTypeId": "{{createAgentType.response.body.id}}",
+    "providerId": "{{createProvider.response.body.id}}",
+    "configuration": {
+        "endpoint": "https://test.example.com"
+    }
 }
 
-@agentId = {{createAgent.response.body.$.id}}
-
+@agentId = {{createAgent.response.body.id}}
 
 ### Create a new agent token
 # @name createAgentToken
 POST {{baseUrl}}/tokens
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
 {
-  "name": "Test Agent Token",
-  "role": "agent",
-  "expireAt": "{{$datetime iso8601 1 y}}",
-  "scopeId": "{{agentId}}"
+    "name": "Test Agent Token",
+    "role": "agent",
+    "expireAt": "{{$datetime iso8601 1 y}}",
+    "scopeId": "{{agentId}}"
 }
 
-@agentToken = {{createAgentToken.response.body.$.value}}
+@agentToken = {{createAgentToken.response.body.value}}
 
 ### Create a new consumer
 # @name createConsumer
 POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
 {
-  "name": "Test Consumer",
-  "status": "Enabled"
+    "name": "Test Consumer {{$guid}}",
+    "status": "Enabled"
 }
-
-@consumerId = {{createConsumer.response.body.$.id}}
 
 ### Create a service group
 # @name createServiceGroup
 POST {{baseUrl}}/service-groups
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
 {
-    "name": "Test Job Service Group",
-    "consumerId": "{{consumerId}}"
+    "name": "Test Job Service Group {{$guid}}",
+    "consumerId": "{{createConsumer.response.body.id}}"
 }
-
-@serviceGroupId = {{createServiceGroup.response.body.$.id}}
 
 ### Create a new service
 # @name createService
 POST {{baseUrl}}/services
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
 {
-    "name": "Test Service",
-    "status": "Created",
+    "name": "Test Service {{$guid}}",
     "agentId": "{{agentId}}",
-    "serviceTypeId": "0195c3c8-69e5-7806-9598-8523c01ea54f",
-    "groupId": "{{serviceGroupId}}",
+    "serviceTypeId": "{{createServiceType.response.body.id}}",
+    "groupId": "{{createServiceGroup.response.body.id}}",
     "properties": {
         "cpu": 4,
         "memory": 512
     }
 }
 
-@serviceId = {{createService.response.body.$.id}}
+@serviceId = {{createService.response.body.id}}
+
+###############################################################################
+### JOB LIFECYCLE: Pending → Claim → Complete
+###############################################################################
 
 ### Get pending jobs for agent
 # @name pendingJobs
 GET {{baseUrl}}/jobs/pending
 Authorization: Bearer {{agentToken}}
 
-@jobId = {{pendingJobs.response.body.$.[0].id}}
+@jobId = {{pendingJobs.response.body.$[0].id}}
 
 ### Claim a job
 POST {{baseUrl}}/jobs/{{jobId}}/claim
 Authorization: Bearer {{agentToken}}
 
-### Complete a job (requires authentication
+### Complete a job
 # @name completeJob
 POST {{baseUrl}}/jobs/{{jobId}}/complete
 Authorization: Bearer {{agentToken}}
+Content-Type: application/json
 
 {
     "agentInstanceData": {
@@ -123,42 +218,49 @@ Authorization: Bearer {{agentToken}}
 GET {{baseUrl}}/services/{{serviceId}}
 Authorization: Bearer {{adminToken}}
 
-@agentInstanceId = {{getService.response.body.$.agentInstanceId}}
+@agentInstanceId = {{getService.response.body.agentInstanceId}}
+
+###############################################################################
+### METRIC ENTRY TESTING
+###############################################################################
 
 ### Create a metric type for testing
 # @name createMetricType
 POST {{baseUrl}}/metric-types
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 
 {
     "name": "test-metric {{$guid}}",
     "entityType": "Service"
 }
 
-@metricTypeId = {{createMetricType.response.body.$.id}}
-@metricTypeName = {{createMetricType.response.body.$.name}}
+@metricTypeId = {{createMetricType.response.body.id}}
+@metricTypeName = {{createMetricType.response.body.name}}
 
 ### Create a new metric entry using serviceId
 # @name createMetricEntry
 POST {{baseUrl}}/metric-entries
 Authorization: Bearer {{agentToken}}
+Content-Type: application/json
 
 {
     "serviceId": "{{serviceId}}",
     "resourceId": "test-resource",
-    "value": 42.5, 
+    "value": 35.5,
     "typeName": "{{metricTypeName}}"
 }
 
-### Create a new metric entry using externatId
+### Create a new metric entry using externalId
 # @name createMetricEntryByName
 POST {{baseUrl}}/metric-entries
 Authorization: Bearer {{agentToken}}
+Content-Type: application/json
 
 {
     "agentInstanceId": "{{agentInstanceId}}",
     "resourceId": "test-resource",
-    "value": 78.2, 
+    "value": 78.2,
     "typeName": "{{metricTypeName}}"
 }
 
@@ -168,4 +270,8 @@ Authorization: Bearer {{adminToken}}
 
 ### List metric entries with pagination
 GET {{baseUrl}}/metric-entries?page=1&pageSize=10
+Authorization: Bearer {{adminToken}}
+
+### Get unique resource IDs
+GET {{baseUrl}}/metric-entries/resource-ids?serviceId={{serviceId}}&typeId={{metricTypeId}}&agentId={{agentId}}
 Authorization: Bearer {{adminToken}}

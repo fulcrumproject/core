@@ -273,4 +273,7 @@ type MetricEntryQuerier interface {
 
 	// Aggregate performs aggregation operations on metric entries for a specific metric type and service within a time range
 	Aggregate(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)
+
+	// ListResourceIDs returns the distinct resource IDs
+	ListResourceIDs(ctx context.Context, page *PageReq) (*PageRes[string], error)
 }

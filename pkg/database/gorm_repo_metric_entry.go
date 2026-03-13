@@ -77,6 +77,29 @@ func (r *GormMetricEntryRepository) Aggregate(ctx context.Context, aggregateType
 	return result, err
 }
 
+// ListResourceIDs returns the distinct resource IDs
+func (r *GormMetricEntryRepository) ListResourceIDs(ctx context.Context, page *domain.PageReq) (*domain.PageRes[string], error) {
+	baseQuery := r.db.WithContext(ctx).Model(&domain.MetricEntry{})
+
+	baseQuery, err := applyMetricEntryFilter(baseQuery, page)
+	if err != nil {
+		return nil, err
+	}
+
+	var count int64
+	if err := baseQuery.Distinct("resource_id").Count(&count).Error; err != nil {
+		return nil, err
+	}
+
+	var resourceIds []string
+	offset := (page.Page - 1) * page.PageSize
+	if err := baseQuery.Distinct("resource_id").Offset(offset).Limit(page.PageSize).Pluck("resource_id", &resourceIds).Error; err != nil {
+		return nil, err
+	}
+
+	return domain.NewPaginatedResult(resourceIds, count, page), nil
+}
+
 func (r *GormMetricEntryRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	return r.AuthScopeByFields(ctx, id, "null", "provider_id", "agent_id", "consumer_id")
 }
