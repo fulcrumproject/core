@@ -116,6 +116,17 @@ func ParseAggregateBucket(s string) (AggregateBucket, error) {
 	return aggBucket, nil
 }
 
+// AggregateQuery groups the parameters for an aggregation query
+type AggregateQuery struct {
+	ServiceID  properties.UUID
+	ResourceID string
+	TypeID     properties.UUID
+	Aggregate  AggregateType
+	Bucket     AggregateBucket
+	Start      time.Time
+	End        time.Time
+}
+
 type AggregateData [2]any
 
 type AggregationResult struct {
@@ -374,7 +385,7 @@ type MetricEntryQuerier interface {
 	CountByMetricType(ctx context.Context, typeID properties.UUID) (int64, error)
 
 	// Aggregate performs aggregation operations on metric entries for a specific metric type and service within a time range
-	Aggregate(ctx context.Context, aggregateType AggregateType, bucket AggregateBucket, serviceID properties.UUID, resourceID string, typeID properties.UUID, start time.Time, end time.Time) (AggregationResult, error)
+	Aggregate(ctx context.Context, query AggregateQuery) (AggregationResult, error)
 
 	// ListResourceIDs returns the distinct resource IDs
 	ListResourceIDs(ctx context.Context, page *PageReq) (*PageRes[string], error)

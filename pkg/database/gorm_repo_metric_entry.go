@@ -58,13 +58,13 @@ type BucketRow struct {
 }
 
 // Aggregate performs aggregation operations on metric entries for a specific metric type and service within a time range
-func (r *GormMetricEntryRepository) Aggregate(ctx context.Context, aggregateType domain.AggregateType, bucket domain.AggregateBucket, serviceID properties.UUID, resourceID string, typeID properties.UUID, start time.Time, end time.Time) (domain.AggregationResult, error) {
-	selectStr := fmt.Sprintf("DATE_TRUNC('%s', created_at) as bucket_time, COALESCE(%s(value), 0) as agg_value", bucket, aggregateType)
+func (r *GormMetricEntryRepository) Aggregate(ctx context.Context, query domain.AggregateQuery) (domain.AggregationResult, error) {
+	selectStr := fmt.Sprintf("DATE_TRUNC('%s', created_at) as bucket_time, COALESCE(%s(value), 0) as agg_value", query.Bucket, query.Aggregate)
 
 	var rows []BucketRow
 	if err := r.db.WithContext(ctx).
 		Model(&domain.MetricEntry{}).Select(selectStr).
-		Where("service_id = ? AND type_id = ? AND resource_id = ? AND created_at >= ? AND created_at <= ?", serviceID, typeID, resourceID, start, end).
+		Where("service_id = ? AND type_id = ? AND resource_id = ? AND created_at >= ? AND created_at <= ?", query.ServiceID, query.TypeID, query.ResourceID, query.Start, query.End).
 		Group("bucket_time").Order("bucket_time").Scan(&rows).Error; err != nil {
 		return domain.AggregationResult{}, err
 	}
@@ -76,10 +76,10 @@ func (r *GormMetricEntryRepository) Aggregate(ctx context.Context, aggregateType
 
 	return domain.AggregationResult{
 		Data:      data,
-		Aggregate: aggregateType,
-		Bucket:    bucket,
-		Start:     start,
-		End:       end,
+		Aggregate: query.Aggregate,
+		Bucket:    query.Bucket,
+		Start:     query.Start,
+		End:       query.End,
 	}, nil
 }
 

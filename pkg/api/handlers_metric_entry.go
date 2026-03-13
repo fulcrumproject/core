@@ -145,35 +145,38 @@ func (h *MetricEntryHandler) ListResourceIDs(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *MetricEntryHandler) Aggregate(w http.ResponseWriter, r *http.Request) {
+	aq, err := parseAggregateQuery(r)
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	result, err := h.querier.Aggregate(r.Context(), *aq)
+	if err != nil {
+		render.Render(w, r, ErrDomain(err))
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, result)
+}
+
+func parseAggregateQuery(r *http.Request) (*domain.AggregateQuery, error) {
 	q := r.URL.Query()
 
-	serviceIdStr := chi.URLParam(r, "serviceId")
-	if serviceIdStr == "" {
-		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("invalid parameter service id")))
-		return
-	}
-	serviceId, err := properties.ParseUUID(serviceIdStr)
+	serviceID, err := properties.ParseUUID(chi.URLParam(r, "serviceId"))
 	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
+		return nil, fmt.Errorf("invalid parameter service id: %w", err)
 	}
 
-	resourceId := chi.URLParam(r, "resourceId")
-	if resourceId == "" {
-		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("invalid parameter resource id")))
-		return
+	resourceID := chi.URLParam(r, "resourceId")
+	if resourceID == "" {
+		return nil, fmt.Errorf("invalid parameter resource id")
 	}
 
-	typeIdStr := chi.URLParam(r, "typeId")
-	if typeIdStr == "" {
-		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("invalid parameter type id")))
-		return
-	}
-
-	typeId, err := properties.ParseUUID(typeIdStr)
+	typeID, err := properties.ParseUUID(chi.URLParam(r, "typeId"))
 	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
+		return nil, fmt.Errorf("invalid parameter type id: %w", err)
 	}
 
 	aggTypeStr := q.Get("aggregateType")
@@ -182,51 +185,47 @@ func (h *MetricEntryHandler) Aggregate(w http.ResponseWriter, r *http.Request) {
 	}
 	aggType, err := domain.ParseAggregateType(aggTypeStr)
 	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
+		return nil, err
 	}
 
-	aggBucketStr := q.Get("bucket")
-	if aggBucketStr == "" {
-		aggBucketStr = "hour"
+	bucketStr := q.Get("bucket")
+	if bucketStr == "" {
+		bucketStr = "hour"
 	}
-	aggBucket, err := domain.ParseAggregateBucket(aggBucketStr)
+	bucket, err := domain.ParseAggregateBucket(bucketStr)
 	if err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
+		return nil, err
 	}
 
 	end := time.Now()
 	if endStr := q.Get("end"); endStr != "" {
 		end, err = time.Parse(time.RFC3339, endStr)
 		if err != nil {
-			render.Render(w, r, ErrInvalidRequest(err))
-			return
+			return nil, err
 		}
 	}
 
-	start := aggBucket.DefaultStart(end)
+	start := bucket.DefaultStart(end)
 	if startStr := q.Get("start"); startStr != "" {
 		start, err = time.Parse(time.RFC3339, startStr)
 		if err != nil {
-			render.Render(w, r, ErrInvalidRequest(err))
-			return
+			return nil, err
 		}
 	}
 
-	if err := aggBucket.ValidateTimeRange(start, end); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
+	if err := bucket.ValidateTimeRange(start, end); err != nil {
+		return nil, err
 	}
 
-	result, err := h.querier.Aggregate(r.Context(), aggType, aggBucket, serviceId, resourceId, typeId, start, end)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
-	render.Status(r, http.StatusOK)
-	render.JSON(w, r, result)
+	return &domain.AggregateQuery{
+		ServiceID:  serviceID,
+		ResourceID: resourceID,
+		TypeID:     typeID,
+		Aggregate:  aggType,
+		Bucket:     bucket,
+		Start:      start,
+		End:        end,
+	}, nil
 }
 
 // MetricEntryRes represents the response body for metric entry operations

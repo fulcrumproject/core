@@ -345,8 +345,19 @@ func TestMetricEntryRepository(t *testing.T) {
 
 			// All entries are created in the same second, so with hour bucket they land in one bucket
 
+			baseQuery := domain.AggregateQuery{
+				ServiceID:  service.ID,
+				ResourceID: resourceID,
+				TypeID:     metricTypeService.ID,
+				Bucket:     domain.AggregateBucketHour,
+				Start:      start,
+				End:        end,
+			}
+
 			// Test MAX aggregate
-			maxResult, err := repo.Aggregate(context.Background(), domain.AggregateMax, domain.AggregateBucketHour, service.ID, resourceID, metricTypeService.ID, start, end)
+			maxQuery := baseQuery
+			maxQuery.Aggregate = domain.AggregateMax
+			maxResult, err := repo.Aggregate(context.Background(), maxQuery)
 			require.NoError(t, err)
 			require.Len(t, maxResult.Data, 1, "All entries should fall in one bucket")
 			assert.Equal(t, 50.0, maxResult.Data[0][1], "MAX aggregate should return the maximum value")
@@ -354,19 +365,25 @@ func TestMetricEntryRepository(t *testing.T) {
 			assert.Equal(t, domain.AggregateBucketHour, maxResult.Bucket)
 
 			// Test SUM aggregate
-			sumResult, err := repo.Aggregate(context.Background(), domain.AggregateSum, domain.AggregateBucketHour, service.ID, resourceID, metricTypeService.ID, start, end)
+			sumQuery := baseQuery
+			sumQuery.Aggregate = domain.AggregateSum
+			sumResult, err := repo.Aggregate(context.Background(), sumQuery)
 			require.NoError(t, err)
 			require.Len(t, sumResult.Data, 1)
 			assert.Equal(t, 150.0, sumResult.Data[0][1], "SUM aggregate should return the sum of all values")
 
 			// Test AVG aggregate
-			avgResult, err := repo.Aggregate(context.Background(), domain.AggregateAvg, domain.AggregateBucketHour, service.ID, resourceID, metricTypeService.ID, start, end)
+			avgQuery := baseQuery
+			avgQuery.Aggregate = domain.AggregateAvg
+			avgResult, err := repo.Aggregate(context.Background(), avgQuery)
 			require.NoError(t, err)
 			require.Len(t, avgResult.Data, 1)
 			assert.Equal(t, 30.0, avgResult.Data[0][1], "AVG aggregate should return the average value")
 
 			// Test MIN aggregate
-			minResult, err := repo.Aggregate(context.Background(), domain.AggregateMin, domain.AggregateBucketHour, service.ID, resourceID, metricTypeService.ID, start, end)
+			minQuery := baseQuery
+			minQuery.Aggregate = domain.AggregateMin
+			minResult, err := repo.Aggregate(context.Background(), minQuery)
 			require.NoError(t, err)
 			require.Len(t, minResult.Data, 1)
 			assert.Equal(t, 10.0, minResult.Data[0][1], "MIN aggregate should return the minimum value")
@@ -378,7 +395,15 @@ func TestMetricEntryRepository(t *testing.T) {
 			start := time.Now().Add(-1 * time.Hour)
 			end := time.Now().Add(1 * time.Hour)
 
-			result, err := repo.Aggregate(context.Background(), domain.AggregateMax, domain.AggregateBucketHour, nonExistentServiceID, "no-match", metricTypeService.ID, start, end)
+			result, err := repo.Aggregate(context.Background(), domain.AggregateQuery{
+				ServiceID:  nonExistentServiceID,
+				ResourceID: "no-match",
+				TypeID:     metricTypeService.ID,
+				Aggregate:  domain.AggregateMax,
+				Bucket:     domain.AggregateBucketHour,
+				Start:      start,
+				End:        end,
+			})
 			require.NoError(t, err)
 			assert.Empty(t, result.Data, "Should return empty data when no entries match")
 			assert.Equal(t, domain.AggregateMax, result.Aggregate)

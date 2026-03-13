@@ -436,7 +436,13 @@ func TestMetricEntryHandlerAggregate(t *testing.T) {
 		authzMock := authz.NewMockAuthorizer(t)
 
 		querier.EXPECT().
-			Aggregate(mock.Anything, domain.AggregateMin, domain.AggregateBucketHour, serviceID, resourceID, typeID, mock.AnythingOfType("time.Time"), mock.AnythingOfType("time.Time")).
+			Aggregate(mock.Anything, mock.MatchedBy(func(q domain.AggregateQuery) bool {
+				return q.Aggregate == domain.AggregateMin &&
+					q.Bucket == domain.AggregateBucketHour &&
+					q.ServiceID == serviceID &&
+					q.ResourceID == resourceID &&
+					q.TypeID == typeID
+			})).
 			Return(domain.AggregationResult{
 				Data:      []domain.AggregateData{{"2026-03-13T00:00:00Z", 10.0}},
 				Aggregate: domain.AggregateMin,
@@ -473,7 +479,15 @@ func TestMetricEntryHandlerAggregate(t *testing.T) {
 		end, _ := time.Parse(time.RFC3339, "2026-03-13T00:00:00Z")
 
 		querier.EXPECT().
-			Aggregate(mock.Anything, domain.AggregateMax, domain.AggregateBucketDay, serviceID, resourceID, typeID, start, end).
+			Aggregate(mock.Anything, domain.AggregateQuery{
+				ServiceID:  serviceID,
+				ResourceID: resourceID,
+				TypeID:     typeID,
+				Aggregate:  domain.AggregateMax,
+				Bucket:     domain.AggregateBucketDay,
+				Start:      start,
+				End:        end,
+			}).
 			Return(domain.AggregationResult{
 				Data:      []domain.AggregateData{{"2026-03-01T00:00:00Z", 50.0}},
 				Aggregate: domain.AggregateMax,
@@ -661,7 +675,7 @@ func TestMetricEntryHandlerAggregate(t *testing.T) {
 		authzMock := authz.NewMockAuthorizer(t)
 
 		querier.EXPECT().
-			Aggregate(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Aggregate(mock.Anything, mock.Anything).
 			Return(domain.AggregationResult{}, fmt.Errorf("database error"))
 
 		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
