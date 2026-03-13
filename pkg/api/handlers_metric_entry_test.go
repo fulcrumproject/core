@@ -62,6 +62,7 @@ func TestMetricEntryHandlerRoutes(t *testing.T) {
 		case method == "GET" && route == "/":
 		case method == "POST" && route == "/":
 		case method == "GET" && route == "/resource-ids":
+		case method == "GET" && route == "/aggregate/{serviceId}/{resourceId}/{typeId}":
 		default:
 			return fmt.Errorf("unexpected route: %s %s", method, route)
 		}
@@ -414,4 +415,226 @@ func TestMetricEntryToResponse(t *testing.T) {
 	assert.Nil(t, responseSparse.Agent)
 	assert.Nil(t, responseSparse.Service)
 	assert.Nil(t, responseSparse.Type)
+}
+
+// TestMetricEntryHandlerAggregate tests the Aggregate handler
+func TestMetricEntryHandlerAggregate(t *testing.T) {
+	serviceID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+	typeID := uuid.MustParse("990e8400-e29b-41d4-a716-446655440000")
+	resourceID := "test-resource"
+
+	setupRouter := func(handler *MetricEntryHandler) *chi.Mux {
+		r := chi.NewRouter()
+		r.Get("/aggregate/{serviceId}/{resourceId}/{typeId}", handler.Aggregate)
+		return r
+	}
+
+	t.Run("Success with defaults", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		querier.EXPECT().
+			Aggregate(mock.Anything, domain.AggregateMin, domain.AggregateBucketHour, serviceID, resourceID, typeID, mock.AnythingOfType("time.Time"), mock.AnythingOfType("time.Time")).
+			Return(domain.AggregationResult{
+				Data:      []domain.AggregateData{{"2026-03-13T00:00:00Z", 10.0}},
+				Aggregate: domain.AggregateMin,
+				Bucket:    domain.AggregateBucketHour,
+			}, nil)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		url := fmt.Sprintf("/aggregate/%s/%s/%s", serviceID, resourceID, typeID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response domain.AggregationResult
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		assert.Equal(t, domain.AggregateMin, response.Aggregate)
+		assert.Equal(t, domain.AggregateBucketHour, response.Bucket)
+		assert.Len(t, response.Data, 1)
+	})
+
+	t.Run("Success with all query params", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		start, _ := time.Parse(time.RFC3339, "2026-03-01T00:00:00Z")
+		end, _ := time.Parse(time.RFC3339, "2026-03-13T00:00:00Z")
+
+		querier.EXPECT().
+			Aggregate(mock.Anything, domain.AggregateMax, domain.AggregateBucketDay, serviceID, resourceID, typeID, start, end).
+			Return(domain.AggregationResult{
+				Data:      []domain.AggregateData{{"2026-03-01T00:00:00Z", 50.0}},
+				Aggregate: domain.AggregateMax,
+				Bucket:    domain.AggregateBucketDay,
+				Start:     start,
+				End:       end,
+			}, nil)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		url := fmt.Sprintf("/aggregate/%s/%s/%s?aggregateType=max&bucket=day&start=2026-03-01T00:00:00Z&end=2026-03-13T00:00:00Z", serviceID, resourceID, typeID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response domain.AggregationResult
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		assert.Equal(t, domain.AggregateMax, response.Aggregate)
+		assert.Equal(t, domain.AggregateBucketDay, response.Bucket)
+	})
+
+	t.Run("Invalid serviceId", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		url := fmt.Sprintf("/aggregate/not-a-uuid/%s/%s", resourceID, typeID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("Invalid typeId", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		url := fmt.Sprintf("/aggregate/%s/%s/not-a-uuid", serviceID, resourceID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("Invalid aggregateType", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		url := fmt.Sprintf("/aggregate/%s/%s/%s?aggregateType=invalid", serviceID, resourceID, typeID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("Invalid bucket", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		url := fmt.Sprintf("/aggregate/%s/%s/%s?bucket=invalid", serviceID, resourceID, typeID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("Invalid start time", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		url := fmt.Sprintf("/aggregate/%s/%s/%s?start=not-a-date", serviceID, resourceID, typeID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("Invalid end time", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		url := fmt.Sprintf("/aggregate/%s/%s/%s?end=not-a-date", serviceID, resourceID, typeID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("Querier error", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		querier.EXPECT().
+			Aggregate(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(domain.AggregationResult{}, fmt.Errorf("database error"))
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		url := fmt.Sprintf("/aggregate/%s/%s/%s", serviceID, resourceID, typeID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
 }

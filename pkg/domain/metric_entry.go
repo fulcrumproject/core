@@ -14,15 +14,72 @@ import (
 type AggregateType string
 
 const (
+	AggregateMin AggregateType = "min"
 	// AggregateMax returns the maximum value
 	AggregateMax AggregateType = "max"
 	// AggregateSum returns the sum of values
 	AggregateSum AggregateType = "sum"
-	// AggregateDiffMaxMin returns the difference between maximum and minimum values (for always increasing metrics)
-	AggregateDiffMaxMin AggregateType = "diff"
 	// AggregateAvg returns the average value
 	AggregateAvg AggregateType = "avg"
 )
+
+func (s AggregateType) Validate() error {
+	switch s {
+	case AggregateMin, AggregateMax, AggregateSum, AggregateAvg:
+		return nil
+	default:
+		return fmt.Errorf("invalid aggregate type: %s", s)
+	}
+}
+
+func ParseAggregateType(s string) (AggregateType, error) {
+	aggType := AggregateType(s)
+
+	if err := aggType.Validate(); err != nil {
+		return "", err
+	}
+
+	return aggType, nil
+}
+
+// AggregateBucket defines the type of aggregation bucket to perform on metric entries
+type AggregateBucket string
+
+const (
+	AggregateBucketMinute AggregateBucket = "minute"
+	AggregateBucketHour   AggregateBucket = "hour"
+	AggregateBucketDay    AggregateBucket = "day"
+	AggregateBucketMonth  AggregateBucket = "month"
+)
+
+func (s AggregateBucket) Validate() error {
+	switch s {
+	case AggregateBucketMinute, AggregateBucketHour, AggregateBucketDay, AggregateBucketMonth:
+		return nil
+	default:
+		return fmt.Errorf("invalid aggregate type: %s", s)
+	}
+}
+
+func ParseAggregateBucket(s string) (AggregateBucket, error) {
+	aggBucket := AggregateBucket(s)
+
+	if err := aggBucket.Validate(); err != nil {
+		return "", err
+	}
+
+	return aggBucket, nil
+}
+
+type AggregateData [2]any
+
+type AggregationResult struct {
+	Data      []AggregateData `json:"data"`
+	Aggregate AggregateType   `json:"aggregate"`
+	Bucket    AggregateBucket `json:"bucket"`
+	Start     time.Time       `json:"start"`
+	End       time.Time       `json:"end"`
+}
 
 // MetricEntry represents a metric measurement for a specific resource
 // Does not extend BaseEntity because it has a custom index on created_at
@@ -272,7 +329,7 @@ type MetricEntryQuerier interface {
 	CountByMetricType(ctx context.Context, typeID properties.UUID) (int64, error)
 
 	// Aggregate performs aggregation operations on metric entries for a specific metric type and service within a time range
-	Aggregate(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)
+	Aggregate(ctx context.Context, aggregateType AggregateType, bucket AggregateBucket, serviceID properties.UUID, resourceID string, typeID properties.UUID, start time.Time, end time.Time) (AggregationResult, error)
 
 	// ListResourceIDs returns the distinct resource IDs
 	ListResourceIDs(ctx context.Context, page *PageReq) (*PageRes[string], error)

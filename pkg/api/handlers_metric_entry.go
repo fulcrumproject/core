@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -65,6 +66,10 @@ func (h *MetricEntryHandler) Routes() func(r chi.Router) {
 		r.With(
 			middlewares.AuthzSimple(authz.ObjectTypeMetricEntry, authz.ActionRead, h.authz),
 		).Get("/resource-ids", h.ListResourceIDs)
+
+		r.With(
+			middlewares.AuthzSimple(authz.ObjectTypeMetricEntry, authz.ActionRead, h.authz),
+		).Get("/aggregate/{serviceId}/{resourceId}/{typeId}", h.Aggregate)
 	}
 }
 
@@ -137,6 +142,86 @@ func (h *MetricEntryHandler) ListResourceIDs(w http.ResponseWriter, r *http.Requ
 
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, NewPageResponse(result, func(s *string) *string { return s }))
+}
+
+func (h *MetricEntryHandler) Aggregate(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+
+	serviceIdStr := chi.URLParam(r, "serviceId")
+	if serviceIdStr == "" {
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("invalid parameter service id")))
+		return
+	}
+	serviceId, err := properties.ParseUUID(serviceIdStr)
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	resourceId := chi.URLParam(r, "resourceId")
+	if resourceId == "" {
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("invalid parameter resource id")))
+		return
+	}
+
+	typeIdStr := chi.URLParam(r, "typeId")
+	if typeIdStr == "" {
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("invalid parameter type id")))
+		return
+	}
+
+	typeId, err := properties.ParseUUID(typeIdStr)
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	aggTypeStr := q.Get("aggregateType")
+	if aggTypeStr == "" {
+		aggTypeStr = "min"
+	}
+	aggType, err := domain.ParseAggregateType(aggTypeStr)
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	aggBucketStr := q.Get("bucket")
+	if aggBucketStr == "" {
+		aggBucketStr = "hour"
+	}
+	aggBucket, err := domain.ParseAggregateBucket(aggBucketStr)
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	end := time.Now()
+	if endStr := q.Get("end"); endStr != "" {
+		end, err = time.Parse(time.RFC3339, endStr)
+		if err != nil {
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
+		}
+	}
+
+	start := end.AddDate(0, 0, -7)
+	if startStr := q.Get("start"); startStr != "" {
+		start, err = time.Parse(time.RFC3339, startStr)
+		if err != nil {
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
+		}
+	}
+
+	result, err := h.querier.Aggregate(r.Context(), aggType, aggBucket, serviceId, resourceId, typeId, start, end)
+	if err != nil {
+		render.Render(w, r, ErrDomain(err))
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, result)
 }
 
 // MetricEntryRes represents the response body for metric entry operations

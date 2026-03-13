@@ -8758,25 +8758,25 @@ func (_m *MockMetricEntryRepository) EXPECT() *MockMetricEntryRepository_Expecte
 }
 
 // Aggregate provides a mock function for the type MockMetricEntryRepository
-func (_mock *MockMetricEntryRepository) Aggregate(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error) {
-	ret := _mock.Called(ctx, aggregateType, serviceID, typeID, start, end)
+func (_mock *MockMetricEntryRepository) Aggregate(ctx context.Context, aggregateType AggregateType, bucket AggregateBucket, serviceID properties.UUID, resourceID string, typeID properties.UUID, start time.Time, end time.Time) (AggregationResult, error) {
+	ret := _mock.Called(ctx, aggregateType, bucket, serviceID, resourceID, typeID, start, end)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Aggregate")
 	}
 
-	var r0 float64
+	var r0 AggregationResult
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) (float64, error)); ok {
-		return returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, AggregateBucket, properties.UUID, string, properties.UUID, time.Time, time.Time) (AggregationResult, error)); ok {
+		return returnFunc(ctx, aggregateType, bucket, serviceID, resourceID, typeID, start, end)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) float64); ok {
-		r0 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, AggregateBucket, properties.UUID, string, properties.UUID, time.Time, time.Time) AggregationResult); ok {
+		r0 = returnFunc(ctx, aggregateType, bucket, serviceID, resourceID, typeID, start, end)
 	} else {
-		r0 = ret.Get(0).(float64)
+		r0 = ret.Get(0).(AggregationResult)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) error); ok {
-		r1 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, AggregateType, AggregateBucket, properties.UUID, string, properties.UUID, time.Time, time.Time) error); ok {
+		r1 = returnFunc(ctx, aggregateType, bucket, serviceID, resourceID, typeID, start, end)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -8791,15 +8791,17 @@ type MockMetricEntryRepository_Aggregate_Call struct {
 // Aggregate is a helper method to define mock.On call
 //   - ctx context.Context
 //   - aggregateType AggregateType
+//   - bucket AggregateBucket
 //   - serviceID properties.UUID
+//   - resourceID string
 //   - typeID properties.UUID
 //   - start time.Time
 //   - end time.Time
-func (_e *MockMetricEntryRepository_Expecter) Aggregate(ctx interface{}, aggregateType interface{}, serviceID interface{}, typeID interface{}, start interface{}, end interface{}) *MockMetricEntryRepository_Aggregate_Call {
-	return &MockMetricEntryRepository_Aggregate_Call{Call: _e.mock.On("Aggregate", ctx, aggregateType, serviceID, typeID, start, end)}
+func (_e *MockMetricEntryRepository_Expecter) Aggregate(ctx interface{}, aggregateType interface{}, bucket interface{}, serviceID interface{}, resourceID interface{}, typeID interface{}, start interface{}, end interface{}) *MockMetricEntryRepository_Aggregate_Call {
+	return &MockMetricEntryRepository_Aggregate_Call{Call: _e.mock.On("Aggregate", ctx, aggregateType, bucket, serviceID, resourceID, typeID, start, end)}
 }
 
-func (_c *MockMetricEntryRepository_Aggregate_Call) Run(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time)) *MockMetricEntryRepository_Aggregate_Call {
+func (_c *MockMetricEntryRepository_Aggregate_Call) Run(run func(ctx context.Context, aggregateType AggregateType, bucket AggregateBucket, serviceID properties.UUID, resourceID string, typeID properties.UUID, start time.Time, end time.Time)) *MockMetricEntryRepository_Aggregate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -8809,21 +8811,29 @@ func (_c *MockMetricEntryRepository_Aggregate_Call) Run(run func(ctx context.Con
 		if args[1] != nil {
 			arg1 = args[1].(AggregateType)
 		}
-		var arg2 properties.UUID
+		var arg2 AggregateBucket
 		if args[2] != nil {
-			arg2 = args[2].(properties.UUID)
+			arg2 = args[2].(AggregateBucket)
 		}
 		var arg3 properties.UUID
 		if args[3] != nil {
 			arg3 = args[3].(properties.UUID)
 		}
-		var arg4 time.Time
+		var arg4 string
 		if args[4] != nil {
-			arg4 = args[4].(time.Time)
+			arg4 = args[4].(string)
 		}
-		var arg5 time.Time
+		var arg5 properties.UUID
 		if args[5] != nil {
-			arg5 = args[5].(time.Time)
+			arg5 = args[5].(properties.UUID)
+		}
+		var arg6 time.Time
+		if args[6] != nil {
+			arg6 = args[6].(time.Time)
+		}
+		var arg7 time.Time
+		if args[7] != nil {
+			arg7 = args[7].(time.Time)
 		}
 		run(
 			arg0,
@@ -8832,17 +8842,19 @@ func (_c *MockMetricEntryRepository_Aggregate_Call) Run(run func(ctx context.Con
 			arg3,
 			arg4,
 			arg5,
+			arg6,
+			arg7,
 		)
 	})
 	return _c
 }
 
-func (_c *MockMetricEntryRepository_Aggregate_Call) Return(f float64, err error) *MockMetricEntryRepository_Aggregate_Call {
-	_c.Call.Return(f, err)
+func (_c *MockMetricEntryRepository_Aggregate_Call) Return(aggregationResult AggregationResult, err error) *MockMetricEntryRepository_Aggregate_Call {
+	_c.Call.Return(aggregationResult, err)
 	return _c
 }
 
-func (_c *MockMetricEntryRepository_Aggregate_Call) RunAndReturn(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)) *MockMetricEntryRepository_Aggregate_Call {
+func (_c *MockMetricEntryRepository_Aggregate_Call) RunAndReturn(run func(ctx context.Context, aggregateType AggregateType, bucket AggregateBucket, serviceID properties.UUID, resourceID string, typeID properties.UUID, start time.Time, end time.Time) (AggregationResult, error)) *MockMetricEntryRepository_Aggregate_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -9516,25 +9528,25 @@ func (_m *MockMetricEntryQuerier) EXPECT() *MockMetricEntryQuerier_Expecter {
 }
 
 // Aggregate provides a mock function for the type MockMetricEntryQuerier
-func (_mock *MockMetricEntryQuerier) Aggregate(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error) {
-	ret := _mock.Called(ctx, aggregateType, serviceID, typeID, start, end)
+func (_mock *MockMetricEntryQuerier) Aggregate(ctx context.Context, aggregateType AggregateType, bucket AggregateBucket, serviceID properties.UUID, resourceID string, typeID properties.UUID, start time.Time, end time.Time) (AggregationResult, error) {
+	ret := _mock.Called(ctx, aggregateType, bucket, serviceID, resourceID, typeID, start, end)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Aggregate")
 	}
 
-	var r0 float64
+	var r0 AggregationResult
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) (float64, error)); ok {
-		return returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, AggregateBucket, properties.UUID, string, properties.UUID, time.Time, time.Time) (AggregationResult, error)); ok {
+		return returnFunc(ctx, aggregateType, bucket, serviceID, resourceID, typeID, start, end)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) float64); ok {
-		r0 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, AggregateBucket, properties.UUID, string, properties.UUID, time.Time, time.Time) AggregationResult); ok {
+		r0 = returnFunc(ctx, aggregateType, bucket, serviceID, resourceID, typeID, start, end)
 	} else {
-		r0 = ret.Get(0).(float64)
+		r0 = ret.Get(0).(AggregationResult)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) error); ok {
-		r1 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, AggregateType, AggregateBucket, properties.UUID, string, properties.UUID, time.Time, time.Time) error); ok {
+		r1 = returnFunc(ctx, aggregateType, bucket, serviceID, resourceID, typeID, start, end)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -9549,15 +9561,17 @@ type MockMetricEntryQuerier_Aggregate_Call struct {
 // Aggregate is a helper method to define mock.On call
 //   - ctx context.Context
 //   - aggregateType AggregateType
+//   - bucket AggregateBucket
 //   - serviceID properties.UUID
+//   - resourceID string
 //   - typeID properties.UUID
 //   - start time.Time
 //   - end time.Time
-func (_e *MockMetricEntryQuerier_Expecter) Aggregate(ctx interface{}, aggregateType interface{}, serviceID interface{}, typeID interface{}, start interface{}, end interface{}) *MockMetricEntryQuerier_Aggregate_Call {
-	return &MockMetricEntryQuerier_Aggregate_Call{Call: _e.mock.On("Aggregate", ctx, aggregateType, serviceID, typeID, start, end)}
+func (_e *MockMetricEntryQuerier_Expecter) Aggregate(ctx interface{}, aggregateType interface{}, bucket interface{}, serviceID interface{}, resourceID interface{}, typeID interface{}, start interface{}, end interface{}) *MockMetricEntryQuerier_Aggregate_Call {
+	return &MockMetricEntryQuerier_Aggregate_Call{Call: _e.mock.On("Aggregate", ctx, aggregateType, bucket, serviceID, resourceID, typeID, start, end)}
 }
 
-func (_c *MockMetricEntryQuerier_Aggregate_Call) Run(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time)) *MockMetricEntryQuerier_Aggregate_Call {
+func (_c *MockMetricEntryQuerier_Aggregate_Call) Run(run func(ctx context.Context, aggregateType AggregateType, bucket AggregateBucket, serviceID properties.UUID, resourceID string, typeID properties.UUID, start time.Time, end time.Time)) *MockMetricEntryQuerier_Aggregate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -9567,21 +9581,29 @@ func (_c *MockMetricEntryQuerier_Aggregate_Call) Run(run func(ctx context.Contex
 		if args[1] != nil {
 			arg1 = args[1].(AggregateType)
 		}
-		var arg2 properties.UUID
+		var arg2 AggregateBucket
 		if args[2] != nil {
-			arg2 = args[2].(properties.UUID)
+			arg2 = args[2].(AggregateBucket)
 		}
 		var arg3 properties.UUID
 		if args[3] != nil {
 			arg3 = args[3].(properties.UUID)
 		}
-		var arg4 time.Time
+		var arg4 string
 		if args[4] != nil {
-			arg4 = args[4].(time.Time)
+			arg4 = args[4].(string)
 		}
-		var arg5 time.Time
+		var arg5 properties.UUID
 		if args[5] != nil {
-			arg5 = args[5].(time.Time)
+			arg5 = args[5].(properties.UUID)
+		}
+		var arg6 time.Time
+		if args[6] != nil {
+			arg6 = args[6].(time.Time)
+		}
+		var arg7 time.Time
+		if args[7] != nil {
+			arg7 = args[7].(time.Time)
 		}
 		run(
 			arg0,
@@ -9590,17 +9612,19 @@ func (_c *MockMetricEntryQuerier_Aggregate_Call) Run(run func(ctx context.Contex
 			arg3,
 			arg4,
 			arg5,
+			arg6,
+			arg7,
 		)
 	})
 	return _c
 }
 
-func (_c *MockMetricEntryQuerier_Aggregate_Call) Return(f float64, err error) *MockMetricEntryQuerier_Aggregate_Call {
-	_c.Call.Return(f, err)
+func (_c *MockMetricEntryQuerier_Aggregate_Call) Return(aggregationResult AggregationResult, err error) *MockMetricEntryQuerier_Aggregate_Call {
+	_c.Call.Return(aggregationResult, err)
 	return _c
 }
 
-func (_c *MockMetricEntryQuerier_Aggregate_Call) RunAndReturn(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)) *MockMetricEntryQuerier_Aggregate_Call {
+func (_c *MockMetricEntryQuerier_Aggregate_Call) RunAndReturn(run func(ctx context.Context, aggregateType AggregateType, bucket AggregateBucket, serviceID properties.UUID, resourceID string, typeID properties.UUID, start time.Time, end time.Time) (AggregationResult, error)) *MockMetricEntryQuerier_Aggregate_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -275,3 +275,23 @@ Authorization: Bearer {{adminToken}}
 ### Get unique resource IDs
 GET {{baseUrl}}/metric-entries/resource-ids?serviceId={{serviceId}}&typeId={{metricTypeId}}&agentId={{agentId}}
 Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### AGGREGATE TESTING
+###############################################################################
+
+### Aggregate with defaults (aggregateType=min, bucket=hour)
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}
+Authorization: Bearer {{adminToken}}
+
+### Aggregate with explicit params
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?aggregateType=max&bucket=hour&start=2026-03-01T00:00:00Z&end=2026-03-13T23:59:59Z
+Authorization: Bearer {{adminToken}}
+
+### Aggregate with avg and day bucket
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?aggregateType=avg&bucket=day
+Authorization: Bearer {{adminToken}}
+
+### Aggregate with sum and minute bucket
+GET {{baseUrl}}/metric-entries/aggregate/{{serviceId}}/test-resource/{{metricTypeId}}?aggregateType=sum&bucket=minute
+Authorization: Bearer {{adminToken}}
