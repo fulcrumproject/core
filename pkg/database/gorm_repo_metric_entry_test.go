@@ -387,6 +387,14 @@ func TestMetricEntryRepository(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, minResult.Data, 1)
 			assert.Equal(t, 10.0, minResult.Data[0][1], "MIN aggregate should return the minimum value")
+
+			// Test DIFF aggregate (max - min = 50 - 10 = 40)
+			diffQuery := baseQuery
+			diffQuery.Aggregate = domain.AggregateDiffMaxMin
+			diffResult, err := repo.Aggregate(context.Background(), diffQuery)
+			require.NoError(t, err)
+			require.Len(t, diffResult.Data, 1)
+			assert.Equal(t, 40.0, diffResult.Data[0][1], "DIFF aggregate should return max - min")
 		})
 
 		t.Run("success - returns empty data for no matching entries", func(t *testing.T) {
@@ -408,6 +416,64 @@ func TestMetricEntryRepository(t *testing.T) {
 			assert.Empty(t, result.Data, "Should return empty data when no entries match")
 			assert.Equal(t, domain.AggregateMax, result.Aggregate)
 			assert.Equal(t, domain.AggregateBucketHour, result.Bucket)
+		})
+	})
+
+	t.Run("AggregateTotal", func(t *testing.T) {
+		t.Run("success - scalar aggregation for each type", func(t *testing.T) {
+			testDB.DB.Exec("DELETE FROM metric_entries")
+
+			testValues := []float64{10.0, 20.0, 30.0, 40.0, 50.0}
+			for _, value := range testValues {
+				entry := &domain.MetricEntry{
+					AgentID:    agent.ID,
+					ServiceID:  service.ID,
+					ResourceID: "agg-total-test",
+					ProviderID: provider.ID,
+					ConsumerID: consumer.ID,
+					Value:      value,
+					TypeID:     metricTypeService.ID,
+				}
+				err := repo.Create(context.Background(), entry)
+				require.NoError(t, err)
+			}
+
+			start := time.Now().Add(-1 * time.Hour)
+			end := time.Now().Add(1 * time.Hour)
+
+			// Test MIN
+			minVal, err := repo.AggregateTotal(ctx, domain.AggregateMin, service.ID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, 10.0, minVal)
+
+			// Test MAX
+			maxVal, err := repo.AggregateTotal(ctx, domain.AggregateMax, service.ID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, 50.0, maxVal)
+
+			// Test SUM
+			sumVal, err := repo.AggregateTotal(ctx, domain.AggregateSum, service.ID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, 150.0, sumVal)
+
+			// Test AVG
+			avgVal, err := repo.AggregateTotal(ctx, domain.AggregateAvg, service.ID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, 30.0, avgVal)
+
+			// Test DIFF (max - min = 50 - 10 = 40)
+			diffVal, err := repo.AggregateTotal(ctx, domain.AggregateDiffMaxMin, service.ID, metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, 40.0, diffVal)
+		})
+
+		t.Run("success - returns 0 for non-existent service", func(t *testing.T) {
+			start := time.Now().Add(-1 * time.Hour)
+			end := time.Now().Add(1 * time.Hour)
+
+			result, err := repo.AggregateTotal(ctx, domain.AggregateSum, properties.NewUUID(), metricTypeService.ID, start, end)
+			require.NoError(t, err)
+			assert.Equal(t, 0.0, result)
 		})
 	})
 

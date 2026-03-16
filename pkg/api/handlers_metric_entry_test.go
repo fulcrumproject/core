@@ -520,6 +520,44 @@ func TestMetricEntryHandlerAggregate(t *testing.T) {
 		assert.Equal(t, domain.AggregateBucketDay, response.Bucket)
 	})
 
+	t.Run("Success with aggregateType=diff", func(t *testing.T) {
+		querier := domain.NewMockMetricEntryQuerier(t)
+		serviceQuerier := domain.NewMockServiceQuerier(t)
+		commander := domain.NewMockMetricEntryCommander(t)
+		authzMock := authz.NewMockAuthorizer(t)
+
+		querier.EXPECT().
+			Aggregate(mock.Anything, mock.MatchedBy(func(q domain.AggregateQuery) bool {
+				return q.Aggregate == domain.AggregateDiffMaxMin &&
+					q.ServiceID == serviceID &&
+					q.ResourceID == resourceID &&
+					q.TypeID == typeID
+			})).
+			Return(domain.AggregationResult{
+				Data:      []domain.AggregateData{{"2026-03-13T00:00:00Z", 40.0}},
+				Aggregate: domain.AggregateDiffMaxMin,
+				Bucket:    domain.AggregateBucketHour,
+			}, nil)
+
+		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
+		router := setupRouter(handler)
+
+		url := fmt.Sprintf("/aggregate/%s/%s/%s?aggregateType=diff", serviceID, resourceID, typeID)
+		req := httptest.NewRequest("GET", url, nil)
+		req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAgent()))
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response domain.AggregationResult
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		assert.Equal(t, domain.AggregateDiffMaxMin, response.Aggregate)
+		assert.Len(t, response.Data, 1)
+	})
+
 	t.Run("Invalid serviceId", func(t *testing.T) {
 		querier := domain.NewMockMetricEntryQuerier(t)
 		serviceQuerier := domain.NewMockServiceQuerier(t)

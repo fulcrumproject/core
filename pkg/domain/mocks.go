@@ -8823,6 +8823,96 @@ func (_c *MockMetricEntryRepository_Aggregate_Call) RunAndReturn(run func(ctx co
 	return _c
 }
 
+// AggregateTotal provides a mock function for the type MockMetricEntryRepository
+func (_mock *MockMetricEntryRepository) AggregateTotal(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error) {
+	ret := _mock.Called(ctx, aggregateType, serviceID, typeID, start, end)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AggregateTotal")
+	}
+
+	var r0 float64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) (float64, error)); ok {
+		return returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) float64); ok {
+		r0 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	} else {
+		r0 = ret.Get(0).(float64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) error); ok {
+		r1 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMetricEntryRepository_AggregateTotal_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AggregateTotal'
+type MockMetricEntryRepository_AggregateTotal_Call struct {
+	*mock.Call
+}
+
+// AggregateTotal is a helper method to define mock.On call
+//   - ctx context.Context
+//   - aggregateType AggregateType
+//   - serviceID properties.UUID
+//   - typeID properties.UUID
+//   - start time.Time
+//   - end time.Time
+func (_e *MockMetricEntryRepository_Expecter) AggregateTotal(ctx interface{}, aggregateType interface{}, serviceID interface{}, typeID interface{}, start interface{}, end interface{}) *MockMetricEntryRepository_AggregateTotal_Call {
+	return &MockMetricEntryRepository_AggregateTotal_Call{Call: _e.mock.On("AggregateTotal", ctx, aggregateType, serviceID, typeID, start, end)}
+}
+
+func (_c *MockMetricEntryRepository_AggregateTotal_Call) Run(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time)) *MockMetricEntryRepository_AggregateTotal_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 AggregateType
+		if args[1] != nil {
+			arg1 = args[1].(AggregateType)
+		}
+		var arg2 properties.UUID
+		if args[2] != nil {
+			arg2 = args[2].(properties.UUID)
+		}
+		var arg3 properties.UUID
+		if args[3] != nil {
+			arg3 = args[3].(properties.UUID)
+		}
+		var arg4 time.Time
+		if args[4] != nil {
+			arg4 = args[4].(time.Time)
+		}
+		var arg5 time.Time
+		if args[5] != nil {
+			arg5 = args[5].(time.Time)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMetricEntryRepository_AggregateTotal_Call) Return(f float64, err error) *MockMetricEntryRepository_AggregateTotal_Call {
+	_c.Call.Return(f, err)
+	return _c
+}
+
+func (_c *MockMetricEntryRepository_AggregateTotal_Call) RunAndReturn(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)) *MockMetricEntryRepository_AggregateTotal_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // AuthScope provides a mock function for the type MockMetricEntryRepository
 func (_mock *MockMetricEntryRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	ret := _mock.Called(ctx, id)
@@ -9559,6 +9649,96 @@ func (_c *MockMetricEntryQuerier_Aggregate_Call) Return(aggregationResult Aggreg
 }
 
 func (_c *MockMetricEntryQuerier_Aggregate_Call) RunAndReturn(run func(ctx context.Context, query AggregateQuery) (AggregationResult, error)) *MockMetricEntryQuerier_Aggregate_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// AggregateTotal provides a mock function for the type MockMetricEntryQuerier
+func (_mock *MockMetricEntryQuerier) AggregateTotal(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error) {
+	ret := _mock.Called(ctx, aggregateType, serviceID, typeID, start, end)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AggregateTotal")
+	}
+
+	var r0 float64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) (float64, error)); ok {
+		return returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) float64); ok {
+		r0 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	} else {
+		r0 = ret.Get(0).(float64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) error); ok {
+		r1 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMetricEntryQuerier_AggregateTotal_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AggregateTotal'
+type MockMetricEntryQuerier_AggregateTotal_Call struct {
+	*mock.Call
+}
+
+// AggregateTotal is a helper method to define mock.On call
+//   - ctx context.Context
+//   - aggregateType AggregateType
+//   - serviceID properties.UUID
+//   - typeID properties.UUID
+//   - start time.Time
+//   - end time.Time
+func (_e *MockMetricEntryQuerier_Expecter) AggregateTotal(ctx interface{}, aggregateType interface{}, serviceID interface{}, typeID interface{}, start interface{}, end interface{}) *MockMetricEntryQuerier_AggregateTotal_Call {
+	return &MockMetricEntryQuerier_AggregateTotal_Call{Call: _e.mock.On("AggregateTotal", ctx, aggregateType, serviceID, typeID, start, end)}
+}
+
+func (_c *MockMetricEntryQuerier_AggregateTotal_Call) Run(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time)) *MockMetricEntryQuerier_AggregateTotal_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 AggregateType
+		if args[1] != nil {
+			arg1 = args[1].(AggregateType)
+		}
+		var arg2 properties.UUID
+		if args[2] != nil {
+			arg2 = args[2].(properties.UUID)
+		}
+		var arg3 properties.UUID
+		if args[3] != nil {
+			arg3 = args[3].(properties.UUID)
+		}
+		var arg4 time.Time
+		if args[4] != nil {
+			arg4 = args[4].(time.Time)
+		}
+		var arg5 time.Time
+		if args[5] != nil {
+			arg5 = args[5].(time.Time)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMetricEntryQuerier_AggregateTotal_Call) Return(f float64, err error) *MockMetricEntryQuerier_AggregateTotal_Call {
+	_c.Call.Return(f, err)
+	return _c
+}
+
+func (_c *MockMetricEntryQuerier_AggregateTotal_Call) RunAndReturn(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)) *MockMetricEntryQuerier_AggregateTotal_Call {
 	_c.Call.Return(run)
 	return _c
 }

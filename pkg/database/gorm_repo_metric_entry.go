@@ -53,6 +53,24 @@ func (r *GormMetricEntryRepository) CountByMetricType(ctx context.Context, typeI
 	return count, result.Error
 }
 
+// aggregateSQLExpr maps an AggregateType to its SQL expression.
+func aggregateSQLExpr(aggType domain.AggregateType) string {
+	switch aggType {
+	case domain.AggregateMin:
+		return "COALESCE(MIN(value), 0)"
+	case domain.AggregateMax:
+		return "COALESCE(MAX(value), 0)"
+	case domain.AggregateSum:
+		return "COALESCE(SUM(value), 0)"
+	case domain.AggregateAvg:
+		return "COALESCE(AVG(value), 0)"
+	case domain.AggregateDiffMaxMin:
+		return "COALESCE(MAX(value) - MIN(value), 0)"
+	default:
+		return "0"
+	}
+}
+
 type BucketRow struct {
 	BucketTime time.Time
 	AggValue   float64
@@ -67,7 +85,7 @@ func (r *GormMetricEntryRepository) Aggregate(ctx context.Context, query domain.
 		return domain.AggregationResult{}, err
 	}
 
-	selectStr := fmt.Sprintf("DATE_TRUNC('%s', created_at) as bucket_time, COALESCE(%s(value), 0) as agg_value", query.Bucket, query.Aggregate)
+	selectStr := fmt.Sprintf("DATE_TRUNC('%s', created_at) as bucket_time, %s as agg_value", query.Bucket, aggregateSQLExpr(query.Aggregate))
 
 	baseQuery := r.db.WithContext(ctx).
 		Model(&domain.MetricEntry{}).Select(selectStr).
@@ -95,6 +113,22 @@ func (r *GormMetricEntryRepository) Aggregate(ctx context.Context, query domain.
 		Start:     query.Start,
 		End:       query.End,
 	}, nil
+}
+
+// AggregateTotal performs a simple scalar aggregation returning a single float64
+func (r *GormMetricEntryRepository) AggregateTotal(ctx context.Context, aggregateType domain.AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error) {
+	if err := aggregateType.Validate(); err != nil {
+		return 0, err
+	}
+
+	var result float64
+	err := r.db.WithContext(ctx).
+		Model(&domain.MetricEntry{}).
+		Select(aggregateSQLExpr(aggregateType)).
+		Where("service_id = ? AND type_id = ? AND created_at >= ? AND created_at <= ?", serviceID, typeID, start, end).
+		Scan(&result).Error
+
+	return result, err
 }
 
 // ListResourceIDs returns the distinct resource IDs
