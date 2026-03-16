@@ -419,6 +419,38 @@ func TestMetricEntryRepository(t *testing.T) {
 		})
 	})
 
+	t.Run("ListResourceIDs", func(t *testing.T) {
+		t.Run("success - returns distinct resource IDs", func(t *testing.T) {
+			testDB.DB.Exec("DELETE FROM metric_entries")
+
+			// Create entries with different resource IDs
+			resourceIDs := []string{"res-a", "res-b", "res-c", "res-a"} // res-a duplicated
+			for _, rid := range resourceIDs {
+				entry := &domain.MetricEntry{
+					AgentID:    agent.ID,
+					ServiceID:  service.ID,
+					ResourceID: rid,
+					ProviderID: provider.ID,
+					ConsumerID: consumer.ID,
+					Value:      1.0,
+					TypeID:     metricTypeService.ID,
+				}
+				err := repo.Create(context.Background(), entry)
+				require.NoError(t, err)
+			}
+
+			page := &domain.PageReq{Page: 1, PageSize: 10}
+			result, err := repo.ListResourceIDs(
+				context.Background(),
+				&auth.IdentityScope{},
+				page,
+			)
+			require.NoError(t, err)
+			assert.Equal(t, int64(3), result.TotalItems, "Should return 3 distinct resource IDs")
+			assert.Len(t, result.Items, 3)
+		})
+	})
+
 	t.Run("AggregateTotal", func(t *testing.T) {
 		t.Run("success - scalar aggregation for each type", func(t *testing.T) {
 			testDB.DB.Exec("DELETE FROM metric_entries")
