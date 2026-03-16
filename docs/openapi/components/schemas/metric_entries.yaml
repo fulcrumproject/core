@@ -59,4 +59,27 @@ MetricEntryRes:
       $ref: "./services.yaml#/ServiceRes"
     type:
       $ref: "./metric_types.yaml#/MetricTypeRes"
+AggregationResult:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        type: array
+        items: {}
+        minItems: 2
+        maxItems: 2
+        description: "Tuple of [timestamp, aggregated_value]"
+    aggregate:
+      type: string
+      enum: [min, max, sum, avg]
+    bucket:
+      type: string
+      enum: [minute, hour, day, month]
+    start:
+      type: string
+      format: date-time
+    end:
+      type: string
+      format: date-time
 # Event schemas

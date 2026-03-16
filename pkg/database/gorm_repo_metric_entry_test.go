@@ -321,19 +321,15 @@ func TestMetricEntryRepository(t *testing.T) {
 			// Clear existing entries for better test isolation
 			testDB.DB.Exec("DELETE FROM metric_entries")
 
-			// Create test entries with known values
+			// Create test entries with known values and same resource ID
 			testValues := []float64{10.0, 20.0, 30.0, 40.0, 50.0}
-			expectedSum := 150.0
-			expectedMax := 50.0
-			expectedDiffMaxMin := 40.0 // 50 - 10
-			expectedAvg := 30.0        // 150 / 5
+			resourceID := "aggregate-test"
 
-			// Create entries
-			for i, value := range testValues {
+			for _, value := range testValues {
 				entry := &domain.MetricEntry{
 					AgentID:    agent.ID,
 					ServiceID:  service.ID,
-					ResourceID: fmt.Sprintf("aggregate-test-%d", i),
+					ResourceID: resourceID,
 					ProviderID: provider.ID,
 					ConsumerID: consumer.ID,
 					Value:      value,
@@ -347,60 +343,125 @@ func TestMetricEntryRepository(t *testing.T) {
 			start := time.Now().Add(-1 * time.Hour)
 			end := time.Now().Add(1 * time.Hour)
 
+			// All entries are created in the same second, so with hour bucket they land in one bucket
+
+			baseQuery := domain.AggregateQuery{
+				ServiceID:  service.ID,
+				ResourceID: resourceID,
+				TypeID:     metricTypeService.ID,
+				Bucket:     domain.AggregateBucketHour,
+				Start:      start,
+				End:        end,
+			}
+
 			// Test MAX aggregate
-			maxResult, err := repo.Aggregate(context.Background(), domain.AggregateMax, service.ID, metricTypeService.ID, start, end)
+			maxQuery := baseQuery
+			maxQuery.Aggregate = domain.AggregateMax
+			maxResult, err := repo.Aggregate(context.Background(), maxQuery)
 			require.NoError(t, err)
-			assert.Equal(t, expectedMax, maxResult, "MAX aggregate should return the maximum value")
+			require.Len(t, maxResult.Data, 1, "All entries should fall in one bucket")
+			assert.Equal(t, 50.0, maxResult.Data[0][1], "MAX aggregate should return the maximum value")
+			assert.Equal(t, domain.AggregateMax, maxResult.Aggregate)
+			assert.Equal(t, domain.AggregateBucketHour, maxResult.Bucket)
 
 			// Test SUM aggregate
-			sumResult, err := repo.Aggregate(context.Background(), domain.AggregateSum, service.ID, metricTypeService.ID, start, end)
+			sumQuery := baseQuery
+			sumQuery.Aggregate = domain.AggregateSum
+			sumResult, err := repo.Aggregate(context.Background(), sumQuery)
 			require.NoError(t, err)
-			assert.Equal(t, expectedSum, sumResult, "SUM aggregate should return the sum of all values")
-
-			// Test DIFF_MAX_MIN aggregate
-			diffResult, err := repo.Aggregate(context.Background(), domain.AggregateDiffMaxMin, service.ID, metricTypeService.ID, start, end)
-			require.NoError(t, err)
-			assert.Equal(t, expectedDiffMaxMin, diffResult, "DIFF_MAX_MIN aggregate should return the difference between max and min")
+			require.Len(t, sumResult.Data, 1)
+			assert.Equal(t, 150.0, sumResult.Data[0][1], "SUM aggregate should return the sum of all values")
 
 			// Test AVG aggregate
-			avgResult, err := repo.Aggregate(context.Background(), domain.AggregateAvg, service.ID, metricTypeService.ID, start, end)
+			avgQuery := baseQuery
+			avgQuery.Aggregate = domain.AggregateAvg
+			avgResult, err := repo.Aggregate(context.Background(), avgQuery)
 			require.NoError(t, err)
-			assert.Equal(t, expectedAvg, avgResult, "AVG aggregate should return the average value")
+			require.Len(t, avgResult.Data, 1)
+			assert.Equal(t, 30.0, avgResult.Data[0][1], "AVG aggregate should return the average value")
+
+			// Test MIN aggregate
+			minQuery := baseQuery
+			minQuery.Aggregate = domain.AggregateMin
+			minResult, err := repo.Aggregate(context.Background(), minQuery)
+			require.NoError(t, err)
+			require.Len(t, minResult.Data, 1)
+			assert.Equal(t, 10.0, minResult.Data[0][1], "MIN aggregate should return the minimum value")
 		})
 
-		t.Run("success - returns zero for no matching entries", func(t *testing.T) {
+		t.Run("success - returns empty data for no matching entries", func(t *testing.T) {
 			// Use a non-existent service ID
 			nonExistentServiceID := properties.NewUUID()
 			start := time.Now().Add(-1 * time.Hour)
 			end := time.Now().Add(1 * time.Hour)
 
-			// Test all aggregate types with non-existent service
-			maxResult, err := repo.Aggregate(context.Background(), domain.AggregateMax, nonExistentServiceID, metricTypeService.ID, start, end)
+			result, err := repo.Aggregate(context.Background(), domain.AggregateQuery{
+				ServiceID:  nonExistentServiceID,
+				ResourceID: "no-match",
+				TypeID:     metricTypeService.ID,
+				Aggregate:  domain.AggregateMax,
+				Bucket:     domain.AggregateBucketHour,
+				Start:      start,
+				End:        end,
+			})
 			require.NoError(t, err)
-			assert.Equal(t, 0.0, maxResult, "Should return 0 when no entries match")
+			assert.Empty(t, result.Data, "Should return empty data when no entries match")
+			assert.Equal(t, domain.AggregateMax, result.Aggregate)
+			assert.Equal(t, domain.AggregateBucketHour, result.Bucket)
+		})
+	})
 
-			sumResult, err := repo.Aggregate(context.Background(), domain.AggregateSum, nonExistentServiceID, metricTypeService.ID, start, end)
-			require.NoError(t, err)
-			assert.Equal(t, 0.0, sumResult, "Should return 0 when no entries match")
+	t.Run("ListResourceIDs", func(t *testing.T) {
+		t.Run("success - returns distinct resource IDs", func(t *testing.T) {
+			testDB.DB.Exec("DELETE FROM metric_entries")
 
-			diffResult, err := repo.Aggregate(context.Background(), domain.AggregateDiffMaxMin, nonExistentServiceID, metricTypeService.ID, start, end)
-			require.NoError(t, err)
-			assert.Equal(t, 0.0, diffResult, "Should return 0 when no entries match")
+			// Create entries with different resource IDs
+			resourceIDs := []string{"res-a", "res-b", "res-c", "res-a"} // res-a duplicated
+			for _, rid := range resourceIDs {
+				entry := &domain.MetricEntry{
+					AgentID:    agent.ID,
+					ServiceID:  service.ID,
+					ResourceID: rid,
+					ProviderID: provider.ID,
+					ConsumerID: consumer.ID,
+					Value:      1.0,
+					TypeID:     metricTypeService.ID,
+				}
+				err := repo.Create(context.Background(), entry)
+				require.NoError(t, err)
+			}
 
-			avgResult, err := repo.Aggregate(context.Background(), domain.AggregateAvg, nonExistentServiceID, metricTypeService.ID, start, end)
+			page := &domain.PageReq{Page: 1, PageSize: 10}
+			result, err := repo.ListResourceIDs(
+				context.Background(),
+				&auth.IdentityScope{},
+				page,
+			)
 			require.NoError(t, err)
-			assert.Equal(t, 0.0, avgResult, "Should return 0 when no entries match")
+			assert.Equal(t, int64(3), result.TotalItems, "Should return 3 distinct resource IDs")
+			assert.Len(t, result.Items, 3)
 		})
 
-		t.Run("error - unsupported aggregate type", func(t *testing.T) {
-			start := time.Now().Add(-1 * time.Hour)
-			end := time.Now().Add(1 * time.Hour)
+		t.Run("success - pagination", func(t *testing.T) {
+			page1 := &domain.PageReq{Page: 1, PageSize: 2}
+			result1, err := repo.ListResourceIDs(
+				context.Background(),
+				&auth.IdentityScope{},
+				page1,
+			)
+			require.NoError(t, err)
+			assert.Len(t, result1.Items, 2)
+			assert.True(t, result1.HasNext)
 
-			// Test with invalid aggregate type
-			result, err := repo.Aggregate(context.Background(), domain.AggregateType("invalid"), service.ID, metricTypeService.ID, start, end)
-			require.Error(t, err)
-			assert.Equal(t, 0.0, result)
-			assert.Contains(t, err.Error(), "unsupported aggregate type")
+			page2 := &domain.PageReq{Page: 2, PageSize: 2}
+			result2, err := repo.ListResourceIDs(
+				context.Background(),
+				&auth.IdentityScope{},
+				page2,
+			)
+			require.NoError(t, err)
+			assert.Len(t, result2.Items, 1)
+			assert.False(t, result2.HasNext)
 		})
 	})
 

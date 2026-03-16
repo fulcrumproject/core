@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,15 +15,134 @@ import (
 type AggregateType string
 
 const (
+	// AggregateMin returns the minimum value
+	AggregateMin AggregateType = "min"
 	// AggregateMax returns the maximum value
 	AggregateMax AggregateType = "max"
 	// AggregateSum returns the sum of values
 	AggregateSum AggregateType = "sum"
-	// AggregateDiffMaxMin returns the difference between maximum and minimum values (for always increasing metrics)
-	AggregateDiffMaxMin AggregateType = "diff"
 	// AggregateAvg returns the average value
 	AggregateAvg AggregateType = "avg"
 )
+
+func (s AggregateType) Validate() error {
+	switch s {
+	case AggregateMin, AggregateMax, AggregateSum, AggregateAvg:
+		return nil
+	default:
+		return fmt.Errorf("invalid aggregate type: %s", s)
+	}
+}
+
+func ParseAggregateType(s string) (AggregateType, error) {
+	aggType := AggregateType(s)
+
+	if err := aggType.Validate(); err != nil {
+		return "", err
+	}
+
+	return aggType, nil
+}
+
+// AggregateBucket defines the type of aggregation bucket to perform on metric entries
+type AggregateBucket string
+
+const (
+	// AggregateBucketMinute groups data by minute (max range: 24 hours)
+	AggregateBucketMinute AggregateBucket = "minute"
+	// AggregateBucketHour groups data by hour (max range: 7 days)
+	AggregateBucketHour AggregateBucket = "hour"
+	// AggregateBucketDay groups data by day (max range: 90 days)
+	AggregateBucketDay AggregateBucket = "day"
+	// AggregateBucketMonth groups data by month (max range: 1 year)
+	AggregateBucketMonth AggregateBucket = "month"
+)
+
+func (b AggregateBucket) MaxDuration() time.Duration {
+	switch b {
+	case AggregateBucketMinute:
+		return 24 * time.Hour
+	case AggregateBucketHour:
+		return 7 * 24 * time.Hour
+	case AggregateBucketDay:
+		return 90 * 24 * time.Hour
+	case AggregateBucketMonth:
+		return 365 * 24 * time.Hour
+	default:
+		return 0
+	}
+}
+
+func (b AggregateBucket) DefaultStart(end time.Time) time.Time {
+	return end.Add(-b.MaxDuration())
+}
+
+func (b AggregateBucket) MaxDurationLabel() string {
+	switch b {
+	case AggregateBucketMinute:
+		return "24 hours"
+	case AggregateBucketHour:
+		return "7 days"
+	case AggregateBucketDay:
+		return "90 days"
+	case AggregateBucketMonth:
+		return "1 year"
+	default:
+		return "unknown"
+	}
+}
+
+func (b AggregateBucket) ValidateTimeRange(start, end time.Time) error {
+	if end.Before(start) {
+		return fmt.Errorf("end time must be after start time")
+	}
+
+	if end.Sub(start) > b.MaxDuration() {
+		return fmt.Errorf("time range exceeds maximum for bucket %s (max: %s)", b, b.MaxDurationLabel())
+	}
+	return nil
+}
+
+func (s AggregateBucket) Validate() error {
+	switch s {
+	case AggregateBucketMinute, AggregateBucketHour, AggregateBucketDay, AggregateBucketMonth:
+		return nil
+	default:
+		return fmt.Errorf("invalid aggregate bucket: %s", s)
+	}
+}
+
+func ParseAggregateBucket(s string) (AggregateBucket, error) {
+	aggBucket := AggregateBucket(s)
+
+	if err := aggBucket.Validate(); err != nil {
+		return "", err
+	}
+
+	return aggBucket, nil
+}
+
+// AggregateQuery groups the parameters for an aggregation query
+type AggregateQuery struct {
+	ServiceID  properties.UUID
+	ResourceID string
+	TypeID     properties.UUID
+	Aggregate  AggregateType
+	Bucket     AggregateBucket
+	Start      time.Time
+	End        time.Time
+	Scope      *auth.IdentityScope
+}
+
+type AggregateData [2]any
+
+type AggregationResult struct {
+	Data      []AggregateData `json:"data"`
+	Aggregate AggregateType   `json:"aggregate"`
+	Bucket    AggregateBucket `json:"bucket"`
+	Start     time.Time       `json:"start"`
+	End       time.Time       `json:"end"`
+}
 
 // MetricEntry represents a metric measurement for a specific resource
 // Does not extend BaseEntity because it has a custom index on created_at
@@ -32,7 +152,7 @@ type MetricEntry struct {
 	CreatedAt time.Time       `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP;index:idx_metric_aggregate,priority:3"`
 	UpdatedAt time.Time       `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP"`
 
-	ResourceID string  `gorm:"not null"`
+	ResourceID string  `gorm:"not null;index"`
 	Value      float64 `gorm:"not null"`
 
 	// Relationships
@@ -272,5 +392,8 @@ type MetricEntryQuerier interface {
 	CountByMetricType(ctx context.Context, typeID properties.UUID) (int64, error)
 
 	// Aggregate performs aggregation operations on metric entries for a specific metric type and service within a time range
-	Aggregate(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)
+	Aggregate(ctx context.Context, query AggregateQuery) (AggregationResult, error)
+
+	// ListResourceIDs returns the distinct resource IDs
+	ListResourceIDs(ctx context.Context, scope *auth.IdentityScope, page *PageReq) (*PageRes[string], error)
 }

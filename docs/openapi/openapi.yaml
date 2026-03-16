@@ -98,6 +98,8 @@ components:
       $ref: ./components/schemas/service_types.yaml#/LifecycleTransition
     MetricEntityType:
       $ref: ./components/schemas/metric_types.yaml#/MetricEntityType
+    AggregationResult:
+      $ref: ./components/schemas/metric_entries.yaml#/AggregationResult
     MetricEntryReq:
       $ref: ./components/schemas/metric_entries.yaml#/MetricEntryReq
     MetricEntryRes:
@@ -218,6 +220,10 @@ paths:
     $ref: ./paths/jobs@{id}@fail.yaml
   /metric-entries:
     $ref: ./paths/metric-entries.yaml
+  /metric-entries/resource-ids:
+    $ref: ./paths/metric-entries@resource-ids.yaml
+  /metric-entries/aggregate/{serviceId}/{resourceId}/{typeId}:
+    $ref: ./paths/metric-entries@aggregate@{serviceId}@{resourceId}@{typeId}.yaml
   /metric-types:
     $ref: ./paths/metric-types.yaml
   /metric-types/{id}:

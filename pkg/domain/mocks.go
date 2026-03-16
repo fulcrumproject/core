@@ -8758,25 +8758,25 @@ func (_m *MockMetricEntryRepository) EXPECT() *MockMetricEntryRepository_Expecte
 }
 
 // Aggregate provides a mock function for the type MockMetricEntryRepository
-func (_mock *MockMetricEntryRepository) Aggregate(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error) {
-	ret := _mock.Called(ctx, aggregateType, serviceID, typeID, start, end)
+func (_mock *MockMetricEntryRepository) Aggregate(ctx context.Context, query AggregateQuery) (AggregationResult, error) {
+	ret := _mock.Called(ctx, query)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Aggregate")
 	}
 
-	var r0 float64
+	var r0 AggregationResult
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) (float64, error)); ok {
-		return returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateQuery) (AggregationResult, error)); ok {
+		return returnFunc(ctx, query)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) float64); ok {
-		r0 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateQuery) AggregationResult); ok {
+		r0 = returnFunc(ctx, query)
 	} else {
-		r0 = ret.Get(0).(float64)
+		r0 = ret.Get(0).(AggregationResult)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) error); ok {
-		r1 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, AggregateQuery) error); ok {
+		r1 = returnFunc(ctx, query)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -8790,59 +8790,35 @@ type MockMetricEntryRepository_Aggregate_Call struct {
 
 // Aggregate is a helper method to define mock.On call
 //   - ctx context.Context
-//   - aggregateType AggregateType
-//   - serviceID properties.UUID
-//   - typeID properties.UUID
-//   - start time.Time
-//   - end time.Time
-func (_e *MockMetricEntryRepository_Expecter) Aggregate(ctx interface{}, aggregateType interface{}, serviceID interface{}, typeID interface{}, start interface{}, end interface{}) *MockMetricEntryRepository_Aggregate_Call {
-	return &MockMetricEntryRepository_Aggregate_Call{Call: _e.mock.On("Aggregate", ctx, aggregateType, serviceID, typeID, start, end)}
+//   - query AggregateQuery
+func (_e *MockMetricEntryRepository_Expecter) Aggregate(ctx interface{}, query interface{}) *MockMetricEntryRepository_Aggregate_Call {
+	return &MockMetricEntryRepository_Aggregate_Call{Call: _e.mock.On("Aggregate", ctx, query)}
 }
 
-func (_c *MockMetricEntryRepository_Aggregate_Call) Run(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time)) *MockMetricEntryRepository_Aggregate_Call {
+func (_c *MockMetricEntryRepository_Aggregate_Call) Run(run func(ctx context.Context, query AggregateQuery)) *MockMetricEntryRepository_Aggregate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 AggregateType
+		var arg1 AggregateQuery
 		if args[1] != nil {
-			arg1 = args[1].(AggregateType)
-		}
-		var arg2 properties.UUID
-		if args[2] != nil {
-			arg2 = args[2].(properties.UUID)
-		}
-		var arg3 properties.UUID
-		if args[3] != nil {
-			arg3 = args[3].(properties.UUID)
-		}
-		var arg4 time.Time
-		if args[4] != nil {
-			arg4 = args[4].(time.Time)
-		}
-		var arg5 time.Time
-		if args[5] != nil {
-			arg5 = args[5].(time.Time)
+			arg1 = args[1].(AggregateQuery)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
-			arg4,
-			arg5,
 		)
 	})
 	return _c
 }
 
-func (_c *MockMetricEntryRepository_Aggregate_Call) Return(f float64, err error) *MockMetricEntryRepository_Aggregate_Call {
-	_c.Call.Return(f, err)
+func (_c *MockMetricEntryRepository_Aggregate_Call) Return(aggregationResult AggregationResult, err error) *MockMetricEntryRepository_Aggregate_Call {
+	_c.Call.Return(aggregationResult, err)
 	return _c
 }
 
-func (_c *MockMetricEntryRepository_Aggregate_Call) RunAndReturn(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)) *MockMetricEntryRepository_Aggregate_Call {
+func (_c *MockMetricEntryRepository_Aggregate_Call) RunAndReturn(run func(ctx context.Context, query AggregateQuery) (AggregationResult, error)) *MockMetricEntryRepository_Aggregate_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -9363,6 +9339,80 @@ func (_c *MockMetricEntryRepository_List_Call) RunAndReturn(run func(ctx context
 	return _c
 }
 
+// ListResourceIDs provides a mock function for the type MockMetricEntryRepository
+func (_mock *MockMetricEntryRepository) ListResourceIDs(ctx context.Context, scope *auth.IdentityScope, page *PageReq) (*PageRes[string], error) {
+	ret := _mock.Called(ctx, scope, page)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListResourceIDs")
+	}
+
+	var r0 *PageRes[string]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[string], error)); ok {
+		return returnFunc(ctx, scope, page)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[string]); ok {
+		r0 = returnFunc(ctx, scope, page)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[string])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, page)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMetricEntryRepository_ListResourceIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListResourceIDs'
+type MockMetricEntryRepository_ListResourceIDs_Call struct {
+	*mock.Call
+}
+
+// ListResourceIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - page *PageReq
+func (_e *MockMetricEntryRepository_Expecter) ListResourceIDs(ctx interface{}, scope interface{}, page interface{}) *MockMetricEntryRepository_ListResourceIDs_Call {
+	return &MockMetricEntryRepository_ListResourceIDs_Call{Call: _e.mock.On("ListResourceIDs", ctx, scope, page)}
+}
+
+func (_c *MockMetricEntryRepository_ListResourceIDs_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, page *PageReq)) *MockMetricEntryRepository_ListResourceIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMetricEntryRepository_ListResourceIDs_Call) Return(pageRes *PageRes[string], err error) *MockMetricEntryRepository_ListResourceIDs_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockMetricEntryRepository_ListResourceIDs_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, page *PageReq) (*PageRes[string], error)) *MockMetricEntryRepository_ListResourceIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Save provides a mock function for the type MockMetricEntryRepository
 func (_mock *MockMetricEntryRepository) Save(ctx context.Context, entity *MetricEntry) error {
 	ret := _mock.Called(ctx, entity)
@@ -9448,25 +9498,25 @@ func (_m *MockMetricEntryQuerier) EXPECT() *MockMetricEntryQuerier_Expecter {
 }
 
 // Aggregate provides a mock function for the type MockMetricEntryQuerier
-func (_mock *MockMetricEntryQuerier) Aggregate(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error) {
-	ret := _mock.Called(ctx, aggregateType, serviceID, typeID, start, end)
+func (_mock *MockMetricEntryQuerier) Aggregate(ctx context.Context, query AggregateQuery) (AggregationResult, error) {
+	ret := _mock.Called(ctx, query)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Aggregate")
 	}
 
-	var r0 float64
+	var r0 AggregationResult
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) (float64, error)); ok {
-		return returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateQuery) (AggregationResult, error)); ok {
+		return returnFunc(ctx, query)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) float64); ok {
-		r0 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, AggregateQuery) AggregationResult); ok {
+		r0 = returnFunc(ctx, query)
 	} else {
-		r0 = ret.Get(0).(float64)
+		r0 = ret.Get(0).(AggregationResult)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, AggregateType, properties.UUID, properties.UUID, time.Time, time.Time) error); ok {
-		r1 = returnFunc(ctx, aggregateType, serviceID, typeID, start, end)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, AggregateQuery) error); ok {
+		r1 = returnFunc(ctx, query)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -9480,59 +9530,35 @@ type MockMetricEntryQuerier_Aggregate_Call struct {
 
 // Aggregate is a helper method to define mock.On call
 //   - ctx context.Context
-//   - aggregateType AggregateType
-//   - serviceID properties.UUID
-//   - typeID properties.UUID
-//   - start time.Time
-//   - end time.Time
-func (_e *MockMetricEntryQuerier_Expecter) Aggregate(ctx interface{}, aggregateType interface{}, serviceID interface{}, typeID interface{}, start interface{}, end interface{}) *MockMetricEntryQuerier_Aggregate_Call {
-	return &MockMetricEntryQuerier_Aggregate_Call{Call: _e.mock.On("Aggregate", ctx, aggregateType, serviceID, typeID, start, end)}
+//   - query AggregateQuery
+func (_e *MockMetricEntryQuerier_Expecter) Aggregate(ctx interface{}, query interface{}) *MockMetricEntryQuerier_Aggregate_Call {
+	return &MockMetricEntryQuerier_Aggregate_Call{Call: _e.mock.On("Aggregate", ctx, query)}
 }
 
-func (_c *MockMetricEntryQuerier_Aggregate_Call) Run(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time)) *MockMetricEntryQuerier_Aggregate_Call {
+func (_c *MockMetricEntryQuerier_Aggregate_Call) Run(run func(ctx context.Context, query AggregateQuery)) *MockMetricEntryQuerier_Aggregate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 AggregateType
+		var arg1 AggregateQuery
 		if args[1] != nil {
-			arg1 = args[1].(AggregateType)
-		}
-		var arg2 properties.UUID
-		if args[2] != nil {
-			arg2 = args[2].(properties.UUID)
-		}
-		var arg3 properties.UUID
-		if args[3] != nil {
-			arg3 = args[3].(properties.UUID)
-		}
-		var arg4 time.Time
-		if args[4] != nil {
-			arg4 = args[4].(time.Time)
-		}
-		var arg5 time.Time
-		if args[5] != nil {
-			arg5 = args[5].(time.Time)
+			arg1 = args[1].(AggregateQuery)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
-			arg4,
-			arg5,
 		)
 	})
 	return _c
 }
 
-func (_c *MockMetricEntryQuerier_Aggregate_Call) Return(f float64, err error) *MockMetricEntryQuerier_Aggregate_Call {
-	_c.Call.Return(f, err)
+func (_c *MockMetricEntryQuerier_Aggregate_Call) Return(aggregationResult AggregationResult, err error) *MockMetricEntryQuerier_Aggregate_Call {
+	_c.Call.Return(aggregationResult, err)
 	return _c
 }
 
-func (_c *MockMetricEntryQuerier_Aggregate_Call) RunAndReturn(run func(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)) *MockMetricEntryQuerier_Aggregate_Call {
+func (_c *MockMetricEntryQuerier_Aggregate_Call) RunAndReturn(run func(ctx context.Context, query AggregateQuery) (AggregationResult, error)) *MockMetricEntryQuerier_Aggregate_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -9935,6 +9961,80 @@ func (_c *MockMetricEntryQuerier_List_Call) Return(pageRes *PageRes[MetricEntry]
 }
 
 func (_c *MockMetricEntryQuerier_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[MetricEntry], error)) *MockMetricEntryQuerier_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListResourceIDs provides a mock function for the type MockMetricEntryQuerier
+func (_mock *MockMetricEntryQuerier) ListResourceIDs(ctx context.Context, scope *auth.IdentityScope, page *PageReq) (*PageRes[string], error) {
+	ret := _mock.Called(ctx, scope, page)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListResourceIDs")
+	}
+
+	var r0 *PageRes[string]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[string], error)); ok {
+		return returnFunc(ctx, scope, page)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[string]); ok {
+		r0 = returnFunc(ctx, scope, page)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[string])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, page)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMetricEntryQuerier_ListResourceIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListResourceIDs'
+type MockMetricEntryQuerier_ListResourceIDs_Call struct {
+	*mock.Call
+}
+
+// ListResourceIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - page *PageReq
+func (_e *MockMetricEntryQuerier_Expecter) ListResourceIDs(ctx interface{}, scope interface{}, page interface{}) *MockMetricEntryQuerier_ListResourceIDs_Call {
+	return &MockMetricEntryQuerier_ListResourceIDs_Call{Call: _e.mock.On("ListResourceIDs", ctx, scope, page)}
+}
+
+func (_c *MockMetricEntryQuerier_ListResourceIDs_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, page *PageReq)) *MockMetricEntryQuerier_ListResourceIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMetricEntryQuerier_ListResourceIDs_Call) Return(pageRes *PageRes[string], err error) *MockMetricEntryQuerier_ListResourceIDs_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockMetricEntryQuerier_ListResourceIDs_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, page *PageReq) (*PageRes[string], error)) *MockMetricEntryQuerier_ListResourceIDs_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -1,0 +1,56 @@
+get:
+  operationId: metricEntriesListResourceIDs
+  summary: List distinct resource IDs
+  tags:
+    - Metrics
+  description: Returns a paginated list of distinct resource IDs from metric entries, filtered by service, type, and agent
+  parameters:
+    - name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    - name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 10
+    - name: serviceId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by service ID (can specify multiple values)
+    - name: typeId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by metric type ID (can specify multiple values)
+    - name: agentId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by agent ID (can specify multiple values)
+  responses:
+    "200":
+      description: A paginated list of distinct resource IDs
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/common.yaml#/PageRes"
+              - type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: string
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
