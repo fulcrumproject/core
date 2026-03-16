@@ -157,6 +157,27 @@ func TestMetricEntryRepository(t *testing.T) {
 			}
 		})
 
+		t.Run("success - list with resource filter", func(t *testing.T) {
+			entry1 := createTestMetricEntry(t, agent.ID, service.ID, metricTypeAgent.ID, provider.ID, consumer.ID)
+			err := repo.Create(context.Background(), entry1)
+			require.NoError(t, err)
+
+			entry2 := createTestMetricEntry(t, agent.ID, service.ID, metricTypeAgent.ID, provider.ID, consumer.ID)
+			err = repo.Create(context.Background(), entry2)
+			require.NoError(t, err)
+
+			page := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"resourceId": {entry1.ResourceID}},
+			}
+
+			result, err := repo.List(context.Background(), &auth.IdentityScope{}, page)
+			require.NoError(t, err)
+			assert.Equal(t, 1, len(result.Items))
+			assert.Equal(t, entry1.ResourceID, result.Items[0].ResourceID)
+		})
+
 		t.Run("success - list with type filter", func(t *testing.T) {
 			// Create entries with different types
 			entryService := createTestMetricEntry(t, agent.ID, service.ID, metricTypeService.ID, provider.ID, consumer.ID)
