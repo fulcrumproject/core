@@ -128,13 +128,14 @@ func (h *MetricEntryHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MetricEntryHandler) ListResourceIDs(w http.ResponseWriter, r *http.Request) {
+	id := auth.MustGetIdentity(r.Context())
 	pag, err := ParsePageRequest(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
 
-	result, err := h.querier.ListResourceIDs(r.Context(), pag)
+	result, err := h.querier.ListResourceIDs(r.Context(), &id.Scope, pag)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -145,12 +146,14 @@ func (h *MetricEntryHandler) ListResourceIDs(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *MetricEntryHandler) Aggregate(w http.ResponseWriter, r *http.Request) {
+	id := auth.MustGetIdentity(r.Context())
 	aq, err := parseAggregateQuery(r)
 	if err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
 
+	aq.Scope = &id.Scope
 	result, err := h.querier.Aggregate(r.Context(), *aq)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))

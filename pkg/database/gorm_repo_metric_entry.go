@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"gorm.io/gorm"
@@ -59,12 +60,25 @@ type BucketRow struct {
 
 // Aggregate performs aggregation operations on metric entries for a specific metric type and service within a time range
 func (r *GormMetricEntryRepository) Aggregate(ctx context.Context, query domain.AggregateQuery) (domain.AggregationResult, error) {
+	if err := query.Aggregate.Validate(); err != nil {
+		return domain.AggregationResult{}, err
+	}
+	if err := query.Bucket.Validate(); err != nil {
+		return domain.AggregationResult{}, err
+	}
+
 	selectStr := fmt.Sprintf("DATE_TRUNC('%s', created_at) as bucket_time, COALESCE(%s(value), 0) as agg_value", query.Bucket, query.Aggregate)
 
-	var rows []BucketRow
-	if err := r.db.WithContext(ctx).
+	baseQuery := r.db.WithContext(ctx).
 		Model(&domain.MetricEntry{}).Select(selectStr).
-		Where("service_id = ? AND type_id = ? AND resource_id = ? AND created_at >= ? AND created_at <= ?", query.ServiceID, query.TypeID, query.ResourceID, query.Start, query.End).
+		Where("service_id = ? AND type_id = ? AND resource_id = ? AND created_at >= ? AND created_at <= ?", query.ServiceID, query.TypeID, query.ResourceID, query.Start, query.End)
+
+	if query.Scope != nil {
+		baseQuery = providerConsumerAgentAuthzFilterApplier(query.Scope, baseQuery)
+	}
+
+	var rows []BucketRow
+	if err := baseQuery.
 		Group("bucket_time").Order("bucket_time").Scan(&rows).Error; err != nil {
 		return domain.AggregationResult{}, err
 	}
@@ -84,12 +98,16 @@ func (r *GormMetricEntryRepository) Aggregate(ctx context.Context, query domain.
 }
 
 // ListResourceIDs returns the distinct resource IDs
-func (r *GormMetricEntryRepository) ListResourceIDs(ctx context.Context, page *domain.PageReq) (*domain.PageRes[string], error) {
+func (r *GormMetricEntryRepository) ListResourceIDs(ctx context.Context, scope *auth.IdentityScope, page *domain.PageReq) (*domain.PageRes[string], error) {
 	baseQuery := r.db.WithContext(ctx).Model(&domain.MetricEntry{})
 
 	baseQuery, err := applyMetricEntryFilter(baseQuery, page)
 	if err != nil {
 		return nil, err
+	}
+
+	if scope != nil {
+		baseQuery = providerConsumerAgentAuthzFilterApplier(scope, baseQuery)
 	}
 
 	var count int64

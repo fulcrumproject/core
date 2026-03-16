@@ -434,6 +434,7 @@ func TestMetricEntryRepository(t *testing.T) {
 			page := &domain.PageReq{Page: 1, PageSize: 10}
 			result, err := repo.ListResourceIDs(
 				context.Background(),
+				&auth.IdentityScope{},
 				page,
 			)
 			require.NoError(t, err)
@@ -445,6 +446,7 @@ func TestMetricEntryRepository(t *testing.T) {
 			page1 := &domain.PageReq{Page: 1, PageSize: 2}
 			result1, err := repo.ListResourceIDs(
 				context.Background(),
+				&auth.IdentityScope{},
 				page1,
 			)
 			require.NoError(t, err)
@@ -454,6 +456,7 @@ func TestMetricEntryRepository(t *testing.T) {
 			page2 := &domain.PageReq{Page: 2, PageSize: 2}
 			result2, err := repo.ListResourceIDs(
 				context.Background(),
+				&auth.IdentityScope{},
 				page2,
 			)
 			require.NoError(t, err)

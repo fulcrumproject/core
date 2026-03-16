@@ -286,7 +286,7 @@ func TestMetricEntryHandlerListResourceIDs(t *testing.T) {
 		authzMock := authz.NewMockAuthorizer(t)
 
 		querier.EXPECT().
-			ListResourceIDs(mock.Anything, mock.AnythingOfType("*domain.PageReq")).
+			ListResourceIDs(mock.Anything, mock.AnythingOfType("*auth.IdentityScope"), mock.AnythingOfType("*domain.PageReq")).
 			Return(&domain.PageRes[string]{
 				Items:       []string{"resource-a", "resource-b"},
 				TotalItems:  2,
@@ -320,7 +320,7 @@ func TestMetricEntryHandlerListResourceIDs(t *testing.T) {
 		authzMock := authz.NewMockAuthorizer(t)
 
 		querier.EXPECT().
-			ListResourceIDs(mock.Anything, mock.Anything).
+			ListResourceIDs(mock.Anything, mock.Anything, mock.Anything).
 			Return(nil, fmt.Errorf("database error"))
 
 		handler := NewMetricEntryHandler(querier, serviceQuerier, commander, authzMock)
@@ -441,7 +441,8 @@ func TestMetricEntryHandlerAggregate(t *testing.T) {
 					q.Bucket == domain.AggregateBucketHour &&
 					q.ServiceID == serviceID &&
 					q.ResourceID == resourceID &&
-					q.TypeID == typeID
+					q.TypeID == typeID &&
+					q.Scope != nil
 			})).
 			Return(domain.AggregationResult{
 				Data:      []domain.AggregateData{{"2026-03-13T00:00:00Z", 10.0}},
@@ -478,6 +479,9 @@ func TestMetricEntryHandlerAggregate(t *testing.T) {
 		start, _ := time.Parse(time.RFC3339, "2026-03-01T00:00:00Z")
 		end, _ := time.Parse(time.RFC3339, "2026-03-13T00:00:00Z")
 
+		agentID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440000")
+		participantID := uuid.MustParse("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")
+
 		querier.EXPECT().
 			Aggregate(mock.Anything, domain.AggregateQuery{
 				ServiceID:  serviceID,
@@ -487,6 +491,7 @@ func TestMetricEntryHandlerAggregate(t *testing.T) {
 				Bucket:     domain.AggregateBucketDay,
 				Start:      start,
 				End:        end,
+				Scope:      &auth.IdentityScope{ParticipantID: &participantID, AgentID: &agentID},
 			}).
 			Return(domain.AggregationResult{
 				Data:      []domain.AggregateData{{"2026-03-01T00:00:00Z", 50.0}},

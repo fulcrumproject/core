@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,6 +15,7 @@ import (
 type AggregateType string
 
 const (
+	// AggregateMin returns the minimum value
 	AggregateMin AggregateType = "min"
 	// AggregateMax returns the maximum value
 	AggregateMax AggregateType = "max"
@@ -46,10 +48,14 @@ func ParseAggregateType(s string) (AggregateType, error) {
 type AggregateBucket string
 
 const (
+	// AggregateBucketMinute groups data by minute (max range: 24 hours)
 	AggregateBucketMinute AggregateBucket = "minute"
-	AggregateBucketHour   AggregateBucket = "hour"
-	AggregateBucketDay    AggregateBucket = "day"
-	AggregateBucketMonth  AggregateBucket = "month"
+	// AggregateBucketHour groups data by hour (max range: 7 days)
+	AggregateBucketHour AggregateBucket = "hour"
+	// AggregateBucketDay groups data by day (max range: 90 days)
+	AggregateBucketDay AggregateBucket = "day"
+	// AggregateBucketMonth groups data by month (max range: 1 year)
+	AggregateBucketMonth AggregateBucket = "month"
 )
 
 func (b AggregateBucket) MaxDuration() time.Duration {
@@ -102,7 +108,7 @@ func (s AggregateBucket) Validate() error {
 	case AggregateBucketMinute, AggregateBucketHour, AggregateBucketDay, AggregateBucketMonth:
 		return nil
 	default:
-		return fmt.Errorf("invalid aggregate type: %s", s)
+		return fmt.Errorf("invalid aggregate bucket: %s", s)
 	}
 }
 
@@ -125,6 +131,7 @@ type AggregateQuery struct {
 	Bucket     AggregateBucket
 	Start      time.Time
 	End        time.Time
+	Scope      *auth.IdentityScope
 }
 
 type AggregateData [2]any
@@ -145,7 +152,7 @@ type MetricEntry struct {
 	CreatedAt time.Time       `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP;index:idx_metric_aggregate,priority:3"`
 	UpdatedAt time.Time       `json:"-" gorm:"not null;default:CURRENT_TIMESTAMP"`
 
-	ResourceID string  `gorm:"not null"`
+	ResourceID string  `gorm:"not null;index"`
 	Value      float64 `gorm:"not null"`
 
 	// Relationships
@@ -388,5 +395,5 @@ type MetricEntryQuerier interface {
 	Aggregate(ctx context.Context, query AggregateQuery) (AggregationResult, error)
 
 	// ListResourceIDs returns the distinct resource IDs
-	ListResourceIDs(ctx context.Context, page *PageReq) (*PageRes[string], error)
+	ListResourceIDs(ctx context.Context, scope *auth.IdentityScope, page *PageReq) (*PageRes[string], error)
 }

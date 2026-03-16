@@ -9340,8 +9340,8 @@ func (_c *MockMetricEntryRepository_List_Call) RunAndReturn(run func(ctx context
 }
 
 // ListResourceIDs provides a mock function for the type MockMetricEntryRepository
-func (_mock *MockMetricEntryRepository) ListResourceIDs(ctx context.Context, page *PageReq) (*PageRes[string], error) {
-	ret := _mock.Called(ctx, page)
+func (_mock *MockMetricEntryRepository) ListResourceIDs(ctx context.Context, scope *auth.IdentityScope, page *PageReq) (*PageRes[string], error) {
+	ret := _mock.Called(ctx, scope, page)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListResourceIDs")
@@ -9349,18 +9349,18 @@ func (_mock *MockMetricEntryRepository) ListResourceIDs(ctx context.Context, pag
 
 	var r0 *PageRes[string]
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *PageReq) (*PageRes[string], error)); ok {
-		return returnFunc(ctx, page)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[string], error)); ok {
+		return returnFunc(ctx, scope, page)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *PageReq) *PageRes[string]); ok {
-		r0 = returnFunc(ctx, page)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[string]); ok {
+		r0 = returnFunc(ctx, scope, page)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*PageRes[string])
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *PageReq) error); ok {
-		r1 = returnFunc(ctx, page)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, page)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -9374,24 +9374,30 @@ type MockMetricEntryRepository_ListResourceIDs_Call struct {
 
 // ListResourceIDs is a helper method to define mock.On call
 //   - ctx context.Context
+//   - scope *auth.IdentityScope
 //   - page *PageReq
-func (_e *MockMetricEntryRepository_Expecter) ListResourceIDs(ctx interface{}, page interface{}) *MockMetricEntryRepository_ListResourceIDs_Call {
-	return &MockMetricEntryRepository_ListResourceIDs_Call{Call: _e.mock.On("ListResourceIDs", ctx, page)}
+func (_e *MockMetricEntryRepository_Expecter) ListResourceIDs(ctx interface{}, scope interface{}, page interface{}) *MockMetricEntryRepository_ListResourceIDs_Call {
+	return &MockMetricEntryRepository_ListResourceIDs_Call{Call: _e.mock.On("ListResourceIDs", ctx, scope, page)}
 }
 
-func (_c *MockMetricEntryRepository_ListResourceIDs_Call) Run(run func(ctx context.Context, page *PageReq)) *MockMetricEntryRepository_ListResourceIDs_Call {
+func (_c *MockMetricEntryRepository_ListResourceIDs_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, page *PageReq)) *MockMetricEntryRepository_ListResourceIDs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *PageReq
+		var arg1 *auth.IdentityScope
 		if args[1] != nil {
-			arg1 = args[1].(*PageReq)
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -9402,7 +9408,7 @@ func (_c *MockMetricEntryRepository_ListResourceIDs_Call) Return(pageRes *PageRe
 	return _c
 }
 
-func (_c *MockMetricEntryRepository_ListResourceIDs_Call) RunAndReturn(run func(ctx context.Context, page *PageReq) (*PageRes[string], error)) *MockMetricEntryRepository_ListResourceIDs_Call {
+func (_c *MockMetricEntryRepository_ListResourceIDs_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, page *PageReq) (*PageRes[string], error)) *MockMetricEntryRepository_ListResourceIDs_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -9960,8 +9966,8 @@ func (_c *MockMetricEntryQuerier_List_Call) RunAndReturn(run func(ctx context.Co
 }
 
 // ListResourceIDs provides a mock function for the type MockMetricEntryQuerier
-func (_mock *MockMetricEntryQuerier) ListResourceIDs(ctx context.Context, page *PageReq) (*PageRes[string], error) {
-	ret := _mock.Called(ctx, page)
+func (_mock *MockMetricEntryQuerier) ListResourceIDs(ctx context.Context, scope *auth.IdentityScope, page *PageReq) (*PageRes[string], error) {
+	ret := _mock.Called(ctx, scope, page)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListResourceIDs")
@@ -9969,18 +9975,18 @@ func (_mock *MockMetricEntryQuerier) ListResourceIDs(ctx context.Context, page *
 
 	var r0 *PageRes[string]
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *PageReq) (*PageRes[string], error)); ok {
-		return returnFunc(ctx, page)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[string], error)); ok {
+		return returnFunc(ctx, scope, page)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *PageReq) *PageRes[string]); ok {
-		r0 = returnFunc(ctx, page)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[string]); ok {
+		r0 = returnFunc(ctx, scope, page)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*PageRes[string])
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *PageReq) error); ok {
-		r1 = returnFunc(ctx, page)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, page)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -9994,24 +10000,30 @@ type MockMetricEntryQuerier_ListResourceIDs_Call struct {
 
 // ListResourceIDs is a helper method to define mock.On call
 //   - ctx context.Context
+//   - scope *auth.IdentityScope
 //   - page *PageReq
-func (_e *MockMetricEntryQuerier_Expecter) ListResourceIDs(ctx interface{}, page interface{}) *MockMetricEntryQuerier_ListResourceIDs_Call {
-	return &MockMetricEntryQuerier_ListResourceIDs_Call{Call: _e.mock.On("ListResourceIDs", ctx, page)}
+func (_e *MockMetricEntryQuerier_Expecter) ListResourceIDs(ctx interface{}, scope interface{}, page interface{}) *MockMetricEntryQuerier_ListResourceIDs_Call {
+	return &MockMetricEntryQuerier_ListResourceIDs_Call{Call: _e.mock.On("ListResourceIDs", ctx, scope, page)}
 }
 
-func (_c *MockMetricEntryQuerier_ListResourceIDs_Call) Run(run func(ctx context.Context, page *PageReq)) *MockMetricEntryQuerier_ListResourceIDs_Call {
+func (_c *MockMetricEntryQuerier_ListResourceIDs_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, page *PageReq)) *MockMetricEntryQuerier_ListResourceIDs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *PageReq
+		var arg1 *auth.IdentityScope
 		if args[1] != nil {
-			arg1 = args[1].(*PageReq)
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -10022,7 +10034,7 @@ func (_c *MockMetricEntryQuerier_ListResourceIDs_Call) Return(pageRes *PageRes[s
 	return _c
 }
 
-func (_c *MockMetricEntryQuerier_ListResourceIDs_Call) RunAndReturn(run func(ctx context.Context, page *PageReq) (*PageRes[string], error)) *MockMetricEntryQuerier_ListResourceIDs_Call {
+func (_c *MockMetricEntryQuerier_ListResourceIDs_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, page *PageReq) (*PageRes[string], error)) *MockMetricEntryQuerier_ListResourceIDs_Call {
 	_c.Call.Return(run)
 	return _c
 }
