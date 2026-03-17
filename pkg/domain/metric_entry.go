@@ -23,11 +23,13 @@ const (
 	AggregateSum AggregateType = "sum"
 	// AggregateAvg returns the average value
 	AggregateAvg AggregateType = "avg"
+	// AggregateDiffMaxMin returns the difference between max and min values
+	AggregateDiffMaxMin AggregateType = "diff"
 )
 
 func (s AggregateType) Validate() error {
 	switch s {
-	case AggregateMin, AggregateMax, AggregateSum, AggregateAvg:
+	case AggregateMin, AggregateMax, AggregateSum, AggregateAvg, AggregateDiffMaxMin:
 		return nil
 	default:
 		return fmt.Errorf("invalid aggregate type: %s", s)
@@ -393,6 +395,9 @@ type MetricEntryQuerier interface {
 
 	// Aggregate performs aggregation operations on metric entries for a specific metric type and service within a time range
 	Aggregate(ctx context.Context, query AggregateQuery) (AggregationResult, error)
+
+	// AggregateTotal performs a simple scalar aggregation on metric entries returning a single float64 used for CEM
+	AggregateTotal(ctx context.Context, aggregateType AggregateType, serviceID properties.UUID, typeID properties.UUID, start time.Time, end time.Time) (float64, error)
 
 	// ListResourceIDs returns the distinct resource IDs
 	ListResourceIDs(ctx context.Context, scope *auth.IdentityScope, page *PageReq) (*PageRes[string], error)
