@@ -18,9 +18,10 @@ type GormMetricEntryRepository struct {
 }
 
 var applyMetricEntryFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"agentId":   ParserInFilterFieldApplier("metric_entries.agent_id", properties.ParseUUID),
-	"serviceId": ParserInFilterFieldApplier("metric_entries.service_id", properties.ParseUUID),
-	"typeId":    ParserInFilterFieldApplier("metric_entries.type_id", properties.ParseUUID),
+	"agentId":    ParserInFilterFieldApplier("metric_entries.agent_id", properties.ParseUUID),
+	"serviceId":  ParserInFilterFieldApplier("metric_entries.service_id", properties.ParseUUID),
+	"typeId":     ParserInFilterFieldApplier("metric_entries.type_id", properties.ParseUUID),
+	"resourceId": StringInFilterFieldApplier("metric_entries.resource_id"),
 })
 
 var applyMetricEntrySort = MapSortApplier(map[string]string{
