@@ -159,6 +159,7 @@ func TestMetricEntryRepository(t *testing.T) {
 
 		t.Run("success - list with resource filter", func(t *testing.T) {
 			entry1 := createTestMetricEntry(t, agent.ID, service.ID, metricTypeAgent.ID, provider.ID, consumer.ID)
+			entry1.ResourceID = "MyResource-XYZ"
 			err := repo.Create(context.Background(), entry1)
 			require.NoError(t, err)
 
@@ -166,16 +167,17 @@ func TestMetricEntryRepository(t *testing.T) {
 			err = repo.Create(context.Background(), entry2)
 			require.NoError(t, err)
 
+			// Filter using a different case substring - should match case-insensitively
 			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
-				Filters:  map[string][]string{"resourceId": {entry1.ResourceID}},
+				Filters:  map[string][]string{"resourceId": {"myresource"}},
 			}
 
 			result, err := repo.List(context.Background(), &auth.IdentityScope{}, page)
 			require.NoError(t, err)
 			assert.Equal(t, 1, len(result.Items))
-			assert.Equal(t, entry1.ResourceID, result.Items[0].ResourceID)
+			assert.Equal(t, "MyResource-XYZ", result.Items[0].ResourceID)
 		})
 
 		t.Run("success - list with type filter", func(t *testing.T) {
@@ -441,6 +443,39 @@ func TestMetricEntryRepository(t *testing.T) {
 	})
 
 	t.Run("ListResourceIDs", func(t *testing.T) {
+		t.Run("success - filters resource IDs case-insensitively", func(t *testing.T) {
+			testDB.DB.Exec("DELETE FROM metric_entries")
+
+			// Create entries with different resource IDs
+			for _, rid := range []string{"Alpha-One", "alpha-two", "Beta-Three"} {
+				entry := &domain.MetricEntry{
+					AgentID:    agent.ID,
+					ServiceID:  service.ID,
+					ResourceID: rid,
+					ProviderID: provider.ID,
+					ConsumerID: consumer.ID,
+					Value:      1.0,
+					TypeID:     metricTypeService.ID,
+				}
+				err := repo.Create(context.Background(), entry)
+				require.NoError(t, err)
+			}
+
+			page := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"resourceId": {"ALPHA"}},
+			}
+			result, err := repo.ListResourceIDs(
+				context.Background(),
+				&auth.IdentityScope{},
+				page,
+			)
+			require.NoError(t, err)
+			assert.Equal(t, int64(2), result.TotalItems, "Should return 2 resource IDs matching 'ALPHA' case-insensitively")
+			assert.Len(t, result.Items, 2)
+		})
+
 		t.Run("success - returns distinct resource IDs", func(t *testing.T) {
 			testDB.DB.Exec("DELETE FROM metric_entries")
 
