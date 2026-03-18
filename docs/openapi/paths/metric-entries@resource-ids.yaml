@@ -36,6 +36,13 @@ get:
         items:
           $ref: "../components/schemas/common.yaml#/properties.UUID"
       description: Filter by agent ID (can specify multiple values)
+    - name: resourceId
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+      description: Filter by resource ID (case-insensitive substring match, can specify multiple values)
   responses:
     "200":
       description: A paginated list of distinct resource IDs

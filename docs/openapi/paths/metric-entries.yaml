@@ -48,7 +48,7 @@ get:
         type: array
         items:
           type: string
-      description: Filter by resource ID (can specify multiple values)
+      description: Filter by resource ID (case-insensitive substring match, can specify multiple values)
   responses:
     "200":
       description: A paginated list of metric entries
