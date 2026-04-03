@@ -1,0 +1,104 @@
+### Variables
+
+@baseURL = http://localhost:3000/api/v1
+@kcBaseURL = http://localhost:8080/realms/fulcrum
+@kcClientId = fulcrum-api
+@kcClientSecret = secret
+
+### Get ID Token for admin1 user
+# @name admin1Login
+POST {{kcBaseURL}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{kcClientId}}&client_secret={{kcClientSecret}}&username=admin1&password=password&scope=openid
+
+### Extract the ID Token from the response
+@admin1IdToken = {{admin1Login.response.body.$.access_token}}
+
+### Create a Participant (needed for keycloak user creation)
+# @name createParticipant
+POST {{baseURL}}/participants
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Participant",
+  "status": "Enabled"
+}
+
+### Extract the participant ID
+@participantId = {{createParticipant.response.body.$.id}}
+
+### List Keycloak Users
+GET {{baseURL}}/keycloak-users
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+### List Keycloak Users with search and pagination
+GET {{baseURL}}/keycloak-users?search=admin&page=1&pageSize=10
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+### Create Keycloak User (participant role)
+# @name createUser
+POST {{baseURL}}/keycloak-users
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "username": "newparticipant",
+  "email": "newparticipant@example.com",
+  "firstName": "New",
+  "lastName": "Participant",
+  "password": "password123",
+  "enabled": true,
+  "role": "participant",
+  "participantId": "{{participantId}}"
+}
+
+### Extract the created user ID
+@createdUserId = {{createUser.response.body.$.id}}
+
+### Get Keycloak User by ID
+GET {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+### Update Keycloak User
+PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "email": "updated@example.com",
+  "firstName": "Updated",
+  "lastName": "LastNameUpdated"
+}
+
+### Update Keycloak User password
+PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "password": "newpassword123"
+}
+
+### Delete Keycloak User
+DELETE {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+
+### Create Keycloak User (admin role)
+POST {{baseURL}}/keycloak-users
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "username": "newadmin",
+  "email": "newadmin@example.com",
+  "firstName": "New",
+  "lastName": "Admin",
+  "password": "password123",
+  "enabled": true,
+  "role": "admin"
+}

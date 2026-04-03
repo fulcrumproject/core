@@ -48,6 +48,7 @@ type App struct {
 	JobHandler               *api.JobHandler
 	TokenHandler             *api.TokenHandler
 	VaultHandler             *api.VaultHandler
+	KeycloakUserHandler      *api.KeycloakUserHandler
 	HealthHandler            *health.Handler
 	Logger                   *slog.Logger
 	PropertyEngine           *schema.Engine[domain.ServicePropertyContext]
@@ -189,6 +190,9 @@ func NewApp() *App {
 		slog.Warn("Vault encryption key not configured - secret properties will not work")
 	}
 
+	kcAdminClient := keycloak.NewAdminClient(&cfg.OAuthConfig)
+	keycloakUserCmd := domain.NewKeycloakUserCommander(kcAdminClient, store.ParticipantRepo(), store.AgentRepo())
+
 	// Initialize schema engine for service property validation
 	propertyEngine := domain.NewServicePropertyEngine(vault)
 
@@ -276,6 +280,7 @@ func NewApp() *App {
 		EventHandler:             api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz),
 		TokenHandler:             api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz),
 		VaultHandler:             api.NewVaultHandler(vault),
+		KeycloakUserHandler:      api.NewKeycloakUserHandler(kcAdminClient, keycloakUserCmd, athz),
 		ServiceCmd:               serviceCmd,
 		PropertyEngine:           propertyEngine,
 	}

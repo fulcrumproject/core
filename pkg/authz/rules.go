@@ -21,6 +21,7 @@ const (
 	ObjectTypeMetricEntry       ObjectType = "metric_entry"
 	ObjectTypeEvent             ObjectType = "event_entry"
 	ObjectTypeToken             ObjectType = "token"
+	ObjectTypeKeycloakUser      ObjectType = "keycloak_user"
 )
 
 const (
@@ -138,4 +139,10 @@ var Rules = []AuthorizationRule{
 	{Object: ObjectTypeToken, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 	{Object: ObjectTypeToken, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 	{Object: ObjectTypeToken, Action: ActionGenerateToken, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+
+	// Keycloak user permissions
+	{Object: ObjectTypeKeycloakUser, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeKeycloakUser, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeKeycloakUser, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeKeycloakUser, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
 }
