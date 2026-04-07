@@ -69,7 +69,7 @@ func TestCreateUser_Success(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	id, err := client.CreateUser(context.Background(), domain.KeycloakUserCreateRequest{
+	id, err := client.CreateUser(context.Background(), &domain.KeycloakUser{
 		Username:  "john",
 		Email:     "john@example.com",
 		FirstName: "John",
@@ -89,7 +89,7 @@ func TestCreateUser_Conflict(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	_, err := client.CreateUser(context.Background(), domain.KeycloakUserCreateRequest{
+	_, err := client.CreateUser(context.Background(), &domain.KeycloakUser{
 		Username: "john",
 	})
 
@@ -104,7 +104,7 @@ func TestCreateUser_MissingLocationHeader(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	_, err := client.CreateUser(context.Background(), domain.KeycloakUserCreateRequest{
+	_, err := client.CreateUser(context.Background(), &domain.KeycloakUser{
 		Username: "john",
 	})
 
@@ -151,7 +151,7 @@ func TestUpdateUser_MergesFields(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	result, err := client.UpdateUser(context.Background(), "user-123", domain.KeycloakUserUpdateRequest{
+	result, err := client.UpdateUser(context.Background(), "user-123", domain.UpdateKeycloakUserParams{
 		Email: &newEmail,
 	})
 
@@ -174,7 +174,7 @@ func TestUpdateUser_MergesFields(t *testing.T) {
 
 func TestUpdateUser_EmptyID(t *testing.T) {
 	client := setupTestClient(t, newMux())
-	_, err := client.UpdateUser(context.Background(), "", domain.KeycloakUserUpdateRequest{})
+	_, err := client.UpdateUser(context.Background(), "", domain.UpdateKeycloakUserParams{})
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.InvalidInputError{})
@@ -187,7 +187,7 @@ func TestUpdateUser_NotFound(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	_, err := client.UpdateUser(context.Background(), "bad-id", domain.KeycloakUserUpdateRequest{})
+	_, err := client.UpdateUser(context.Background(), "bad-id", domain.UpdateKeycloakUserParams{})
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.NotFoundError{})

@@ -15,11 +15,11 @@ import (
 )
 
 type AdminClient struct {
-	Config      *Config
-	Client      *resty.Client
+	config      *Config
+	client      *resty.Client
 	tokenClient *resty.Client
-	Token       string
-	TokenExpiry time.Time
+	token       string
+	tokenExpiry time.Time
 	tokenMu     sync.Mutex
 }
 
@@ -34,8 +34,8 @@ func NewAdminClient(cfg *Config) *AdminClient {
 	}
 
 	ac := &AdminClient{
-		Config:      cfg,
-		Client:      client,
+		config:      cfg,
+		client:      client,
 		tokenClient: tokenClient,
 	}
 
@@ -56,18 +56,18 @@ func (a *AdminClient) ensureToken(ctx context.Context) (string, error) {
 	a.tokenMu.Lock()
 	defer a.tokenMu.Unlock()
 
-	if a.Token != "" && time.Now().Add(30*time.Second).Before(a.TokenExpiry) {
-		return a.Token, nil
+	if a.token != "" && time.Now().Add(30*time.Second).Before(a.tokenExpiry) {
+		return a.token, nil
 	}
 
 	formData := map[string]string{
 		"grant_type":    "client_credentials",
-		"client_id":     a.Config.ClientID,
-		"client_secret": a.Config.ClientSecret,
+		"client_id":     a.config.ClientID,
+		"client_secret": a.config.ClientSecret,
 	}
 
 	var tokenRes AdminToken
-	res, err := a.tokenClient.R().SetContext(ctx).SetHeader("Content-Type", "application/x-www-form-urlencoded").SetFormData(formData).SetResult(&tokenRes).Post(a.Config.GetTokenUrl())
+	res, err := a.tokenClient.R().SetContext(ctx).SetHeader("Content-Type", "application/x-www-form-urlencoded").SetFormData(formData).SetResult(&tokenRes).Post(a.config.GetTokenUrl())
 	if err != nil {
 		return "", err
 	}
@@ -76,10 +76,10 @@ func (a *AdminClient) ensureToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("token request failed (status %d): %s", res.StatusCode(), res.String())
 	}
 
-	a.Token = tokenRes.AccessToken
-	a.TokenExpiry = time.Now().Add(time.Duration(tokenRes.ExpiresIn) * time.Second)
+	a.token = tokenRes.AccessToken
+	a.tokenExpiry = time.Now().Add(time.Duration(tokenRes.ExpiresIn) * time.Second)
 
-	return a.Token, nil
+	return a.token, nil
 
 }
 
@@ -135,7 +135,15 @@ func keycloakError(resp *resty.Response, action string) error {
 	}
 }
 
-func (a *AdminClient) CreateUser(ctx context.Context, user domain.KeycloakUserCreateRequest) (string, error) {
+func (a *AdminClient) CreateUser(ctx context.Context, user *domain.KeycloakUser) (string, error) {
+	attrs := map[string][]string{}
+	if user.ParticipantID != "" {
+		attrs["participant_id"] = []string{user.ParticipantID}
+	}
+	if user.AgentID != "" {
+		attrs["agent_id"] = []string{user.AgentID}
+	}
+
 	enabled := user.Enabled
 	body := UserRepresentation{
 		Username:   user.Username,
@@ -143,9 +151,9 @@ func (a *AdminClient) CreateUser(ctx context.Context, user domain.KeycloakUserCr
 		FirstName:  user.FirstName,
 		LastName:   user.LastName,
 		Enabled:    &enabled,
-		Attributes: user.Attributes,
+		Attributes: attrs,
 	}
-	resp, err := a.Client.R().
+	resp, err := a.client.R().
 		SetContext(ctx).
 		SetBody(body).
 		Post("/users")
@@ -163,14 +171,14 @@ func (a *AdminClient) CreateUser(ctx context.Context, user domain.KeycloakUserCr
 	return parts[len(parts)-1], nil
 }
 
-func (a *AdminClient) UpdateUser(ctx context.Context, id string, user domain.KeycloakUserUpdateRequest) (*domain.KeycloakUser, error) {
+func (a *AdminClient) UpdateUser(ctx context.Context, id string, params domain.UpdateKeycloakUserParams) (*domain.KeycloakUser, error) {
 	if id == "" {
 		return nil, domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
 
 	var body UserRepresentation
 
-	respUser, err := a.Client.R().SetContext(ctx).SetPathParam("id", id).
+	respUser, err := a.client.R().SetContext(ctx).SetPathParam("id", id).
 		SetResult(&body).
 		Get("/users/{id}")
 	if err != nil {
@@ -181,27 +189,23 @@ func (a *AdminClient) UpdateUser(ctx context.Context, id string, user domain.Key
 		return nil, keycloakError(respUser, "get user for update")
 	}
 
-	if user.Email != nil {
-		body.Email = *user.Email
+	if params.Email != nil {
+		body.Email = *params.Email
 	}
 
-	if user.FirstName != nil {
-		body.FirstName = *user.FirstName
+	if params.FirstName != nil {
+		body.FirstName = *params.FirstName
 	}
 
-	if user.LastName != nil {
-		body.LastName = *user.LastName
+	if params.LastName != nil {
+		body.LastName = *params.LastName
 	}
 
-	if user.Enabled != nil {
-		body.Enabled = user.Enabled
+	if params.Enabled != nil {
+		body.Enabled = params.Enabled
 	}
 
-	if len(user.Attributes) > 0 {
-		body.Attributes = user.Attributes
-	}
-
-	resp, err := a.Client.R().
+	resp, err := a.client.R().
 		SetContext(ctx).
 		SetPathParam("id", id).
 		SetBody(body).
@@ -219,7 +223,7 @@ func (a *AdminClient) DeleteUser(ctx context.Context, id string) error {
 	if id == "" {
 		return domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
-	resp, err := a.Client.R().
+	resp, err := a.client.R().
 		SetContext(ctx).
 		SetPathParam("id", id).
 		Delete("/users/{id}")
@@ -241,7 +245,7 @@ func (a *AdminClient) SetPassword(ctx context.Context, id string, password strin
 		Value:     password,
 		Temporary: temporary,
 	}
-	resp, err := a.Client.R().
+	resp, err := a.client.R().
 		SetContext(ctx).
 		SetPathParam("id", id).
 		SetBody(cred).
@@ -257,7 +261,7 @@ func (a *AdminClient) SetPassword(ctx context.Context, id string, password strin
 
 func (a *AdminClient) GetRealmRoles(ctx context.Context) ([]domain.KeycloakRole, error) {
 	var roles []domain.KeycloakRole
-	resp, err := a.Client.R().
+	resp, err := a.client.R().
 		SetContext(ctx).
 		SetResult(&roles).
 		Get("/roles")
@@ -267,29 +271,17 @@ func (a *AdminClient) GetRealmRoles(ctx context.Context) ([]domain.KeycloakRole,
 	if resp.StatusCode() != http.StatusOK {
 		return nil, keycloakError(resp, "get realm roles")
 	}
-	result := make([]domain.KeycloakRole, 0, len(roles))
-	for _, r := range roles {
-		result = append(result, domain.KeycloakRole{ID: r.ID, Name: r.Name})
-	}
-	return result, nil
-}
-
-func toRoleRepresentations(roles []domain.KeycloakRole) []domain.KeycloakRole {
-	reps := make([]domain.KeycloakRole, 0, len(roles))
-	for _, r := range roles {
-		reps = append(reps, domain.KeycloakRole{ID: r.ID, Name: r.Name})
-	}
-	return reps
+	return roles, nil
 }
 
 func (a *AdminClient) AssignRealmRoles(ctx context.Context, id string, roles []domain.KeycloakRole) error {
 	if id == "" {
 		return domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
-	resp, err := a.Client.R().
+	resp, err := a.client.R().
 		SetContext(ctx).
 		SetPathParam("id", id).
-		SetBody(toRoleRepresentations(roles)).
+		SetBody(roles).
 		Post("/users/{id}/role-mappings/realm")
 	if err != nil {
 		return err
@@ -304,10 +296,10 @@ func (a *AdminClient) RemoveRealmRoles(ctx context.Context, id string, roles []d
 	if id == "" {
 		return domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
-	resp, err := a.Client.R().
+	resp, err := a.client.R().
 		SetContext(ctx).
 		SetPathParam("id", id).
-		SetBody(toRoleRepresentations(roles)).
+		SetBody(roles).
 		Delete("/users/{id}/role-mappings/realm")
 	if err != nil {
 		return err
@@ -323,7 +315,7 @@ func (a *AdminClient) GetUserRealmRoles(ctx context.Context, id string) ([]domai
 		return nil, domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
 	var roles []domain.KeycloakRole
-	resp, err := a.Client.R().
+	resp, err := a.client.R().
 		SetContext(ctx).
 		SetPathParam("id", id).
 		SetResult(&roles).
@@ -342,7 +334,7 @@ func (a *AdminClient) Get(ctx context.Context, id string) (*domain.KeycloakUser,
 		return nil, domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
 	var user UserRepresentation
-	resp, err := a.Client.R().
+	resp, err := a.client.R().
 		SetContext(ctx).
 		SetPathParam("id", id).
 		SetResult(&user).
@@ -404,7 +396,7 @@ func (a *AdminClient) List(ctx context.Context, params domain.KeycloakUserListPa
 	}
 
 	var userCount int
-	respCount, err := a.Client.R().SetContext(ctx).SetQueryParams(countParams).SetResult(&userCount).Get("/users/count")
+	respCount, err := a.client.R().SetContext(ctx).SetQueryParams(countParams).SetResult(&userCount).Get("/users/count")
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +405,7 @@ func (a *AdminClient) List(ctx context.Context, params domain.KeycloakUserListPa
 	}
 
 	var users []UserRepresentation
-	resp, err := a.Client.R().SetContext(ctx).SetQueryParams(listParams).SetResult(&users).Get("/users")
+	resp, err := a.client.R().SetContext(ctx).SetQueryParams(listParams).SetResult(&users).Get("/users")
 	if err != nil {
 		return nil, err
 	}

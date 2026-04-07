@@ -9,26 +9,26 @@ import (
 )
 
 type KeycloakUser struct {
-	ID            string   `json:"id"`
-	Username      string   `json:"username"`
-	FirstName     string   `json:"firstName"`
-	LastName      string   `json:"lastName"`
-	Email         string   `json:"email"`
-	Enabled       bool     `json:"enabled"`
-	Roles         []string `json:"roles"`
-	ParticipantID string   `json:"participantId"`
-	AgentID       string   `json:"agentId"`
+	ID            string
+	Username      string
+	FirstName     string
+	LastName      string
+	Email         string
+	Enabled       bool
+	Roles         []string
+	ParticipantID string
+	AgentID       string
 }
 
 // KeycloakUserListItem is a slim representation for list responses.
 // The Keycloak GET /users endpoint doesn't populate realmRoles,
 // and fetching roles per-user is too expensive for a list.
 type KeycloakUserListItem struct {
-	ID        string `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
+	ID        string
+	Username  string
+	Email     string
+	FirstName string
+	LastName  string
 }
 
 type KeycloakUserListParams struct {
@@ -39,27 +39,8 @@ type KeycloakUserListParams struct {
 
 // KeycloakRole represents a Keycloak realm role.
 type KeycloakRole struct {
-	ID   string
-	Name string
-}
-
-// KeycloakUserCreateRequest is the data needed to create a user in Keycloak.
-type KeycloakUserCreateRequest struct {
-	Username   string
-	Email      string
-	FirstName  string
-	LastName   string
-	Enabled    bool
-	Attributes map[string][]string
-}
-
-// KeycloakUserUpdateRequest is the data needed to update a user in Keycloak.
-type KeycloakUserUpdateRequest struct {
-	Email      *string
-	FirstName  *string
-	LastName   *string
-	Enabled    *bool
-	Attributes map[string][]string
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type KeycloakUserQuerier interface {
@@ -71,8 +52,8 @@ type KeycloakUserQuerier interface {
 // Implemented by keycloak.AdminClient.
 type KeycloakAdminClient interface {
 	KeycloakUserQuerier
-	CreateUser(ctx context.Context, user KeycloakUserCreateRequest) (string, error)
-	UpdateUser(ctx context.Context, id string, user KeycloakUserUpdateRequest) (*KeycloakUser, error)
+	CreateUser(ctx context.Context, user *KeycloakUser) (string, error)
+	UpdateUser(ctx context.Context, id string, params UpdateKeycloakUserParams) (*KeycloakUser, error)
 	DeleteUser(ctx context.Context, id string) error
 	SetPassword(ctx context.Context, id string, password string, temporary bool) error
 	GetRealmRoles(ctx context.Context) ([]KeycloakRole, error)
@@ -170,23 +151,15 @@ func (c *keycloakUserCommander) Create(ctx context.Context, params CreateKeycloa
 		}
 	}
 
-	// Build attributes (participant_id, agent_id) upfront
-	attrs := map[string][]string{}
-	if params.ParticipantID != "" {
-		attrs["participant_id"] = []string{params.ParticipantID}
-	}
-	if params.AgentID != "" {
-		attrs["agent_id"] = []string{params.AgentID}
-	}
-
-	// Create user in Keycloak (includes attributes)
-	userID, err := c.adminClient.CreateUser(ctx, KeycloakUserCreateRequest{
-		Username:   params.Username,
-		Email:      params.Email,
-		FirstName:  params.FirstName,
-		LastName:   params.LastName,
-		Enabled:    params.Enabled,
-		Attributes: attrs,
+	// Create user in Keycloak
+	userID, err := c.adminClient.CreateUser(ctx, &KeycloakUser{
+		Username:      params.Username,
+		Email:         params.Email,
+		FirstName:     params.FirstName,
+		LastName:      params.LastName,
+		Enabled:       params.Enabled,
+		ParticipantID: params.ParticipantID,
+		AgentID:       params.AgentID,
 	})
 	if err != nil {
 		return nil, err
@@ -228,7 +201,7 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 		return nil, NewInvalidInputErrorf("keycloak user id is required")
 	}
 
-	user, err := c.adminClient.UpdateUser(ctx, id, KeycloakUserUpdateRequest{
+	user, err := c.adminClient.UpdateUser(ctx, id, UpdateKeycloakUserParams{
 		Email:     params.Email,
 		FirstName: params.FirstName,
 		LastName:  params.LastName,

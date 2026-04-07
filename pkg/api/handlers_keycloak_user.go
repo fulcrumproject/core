@@ -95,9 +95,25 @@ func keycloakUserHandlerList(querier domain.KeycloakUserQuerier) http.HandlerFun
 			return
 		}
 
-		render.JSON(w, r, NewPageResponse(result, func(item *domain.KeycloakUserListItem) *domain.KeycloakUserListItem {
-			return item
-		}))
+		render.JSON(w, r, NewPageResponse(result, keycloakUserListItemToRes))
+	}
+}
+
+type KeycloakUserListItemRes struct {
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+}
+
+func keycloakUserListItemToRes(item *domain.KeycloakUserListItem) *KeycloakUserListItemRes {
+	return &KeycloakUserListItemRes{
+		ID:        item.ID,
+		Username:  item.Username,
+		Email:     item.Email,
+		FirstName: item.FirstName,
+		LastName:  item.LastName,
 	}
 }
 
@@ -131,7 +147,17 @@ func keycloakUserHandlerCreate(commander domain.KeycloakUserCommander) http.Hand
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := middlewares.MustGetBody[CreateKeycloakUserReq](r.Context())
 
-		user, err := commander.Create(r.Context(), domain.CreateKeycloakUserParams(req))
+		user, err := commander.Create(r.Context(), domain.CreateKeycloakUserParams{
+			Username:      req.Username,
+			Email:         req.Email,
+			FirstName:     req.FirstName,
+			LastName:      req.LastName,
+			Password:      req.Password,
+			Enabled:       req.Enabled,
+			Role:          req.Role,
+			ParticipantID: req.ParticipantID,
+			AgentID:       req.AgentID,
+		})
 		if err != nil {
 			render.Render(w, r, ErrDomain(err))
 			return
@@ -168,7 +194,13 @@ func keycloakUserHandlerUpdate(commander domain.KeycloakUserCommander) http.Hand
 
 		req := middlewares.MustGetBody[UpdateKeycloakUserReq](r.Context())
 
-		user, err := commander.Update(r.Context(), id, domain.UpdateKeycloakUserParams(req))
+		user, err := commander.Update(r.Context(), id, domain.UpdateKeycloakUserParams{
+			Email:     req.Email,
+			FirstName: req.FirstName,
+			LastName:  req.LastName,
+			Enabled:   req.Enabled,
+			Password:  req.Password,
+		})
 		if err != nil {
 			render.Render(w, r, ErrDomain(err))
 			return
