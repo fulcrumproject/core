@@ -34,8 +34,8 @@ GET {{baseURL}}/keycloak-users
 Authorization: Bearer {{admin1IdToken}}
 Content-Type: application/json
 
-### List Keycloak Users with search and pagination
-GET {{baseURL}}/keycloak-users?search=admin&page=1&pageSize=10
+### List Keycloak Users with filters and pagination
+GET {{baseURL}}/keycloak-users?firstName=fulcrum&lastName=ad&email=@fulcrumproject&page=1&pageSize=10
 Authorization: Bearer {{admin1IdToken}}
 Content-Type: application/json
 

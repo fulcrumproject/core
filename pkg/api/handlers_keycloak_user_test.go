@@ -100,11 +100,11 @@ func TestKeycloakUserHandlerList(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			url:  "/keycloak-users?page=1&pageSize=10&search=john",
+			url:  "/keycloak-users?page=1&pageSize=10&firstName=john",
 			mockSetup: func(q *domain.MockKeycloakUserQuerier) {
 				q.EXPECT().
 					List(mock.Anything, mock.MatchedBy(func(p domain.KeycloakUserListParams) bool {
-						return p.Search == "john" && p.Page == 1 && p.PageSize == 10
+						return p.FirstName == "john" && p.Page == 1 && p.PageSize == 10
 					})).
 					Return(&domain.PageRes[domain.KeycloakUserListItem]{
 						Items: []domain.KeycloakUserListItem{

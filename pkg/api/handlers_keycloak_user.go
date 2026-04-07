@@ -76,10 +76,15 @@ func parsePageRequestKeycloakUser(r *http.Request) (*domain.KeycloakUserListPara
 	if err != nil {
 		return nil, err
 	}
+
+	q := r.URL.Query()
+
 	return &domain.KeycloakUserListParams{
-		Page:     pag.Page,
-		PageSize: pag.PageSize,
-		Search:   r.URL.Query().Get("search"),
+		Page:      pag.Page,
+		PageSize:  pag.PageSize,
+		Email:     q.Get("email"),
+		FirstName: q.Get("firstName"),
+		LastName:  q.Get("lastName"),
 	}, nil
 }
 

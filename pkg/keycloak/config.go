@@ -10,6 +10,7 @@ type Config struct {
 	JWKSCacheTTL       int    `json:"jwksCacheTtl" env:"OAUTH_JWKS_CACHE_TTL"`
 	ValidateIssuer     bool   `json:"validateIssuer" env:"OAUTH_VALIDATE_ISSUER"`
 	InsecureSkipVerify bool   `json:"insecureSkipVerify" env:"OAUTH_INSECURE_SKIP_VERIFY"`
+	RestyDebug         bool   `json:"restyDebug" env:"OAUTH_RESTY_DEBUG"`
 }
 
 // GetJWKSURL returns the JWKS endpoint URL for the Keycloak realm

@@ -327,13 +327,13 @@ func TestList_Success(t *testing.T) {
 	mux := newMux()
 
 	mux.HandleFunc("GET /admin/realms/"+testRealm+"/users/count", func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "john", r.URL.Query().Get("search"))
+		assert.Equal(t, "john", r.URL.Query().Get("firstName"))
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte("2"))
 	})
 
 	mux.HandleFunc("GET /admin/realms/"+testRealm+"/users", func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "john", r.URL.Query().Get("search"))
+		assert.Equal(t, "john", r.URL.Query().Get("firstName"))
 		assert.Equal(t, "10", r.URL.Query().Get("max"))
 		assert.Equal(t, "0", r.URL.Query().Get("first"))
 		assert.Equal(t, "true", r.URL.Query().Get("briefRepresentation"))
@@ -346,9 +346,9 @@ func TestList_Success(t *testing.T) {
 
 	client := setupTestClient(t, mux)
 	result, err := client.List(context.Background(), domain.KeycloakUserListParams{
-		Search:   "john",
-		Page:     1,
-		PageSize: 10,
+		FirstName: "john",
+		Page:      1,
+		PageSize:  10,
 	})
 
 	require.NoError(t, err)

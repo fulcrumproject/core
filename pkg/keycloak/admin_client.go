@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"maps"
 	"net/http"
 	"strconv"
 	"strings"
@@ -32,6 +33,10 @@ func NewAdminClient(cfg *Config) *AdminClient {
 		tlsConfig := &tls.Config{InsecureSkipVerify: true}
 		client.SetTLSClientConfig(tlsConfig)
 		tokenClient.SetTLSClientConfig(tlsConfig)
+	}
+
+	if cfg.RestyDebug {
+		client.SetDebug(true)
 	}
 
 	ac := &AdminClient{
@@ -400,15 +405,26 @@ func (a *AdminClient) Get(ctx context.Context, id string) (*domain.KeycloakUser,
 func (a *AdminClient) List(ctx context.Context, params domain.KeycloakUserListParams) (*domain.PageRes[domain.KeycloakUserListItem], error) {
 	first := (params.Page - 1) * params.PageSize
 
+	countParams := make(map[string]string)
+	if params.FirstName != "" {
+		countParams["firstName"] = params.FirstName
+	}
+
+	if params.Email != "" {
+		countParams["email"] = params.Email
+	}
+
+	if params.LastName != "" {
+		countParams["lastName"] = params.LastName
+	}
+
 	listParams := map[string]string{
-		"search":              params.Search,
 		"max":                 strconv.Itoa(params.PageSize),
 		"first":               strconv.Itoa(first),
 		"briefRepresentation": "true",
 	}
-	countParams := map[string]string{
-		"search": params.Search,
-	}
+
+	maps.Copy(listParams, countParams)
 
 	var userCount int
 	respCount, err := a.client.R().SetContext(ctx).SetQueryParams(countParams).SetResult(&userCount).Get("/users/count")

@@ -33,9 +33,11 @@ type KeycloakUserListItem struct {
 }
 
 type KeycloakUserListParams struct {
-	Search   string //maps to keycloak search contained in username, first or last name, or email.
-	Page     int    // converted to "first" = (Page-1) * PageSize
-	PageSize int    // maps to "max"
+	Email     string
+	FirstName string
+	LastName  string
+	Page      int // converted to "first" = (Page-1) * PageSize
+	PageSize  int // maps to "max"
 }
 
 // KeycloakRole represents a Keycloak realm role.
