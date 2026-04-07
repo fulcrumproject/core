@@ -16,6 +16,7 @@ type KeycloakUserRes struct {
 	ID            string   `json:"id"`
 	Username      string   `json:"username"`
 	Email         string   `json:"email"`
+	EmailVerified bool     `json:"emailVerified"`
 	FirstName     string   `json:"firstName"`
 	LastName      string   `json:"lastName"`
 	Enabled       bool     `json:"enabled"`
@@ -120,6 +121,7 @@ func keycloakUserListItemToRes(item *domain.KeycloakUserListItem) *KeycloakUserL
 type CreateKeycloakUserReq struct {
 	Username      string    `json:"username"`
 	Email         string    `json:"email"`
+	EmailVerified bool      `json:"emailVerified"`
 	FirstName     string    `json:"firstName"`
 	LastName      string    `json:"lastName"`
 	Password      string    `json:"password"`
@@ -134,6 +136,7 @@ func keycloakUserToRes(user *domain.KeycloakUser) *KeycloakUserRes {
 		ID:            user.ID,
 		Username:      user.Username,
 		Email:         user.Email,
+		EmailVerified: user.EmailVerified,
 		FirstName:     user.FirstName,
 		LastName:      user.LastName,
 		Enabled:       user.Enabled,
@@ -150,6 +153,7 @@ func keycloakUserHandlerCreate(commander domain.KeycloakUserCommander) http.Hand
 		user, err := commander.Create(r.Context(), domain.CreateKeycloakUserParams{
 			Username:      req.Username,
 			Email:         req.Email,
+			EmailVerified: req.EmailVerified,
 			FirstName:     req.FirstName,
 			LastName:      req.LastName,
 			Password:      req.Password,

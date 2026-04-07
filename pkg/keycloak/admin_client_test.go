@@ -63,17 +63,22 @@ func TestCreateUser_Success(t *testing.T) {
 		json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "john", body.Username)
 		assert.Equal(t, "john@example.com", body.Email)
+		require.Len(t, body.Credentials, 1)
+		assert.Equal(t, "password", body.Credentials[0].Type)
+		assert.Equal(t, "secret123", body.Credentials[0].Value)
+		assert.False(t, body.Credentials[0].Temporary)
 
 		w.Header().Set("Location", "/admin/realms/"+testRealm+"/users/user-123")
 		w.WriteHeader(http.StatusCreated)
 	})
 
 	client := setupTestClient(t, mux)
-	id, err := client.CreateUser(context.Background(), &domain.KeycloakUser{
+	id, err := client.CreateUser(context.Background(), domain.CreateKeycloakUserParams{
 		Username:  "john",
 		Email:     "john@example.com",
 		FirstName: "John",
 		LastName:  "Doe",
+		Password:  "secret123",
 		Enabled:   true,
 	})
 
@@ -89,7 +94,7 @@ func TestCreateUser_Conflict(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	_, err := client.CreateUser(context.Background(), &domain.KeycloakUser{
+	_, err := client.CreateUser(context.Background(), domain.CreateKeycloakUserParams{
 		Username: "john",
 	})
 
@@ -104,7 +109,7 @@ func TestCreateUser_MissingLocationHeader(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	_, err := client.CreateUser(context.Background(), &domain.KeycloakUser{
+	_, err := client.CreateUser(context.Background(), domain.CreateKeycloakUserParams{
 		Username: "john",
 	})
 

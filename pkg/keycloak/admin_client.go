@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"resty.dev/v3"
 )
 
@@ -99,15 +100,16 @@ type CredentialRepresentation struct {
 }
 
 type UserRepresentation struct {
-	ID          string                     `json:"id,omitempty"`
-	Username    string                     `json:"username,omitempty"`
-	Email       string                     `json:"email,omitempty"`
-	FirstName   string                     `json:"firstName,omitempty"`
-	LastName    string                     `json:"lastName,omitempty"`
-	Enabled     *bool                      `json:"enabled,omitempty"`
-	Attributes  map[string][]string        `json:"attributes,omitempty"`
-	RealmRoles  []string                   `json:"realmRoles,omitempty"`
-	Credentials []CredentialRepresentation `json:"credentials,omitempty"`
+	ID            string                     `json:"id,omitempty"`
+	Username      string                     `json:"username,omitempty"`
+	Email         string                     `json:"email,omitempty"`
+	EmailVerified *bool                      `json:"emailVerified,omitempty"`
+	FirstName     string                     `json:"firstName,omitempty"`
+	LastName      string                     `json:"lastName,omitempty"`
+	Enabled       *bool                      `json:"enabled,omitempty"`
+	Attributes    map[string][]string        `json:"attributes,omitempty"`
+	RealmRoles    []string                   `json:"realmRoles,omitempty"`
+	Credentials   []CredentialRepresentation `json:"credentials,omitempty"`
 }
 
 func keycloakError(resp *resty.Response, action string) error {
@@ -135,23 +137,30 @@ func keycloakError(resp *resty.Response, action string) error {
 	}
 }
 
-func (a *AdminClient) CreateUser(ctx context.Context, user *domain.KeycloakUser) (string, error) {
+func (a *AdminClient) CreateUser(ctx context.Context, params domain.CreateKeycloakUserParams) (string, error) {
 	attrs := map[string][]string{}
-	if user.ParticipantID != "" {
-		attrs["participant_id"] = []string{user.ParticipantID}
+	if params.ParticipantID != "" {
+		attrs["participant_id"] = []string{params.ParticipantID}
 	}
-	if user.AgentID != "" {
-		attrs["agent_id"] = []string{user.AgentID}
+	if params.AgentID != "" {
+		attrs["agent_id"] = []string{params.AgentID}
 	}
 
-	enabled := user.Enabled
+	enabled := helpers.BoolPtr(params.Enabled)
+	emailVerified := helpers.BoolPtr(params.EmailVerified)
 	body := UserRepresentation{
-		Username:   user.Username,
-		Email:      user.Email,
-		FirstName:  user.FirstName,
-		LastName:   user.LastName,
-		Enabled:    &enabled,
-		Attributes: attrs,
+		Username:      params.Username,
+		Email:         params.Email,
+		EmailVerified: emailVerified,
+		FirstName:     params.FirstName,
+		LastName:      params.LastName,
+		Enabled:       enabled,
+		Attributes:    attrs,
+	}
+	if params.Password != "" {
+		body.Credentials = []CredentialRepresentation{
+			{Type: "password", Value: params.Password, Temporary: false},
+		}
 	}
 	resp, err := a.client.R().
 		SetContext(ctx).
@@ -369,12 +378,18 @@ func (a *AdminClient) Get(ctx context.Context, id string) (*domain.KeycloakUser,
 		enabled = *user.Enabled
 	}
 
+	emailVerified := false
+	if user.EmailVerified != nil {
+		emailVerified = *user.EmailVerified
+	}
+
 	return &domain.KeycloakUser{
 		ID:            user.ID,
 		Username:      user.Username,
 		FirstName:     user.FirstName,
 		LastName:      user.LastName,
 		Email:         user.Email,
+		EmailVerified: emailVerified,
 		Enabled:       enabled,
 		Roles:         roleNames,
 		ParticipantID: participantID,

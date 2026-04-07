@@ -48,6 +48,7 @@ Content-Type: application/json
 {
   "username": "newparticipant",
   "email": "newparticipant@example.com",
+  "emailVerified": true,
   "firstName": "New",
   "lastName": "Participant",
   "password": "password123",

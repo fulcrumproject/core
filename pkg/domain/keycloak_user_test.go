@@ -259,19 +259,9 @@ func TestCommanderCreate_CompensatingDelete(t *testing.T) {
 		errContain string
 	}{
 		{
-			"SetPassword fails",
-			func(m *MockKeycloakAdminClient) {
-				m.EXPECT().CreateUser(mock.Anything, mock.Anything).Return("user-123", nil)
-				m.EXPECT().SetPassword(mock.Anything, "user-123", "secret123", false).Return(errors.New("password error"))
-				m.EXPECT().DeleteUser(mock.Anything, "user-123").Return(nil)
-			},
-			"password error",
-		},
-		{
 			"GetRealmRoles fails",
 			func(m *MockKeycloakAdminClient) {
 				m.EXPECT().CreateUser(mock.Anything, mock.Anything).Return("user-123", nil)
-				m.EXPECT().SetPassword(mock.Anything, "user-123", "secret123", false).Return(nil)
 				m.EXPECT().GetRealmRoles(mock.Anything).Return(nil, errors.New("roles error"))
 				m.EXPECT().DeleteUser(mock.Anything, "user-123").Return(nil)
 			},
@@ -281,7 +271,6 @@ func TestCommanderCreate_CompensatingDelete(t *testing.T) {
 			"role not found in Keycloak",
 			func(m *MockKeycloakAdminClient) {
 				m.EXPECT().CreateUser(mock.Anything, mock.Anything).Return("user-123", nil)
-				m.EXPECT().SetPassword(mock.Anything, "user-123", "secret123", false).Return(nil)
 				m.EXPECT().GetRealmRoles(mock.Anything).Return([]KeycloakRole{{ID: "r2", Name: "participant"}}, nil)
 				m.EXPECT().DeleteUser(mock.Anything, "user-123").Return(nil)
 			},
@@ -291,7 +280,6 @@ func TestCommanderCreate_CompensatingDelete(t *testing.T) {
 			"AssignRealmRoles fails",
 			func(m *MockKeycloakAdminClient) {
 				m.EXPECT().CreateUser(mock.Anything, mock.Anything).Return("user-123", nil)
-				m.EXPECT().SetPassword(mock.Anything, "user-123", "secret123", false).Return(nil)
 				m.EXPECT().GetRealmRoles(mock.Anything).Return(sampleRealmRoles(), nil)
 				m.EXPECT().AssignRealmRoles(mock.Anything, "user-123", mock.Anything).Return(errors.New("assign error"))
 				m.EXPECT().DeleteUser(mock.Anything, "user-123").Return(nil)
@@ -321,7 +309,6 @@ func TestCommanderCreate_Success(t *testing.T) {
 	cmd := NewKeycloakUserCommander(adminClient, nil, nil)
 
 	adminClient.EXPECT().CreateUser(mock.Anything, mock.Anything).Return("user-123", nil)
-	adminClient.EXPECT().SetPassword(mock.Anything, "user-123", "secret123", false).Return(nil)
 	adminClient.EXPECT().GetRealmRoles(mock.Anything).Return(sampleRealmRoles(), nil)
 	adminClient.EXPECT().AssignRealmRoles(mock.Anything, "user-123", []KeycloakRole{{ID: "r1", Name: "admin"}}).Return(nil)
 	adminClient.EXPECT().Get(mock.Anything, "user-123").Return(sampleKeycloakUser(), nil)

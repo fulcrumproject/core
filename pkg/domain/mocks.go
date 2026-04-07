@@ -8821,7 +8821,7 @@ func (_c *MockKeycloakAdminClient_AssignRealmRoles_Call) RunAndReturn(run func(c
 }
 
 // CreateUser provides a mock function for the type MockKeycloakAdminClient
-func (_mock *MockKeycloakAdminClient) CreateUser(ctx context.Context, user *KeycloakUser) (string, error) {
+func (_mock *MockKeycloakAdminClient) CreateUser(ctx context.Context, user CreateKeycloakUserParams) (string, error) {
 	ret := _mock.Called(ctx, user)
 
 	if len(ret) == 0 {
@@ -8830,15 +8830,15 @@ func (_mock *MockKeycloakAdminClient) CreateUser(ctx context.Context, user *Keyc
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *KeycloakUser) (string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateKeycloakUserParams) (string, error)); ok {
 		return returnFunc(ctx, user)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *KeycloakUser) string); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateKeycloakUserParams) string); ok {
 		r0 = returnFunc(ctx, user)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *KeycloakUser) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateKeycloakUserParams) error); ok {
 		r1 = returnFunc(ctx, user)
 	} else {
 		r1 = ret.Error(1)
@@ -8853,20 +8853,20 @@ type MockKeycloakAdminClient_CreateUser_Call struct {
 
 // CreateUser is a helper method to define mock.On call
 //   - ctx context.Context
-//   - user *KeycloakUser
+//   - user CreateKeycloakUserParams
 func (_e *MockKeycloakAdminClient_Expecter) CreateUser(ctx interface{}, user interface{}) *MockKeycloakAdminClient_CreateUser_Call {
 	return &MockKeycloakAdminClient_CreateUser_Call{Call: _e.mock.On("CreateUser", ctx, user)}
 }
 
-func (_c *MockKeycloakAdminClient_CreateUser_Call) Run(run func(ctx context.Context, user *KeycloakUser)) *MockKeycloakAdminClient_CreateUser_Call {
+func (_c *MockKeycloakAdminClient_CreateUser_Call) Run(run func(ctx context.Context, user CreateKeycloakUserParams)) *MockKeycloakAdminClient_CreateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *KeycloakUser
+		var arg1 CreateKeycloakUserParams
 		if args[1] != nil {
-			arg1 = args[1].(*KeycloakUser)
+			arg1 = args[1].(CreateKeycloakUserParams)
 		}
 		run(
 			arg0,
@@ -8881,7 +8881,7 @@ func (_c *MockKeycloakAdminClient_CreateUser_Call) Return(s string, err error) *
 	return _c
 }
 
-func (_c *MockKeycloakAdminClient_CreateUser_Call) RunAndReturn(run func(ctx context.Context, user *KeycloakUser) (string, error)) *MockKeycloakAdminClient_CreateUser_Call {
+func (_c *MockKeycloakAdminClient_CreateUser_Call) RunAndReturn(run func(ctx context.Context, user CreateKeycloakUserParams) (string, error)) *MockKeycloakAdminClient_CreateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

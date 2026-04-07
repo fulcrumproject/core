@@ -14,6 +14,7 @@ type KeycloakUser struct {
 	FirstName     string
 	LastName      string
 	Email         string
+	EmailVerified bool
 	Enabled       bool
 	Roles         []string
 	ParticipantID string
@@ -52,7 +53,7 @@ type KeycloakUserQuerier interface {
 // Implemented by keycloak.AdminClient.
 type KeycloakAdminClient interface {
 	KeycloakUserQuerier
-	CreateUser(ctx context.Context, user *KeycloakUser) (string, error)
+	CreateUser(ctx context.Context, user CreateKeycloakUserParams) (string, error)
 	UpdateUser(ctx context.Context, id string, params UpdateKeycloakUserParams) (*KeycloakUser, error)
 	DeleteUser(ctx context.Context, id string) error
 	SetPassword(ctx context.Context, id string, password string, temporary bool) error
@@ -64,6 +65,7 @@ type KeycloakAdminClient interface {
 type CreateKeycloakUserParams struct {
 	Username      string
 	Email         string
+	EmailVerified bool
 	FirstName     string
 	LastName      string
 	Password      string
@@ -152,26 +154,13 @@ func (c *keycloakUserCommander) Create(ctx context.Context, params CreateKeycloa
 	}
 
 	// Create user in Keycloak
-	userID, err := c.adminClient.CreateUser(ctx, &KeycloakUser{
-		Username:      params.Username,
-		Email:         params.Email,
-		FirstName:     params.FirstName,
-		LastName:      params.LastName,
-		Enabled:       params.Enabled,
-		ParticipantID: params.ParticipantID,
-		AgentID:       params.AgentID,
-	})
+	userID, err := c.adminClient.CreateUser(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set password
-	if err := c.adminClient.SetPassword(ctx, userID, params.Password, false); err != nil {
-		c.compensatingDelete(ctx, userID)
-		return nil, err
-	}
-
-	// Assign realm role
+	// Keycloak's POST /users endpoint ignores the realmRoles field in the request body.
+	// Roles must be assigned via a separate POST /users/{id}/role-mappings/realm call.
 	realmRoles, err := c.adminClient.GetRealmRoles(ctx)
 	if err != nil {
 		c.compensatingDelete(ctx, userID)
