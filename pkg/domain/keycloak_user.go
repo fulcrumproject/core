@@ -8,6 +8,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/properties"
 )
 
+// KeycloakUser represents a user managed in Keycloak.
 type KeycloakUser struct {
 	ID            string
 	Username      string
@@ -32,6 +33,7 @@ type KeycloakUserListItem struct {
 	LastName  string
 }
 
+// KeycloakUserListParams defines the filtering and pagination parameters for listing keycloak users.
 type KeycloakUserListParams struct {
 	Email     string
 	FirstName string
@@ -46,6 +48,7 @@ type KeycloakRole struct {
 	Name string `json:"name"`
 }
 
+// KeycloakUserQuerier defines the read operations for keycloak users.
 type KeycloakUserQuerier interface {
 	Get(ctx context.Context, id string) (*KeycloakUser, error)
 	List(ctx context.Context, params KeycloakUserListParams) (*PageRes[KeycloakUserListItem], error)
@@ -55,15 +58,16 @@ type KeycloakUserQuerier interface {
 // Implemented by keycloak.AdminClient.
 type KeycloakAdminClient interface {
 	KeycloakUserQuerier
-	CreateUser(ctx context.Context, user CreateKeycloakUserParams) (string, error)
-	UpdateUser(ctx context.Context, id string, params UpdateKeycloakUserParams) (*KeycloakUser, error)
-	DeleteUser(ctx context.Context, id string) error
+	Create(ctx context.Context, user CreateKeycloakUserParams) (string, error)
+	Update(ctx context.Context, id string, params UpdateKeycloakUserParams) (*KeycloakUser, error)
+	Delete(ctx context.Context, id string) error
 	SetPassword(ctx context.Context, id string, password string, temporary bool) error
 	GetRealmRoles(ctx context.Context) ([]KeycloakRole, error)
 	AssignRealmRoles(ctx context.Context, id string, roles []KeycloakRole) error
 	RemoveRealmRoles(ctx context.Context, id string, roles []KeycloakRole) error
 }
 
+// CreateKeycloakUserParams defines the parameters for creating a keycloak user.
 type CreateKeycloakUserParams struct {
 	Username      string
 	Email         string
@@ -99,6 +103,7 @@ func (p *CreateKeycloakUserParams) Validate() error {
 	return nil
 }
 
+// UpdateKeycloakUserParams defines the parameters for updating a keycloak user.
 type UpdateKeycloakUserParams struct {
 	Email     *string
 	FirstName *string
@@ -107,6 +112,7 @@ type UpdateKeycloakUserParams struct {
 	Password  *string
 }
 
+// KeycloakUserCommander defines the write operations for keycloak users.
 type KeycloakUserCommander interface {
 	Create(ctx context.Context, params CreateKeycloakUserParams) (*KeycloakUser, error)
 	Update(ctx context.Context, id string, params UpdateKeycloakUserParams) (*KeycloakUser, error)
@@ -119,6 +125,7 @@ type keycloakUserCommander struct {
 	agentQuerier       AgentQuerier
 }
 
+// NewKeycloakUserCommander creates a new KeycloakUserCommander.
 func NewKeycloakUserCommander(
 	adminClient KeycloakAdminClient,
 	participantQuerier ParticipantQuerier,
@@ -156,7 +163,7 @@ func (c *keycloakUserCommander) Create(ctx context.Context, params CreateKeycloa
 	}
 
 	// Create user in Keycloak
-	userID, err := c.adminClient.CreateUser(ctx, params)
+	userID, err := c.adminClient.Create(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +199,7 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 		return nil, NewInvalidInputErrorf("keycloak user id is required")
 	}
 
-	user, err := c.adminClient.UpdateUser(ctx, id, UpdateKeycloakUserParams{
+	user, err := c.adminClient.Update(ctx, id, UpdateKeycloakUserParams{
 		Email:     params.Email,
 		FirstName: params.FirstName,
 		LastName:  params.LastName,
@@ -215,12 +222,12 @@ func (c *keycloakUserCommander) Delete(ctx context.Context, id string) error {
 	if id == "" {
 		return NewInvalidInputErrorf("keycloak user id is required")
 	}
-	return c.adminClient.DeleteUser(ctx, id)
+	return c.adminClient.Delete(ctx, id)
 }
 
 // compensatingDelete attempts to clean up a partially created user.
 func (c *keycloakUserCommander) compensatingDelete(ctx context.Context, userID string) {
-	if err := c.adminClient.DeleteUser(ctx, userID); err != nil {
+	if err := c.adminClient.Delete(ctx, userID); err != nil {
 		slog.Error("failed compensating delete of keycloak user", "userID", userID, "error", err)
 	}
 }

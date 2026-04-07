@@ -16,6 +16,7 @@ import (
 	"resty.dev/v3"
 )
 
+// AdminClient implements domain.KeycloakAdminClient using the Keycloak Admin REST API.
 type AdminClient struct {
 	config      *Config
 	client      *resty.Client
@@ -25,6 +26,7 @@ type AdminClient struct {
 	tokenMu     sync.Mutex
 }
 
+// NewAdminClient creates a new AdminClient configured with the given Keycloak settings.
 func NewAdminClient(cfg *Config) *AdminClient {
 	client := resty.New().SetBaseURL(cfg.GetAdminUrl()).SetHeader("Content-Type", "application/json").SetError(&keycloakErrorBody{})
 	tokenClient := resty.New()
@@ -89,6 +91,7 @@ func (a *AdminClient) ensureToken(ctx context.Context) (string, error) {
 
 }
 
+// AdminToken represents an OAuth2 token response from Keycloak.
 type AdminToken struct {
 	AccessToken string `json:"access_token"`
 	ExpiresIn   int    `json:"expires_in"`
@@ -98,12 +101,14 @@ type keycloakErrorBody struct {
 	ErrorMessage string `json:"errorMessage"`
 }
 
+// CredentialRepresentation is the Keycloak API representation of a user credential.
 type CredentialRepresentation struct {
 	Type      string `json:"type"`
 	Value     string `json:"value"`
 	Temporary bool   `json:"temporary"`
 }
 
+// UserRepresentation is the Keycloak API representation of a user.
 type UserRepresentation struct {
 	ID            string                     `json:"id,omitempty"`
 	Username      string                     `json:"username,omitempty"`
@@ -142,7 +147,8 @@ func keycloakError(resp *resty.Response, action string) error {
 	}
 }
 
-func (a *AdminClient) CreateUser(ctx context.Context, params domain.CreateKeycloakUserParams) (string, error) {
+// Create creates a new user in Keycloak and returns the user ID.
+func (a *AdminClient) Create(ctx context.Context, params domain.CreateKeycloakUserParams) (string, error) {
 	attrs := map[string][]string{}
 	if params.ParticipantID != "" {
 		attrs["participant_id"] = []string{params.ParticipantID}
@@ -185,7 +191,8 @@ func (a *AdminClient) CreateUser(ctx context.Context, params domain.CreateKeyclo
 	return parts[len(parts)-1], nil
 }
 
-func (a *AdminClient) UpdateUser(ctx context.Context, id string, params domain.UpdateKeycloakUserParams) (*domain.KeycloakUser, error) {
+// Update updates an existing user in Keycloak and returns the updated user.
+func (a *AdminClient) Update(ctx context.Context, id string, params domain.UpdateKeycloakUserParams) (*domain.KeycloakUser, error) {
 	if id == "" {
 		return nil, domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
@@ -233,7 +240,8 @@ func (a *AdminClient) UpdateUser(ctx context.Context, id string, params domain.U
 	return a.Get(ctx, id)
 }
 
-func (a *AdminClient) DeleteUser(ctx context.Context, id string) error {
+// Delete deletes a user from Keycloak.
+func (a *AdminClient) Delete(ctx context.Context, id string) error {
 	if id == "" {
 		return domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
@@ -250,6 +258,7 @@ func (a *AdminClient) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
+// SetPassword sets or resets a user's password in Keycloak.
 func (a *AdminClient) SetPassword(ctx context.Context, id string, password string, temporary bool) error {
 	if id == "" {
 		return domain.NewInvalidInputErrorf("keycloak user id is required")
@@ -273,6 +282,7 @@ func (a *AdminClient) SetPassword(ctx context.Context, id string, password strin
 	return nil
 }
 
+// GetRealmRoles returns all realm-level roles from Keycloak.
 func (a *AdminClient) GetRealmRoles(ctx context.Context) ([]domain.KeycloakRole, error) {
 	var roles []domain.KeycloakRole
 	resp, err := a.client.R().
@@ -288,6 +298,7 @@ func (a *AdminClient) GetRealmRoles(ctx context.Context) ([]domain.KeycloakRole,
 	return roles, nil
 }
 
+// AssignRealmRoles assigns realm roles to a user in Keycloak.
 func (a *AdminClient) AssignRealmRoles(ctx context.Context, id string, roles []domain.KeycloakRole) error {
 	if id == "" {
 		return domain.NewInvalidInputErrorf("keycloak user id is required")
@@ -306,6 +317,7 @@ func (a *AdminClient) AssignRealmRoles(ctx context.Context, id string, roles []d
 	return nil
 }
 
+// RemoveRealmRoles removes realm roles from a user in Keycloak.
 func (a *AdminClient) RemoveRealmRoles(ctx context.Context, id string, roles []domain.KeycloakRole) error {
 	if id == "" {
 		return domain.NewInvalidInputErrorf("keycloak user id is required")
@@ -324,7 +336,7 @@ func (a *AdminClient) RemoveRealmRoles(ctx context.Context, id string, roles []d
 	return nil
 }
 
-func (a *AdminClient) GetUserRealmRoles(ctx context.Context, id string) ([]domain.KeycloakRole, error) {
+func (a *AdminClient) getUserRealmRoles(ctx context.Context, id string) ([]domain.KeycloakRole, error) {
 	if id == "" {
 		return nil, domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
@@ -343,6 +355,7 @@ func (a *AdminClient) GetUserRealmRoles(ctx context.Context, id string) ([]domai
 	return roles, nil
 }
 
+// Get retrieves a single keycloak user by ID, including their realm roles.
 func (a *AdminClient) Get(ctx context.Context, id string) (*domain.KeycloakUser, error) {
 	if id == "" {
 		return nil, domain.NewInvalidInputErrorf("keycloak user id is required")
@@ -360,7 +373,7 @@ func (a *AdminClient) Get(ctx context.Context, id string) (*domain.KeycloakUser,
 		return nil, keycloakError(resp, "get user")
 	}
 
-	roles, err := a.GetUserRealmRoles(ctx, id)
+	roles, err := a.getUserRealmRoles(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -402,6 +415,7 @@ func (a *AdminClient) Get(ctx context.Context, id string) (*domain.KeycloakUser,
 	}, nil
 }
 
+// List retrieves a paginated list of keycloak users.
 func (a *AdminClient) List(ctx context.Context, params domain.KeycloakUserListParams) (*domain.PageRes[domain.KeycloakUserListItem], error) {
 	first := (params.Page - 1) * params.PageSize
 

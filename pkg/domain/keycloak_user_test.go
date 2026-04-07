@@ -261,28 +261,28 @@ func TestCommanderCreate_CompensatingDelete(t *testing.T) {
 		{
 			"GetRealmRoles fails",
 			func(m *MockKeycloakAdminClient) {
-				m.EXPECT().CreateUser(mock.Anything, mock.Anything).Return("user-123", nil)
+				m.EXPECT().Create(mock.Anything, mock.Anything).Return("user-123", nil)
 				m.EXPECT().GetRealmRoles(mock.Anything).Return(nil, errors.New("roles error"))
-				m.EXPECT().DeleteUser(mock.Anything, "user-123").Return(nil)
+				m.EXPECT().Delete(mock.Anything, "user-123").Return(nil)
 			},
 			"roles error",
 		},
 		{
 			"role not found in Keycloak",
 			func(m *MockKeycloakAdminClient) {
-				m.EXPECT().CreateUser(mock.Anything, mock.Anything).Return("user-123", nil)
+				m.EXPECT().Create(mock.Anything, mock.Anything).Return("user-123", nil)
 				m.EXPECT().GetRealmRoles(mock.Anything).Return([]KeycloakRole{{ID: "r2", Name: "participant"}}, nil)
-				m.EXPECT().DeleteUser(mock.Anything, "user-123").Return(nil)
+				m.EXPECT().Delete(mock.Anything, "user-123").Return(nil)
 			},
 			"admin",
 		},
 		{
 			"AssignRealmRoles fails",
 			func(m *MockKeycloakAdminClient) {
-				m.EXPECT().CreateUser(mock.Anything, mock.Anything).Return("user-123", nil)
+				m.EXPECT().Create(mock.Anything, mock.Anything).Return("user-123", nil)
 				m.EXPECT().GetRealmRoles(mock.Anything).Return(sampleRealmRoles(), nil)
 				m.EXPECT().AssignRealmRoles(mock.Anything, "user-123", mock.Anything).Return(errors.New("assign error"))
-				m.EXPECT().DeleteUser(mock.Anything, "user-123").Return(nil)
+				m.EXPECT().Delete(mock.Anything, "user-123").Return(nil)
 			},
 			"assign error",
 		},
@@ -308,7 +308,7 @@ func TestCommanderCreate_Success(t *testing.T) {
 	adminClient := NewMockKeycloakAdminClient(t)
 	cmd := NewKeycloakUserCommander(adminClient, nil, nil)
 
-	adminClient.EXPECT().CreateUser(mock.Anything, mock.Anything).Return("user-123", nil)
+	adminClient.EXPECT().Create(mock.Anything, mock.Anything).Return("user-123", nil)
 	adminClient.EXPECT().GetRealmRoles(mock.Anything).Return(sampleRealmRoles(), nil)
 	adminClient.EXPECT().AssignRealmRoles(mock.Anything, "user-123", []KeycloakRole{{ID: "r1", Name: "admin"}}).Return(nil)
 	adminClient.EXPECT().Get(mock.Anything, "user-123").Return(sampleKeycloakUser(), nil)
@@ -350,7 +350,7 @@ func TestCommanderUpdate(t *testing.T) {
 			setup: func(m *MockKeycloakAdminClient) {
 				updated := sampleKeycloakUser()
 				updated.Email = newEmail
-				m.EXPECT().UpdateUser(mock.Anything, "user-123", mock.Anything).Return(updated, nil)
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(updated, nil)
 			},
 			checkResult: func(t *testing.T, u *KeycloakUser) {
 				assert.Equal(t, "new@example.com", u.Email)
@@ -361,7 +361,7 @@ func TestCommanderUpdate(t *testing.T) {
 			id:     "user-123",
 			params: UpdateKeycloakUserParams{Password: &newPass},
 			setup: func(m *MockKeycloakAdminClient) {
-				m.EXPECT().UpdateUser(mock.Anything, "user-123", mock.Anything).Return(sampleKeycloakUser(), nil)
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(sampleKeycloakUser(), nil)
 				m.EXPECT().SetPassword(mock.Anything, "user-123", "newpass123", false).Return(nil)
 			},
 			checkResult: func(t *testing.T, u *KeycloakUser) {
@@ -373,7 +373,7 @@ func TestCommanderUpdate(t *testing.T) {
 			id:     "user-123",
 			params: UpdateKeycloakUserParams{},
 			setup: func(m *MockKeycloakAdminClient) {
-				m.EXPECT().UpdateUser(mock.Anything, "user-123", mock.Anything).Return(nil, errors.New("update failed"))
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(nil, errors.New("update failed"))
 			},
 			wantErr:    true,
 			errContain: "update failed",
@@ -421,14 +421,14 @@ func TestCommanderDelete(t *testing.T) {
 			name: "success",
 			id:   "user-123",
 			setup: func(m *MockKeycloakAdminClient) {
-				m.EXPECT().DeleteUser(mock.Anything, "user-123").Return(nil)
+				m.EXPECT().Delete(mock.Anything, "user-123").Return(nil)
 			},
 		},
 		{
 			name: "failure",
 			id:   "user-123",
 			setup: func(m *MockKeycloakAdminClient) {
-				m.EXPECT().DeleteUser(mock.Anything, "user-123").Return(errors.New("delete failed"))
+				m.EXPECT().Delete(mock.Anything, "user-123").Return(errors.New("delete failed"))
 			},
 			wantErr:    true,
 			errContain: "delete failed",

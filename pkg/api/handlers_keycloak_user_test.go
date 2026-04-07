@@ -78,7 +78,7 @@ func TestKeycloakUserToRes(t *testing.T) {
 		AgentID:       "a-1",
 	}
 
-	res := keycloakUserToRes(user)
+	res := KeycloakUserToRes(user)
 
 	assert.Equal(t, "user-123", res.ID)
 	assert.Equal(t, "john", res.Username)
@@ -132,7 +132,8 @@ func TestKeycloakUserHandlerList(t *testing.T) {
 			querier := domain.NewMockKeycloakUserQuerier(t)
 			tc.mockSetup(querier)
 
-			handler := keycloakUserHandlerList(querier)
+			h := &KeycloakUserHandler{querier: querier}
+			handler := http.HandlerFunc(h.List)
 
 			req := httptest.NewRequest("GET", tc.url, nil)
 			req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAdmin()))
@@ -214,7 +215,8 @@ func TestKeycloakUserHandlerCreate(t *testing.T) {
 			req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAdmin()))
 
 			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.DecodeBody[CreateKeycloakUserReq]()(keycloakUserHandlerCreate(commander))
+			h := &KeycloakUserHandler{commander: commander}
+			middlewareHandler := middlewares.DecodeBody[CreateKeycloakUserReq]()(http.HandlerFunc(h.Create))
 			middlewareHandler.ServeHTTP(w, req)
 
 			assert.Equal(t, tc.expectedStatus, w.Code)
@@ -268,7 +270,8 @@ func TestKeycloakUserHandlerGet(t *testing.T) {
 			querier := domain.NewMockKeycloakUserQuerier(t)
 			tc.mockSetup(querier)
 
-			handler := keycloakUserHandlerGet(querier)
+			h := &KeycloakUserHandler{querier: querier}
+			handler := http.HandlerFunc(h.Get)
 
 			req := httptest.NewRequest("GET", "/keycloak-users/"+tc.id, nil)
 			rctx := chi.NewRouteContext()
@@ -352,7 +355,8 @@ func TestKeycloakUserHandlerUpdate(t *testing.T) {
 			req = req.WithContext(auth.WithIdentity(req.Context(), newMockAuthAdmin()))
 
 			w := httptest.NewRecorder()
-			middlewareHandler := middlewares.DecodeBody[UpdateKeycloakUserReq]()(keycloakUserHandlerUpdate(commander))
+			h := &KeycloakUserHandler{commander: commander}
+			middlewareHandler := middlewares.DecodeBody[UpdateKeycloakUserReq]()(http.HandlerFunc(h.Update))
 			middlewareHandler.ServeHTTP(w, req)
 
 			assert.Equal(t, tc.expectedStatus, w.Code)
@@ -398,7 +402,8 @@ func TestKeycloakUserHandlerDelete(t *testing.T) {
 			commander := domain.NewMockKeycloakUserCommander(t)
 			tc.mockSetup(commander)
 
-			handler := keycloakUserHandlerDelete(commander)
+			h := &KeycloakUserHandler{commander: commander}
+			handler := http.HandlerFunc(h.Delete)
 
 			req := httptest.NewRequest("DELETE", "/keycloak-users/"+tc.id, nil)
 			rctx := chi.NewRouteContext()

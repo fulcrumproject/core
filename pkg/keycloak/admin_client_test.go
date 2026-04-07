@@ -54,9 +54,9 @@ func jsonResponse(w http.ResponseWriter, v any) {
 	json.NewEncoder(w).Encode(v)
 }
 
-// --- CreateUser ---
+// --- Create ---
 
-func TestCreateUser_Success(t *testing.T) {
+func TestCreate_Success(t *testing.T) {
 	mux := newMux()
 	mux.HandleFunc("POST /admin/realms/"+testRealm+"/users", func(w http.ResponseWriter, r *http.Request) {
 		var body UserRepresentation
@@ -73,7 +73,7 @@ func TestCreateUser_Success(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	id, err := client.CreateUser(context.Background(), domain.CreateKeycloakUserParams{
+	id, err := client.Create(context.Background(), domain.CreateKeycloakUserParams{
 		Username:  "john",
 		Email:     "john@example.com",
 		FirstName: "John",
@@ -86,7 +86,7 @@ func TestCreateUser_Success(t *testing.T) {
 	assert.Equal(t, "user-123", id)
 }
 
-func TestCreateUser_Conflict(t *testing.T) {
+func TestCreate_Conflict(t *testing.T) {
 	mux := newMux()
 	mux.HandleFunc("POST /admin/realms/"+testRealm+"/users", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusConflict)
@@ -94,7 +94,7 @@ func TestCreateUser_Conflict(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	_, err := client.CreateUser(context.Background(), domain.CreateKeycloakUserParams{
+	_, err := client.Create(context.Background(), domain.CreateKeycloakUserParams{
 		Username: "john",
 	})
 
@@ -102,14 +102,14 @@ func TestCreateUser_Conflict(t *testing.T) {
 	assert.ErrorAs(t, err, &domain.InvalidInputError{})
 }
 
-func TestCreateUser_MissingLocationHeader(t *testing.T) {
+func TestCreate_MissingLocationHeader(t *testing.T) {
 	mux := newMux()
 	mux.HandleFunc("POST /admin/realms/"+testRealm+"/users", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
 	client := setupTestClient(t, mux)
-	_, err := client.CreateUser(context.Background(), domain.CreateKeycloakUserParams{
+	_, err := client.Create(context.Background(), domain.CreateKeycloakUserParams{
 		Username: "john",
 	})
 
@@ -117,9 +117,9 @@ func TestCreateUser_MissingLocationHeader(t *testing.T) {
 	assert.Contains(t, err.Error(), "missing Location header")
 }
 
-// --- UpdateUser ---
+// --- Update ---
 
-func TestUpdateUser_MergesFields(t *testing.T) {
+func TestUpdate_MergesFields(t *testing.T) {
 	newEmail := "new@example.com"
 	putBodyCh := make(chan UserRepresentation, 1)
 
@@ -156,7 +156,7 @@ func TestUpdateUser_MergesFields(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	result, err := client.UpdateUser(context.Background(), "user-123", domain.UpdateKeycloakUserParams{
+	result, err := client.Update(context.Background(), "user-123", domain.UpdateKeycloakUserParams{
 		Email: &newEmail,
 	})
 
@@ -177,56 +177,56 @@ func TestUpdateUser_MergesFields(t *testing.T) {
 	assert.Equal(t, []string{"admin"}, result.Roles)
 }
 
-func TestUpdateUser_EmptyID(t *testing.T) {
+func TestUpdate_EmptyID(t *testing.T) {
 	client := setupTestClient(t, newMux())
-	_, err := client.UpdateUser(context.Background(), "", domain.UpdateKeycloakUserParams{})
+	_, err := client.Update(context.Background(), "", domain.UpdateKeycloakUserParams{})
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.InvalidInputError{})
 }
 
-func TestUpdateUser_NotFound(t *testing.T) {
+func TestUpdate_NotFound(t *testing.T) {
 	mux := newMux()
 	mux.HandleFunc("GET /admin/realms/"+testRealm+"/users/bad-id", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 
 	client := setupTestClient(t, mux)
-	_, err := client.UpdateUser(context.Background(), "bad-id", domain.UpdateKeycloakUserParams{})
+	_, err := client.Update(context.Background(), "bad-id", domain.UpdateKeycloakUserParams{})
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.NotFoundError{})
 }
 
-// --- DeleteUser ---
+// --- Delete ---
 
-func TestDeleteUser_Success(t *testing.T) {
+func TestDelete_Success(t *testing.T) {
 	mux := newMux()
 	mux.HandleFunc("DELETE /admin/realms/"+testRealm+"/users/user-123", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
 	client := setupTestClient(t, mux)
-	err := client.DeleteUser(context.Background(), "user-123")
+	err := client.Delete(context.Background(), "user-123")
 	require.NoError(t, err)
 }
 
-func TestDeleteUser_EmptyID(t *testing.T) {
+func TestDelete_EmptyID(t *testing.T) {
 	client := setupTestClient(t, newMux())
-	err := client.DeleteUser(context.Background(), "")
+	err := client.Delete(context.Background(), "")
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.InvalidInputError{})
 }
 
-func TestDeleteUser_NotFound(t *testing.T) {
+func TestDelete_NotFound(t *testing.T) {
 	mux := newMux()
 	mux.HandleFunc("DELETE /admin/realms/"+testRealm+"/users/bad-id", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 
 	client := setupTestClient(t, mux)
-	err := client.DeleteUser(context.Background(), "bad-id")
+	err := client.Delete(context.Background(), "bad-id")
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.NotFoundError{})
@@ -488,8 +488,8 @@ func TestEnsureToken_CachesToken(t *testing.T) {
 	ctx := context.Background()
 
 	// Two calls should only request one token
-	_ = client.DeleteUser(ctx, "u1")
-	_ = client.DeleteUser(ctx, "u2")
+	_ = client.Delete(ctx, "u1")
+	_ = client.Delete(ctx, "u2")
 
 	assert.Equal(t, 1, tokenCalls, "token should be cached across requests")
 }
@@ -502,34 +502,9 @@ func TestEnsureToken_FailureReturnsError(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	err := client.DeleteUser(context.Background(), "user-123")
+	err := client.Delete(context.Background(), "user-123")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "token request failed")
 }
 
-// --- GetUserRealmRoles ---
-
-func TestGetUserRealmRoles_Success(t *testing.T) {
-	mux := newMux()
-	mux.HandleFunc("GET /admin/realms/"+testRealm+"/users/user-123/role-mappings/realm", func(w http.ResponseWriter, r *http.Request) {
-		jsonResponse(w, []domain.KeycloakRole{
-			{ID: "r1", Name: "admin"},
-		})
-	})
-
-	client := setupTestClient(t, mux)
-	roles, err := client.GetUserRealmRoles(context.Background(), "user-123")
-
-	require.NoError(t, err)
-	assert.Len(t, roles, 1)
-	assert.Equal(t, "admin", roles[0].Name)
-}
-
-func TestGetUserRealmRoles_EmptyID(t *testing.T) {
-	client := setupTestClient(t, newMux())
-	_, err := client.GetUserRealmRoles(context.Background(), "")
-
-	require.Error(t, err)
-	assert.ErrorAs(t, err, &domain.InvalidInputError{})
-}
