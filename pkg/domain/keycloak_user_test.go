@@ -143,14 +143,6 @@ func validCreateParams() CreateKeycloakUserParams {
 	}
 }
 
-func sampleRealmRoles() []KeycloakRole {
-	return []KeycloakRole{
-		{ID: "r1", Name: "admin"},
-		{ID: "r2", Name: "participant"},
-		{ID: "r3", Name: "agent"},
-	}
-}
-
 func sampleKeycloakUser() *KeycloakUser {
 	return &KeycloakUser{
 		ID: "user-123", Username: "john", Email: "john@example.com",
@@ -253,53 +245,16 @@ func TestCommanderCreate_AgentValidation(t *testing.T) {
 // --- Commander Create: compensating deletes ---
 
 func TestCommanderCreate_CompensatingDelete(t *testing.T) {
-	tests := []struct {
-		name       string
-		setup      func(*MockKeycloakAdminClient)
-		errContain string
-	}{
-		{
-			"GetRealmRoles fails",
-			func(m *MockKeycloakAdminClient) {
-				m.EXPECT().Create(mock.Anything, mock.Anything).Return("user-123", nil)
-				m.EXPECT().GetRealmRoles(mock.Anything).Return(nil, errors.New("roles error"))
-				m.EXPECT().Delete(mock.Anything, "user-123").Return(nil)
-			},
-			"roles error",
-		},
-		{
-			"role not found in Keycloak",
-			func(m *MockKeycloakAdminClient) {
-				m.EXPECT().Create(mock.Anything, mock.Anything).Return("user-123", nil)
-				m.EXPECT().GetRealmRoles(mock.Anything).Return([]KeycloakRole{{ID: "r2", Name: "participant"}}, nil)
-				m.EXPECT().Delete(mock.Anything, "user-123").Return(nil)
-			},
-			"admin",
-		},
-		{
-			"AssignRealmRoles fails",
-			func(m *MockKeycloakAdminClient) {
-				m.EXPECT().Create(mock.Anything, mock.Anything).Return("user-123", nil)
-				m.EXPECT().GetRealmRoles(mock.Anything).Return(sampleRealmRoles(), nil)
-				m.EXPECT().AssignRealmRoles(mock.Anything, "user-123", mock.Anything).Return(errors.New("assign error"))
-				m.EXPECT().Delete(mock.Anything, "user-123").Return(nil)
-			},
-			"assign error",
-		},
-	}
+	adminClient := NewMockKeycloakAdminClient(t)
+	adminClient.EXPECT().Create(mock.Anything, mock.Anything).Return("user-123", nil)
+	adminClient.EXPECT().SetRole(mock.Anything, "user-123", "admin").Return(errors.New("set role error"))
+	adminClient.EXPECT().Delete(mock.Anything, "user-123").Return(nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			adminClient := NewMockKeycloakAdminClient(t)
-			tt.setup(adminClient)
-			cmd := NewKeycloakUserCommander(adminClient, nil, nil)
+	cmd := NewKeycloakUserCommander(adminClient, nil, nil)
+	_, err := cmd.Create(context.Background(), validCreateParams())
 
-			_, err := cmd.Create(context.Background(), validCreateParams())
-
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), tt.errContain)
-		})
-	}
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "set role error")
 }
 
 // --- Commander Create: happy path ---
@@ -309,8 +264,7 @@ func TestCommanderCreate_Success(t *testing.T) {
 	cmd := NewKeycloakUserCommander(adminClient, nil, nil)
 
 	adminClient.EXPECT().Create(mock.Anything, mock.Anything).Return("user-123", nil)
-	adminClient.EXPECT().GetRealmRoles(mock.Anything).Return(sampleRealmRoles(), nil)
-	adminClient.EXPECT().AssignRealmRoles(mock.Anything, "user-123", []KeycloakRole{{ID: "r1", Name: "admin"}}).Return(nil)
+	adminClient.EXPECT().SetRole(mock.Anything, "user-123", "admin").Return(nil)
 	adminClient.EXPECT().Get(mock.Anything, "user-123").Return(sampleKeycloakUser(), nil)
 
 	result, err := cmd.Create(context.Background(), validCreateParams())
@@ -327,19 +281,19 @@ func TestCommanderUpdate(t *testing.T) {
 	newPass := "newpass123"
 
 	tests := []struct {
-		name       string
-		id         string
-		params     UpdateKeycloakUserParams
-		setup      func(*MockKeycloakAdminClient)
-		wantErr    bool
-		errContain string
+		name        string
+		id          string
+		params      UpdateKeycloakUserParams
+		setup       func(*MockKeycloakAdminClient, *MockParticipantQuerier, *MockAgentQuerier)
+		wantErr     bool
+		errContain  string
 		checkResult func(*testing.T, *KeycloakUser)
 	}{
 		{
-			name:       "empty ID",
-			id:         "",
-			params:     UpdateKeycloakUserParams{},
-			setup:      func(m *MockKeycloakAdminClient) {},
+			name:   "empty ID",
+			id:     "",
+			params: UpdateKeycloakUserParams{},
+			setup:  func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {},
 			wantErr:    true,
 			errContain: "id is required",
 		},
@@ -347,10 +301,11 @@ func TestCommanderUpdate(t *testing.T) {
 			name:   "success without password",
 			id:     "user-123",
 			params: UpdateKeycloakUserParams{Email: &newEmail},
-			setup: func(m *MockKeycloakAdminClient) {
+			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
 				updated := sampleKeycloakUser()
 				updated.Email = newEmail
-				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(updated, nil)
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(nil)
+				m.EXPECT().Get(mock.Anything, "user-123").Return(updated, nil)
 			},
 			checkResult: func(t *testing.T, u *KeycloakUser) {
 				assert.Equal(t, "new@example.com", u.Email)
@@ -360,9 +315,10 @@ func TestCommanderUpdate(t *testing.T) {
 			name:   "success with password",
 			id:     "user-123",
 			params: UpdateKeycloakUserParams{Password: &newPass},
-			setup: func(m *MockKeycloakAdminClient) {
-				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(sampleKeycloakUser(), nil)
+			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(nil)
 				m.EXPECT().SetPassword(mock.Anything, "user-123", "newpass123", false).Return(nil)
+				m.EXPECT().Get(mock.Anything, "user-123").Return(sampleKeycloakUser(), nil)
 			},
 			checkResult: func(t *testing.T, u *KeycloakUser) {
 				assert.Equal(t, "user-123", u.ID)
@@ -372,19 +328,111 @@ func TestCommanderUpdate(t *testing.T) {
 			name:   "UpdateUser fails",
 			id:     "user-123",
 			params: UpdateKeycloakUserParams{},
-			setup: func(m *MockKeycloakAdminClient) {
-				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(nil, errors.New("update failed"))
+			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(errors.New("update failed"))
 			},
 			wantErr:    true,
 			errContain: "update failed",
+		},
+		{
+			name: "role change to participant with participantId",
+			id:   "user-123",
+			params: UpdateKeycloakUserParams{
+				Role:          rolePtr(auth.RoleParticipant),
+				ParticipantID: helpers.StringPtr(sampleParticipantUUID.String()),
+			},
+			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
+				pq.EXPECT().Exists(mock.Anything, properties.UUID(sampleParticipantUUID)).Return(true, nil)
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(nil)
+				m.EXPECT().SetRole(mock.Anything, "user-123", "participant").Return(nil)
+				m.EXPECT().Get(mock.Anything, "user-123").Return(&KeycloakUser{
+					ID: "user-123", Roles: []string{"participant"}, ParticipantID: sampleParticipantUUID.String(),
+				}, nil)
+			},
+			checkResult: func(t *testing.T, u *KeycloakUser) {
+				assert.Equal(t, []string{"participant"}, u.Roles)
+				assert.Equal(t, sampleParticipantUUID.String(), u.ParticipantID)
+			},
+		},
+		{
+			name: "role change to participant without participantId",
+			id:   "user-123",
+			params: UpdateKeycloakUserParams{
+				Role: rolePtr(auth.RoleParticipant),
+			},
+			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {},
+			wantErr:    true,
+			errContain: "participantId is required",
+		},
+		{
+			name: "role change to admin clears attributes",
+			id:   "user-123",
+			params: UpdateKeycloakUserParams{
+				Role: rolePtr(auth.RoleAdmin),
+			},
+			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
+				m.EXPECT().Update(mock.Anything, "user-123", mock.MatchedBy(func(p UpdateKeycloakUserParams) bool {
+					return p.ParticipantID != nil && *p.ParticipantID == "" &&
+						p.AgentID != nil && *p.AgentID == ""
+				})).Return(nil)
+				m.EXPECT().SetRole(mock.Anything, "user-123", "admin").Return(nil)
+				m.EXPECT().Get(mock.Anything, "user-123").Return(sampleKeycloakUser(), nil)
+			},
+			checkResult: func(t *testing.T, u *KeycloakUser) {
+				assert.Equal(t, []string{"admin"}, u.Roles)
+			},
+		},
+		{
+			name: "attribute-only update: participantId on participant user",
+			id:   "user-123",
+			params: UpdateKeycloakUserParams{
+				ParticipantID: helpers.StringPtr(sampleParticipantUUID.String()),
+			},
+			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
+				m.EXPECT().Get(mock.Anything, "user-123").Return(&KeycloakUser{
+					ID: "user-123", Roles: []string{"participant"}, ParticipantID: "old-id",
+				}, nil).Once()
+				pq.EXPECT().Exists(mock.Anything, properties.UUID(sampleParticipantUUID)).Return(true, nil)
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(nil)
+				m.EXPECT().Get(mock.Anything, "user-123").Return(&KeycloakUser{
+					ID: "user-123", Roles: []string{"participant"}, ParticipantID: sampleParticipantUUID.String(),
+				}, nil).Once()
+			},
+			checkResult: func(t *testing.T, u *KeycloakUser) {
+				assert.Equal(t, sampleParticipantUUID.String(), u.ParticipantID)
+			},
+		},
+		{
+			name: "attribute-only update: participantId on admin user rejected",
+			id:   "user-123",
+			params: UpdateKeycloakUserParams{
+				ParticipantID: helpers.StringPtr(sampleParticipantUUID.String()),
+			},
+			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
+				m.EXPECT().Get(mock.Anything, "user-123").Return(sampleKeycloakUser(), nil)
+			},
+			wantErr:    true,
+			errContain: "participantId can only be set on users with role participant",
+		},
+		{
+			name: "invalid role",
+			id:   "user-123",
+			params: UpdateKeycloakUserParams{
+				Role: rolePtr("invalid"),
+			},
+			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {},
+			wantErr:    true,
+			errContain: "invalid role",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			adminClient := NewMockKeycloakAdminClient(t)
-			tt.setup(adminClient)
-			cmd := NewKeycloakUserCommander(adminClient, nil, nil)
+			participantQuerier := NewMockParticipantQuerier(t)
+			agentQuerier := NewMockAgentQuerier(t)
+			tt.setup(adminClient, participantQuerier, agentQuerier)
+			cmd := NewKeycloakUserCommander(adminClient, participantQuerier, agentQuerier)
 
 			result, err := cmd.Update(context.Background(), tt.id, tt.params)
 			if tt.wantErr {
@@ -399,6 +447,10 @@ func TestCommanderUpdate(t *testing.T) {
 		})
 	}
 }
+
+var sampleParticipantUUID = uuid.New()
+
+func rolePtr(r auth.Role) *auth.Role { return &r }
 
 // --- Commander Delete ---
 

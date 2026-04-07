@@ -50,11 +50,14 @@ type CreateKeycloakUserReq struct {
 
 // UpdateKeycloakUserReq is the request body for updating a keycloak user.
 type UpdateKeycloakUserReq struct {
-	Email     *string `json:"email,omitempty"`
-	FirstName *string `json:"firstName,omitempty"`
-	LastName  *string `json:"lastName,omitempty"`
-	Enabled   *bool   `json:"enabled,omitempty"`
-	Password  *string `json:"password,omitempty"`
+	Email         *string    `json:"email,omitempty"`
+	FirstName     *string    `json:"firstName,omitempty"`
+	LastName      *string    `json:"lastName,omitempty"`
+	Enabled       *bool      `json:"enabled,omitempty"`
+	Password      *string    `json:"password,omitempty"`
+	Role          *auth.Role `json:"role,omitempty"`
+	ParticipantID *string    `json:"participantId,omitempty"`
+	AgentID       *string    `json:"agentId,omitempty"`
 }
 
 // KeycloakUserHandler handles HTTP requests for keycloak user operations.
@@ -177,11 +180,14 @@ func (h *KeycloakUserHandler) Update(w http.ResponseWriter, r *http.Request) {
 	req := middlewares.MustGetBody[UpdateKeycloakUserReq](r.Context())
 
 	user, err := h.commander.Update(r.Context(), id, domain.UpdateKeycloakUserParams{
-		Email:     req.Email,
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		Enabled:   req.Enabled,
-		Password:  req.Password,
+		Email:         req.Email,
+		FirstName:     req.FirstName,
+		LastName:      req.LastName,
+		Enabled:       req.Enabled,
+		Password:      req.Password,
+		Role:          req.Role,
+		ParticipantID: req.ParticipantID,
+		AgentID:       req.AgentID,
 	})
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))

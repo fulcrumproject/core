@@ -3,8 +3,10 @@ package domain
 import (
 	"context"
 	"log/slog"
+	"slices"
 
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 )
 
@@ -59,12 +61,10 @@ type KeycloakUserQuerier interface {
 type KeycloakAdminClient interface {
 	KeycloakUserQuerier
 	Create(ctx context.Context, user CreateKeycloakUserParams) (string, error)
-	Update(ctx context.Context, id string, params UpdateKeycloakUserParams) (*KeycloakUser, error)
+	Update(ctx context.Context, id string, params UpdateKeycloakUserParams) error
 	Delete(ctx context.Context, id string) error
 	SetPassword(ctx context.Context, id string, password string, temporary bool) error
-	GetRealmRoles(ctx context.Context) ([]KeycloakRole, error)
-	AssignRealmRoles(ctx context.Context, id string, roles []KeycloakRole) error
-	RemoveRealmRoles(ctx context.Context, id string, roles []KeycloakRole) error
+	SetRole(ctx context.Context, userID string, role string) error
 }
 
 // CreateKeycloakUserParams defines the parameters for creating a keycloak user.
@@ -105,11 +105,14 @@ func (p *CreateKeycloakUserParams) Validate() error {
 
 // UpdateKeycloakUserParams defines the parameters for updating a keycloak user.
 type UpdateKeycloakUserParams struct {
-	Email     *string
-	FirstName *string
-	LastName  *string
-	Enabled   *bool
-	Password  *string
+	Email         *string
+	FirstName     *string
+	LastName      *string
+	Enabled       *bool
+	Password      *string
+	Role          *auth.Role
+	ParticipantID *string
+	AgentID       *string
 }
 
 // KeycloakUserCommander defines the write operations for keycloak users.
@@ -170,23 +173,7 @@ func (c *keycloakUserCommander) Create(ctx context.Context, params CreateKeycloa
 
 	// Keycloak's POST /users endpoint ignores the realmRoles field in the request body.
 	// Roles must be assigned via a separate POST /users/{id}/role-mappings/realm call.
-	realmRoles, err := c.adminClient.GetRealmRoles(ctx)
-	if err != nil {
-		c.compensatingDelete(ctx, userID)
-		return nil, err
-	}
-	var targetRole *KeycloakRole
-	for _, r := range realmRoles {
-		if r.Name == string(params.Role) {
-			targetRole = &r
-			break
-		}
-	}
-	if targetRole == nil {
-		c.compensatingDelete(ctx, userID)
-		return nil, NewInvalidInputErrorf("realm role %s not found in Keycloak", params.Role)
-	}
-	if err := c.adminClient.AssignRealmRoles(ctx, userID, []KeycloakRole{*targetRole}); err != nil {
+	if err := c.adminClient.SetRole(ctx, userID, string(params.Role)); err != nil {
 		c.compensatingDelete(ctx, userID)
 		return nil, err
 	}
@@ -199,14 +186,73 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 		return nil, NewInvalidInputErrorf("keycloak user id is required")
 	}
 
-	user, err := c.adminClient.Update(ctx, id, UpdateKeycloakUserParams{
-		Email:     params.Email,
-		FirstName: params.FirstName,
-		LastName:  params.LastName,
-		Enabled:   params.Enabled,
-	})
-	if err != nil {
+	needsCurrentUser := params.Role == nil && (params.ParticipantID != nil || params.AgentID != nil)
+
+	var currentUser *KeycloakUser
+	if needsCurrentUser {
+		var err error
+		currentUser, err = c.adminClient.Get(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if params.Role != nil {
+		if err := params.Role.Validate(); err != nil {
+			return nil, NewInvalidInputErrorf("invalid role: %s", *params.Role)
+		}
+
+		switch *params.Role {
+		case auth.RoleParticipant:
+			if params.ParticipantID == nil || *params.ParticipantID == "" {
+				return nil, NewInvalidInputErrorf("participantId is required for role participant")
+			}
+			if err := c.validateParticipantID(ctx, *params.ParticipantID); err != nil {
+				return nil, err
+			}
+			params.AgentID = helpers.StringPtr("")
+
+		case auth.RoleAgent:
+			if params.AgentID == nil || *params.AgentID == "" {
+				return nil, NewInvalidInputErrorf("agentId is required for role agent")
+			}
+			if err := c.validateAgentID(ctx, *params.AgentID); err != nil {
+				return nil, err
+			}
+			params.ParticipantID = helpers.StringPtr("")
+
+		case auth.RoleAdmin:
+			params.ParticipantID = helpers.StringPtr("")
+			params.AgentID = helpers.StringPtr("")
+		}
+	} else {
+		// Attribute-only update: validate against current role
+		if params.ParticipantID != nil && *params.ParticipantID != "" {
+			if !slices.Contains(currentUser.Roles, string(auth.RoleParticipant)) {
+				return nil, NewInvalidInputErrorf("participantId can only be set on users with role participant")
+			}
+			if err := c.validateParticipantID(ctx, *params.ParticipantID); err != nil {
+				return nil, err
+			}
+		}
+		if params.AgentID != nil && *params.AgentID != "" {
+			if !slices.Contains(currentUser.Roles, string(auth.RoleAgent)) {
+				return nil, NewInvalidInputErrorf("agentId can only be set on users with role agent")
+			}
+			if err := c.validateAgentID(ctx, *params.AgentID); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if err := c.adminClient.Update(ctx, id, params); err != nil {
 		return nil, err
+	}
+
+	if params.Role != nil {
+		if err := c.adminClient.SetRole(ctx, id, string(*params.Role)); err != nil {
+			return nil, err
+		}
 	}
 
 	if params.Password != nil {
@@ -215,7 +261,7 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 		}
 	}
 
-	return user, nil
+	return c.adminClient.Get(ctx, id)
 }
 
 func (c *keycloakUserCommander) Delete(ctx context.Context, id string) error {

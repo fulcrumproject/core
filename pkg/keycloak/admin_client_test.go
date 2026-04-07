@@ -150,13 +150,8 @@ func TestUpdate_MergesFields(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	// GET for role mappings (called by a.Get at the end)
-	mux.HandleFunc("GET /admin/realms/"+testRealm+"/users/user-123/role-mappings/realm", func(w http.ResponseWriter, r *http.Request) {
-		jsonResponse(w, []domain.KeycloakRole{{ID: "r1", Name: "admin"}})
-	})
-
 	client := setupTestClient(t, mux)
-	result, err := client.Update(context.Background(), "user-123", domain.UpdateKeycloakUserParams{
+	err := client.Update(context.Background(), "user-123", domain.UpdateKeycloakUserParams{
 		Email: &newEmail,
 	})
 
@@ -170,16 +165,11 @@ func TestUpdate_MergesFields(t *testing.T) {
 	require.NotNil(t, putBody.Enabled)
 	assert.True(t, *putBody.Enabled)
 	assert.Equal(t, []string{"p-1"}, putBody.Attributes["participant_id"])
-
-	// Verify returned domain object
-	assert.Equal(t, "user-123", result.ID)
-	assert.Equal(t, "new@example.com", result.Email)
-	assert.Equal(t, []string{"admin"}, result.Roles)
 }
 
 func TestUpdate_EmptyID(t *testing.T) {
 	client := setupTestClient(t, newMux())
-	_, err := client.Update(context.Background(), "", domain.UpdateKeycloakUserParams{})
+	err := client.Update(context.Background(), "", domain.UpdateKeycloakUserParams{})
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.InvalidInputError{})
@@ -192,7 +182,7 @@ func TestUpdate_NotFound(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	_, err := client.Update(context.Background(), "bad-id", domain.UpdateKeycloakUserParams{})
+	err := client.Update(context.Background(), "bad-id", domain.UpdateKeycloakUserParams{})
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.NotFoundError{})
@@ -298,6 +288,33 @@ func TestGet_Success(t *testing.T) {
 	assert.Equal(t, []string{"admin", "participant"}, user.Roles)
 	assert.Equal(t, "p-1", user.ParticipantID)
 	assert.Equal(t, "a-1", user.AgentID)
+}
+
+func TestGet_FiltersSystemRoles(t *testing.T) {
+	mux := newMux()
+
+	mux.HandleFunc("GET /admin/realms/"+testRealm+"/users/user-123", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, UserRepresentation{
+			ID:       "user-123",
+			Username: "john",
+			Email:    "john@example.com",
+			Enabled:  helpers.BoolPtr(true),
+		})
+	})
+
+	mux.HandleFunc("GET /admin/realms/"+testRealm+"/users/user-123/role-mappings/realm", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, []domain.KeycloakRole{
+			{ID: "r1", Name: "admin"},
+			{ID: "r2", Name: "default-roles-myrealm"},
+			{ID: "r3", Name: "offline_access"},
+		})
+	})
+
+	client := setupTestClient(t, mux)
+	user, err := client.Get(context.Background(), "user-123")
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{"admin"}, user.Roles, "only app roles should be returned, system roles must be filtered out")
 }
 
 func TestGet_EmptyID(t *testing.T) {
@@ -464,6 +481,147 @@ func TestRemoveRealmRoles_EmptyID(t *testing.T) {
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.InvalidInputError{})
+}
+
+// --- SetRole ---
+
+func TestSetRole_Success(t *testing.T) {
+	mux := newMux()
+
+	mux.HandleFunc("GET /admin/realms/"+testRealm+"/roles", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, []domain.KeycloakRole{
+			{ID: "r1", Name: "admin"},
+			{ID: "r2", Name: "participant"},
+			{ID: "r3", Name: "agent"},
+		})
+	})
+
+	mux.HandleFunc("GET /admin/realms/"+testRealm+"/users/user-123/role-mappings/realm", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, []domain.KeycloakRole{
+			{ID: "r1", Name: "admin"},
+			{ID: "r99", Name: "default-roles-myrealm"},
+		})
+	})
+
+	removeCalled := false
+	mux.HandleFunc("DELETE /admin/realms/"+testRealm+"/users/user-123/role-mappings/realm", func(w http.ResponseWriter, r *http.Request) {
+		removeCalled = true
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	mux.HandleFunc("POST /admin/realms/"+testRealm+"/users/user-123/role-mappings/realm", func(w http.ResponseWriter, r *http.Request) {
+		var roles []domain.KeycloakRole
+		json.NewDecoder(r.Body).Decode(&roles)
+		assert.Len(t, roles, 1)
+		assert.Equal(t, "participant", roles[0].Name)
+		assert.Equal(t, "r2", roles[0].ID)
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	client := setupTestClient(t, mux)
+	err := client.SetRole(context.Background(), "user-123", "participant")
+
+	require.NoError(t, err)
+	assert.True(t, removeCalled)
+}
+
+func TestSetRole_RoleNotFound(t *testing.T) {
+	mux := newMux()
+	mux.HandleFunc("GET /admin/realms/"+testRealm+"/roles", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, []domain.KeycloakRole{
+			{ID: "r1", Name: "admin"},
+		})
+	})
+
+	client := setupTestClient(t, mux)
+	err := client.SetRole(context.Background(), "user-123", "nonexistent")
+
+	require.Error(t, err)
+	assert.ErrorAs(t, err, &domain.InvalidInputError{})
+	assert.Contains(t, err.Error(), "nonexistent")
+}
+
+func TestSetRole_EmptyID(t *testing.T) {
+	client := setupTestClient(t, newMux())
+	err := client.SetRole(context.Background(), "", "admin")
+
+	require.Error(t, err)
+	assert.ErrorAs(t, err, &domain.InvalidInputError{})
+}
+
+// --- Update with attributes ---
+
+func TestUpdate_SetsAttributes(t *testing.T) {
+	newParticipantID := "p-new"
+	putBodyCh := make(chan UserRepresentation, 1)
+
+	mux := newMux()
+
+	mux.HandleFunc("GET /admin/realms/"+testRealm+"/users/user-123", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, UserRepresentation{
+			ID:       "user-123",
+			Username: "john",
+			Enabled:  helpers.BoolPtr(true),
+			Attributes: map[string][]string{
+				"participant_id": {"p-old"},
+			},
+		})
+	})
+
+	mux.HandleFunc("PUT /admin/realms/"+testRealm+"/users/user-123", func(w http.ResponseWriter, r *http.Request) {
+		var body UserRepresentation
+		json.NewDecoder(r.Body).Decode(&body)
+		putBodyCh <- body
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	client := setupTestClient(t, mux)
+	err := client.Update(context.Background(), "user-123", domain.UpdateKeycloakUserParams{
+		ParticipantID: &newParticipantID,
+	})
+
+	require.NoError(t, err)
+
+	putBody := <-putBodyCh
+	assert.Equal(t, []string{"p-new"}, putBody.Attributes["participant_id"])
+}
+
+func TestUpdate_ClearsAttributes(t *testing.T) {
+	empty := ""
+	putBodyCh := make(chan UserRepresentation, 1)
+
+	mux := newMux()
+
+	mux.HandleFunc("GET /admin/realms/"+testRealm+"/users/user-123", func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, UserRepresentation{
+			ID:       "user-123",
+			Username: "john",
+			Enabled:  helpers.BoolPtr(true),
+			Attributes: map[string][]string{
+				"participant_id": {"p-1"},
+				"agent_id":       {"a-1"},
+			},
+		})
+	})
+
+	mux.HandleFunc("PUT /admin/realms/"+testRealm+"/users/user-123", func(w http.ResponseWriter, r *http.Request) {
+		var body UserRepresentation
+		json.NewDecoder(r.Body).Decode(&body)
+		putBodyCh <- body
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	client := setupTestClient(t, mux)
+	err := client.Update(context.Background(), "user-123", domain.UpdateKeycloakUserParams{
+		ParticipantID: &empty,
+		AgentID:       &empty,
+	})
+
+	require.NoError(t, err)
+
+	putBody := <-putBodyCh
+	assert.Equal(t, []string{}, putBody.Attributes["participant_id"], "participant_id should be cleared")
+	assert.Equal(t, []string{}, putBody.Attributes["agent_id"], "agent_id should be cleared")
 }
 
 // --- ensureToken ---
