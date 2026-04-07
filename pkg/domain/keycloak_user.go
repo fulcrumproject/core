@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 
 	"github.com/fulcrumproject/core/pkg/auth"
@@ -32,39 +31,10 @@ type KeycloakUserListItem struct {
 	LastName  string `json:"lastName"`
 }
 
-func (k *KeycloakUser) Validate() error {
-	if k.ID == "" {
-		return errors.New("keycloak user id is required")
-	}
-
-	if k.Username == "" {
-		return errors.New("keycloak user username is required")
-	}
-
-	if k.Email == "" {
-		return errors.New("keycloak user email is required")
-	}
-
-	if k.FirstName == "" {
-		return errors.New("keycloak user first name is required")
-	}
-
-	if k.LastName == "" {
-		return errors.New("keycloak user last name is required")
-	}
-
-	return nil
-}
-
 type KeycloakUserListParams struct {
 	Search   string //maps to keycloak search contained in username, first or last name, or email.
 	Page     int    // converted to "first" = (Page-1) * PageSize
 	PageSize int    // maps to "max"
-}
-
-type KeycloakUserPaginatedRes struct {
-	Items      []KeycloakUserListItem `json:"items"`
-	TotalItems int                    `json:"totalItems"`
 }
 
 // KeycloakRole represents a Keycloak realm role.
@@ -94,7 +64,7 @@ type KeycloakUserUpdateRequest struct {
 
 type KeycloakUserQuerier interface {
 	Get(ctx context.Context, id string) (*KeycloakUser, error)
-	List(ctx context.Context, params KeycloakUserListParams) (KeycloakUserPaginatedRes, error)
+	List(ctx context.Context, params KeycloakUserListParams) (*PageRes[KeycloakUserListItem], error)
 }
 
 // KeycloakAdminClient defines the interface for Keycloak admin operations.
@@ -111,23 +81,45 @@ type KeycloakAdminClient interface {
 }
 
 type CreateKeycloakUserParams struct {
-	Username      string `json:"username"`
-	Email         string `json:"email"`
-	FirstName     string `json:"firstName"`
-	LastName      string `json:"lastName"`
-	Password      string `json:"password"`
-	Enabled       bool   `json:"enabled"`
-	Role          auth.Role `json:"role"`
-	ParticipantID string `json:"participantId"` // required if role is "participant"
-	AgentID       string `json:"agentId"`       // required if role is "agent"
+	Username      string
+	Email         string
+	FirstName     string
+	LastName      string
+	Password      string
+	Enabled       bool
+	Role          auth.Role
+	ParticipantID string // required if role is "participant"
+	AgentID       string // required if role is "agent"
+}
+
+func (p *CreateKeycloakUserParams) Validate() error {
+	if p.Username == "" {
+		return NewInvalidInputErrorf("username is required")
+	}
+	if p.Email == "" {
+		return NewInvalidInputErrorf("email is required")
+	}
+	if p.FirstName == "" {
+		return NewInvalidInputErrorf("first name is required")
+	}
+	if p.LastName == "" {
+		return NewInvalidInputErrorf("last name is required")
+	}
+	if p.Password == "" {
+		return NewInvalidInputErrorf("password is required")
+	}
+	if err := p.Role.Validate(); err != nil {
+		return NewInvalidInputErrorf("invalid role: %s", p.Role)
+	}
+	return nil
 }
 
 type UpdateKeycloakUserParams struct {
-	Email     *string `json:"email,omitempty"`
-	FirstName *string `json:"firstName,omitempty"`
-	LastName  *string `json:"lastName,omitempty"`
-	Enabled   *bool   `json:"enabled,omitempty"`
-	Password  *string `json:"password,omitempty"`
+	Email     *string
+	FirstName *string
+	LastName  *string
+	Enabled   *bool
+	Password  *string
 }
 
 type KeycloakUserCommander interface {
@@ -156,24 +148,8 @@ func NewKeycloakUserCommander(
 
 func (c *keycloakUserCommander) Create(ctx context.Context, params CreateKeycloakUserParams) (*KeycloakUser, error) {
 	// Validate required fields
-	if params.Username == "" {
-		return nil, NewInvalidInputErrorf("username is required")
-	}
-	if params.Email == "" {
-		return nil, NewInvalidInputErrorf("email is required")
-	}
-	if params.FirstName == "" {
-		return nil, NewInvalidInputErrorf("first name is required")
-	}
-	if params.LastName == "" {
-		return nil, NewInvalidInputErrorf("last name is required")
-	}
-	if params.Password == "" {
-		return nil, NewInvalidInputErrorf("password is required")
-	}
-
-	if err := params.Role.Validate(); err != nil {
-		return nil, NewInvalidInputErrorf("invalid role: %s", params.Role)
+	if err := params.Validate(); err != nil {
+		return nil, err
 	}
 
 	if params.Role == auth.RoleParticipant {
