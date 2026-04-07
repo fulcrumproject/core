@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log/slog"
 	"maps"
 	"net/http"
 	"strconv"
@@ -147,8 +148,8 @@ func keycloakError(resp *resty.Response, action string) error {
 	}
 }
 
-// Create creates a new user in Keycloak and returns the user ID.
-func (a *AdminClient) Create(ctx context.Context, params domain.CreateKeycloakUserParams) (string, error) {
+// Create creates a new user in Keycloak, assigns the role, and returns the hydrated user.
+func (a *AdminClient) Create(ctx context.Context, params domain.CreateKeycloakUserParams) (*domain.KeycloakUser, error) {
 	attrs := map[string][]string{}
 	if params.ParticipantID != "" {
 		attrs["participant_id"] = []string{params.ParticipantID}
@@ -178,23 +179,33 @@ func (a *AdminClient) Create(ctx context.Context, params domain.CreateKeycloakUs
 		SetBody(body).
 		Post("/users")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if resp.StatusCode() != http.StatusCreated {
-		return "", keycloakError(resp, "create user")
+		return nil, keycloakError(resp, "create user")
 	}
 	location := resp.Header().Get("Location")
 	if location == "" {
-		return "", fmt.Errorf("keycloak create user: missing Location header")
+		return nil, fmt.Errorf("keycloak create user: missing Location header")
 	}
 	parts := strings.Split(location, "/")
-	return parts[len(parts)-1], nil
+	userID := parts[len(parts)-1]
+
+	// Keycloak's POST /users endpoint ignores realmRoles in the request body.
+	// Roles must be assigned via a separate role-mappings call.
+	if err := a.assignRole(ctx, userID, string(params.Role)); err != nil {
+		a.compensatingDelete(ctx, userID)
+		return nil, err
+	}
+
+	body.ID = userID
+	return buildKeycloakUser(body, []string{string(params.Role)}), nil
 }
 
 // Update updates an existing user in Keycloak and returns the updated user.
-func (a *AdminClient) Update(ctx context.Context, id string, params domain.UpdateKeycloakUserParams) error {
+func (a *AdminClient) Update(ctx context.Context, id string, params domain.UpdateKeycloakUserParams) (*domain.KeycloakUser, error) {
 	if id == "" {
-		return domain.NewInvalidInputErrorf("keycloak user id is required")
+		return nil, domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
 
 	var body UserRepresentation
@@ -203,11 +214,11 @@ func (a *AdminClient) Update(ctx context.Context, id string, params domain.Updat
 		SetResult(&body).
 		Get("/users/{id}")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if respUser.StatusCode() != http.StatusOK {
-		return keycloakError(respUser, "get user for update")
+		return nil, keycloakError(respUser, "get user for update")
 	}
 
 	if params.Email != nil {
@@ -252,12 +263,39 @@ func (a *AdminClient) Update(ctx context.Context, id string, params domain.Updat
 		SetBody(body).
 		Put("/users/{id}")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if resp.StatusCode() != http.StatusNoContent {
-		return keycloakError(resp, "update user")
+		return nil, keycloakError(resp, "update user")
 	}
-	return nil
+
+	// Determine final roles for the return value
+	var roles []string
+	if params.Role != nil {
+		if err := a.SetRole(ctx, id, string(*params.Role)); err != nil {
+			return nil, err
+		}
+		roles = []string{string(*params.Role)}
+	} else {
+		// Role unchanged: fetch current app-managed roles
+		currentRoles, err := a.getUserRealmRoles(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range currentRoles {
+			if auth.Role(r.Name).Validate() == nil {
+				roles = append(roles, r.Name)
+			}
+		}
+	}
+
+	if params.Password != nil {
+		if err := a.SetPassword(ctx, id, *params.Password, false); err != nil {
+			return nil, err
+		}
+	}
+
+	return buildKeycloakUser(body, roles), nil
 }
 
 // Delete deletes a user from Keycloak.
@@ -401,6 +439,63 @@ func (a *AdminClient) SetRole(ctx context.Context, userID string, role string) e
 	return a.AssignRealmRoles(ctx, userID, []domain.KeycloakRole{*targetRole})
 }
 
+// assignRole assigns a role to a newly created user (no existing roles to remove).
+func (a *AdminClient) assignRole(ctx context.Context, userID string, role string) error {
+	realmRoles, err := a.GetRealmRoles(ctx)
+	if err != nil {
+		return err
+	}
+	var targetRole *domain.KeycloakRole
+	for _, r := range realmRoles {
+		if r.Name == role {
+			targetRole = &r
+			break
+		}
+	}
+	if targetRole == nil {
+		return domain.NewInvalidInputErrorf("realm role %s not found in Keycloak", role)
+	}
+	return a.AssignRealmRoles(ctx, userID, []domain.KeycloakRole{*targetRole})
+}
+
+func (a *AdminClient) compensatingDelete(ctx context.Context, userID string) {
+	if err := a.Delete(ctx, userID); err != nil {
+		slog.Error("failed compensating delete of keycloak user", "userID", userID, "error", err)
+	}
+}
+
+// buildKeycloakUser constructs a domain.KeycloakUser from a Keycloak representation and known roles.
+func buildKeycloakUser(rep UserRepresentation, roles []string) *domain.KeycloakUser {
+	var participantID string
+	if vals, ok := rep.Attributes["participant_id"]; ok && len(vals) > 0 {
+		participantID = vals[0]
+	}
+	var agentID string
+	if vals, ok := rep.Attributes["agent_id"]; ok && len(vals) > 0 {
+		agentID = vals[0]
+	}
+	enabled := false
+	if rep.Enabled != nil {
+		enabled = *rep.Enabled
+	}
+	emailVerified := false
+	if rep.EmailVerified != nil {
+		emailVerified = *rep.EmailVerified
+	}
+	return &domain.KeycloakUser{
+		ID:            rep.ID,
+		Username:      rep.Username,
+		FirstName:     rep.FirstName,
+		LastName:      rep.LastName,
+		Email:         rep.Email,
+		EmailVerified: emailVerified,
+		Enabled:       enabled,
+		Roles:         roles,
+		ParticipantID: participantID,
+		AgentID:       agentID,
+	}
+}
+
 func (a *AdminClient) getUserRealmRoles(ctx context.Context, id string) ([]domain.KeycloakRole, error) {
 	if id == "" {
 		return nil, domain.NewInvalidInputErrorf("keycloak user id is required")
@@ -449,37 +544,7 @@ func (a *AdminClient) Get(ctx context.Context, id string) (*domain.KeycloakUser,
 		}
 	}
 
-	var participantID string
-	if vals, ok := user.Attributes["participant_id"]; ok && len(vals) > 0 {
-		participantID = vals[0]
-	}
-	var agentID string
-	if vals, ok := user.Attributes["agent_id"]; ok && len(vals) > 0 {
-		agentID = vals[0]
-	}
-
-	enabled := false
-	if user.Enabled != nil {
-		enabled = *user.Enabled
-	}
-
-	emailVerified := false
-	if user.EmailVerified != nil {
-		emailVerified = *user.EmailVerified
-	}
-
-	return &domain.KeycloakUser{
-		ID:            user.ID,
-		Username:      user.Username,
-		FirstName:     user.FirstName,
-		LastName:      user.LastName,
-		Email:         user.Email,
-		EmailVerified: emailVerified,
-		Enabled:       enabled,
-		Roles:         roleNames,
-		ParticipantID: participantID,
-		AgentID:       agentID,
-	}, nil
+	return buildKeycloakUser(user, roleNames), nil
 }
 
 // List retrieves a paginated list of keycloak users.

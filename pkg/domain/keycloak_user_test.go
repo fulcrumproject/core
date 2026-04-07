@@ -244,17 +244,15 @@ func TestCommanderCreate_AgentValidation(t *testing.T) {
 
 // --- Commander Create: compensating deletes ---
 
-func TestCommanderCreate_CompensatingDelete(t *testing.T) {
+func TestCommanderCreate_AdminClientFails(t *testing.T) {
 	adminClient := NewMockKeycloakAdminClient(t)
-	adminClient.EXPECT().Create(mock.Anything, mock.Anything).Return("user-123", nil)
-	adminClient.EXPECT().SetRole(mock.Anything, "user-123", "admin").Return(errors.New("set role error"))
-	adminClient.EXPECT().Delete(mock.Anything, "user-123").Return(nil)
+	adminClient.EXPECT().Create(mock.Anything, mock.Anything).Return(nil, errors.New("create error"))
 
 	cmd := NewKeycloakUserCommander(adminClient, nil, nil)
 	_, err := cmd.Create(context.Background(), validCreateParams())
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "set role error")
+	assert.Contains(t, err.Error(), "create error")
 }
 
 // --- Commander Create: happy path ---
@@ -263,9 +261,7 @@ func TestCommanderCreate_Success(t *testing.T) {
 	adminClient := NewMockKeycloakAdminClient(t)
 	cmd := NewKeycloakUserCommander(adminClient, nil, nil)
 
-	adminClient.EXPECT().Create(mock.Anything, mock.Anything).Return("user-123", nil)
-	adminClient.EXPECT().SetRole(mock.Anything, "user-123", "admin").Return(nil)
-	adminClient.EXPECT().Get(mock.Anything, "user-123").Return(sampleKeycloakUser(), nil)
+	adminClient.EXPECT().Create(mock.Anything, mock.Anything).Return(sampleKeycloakUser(), nil)
 
 	result, err := cmd.Create(context.Background(), validCreateParams())
 
@@ -304,8 +300,7 @@ func TestCommanderUpdate(t *testing.T) {
 			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
 				updated := sampleKeycloakUser()
 				updated.Email = newEmail
-				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(nil)
-				m.EXPECT().Get(mock.Anything, "user-123").Return(updated, nil)
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(updated, nil)
 			},
 			checkResult: func(t *testing.T, u *KeycloakUser) {
 				assert.Equal(t, "new@example.com", u.Email)
@@ -316,9 +311,7 @@ func TestCommanderUpdate(t *testing.T) {
 			id:     "user-123",
 			params: UpdateKeycloakUserParams{Password: &newPass},
 			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
-				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(nil)
-				m.EXPECT().SetPassword(mock.Anything, "user-123", "newpass123", false).Return(nil)
-				m.EXPECT().Get(mock.Anything, "user-123").Return(sampleKeycloakUser(), nil)
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(sampleKeycloakUser(), nil)
 			},
 			checkResult: func(t *testing.T, u *KeycloakUser) {
 				assert.Equal(t, "user-123", u.ID)
@@ -329,7 +322,7 @@ func TestCommanderUpdate(t *testing.T) {
 			id:     "user-123",
 			params: UpdateKeycloakUserParams{},
 			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
-				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(errors.New("update failed"))
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(nil, errors.New("update failed"))
 			},
 			wantErr:    true,
 			errContain: "update failed",
@@ -343,9 +336,7 @@ func TestCommanderUpdate(t *testing.T) {
 			},
 			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
 				pq.EXPECT().Exists(mock.Anything, properties.UUID(sampleParticipantUUID)).Return(true, nil)
-				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(nil)
-				m.EXPECT().SetRole(mock.Anything, "user-123", "participant").Return(nil)
-				m.EXPECT().Get(mock.Anything, "user-123").Return(&KeycloakUser{
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(&KeycloakUser{
 					ID: "user-123", Roles: []string{"participant"}, ParticipantID: sampleParticipantUUID.String(),
 				}, nil)
 			},
@@ -374,9 +365,7 @@ func TestCommanderUpdate(t *testing.T) {
 				m.EXPECT().Update(mock.Anything, "user-123", mock.MatchedBy(func(p UpdateKeycloakUserParams) bool {
 					return p.ParticipantID != nil && *p.ParticipantID == "" &&
 						p.AgentID != nil && *p.AgentID == ""
-				})).Return(nil)
-				m.EXPECT().SetRole(mock.Anything, "user-123", "admin").Return(nil)
-				m.EXPECT().Get(mock.Anything, "user-123").Return(sampleKeycloakUser(), nil)
+				})).Return(sampleKeycloakUser(), nil)
 			},
 			checkResult: func(t *testing.T, u *KeycloakUser) {
 				assert.Equal(t, []string{"admin"}, u.Roles)
@@ -391,12 +380,11 @@ func TestCommanderUpdate(t *testing.T) {
 			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
 				m.EXPECT().Get(mock.Anything, "user-123").Return(&KeycloakUser{
 					ID: "user-123", Roles: []string{"participant"}, ParticipantID: "old-id",
-				}, nil).Once()
+				}, nil)
 				pq.EXPECT().Exists(mock.Anything, properties.UUID(sampleParticipantUUID)).Return(true, nil)
-				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(nil)
-				m.EXPECT().Get(mock.Anything, "user-123").Return(&KeycloakUser{
+				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(&KeycloakUser{
 					ID: "user-123", Roles: []string{"participant"}, ParticipantID: sampleParticipantUUID.String(),
-				}, nil).Once()
+				}, nil)
 			},
 			checkResult: func(t *testing.T, u *KeycloakUser) {
 				assert.Equal(t, sampleParticipantUUID.String(), u.ParticipantID)

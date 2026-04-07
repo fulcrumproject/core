@@ -8758,25 +8758,27 @@ func (_m *MockKeycloakAdminClient) EXPECT() *MockKeycloakAdminClient_Expecter {
 }
 
 // Create provides a mock function for the type MockKeycloakAdminClient
-func (_mock *MockKeycloakAdminClient) Create(ctx context.Context, user CreateKeycloakUserParams) (string, error) {
-	ret := _mock.Called(ctx, user)
+func (_mock *MockKeycloakAdminClient) Create(ctx context.Context, params CreateKeycloakUserParams) (*KeycloakUser, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
-	var r0 string
+	var r0 *KeycloakUser
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateKeycloakUserParams) (string, error)); ok {
-		return returnFunc(ctx, user)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateKeycloakUserParams) (*KeycloakUser, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateKeycloakUserParams) string); ok {
-		r0 = returnFunc(ctx, user)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateKeycloakUserParams) *KeycloakUser); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
-		r0 = ret.Get(0).(string)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*KeycloakUser)
+		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateKeycloakUserParams) error); ok {
-		r1 = returnFunc(ctx, user)
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -8790,12 +8792,12 @@ type MockKeycloakAdminClient_Create_Call struct {
 
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
-//   - user CreateKeycloakUserParams
-func (_e *MockKeycloakAdminClient_Expecter) Create(ctx interface{}, user interface{}) *MockKeycloakAdminClient_Create_Call {
-	return &MockKeycloakAdminClient_Create_Call{Call: _e.mock.On("Create", ctx, user)}
+//   - params CreateKeycloakUserParams
+func (_e *MockKeycloakAdminClient_Expecter) Create(ctx interface{}, params interface{}) *MockKeycloakAdminClient_Create_Call {
+	return &MockKeycloakAdminClient_Create_Call{Call: _e.mock.On("Create", ctx, params)}
 }
 
-func (_c *MockKeycloakAdminClient_Create_Call) Run(run func(ctx context.Context, user CreateKeycloakUserParams)) *MockKeycloakAdminClient_Create_Call {
+func (_c *MockKeycloakAdminClient_Create_Call) Run(run func(ctx context.Context, params CreateKeycloakUserParams)) *MockKeycloakAdminClient_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -8813,12 +8815,12 @@ func (_c *MockKeycloakAdminClient_Create_Call) Run(run func(ctx context.Context,
 	return _c
 }
 
-func (_c *MockKeycloakAdminClient_Create_Call) Return(s string, err error) *MockKeycloakAdminClient_Create_Call {
-	_c.Call.Return(s, err)
+func (_c *MockKeycloakAdminClient_Create_Call) Return(keycloakUser *KeycloakUser, err error) *MockKeycloakAdminClient_Create_Call {
+	_c.Call.Return(keycloakUser, err)
 	return _c
 }
 
-func (_c *MockKeycloakAdminClient_Create_Call) RunAndReturn(run func(ctx context.Context, user CreateKeycloakUserParams) (string, error)) *MockKeycloakAdminClient_Create_Call {
+func (_c *MockKeycloakAdminClient_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateKeycloakUserParams) (*KeycloakUser, error)) *MockKeycloakAdminClient_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -9016,153 +9018,32 @@ func (_c *MockKeycloakAdminClient_List_Call) RunAndReturn(run func(ctx context.C
 	return _c
 }
 
-// SetPassword provides a mock function for the type MockKeycloakAdminClient
-func (_mock *MockKeycloakAdminClient) SetPassword(ctx context.Context, id string, password string, temporary bool) error {
-	ret := _mock.Called(ctx, id, password, temporary)
-
-	if len(ret) == 0 {
-		panic("no return value specified for SetPassword")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, bool) error); ok {
-		r0 = returnFunc(ctx, id, password, temporary)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockKeycloakAdminClient_SetPassword_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetPassword'
-type MockKeycloakAdminClient_SetPassword_Call struct {
-	*mock.Call
-}
-
-// SetPassword is a helper method to define mock.On call
-//   - ctx context.Context
-//   - id string
-//   - password string
-//   - temporary bool
-func (_e *MockKeycloakAdminClient_Expecter) SetPassword(ctx interface{}, id interface{}, password interface{}, temporary interface{}) *MockKeycloakAdminClient_SetPassword_Call {
-	return &MockKeycloakAdminClient_SetPassword_Call{Call: _e.mock.On("SetPassword", ctx, id, password, temporary)}
-}
-
-func (_c *MockKeycloakAdminClient_SetPassword_Call) Run(run func(ctx context.Context, id string, password string, temporary bool)) *MockKeycloakAdminClient_SetPassword_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		var arg3 bool
-		if args[3] != nil {
-			arg3 = args[3].(bool)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-			arg3,
-		)
-	})
-	return _c
-}
-
-func (_c *MockKeycloakAdminClient_SetPassword_Call) Return(err error) *MockKeycloakAdminClient_SetPassword_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockKeycloakAdminClient_SetPassword_Call) RunAndReturn(run func(ctx context.Context, id string, password string, temporary bool) error) *MockKeycloakAdminClient_SetPassword_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// SetRole provides a mock function for the type MockKeycloakAdminClient
-func (_mock *MockKeycloakAdminClient) SetRole(ctx context.Context, userID string, role string) error {
-	ret := _mock.Called(ctx, userID, role)
-
-	if len(ret) == 0 {
-		panic("no return value specified for SetRole")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = returnFunc(ctx, userID, role)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockKeycloakAdminClient_SetRole_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetRole'
-type MockKeycloakAdminClient_SetRole_Call struct {
-	*mock.Call
-}
-
-// SetRole is a helper method to define mock.On call
-//   - ctx context.Context
-//   - userID string
-//   - role string
-func (_e *MockKeycloakAdminClient_Expecter) SetRole(ctx interface{}, userID interface{}, role interface{}) *MockKeycloakAdminClient_SetRole_Call {
-	return &MockKeycloakAdminClient_SetRole_Call{Call: _e.mock.On("SetRole", ctx, userID, role)}
-}
-
-func (_c *MockKeycloakAdminClient_SetRole_Call) Run(run func(ctx context.Context, userID string, role string)) *MockKeycloakAdminClient_SetRole_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *MockKeycloakAdminClient_SetRole_Call) Return(err error) *MockKeycloakAdminClient_SetRole_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockKeycloakAdminClient_SetRole_Call) RunAndReturn(run func(ctx context.Context, userID string, role string) error) *MockKeycloakAdminClient_SetRole_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // Update provides a mock function for the type MockKeycloakAdminClient
-func (_mock *MockKeycloakAdminClient) Update(ctx context.Context, id string, params UpdateKeycloakUserParams) error {
+func (_mock *MockKeycloakAdminClient) Update(ctx context.Context, id string, params UpdateKeycloakUserParams) (*KeycloakUser, error) {
 	ret := _mock.Called(ctx, id, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, UpdateKeycloakUserParams) error); ok {
+	var r0 *KeycloakUser
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, UpdateKeycloakUserParams) (*KeycloakUser, error)); ok {
+		return returnFunc(ctx, id, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, UpdateKeycloakUserParams) *KeycloakUser); ok {
 		r0 = returnFunc(ctx, id, params)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*KeycloakUser)
+		}
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, UpdateKeycloakUserParams) error); ok {
+		r1 = returnFunc(ctx, id, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
 // MockKeycloakAdminClient_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
@@ -9201,12 +9082,12 @@ func (_c *MockKeycloakAdminClient_Update_Call) Run(run func(ctx context.Context,
 	return _c
 }
 
-func (_c *MockKeycloakAdminClient_Update_Call) Return(err error) *MockKeycloakAdminClient_Update_Call {
-	_c.Call.Return(err)
+func (_c *MockKeycloakAdminClient_Update_Call) Return(keycloakUser *KeycloakUser, err error) *MockKeycloakAdminClient_Update_Call {
+	_c.Call.Return(keycloakUser, err)
 	return _c
 }
 
-func (_c *MockKeycloakAdminClient_Update_Call) RunAndReturn(run func(ctx context.Context, id string, params UpdateKeycloakUserParams) error) *MockKeycloakAdminClient_Update_Call {
+func (_c *MockKeycloakAdminClient_Update_Call) RunAndReturn(run func(ctx context.Context, id string, params UpdateKeycloakUserParams) (*KeycloakUser, error)) *MockKeycloakAdminClient_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

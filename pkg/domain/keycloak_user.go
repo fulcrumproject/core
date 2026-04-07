@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"log/slog"
 	"slices"
 
 	"github.com/fulcrumproject/core/pkg/auth"
@@ -60,11 +59,9 @@ type KeycloakUserQuerier interface {
 // Implemented by keycloak.AdminClient.
 type KeycloakAdminClient interface {
 	KeycloakUserQuerier
-	Create(ctx context.Context, user CreateKeycloakUserParams) (string, error)
-	Update(ctx context.Context, id string, params UpdateKeycloakUserParams) error
+	Create(ctx context.Context, params CreateKeycloakUserParams) (*KeycloakUser, error)
+	Update(ctx context.Context, id string, params UpdateKeycloakUserParams) (*KeycloakUser, error)
 	Delete(ctx context.Context, id string) error
-	SetPassword(ctx context.Context, id string, password string, temporary bool) error
-	SetRole(ctx context.Context, userID string, role string) error
 }
 
 // CreateKeycloakUserParams defines the parameters for creating a keycloak user.
@@ -142,7 +139,6 @@ func NewKeycloakUserCommander(
 }
 
 func (c *keycloakUserCommander) Create(ctx context.Context, params CreateKeycloakUserParams) (*KeycloakUser, error) {
-	// Validate required fields
 	if err := params.Validate(); err != nil {
 		return nil, err
 	}
@@ -165,36 +161,12 @@ func (c *keycloakUserCommander) Create(ctx context.Context, params CreateKeycloa
 		}
 	}
 
-	// Create user in Keycloak
-	userID, err := c.adminClient.Create(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-
-	// Keycloak's POST /users endpoint ignores the realmRoles field in the request body.
-	// Roles must be assigned via a separate POST /users/{id}/role-mappings/realm call.
-	if err := c.adminClient.SetRole(ctx, userID, string(params.Role)); err != nil {
-		c.compensatingDelete(ctx, userID)
-		return nil, err
-	}
-
-	return c.adminClient.Get(ctx, userID)
+	return c.adminClient.Create(ctx, params)
 }
 
 func (c *keycloakUserCommander) Update(ctx context.Context, id string, params UpdateKeycloakUserParams) (*KeycloakUser, error) {
 	if id == "" {
 		return nil, NewInvalidInputErrorf("keycloak user id is required")
-	}
-
-	needsCurrentUser := params.Role == nil && (params.ParticipantID != nil || params.AgentID != nil)
-
-	var currentUser *KeycloakUser
-	if needsCurrentUser {
-		var err error
-		currentUser, err = c.adminClient.Get(ctx, id)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	if params.Role != nil {
@@ -225,8 +197,12 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 			params.ParticipantID = helpers.StringPtr("")
 			params.AgentID = helpers.StringPtr("")
 		}
-	} else {
+	} else if params.ParticipantID != nil || params.AgentID != nil {
 		// Attribute-only update: validate against current role
+		currentUser, err := c.adminClient.Get(ctx, id)
+		if err != nil {
+			return nil, err
+		}
 		if params.ParticipantID != nil && *params.ParticipantID != "" {
 			if !slices.Contains(currentUser.Roles, string(auth.RoleParticipant)) {
 				return nil, NewInvalidInputErrorf("participantId can only be set on users with role participant")
@@ -245,23 +221,7 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 		}
 	}
 
-	if err := c.adminClient.Update(ctx, id, params); err != nil {
-		return nil, err
-	}
-
-	if params.Role != nil {
-		if err := c.adminClient.SetRole(ctx, id, string(*params.Role)); err != nil {
-			return nil, err
-		}
-	}
-
-	if params.Password != nil {
-		if err := c.adminClient.SetPassword(ctx, id, *params.Password, false); err != nil {
-			return nil, err
-		}
-	}
-
-	return c.adminClient.Get(ctx, id)
+	return c.adminClient.Update(ctx, id, params)
 }
 
 func (c *keycloakUserCommander) Delete(ctx context.Context, id string) error {
@@ -269,13 +229,6 @@ func (c *keycloakUserCommander) Delete(ctx context.Context, id string) error {
 		return NewInvalidInputErrorf("keycloak user id is required")
 	}
 	return c.adminClient.Delete(ctx, id)
-}
-
-// compensatingDelete attempts to clean up a partially created user.
-func (c *keycloakUserCommander) compensatingDelete(ctx context.Context, userID string) {
-	if err := c.adminClient.Delete(ctx, userID); err != nil {
-		slog.Error("failed compensating delete of keycloak user", "userID", userID, "error", err)
-	}
 }
 
 // validateParticipantID checks that the participant exists in the local DB.
