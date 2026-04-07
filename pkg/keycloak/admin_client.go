@@ -241,20 +241,8 @@ func (a *AdminClient) Update(ctx context.Context, id string, params domain.Updat
 		if body.Attributes == nil {
 			body.Attributes = make(map[string][]string)
 		}
-		if params.ParticipantID != nil {
-			if *params.ParticipantID == "" {
-				body.Attributes["participant_id"] = []string{}
-			} else {
-				body.Attributes["participant_id"] = []string{*params.ParticipantID}
-			}
-		}
-		if params.AgentID != nil {
-			if *params.AgentID == "" {
-				body.Attributes["agent_id"] = []string{}
-			} else {
-				body.Attributes["agent_id"] = []string{*params.AgentID}
-			}
-		}
+		setAttribute(body.Attributes, "participant_id", params.ParticipantID)
+		setAttribute(body.Attributes, "agent_id", params.AgentID)
 	}
 
 	resp, err := a.client.R().
@@ -272,7 +260,7 @@ func (a *AdminClient) Update(ctx context.Context, id string, params domain.Updat
 	// Determine final roles for the return value
 	var roles []string
 	if params.Role != nil {
-		if err := a.SetRole(ctx, id, string(*params.Role)); err != nil {
+		if err := a.setRole(ctx, id, string(*params.Role)); err != nil {
 			return nil, err
 		}
 		roles = []string{string(*params.Role)}
@@ -282,15 +270,11 @@ func (a *AdminClient) Update(ctx context.Context, id string, params domain.Updat
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range currentRoles {
-			if auth.Role(r.Name).Validate() == nil {
-				roles = append(roles, r.Name)
-			}
-		}
+		roles = filterAppManagedRoles(currentRoles)
 	}
 
 	if params.Password != nil {
-		if err := a.SetPassword(ctx, id, *params.Password, false); err != nil {
+		if err := a.setPassword(ctx, id, *params.Password, false); err != nil {
 			return nil, err
 		}
 	}
@@ -316,8 +300,8 @@ func (a *AdminClient) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// SetPassword sets or resets a user's password in Keycloak.
-func (a *AdminClient) SetPassword(ctx context.Context, id string, password string, temporary bool) error {
+// setPassword sets or resets a user's password in Keycloak.
+func (a *AdminClient) setPassword(ctx context.Context, id string, password string, temporary bool) error {
 	if id == "" {
 		return domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
@@ -340,8 +324,8 @@ func (a *AdminClient) SetPassword(ctx context.Context, id string, password strin
 	return nil
 }
 
-// GetRealmRoles returns all realm-level roles from Keycloak.
-func (a *AdminClient) GetRealmRoles(ctx context.Context) ([]domain.KeycloakRole, error) {
+// getRealmRoles returns all realm-level roles from Keycloak.
+func (a *AdminClient) getRealmRoles(ctx context.Context) ([]domain.KeycloakRole, error) {
 	var roles []domain.KeycloakRole
 	resp, err := a.client.R().
 		SetContext(ctx).
@@ -356,8 +340,8 @@ func (a *AdminClient) GetRealmRoles(ctx context.Context) ([]domain.KeycloakRole,
 	return roles, nil
 }
 
-// AssignRealmRoles assigns realm roles to a user in Keycloak.
-func (a *AdminClient) AssignRealmRoles(ctx context.Context, id string, roles []domain.KeycloakRole) error {
+// assignRealmRoles assigns realm roles to a user in Keycloak.
+func (a *AdminClient) assignRealmRoles(ctx context.Context, id string, roles []domain.KeycloakRole) error {
 	if id == "" {
 		return domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
@@ -375,8 +359,8 @@ func (a *AdminClient) AssignRealmRoles(ctx context.Context, id string, roles []d
 	return nil
 }
 
-// RemoveRealmRoles removes realm roles from a user in Keycloak.
-func (a *AdminClient) RemoveRealmRoles(ctx context.Context, id string, roles []domain.KeycloakRole) error {
+// removeRealmRoles removes realm roles from a user in Keycloak.
+func (a *AdminClient) removeRealmRoles(ctx context.Context, id string, roles []domain.KeycloakRole) error {
 	if id == "" {
 		return domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
@@ -394,9 +378,9 @@ func (a *AdminClient) RemoveRealmRoles(ctx context.Context, id string, roles []d
 	return nil
 }
 
-// SetRole replaces the user's current app-managed role with the given role.
+// setRole replaces the user's current app-managed role with the given role.
 // It leaves Keycloak built-in roles (e.g. default-roles-*, offline_access) untouched.
-func (a *AdminClient) SetRole(ctx context.Context, userID string, role string) error {
+func (a *AdminClient) setRole(ctx context.Context, userID string, role string) error {
 	if userID == "" {
 		return domain.NewInvalidInputErrorf("keycloak user id is required")
 	}
@@ -404,19 +388,9 @@ func (a *AdminClient) SetRole(ctx context.Context, userID string, role string) e
 		return domain.NewInvalidInputErrorf("role is required")
 	}
 
-	realmRoles, err := a.GetRealmRoles(ctx)
+	targetRole, err := a.findRealmRole(ctx, role)
 	if err != nil {
 		return err
-	}
-	var targetRole *domain.KeycloakRole
-	for _, r := range realmRoles {
-		if r.Name == role {
-			targetRole = &r
-			break
-		}
-	}
-	if targetRole == nil {
-		return domain.NewInvalidInputErrorf("realm role %s not found in Keycloak", role)
 	}
 
 	currentRoles, err := a.getUserRealmRoles(ctx, userID)
@@ -431,31 +405,59 @@ func (a *AdminClient) SetRole(ctx context.Context, userID string, role string) e
 		}
 	}
 	if len(toRemove) > 0 {
-		if err := a.RemoveRealmRoles(ctx, userID, toRemove); err != nil {
+		if err := a.removeRealmRoles(ctx, userID, toRemove); err != nil {
 			return err
 		}
 	}
 
-	return a.AssignRealmRoles(ctx, userID, []domain.KeycloakRole{*targetRole})
+	return a.assignRealmRoles(ctx, userID, []domain.KeycloakRole{*targetRole})
 }
 
 // assignRole assigns a role to a newly created user (no existing roles to remove).
 func (a *AdminClient) assignRole(ctx context.Context, userID string, role string) error {
-	realmRoles, err := a.GetRealmRoles(ctx)
+	targetRole, err := a.findRealmRole(ctx, role)
 	if err != nil {
 		return err
 	}
-	var targetRole *domain.KeycloakRole
+	return a.assignRealmRoles(ctx, userID, []domain.KeycloakRole{*targetRole})
+}
+
+// findRealmRole looks up a realm role by name from Keycloak.
+func (a *AdminClient) findRealmRole(ctx context.Context, name string) (*domain.KeycloakRole, error) {
+	realmRoles, err := a.getRealmRoles(ctx)
+	if err != nil {
+		return nil, err
+	}
 	for _, r := range realmRoles {
-		if r.Name == role {
-			targetRole = &r
-			break
+		if r.Name == name {
+			return &r, nil
 		}
 	}
-	if targetRole == nil {
-		return domain.NewInvalidInputErrorf("realm role %s not found in Keycloak", role)
+	return nil, domain.NewInvalidInputErrorf("realm role %s not found in Keycloak", name)
+}
+
+// filterAppManagedRoles extracts app-managed role names from a list of Keycloak roles,
+// filtering out Keycloak built-in roles (e.g. default-roles-*, offline_access).
+func filterAppManagedRoles(roles []domain.KeycloakRole) []string {
+	var names []string
+	for _, r := range roles {
+		if auth.Role(r.Name).Validate() == nil {
+			names = append(names, r.Name)
+		}
 	}
-	return a.AssignRealmRoles(ctx, userID, []domain.KeycloakRole{*targetRole})
+	return names
+}
+
+// setAttribute sets or clears a single attribute in a Keycloak attributes map.
+func setAttribute(attrs map[string][]string, key string, val *string) {
+	if val == nil {
+		return
+	}
+	if *val == "" {
+		attrs[key] = []string{}
+	} else {
+		attrs[key] = []string{*val}
+	}
 }
 
 func (a *AdminClient) compensatingDelete(ctx context.Context, userID string) {
@@ -537,14 +539,8 @@ func (a *AdminClient) Get(ctx context.Context, id string) (*domain.KeycloakUser,
 	if err != nil {
 		return nil, err
 	}
-	roleNames := make([]string, 0, len(roles))
-	for _, r := range roles {
-		if auth.Role(r.Name).Validate() == nil {
-			roleNames = append(roleNames, r.Name)
-		}
-	}
 
-	return buildKeycloakUser(user, roleNames), nil
+	return buildKeycloakUser(user, filterAppManagedRoles(roles)), nil
 }
 
 // List retrieves a paginated list of keycloak users.

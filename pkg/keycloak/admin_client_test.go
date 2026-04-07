@@ -262,13 +262,13 @@ func TestSetPassword_Success(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	err := client.SetPassword(context.Background(), "user-123", "secret123", false)
+	err := client.setPassword(context.Background(), "user-123", "secret123", false)
 	require.NoError(t, err)
 }
 
 func TestSetPassword_EmptyID(t *testing.T) {
 	client := setupTestClient(t, newMux())
-	err := client.SetPassword(context.Background(), "", "pass", false)
+	err := client.setPassword(context.Background(), "", "pass", false)
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.InvalidInputError{})
@@ -448,7 +448,7 @@ func TestGetRealmRoles_Success(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	roles, err := client.GetRealmRoles(context.Background())
+	roles, err := client.getRealmRoles(context.Background())
 
 	require.NoError(t, err)
 	assert.Len(t, roles, 3)
@@ -469,7 +469,7 @@ func TestAssignRealmRoles_Success(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	err := client.AssignRealmRoles(context.Background(), "user-123", []domain.KeycloakRole{
+	err := client.assignRealmRoles(context.Background(), "user-123", []domain.KeycloakRole{
 		{ID: "r1", Name: "admin"},
 	})
 	require.NoError(t, err)
@@ -477,7 +477,7 @@ func TestAssignRealmRoles_Success(t *testing.T) {
 
 func TestAssignRealmRoles_EmptyID(t *testing.T) {
 	client := setupTestClient(t, newMux())
-	err := client.AssignRealmRoles(context.Background(), "", []domain.KeycloakRole{{ID: "r1", Name: "admin"}})
+	err := client.assignRealmRoles(context.Background(), "", []domain.KeycloakRole{{ID: "r1", Name: "admin"}})
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.InvalidInputError{})
@@ -494,7 +494,7 @@ func TestRemoveRealmRoles_Success(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	err := client.RemoveRealmRoles(context.Background(), "user-123", []domain.KeycloakRole{
+	err := client.removeRealmRoles(context.Background(), "user-123", []domain.KeycloakRole{
 		{ID: "r1", Name: "admin"},
 	})
 	require.NoError(t, err)
@@ -503,7 +503,7 @@ func TestRemoveRealmRoles_Success(t *testing.T) {
 
 func TestRemoveRealmRoles_EmptyID(t *testing.T) {
 	client := setupTestClient(t, newMux())
-	err := client.RemoveRealmRoles(context.Background(), "", []domain.KeycloakRole{{ID: "r1", Name: "admin"}})
+	err := client.removeRealmRoles(context.Background(), "", []domain.KeycloakRole{{ID: "r1", Name: "admin"}})
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.InvalidInputError{})
@@ -545,7 +545,7 @@ func TestSetRole_Success(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	err := client.SetRole(context.Background(), "user-123", "participant")
+	err := client.setRole(context.Background(), "user-123", "participant")
 
 	require.NoError(t, err)
 	assert.True(t, removeCalled)
@@ -560,7 +560,7 @@ func TestSetRole_RoleNotFound(t *testing.T) {
 	})
 
 	client := setupTestClient(t, mux)
-	err := client.SetRole(context.Background(), "user-123", "nonexistent")
+	err := client.setRole(context.Background(), "user-123", "nonexistent")
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.InvalidInputError{})
@@ -569,7 +569,7 @@ func TestSetRole_RoleNotFound(t *testing.T) {
 
 func TestSetRole_EmptyID(t *testing.T) {
 	client := setupTestClient(t, newMux())
-	err := client.SetRole(context.Background(), "", "admin")
+	err := client.setRole(context.Background(), "", "admin")
 
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &domain.InvalidInputError{})

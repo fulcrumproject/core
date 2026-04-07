@@ -147,7 +147,7 @@ func (c *keycloakUserCommander) Create(ctx context.Context, params CreateKeycloa
 		if params.ParticipantID == "" {
 			return nil, NewInvalidInputErrorf("participantId is required for role participant")
 		}
-		if err := c.validateParticipantID(ctx, params.ParticipantID); err != nil {
+		if err := c.validateEntityExists(ctx, params.ParticipantID, "participant", c.participantQuerier.Exists); err != nil {
 			return nil, err
 		}
 	}
@@ -156,7 +156,7 @@ func (c *keycloakUserCommander) Create(ctx context.Context, params CreateKeycloa
 		if params.AgentID == "" {
 			return nil, NewInvalidInputErrorf("agentId is required for role agent")
 		}
-		if err := c.validateAgentID(ctx, params.AgentID); err != nil {
+		if err := c.validateEntityExists(ctx, params.AgentID, "agent", c.agentQuerier.Exists); err != nil {
 			return nil, err
 		}
 	}
@@ -179,7 +179,7 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 			if params.ParticipantID == nil || *params.ParticipantID == "" {
 				return nil, NewInvalidInputErrorf("participantId is required for role participant")
 			}
-			if err := c.validateParticipantID(ctx, *params.ParticipantID); err != nil {
+			if err := c.validateEntityExists(ctx, *params.ParticipantID, "participant", c.participantQuerier.Exists); err != nil {
 				return nil, err
 			}
 			params.AgentID = helpers.StringPtr("")
@@ -188,7 +188,7 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 			if params.AgentID == nil || *params.AgentID == "" {
 				return nil, NewInvalidInputErrorf("agentId is required for role agent")
 			}
-			if err := c.validateAgentID(ctx, *params.AgentID); err != nil {
+			if err := c.validateEntityExists(ctx, *params.AgentID, "agent", c.agentQuerier.Exists); err != nil {
 				return nil, err
 			}
 			params.ParticipantID = helpers.StringPtr("")
@@ -207,7 +207,7 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 			if !slices.Contains(currentUser.Roles, string(auth.RoleParticipant)) {
 				return nil, NewInvalidInputErrorf("participantId can only be set on users with role participant")
 			}
-			if err := c.validateParticipantID(ctx, *params.ParticipantID); err != nil {
+			if err := c.validateEntityExists(ctx, *params.ParticipantID, "participant", c.participantQuerier.Exists); err != nil {
 				return nil, err
 			}
 		}
@@ -215,7 +215,7 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 			if !slices.Contains(currentUser.Roles, string(auth.RoleAgent)) {
 				return nil, NewInvalidInputErrorf("agentId can only be set on users with role agent")
 			}
-			if err := c.validateAgentID(ctx, *params.AgentID); err != nil {
+			if err := c.validateEntityExists(ctx, *params.AgentID, "agent", c.agentQuerier.Exists); err != nil {
 				return nil, err
 			}
 		}
@@ -231,34 +231,18 @@ func (c *keycloakUserCommander) Delete(ctx context.Context, id string) error {
 	return c.adminClient.Delete(ctx, id)
 }
 
-// validateParticipantID checks that the participant exists in the local DB.
-func (c *keycloakUserCommander) validateParticipantID(ctx context.Context, participantID string) error {
-	id, err := properties.ParseUUID(participantID)
+// validateEntityExists checks that an entity with the given ID exists using the provided existsFn.
+func (c *keycloakUserCommander) validateEntityExists(ctx context.Context, rawID string, entityName string, existsFn func(context.Context, properties.UUID) (bool, error)) error {
+	id, err := properties.ParseUUID(rawID)
 	if err != nil {
-		return NewInvalidInputErrorf("invalid participant id: %s", participantID)
+		return NewInvalidInputErrorf("invalid %s id: %s", entityName, rawID)
 	}
-	exists, err := c.participantQuerier.Exists(ctx, id)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return NewInvalidInputErrorf("participant with id %s not found", participantID)
-	}
-	return nil
-}
-
-// validateAgentID checks that the agent exists in the local DB.
-func (c *keycloakUserCommander) validateAgentID(ctx context.Context, agentID string) error {
-	id, err := properties.ParseUUID(agentID)
-	if err != nil {
-		return NewInvalidInputErrorf("invalid agent id: %s", agentID)
-	}
-	exists, err := c.agentQuerier.Exists(ctx, id)
+	exists, err := existsFn(ctx, id)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		return NewInvalidInputErrorf("agent with id %s not found", agentID)
+		return NewInvalidInputErrorf("%s with id %s not found", entityName, rawID)
 	}
 	return nil
 }
