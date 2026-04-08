@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/stretchr/testify/assert"
@@ -59,7 +60,7 @@ func TestCreate_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "user-123", user.ID)
 	assert.Equal(t, "john", user.Username)
-	assert.Equal(t, []string{"admin"}, user.Roles)
+	assert.Equal(t, []auth.Role{auth.RoleAdmin}, user.Roles)
 }
 
 func TestCreate_Conflict(t *testing.T) {
@@ -148,7 +149,7 @@ func TestUpdate_MergesFields(t *testing.T) {
 	// Verify returned user is built from known data
 	assert.Equal(t, "user-123", user.ID)
 	assert.Equal(t, "new@example.com", user.Email)
-	assert.Equal(t, []string{"admin"}, user.Roles)
+	assert.Equal(t, []auth.Role{auth.RoleAdmin}, user.Roles)
 }
 
 func TestUpdate_EmptyID(t *testing.T) {
@@ -269,7 +270,7 @@ func TestGet_Success(t *testing.T) {
 	assert.Equal(t, "John", user.FirstName)
 	assert.Equal(t, "Doe", user.LastName)
 	assert.True(t, user.Enabled)
-	assert.Equal(t, []string{"admin", "participant"}, user.Roles)
+	assert.Equal(t, []auth.Role{auth.RoleAdmin, auth.RoleParticipant}, user.Roles)
 	assert.Equal(t, "p-1", user.ParticipantID)
 	assert.Equal(t, "a-1", user.AgentID)
 }
@@ -298,7 +299,7 @@ func TestGet_FiltersSystemRoles(t *testing.T) {
 	user, err := client.Get(context.Background(), "user-123")
 
 	require.NoError(t, err)
-	assert.Equal(t, []string{"admin"}, user.Roles, "only app roles should be returned, system roles must be filtered out")
+	assert.Equal(t, []auth.Role{auth.RoleAdmin}, user.Roles, "only app roles should be returned, system roles must be filtered out")
 }
 
 func TestGet_EmptyID(t *testing.T) {

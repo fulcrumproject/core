@@ -92,7 +92,7 @@ KeycloakUserRes:
     roles:
       type: array
       items:
-        type: string
+        $ref: "./tokens.yaml#/AuthRole"
       example: ["participant"]
     participantId:
       type: string

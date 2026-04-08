@@ -18,7 +18,7 @@ type KeycloakUser struct {
 	Email         string
 	EmailVerified bool
 	Enabled       bool
-	Roles         []string
+	Roles         []auth.Role
 	ParticipantID string
 	AgentID       string
 }
@@ -221,7 +221,7 @@ func (c *keycloakUserCommander) validateAttributeOnlyUpdate(ctx context.Context,
 		return err
 	}
 	if params.ParticipantID != nil && *params.ParticipantID != "" {
-		if !slices.Contains(currentUser.Roles, string(auth.RoleParticipant)) {
+		if !slices.Contains(currentUser.Roles, auth.RoleParticipant) {
 			return NewInvalidInputErrorf("participantId can only be set on users with role participant")
 		}
 		if err := c.validateEntityExists(ctx, *params.ParticipantID, "participant", c.participantQuerier.Exists); err != nil {
@@ -229,7 +229,7 @@ func (c *keycloakUserCommander) validateAttributeOnlyUpdate(ctx context.Context,
 		}
 	}
 	if params.AgentID != nil && *params.AgentID != "" {
-		if !slices.Contains(currentUser.Roles, string(auth.RoleAgent)) {
+		if !slices.Contains(currentUser.Roles, auth.RoleAgent) {
 			return NewInvalidInputErrorf("agentId can only be set on users with role agent")
 		}
 		if err := c.validateEntityExists(ctx, *params.AgentID, "agent", c.agentQuerier.Exists); err != nil {

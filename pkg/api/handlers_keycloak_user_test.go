@@ -73,7 +73,7 @@ func TestKeycloakUserToRes(t *testing.T) {
 		FirstName:     "John",
 		LastName:      "Doe",
 		Enabled:       true,
-		Roles:         []string{"admin"},
+		Roles:         []auth.Role{auth.RoleAdmin},
 		ParticipantID: "p-1",
 		AgentID:       "a-1",
 	}
@@ -86,7 +86,7 @@ func TestKeycloakUserToRes(t *testing.T) {
 	assert.Equal(t, "John", res.FirstName)
 	assert.Equal(t, "Doe", res.LastName)
 	assert.True(t, res.Enabled)
-	assert.Equal(t, []string{"admin"}, res.Roles)
+	assert.Equal(t, []auth.Role{auth.RoleAdmin}, res.Roles)
 	assert.Equal(t, "p-1", res.ParticipantID)
 	assert.Equal(t, "a-1", res.AgentID)
 }
@@ -186,7 +186,7 @@ func TestKeycloakUserHandlerCreate(t *testing.T) {
 						FirstName: "New",
 						LastName:  "User",
 						Enabled:   true,
-						Roles:     []string{"admin"},
+						Roles:     []auth.Role{auth.RoleAdmin},
 					}, nil)
 			},
 			expectedStatus: http.StatusCreated,
@@ -250,7 +250,7 @@ func TestKeycloakUserHandlerGet(t *testing.T) {
 					FirstName: "John",
 					LastName:  "Doe",
 					Enabled:   true,
-					Roles:     []string{"admin"},
+					Roles:     []auth.Role{auth.RoleAdmin},
 				}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -322,7 +322,7 @@ func TestKeycloakUserHandlerUpdate(t *testing.T) {
 						FirstName: "Updated",
 						LastName:  "Doe",
 						Enabled:   true,
-						Roles:     []string{"admin"},
+						Roles:     []auth.Role{auth.RoleAdmin},
 					}, nil)
 			},
 			expectedStatus: http.StatusOK,

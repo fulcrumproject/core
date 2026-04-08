@@ -13,16 +13,16 @@ import (
 
 // KeycloakUserRes is the response body for keycloak user get, create, and update operations.
 type KeycloakUserRes struct {
-	ID            string   `json:"id"`
-	Username      string   `json:"username"`
-	Email         string   `json:"email"`
-	EmailVerified bool     `json:"emailVerified"`
-	FirstName     string   `json:"firstName"`
-	LastName      string   `json:"lastName"`
-	Enabled       bool     `json:"enabled"`
-	Roles         []string `json:"roles"`
-	ParticipantID string   `json:"participantId,omitempty"`
-	AgentID       string   `json:"agentId,omitempty"`
+	ID            string      `json:"id"`
+	Username      string      `json:"username"`
+	Email         string      `json:"email"`
+	EmailVerified bool        `json:"emailVerified"`
+	FirstName     string      `json:"firstName"`
+	LastName      string      `json:"lastName"`
+	Enabled       bool        `json:"enabled"`
+	Roles         []auth.Role `json:"roles"`
+	ParticipantID string      `json:"participantId,omitempty"`
+	AgentID       string      `json:"agentId,omitempty"`
 }
 
 // KeycloakUserListItemRes is the response body for keycloak user list items.

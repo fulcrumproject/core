@@ -146,7 +146,7 @@ func validCreateParams() CreateKeycloakUserParams {
 func sampleKeycloakUser() *KeycloakUser {
 	return &KeycloakUser{
 		ID: "user-123", Username: "john", Email: "john@example.com",
-		FirstName: "John", LastName: "Doe", Enabled: true, Roles: []string{"admin"},
+		FirstName: "John", LastName: "Doe", Enabled: true, Roles: []auth.Role{auth.RoleAdmin},
 	}
 }
 
@@ -337,11 +337,11 @@ func TestCommanderUpdate(t *testing.T) {
 			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
 				pq.EXPECT().Exists(mock.Anything, properties.UUID(sampleParticipantUUID)).Return(true, nil)
 				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(&KeycloakUser{
-					ID: "user-123", Roles: []string{"participant"}, ParticipantID: sampleParticipantUUID.String(),
+					ID: "user-123", Roles: []auth.Role{auth.RoleParticipant}, ParticipantID: sampleParticipantUUID.String(),
 				}, nil)
 			},
 			checkResult: func(t *testing.T, u *KeycloakUser) {
-				assert.Equal(t, []string{"participant"}, u.Roles)
+				assert.Equal(t, []auth.Role{auth.RoleParticipant}, u.Roles)
 				assert.Equal(t, sampleParticipantUUID.String(), u.ParticipantID)
 			},
 		},
@@ -368,7 +368,7 @@ func TestCommanderUpdate(t *testing.T) {
 				})).Return(sampleKeycloakUser(), nil)
 			},
 			checkResult: func(t *testing.T, u *KeycloakUser) {
-				assert.Equal(t, []string{"admin"}, u.Roles)
+				assert.Equal(t, []auth.Role{auth.RoleAdmin}, u.Roles)
 			},
 		},
 		{
@@ -379,11 +379,11 @@ func TestCommanderUpdate(t *testing.T) {
 			},
 			setup: func(m *MockKeycloakAdminClient, pq *MockParticipantQuerier, aq *MockAgentQuerier) {
 				m.EXPECT().Get(mock.Anything, "user-123").Return(&KeycloakUser{
-					ID: "user-123", Roles: []string{"participant"}, ParticipantID: "old-id",
+					ID: "user-123", Roles: []auth.Role{auth.RoleParticipant}, ParticipantID: "old-id",
 				}, nil)
 				pq.EXPECT().Exists(mock.Anything, properties.UUID(sampleParticipantUUID)).Return(true, nil)
 				m.EXPECT().Update(mock.Anything, "user-123", mock.Anything).Return(&KeycloakUser{
-					ID: "user-123", Roles: []string{"participant"}, ParticipantID: sampleParticipantUUID.String(),
+					ID: "user-123", Roles: []auth.Role{auth.RoleParticipant}, ParticipantID: sampleParticipantUUID.String(),
 				}, nil)
 			},
 			checkResult: func(t *testing.T, u *KeycloakUser) {

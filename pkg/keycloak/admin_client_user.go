@@ -65,7 +65,7 @@ func (a *AdminClient) Create(ctx context.Context, params domain.CreateKeycloakUs
 	}
 
 	body.ID = userID
-	return buildKeycloakUser(body, []string{string(params.Role)}), nil
+	return buildKeycloakUser(body, []auth.Role{params.Role}), nil
 }
 
 // Update updates an existing user in Keycloak and returns the updated user.
@@ -124,12 +124,12 @@ func (a *AdminClient) Update(ctx context.Context, id string, params domain.Updat
 	}
 
 	// Determine final roles for the return value
-	var roles []string
+	var roles []auth.Role
 	if params.Role != nil {
 		if err := a.setRole(ctx, id, string(*params.Role)); err != nil {
 			return nil, err
 		}
-		roles = []string{string(*params.Role)}
+		roles = []auth.Role{*params.Role}
 	} else {
 		// Role unchanged: fetch current app-managed roles
 		currentRoles, err := a.getUserRealmRoles(ctx, id)
@@ -304,11 +304,11 @@ func (a *AdminClient) findRealmRole(ctx context.Context, name string) (*domain.K
 
 // filterAppManagedRoles extracts app-managed role names from a list of Keycloak roles,
 // filtering out Keycloak built-in roles (e.g. default-roles-*, offline_access).
-func filterAppManagedRoles(roles []domain.KeycloakRole) []string {
-	var names []string
+func filterAppManagedRoles(roles []domain.KeycloakRole) []auth.Role {
+	var names []auth.Role
 	for _, r := range roles {
 		if auth.Role(r.Name).Validate() == nil {
-			names = append(names, r.Name)
+			names = append(names, auth.Role(r.Name))
 		}
 	}
 	return names
@@ -333,7 +333,7 @@ func (a *AdminClient) compensatingDelete(ctx context.Context, userID string) {
 }
 
 // buildKeycloakUser constructs a domain.KeycloakUser from a Keycloak representation and known roles.
-func buildKeycloakUser(rep UserRepresentation, roles []string) *domain.KeycloakUser {
+func buildKeycloakUser(rep UserRepresentation, roles []auth.Role) *domain.KeycloakUser {
 	var participantID string
 	if vals, ok := rep.Attributes["participant_id"]; ok && len(vals) > 0 {
 		participantID = vals[0]
