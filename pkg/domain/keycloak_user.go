@@ -142,25 +142,9 @@ func (c *keycloakUserCommander) Create(ctx context.Context, params CreateKeycloa
 	if err := params.Validate(); err != nil {
 		return nil, err
 	}
-
-	if params.Role == auth.RoleParticipant {
-		if params.ParticipantID == "" {
-			return nil, NewInvalidInputErrorf("participantId is required for role participant")
-		}
-		if err := c.validateEntityExists(ctx, params.ParticipantID, "participant", c.participantQuerier.Exists); err != nil {
-			return nil, err
-		}
+	if err := c.validateCreateRoleAttributes(ctx, params); err != nil {
+		return nil, err
 	}
-
-	if params.Role == auth.RoleAgent {
-		if params.AgentID == "" {
-			return nil, NewInvalidInputErrorf("agentId is required for role agent")
-		}
-		if err := c.validateEntityExists(ctx, params.AgentID, "agent", c.agentQuerier.Exists); err != nil {
-			return nil, err
-		}
-	}
-
 	return c.adminClient.Create(ctx, params)
 }
 
@@ -168,59 +152,15 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 	if id == "" {
 		return nil, NewInvalidInputErrorf("keycloak user id is required")
 	}
-
 	if params.Role != nil {
-		if err := params.Role.Validate(); err != nil {
-			return nil, NewInvalidInputErrorf("invalid role: %s", *params.Role)
-		}
-
-		switch *params.Role {
-		case auth.RoleParticipant:
-			if params.ParticipantID == nil || *params.ParticipantID == "" {
-				return nil, NewInvalidInputErrorf("participantId is required for role participant")
-			}
-			if err := c.validateEntityExists(ctx, *params.ParticipantID, "participant", c.participantQuerier.Exists); err != nil {
-				return nil, err
-			}
-			params.AgentID = helpers.StringPtr("")
-
-		case auth.RoleAgent:
-			if params.AgentID == nil || *params.AgentID == "" {
-				return nil, NewInvalidInputErrorf("agentId is required for role agent")
-			}
-			if err := c.validateEntityExists(ctx, *params.AgentID, "agent", c.agentQuerier.Exists); err != nil {
-				return nil, err
-			}
-			params.ParticipantID = helpers.StringPtr("")
-
-		case auth.RoleAdmin:
-			params.ParticipantID = helpers.StringPtr("")
-			params.AgentID = helpers.StringPtr("")
-		}
-	} else if params.ParticipantID != nil || params.AgentID != nil {
-		// Attribute-only update: validate against current role
-		currentUser, err := c.adminClient.Get(ctx, id)
-		if err != nil {
+		if err := c.validateRoleChange(ctx, &params); err != nil {
 			return nil, err
 		}
-		if params.ParticipantID != nil && *params.ParticipantID != "" {
-			if !slices.Contains(currentUser.Roles, string(auth.RoleParticipant)) {
-				return nil, NewInvalidInputErrorf("participantId can only be set on users with role participant")
-			}
-			if err := c.validateEntityExists(ctx, *params.ParticipantID, "participant", c.participantQuerier.Exists); err != nil {
-				return nil, err
-			}
-		}
-		if params.AgentID != nil && *params.AgentID != "" {
-			if !slices.Contains(currentUser.Roles, string(auth.RoleAgent)) {
-				return nil, NewInvalidInputErrorf("agentId can only be set on users with role agent")
-			}
-			if err := c.validateEntityExists(ctx, *params.AgentID, "agent", c.agentQuerier.Exists); err != nil {
-				return nil, err
-			}
+	} else if params.ParticipantID != nil || params.AgentID != nil {
+		if err := c.validateAttributeOnlyUpdate(ctx, id, &params); err != nil {
+			return nil, err
 		}
 	}
-
 	return c.adminClient.Update(ctx, id, params)
 }
 
@@ -229,6 +169,74 @@ func (c *keycloakUserCommander) Delete(ctx context.Context, id string) error {
 		return NewInvalidInputErrorf("keycloak user id is required")
 	}
 	return c.adminClient.Delete(ctx, id)
+}
+
+func (c *keycloakUserCommander) validateCreateRoleAttributes(ctx context.Context, params CreateKeycloakUserParams) error {
+	switch params.Role {
+	case auth.RoleParticipant:
+		if params.ParticipantID == "" {
+			return NewInvalidInputErrorf("participantId is required for role participant")
+		}
+		return c.validateEntityExists(ctx, params.ParticipantID, "participant", c.participantQuerier.Exists)
+	case auth.RoleAgent:
+		if params.AgentID == "" {
+			return NewInvalidInputErrorf("agentId is required for role agent")
+		}
+		return c.validateEntityExists(ctx, params.AgentID, "agent", c.agentQuerier.Exists)
+	}
+	return nil
+}
+
+func (c *keycloakUserCommander) validateRoleChange(ctx context.Context, params *UpdateKeycloakUserParams) error {
+	if err := params.Role.Validate(); err != nil {
+		return NewInvalidInputErrorf("invalid role: %s", *params.Role)
+	}
+	switch *params.Role {
+	case auth.RoleParticipant:
+		if params.ParticipantID == nil || *params.ParticipantID == "" {
+			return NewInvalidInputErrorf("participantId is required for role participant")
+		}
+		if err := c.validateEntityExists(ctx, *params.ParticipantID, "participant", c.participantQuerier.Exists); err != nil {
+			return err
+		}
+		params.AgentID = helpers.StringPtr("")
+	case auth.RoleAgent:
+		if params.AgentID == nil || *params.AgentID == "" {
+			return NewInvalidInputErrorf("agentId is required for role agent")
+		}
+		if err := c.validateEntityExists(ctx, *params.AgentID, "agent", c.agentQuerier.Exists); err != nil {
+			return err
+		}
+		params.ParticipantID = helpers.StringPtr("")
+	case auth.RoleAdmin:
+		params.ParticipantID = helpers.StringPtr("")
+		params.AgentID = helpers.StringPtr("")
+	}
+	return nil
+}
+
+func (c *keycloakUserCommander) validateAttributeOnlyUpdate(ctx context.Context, id string, params *UpdateKeycloakUserParams) error {
+	currentUser, err := c.adminClient.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if params.ParticipantID != nil && *params.ParticipantID != "" {
+		if !slices.Contains(currentUser.Roles, string(auth.RoleParticipant)) {
+			return NewInvalidInputErrorf("participantId can only be set on users with role participant")
+		}
+		if err := c.validateEntityExists(ctx, *params.ParticipantID, "participant", c.participantQuerier.Exists); err != nil {
+			return err
+		}
+	}
+	if params.AgentID != nil && *params.AgentID != "" {
+		if !slices.Contains(currentUser.Roles, string(auth.RoleAgent)) {
+			return NewInvalidInputErrorf("agentId can only be set on users with role agent")
+		}
+		if err := c.validateEntityExists(ctx, *params.AgentID, "agent", c.agentQuerier.Exists); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // validateEntityExists checks that an entity with the given ID exists using the provided existsFn.
