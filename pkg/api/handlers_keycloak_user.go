@@ -182,7 +182,10 @@ func (h *KeycloakUserHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.commander.Update(r.Context(), id, domain.UpdateKeycloakUserParams{
 		Email:         req.Email,
+<<<<<<< HEAD
 		EmailVerified: req.EmailVerified,
+=======
+>>>>>>> main
 		FirstName:     req.FirstName,
 		LastName:      req.LastName,
 		Enabled:       req.Enabled,
