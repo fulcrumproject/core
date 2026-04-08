@@ -51,6 +51,7 @@ type CreateKeycloakUserReq struct {
 // UpdateKeycloakUserReq is the request body for updating a keycloak user.
 type UpdateKeycloakUserReq struct {
 	Email         *string    `json:"email,omitempty"`
+	EmailVerified *bool      `json:"emailVerified,omitempty"`
 	FirstName     *string    `json:"firstName,omitempty"`
 	LastName      *string    `json:"lastName,omitempty"`
 	Enabled       *bool      `json:"enabled,omitempty"`
@@ -181,6 +182,7 @@ func (h *KeycloakUserHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.commander.Update(r.Context(), id, domain.UpdateKeycloakUserParams{
 		Email:         req.Email,
+		EmailVerified: req.EmailVerified,
 		FirstName:     req.FirstName,
 		LastName:      req.LastName,
 		Enabled:       req.Enabled,

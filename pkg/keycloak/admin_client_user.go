@@ -103,6 +103,10 @@ func (a *AdminClient) Update(ctx context.Context, id string, params domain.Updat
 		body.Enabled = params.Enabled
 	}
 
+	if params.EmailVerified != nil {
+		body.EmailVerified = params.EmailVerified
+	}
+
 	if params.ParticipantID != nil || params.AgentID != nil {
 		if body.Attributes == nil {
 			body.Attributes = make(map[string][]string)

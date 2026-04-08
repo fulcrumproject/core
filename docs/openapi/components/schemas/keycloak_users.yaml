@@ -48,6 +48,8 @@ UpdateKeycloakUserReq:
       type: string
       format: email
       example: "john.updated@example.com"
+    emailVerified:
+      type: boolean
     firstName:
       type: string
       example: "John"

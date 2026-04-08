@@ -103,6 +103,7 @@ func (p *CreateKeycloakUserParams) Validate() error {
 // UpdateKeycloakUserParams defines the parameters for updating a keycloak user.
 type UpdateKeycloakUserParams struct {
 	Email         *string
+	EmailVerified *bool
 	FirstName     *string
 	LastName      *string
 	Enabled       *bool
