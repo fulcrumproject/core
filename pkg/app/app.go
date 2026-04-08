@@ -83,6 +83,7 @@ func initLogger(cfg *config.Config) *slog.Logger {
 	slog.Debug("API_SERVER", "value", cfg.ApiServer)
 	slog.Debug("JOB_MAINTENANCE", "value", cfg.JobMaintenance)
 	slog.Debug("AGENT_MAINTENANCE", "value", cfg.AgentMaintenance)
+	slog.Debug("KEYCLOAK_ADMIN", "value", cfg.KeycloakAdmin)
 
 	return logger
 }
@@ -190,9 +191,6 @@ func NewApp() *App {
 		slog.Warn("Vault encryption key not configured - secret properties will not work")
 	}
 
-	kcAdminClient := keycloak.NewAdminClient(&cfg.OAuthConfig)
-	keycloakUserCmd := domain.NewKeycloakUserCommander(kcAdminClient, store.ParticipantRepo(), store.AgentRepo())
-
 	// Initialize schema engine for service property validation
 	propertyEngine := domain.NewServicePropertyEngine(vault)
 
@@ -245,6 +243,14 @@ func NewApp() *App {
 
 	athz := authz.NewRuleBasedAuthorizer(authz.Rules)
 
+	var keycloakUserHandler *api.KeycloakUserHandler
+	if cfg.KeycloakAdmin {
+		kcAdminClient := keycloak.NewAdminClient(&cfg.OAuthConfig)
+		keycloakUserCmd := domain.NewKeycloakUserCommander(kcAdminClient, store.ParticipantRepo(), store.AgentRepo())
+		keycloakUserHandler = api.NewKeycloakUserHandler(kcAdminClient, keycloakUserCmd, athz)
+		slog.Info("Keycloak admin user management enabled")
+	}
+
 	// Initialize commanders for service pools
 	servicePoolSetCmd := domain.NewServicePoolSetCommander(store)
 	servicePoolCmd := domain.NewServicePoolCommander(store)
@@ -280,7 +286,7 @@ func NewApp() *App {
 		EventHandler:             api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz),
 		TokenHandler:             api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz),
 		VaultHandler:             api.NewVaultHandler(vault),
-		KeycloakUserHandler:      api.NewKeycloakUserHandler(kcAdminClient, keycloakUserCmd, athz),
+		KeycloakUserHandler:      keycloakUserHandler,
 		ServiceCmd:               serviceCmd,
 		PropertyEngine:           propertyEngine,
 	}

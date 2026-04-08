@@ -149,7 +149,9 @@ func BuildHttpServer(
 		r.Route("/jobs", app.JobHandler.Routes())
 		r.Route("/tokens", app.TokenHandler.Routes())
 		r.Route("/vault/secrets", app.VaultHandler.Routes())
-		r.Route("/keycloak-users", app.KeycloakUserHandler.Routes())
+		if app.KeycloakUserHandler != nil {
+			r.Route("/keycloak-users", app.KeycloakUserHandler.Routes())
+		}
 	})
 
 	return &http.Server{
