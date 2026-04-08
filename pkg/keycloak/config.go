@@ -3,13 +3,14 @@ package keycloak
 import "fmt"
 
 type Config struct {
-	KeycloakURL    string `json:"keycloakUrl" env:"OAUTH_KEYCLOAK_URL"`
-	Realm          string `json:"realm" env:"OAUTH_REALM"`
-	ClientID       string `json:"clientId" env:"OAUTH_CLIENT_ID"`
-	ClientSecret   string `json:"clientSecret" env:"OAUTH_CLIENT_SECRET"`
-	JWKSCacheTTL   int    `json:"jwksCacheTtl" env:"OAUTH_JWKS_CACHE_TTL"`
-	ValidateIssuer bool   `json:"validateIssuer" env:"OAUTH_VALIDATE_ISSUER"`
-	InsecureSkipVerify bool `json:"insecureSkipVerify" env:"OAUTH_INSECURE_SKIP_VERIFY"`
+	KeycloakURL        string `json:"keycloakUrl" env:"OAUTH_KEYCLOAK_URL"`
+	Realm              string `json:"realm" env:"OAUTH_REALM"`
+	ClientID           string `json:"clientId" env:"OAUTH_CLIENT_ID"`
+	ClientSecret       string `json:"clientSecret" env:"OAUTH_CLIENT_SECRET"`
+	JWKSCacheTTL       int    `json:"jwksCacheTtl" env:"OAUTH_JWKS_CACHE_TTL"`
+	ValidateIssuer     bool   `json:"validateIssuer" env:"OAUTH_VALIDATE_ISSUER"`
+	InsecureSkipVerify bool   `json:"insecureSkipVerify" env:"OAUTH_INSECURE_SKIP_VERIFY"`
+	RestyDebug         bool   `json:"restyDebug" env:"OAUTH_RESTY_DEBUG"`
 }
 
 // GetJWKSURL returns the JWKS endpoint URL for the Keycloak realm
@@ -20,4 +21,14 @@ func (c *Config) GetJWKSURL() string {
 // GetIssuer returns the expected issuer for JWT tokens
 func (c *Config) GetIssuer() string {
 	return fmt.Sprintf("%s/realms/%s", c.KeycloakURL, c.Realm)
+}
+
+// GetAdminUrl returns the base admin url
+func (c *Config) GetAdminUrl() string {
+	return fmt.Sprintf("%s/admin/realms/%s", c.KeycloakURL, c.Realm)
+}
+
+// GetTokenUrl returns the token url for client credentials auth
+func (c *Config) GetTokenUrl() string {
+	return fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", c.KeycloakURL, c.Realm)
 }

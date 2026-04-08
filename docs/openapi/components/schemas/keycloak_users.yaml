@@ -1,0 +1,121 @@
+CreateKeycloakUserReq:
+  type: object
+  required:
+    - username
+    - email
+    - firstName
+    - lastName
+    - password
+    - role
+  properties:
+    username:
+      type: string
+      example: "john.doe"
+    email:
+      type: string
+      format: email
+      example: "john.doe@example.com"
+    emailVerified:
+      type: boolean
+      example: false
+    firstName:
+      type: string
+      example: "John"
+    lastName:
+      type: string
+      example: "Doe"
+    password:
+      type: string
+      example: "securePassword123"
+    enabled:
+      type: boolean
+      example: true
+    role:
+      $ref: "./tokens.yaml#/AuthRole"
+    participantId:
+      type: string
+      description: "Required when role is 'participant'"
+      example: "123e4567-e89b-12d3-a456-426614174000"
+    agentId:
+      type: string
+      description: "Required when role is 'agent'"
+      example: "123e4567-e89b-12d3-a456-426614174000"
+
+UpdateKeycloakUserReq:
+  type: object
+  properties:
+    email:
+      type: string
+      format: email
+      example: "john.updated@example.com"
+    firstName:
+      type: string
+      example: "John"
+    lastName:
+      type: string
+      example: "Doe"
+    enabled:
+      type: boolean
+    password:
+      type: string
+    role:
+      $ref: "./tokens.yaml#/AuthRole"
+    participantId:
+      type: string
+      description: "Required when role is 'participant'"
+    agentId:
+      type: string
+      description: "Required when role is 'agent'"
+
+KeycloakUserRes:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    username:
+      type: string
+      example: "john.doe"
+    email:
+      type: string
+      example: "john.doe@example.com"
+    emailVerified:
+      type: boolean
+    firstName:
+      type: string
+      example: "John"
+    lastName:
+      type: string
+      example: "Doe"
+    enabled:
+      type: boolean
+    roles:
+      type: array
+      items:
+        $ref: "./tokens.yaml#/AuthRole"
+      example: ["participant"]
+    participantId:
+      type: string
+      description: "Present only for users with participant role"
+    agentId:
+      type: string
+      description: "Present only for users with agent role"
+
+KeycloakUserListItemRes:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    username:
+      type: string
+      example: "john.doe"
+    email:
+      type: string
+      example: "john.doe@example.com"
+    firstName:
+      type: string
+      example: "John"
+    lastName:
+      type: string
+      example: "Doe"

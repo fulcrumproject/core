@@ -57,6 +57,18 @@
         "participant_id": "agent1-participant-id",
         "agent_id": "agent1-id"
       }
+    },
+    {
+      "username": "service-account-fulcrum-api",
+      "enabled": true,
+      "serviceAccountClientId": "fulcrum-api",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users"
+        ]
+      }
     }
   ],
   "clients": [

@@ -1,0 +1,89 @@
+get:
+  operationId: keycloakUsersList
+  summary: List keycloak users
+  tags:
+    - Keycloak Users
+  description: Retrieves a paginated list of keycloak users
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: not authorized
+    - role: agent
+      permission: not authorized
+  parameters:
+    - name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    - name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 10
+    - name: email
+      in: query
+      schema:
+        type: string
+      description: Filter by email
+    - name: firstName
+      in: query
+      schema:
+        type: string
+      description: Filter by first name
+    - name: lastName
+      in: query
+      schema:
+        type: string
+      description: Filter by last name
+  responses:
+    "200":
+      description: A paginated list of keycloak users
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/common.yaml#/PageRes"
+              - type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/keycloak_users.yaml#/KeycloakUserListItemRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+post:
+  operationId: keycloakUsersCreate
+  summary: Create a keycloak user
+  tags:
+    - Keycloak Users
+  description: Creates a new keycloak user with role assignment
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: not authorized
+    - role: agent
+      permission: not authorized
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/keycloak_users.yaml#/CreateKeycloakUserReq"
+  responses:
+    "201":
+      description: Keycloak user created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/keycloak_users.yaml#/KeycloakUserRes"
+    "400":
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

@@ -31,6 +31,7 @@ type Config struct {
 	ApiServer               bool                  `json:"apiServer" env:"API_SERVER" validate:"boolean"`
 	JobMaintenance          bool                  `json:"jobMaintenance" env:"JOB_MAINTENANCE" validate:"boolean"`
 	AgentMaintenance        bool                  `json:"agentMaintenance" env:"AGENT_MAINTENANCE" validate:"boolean"`
+	KeycloakAdmin           bool                  `json:"keycloakAdmin" env:"KEYCLOAK_ADMIN" validate:"boolean"`
 }
 
 // Fulcrum scheduler locker configuration
@@ -92,4 +93,5 @@ var Default = Config{
 	ApiServer:        true,
 	JobMaintenance:   false,
 	AgentMaintenance: false,
+	KeycloakAdmin:    false,
 }

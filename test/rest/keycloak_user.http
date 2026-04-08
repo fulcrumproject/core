@@ -1,0 +1,152 @@
+### Variables
+
+@baseURL = http://localhost:3000/api/v1
+@kcBaseURL = http://localhost:8080/realms/fulcrum
+@kcClientId = fulcrum-api
+@kcClientSecret = secret
+
+### Get ID Token for admin1 user
+# @name admin1Login
+POST {{kcBaseURL}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{kcClientId}}&client_secret={{kcClientSecret}}&username=admin1&password=password&scope=openid
+
+### Extract the ID Token from the response
+@admin1IdToken = {{admin1Login.response.body.$.access_token}}
+
+### Create a Participant (needed for keycloak user creation)
+# @name createParticipant
+POST {{baseURL}}/participants
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Participant",
+  "status": "Enabled"
+}
+
+### Extract the participant ID
+@participantId = {{createParticipant.response.body.$.id}}
+
+### List Keycloak Users
+GET {{baseURL}}/keycloak-users
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+### List Keycloak Users with filters and pagination
+GET {{baseURL}}/keycloak-users?firstName=fulcrum&lastName=ad&email=@fulcrumproject&page=1&pageSize=10
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+### Create Keycloak User (participant role)
+# @name createUser
+POST {{baseURL}}/keycloak-users
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "username": "newparticipant",
+  "email": "newparticipant@example.com",
+  "emailVerified": true,
+  "firstName": "New",
+  "lastName": "Participant",
+  "password": "password123",
+  "enabled": true,
+  "role": "participant",
+  "participantId": "{{participantId}}"
+}
+
+### Extract the created user ID
+@createdUserId = {{createUser.response.body.$.id}}
+
+### Get Keycloak User by ID
+GET {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+### Update Keycloak User
+PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "email": "updated@example.com",
+  "firstName": "Updated",
+  "lastName": "LastNameUpdated"
+}
+
+### Update Keycloak User password
+PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "password": "newpassword123"
+}
+
+### Update Keycloak User role to admin (clears participantId)
+PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "role": "admin"
+}
+
+### Get Keycloak User — verify role is admin and participantId is cleared
+GET {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+### Update Keycloak User role back to participant (requires participantId)
+PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "role": "participant",
+  "participantId": "{{participantId}}"
+}
+
+### Get Keycloak User — verify role is participant and participantId is set
+GET {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+### Update Keycloak User role to participant without participantId (should fail)
+PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "role": "participant"
+}
+
+### Update participantId on a participant user (attribute-only update)
+PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "participantId": "{{participantId}}"
+}
+
+### Delete Keycloak User
+DELETE {{baseURL}}/keycloak-users/{{createdUserId}}
+Authorization: Bearer {{admin1IdToken}}
+
+### Create Keycloak User (admin role)
+POST {{baseURL}}/keycloak-users
+Authorization: Bearer {{admin1IdToken}}
+Content-Type: application/json
+
+{
+  "username": "newadmin",
+  "email": "newadmin@example.com",
+  "firstName": "New",
+  "lastName": "Admin",
+  "password": "password123",
+  "enabled": true,
+  "role": "admin"
+}

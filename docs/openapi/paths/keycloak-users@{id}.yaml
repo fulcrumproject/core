@@ -1,0 +1,87 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: string
+      description: Keycloak user ID
+get:
+  operationId: keycloakUsersGet
+  summary: Get a keycloak user
+  tags:
+    - Keycloak Users
+  description: Retrieves a specific keycloak user by ID
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: not authorized
+    - role: agent
+      permission: not authorized
+  responses:
+    "200":
+      description: The keycloak user details
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/keycloak_users.yaml#/KeycloakUserRes"
+    "404":
+      description: Keycloak user not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+patch:
+  operationId: keycloakUsersUpdate
+  summary: Update a keycloak user
+  tags:
+    - Keycloak Users
+  description: Updates an existing keycloak user
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: not authorized
+    - role: agent
+      permission: not authorized
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/keycloak_users.yaml#/UpdateKeycloakUserReq"
+  responses:
+    "200":
+      description: Keycloak user updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/keycloak_users.yaml#/KeycloakUserRes"
+    "404":
+      description: Keycloak user not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+delete:
+  operationId: keycloakUsersDelete
+  summary: Delete a keycloak user
+  tags:
+    - Keycloak Users
+  description: Deletes a keycloak user by ID
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: not authorized
+    - role: agent
+      permission: not authorized
+  responses:
+    "204":
+      description: Keycloak user deleted successfully
+    "404":
+      description: Keycloak user not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

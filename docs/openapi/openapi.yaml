@@ -19,6 +19,8 @@ tags:
     description: Service, service type, service group management and service pools
   - name: Jobs
     description: Job queue and processing
+  - name: Keycloak Users
+    description: Keycloak user management
   - name: Metrics
     description: Metrics collection and management
   - name: Event
@@ -84,6 +86,14 @@ components:
       $ref: ./components/schemas/jobs.yaml#/FailJobReq
     JSONObject:
       $ref: ./components/schemas/common.yaml#/JSONObject
+    CreateKeycloakUserReq:
+      $ref: ./components/schemas/keycloak_users.yaml#/CreateKeycloakUserReq
+    UpdateKeycloakUserReq:
+      $ref: ./components/schemas/keycloak_users.yaml#/UpdateKeycloakUserReq
+    KeycloakUserRes:
+      $ref: ./components/schemas/keycloak_users.yaml#/KeycloakUserRes
+    KeycloakUserListItemRes:
+      $ref: ./components/schemas/keycloak_users.yaml#/KeycloakUserListItemRes
     JobRes:
       $ref: ./components/schemas/jobs.yaml#/JobRes
     JobStatus:
@@ -218,6 +228,10 @@ paths:
     $ref: ./paths/jobs@{id}@complete.yaml
   /jobs/{id}/fail:
     $ref: ./paths/jobs@{id}@fail.yaml
+  /keycloak-users:
+    $ref: ./paths/keycloak-users.yaml
+  /keycloak-users/{id}:
+    $ref: ./paths/keycloak-users@{id}.yaml
   /metric-entries:
     $ref: ./paths/metric-entries.yaml
   /metric-entries/resource-ids:
