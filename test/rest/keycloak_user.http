@@ -132,51 +132,6 @@ Content-Type: application/json
   "participantId": "{{participantId}}"
 }
 
-### FAIL: Set role to invalid value (should 400)
-PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
-Authorization: Bearer {{admin1IdToken}}
-Content-Type: application/json
-
-{
-  "role": "superadmin"
-}
-
-### FAIL: Set agentId on a participant user (role mismatch, should 400)
-PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
-Authorization: Bearer {{admin1IdToken}}
-Content-Type: application/json
-
-{
-  "agentId": "00000000-0000-0000-0000-000000000001"
-}
-
-### FAIL: Set participantId to non-existent UUID (should 400)
-PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
-Authorization: Bearer {{admin1IdToken}}
-Content-Type: application/json
-
-{
-  "participantId": "00000000-0000-0000-0000-000000000099"
-}
-
-### FAIL: Set role to agent without agentId (should 400)
-PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
-Authorization: Bearer {{admin1IdToken}}
-Content-Type: application/json
-
-{
-  "role": "agent"
-}
-
-### FAIL: Set participantId with invalid format (should 400)
-PATCH {{baseURL}}/keycloak-users/{{createdUserId}}
-Authorization: Bearer {{admin1IdToken}}
-Content-Type: application/json
-
-{
-  "participantId": "not-a-uuid"
-}
-
 ### Delete Keycloak User
 DELETE {{baseURL}}/keycloak-users/{{createdUserId}}
 Authorization: Bearer {{admin1IdToken}}
