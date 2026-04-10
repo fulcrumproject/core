@@ -1,0 +1,630 @@
+/*
+ * Fulcrum Keycloak Login Theme
+ * Mirrors the CEM UI design system (Tailwind + shadcn/ui tokens)
+ */
+
+:root {
+    /* ── Color tokens (identical to CEM UI :root) ── */
+    --fulcrum-bg: oklch(1 0 0);
+    --fulcrum-fg: oklch(0.145 0 0);
+    --fulcrum-card: oklch(1 0 0);
+    --fulcrum-card-fg: oklch(0.145 0 0);
+    --fulcrum-primary: oklch(0.205 0 0);
+    --fulcrum-primary-fg: oklch(0.985 0 0);
+    --fulcrum-secondary: oklch(0.97 0 0);
+    --fulcrum-muted-fg: oklch(0.556 0 0);
+    --fulcrum-border: oklch(0.922 0 0);
+    --fulcrum-input: oklch(0.922 0 0);
+    --fulcrum-ring: oklch(0.708 0 0);
+    --fulcrum-destructive: oklch(0.577 0.245 27.325);
+
+    /* ── Radius tokens (matching Tailwind --radius) ── */
+    --fulcrum-radius: 0.625rem;
+    /* 10px — rounded-lg */
+    --fulcrum-radius-md: calc(0.625rem - 2px);
+    /* ~8px — rounded-md (inputs, buttons) */
+    --fulcrum-radius-xl: calc(0.625rem + 4px);
+    /* ~14px — rounded-xl (cards) */
+}
+
+/* ══════════════════════════════════════════════
+   Reset Keycloak / PatternFly defaults
+   ══════════════════════════════════════════════ */
+
+/* Override PatternFly's Open Sans on every element */
+* {
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+html,
+body,
+body.kcBodyClass,
+.login-pf,
+.login-pf body,
+.login-pf-page,
+#kc-bg-section,
+.login-pf-page .login-pf-page-header {
+    background: var(--fulcrum-bg) !important;
+    background-image: none !important;
+    background-color: var(--fulcrum-bg) !important;
+}
+
+/* ══════════════════════════════════════════════
+   Preflight: force form controls to inherit font
+   (mirrors Tailwind's preflight reset)
+   ══════════════════════════════════════════════ */
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit !important;
+    font-size: inherit;
+    font-weight: inherit !important;
+    line-height: inherit;
+    color: inherit;
+    margin: 0;
+    padding: 0;
+}
+
+/* ══════════════════════════════════════════════
+   Base: typography, font stack, full-page center
+   ══════════════════════════════════════════════ */
+
+body.kcBodyClass,
+.login-pf {
+    color: var(--fulcrum-fg);
+    /* Tailwind font-sans stack */
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+    font-weight: 400 !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+/* Force vertical + horizontal centering on the whole page */
+html,
+body {
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+body.kcBodyClass,
+.login-pf {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+}
+
+/* Make sure all Keycloak wrapper divs don't break centering */
+.login-pf-page,
+.login-pf-page .container-fluid,
+.login-pf-page .login-pf-page-header,
+.login-pf-page .row,
+.login-pf-page .col-sm-12 {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    float: none !important;
+}
+
+.login-pf-page {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 !important;
+    width: 100% !important;
+}
+
+/* ══════════════════════════════════════════════
+   Hide the realm-name header (logo replaces it)
+   ══════════════════════════════════════════════ */
+
+#kc-header,
+#kc-header-wrapper {
+    display: none !important;
+}
+
+/* ══════════════════════════════════════════════
+   Logo
+   ══════════════════════════════════════════════ */
+
+.fulcrum-logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.fulcrum-logo img {
+    width: 210px;
+    height: 48px;
+}
+
+/* ══════════════════════════════════════════════
+   Page title  ("Sign in to your account")
+   ══════════════════════════════════════════════ */
+
+#kc-page-title {
+    color: var(--fulcrum-fg);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    text-align: center;
+    margin: 0 0 1.5rem;
+}
+
+/* ══════════════════════════════════════════════
+   Card — matches CEM UI Card component
+   bg-card, rounded-xl, border, shadow-sm, gap-6, py-6
+   ══════════════════════════════════════════════ */
+
+.login-pf-page .card-pf,
+.card-pf {
+    background: var(--fulcrum-card) !important;
+    color: var(--fulcrum-card-fg) !important;
+    border: 1px solid var(--fulcrum-border) !important;
+    border-radius: var(--fulcrum-radius-xl) !important;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+    /* shadow-sm */
+    width: 100%;
+    max-width: 28rem;
+    min-width: 28rem;
+    /* 448px — comfortable form width */
+    margin: 0 auto;
+    padding: 2rem 1.5rem !important;
+    /* py-8 px-6 */
+}
+
+@media screen and (max-width: 700px) {
+
+    .login-pf-page .card-pf,
+    .card-pf {
+        min-width: 10rem;
+    }
+}
+
+#kc-form {
+    width: 100%;
+}
+
+/* ══════════════════════════════════════════════
+   Form fields — matches CEM UI form layout
+   flex flex-col gap-4, field: space-y-2
+   ══════════════════════════════════════════════ */
+
+#kc-form-login {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    /* gap-4 */
+}
+
+/* ── Field wrapper ── */
+.fulcrum-field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    /* space-y-2 */
+}
+
+/* ── Label — text-sm leading-none font-medium ── */
+.fulcrum-field label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--fulcrum-fg);
+    user-select: none;
+}
+
+/* ══════════════════════════════════════════════
+   Inputs — matches CEM UI Input component
+   h-9, rounded-md, border, bg-transparent,
+   px-3 py-1, text-base md:text-sm, shadow-xs
+   ══════════════════════════════════════════════ */
+
+.fulcrum-field input[type="text"],
+.fulcrum-field input[type="password"],
+.fulcrum-field input[type="email"] {
+    height: 2.25rem;
+    /* h-9 = 36px */
+    width: 100%;
+    min-width: 0;
+    background: transparent;
+    border: 1px solid var(--fulcrum-input);
+    border-radius: var(--fulcrum-radius-md);
+    /* rounded-md ~8px */
+    color: var(--fulcrum-fg);
+    font-size: 0.875rem;
+    /* text-sm */
+    padding: 0.25rem 0.75rem;
+    /* py-1 px-3 */
+    box-shadow: 0 1px 1px 0 rgb(0 0 0 / 0.04);
+    /* shadow-xs */
+    transition: color 0.15s ease, box-shadow 0.15s ease;
+    outline: none;
+    box-sizing: border-box;
+}
+
+/* Placeholder — placeholder:text-muted-foreground */
+.fulcrum-field input::placeholder {
+    color: var(--fulcrum-muted-fg);
+}
+
+/* Focus — focus-visible:border-ring ring-ring/50 ring-[3px] */
+.fulcrum-field input:focus-visible {
+    border-color: var(--fulcrum-ring);
+    box-shadow: 0 0 0 3px oklch(0.708 0 0 / 50%);
+    outline: none;
+}
+
+/* Invalid — aria-invalid:border-destructive ring-destructive/20 */
+.fulcrum-field input[aria-invalid="true"] {
+    border-color: var(--fulcrum-destructive);
+    box-shadow: 0 0 0 3px oklch(0.577 0.245 27.325 / 20%);
+}
+
+/* ══════════════════════════════════════════════
+   Password input group
+   ══════════════════════════════════════════════ */
+
+.fulcrum-input-group {
+    position: relative;
+    display: flex;
+    width: 100%;
+}
+
+.fulcrum-input-group input {
+    padding-right: 2.5rem;
+}
+
+/* ── Password toggle button ── */
+.fulcrum-password-toggle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 2.25rem;
+    /* match input h-9 */
+    width: 2.25rem;
+    background: none;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    color: var(--fulcrum-muted-fg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+}
+
+.fulcrum-password-toggle:hover {
+    color: var(--fulcrum-fg);
+}
+
+.fulcrum-password-toggle svg,
+.fulcrum-password-toggle i {
+    width: 1rem;
+    height: 1rem;
+    font-size: 1rem;
+}
+
+/* ══════════════════════════════════════════════
+   Options row (remember me + forgot password)
+   ══════════════════════════════════════════════ */
+
+.fulcrum-options {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.fulcrum-remember {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.fulcrum-remember label {
+    color: var(--fulcrum-muted-fg);
+    font-size: 0.875rem;
+    font-weight: 400;
+    margin: 0;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.fulcrum-remember input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--fulcrum-primary);
+    cursor: pointer;
+}
+
+.fulcrum-options a {
+    color: var(--fulcrum-fg);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    font-size: 0.875rem;
+}
+
+.fulcrum-options a:hover {
+    opacity: 0.8;
+}
+
+/* ══════════════════════════════════════════════
+   Submit button — matches CEM UI Button (default)
+   h-9 px-4 py-2 rounded-md text-sm font-medium
+   bg-primary text-primary-foreground hover:bg-primary/90
+   ══════════════════════════════════════════════ */
+
+.fulcrum-submit,
+#kc-login {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.25rem;
+    /* h-9 */
+    width: 100%;
+    padding: 0.5rem 1rem;
+    /* py-2 px-4 */
+    background-color: var(--fulcrum-primary);
+    border: 1px solid var(--fulcrum-primary);
+    border-radius: var(--fulcrum-radius-md);
+    /* rounded-md */
+    color: var(--fulcrum-primary-fg);
+    font-size: 0.875rem;
+    /* text-sm */
+    font-weight: 500 !important;
+    /* font-medium */
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    outline: none;
+}
+
+.fulcrum-submit:hover,
+#kc-login:hover {
+    opacity: 0.9;
+}
+
+.fulcrum-submit:focus-visible,
+#kc-login:focus-visible {
+    border-color: var(--fulcrum-ring);
+    box-shadow: 0 0 0 3px oklch(0.708 0 0 / 50%);
+    outline: none;
+}
+
+/* ══════════════════════════════════════════════
+   Error messages — text-destructive text-sm
+   ══════════════════════════════════════════════ */
+
+.fulcrum-error {
+    display: block;
+    color: var(--fulcrum-destructive);
+    font-size: 0.875rem;
+}
+
+/* Keycloak alert banner errors */
+.alert-error,
+.pf-c-alert.pf-m-danger,
+.pf-v5-c-alert.pf-m-danger,
+#input-error,
+.kc-feedback-text {
+    color: var(--fulcrum-destructive) !important;
+    font-size: 0.875rem;
+}
+
+/* ══════════════════════════════════════════════
+   Links — underline, offset-4
+   ══════════════════════════════════════════════ */
+
+.login-pf-page a,
+#kc-form a {
+    color: var(--fulcrum-fg);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    font-size: 0.875rem;
+}
+
+.login-pf-page a:hover,
+#kc-form a:hover {
+    opacity: 0.8;
+}
+
+/* ══════════════════════════════════════════════
+   Registration link
+   ══════════════════════════════════════════════ */
+
+.fulcrum-register {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.875rem;
+    color: var(--fulcrum-muted-fg);
+}
+
+.fulcrum-register a {
+    color: var(--fulcrum-fg);
+    margin-left: 0.25rem;
+}
+
+/* ══════════════════════════════════════════════
+   Social providers
+   ══════════════════════════════════════════════ */
+
+.fulcrum-social {
+    margin-top: 1.5rem;
+}
+
+.fulcrum-social-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    color: var(--fulcrum-muted-fg);
+    font-size: 0.875rem;
+}
+
+.fulcrum-social-divider::before,
+.fulcrum-social-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--fulcrum-border);
+}
+
+.fulcrum-social-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.fulcrum-social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 2.25rem;
+    border: 1px solid var(--fulcrum-border);
+    border-radius: var(--fulcrum-radius-md);
+    background: var(--fulcrum-bg);
+    color: var(--fulcrum-fg);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+    cursor: pointer;
+}
+
+.fulcrum-social-btn:hover {
+    background: var(--fulcrum-secondary);
+    text-decoration: none;
+}
+
+/* ══════════════════════════════════════════════
+   Muted / helper text
+   ══════════════════════════════════════════════ */
+
+.login-pf-page .instruction,
+#kc-info-message,
+.kc-social-section {
+    color: var(--fulcrum-muted-fg);
+    font-size: 0.875rem;
+}
+
+/* ══════════════════════════════════════════════
+   Legacy PatternFly overrides
+   (for template.ftl outer shell & non-login pages)
+   ══════════════════════════════════════════════ */
+
+.login-pf-page .card-pf label,
+#kc-form label {
+    color: var(--fulcrum-fg);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.login-pf-page .card-pf input[type="text"],
+.login-pf-page .card-pf input[type="password"],
+.login-pf-page .card-pf input[type="email"],
+.pf-c-form-control,
+.pf-v5-c-form-control {
+    background: transparent !important;
+    border: 1px solid var(--fulcrum-input) !important;
+    border-radius: var(--fulcrum-radius-md) !important;
+    color: var(--fulcrum-fg) !important;
+    font-size: 0.875rem;
+    height: 2.25rem;
+    padding: 0.25rem 0.75rem;
+    outline: none;
+}
+
+.login-pf-page .card-pf input:focus,
+.pf-c-form-control:focus,
+.pf-v5-c-form-control:focus {
+    border-color: var(--fulcrum-ring) !important;
+    box-shadow: 0 0 0 3px oklch(0.708 0 0 / 50%) !important;
+    outline: none !important;
+}
+
+.pf-c-button.pf-m-primary,
+.pf-v5-c-button.pf-m-primary,
+input[type="submit"].pf-c-button {
+    background-color: var(--fulcrum-primary) !important;
+    border: 1px solid var(--fulcrum-primary) !important;
+    border-radius: var(--fulcrum-radius-md) !important;
+    color: var(--fulcrum-primary-fg) !important;
+    font-size: 0.875rem;
+    font-weight: 500;
+    height: 2.25rem;
+    padding: 0.5rem 1rem;
+    width: 100%;
+}
+
+/* PatternFly password toggle override */
+.pf-c-button.pf-m-control,
+.pf-v5-c-button.pf-m-control {
+    position: absolute !important;
+    right: 0 !important;
+    top: 0 !important;
+    height: 2.25rem;
+    width: 2.25rem;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: var(--fulcrum-muted-fg) !important;
+    cursor: pointer;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.pf-c-button.pf-m-control::after {
+    display: none !important;
+}
+
+.pf-c-input-group,
+.pf-v5-c-input-group {
+    position: relative !important;
+    display: flex !important;
+}
+
+/* Form group spacing (non-login pages) */
+.login-pf-page .form-group,
+#kc-form-login .form-group {
+    margin-bottom: 1rem;
+}

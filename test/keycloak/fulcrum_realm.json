@@ -2,6 +2,9 @@
   "realm": "fulcrum",
   "displayName": "fulcrum",
   "enabled": true,
+  "loginTheme": "fulcrum",
+  "adminTheme": "fulcrum",
+  "accountTheme": "fulcrum",
   "users": [
     {
       "username": "admin1",
