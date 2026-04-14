@@ -141,6 +141,7 @@ func BuildHttpServer(
 		r.Route("/service-pool-values", app.ServicePoolValueHandler.Routes())
 		r.Route("/participants", app.ParticipantHandler.Routes())
 		r.Route("/agents", app.AgentHandler.Routes())
+		r.Route("/agent-pools", app.AgentPoolHandler.Routes())
 		r.Route("/service-groups", app.ServiceGroupHandler.Routes())
 		r.Route("/services", app.ServiceHandler.Routes())
 		r.Route("/metric-types", app.MetricTypeHandler.Routes())

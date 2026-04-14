@@ -103,12 +103,12 @@ func (h *ServicePoolHandler) Update(ctx context.Context, id properties.UUID, req
 
 // ServicePoolRes represents the response body for service pool operations
 type ServicePoolRes struct {
-	ID               properties.UUID          `json:"id"`
-	Name             string                   `json:"name"`
-	Type             string                   `json:"type"`
-	PropertyType     string                   `json:"propertyType"`
-	GeneratorType    domain.PoolGeneratorType `json:"generatorType"`
-	GeneratorConfig  *properties.JSON         `json:"generatorConfig,omitempty"`
+	ID                 properties.UUID          `json:"id"`
+	Name               string                   `json:"name"`
+	Type               string                   `json:"type"`
+	PropertyType       string                   `json:"propertyType"`
+	GeneratorType      domain.PoolGeneratorType `json:"generatorType"`
+	GeneratorConfig    *properties.JSON         `json:"generatorConfig,omitempty"`
 	ServicePoolSetID   properties.UUID          `json:"servicePoolSetId"`
 	ServicePoolSetName string                   `json:"servicePoolSetName,omitempty"`
 	CreatedAt          JSONUTCTime              `json:"createdAt"`

@@ -58,12 +58,16 @@ components:
       $ref: ./components/schemas/agents.yaml#/AgentRes
     AgentStatus:
       $ref: ./components/schemas/agents.yaml#/AgentStatus
+    AgentPoolRes:
+      $ref: ./components/schemas/agent_pools.yaml#/AgentPoolRes
     AgentTypeRes:
       $ref: ./components/schemas/agent_types.yaml#/AgentTypeRes
     AuthRole:
       $ref: ./components/schemas/tokens.yaml#/AuthRole
     CompleteJobReq:
       $ref: ./components/schemas/jobs.yaml#/CompleteJobReq
+    CreateAgentPoolReq:
+      $ref: ./components/schemas/agent_pools.yaml#/CreateAgentPoolReq
     CreateAgentReq:
       $ref: ./components/schemas/agents.yaml#/CreateAgentReq
     CreateAgentTypeReq:
@@ -172,6 +176,8 @@ components:
       $ref: ./components/schemas/tokens.yaml#/TokenReq
     TokenRes:
       $ref: ./components/schemas/tokens.yaml#/TokenRes
+    UpdateAgentPoolReq:
+      $ref: ./components/schemas/agent_pools.yaml#/UpdateAgentPoolReq
     UpdateAgentReq:
       $ref: ./components/schemas/agents.yaml#/UpdateAgentReq
     UpdateAgentTypeReq:
@@ -210,6 +216,10 @@ paths:
     $ref: ./paths/agents@me@status.yaml
   /agents/{id}:
     $ref: ./paths/agents@{id}.yaml
+  /agent-pools:
+    $ref: ./paths/agent-pools.yaml
+  /agent-pools/{id}:
+    $ref: ./paths/agent-pools@{id}.yaml
   /events:
     $ref: ./paths/events.yaml
   /events/ack:
