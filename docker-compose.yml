@@ -47,6 +47,9 @@ services:
     ports:
       - "8080:8080"
       - "8443:8443"
+    volumes:
+      - ./test/keycloak/themes/fulcrum:/opt/keycloak/themes/fulcrum:z
+      - ./test/keycloak/themes/fulcrum-admin:/opt/keycloak/themes/fulcrum-admin:z
     networks:
       - fulcrum-network
 

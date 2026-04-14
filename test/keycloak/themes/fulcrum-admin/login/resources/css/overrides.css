@@ -1,0 +1,6 @@
+div.kc-logo-text {
+    background-image: url(../img/fulcrum-logo.svg);
+    background-size: contain;
+    height: 48px;
+    width: 210px;
+}
