@@ -252,6 +252,28 @@ func TestAgentPoolRepository(t *testing.T) {
 		})
 	})
 
+	t.Run("FindByType", func(t *testing.T) {
+		t.Run("success", func(t *testing.T) {
+			uniqueType := fmt.Sprintf("unique-type-%s", uuid.New().String())
+			pool := createTestAgentPool(t)
+			pool.Type = uniqueType
+			require.NoError(t, repo.Create(ctx, pool))
+
+			found, err := repo.FindByType(ctx, uniqueType)
+
+			require.NoError(t, err)
+			assert.Equal(t, pool.ID, found.ID)
+			assert.Equal(t, uniqueType, found.Type)
+		})
+
+		t.Run("not found", func(t *testing.T) {
+			found, err := repo.FindByType(ctx, "nonexistent_type")
+
+			assert.Nil(t, found)
+			assert.IsType(t, domain.NotFoundError{}, err)
+		})
+	})
+
 	t.Run("AuthScope", func(t *testing.T) {
 		t.Run("success - returns always match scope", func(t *testing.T) {
 			pool := createTestAgentPool(t)

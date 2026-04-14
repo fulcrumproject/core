@@ -16,9 +16,9 @@ const (
 
 type AgentPool struct {
 	BaseEntity
-	Name         string `json:"name" gorm:"not null"`
-	Type         string `json:"type" gorm:"not null"`
-	PropertyType string `json:"propertyType" gorm:"not null"`
+	Name            string            `json:"name" gorm:"not null"`
+	Type            string            `json:"type" gorm:"not null"`
+	PropertyType    string            `json:"propertyType" gorm:"not null"`
 	GeneratorType   PoolGeneratorType `json:"generatorType" gorm:"not null"`
 	GeneratorConfig *properties.JSON  `json:"generatorConfig,omitempty" gorm:"type:jsonb"`
 }
@@ -85,6 +85,7 @@ func (ap *AgentPool) Update(params UpdateAgentPoolParams) {
 
 type AgentPoolQuerier interface {
 	BaseEntityQuerier[AgentPool]
+	FindByType(ctx context.Context, poolType string) (*AgentPool, error)
 }
 
 type AgentPoolRepository interface {

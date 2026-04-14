@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
@@ -40,6 +41,18 @@ func NewAgentPoolRepository(db *gorm.DB) *GormAgentPoolRepository {
 
 func (r *GormAgentPoolRepository) Update(ctx context.Context, pool *domain.AgentPool) error {
 	return r.Save(ctx, pool)
+}
+
+func (r *GormAgentPoolRepository) FindByType(ctx context.Context, poolType string) (*domain.AgentPool, error) {
+	var entity domain.AgentPool
+	result := r.db.WithContext(ctx).Where("type = ?", poolType).First(&entity)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, domain.NewNotFoundErrorf("agent pool with type %s", poolType)
+		}
+		return nil, result.Error
+	}
+	return &entity, nil
 }
 
 func (r *GormAgentPoolRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
