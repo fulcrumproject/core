@@ -148,7 +148,7 @@ var Rules = []AuthorizationRule{
 	{Object: ObjectTypeKeycloakUser, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
 
 	// AgentPool permissions
-	{Object: ObjectTypeAgentPool, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleAgent}},
+	{Object: ObjectTypeAgentPool, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin}},
 	{Object: ObjectTypeAgentPool, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
 	{Object: ObjectTypeAgentPool, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
 	{Object: ObjectTypeAgentPool, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
