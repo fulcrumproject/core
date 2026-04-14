@@ -16,6 +16,7 @@ type GormStore struct {
 	agentTypeRepo         domain.AgentTypeRepository
 	agentRepo             domain.AgentRepository
 	agentPoolRepo         domain.AgentPoolRepository
+	agentPoolValueRepo    domain.AgentPoolValueRepository
 	serviceTypeRepo       domain.ServiceTypeRepository
 	serviceGroupRepo      domain.ServiceGroupRepository
 	serviceRepo           domain.ServiceRepository
@@ -80,6 +81,13 @@ func (s *GormStore) AgentPoolRepo() domain.AgentPoolRepository {
 		s.agentPoolRepo = NewAgentPoolRepository(s.db)
 	}
 	return s.agentPoolRepo
+}
+
+func (s *GormStore) AgentPoolValueRepo() domain.AgentPoolValueRepository {
+	if s.agentPoolValueRepo == nil {
+		s.agentPoolValueRepo = NewAgentPoolValueRepository(s.db)
+	}
+	return s.agentPoolValueRepo
 }
 
 func (s *GormStore) ServiceTypeRepo() domain.ServiceTypeRepository {
@@ -188,6 +196,10 @@ func (s *GormReadOnlyStore) AgentQuerier() domain.AgentQuerier {
 
 func (s *GormReadOnlyStore) AgentPoolQuerier() domain.AgentPoolQuerier {
 	return NewAgentPoolRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) AgentPoolValueQuerier() domain.AgentPoolValueQuerier {
+	return NewAgentPoolValueRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) TokenQuerier() domain.TokenQuerier {

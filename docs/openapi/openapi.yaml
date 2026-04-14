@@ -60,6 +60,8 @@ components:
       $ref: ./components/schemas/agents.yaml#/AgentStatus
     AgentPoolRes:
       $ref: ./components/schemas/agent_pools.yaml#/AgentPoolRes
+    AgentPoolValueRes:
+      $ref: ./components/schemas/agent_pool_values.yaml#/AgentPoolValueRes
     AgentTypeRes:
       $ref: ./components/schemas/agent_types.yaml#/AgentTypeRes
     AuthRole:
@@ -68,6 +70,8 @@ components:
       $ref: ./components/schemas/jobs.yaml#/CompleteJobReq
     CreateAgentPoolReq:
       $ref: ./components/schemas/agent_pools.yaml#/CreateAgentPoolReq
+    CreateAgentPoolValueReq:
+      $ref: ./components/schemas/agent_pool_values.yaml#/CreateAgentPoolValueReq
     CreateAgentReq:
       $ref: ./components/schemas/agents.yaml#/CreateAgentReq
     CreateAgentTypeReq:
@@ -220,6 +224,10 @@ paths:
     $ref: ./paths/agent-pools.yaml
   /agent-pools/{id}:
     $ref: ./paths/agent-pools@{id}.yaml
+  /agent-pool-values:
+    $ref: ./paths/agent-pool-values.yaml
+  /agent-pool-values/{id}:
+    $ref: ./paths/agent-pool-values@{id}.yaml
   /events:
     $ref: ./paths/events.yaml
   /events/ack:

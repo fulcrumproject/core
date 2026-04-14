@@ -3,6 +3,7 @@ package domain
 import (
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -139,7 +140,7 @@ func TestAgentPool_Update(t *testing.T) {
 	}{
 		{
 			name:           "update name only",
-			params:         UpdateAgentPoolParams{Name: strPtr("New Name")},
+			params:         UpdateAgentPoolParams{Name: helpers.StringPtr("New Name")},
 			expectedName:   "New Name",
 			expectedConfig: nil,
 		},
@@ -151,7 +152,7 @@ func TestAgentPool_Update(t *testing.T) {
 		},
 		{
 			name:           "update both",
-			params:         UpdateAgentPoolParams{Name: strPtr("Updated"), GeneratorConfig: &properties.JSON{"a": "b"}},
+			params:         UpdateAgentPoolParams{Name: helpers.StringPtr("Updated"), GeneratorConfig: &properties.JSON{"a": "b"}},
 			expectedName:   "Updated",
 			expectedConfig: &properties.JSON{"a": "b"},
 		},
@@ -173,6 +174,3 @@ func TestAgentPool_Update(t *testing.T) {
 	}
 }
 
-func strPtr(s string) *string {
-	return &s
-}

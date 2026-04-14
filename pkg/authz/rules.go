@@ -9,6 +9,7 @@ const (
 	ObjectTypeAgent             ObjectType = "agent"
 	ObjectTypeAgentType         ObjectType = "agent_type"
 	ObjectTypeAgentPool         ObjectType = "agent_pool"
+	ObjectTypeAgentPoolValue    ObjectType = "agent_pool_value"
 	ObjectTypeService           ObjectType = "service"
 	ObjectTypeServiceType       ObjectType = "service_type"
 	ObjectTypeServiceGroup      ObjectType = "service_group"
@@ -152,4 +153,10 @@ var Rules = []AuthorizationRule{
 	{Object: ObjectTypeAgentPool, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
 	{Object: ObjectTypeAgentPool, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
 	{Object: ObjectTypeAgentPool, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
+
+	// AgentPoolValue permissions
+	{Object: ObjectTypeAgentPoolValue, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeAgentPoolValue, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeAgentPoolValue, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeAgentPoolValue, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
 }

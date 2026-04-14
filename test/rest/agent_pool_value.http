@@ -1,0 +1,59 @@
+### Agent Pool Value Operations
+### This file tests operations for agent pool values
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+### Create an agent pool (needed for agent pool values)
+# @name createAgentPool
+POST {{baseUrl}}/agent-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Pool",
+  "type": "publicIp",
+  "propertyType": "string",
+  "generatorType": "list"
+}
+
+@agentPoolId = {{createAgentPool.response.body.$.id}}
+
+### Get all agent pool values
+GET {{baseUrl}}/agent-pool-values
+Authorization: Bearer {{adminToken}}
+
+### Get all agent pool values with filter by name
+GET {{baseUrl}}/agent-pool-values?name=192
+Authorization: Bearer {{adminToken}}
+
+### Get all agent pool values with filter by agentPoolId
+GET {{baseUrl}}/agent-pool-values?agentPoolId={{agentPoolId}}
+Authorization: Bearer {{adminToken}}
+
+### Get all agent pool values with filter by agentId
+GET {{baseUrl}}/agent-pool-values?agentId=change-me
+Authorization: Bearer {{adminToken}}
+
+### Create an agent pool value
+# @name createAgentPoolValue
+POST {{baseUrl}}/agent-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "192.168.1.10",
+  "value": "192.168.1.10",
+  "agentPoolId": "{{agentPoolId}}"
+}
+
+@agentPoolValueId = {{createAgentPoolValue.response.body.$.id}}
+
+### Get a specific agent pool value
+GET {{baseUrl}}/agent-pool-values/{{agentPoolValueId}}
+Authorization: Bearer {{adminToken}}
+
+### Delete an agent pool value
+DELETE {{baseUrl}}/agent-pool-values/{{agentPoolValueId}}
+Authorization: Bearer {{adminToken}}

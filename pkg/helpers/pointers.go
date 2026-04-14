@@ -21,3 +21,8 @@ func BoolPtr(b bool) *bool {
 func JSONPtr(j properties.JSON) *properties.JSON {
 	return &j
 }
+
+// UUIDPtr returns a pointer to the given UUID
+func UUIDPtr(u properties.UUID) *properties.UUID {
+	return &u
+}

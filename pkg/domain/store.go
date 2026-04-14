@@ -11,6 +11,7 @@ type Store interface {
 	AgentTypeRepo() AgentTypeRepository
 	AgentRepo() AgentRepository
 	AgentPoolRepo() AgentPoolRepository
+	AgentPoolValueRepo() AgentPoolValueRepository
 	TokenRepo() TokenRepository
 	ServiceTypeRepo() ServiceTypeRepository
 	ServiceGroupRepo() ServiceGroupRepository
@@ -33,6 +34,7 @@ type ReadOnlyStore interface {
 	AgentTypeQuerier() AgentTypeQuerier
 	AgentQuerier() AgentQuerier
 	AgentPoolQuerier() AgentPoolQuerier
+	AgentPoolValueQuerier() AgentPoolValueQuerier
 	TokenQuerier() TokenQuerier
 	ServiceTypeQuerier() ServiceTypeQuerier
 	ServiceGroupQuerier() ServiceGroupQuerier
