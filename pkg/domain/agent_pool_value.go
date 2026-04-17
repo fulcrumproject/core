@@ -62,6 +62,14 @@ func (ag *AgentPoolValue) Release() {
 	ag.PropertyName = nil
 }
 
+func (ag *AgentPoolValue) PoolID() properties.UUID {
+	return ag.AgentPoolID
+}
+
+func (ag *AgentPoolValue) RawValue() any {
+	return ag.Value
+}
+
 type CreateAgentPoolValueParams struct {
 	Name        string
 	Value       any

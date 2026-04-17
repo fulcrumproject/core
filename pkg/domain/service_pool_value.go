@@ -89,6 +89,14 @@ func (spv *ServicePoolValue) Release() {
 	spv.AllocatedAt = nil
 }
 
+func (spv *ServicePoolValue) PoolID() properties.UUID {
+	return spv.ServicePoolID
+}
+
+func (spv *ServicePoolValue) RawValue() any {
+	return spv.Value
+}
+
 // ServicePoolValueRepository manages ServicePoolValue entities
 type ServicePoolValueRepository interface {
 	ServicePoolValueQuerier

@@ -11,7 +11,7 @@ import (
 type PoolGenerator interface {
 	// Allocate allocates a value from the pool for the given service and property
 	// Returns the actual value to be copied to the service property
-	Allocate(ctx context.Context, poolID properties.UUID, serviceID properties.UUID, propertyName string) (any, error)
+	Allocate(ctx context.Context, serviceID properties.UUID, propertyName string) (any, error)
 
 	// Release releases all allocations for the given service
 	Release(ctx context.Context, serviceID properties.UUID) error

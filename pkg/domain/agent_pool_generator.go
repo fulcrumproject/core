@@ -10,7 +10,7 @@ import (
 // AgentPoolGenerator defines the interface for agent pool value allocation strategies
 type AgentPoolGenerator interface {
 	// Allocate allocates a value from the pool for the given agent and property
-	Allocate(ctx context.Context, poolID properties.UUID, agentID properties.UUID, propertyName string) (any, error)
+	Allocate(ctx context.Context, agentID properties.UUID, propertyName string) (any, error)
 
 	// Release releases the given pre-fetched allocations that belong to this generator's pool.
 	// Callers pass the agent's full allocation slice; implementations filter to their own pool.

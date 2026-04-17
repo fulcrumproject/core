@@ -122,7 +122,7 @@ func TestSubnetGenerator_Allocate(t *testing.T) {
 			tt.setupMock(repo)
 
 			generator := NewSubnetGenerator(repo, poolID, tt.generatorConfig)
-			value, err := generator.Allocate(ctx, poolID, serviceID, propertyName)
+			value, err := generator.Allocate(ctx, serviceID, propertyName)
 
 			if tt.expectErr {
 				require.Error(t, err)

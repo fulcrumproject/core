@@ -55,7 +55,7 @@ func (g *SchemaAgentPoolGenerator) Generate(
 		return nil, false, fmt.Errorf("%s: failed to create generator for pool: %w", propPath, err)
 	}
 
-	allocatedValue, err := generator.Allocate(ctx, pool.ID, *schemaCtx.AgentID, propPath)
+	allocatedValue, err := generator.Allocate(ctx, *schemaCtx.AgentID, propPath)
 	if err != nil {
 		return nil, false, fmt.Errorf("%s: failed to allocate from pool: %w", propPath, err)
 	}

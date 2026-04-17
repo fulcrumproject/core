@@ -36,15 +36,9 @@ func (g *SchemaPoolGenerator) Generate(
 		return currentValue, false, nil
 	}
 
-	// Get pool type from config
-	poolTypeRaw, hasPoolType := config["poolType"]
-	if !hasPoolType {
-		return nil, false, fmt.Errorf("%s: pool generator config missing 'poolType'", propPath)
-	}
-
-	poolType, ok := poolTypeRaw.(string)
-	if !ok {
-		return nil, false, fmt.Errorf("%s: pool generator config 'poolType' must be a string", propPath)
+	poolType, err := parsePoolTypeConfig(config)
+	if err != nil {
+		return nil, false, fmt.Errorf("%s: %w", propPath, err)
 	}
 
 	// Pool set ID must be configured
@@ -84,7 +78,7 @@ func (g *SchemaPoolGenerator) Generate(
 	}
 
 	// Allocate value from pool
-	allocatedValue, err := generator.Allocate(ctx, targetPool.ID, *schemaCtx.ServiceID, propPath)
+	allocatedValue, err := generator.Allocate(ctx, *schemaCtx.ServiceID, propPath)
 	if err != nil {
 		return nil, false, fmt.Errorf("%s: failed to allocate from pool: %w", propPath, err)
 	}
@@ -94,23 +88,6 @@ func (g *SchemaPoolGenerator) Generate(
 
 // ValidateConfig validates the pool generator configuration
 func (g *SchemaPoolGenerator) ValidateConfig(propPath string, config map[string]any) error {
-	if len(config) == 0 {
-		return fmt.Errorf("pool generator config missing 'poolType'")
-	}
-
-	poolTypeRaw, hasPoolType := config["poolType"]
-	if !hasPoolType {
-		return fmt.Errorf("pool generator config missing 'poolType'")
-	}
-
-	poolType, ok := poolTypeRaw.(string)
-	if !ok {
-		return fmt.Errorf("pool generator config 'poolType' must be a string")
-	}
-
-	if poolType == "" {
-		return fmt.Errorf("pool generator config 'poolType' cannot be empty")
-	}
-
-	return nil
+	_, err := parsePoolTypeConfig(config)
+	return err
 }

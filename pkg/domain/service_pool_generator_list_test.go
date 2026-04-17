@@ -79,7 +79,7 @@ func TestListGenerator_Allocate(t *testing.T) {
 			tt.setupMock(repo)
 
 			generator := NewListGenerator(repo, poolID)
-			value, err := generator.Allocate(ctx, poolID, serviceID, propertyName)
+			value, err := generator.Allocate(ctx, serviceID, propertyName)
 
 			if tt.expectErr {
 				require.Error(t, err)

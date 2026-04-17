@@ -75,7 +75,7 @@ func TestAgentPoolListGenerator_Allocate(t *testing.T) {
 			tt.setupRepo(repo)
 
 			gen := NewAgentPoolListGenerator(repo, poolID)
-			got, err := gen.Allocate(ctx, poolID, agentID, "propA")
+			got, err := gen.Allocate(ctx, agentID, "propA")
 
 			if tt.wantErr {
 				if err == nil {
