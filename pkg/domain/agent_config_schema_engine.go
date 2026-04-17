@@ -1,14 +1,18 @@
 // Agent configuration schema engine composition and factory
 package domain
 
-import "github.com/fulcrumproject/core/pkg/schema"
+import (
+	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
+)
 
-// AgentConfigContext provides context for agent configuration validation
-// Currently empty as agent config validation doesn't require contextual information:
-// - No authorization rules (all fields are user input)
-// - No state-based validation (agents don't have lifecycle states)
-// - No generators requiring store access
-type AgentConfigContext struct{}
+// AgentConfigContext carries the contextual data the agent config schema engine needs.
+// Store exposes repositories to generators (e.g. the pool generator looks up AgentPool +
+// allocates AgentPoolValue rows); AgentID stamps allocated values to the owning agent.
+type AgentConfigContext struct {
+	Store   Store
+	AgentID *properties.UUID
+}
 
 // buildAgentConfigValidatorRegistry creates a registry of property validators
 // Only generic validators - no domain-specific ones (no source/mutable for agents)
@@ -44,11 +48,11 @@ func buildAgentConfigSchemaValidatorRegistry() map[string]schema.SchemaValidator
 	}
 }
 
-// buildAgentConfigGeneratorRegistry creates an empty generator registry
-// Agents don't currently use generators
+// buildAgentConfigGeneratorRegistry registers the generators available to agent configuration
+// schemas. The "pool" generator auto-allocates an AgentPoolValue at agent create time.
 func buildAgentConfigGeneratorRegistry() map[string]schema.Generator[AgentConfigContext] {
 	return map[string]schema.Generator[AgentConfigContext]{
-		// Empty for now - agents don't use generators
+		"pool": NewSchemaAgentPoolGenerator(),
 	}
 }
 

@@ -18,7 +18,7 @@ func createTestAgentPool(t *testing.T) *domain.AgentPool {
 	randomSuffix := uuid.New().String()
 	return &domain.AgentPool{
 		Name:          fmt.Sprintf("Test Pool %s", randomSuffix),
-		Type:          "ipv4",
+		Type:          fmt.Sprintf("ipv4-%s", randomSuffix),
 		PropertyType:  "string",
 		GeneratorType: domain.PoolGeneratorList,
 	}

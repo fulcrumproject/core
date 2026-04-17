@@ -57,8 +57,7 @@ func TestAgentConfigSchemaValidatorRegistry(t *testing.T) {
 func TestAgentConfigGeneratorRegistry(t *testing.T) {
 	generators := buildAgentConfigGeneratorRegistry()
 
-	// Should be empty - no generators for agent config
-	if len(generators) != 0 {
-		t.Errorf("Expected empty generator registry, got %d generators", len(generators))
+	if _, ok := generators["pool"]; !ok {
+		t.Errorf("Expected pool generator to be registered, got %d generators", len(generators))
 	}
 }

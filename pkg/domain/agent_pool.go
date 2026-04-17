@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -17,7 +18,7 @@ const (
 type AgentPool struct {
 	BaseEntity
 	Name            string            `json:"name" gorm:"not null"`
-	Type            string            `json:"type" gorm:"not null"`
+	Type            string            `json:"type" gorm:"not null;unique"`
 	PropertyType    string            `json:"propertyType" gorm:"not null"`
 	GeneratorType   PoolGeneratorType `json:"generatorType" gorm:"not null"`
 	GeneratorConfig *properties.JSON  `json:"generatorConfig,omitempty" gorm:"type:jsonb"`
@@ -119,6 +120,18 @@ func (c *agentPoolCommander) Create(
 		pool = NewAgentPool(params)
 		if err := pool.Validate(); err != nil {
 			return err
+		}
+
+		// Type must be globally unique — the schema engine's pool generator resolves pools
+		// by type, so two pools sharing a type silently collide at allocation time.
+		existing, err := store.AgentPoolRepo().FindByType(ctx, pool.Type)
+		if err != nil {
+			var notFound NotFoundError
+			if !errors.As(err, &notFound) {
+				return err
+			}
+		} else if existing != nil {
+			return NewInvalidInputErrorf("agent pool with type %q already exists", pool.Type)
 		}
 
 		if err := store.AgentPoolRepo().Create(ctx, pool); err != nil {

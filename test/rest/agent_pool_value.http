@@ -57,3 +57,203 @@ Authorization: Bearer {{adminToken}}
 ### Delete an agent pool value
 DELETE {{baseUrl}}/agent-pool-values/{{agentPoolValueId}}
 Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### Pool generator end-to-end: allocation on agent Create, release on Delete
+###############################################################################
+### This walks through the `generator: "pool"` flow end-to-end:
+###   1. Seed a pool and two values.
+###   2. Declare an agent type whose configurationSchema has a pool-generated
+###      property.
+###   3. Create an agent → observe that the property gets auto-allocated.
+###   4. Create a second agent → uses the second value.
+###   5. Create a third agent → fails with "no available values in pool".
+###   6. Delete the first agent → its value gets released.
+###   7. Create a third agent → now succeeds using the released value.
+
+### Create a provider for the pool-generator scenario
+# @name createPoolGenProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Pool Generator Provider",
+  "status": "Enabled"
+}
+
+@poolGenProviderId = {{createPoolGenProvider.response.body.$.id}}
+
+### Create a pool dedicated to this scenario
+# @name createPoolGenPool
+POST {{baseUrl}}/agent-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Pool Generator Pool",
+  "type": "publicIpGen",
+  "propertyType": "string",
+  "generatorType": "list"
+}
+
+@poolGenPoolId = {{createPoolGenPool.response.body.$.id}}
+
+### Seed the pool with two values
+# @name createPoolGenValue1
+POST {{baseUrl}}/agent-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "203.0.113.10",
+  "value": "203.0.113.10",
+  "agentPoolId": "{{poolGenPoolId}}"
+}
+
+@poolGenValueId1 = {{createPoolGenValue1.response.body.$.id}}
+
+### Seed the pool with two values
+# @name createPoolGenValue2
+POST {{baseUrl}}/agent-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "203.0.113.11",
+  "value": "203.0.113.11",
+  "agentPoolId": "{{poolGenPoolId}}"
+}
+
+@poolGenValueId2 = {{createPoolGenValue2.response.body.$.id}}
+
+### Create an agent type that auto-allocates publicIP from the pool
+# @name createPoolGenAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Pool Generator Agent Type {{$timestamp}}",
+  "configurationSchema": {
+    "properties": {
+      "publicIP": {
+        "type": "string",
+        "label": "Public IP",
+        "generator": {
+          "type": "pool",
+          "config": {
+            "poolType": "publicIpGen"
+          }
+        }
+      }
+    }
+  }
+}
+
+@poolGenAgentTypeId = {{createPoolGenAgentType.response.body.$.id}}
+
+### ✅ Create first agent — expect publicIP to be auto-allocated from the pool
+# @name createPoolGenAgent1
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Pool Gen Agent 1",
+  "providerId": "{{poolGenProviderId}}",
+  "agentTypeId": "{{poolGenAgentTypeId}}",
+  "tags": ["pool-gen-test"],
+  "configuration": {}
+}
+
+@poolGenAgent1Id = {{createPoolGenAgent1.response.body.$.id}}
+
+### Verify agent 1 got a pool value in its configuration
+GET {{baseUrl}}/agents/{{poolGenAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### Verify agent 1 is stamped on one of the pool values
+GET {{baseUrl}}/agent-pool-values?agentId={{poolGenAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### ✅ Create second agent — takes the remaining pool value
+# @name createPoolGenAgent2
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Pool Gen Agent 2",
+  "providerId": "{{poolGenProviderId}}",
+  "agentTypeId": "{{poolGenAgentTypeId}}",
+  "tags": ["pool-gen-test"],
+  "configuration": {}
+}
+
+@poolGenAgent2Id = {{createPoolGenAgent2.response.body.$.id}}
+
+### Verify agent 2 configuration is populated
+GET {{baseUrl}}/agents/{{poolGenAgent2Id}}
+Authorization: Bearer {{adminToken}}
+
+### List all values in the pool — both should be allocated
+GET {{baseUrl}}/agent-pool-values?agentPoolId={{poolGenPoolId}}
+Authorization: Bearer {{adminToken}}
+
+### ❌ TEST: third agent fails — no available values in pool
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Pool Gen Agent 3 (should fail)",
+  "providerId": "{{poolGenProviderId}}",
+  "agentTypeId": "{{poolGenAgentTypeId}}",
+  "tags": ["pool-gen-test"],
+  "configuration": {}
+}
+
+### ✅ Idempotent update — re-applying schema on update does NOT reallocate
+PATCH {{baseUrl}}/agents/{{poolGenAgent1Id}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "tags": ["pool-gen-test", "updated"]
+}
+
+### Verify agent 1 still holds its original pool value
+GET {{baseUrl}}/agents/{{poolGenAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### Delete agent 1 — expect its pool value to be released
+DELETE {{baseUrl}}/agents/{{poolGenAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### Verify agent 1's values were released (agentId filter should return empty)
+GET {{baseUrl}}/agent-pool-values?agentId={{poolGenAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### List pool values — one should now be available again (agentId=null)
+GET {{baseUrl}}/agent-pool-values?agentPoolId={{poolGenPoolId}}
+Authorization: Bearer {{adminToken}}
+
+### ✅ New agent now succeeds because the released value is available again
+# @name createPoolGenAgent3
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Pool Gen Agent 3",
+  "providerId": "{{poolGenProviderId}}",
+  "agentTypeId": "{{poolGenAgentTypeId}}",
+  "tags": ["pool-gen-test"],
+  "configuration": {}
+}
+
+@poolGenAgent3Id = {{createPoolGenAgent3.response.body.$.id}}
+
+### Confirm the previously released value is now stamped on agent 3
+GET {{baseUrl}}/agent-pool-values?agentId={{poolGenAgent3Id}}
+Authorization: Bearer {{adminToken}}
