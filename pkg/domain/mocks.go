@@ -16195,8 +16195,8 @@ func (_m *MockPoolListItem) EXPECT() *MockPoolListItem_Expecter {
 }
 
 // Allocate provides a mock function for the type MockPoolListItem
-func (_mock *MockPoolListItem) Allocate(poolID properties.UUID, propertyName string) {
-	_mock.Called(poolID, propertyName)
+func (_mock *MockPoolListItem) Allocate(entityID properties.UUID, propertyName string) {
+	_mock.Called(entityID, propertyName)
 	return
 }
 
@@ -16206,13 +16206,13 @@ type MockPoolListItem_Allocate_Call struct {
 }
 
 // Allocate is a helper method to define mock.On call
-//   - poolID properties.UUID
+//   - entityID properties.UUID
 //   - propertyName string
-func (_e *MockPoolListItem_Expecter) Allocate(poolID interface{}, propertyName interface{}) *MockPoolListItem_Allocate_Call {
-	return &MockPoolListItem_Allocate_Call{Call: _e.mock.On("Allocate", poolID, propertyName)}
+func (_e *MockPoolListItem_Expecter) Allocate(entityID interface{}, propertyName interface{}) *MockPoolListItem_Allocate_Call {
+	return &MockPoolListItem_Allocate_Call{Call: _e.mock.On("Allocate", entityID, propertyName)}
 }
 
-func (_c *MockPoolListItem_Allocate_Call) Run(run func(poolID properties.UUID, propertyName string)) *MockPoolListItem_Allocate_Call {
+func (_c *MockPoolListItem_Allocate_Call) Run(run func(entityID properties.UUID, propertyName string)) *MockPoolListItem_Allocate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 properties.UUID
 		if args[0] != nil {
@@ -16235,7 +16235,7 @@ func (_c *MockPoolListItem_Allocate_Call) Return() *MockPoolListItem_Allocate_Ca
 	return _c
 }
 
-func (_c *MockPoolListItem_Allocate_Call) RunAndReturn(run func(poolID properties.UUID, propertyName string)) *MockPoolListItem_Allocate_Call {
+func (_c *MockPoolListItem_Allocate_Call) RunAndReturn(run func(entityID properties.UUID, propertyName string)) *MockPoolListItem_Allocate_Call {
 	_c.Run(run)
 	return _c
 }

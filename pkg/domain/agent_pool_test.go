@@ -173,4 +173,3 @@ func TestAgentPool_Update(t *testing.T) {
 		})
 	}
 }
-

@@ -1,7 +1,9 @@
 openapi: 3.1.0
 info:
   title: Fulcrum Core API
-  description: A comprehensive cloud infrastructure management system designed to orchestrate and monitor distributed cloud resources across multiple providers.
+  description: A comprehensive cloud infrastructure management system designed to
+    orchestrate and monitor distributed cloud resources across multiple
+    providers.
   version: 1.0.0
   contact:
     name: Fulcrum Project
@@ -48,7 +50,8 @@ components:
           authorizationUrl: https://api.fulcrum.testudosrl.dev/oauth/authorize
           scopes:
             admin: System administrator with unrestricted access
-            participant: Participant administrator that can act as both provider and consumer
+            participant: Participant administrator that can act as both provider and
+              consumer
             agent: Agent role with access to specific operations
 
   schemas:
