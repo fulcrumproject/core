@@ -10,7 +10,7 @@ import (
 type PoolListItem interface {
 	PoolID() properties.UUID
 	RawValue() any
-	Allocate(poolID properties.UUID, propertyName string)
+	Allocate(entityID properties.UUID, propertyName string)
 	Release()
 }
 
@@ -28,7 +28,7 @@ func NewPoolListGenerator[V PoolListItem](valueRepo PoolListRepo[V], poolID prop
 	return &PoolListGenerator[V]{valueRepo: valueRepo, poolID: poolID}
 }
 
-func (p *PoolListGenerator[V]) Allocate(ctx context.Context, poolID properties.UUID, propertyName string) (any, error) {
+func (p *PoolListGenerator[V]) Allocate(ctx context.Context, entityID properties.UUID, propertyName string) (any, error) {
 	availableValues, err := p.valueRepo.FindAvailable(ctx, p.poolID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query available values: %w", err)
@@ -39,7 +39,7 @@ func (p *PoolListGenerator[V]) Allocate(ctx context.Context, poolID properties.U
 	}
 
 	value := availableValues[0]
-	value.Allocate(poolID, propertyName)
+	value.Allocate(entityID, propertyName)
 
 	err = p.valueRepo.Update(ctx, value)
 	if err != nil {

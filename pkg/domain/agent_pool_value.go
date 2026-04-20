@@ -10,7 +10,6 @@ import (
 
 const (
 	EventTypeAgentPoolValueCreated EventType = "agent_pool_value.created"
-	EventTypeAgentPoolValueUpdated EventType = "agent_pool_value.updated"
 	EventTypeAgentPoolValueDeleted EventType = "agent_pool_value.deleted"
 )
 
