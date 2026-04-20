@@ -3,6 +3,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -128,6 +129,7 @@ type ServicePoolQuerier interface {
 
 	ListByPoolSet(ctx context.Context, poolSetID properties.UUID) ([]*ServicePool, error)
 	FindByPoolSetAndType(ctx context.Context, poolSetID properties.UUID, poolType string) (*ServicePool, error)
+	FindByProviderAndType(ctx context.Context, providerID properties.UUID, poolType string) (*ServicePool, error)
 }
 
 // ServicePoolCommander handles complex ServicePool operations
@@ -155,18 +157,32 @@ func (c *servicePoolCommander) Create(
 	var pool *ServicePool
 	err := c.store.Atomic(ctx, func(store Store) error {
 		// Validate that the pool set exists
-		exists, err := store.ServicePoolSetRepo().Exists(ctx, params.ServicePoolSetID)
+		poolSet, err := store.ServicePoolSetRepo().Get(ctx, params.ServicePoolSetID)
 		if err != nil {
+			var notFound NotFoundError
+			if errors.As(err, &notFound) {
+				return NewNotFoundErrorf("service pool set with id %s not found", params.ServicePoolSetID)
+			}
 			return err
-		}
-		if !exists {
-			return NewNotFoundErrorf("service pool set with id %s not found", params.ServicePoolSetID)
 		}
 
 		// Create the pool
 		pool = NewServicePool(params)
 		if err := pool.Validate(); err != nil {
 			return err
+		}
+
+		// Type must be unique per provider — the pool resolver matches by type
+		// and will silently pick one of the duplicates; if that one is empty
+		// allocation fails with a misleading "no available pool values".
+		existing, err := store.ServicePoolRepo().FindByProviderAndType(ctx, poolSet.ProviderID, pool.Type)
+		if err != nil {
+			var notFound NotFoundError
+			if !errors.As(err, &notFound) {
+				return err
+			}
+		} else if existing != nil {
+			return NewInvalidInputErrorf("service pool with type %q already exists for this provider", pool.Type)
 		}
 
 		// Save to database

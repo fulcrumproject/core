@@ -314,6 +314,53 @@ func TestServicePoolRepository(t *testing.T) {
 		})
 	})
 
+	t.Run("FindByProviderAndType", func(t *testing.T) {
+		t.Run("success - same provider different pool set", func(t *testing.T) {
+			ctx := context.Background()
+
+			poolType := fmt.Sprintf("unique-type-%s", uuid.New().String())
+
+			pool := createTestServicePool(t, poolSet.ID)
+			pool.Type = poolType
+			require.NoError(t, repo.Create(ctx, pool))
+
+			otherPoolSet := createTestServicePoolSet(t, participant.ID)
+			require.NoError(t, poolSetRepo.Create(ctx, otherPoolSet))
+
+			found, err := repo.FindByProviderAndType(ctx, participant.ID, poolType)
+
+			require.NoError(t, err)
+			assert.Equal(t, pool.ID, found.ID)
+		})
+
+		t.Run("not found - different provider", func(t *testing.T) {
+			ctx := context.Background()
+
+			poolType := fmt.Sprintf("unique-type-%s", uuid.New().String())
+
+			pool := createTestServicePool(t, poolSet.ID)
+			pool.Type = poolType
+			require.NoError(t, repo.Create(ctx, pool))
+
+			otherProvider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, otherProvider))
+
+			found, err := repo.FindByProviderAndType(ctx, otherProvider.ID, poolType)
+
+			assert.Nil(t, found)
+			assert.ErrorAs(t, err, &domain.NotFoundError{})
+		})
+
+		t.Run("not found - unknown type", func(t *testing.T) {
+			ctx := context.Background()
+
+			found, err := repo.FindByProviderAndType(ctx, participant.ID, "nonexistent-type")
+
+			assert.Nil(t, found)
+			assert.ErrorAs(t, err, &domain.NotFoundError{})
+		})
+	})
+
 	t.Run("Update", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			ctx := context.Background()

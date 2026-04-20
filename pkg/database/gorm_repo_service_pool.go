@@ -95,6 +95,28 @@ func (r *GormServicePoolRepository) FindByPoolSetAndType(
 	return &entity, nil
 }
 
+// FindByProviderAndType retrieves a service pool by provider and type, joining
+// through service_pool_sets since ProviderID is not a column on service_pools.
+func (r *GormServicePoolRepository) FindByProviderAndType(
+	ctx context.Context,
+	providerID properties.UUID,
+	poolType string,
+) (*domain.ServicePool, error) {
+	var entity domain.ServicePool
+	result := r.db.WithContext(ctx).
+		Joins("JOIN service_pool_sets ON service_pool_sets.id = service_pools.service_pool_set_id").
+		Where("service_pool_sets.provider_id = ? AND service_pools.type = ?", providerID, poolType).
+		First(&entity)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, domain.NotFoundError{Err: result.Error}
+		}
+		return nil, result.Error
+	}
+	return &entity, nil
+}
+
 // Update updates an existing service pool
 func (r *GormServicePoolRepository) Update(ctx context.Context, pool *domain.ServicePool) error {
 	return r.Save(ctx, pool)
