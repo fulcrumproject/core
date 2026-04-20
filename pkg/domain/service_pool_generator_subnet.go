@@ -27,7 +27,7 @@ func NewSubnetGenerator(valueRepo ServicePoolValueRepository, poolID properties.
 }
 
 // Allocate allocates the next available IP from the subnet
-func (g *SubnetGenerator) Allocate(ctx context.Context, poolID properties.UUID, serviceID properties.UUID, propertyName string) (any, error) {
+func (g *SubnetGenerator) Allocate(ctx context.Context, serviceID properties.UUID, propertyName string) (any, error) {
 	// Parse generator config
 	cidr, ok := g.generatorConfig["cidr"].(string)
 	if !ok || cidr == "" {

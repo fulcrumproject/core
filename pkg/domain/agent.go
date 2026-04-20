@@ -256,15 +256,22 @@ func (s *agentCommander) Create(
     }
   }
 
+	// Pre-generate agent ID upfront so pool generators can stamp allocations with it
+	// within the same transaction as the agent insert.
+	agentID := properties.UUID(uuid.New())
+
 	// Create and save
 	var agent *Agent
 	err = s.store.Atomic(ctx, func(store Store) error {
 		agent = NewAgent(params)
+		agent.ID = agentID
 
 		// Validate and process configuration against schema
 		if agent.Configuration != nil {
-			// Build schema context (empty for agents)
-			schemaCtx := AgentConfigContext{}
+			schemaCtx := AgentConfigContext{
+				Store:   store,
+				AgentID: &agentID,
+			}
 
 			// Convert configuration to map
 			configMap := map[string]any(*agent.Configuration)
@@ -340,43 +347,42 @@ func (s *agentCommander) Update(ctx context.Context,
 	}
 	agent.Update(params.Name, params.Tags, params.Configuration, params.ServicePoolSetID)
 
-	// Validate and process configuration against schema if configuration is being updated
-	if params.Configuration != nil && agent.Configuration != nil {
-		// Build schema context (empty for agents)
-		schemaCtx := AgentConfigContext{}
-
-		// Convert configurations to maps
-		var oldConfigMap map[string]any
-		if beforeAgent.Configuration != nil {
-			oldConfigMap = map[string]any(*beforeAgent.Configuration)
-		}
-		newConfigMap := map[string]any(*agent.Configuration)
-
-		// Use injected engine to process configuration
-		processedConfig, err := s.configEngine.ApplyUpdate(
-			ctx,
-			schemaCtx,
-			agentType.ConfigurationSchema,
-			oldConfigMap,
-			newConfigMap,
-		)
-		if err != nil {
-			return nil, InvalidInputError{Err: fmt.Errorf("configuration: %w", err)}
-		}
-
-		// Update agent with processed configuration
-		processedJSON := properties.JSON(processedConfig)
-		agent.Configuration = &processedJSON
-	}
-
-	if err := agent.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
-	}
-
 	// Save and event
 	err = s.store.Atomic(ctx, func(store Store) error {
-		err := store.AgentRepo().Save(ctx, agent)
-		if err != nil {
+		// Validate and process configuration against schema if configuration is being updated.
+		// Done inside the transaction so any pool allocations share the same tx as the save.
+		if params.Configuration != nil && agent.Configuration != nil {
+			schemaCtx := AgentConfigContext{
+				Store:   store,
+				AgentID: &agent.ID,
+			}
+
+			var oldConfigMap map[string]any
+			if beforeAgent.Configuration != nil {
+				oldConfigMap = map[string]any(*beforeAgent.Configuration)
+			}
+			newConfigMap := map[string]any(*agent.Configuration)
+
+			processedConfig, err := s.configEngine.ApplyUpdate(
+				ctx,
+				schemaCtx,
+				agentType.ConfigurationSchema,
+				oldConfigMap,
+				newConfigMap,
+			)
+			if err != nil {
+				return InvalidInputError{Err: fmt.Errorf("configuration: %w", err)}
+			}
+
+			processedJSON := properties.JSON(processedConfig)
+			agent.Configuration = &processedJSON
+		}
+
+		if err := agent.Validate(); err != nil {
+			return InvalidInputError{Err: err}
+		}
+
+		if err := store.AgentRepo().Save(ctx, agent); err != nil {
 			return err
 		}
 		eventEntry, err := NewEvent(EventTypeAgentUpdated, WithInitiatorCtx(ctx), WithDiff(&beforeAgent, agent), WithAgent(agent))
@@ -415,6 +421,36 @@ func (s *agentCommander) Delete(ctx context.Context, id properties.UUID) error {
 		if err := store.TokenRepo().DeleteByAgentID(ctx, id); err != nil {
 			return err
 		}
+
+		// Release any AgentPoolValue rows allocated to this agent. Dispatched per pool via
+		// the factory so release semantics stay consistent across generator types (list today,
+		// potentially subnet later).
+		allocated, err := store.AgentPoolValueRepo().FindByAgent(ctx, id)
+		if err != nil {
+			return err
+		}
+		if len(allocated) > 0 {
+			factory := NewDefaultAgentPoolGeneratorFactory(store.AgentPoolValueRepo())
+			seen := make(map[properties.UUID]bool, len(allocated))
+			for _, v := range allocated {
+				if seen[v.AgentPoolID] {
+					continue
+				}
+				seen[v.AgentPoolID] = true
+				pool, err := store.AgentPoolRepo().Get(ctx, v.AgentPoolID)
+				if err != nil {
+					return err
+				}
+				gen, err := factory.CreateGenerator(pool)
+				if err != nil {
+					return err
+				}
+				if err := gen.Release(ctx, allocated); err != nil {
+					return err
+				}
+			}
+		}
+
 		if err := store.AgentRepo().Delete(ctx, id); err != nil {
 			return err
 		}

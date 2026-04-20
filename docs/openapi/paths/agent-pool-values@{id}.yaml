@@ -1,0 +1,54 @@
+get:
+  operationId: agentPoolValuesGet
+  summary: Get an agent pool value by ID
+  tags:
+    - Agents
+  description: Retrieves details of a specific agent pool value
+  x-auth-permissions:
+    - role: admin
+      permission: always
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  responses:
+    "200":
+      description: Agent pool value retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/agent_pool_values.yaml#/AgentPoolValueRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Agent pool value not found
+delete:
+  operationId: agentPoolValuesDelete
+  summary: Delete an agent pool value
+  tags:
+    - Agents
+  description: Deletes an existing agent pool value. Cannot delete a value that is currently allocated.
+  x-auth-permissions:
+    - role: admin
+      permission: always
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  responses:
+    "204":
+      description: Agent pool value deleted successfully
+    "400":
+      description: Cannot delete allocated pool value
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Agent pool value not found

@@ -162,6 +162,13 @@ func WithAgentPool(t *AgentPool) EventOption {
 	}
 }
 
+func WithAgentPoolValue(t *AgentPoolValue) EventOption {
+	return func(e *Event) error {
+		e.EntityID = &t.ID
+		return nil
+	}
+}
+
 // WithAgentType sets the entity ID for the event
 func WithAgentType(t *AgentType) EventOption {
 	return func(e *Event) error {
