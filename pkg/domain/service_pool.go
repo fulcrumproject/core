@@ -23,6 +23,9 @@ const (
 	PoolGeneratorSubnet PoolGeneratorType = "subnet"
 )
 
+// ValidPoolPropertyTypes lists the allowed property types for pools.
+var ValidPoolPropertyTypes = []string{"string", "integer", "number", "boolean", "json"}
+
 // Validate checks if the pool generator type is valid
 func (t PoolGeneratorType) Validate() error {
 	switch t {
@@ -88,10 +91,8 @@ func (sp *ServicePool) Validate() error {
 		return fmt.Errorf("pool type cannot be empty")
 	}
 
-	// Validate PropertyType
-	validTypes := []string{"string", "integer", "number", "boolean", "json"}
-	if !slices.Contains(validTypes, sp.PropertyType) {
-		return fmt.Errorf("invalid property type: %s (must be one of: %v)", sp.PropertyType, validTypes)
+	if !slices.Contains(ValidPoolPropertyTypes, sp.PropertyType) {
+		return fmt.Errorf("invalid property type: %s (must be one of: %v)", sp.PropertyType, ValidPoolPropertyTypes)
 	}
 
 	if err := sp.GeneratorType.Validate(); err != nil {

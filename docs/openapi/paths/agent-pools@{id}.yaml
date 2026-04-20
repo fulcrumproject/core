@@ -1,0 +1,90 @@
+get:
+  operationId: agentPoolsGet
+  summary: Get an agent pool by ID
+  tags:
+    - Agents
+  description: Retrieves details of a specific agent pool
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: agent
+      permission: read-only
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  responses:
+    "200":
+      description: Agent pool retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/agent_pools.yaml#/AgentPoolRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Agent pool not found
+patch:
+  operationId: agentPoolsUpdate
+  summary: Update an agent pool
+  tags:
+    - Agents
+  description: Updates an existing agent pool
+  x-auth-permissions:
+    - role: admin
+      permission: always
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/agent_pools.yaml#/UpdateAgentPoolReq"
+  responses:
+    "200":
+      description: Agent pool updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/agent_pools.yaml#/AgentPoolRes"
+    "400":
+      $ref: "../components/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Agent pool not found
+delete:
+  operationId: agentPoolsDelete
+  summary: Delete an agent pool
+  tags:
+    - Agents
+  description: Deletes an existing agent pool
+  x-auth-permissions:
+    - role: admin
+      permission: always
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: "../components/schemas/common.yaml#/properties.UUID"
+  responses:
+    "204":
+      description: Agent pool deleted successfully
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Agent pool not found

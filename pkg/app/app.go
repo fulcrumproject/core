@@ -39,6 +39,7 @@ type App struct {
 	ServicePoolValueHandler  *api.ServicePoolValueHandler
 	ParticipantHandler       *api.ParticipantHandler
 	AgentHandler             *api.AgentHandler
+	AgentPoolHandler         *api.AgentPoolHandler
 	ServiceGroupHandler      *api.ServiceGroupHandler
 	ServiceHandler           *api.ServiceHandler
 	MetricTypeHandler        *api.MetricTypeHandler
@@ -256,6 +257,9 @@ func NewApp() *App {
 	servicePoolCmd := domain.NewServicePoolCommander(store)
 	servicePoolValueCmd := domain.NewServicePoolValueCommander(store)
 
+	// Initialize commander for agent pools
+	agentPoolCmd := domain.NewAgentPoolCommander(store)
+
 	return &App{
 		Config:                   cfg,
 		Db:                       db,
@@ -276,6 +280,7 @@ func NewApp() *App {
 		ServicePoolValueHandler:  api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), servicePoolValueCmd, athz),
 		ParticipantHandler:       api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz),
 		AgentHandler:             api.NewAgentHandler(store.AgentRepo(), agentCmd, athz),
+		AgentPoolHandler:         api.NewAgentPoolHandler(store.AgentPoolRepo(), agentPoolCmd, athz),
 		AgentTypeHandler:         api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz),
 		ServiceGroupHandler:      api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz),
 		ServiceHandler:           api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, athz),

@@ -1,0 +1,70 @@
+CreateAgentPoolReq:
+  type: object
+  required:
+    - name
+    - type
+    - propertyType
+    - generatorType
+  properties:
+    name:
+      type: string
+      example: "Public IP Pool"
+      description: "Name of the agent pool"
+    type:
+      type: string
+      example: "public_ip"
+      description: "Type identifier for the pool"
+    propertyType:
+      type: string
+      enum: [string, integer, number, boolean, json]
+      example: "string"
+      description: "Property type that this pool provides"
+    generatorType:
+      type: string
+      enum: [list]
+      example: "list"
+      description: "Allocation strategy: 'list' for pre-configured values"
+    generatorConfig:
+      type: object
+      description: "Generator-specific configuration"
+      example: { "cidr": "192.168.1.0/24", "excludeFirst": 1, "excludeLast": 1 }
+
+UpdateAgentPoolReq:
+  type: object
+  properties:
+    name:
+      type: string
+      example: "Public IP Pool - Updated"
+    generatorConfig:
+      type: object
+      description: "Generator-specific configuration"
+
+AgentPoolRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "Public IP Pool"
+    type:
+      type: string
+      example: "public_ip"
+    propertyType:
+      type: string
+      enum: [string, integer, number, boolean, json]
+      example: "string"
+      description: "Property type that this pool provides"
+    generatorType:
+      type: string
+      enum: [list]
+      example: "list"
+    generatorConfig:
+      type: object
+      example: { "cidr": "192.168.1.0/24" }
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time

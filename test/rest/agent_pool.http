@@ -1,0 +1,55 @@
+### Agent Pool Operations
+### This file tests operations for agent pools
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+### Get all agent pools
+GET {{baseUrl}}/agent-pools
+Authorization: Bearer {{adminToken}}
+
+### Get all agent pools with filter by name
+GET {{baseUrl}}/agent-pools?name=test
+Authorization: Bearer {{adminToken}}
+
+### Get all agent pools with filter by type
+GET {{baseUrl}}/agent-pools?type=type
+Authorization: Bearer {{adminToken}}
+
+### Get all agent pools with filter by generatorType
+GET {{baseUrl}}/agent-pools?generatorType=list
+Authorization: Bearer {{adminToken}}
+
+
+### Create an agent pool
+# @name createAgentPool
+POST {{baseUrl}}/agent-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Pool",
+  "type": "publicIp",
+  "propertyType": "string",
+  "generatorType": "list"
+}
+
+@agentPoolId = {{createAgentPool.response.body.$.id}}
+
+### Get a specific agent pool
+GET {{baseUrl}}/agent-pools/{{agentPoolId}}
+Authorization: Bearer {{adminToken}}
+
+### Update an agent pool
+PATCH {{baseUrl}}/agent-pools/{{agentPoolId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Pool Name"
+}
+
+### Delete an agent pool
+DELETE {{baseUrl}}/agent-pools/{{agentPoolId}}
+Authorization: Bearer {{adminToken}}
