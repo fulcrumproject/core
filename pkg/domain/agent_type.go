@@ -20,6 +20,9 @@ type AgentType struct {
 	Name                string        `json:"name" gorm:"not null;unique"`
 	ServiceTypes        []ServiceType `json:"-" gorm:"many2many:agent_type_service_types;"`
 	ConfigurationSchema schema.Schema `json:"configurationSchema" gorm:"type:jsonb;not null"`
+	ConfigTemplate      string        `json:"configTemplate" gorm:"type:text"`
+	CmdTemplate         string        `json:"cmdTemplate" gorm:"type:text"`
+	ConfigContentType   string        `json:"configContentType" gorm:"type:text;not null;default:'text/plain'"`
 }
 
 // NewAgentType creates a new agent type without validation
@@ -32,10 +35,18 @@ func NewAgentType(params CreateAgentTypeParams) *AgentType {
 		})
 	}
 
+	configContentType := params.ConfigContentType
+	if configContentType == "" {
+		configContentType = "text/plain"
+	}
+
 	return &AgentType{
 		Name:                params.Name,
 		ServiceTypes:        serviceTypes,
 		ConfigurationSchema: params.ConfigurationSchema,
+		ConfigTemplate:      params.ConfigTemplate,
+		CmdTemplate:         params.CmdTemplate,
+		ConfigContentType:   configContentType,
 	}
 }
 
@@ -49,7 +60,7 @@ func (at *AgentType) Validate() error {
 	if at.Name == "" {
 		return fmt.Errorf("agent type name cannot be empty")
 	}
-	return nil
+	return at.validateTemplates()
 }
 
 // ValidateWithEngine validates the agent type including its configuration schema
@@ -63,7 +74,7 @@ func (at *AgentType) ValidateWithEngine(engine *schema.Engine[AgentConfigContext
 		return fmt.Errorf("configurationSchema: %w", err)
 	}
 
-	return nil
+	return at.validateTemplates()
 }
 
 // Update updates the agent type fields if the pointers are non-nil
@@ -84,6 +95,18 @@ func (at *AgentType) Update(params UpdateAgentTypeParams) {
 	if params.ConfigurationSchema != nil {
 		at.ConfigurationSchema = *params.ConfigurationSchema
 	}
+	if params.ConfigTemplate != nil {
+		at.ConfigTemplate = *params.ConfigTemplate
+	}
+	if params.CmdTemplate != nil {
+		at.CmdTemplate = *params.CmdTemplate
+	}
+	if params.ConfigContentType != nil {
+		at.ConfigContentType = *params.ConfigContentType
+		if at.ConfigContentType == "" {
+			at.ConfigContentType = "text/plain"
+		}
+	}
 }
 
 // AgentTypeCommander defines the interface for agent type command operations
@@ -102,6 +125,9 @@ type CreateAgentTypeParams struct {
 	Name                string            `json:"name"`
 	ServiceTypeIds      []properties.UUID `json:"serviceTypeIds,omitempty"`
 	ConfigurationSchema schema.Schema     `json:"configurationSchema"`
+	ConfigTemplate      string            `json:"configTemplate,omitempty"`
+	CmdTemplate         string            `json:"cmdTemplate,omitempty"`
+	ConfigContentType   string            `json:"configContentType,omitempty"`
 }
 
 type UpdateAgentTypeParams struct {
@@ -109,6 +135,9 @@ type UpdateAgentTypeParams struct {
 	Name                *string            `json:"name"`
 	ServiceTypeIds      *[]properties.UUID `json:"serviceTypeIds,omitempty"`
 	ConfigurationSchema *schema.Schema     `json:"configurationSchema,omitempty"`
+	ConfigTemplate      *string            `json:"configTemplate,omitempty"`
+	CmdTemplate         *string            `json:"cmdTemplate,omitempty"`
+	ConfigContentType   *string            `json:"configContentType,omitempty"`
 }
 
 // agentTypeCommander is the concrete implementation of AgentTypeCommander

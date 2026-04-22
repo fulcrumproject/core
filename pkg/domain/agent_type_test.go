@@ -133,6 +133,138 @@ func TestAgentType_WithConfigurationSchema(t *testing.T) {
 	}
 }
 
+func TestAgentType_ValidateTemplates(t *testing.T) {
+	baseProps := map[string]schema.PropertyDefinition{
+		"host": {Type: "string"},
+		"port": {Type: "integer"},
+	}
+	arrayProps := map[string]schema.PropertyDefinition{
+		"servers": {Type: "array"},
+	}
+
+	tests := []struct {
+		name              string
+		props             map[string]schema.PropertyDefinition
+		configTemplate    string
+		cmdTemplate       string
+		configContentType string
+		wantErr           bool
+		wantMsgContains   string
+	}{
+		{
+			name:              "accept valid refs",
+			props:             baseProps,
+			configTemplate:    "host={{.host}}\nport={{.port}}",
+			cmdTemplate:       "run --p {{.port}} --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "accept empty templates",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "reject unknown ref in configTemplate",
+			props:             baseProps,
+			configTemplate:    "{{.missing}}",
+			cmdTemplate:       "",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "missing",
+		},
+		{
+			name:              "reject unknown ref in cmdTemplate",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "{{.unknown}}",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "unknown",
+		},
+		{
+			name:              "reject configUrl in configTemplate",
+			props:             baseProps,
+			configTemplate:    "url={{.configUrl}}",
+			cmdTemplate:       "",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "configUrl",
+		},
+		{
+			name:              "accept configUrl in cmdTemplate only",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "{{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "reject unparseable template",
+			props:             baseProps,
+			configTemplate:    "{{.host",
+			cmdTemplate:       "",
+			configContentType: "text/plain",
+			wantErr:           true,
+		},
+		{
+			name:              "accept range over declared array prop",
+			props:             arrayProps,
+			configTemplate:    "",
+			cmdTemplate:       "{{range .servers}}x{{end}}",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "reject malformed mime type",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "",
+			configContentType: "not a mime",
+			wantErr:           true,
+			wantMsgContains:   "configContentType",
+		},
+		{
+			name:              "accept common mime type",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "",
+			configContentType: "application/yaml",
+			wantErr:           false,
+		},
+		{
+			name:              "accept mime type with params",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "",
+			configContentType: "text/plain; charset=utf-8",
+			wantErr:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			at := &AgentType{
+				Name:                "Test Agent",
+				ConfigurationSchema: schema.Schema{Properties: tt.props},
+				ConfigTemplate:      tt.configTemplate,
+				CmdTemplate:         tt.cmdTemplate,
+				ConfigContentType:   tt.configContentType,
+			}
+			err := at.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantMsgContains != "" && !strings.Contains(err.Error(), tt.wantMsgContains) {
+				t.Errorf("expected error to contain %q, got: %v", tt.wantMsgContains, err)
+			}
+		})
+	}
+}
+
 func TestAgentType_ValidateWithEngine_EmptyName(t *testing.T) {
 	engine := NewAgentConfigSchemaEngine(nil)
 

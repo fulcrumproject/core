@@ -71,6 +71,9 @@ type CreateAgentTypeReq struct {
 	Name                string            `json:"name"`
 	ServiceTypeIds      []properties.UUID `json:"serviceTypeIds,omitempty"`
 	ConfigurationSchema schema.Schema     `json:"configurationSchema"`
+	ConfigTemplate      string            `json:"configTemplate,omitempty"`
+	CmdTemplate         string            `json:"cmdTemplate,omitempty"`
+	ConfigContentType   string            `json:"configContentType,omitempty"`
 }
 
 // UpdateAgentTypeReq represents the request body for updating agent types
@@ -78,6 +81,9 @@ type UpdateAgentTypeReq struct {
 	Name                *string            `json:"name"`
 	ServiceTypeIds      *[]properties.UUID `json:"serviceTypeIds,omitempty"`
 	ConfigurationSchema *schema.Schema     `json:"configurationSchema,omitempty"`
+	ConfigTemplate      *string            `json:"configTemplate,omitempty"`
+	CmdTemplate         *string            `json:"cmdTemplate,omitempty"`
+	ConfigContentType   *string            `json:"configContentType,omitempty"`
 }
 
 // AgentTypeRes represents the response body for agent type operations
@@ -88,6 +94,9 @@ type AgentTypeRes struct {
 	UpdatedAt           JSONUTCTime       `json:"updatedAt"`
 	ServiceTypeIds      []properties.UUID `json:"serviceTypeIds"`
 	ConfigurationSchema schema.Schema     `json:"configurationSchema"`
+	ConfigTemplate      string            `json:"configTemplate"`
+	CmdTemplate         string            `json:"cmdTemplate"`
+	ConfigContentType   string            `json:"configContentType"`
 }
 
 // AgentTypeToRes converts a domain.AgentType to an AgentTypeResponse
@@ -99,6 +108,9 @@ func AgentTypeToRes(at *domain.AgentType) *AgentTypeRes {
 		UpdatedAt:           JSONUTCTime(at.UpdatedAt),
 		ServiceTypeIds:      make([]properties.UUID, 0),
 		ConfigurationSchema: at.ConfigurationSchema,
+		ConfigTemplate:      at.ConfigTemplate,
+		CmdTemplate:         at.CmdTemplate,
+		ConfigContentType:   at.ConfigContentType,
 	}
 	for _, st := range at.ServiceTypes {
 		response.ServiceTypeIds = append(response.ServiceTypeIds, st.ID)
@@ -113,6 +125,9 @@ func (h *AgentTypeHandler) Create(ctx context.Context, req *CreateAgentTypeReq) 
 		Name:                req.Name,
 		ServiceTypeIds:      req.ServiceTypeIds,
 		ConfigurationSchema: req.ConfigurationSchema,
+		ConfigTemplate:      req.ConfigTemplate,
+		CmdTemplate:         req.CmdTemplate,
+		ConfigContentType:   req.ConfigContentType,
 	}
 	return h.commander.Create(ctx, params)
 }
@@ -123,6 +138,9 @@ func (h *AgentTypeHandler) Update(ctx context.Context, id properties.UUID, req *
 		Name:                req.Name,
 		ServiceTypeIds:      req.ServiceTypeIds,
 		ConfigurationSchema: req.ConfigurationSchema,
+		ConfigTemplate:      req.ConfigTemplate,
+		CmdTemplate:         req.CmdTemplate,
+		ConfigContentType:   req.ConfigContentType,
 	}
 	return h.commander.Update(ctx, params)
 }
