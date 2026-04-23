@@ -85,6 +85,7 @@ func NewAgentPoolValue(c CreateAgentPoolValueParams) *AgentPoolValue {
 
 type AgentPoolValueQuerier interface {
 	BaseEntityQuerier[AgentPoolValue]
+	CountByPool(ctx context.Context, poolID properties.UUID) (int64, error)
 	FindAvailable(ctx context.Context, poolID properties.UUID) ([]*AgentPoolValue, error)
 	FindByAgent(ctx context.Context, agentID properties.UUID) ([]*AgentPoolValue, error)
 }

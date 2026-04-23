@@ -109,6 +109,7 @@ type ServicePoolValueRepository interface {
 type ServicePoolValueQuerier interface {
 	BaseEntityQuerier[ServicePoolValue]
 
+	CountByPool(ctx context.Context, poolID properties.UUID) (int64, error)
 	ListByPool(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)
 	ListByService(ctx context.Context, serviceID properties.UUID) ([]*ServicePoolValue, error)
 	FindByPool(ctx context.Context, poolID properties.UUID) ([]*ServicePoolValue, error)

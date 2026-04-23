@@ -37,6 +37,20 @@ Content-Type: application/json
 
 @agentPoolId = {{createAgentPool.response.body.$.id}}
 
+### Create an agent pool value
+# @name createAgentPoolValue
+POST {{baseUrl}}/agent-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "192.168.1.10",
+  "value": "192.168.1.10",
+  "agentPoolId": "{{agentPoolId}}"
+}
+
+@agentPoolValueId = {{createAgentPoolValue.response.body.$.id}}
+
 ### Get a specific agent pool
 GET {{baseUrl}}/agent-pools/{{agentPoolId}}
 Authorization: Bearer {{adminToken}}
@@ -50,6 +64,10 @@ Content-Type: application/json
   "name": "Updated Pool Name"
 }
 
-### Delete an agent pool
+### Delete an agent pool (should fail if has associated value)
 DELETE {{baseUrl}}/agent-pools/{{agentPoolId}}
+Authorization: Bearer {{adminToken}}
+
+### Delete an agent pool value
+DELETE {{baseUrl}}/agent-pool-values/{{agentPoolValueId}}
 Authorization: Bearer {{adminToken}}

@@ -257,6 +257,15 @@ func (c *servicePoolCommander) Delete(
 			return NewNotFoundErrorf("service pool with id %s not found", id)
 		}
 
+		poolValues, err := store.ServicePoolValueRepo().CountByPool(ctx, pool.ID)
+		if err != nil {
+			return fmt.Errorf("failed to count values for service pool %s: %w", id, err)
+		}
+
+		if poolValues > 0 {
+			return NewInvalidInputErrorf("cannot delete service pool %s: %d dependent value(s) exist", id, poolValues)
+		}
+
 		eventEntity, err := NewEvent(EventTypeServicePoolDeleted, WithInitiatorCtx(ctx), WithServicePool(pool))
 		if err != nil {
 			return err

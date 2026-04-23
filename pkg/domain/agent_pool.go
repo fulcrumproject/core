@@ -211,6 +211,15 @@ func (c *agentPoolCommander) Delete(
 			return err
 		}
 
+		poolValues, err := store.AgentPoolValueRepo().CountByPool(ctx, pool.ID)
+		if err != nil {
+			return fmt.Errorf("failed to count values for agent pool %s: %w", id, err)
+		}
+
+		if poolValues > 0 {
+			return NewInvalidInputErrorf("cannot delete agent pool %s: %d dependent value(s) exist", id, poolValues)
+		}
+
 		eventEntity, err := NewEvent(EventTypeAgentPoolDeleted, WithInitiatorCtx(ctx), WithAgentPool(pool))
 		if err != nil {
 			return err

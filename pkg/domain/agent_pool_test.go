@@ -1,11 +1,16 @@
 package domain
 
 import (
+	"context"
+	"errors"
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -170,6 +175,84 @@ func TestAgentPool_Update(t *testing.T) {
 			pool.Update(tt.params)
 			assert.Equal(t, tt.expectedName, pool.Name)
 			assert.Equal(t, tt.expectedConfig, pool.GeneratorConfig)
+		})
+	}
+}
+
+func TestAgentPoolCommander_Delete(t *testing.T) {
+	poolID := properties.UUID(uuid.New())
+
+	tests := []struct {
+		name        string
+		count       int64
+		countErr    error
+		expectEvent bool
+		expectDel   bool
+		wantErr     bool
+		errContains string
+		wantInvalid bool
+	}{
+		{
+			name:        "success when no values",
+			count:       0,
+			expectEvent: true,
+			expectDel:   true,
+		},
+		{
+			name:        "refuses delete when values exist",
+			count:       3,
+			wantErr:     true,
+			errContains: "dependent value(s) exist",
+			wantInvalid: true,
+		},
+		{
+			name:        "propagates count error",
+			countErr:    errors.New("db boom"),
+			wantErr:     true,
+			errContains: "db boom",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ms := setupMockStore(t)
+
+			poolRepo := NewMockAgentPoolRepository(t)
+			poolRepo.On("Get", mock.Anything, poolID).Return(&AgentPool{
+				BaseEntity:    BaseEntity{ID: poolID},
+				Name:          "p",
+				Type:          "publicIp",
+				PropertyType:  "string",
+				GeneratorType: PoolGeneratorList,
+			}, nil).Once()
+			if tt.expectDel {
+				poolRepo.On("Delete", mock.Anything, poolID).Return(nil).Once()
+			}
+			ms.On("AgentPoolRepo").Return(poolRepo).Maybe()
+
+			valueRepo := NewMockAgentPoolValueRepository(t)
+			valueRepo.On("CountByPool", mock.Anything, poolID).Return(tt.count, tt.countErr).Once()
+			ms.On("AgentPoolValueRepo").Return(valueRepo).Maybe()
+
+			eventRepo := NewMockEventRepository(t)
+			if tt.expectEvent {
+				eventRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Once()
+			}
+			ms.On("EventRepo").Return(eventRepo).Maybe()
+
+			ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
+			cmd := NewAgentPoolCommander(ms)
+			err := cmd.Delete(ctx, poolID)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errContains)
+				if tt.wantInvalid {
+					assert.ErrorAs(t, err, &InvalidInputError{})
+				}
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
