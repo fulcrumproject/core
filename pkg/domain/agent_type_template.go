@@ -5,6 +5,7 @@ import (
 	"io"
 	"mime"
 	"regexp"
+	"strings"
 	"text/template"
 
 	"github.com/fulcrumproject/core/pkg/schema"
@@ -24,6 +25,21 @@ func (at *AgentType) validateTemplates() error {
 	}
 	if err := parseAndRender("cmdTemplate", at.CmdTemplate, cmdData); err != nil {
 		return err
+	}
+
+	if (at.ConfigTemplate == "") != (at.CmdTemplate == "") {
+		return fmt.Errorf("configTemplate and cmdTemplate must both be set or both be empty")
+	}
+
+	if at.ConfigTemplate != "" && at.CmdTemplate != "" {
+		cmdDataNoURL := mockDataFromSchema(at.ConfigurationSchema.Properties)
+		err := parseAndRender("cmdTemplate", at.CmdTemplate, cmdDataNoURL)
+		if err == nil {
+			return fmt.Errorf("cmdTemplate must reference {{.configUrl}} when configTemplate is set")
+		}
+		if !strings.Contains(err.Error(), cmdTemplateExtraRef) {
+			return err
+		}
 	}
 
 	if at.ConfigContentType != "" {
@@ -54,21 +70,24 @@ func parseAndRender(name, body string, data map[string]any) error {
 func mockDataFromSchema(props map[string]schema.PropertyDefinition) map[string]any {
 	data := make(map[string]any, len(props))
 	for name, def := range props {
-		data[name] = mockValueForType(def.Type)
+		data[name] = mockForDef(def)
 	}
 	return data
 }
 
-func mockValueForType(t string) any {
-	switch t {
+func mockForDef(def schema.PropertyDefinition) any {
+	switch def.Type {
 	case "integer", "number":
 		return 0
 	case "boolean":
 		return false
-	case "array":
-		return []any{}
 	case "object":
-		return map[string]any{}
+		return mockDataFromSchema(def.Properties)
+	case "array":
+		if def.Items != nil {
+			return []any{mockForDef(*def.Items)}
+		}
+		return []any{}
 	default:
 		return ""
 	}

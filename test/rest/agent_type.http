@@ -286,21 +286,55 @@ Content-Type: application/json
     "configContentType": "not a mime"
 }
 
+### Reject configTemplate set but cmdTemplate empty (coupling)
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Config Only",
+    "configurationSchema": {
+        "properties": {
+            "host": { "type": "string", "required": true }
+        }
+    },
+    "configTemplate": "host: {{.host}}",
+    "configContentType": "text/plain"
+}
+
+### Reject both templates set but cmdTemplate missing configUrl
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Cmd Missing ConfigUrl",
+    "configurationSchema": {
+        "properties": {
+            "host": { "type": "string", "required": true }
+        }
+    },
+    "configTemplate": "host: {{.host}}",
+    "cmdTemplate": "install --host {{.host}}",
+    "configContentType": "text/plain"
+}
+
 ### --- Template validation: happy paths (expect 200) ---
 
-### Accept cmdTemplate-only with configUrl and default configContentType
+### Accept both templates with configUrl and default configContentType
 # @name templateHappyPath
 POST {{baseUrl}}/agent-types
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-    "name": "Cmd Only Template",
+    "name": "Both Templates",
     "configurationSchema": {
         "properties": {
             "host": { "type": "string", "required": true }
         }
     },
+    "configTemplate": "host: {{.host}}",
     "cmdTemplate": "agent install --url {{.configUrl}} --host {{.host}}"
 }
 

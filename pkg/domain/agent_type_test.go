@@ -141,6 +141,24 @@ func TestAgentType_ValidateTemplates(t *testing.T) {
 	arrayProps := map[string]schema.PropertyDefinition{
 		"servers": {Type: "array"},
 	}
+	nestedProps := map[string]schema.PropertyDefinition{
+		"proxmoxAPI": {
+			Type: "object",
+			Properties: map[string]schema.PropertyDefinition{
+				"apiToken": {Type: "string"},
+				"apiUrls": {
+					Type:  "array",
+					Items: &schema.PropertyDefinition{Type: "string"},
+				},
+			},
+		},
+	}
+	nestedMissingProps := map[string]schema.PropertyDefinition{
+		"proxmoxAPI": {
+			Type:       "object",
+			Properties: map[string]schema.PropertyDefinition{},
+		},
+	}
 
 	tests := []struct {
 		name              string
@@ -195,12 +213,13 @@ func TestAgentType_ValidateTemplates(t *testing.T) {
 			wantMsgContains:   "configUrl",
 		},
 		{
-			name:              "accept configUrl in cmdTemplate only",
+			name:              "reject configUrl in cmdTemplate only (coupling)",
 			props:             baseProps,
 			configTemplate:    "",
 			cmdTemplate:       "{{.configUrl}}",
 			configContentType: "text/plain",
-			wantErr:           false,
+			wantErr:           true,
+			wantMsgContains:   "both be set or both be empty",
 		},
 		{
 			name:              "reject unparseable template",
@@ -213,8 +232,68 @@ func TestAgentType_ValidateTemplates(t *testing.T) {
 		{
 			name:              "accept range over declared array prop",
 			props:             arrayProps,
+			configTemplate:    "{{range .servers}}x{{end}}",
+			cmdTemplate:       "install --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "accept nested object ref",
+			props:             nestedProps,
+			configTemplate:    "token={{.proxmoxAPI.apiToken}}",
+			cmdTemplate:       "install --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "reject nested ref to missing nested prop",
+			props:             nestedMissingProps,
+			configTemplate:    "token={{.proxmoxAPI.apiToken}}",
+			cmdTemplate:       "install --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "apiToken",
+		},
+		{
+			name:              "accept range over nested array-of-string",
+			props:             nestedProps,
+			configTemplate:    "{{range .proxmoxAPI.apiUrls}}{{.}}\n{{end}}",
+			cmdTemplate:       "install --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "reject configTemplate set but cmdTemplate empty",
+			props:             baseProps,
+			configTemplate:    "host={{.host}}",
+			cmdTemplate:       "",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "both be set or both be empty",
+		},
+		{
+			name:              "reject cmdTemplate set but configTemplate empty",
+			props:             baseProps,
 			configTemplate:    "",
-			cmdTemplate:       "{{range .servers}}x{{end}}",
+			cmdTemplate:       "install --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "both be set or both be empty",
+		},
+		{
+			name:              "reject both set but cmd missing configUrl",
+			props:             baseProps,
+			configTemplate:    "host={{.host}}",
+			cmdTemplate:       "run --h {{.host}}",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "must reference {{.configUrl}}",
+		},
+		{
+			name:              "accept configUrl with whitespace and trim markers",
+			props:             baseProps,
+			configTemplate:    "host={{.host}}",
+			cmdTemplate:       "run --url {{- .configUrl -}} --host {{ .host }}",
 			configContentType: "text/plain",
 			wantErr:           false,
 		},
