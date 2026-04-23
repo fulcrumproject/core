@@ -28,6 +28,8 @@ type Config struct {
 	MetricDBConfig          gormpg.Conf           `json:"metricDb" env:"METRIC_DB" validate:"required"`
 	OAuthConfig             keycloak.Config       `json:"oauth" validate:"required"`
 	VaultEncryptionKey      string                `json:"vaultEncryptionKey" env:"VAULT_ENCRYPTION_KEY" validate:"omitempty,len=64"`
+	PublicBaseURL           string                `json:"publicBaseUrl" env:"PUBLIC_BASE_URL" validate:"required,url"`
+	InstallTokenTTL         time.Duration         `json:"installTokenTtl" env:"INSTALL_TOKEN_TTL" validate:"required"`
 	ApiServer               bool                  `json:"apiServer" env:"API_SERVER" validate:"boolean"`
 	JobMaintenance          bool                  `json:"jobMaintenance" env:"JOB_MAINTENANCE" validate:"boolean"`
 	AgentMaintenance        bool                  `json:"agentMaintenance" env:"AGENT_MAINTENANCE" validate:"boolean"`
@@ -90,6 +92,7 @@ var Default = Config{
 		LogLevel:  slog.LevelWarn,
 		LogFormat: "text",
 	},
+	InstallTokenTTL:  24 * time.Hour,
 	ApiServer:        true,
 	JobMaintenance:   false,
 	AgentMaintenance: false,

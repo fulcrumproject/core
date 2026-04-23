@@ -111,7 +111,9 @@ func TestAgentCommander_CreateWithConfiguration(t *testing.T) {
 			ms.On("EventRepo").Return(eventRepo).Maybe()
 
 			engine := NewAgentConfigSchemaEngine(nil)
-			commander := NewAgentCommander(ms, engine)
+			installCmd := NewMockAgentInstallCommandCommander(t)
+			installCmd.On("DeleteByAgentID", mock.Anything, mock.Anything).Return(nil).Maybe()
+			commander := NewAgentCommander(ms, engine, installCmd)
 
 			identity := &auth.Identity{
 				Role: auth.RoleAdmin,
@@ -210,7 +212,9 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 		ms.On("EventRepo").Return(eventRepo).Maybe()
 
 		engine := NewAgentConfigSchemaEngine(nil)
-		commander := NewAgentCommander(ms, engine)
+		installCmd := NewMockAgentInstallCommandCommander(t)
+			installCmd.On("DeleteByAgentID", mock.Anything, mock.Anything).Return(nil).Maybe()
+			commander := NewAgentCommander(ms, engine, installCmd)
 
 		identity := &auth.Identity{
 			Role: auth.RoleAdmin,
@@ -275,7 +279,9 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 		ms.On("AgentTypeRepo").Return(agentTypeRepo).Maybe()
 
 		engine := NewAgentConfigSchemaEngine(nil)
-		commander := NewAgentCommander(ms, engine)
+		installCmd := NewMockAgentInstallCommandCommander(t)
+			installCmd.On("DeleteByAgentID", mock.Anything, mock.Anything).Return(nil).Maybe()
+			commander := NewAgentCommander(ms, engine, installCmd)
 
 		identity := &auth.Identity{
 			Role: auth.RoleAdmin,
@@ -346,7 +352,9 @@ func TestAgentCommander_ServicePoolSetValidation(t *testing.T) {
 		}, nil).Maybe()
 		ms.On("ServicePoolSetRepo").Return(servicePoolSetRepo).Maybe()
 
-		commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil))
+		installCmd := NewMockAgentInstallCommandCommander(t)
+		installCmd.On("DeleteByAgentID", mock.Anything, mock.Anything).Return(nil).Maybe()
+		commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil), installCmd)
 		ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
 
 		_, err := commander.Create(ctx, CreateAgentParams{
@@ -389,7 +397,9 @@ func TestAgentCommander_ServicePoolSetValidation(t *testing.T) {
 		}, nil).Maybe()
 		ms.On("ServicePoolSetRepo").Return(servicePoolSetRepo).Maybe()
 
-		commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil))
+		installCmd := NewMockAgentInstallCommandCommander(t)
+		installCmd.On("DeleteByAgentID", mock.Anything, mock.Anything).Return(nil).Maybe()
+		commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil), installCmd)
 		ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
 
 		_, err := commander.Create(ctx, CreateAgentParams{
@@ -427,7 +437,9 @@ func TestAgentCommander_ServicePoolSetValidation(t *testing.T) {
 		}, nil).Maybe()
 		ms.On("ServicePoolSetRepo").Return(servicePoolSetRepo).Maybe()
 
-		commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil))
+		installCmd := NewMockAgentInstallCommandCommander(t)
+		installCmd.On("DeleteByAgentID", mock.Anything, mock.Anything).Return(nil).Maybe()
+		commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil), installCmd)
 		ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
 
 		_, err := commander.Update(ctx, UpdateAgentParams{
@@ -557,7 +569,9 @@ func TestAgentCommander_CreateWithPoolGenerator(t *testing.T) {
 			eventRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Maybe()
 			ms.On("EventRepo").Return(eventRepo).Maybe()
 
-			commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil))
+			installCmd := NewMockAgentInstallCommandCommander(t)
+		installCmd.On("DeleteByAgentID", mock.Anything, mock.Anything).Return(nil).Maybe()
+		commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil), installCmd)
 			ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
 
 			initialConfig := properties.JSON{}
@@ -698,7 +712,9 @@ func TestAgentCommander_DeleteReleasesPoolValues(t *testing.T) {
 			eventRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Maybe()
 			ms.On("EventRepo").Return(eventRepo).Maybe()
 
-			commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil))
+			installCmd := NewMockAgentInstallCommandCommander(t)
+		installCmd.On("DeleteByAgentID", mock.Anything, mock.Anything).Return(nil).Maybe()
+		commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil), installCmd)
 			ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
 
 			err := commander.Delete(ctx, agentID)

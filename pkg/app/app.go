@@ -38,8 +38,9 @@ type App struct {
 	ServicePoolHandler       *api.ServicePoolHandler
 	ServicePoolValueHandler  *api.ServicePoolValueHandler
 	ParticipantHandler       *api.ParticipantHandler
-	AgentHandler             *api.AgentHandler
-	AgentPoolHandler         *api.AgentPoolHandler
+	AgentHandler               *api.AgentHandler
+	AgentInstallPublicHandler  *api.AgentInstallPublicHandler
+	AgentPoolHandler           *api.AgentPoolHandler
 	AgentPoolValueHandler    *api.AgentPoolValueHandler
 	ServiceGroupHandler      *api.ServiceGroupHandler
 	ServiceHandler           *api.ServiceHandler
@@ -209,7 +210,8 @@ func NewApp() *App {
 	jobCmd := domain.NewJobCommander(store, propertyEngine)
 	metricEntryCmd := domain.NewMetricEntryCommander(store, metricEntryRepo)
 	metricTypeCmd := domain.NewMetricTypeCommander(store, metricEntryRepo)
-	agentCmd := domain.NewAgentCommander(store, agentConfigEngine)
+	installCommandCmd := domain.NewAgentInstallCommandCommander(store, vault, cfg.InstallTokenTTL)
+	agentCmd := domain.NewAgentCommander(store, agentConfigEngine, installCommandCmd)
 	tokenCmd := domain.NewTokenCommander(store)
 	eventSubscriptionCmd := domain.NewEventSubscriptionCommander(store)
 
@@ -281,7 +283,8 @@ func NewApp() *App {
 		ServicePoolHandler:       api.NewServicePoolHandler(store.ServicePoolRepo(), servicePoolCmd, athz),
 		ServicePoolValueHandler:  api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), servicePoolValueCmd, athz),
 		ParticipantHandler:       api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz),
-		AgentHandler:             api.NewAgentHandler(store.AgentRepo(), agentCmd, athz),
+		AgentHandler:             api.NewAgentHandler(store.AgentRepo(), agentCmd, athz, api.NewAgentInstallCommandHandler(store.AgentInstallCommandRepo(), installCommandCmd, store.AgentRepo(), vault, cfg.PublicBaseURL)),
+		AgentInstallPublicHandler: api.NewAgentInstallPublicHandler(store.AgentInstallCommandRepo(), vault),
 		AgentPoolHandler:         api.NewAgentPoolHandler(store.AgentPoolRepo(), agentPoolCmd, athz),
 		AgentPoolValueHandler:    api.NewAgentPoolValueHandler(store.AgentPoolValueRepo(), agentPoolValueCmd, athz),
 		AgentTypeHandler:         api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz),

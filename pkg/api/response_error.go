@@ -17,6 +17,7 @@ type ErrRes struct {
 
 	StatusText string `json:"status"`          // user-level status message
 	ErrorText  string `json:"error,omitempty"` // application-level error message
+	Code       string `json:"code,omitempty"`  // machine-readable error code
 }
 
 // ValidationErrRes represents a validation error response with detailed errors
@@ -42,7 +43,34 @@ func ErrDomain(err error) render.Renderer {
 	if errors.As(err, &domain.UnauthorizedError{}) {
 		return ErrUnauthorized(err)
 	}
+	if errors.As(err, &domain.ConflictError{}) {
+		return ErrConflictWithCode("", err.Error())
+	}
 	return ErrInternal(err)
+}
+
+func ErrConflictWithCode(code, msg string) render.Renderer {
+	return &ErrRes{
+		HTTPStatusCode: http.StatusConflict,
+		StatusText:     msg,
+		Code:           code,
+	}
+}
+
+func ErrUnprocessableWithCode(code, msg string) render.Renderer {
+	return &ErrRes{
+		HTTPStatusCode: http.StatusUnprocessableEntity,
+		StatusText:     msg,
+		Code:           code,
+	}
+}
+
+func ErrNotFoundWithCode(code string) render.Renderer {
+	return &ErrRes{
+		HTTPStatusCode: http.StatusNotFound,
+		StatusText:     "Resource not found",
+		Code:           code,
+	}
 }
 
 func ErrInvalidRequest(err error) render.Renderer {

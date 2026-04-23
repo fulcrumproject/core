@@ -10,6 +10,7 @@ type Store interface {
 	// Repositories
 	AgentTypeRepo() AgentTypeRepository
 	AgentRepo() AgentRepository
+	AgentInstallCommandRepo() AgentInstallCommandRepository
 	AgentPoolRepo() AgentPoolRepository
 	AgentPoolValueRepo() AgentPoolValueRepository
 	TokenRepo() TokenRepository
