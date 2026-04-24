@@ -92,7 +92,7 @@ var Default = Config{
 		LogLevel:  slog.LevelWarn,
 		LogFormat: "text",
 	},
-	InstallTokenTTL:  24 * time.Hour,
+	InstallTokenTTL:  5 * time.Minute,
 	ApiServer:        true,
 	JobMaintenance:   false,
 	AgentMaintenance: false,

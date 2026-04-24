@@ -28,7 +28,7 @@ func TestAgentInstallCommand_IsExpired(t *testing.T) {
 // passes), and the per-test install-command repo + event repo. The returned
 // installRepo is the seam tests use to control GetByAgentID semantics
 // (exists / not-found / error).
-func setupInstallCommandTest(t *testing.T) (*MockStore, *MockAgentInstallCommandRepository, properties.UUID, context.Context) {
+func setupInstallCommandTest(t *testing.T) (*MockStore, *MockAgentInstallCommandRepository, *MockTokenRepository, properties.UUID, context.Context) {
 	t.Helper()
 	ms := setupMockStore(t)
 
@@ -38,7 +38,7 @@ func setupInstallCommandTest(t *testing.T) (*MockStore, *MockAgentInstallCommand
 		ProviderID: properties.UUID(uuid.New()),
 		AgentType: &AgentType{
 			BaseEntity:  BaseEntity{ID: properties.UUID(uuid.New())},
-			CmdTemplate: "curl {{.configUrl}}",
+			CmdTemplate: "curl {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
 		},
 	}
 
@@ -49,6 +49,9 @@ func setupInstallCommandTest(t *testing.T) (*MockStore, *MockAgentInstallCommand
 	installRepo := NewMockAgentInstallCommandRepository(t)
 	ms.EXPECT().AgentInstallCommandRepo().Return(installRepo).Maybe()
 
+	tokenRepo := NewMockTokenRepository(t)
+	ms.EXPECT().TokenRepo().Return(tokenRepo).Maybe()
+
 	eventRepo := NewMockEventRepository(t)
 	eventRepo.EXPECT().Create(mock.Anything, mock.Anything).Return(nil).Maybe()
 	ms.EXPECT().EventRepo().Return(eventRepo).Maybe()
@@ -58,15 +61,23 @@ func setupInstallCommandTest(t *testing.T) (*MockStore, *MockAgentInstallCommand
 		ID:   properties.UUID(uuid.New()),
 		Name: "Test Admin",
 	})
-	return ms, installRepo, agentID, ctx
+	return ms, installRepo, tokenRepo, agentID, ctx
 }
 
 func TestAgentInstallCommandCommander_Create(t *testing.T) {
-	t.Run("happy path returns entity with PlainToken and stores hash", func(t *testing.T) {
-		ms, installRepo, agentID, ctx := setupInstallCommandTest(t)
+	t.Run("happy path returns entity with PlainToken, PlainBootstrapToken, BootstrapTokenID", func(t *testing.T) {
+		ms, installRepo, tokenRepo, agentID, ctx := setupInstallCommandTest(t)
 
 		installRepo.EXPECT().GetByAgentID(mock.Anything, agentID).
 			Return(nil, NotFoundError{}).Once()
+
+		var createdToken *Token
+		tokenRepo.EXPECT().Create(mock.Anything, mock.Anything).
+			RunAndReturn(func(_ context.Context, tok *Token) error {
+				tok.ID = properties.UUID(uuid.New())
+				createdToken = tok
+				return nil
+			}).Once()
 
 		var created *AgentInstallCommand
 		installRepo.EXPECT().Create(mock.Anything, mock.Anything).
@@ -81,12 +92,18 @@ func TestAgentInstallCommandCommander_Create(t *testing.T) {
 		assert.NotEmpty(t, cmd.PlainToken, "PlainToken should be populated on the returned entity")
 		assert.Equal(t, HashTokenValue(cmd.PlainToken), cmd.TokenHashed, "hash must match plaintext")
 		assert.WithinDuration(t, time.Now().UTC().Add(time.Hour), cmd.ExpiresAt, 5*time.Second)
+		assert.NotEmpty(t, cmd.PlainBootstrapToken, "PlainBootstrapToken should be populated")
+		assert.NotNil(t, cmd.BootstrapTokenID, "BootstrapTokenID should be set")
+		assert.Equal(t, createdToken.ID, *cmd.BootstrapTokenID)
+		assert.Equal(t, auth.RoleAgent, createdToken.Role)
+		assert.Equal(t, HashTokenValue(cmd.PlainBootstrapToken), createdToken.HashedValue)
+		assert.WithinDuration(t, cmd.ExpiresAt, createdToken.ExpireAt, time.Second)
 		// The persisted entity must match the returned one — same hash, same ID.
 		assert.Equal(t, cmd.TokenHashed, created.TokenHashed)
 	})
 
 	t.Run("conflict when one already exists", func(t *testing.T) {
-		ms, installRepo, agentID, ctx := setupInstallCommandTest(t)
+		ms, installRepo, _, agentID, ctx := setupInstallCommandTest(t)
 		installRepo.EXPECT().GetByAgentID(mock.Anything, agentID).
 			Return(&AgentInstallCommand{AgentID: agentID}, nil).Once()
 
@@ -112,16 +129,26 @@ func TestAgentInstallCommandCommander_Create(t *testing.T) {
 }
 
 func TestAgentInstallCommandCommander_Regenerate(t *testing.T) {
-	t.Run("rotates token and populates new PlainToken", func(t *testing.T) {
-		ms, installRepo, agentID, ctx := setupInstallCommandTest(t)
+	t.Run("rotates token, mints fresh bootstrap, and deletes prior bootstrap", func(t *testing.T) {
+		ms, installRepo, tokenRepo, agentID, ctx := setupInstallCommandTest(t)
 
+		priorBootstrapID := properties.UUID(uuid.New())
 		existing := &AgentInstallCommand{
-			BaseEntity:  BaseEntity{ID: properties.UUID(uuid.New())},
-			AgentID:     agentID,
-			TokenHashed: HashTokenValue("old-token-value"),
-			ExpiresAt:   time.Now().UTC().Add(-time.Minute),
+			BaseEntity:       BaseEntity{ID: properties.UUID(uuid.New())},
+			AgentID:          agentID,
+			TokenHashed:      HashTokenValue("old-token-value"),
+			ExpiresAt:        time.Now().UTC().Add(-time.Minute),
+			BootstrapTokenID: &priorBootstrapID,
 		}
 		installRepo.EXPECT().GetByAgentID(mock.Anything, agentID).Return(existing, nil).Once()
+		tokenRepo.EXPECT().Delete(mock.Anything, priorBootstrapID).Return(nil).Once()
+		var createdToken *Token
+		tokenRepo.EXPECT().Create(mock.Anything, mock.Anything).
+			RunAndReturn(func(_ context.Context, tok *Token) error {
+				tok.ID = properties.UUID(uuid.New())
+				createdToken = tok
+				return nil
+			}).Once()
 		installRepo.EXPECT().Save(mock.Anything, mock.Anything).Return(nil).Once()
 
 		cmd, err := NewAgentInstallCommandCommander(ms, time.Hour).Regenerate(ctx, agentID)
@@ -130,10 +157,14 @@ func TestAgentInstallCommandCommander_Regenerate(t *testing.T) {
 		assert.NotEqual(t, HashTokenValue("old-token-value"), cmd.TokenHashed)
 		assert.Equal(t, HashTokenValue(cmd.PlainToken), cmd.TokenHashed)
 		assert.True(t, cmd.ExpiresAt.After(time.Now().UTC()))
+		assert.NotEmpty(t, cmd.PlainBootstrapToken)
+		assert.NotNil(t, cmd.BootstrapTokenID)
+		assert.Equal(t, createdToken.ID, *cmd.BootstrapTokenID)
+		assert.NotEqual(t, priorBootstrapID, *cmd.BootstrapTokenID)
 	})
 
 	t.Run("not found when none exists", func(t *testing.T) {
-		ms, installRepo, agentID, ctx := setupInstallCommandTest(t)
+		ms, installRepo, _, agentID, ctx := setupInstallCommandTest(t)
 		installRepo.EXPECT().GetByAgentID(mock.Anything, agentID).
 			Return(nil, NotFoundError{}).Once()
 
@@ -143,8 +174,20 @@ func TestAgentInstallCommandCommander_Regenerate(t *testing.T) {
 }
 
 func TestAgentInstallCommandCommander_Revoke(t *testing.T) {
-	t.Run("deletes existing row", func(t *testing.T) {
-		ms, installRepo, agentID, ctx := setupInstallCommandTest(t)
+	t.Run("deletes existing row and its bootstrap token", func(t *testing.T) {
+		ms, installRepo, tokenRepo, agentID, ctx := setupInstallCommandTest(t)
+		bootstrapID := properties.UUID(uuid.New())
+		installRepo.EXPECT().GetByAgentID(mock.Anything, agentID).
+			Return(&AgentInstallCommand{AgentID: agentID, BootstrapTokenID: &bootstrapID}, nil).Once()
+		tokenRepo.EXPECT().Delete(mock.Anything, bootstrapID).Return(nil).Once()
+		installRepo.EXPECT().DeleteByAgentID(mock.Anything, agentID).Return(nil).Once()
+
+		err := NewAgentInstallCommandCommander(ms, time.Hour).Revoke(ctx, agentID)
+		assert.NoError(t, err)
+	})
+
+	t.Run("deletes row without bootstrap when BootstrapTokenID is nil", func(t *testing.T) {
+		ms, installRepo, _, agentID, ctx := setupInstallCommandTest(t)
 		installRepo.EXPECT().GetByAgentID(mock.Anything, agentID).
 			Return(&AgentInstallCommand{AgentID: agentID}, nil).Once()
 		installRepo.EXPECT().DeleteByAgentID(mock.Anything, agentID).Return(nil).Once()
@@ -154,7 +197,7 @@ func TestAgentInstallCommandCommander_Revoke(t *testing.T) {
 	})
 
 	t.Run("not found when nothing to revoke", func(t *testing.T) {
-		ms, installRepo, agentID, ctx := setupInstallCommandTest(t)
+		ms, installRepo, _, agentID, ctx := setupInstallCommandTest(t)
 		installRepo.EXPECT().GetByAgentID(mock.Anything, agentID).
 			Return(nil, NotFoundError{}).Once()
 

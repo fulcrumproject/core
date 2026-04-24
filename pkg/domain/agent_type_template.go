@@ -11,7 +11,10 @@ import (
 	"github.com/fulcrumproject/core/pkg/schema"
 )
 
-const cmdTemplateExtraRef = "configUrl"
+const (
+	cmdTemplateExtraRef          = "configUrl"
+	cmdTemplateExtraAuthTokenRef = "authToken"
+)
 
 var missingKeyRe = regexp.MustCompile(`map has no entry for key "([^"]+)"`)
 
@@ -19,6 +22,7 @@ func (at *AgentType) validateTemplates() error {
 	configData := mockDataFromSchema(at.ConfigurationSchema.Properties)
 	cmdData := mockDataFromSchema(at.ConfigurationSchema.Properties)
 	cmdData[cmdTemplateExtraRef] = ""
+	cmdData[cmdTemplateExtraAuthTokenRef] = ""
 
 	if err := parseAndRender("configTemplate", at.ConfigTemplate, configData); err != nil {
 		return err
@@ -32,13 +36,22 @@ func (at *AgentType) validateTemplates() error {
 	}
 
 	if at.ConfigTemplate != "" && at.CmdTemplate != "" {
-		cmdDataNoURL := mockDataFromSchema(at.ConfigurationSchema.Properties)
-		err := parseAndRender("cmdTemplate", at.CmdTemplate, cmdDataNoURL)
-		if err == nil {
-			return fmt.Errorf("cmdTemplate must reference {{.configUrl}} when configTemplate is set")
-		}
-		if !strings.Contains(err.Error(), cmdTemplateExtraRef) {
-			return err
+		for _, required := range []string{cmdTemplateExtraRef, cmdTemplateExtraAuthTokenRef} {
+			data := mockDataFromSchema(at.ConfigurationSchema.Properties)
+			// Populate every required key except the one under test so a missing
+			// reference in cmdTemplate is the only way Execute can fail.
+			for _, k := range []string{cmdTemplateExtraRef, cmdTemplateExtraAuthTokenRef} {
+				if k != required {
+					data[k] = ""
+				}
+			}
+			err := parseAndRender("cmdTemplate", at.CmdTemplate, data)
+			if err == nil {
+				return fmt.Errorf("cmdTemplate must reference {{.%s}} when configTemplate is set", required)
+			}
+			if !strings.Contains(err.Error(), required) {
+				return err
+			}
 		}
 	}
 

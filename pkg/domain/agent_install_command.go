@@ -3,8 +3,10 @@ package domain
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 )
@@ -27,10 +29,21 @@ type AgentInstallCommand struct {
 	TokenHashed string          `json:"-" gorm:"uniqueIndex;not null"`
 	ExpiresAt   time.Time       `json:"expiresAt" gorm:"not null"`
 
+	// BootstrapTokenID references an agent-role Token minted alongside the
+	// install command. The plain value of that token is rendered into the
+	// cmdTemplate's Authorization header so the installer can authenticate
+	// against the protected fetch endpoint. Its lifecycle is tied to this
+	// command: rotated on Regenerate, deleted on Revoke.
+	BootstrapTokenID *properties.UUID `json:"-" gorm:"type:uuid"`
+
 	// PlainToken is transient: set only on freshly minted (Create) or rotated
 	// (Regenerate) commands so the HTTP handler can render the URL in the same
 	// response. Never persisted, never serialized.
 	PlainToken string `json:"-" gorm:"-"`
+
+	// PlainBootstrapToken is transient: the plain value of the bootstrap bearer
+	// token, returned once at Create/Regenerate and never recoverable after.
+	PlainBootstrapToken string `json:"-" gorm:"-"`
 
 	Agent *Agent `json:"-" gorm:"foreignKey:AgentID;constraint:OnDelete:CASCADE"`
 }
@@ -79,6 +92,27 @@ type AgentInstallCommandQuerier interface {
 	FindByHashedToken(ctx context.Context, hashed string) (*AgentInstallCommand, error)
 }
 
+// mintBootstrapToken creates an agent-role Token scoped to agentID, expiring at
+// expiresAt, and persists it via store.TokenRepo(). The returned token carries
+// PlainValue (needed for the installer's Authorization header) which is never
+// persisted.
+func mintBootstrapToken(ctx context.Context, store Store, agentID properties.UUID, expiresAt time.Time) (*Token, error) {
+	scope := agentID
+	token, err := NewToken(ctx, store, CreateTokenParams{
+		Name:     fmt.Sprintf("install-bootstrap-%s", agentID),
+		Role:     auth.RoleAgent,
+		ExpireAt: &expiresAt,
+		ScopeID:  &scope,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := store.TokenRepo().Create(ctx, token); err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
 type agentInstallCommandCommander struct {
 	store Store
 	ttl   time.Duration
@@ -115,12 +149,21 @@ func (c *agentInstallCommandCommander) Create(ctx context.Context, agentID prope
 		}
 
 		now := time.Now().UTC()
+		expiresAt := now.Add(c.ttl)
+
+		bootstrap, err := mintBootstrapToken(ctx, store, agentID, expiresAt)
+		if err != nil {
+			return err
+		}
+
 		cmd = &AgentInstallCommand{
-			BaseEntity:  BaseEntity{ID: properties.UUID(uuid.New())},
-			AgentID:     agentID,
-			TokenHashed: HashTokenValue(plain),
-			ExpiresAt:   now.Add(c.ttl),
-			PlainToken:  plain,
+			BaseEntity:          BaseEntity{ID: properties.UUID(uuid.New())},
+			AgentID:             agentID,
+			TokenHashed:         HashTokenValue(plain),
+			ExpiresAt:           expiresAt,
+			BootstrapTokenID:    &bootstrap.ID,
+			PlainToken:          plain,
+			PlainBootstrapToken: bootstrap.PlainValue,
 		}
 		if err := store.AgentInstallCommandRepo().Create(ctx, cmd); err != nil {
 			return err
@@ -167,10 +210,25 @@ func (c *agentInstallCommandCommander) Regenerate(ctx context.Context, agentID p
 			return err
 		}
 
+		if existing.BootstrapTokenID != nil {
+			if err := store.TokenRepo().Delete(ctx, *existing.BootstrapTokenID); err != nil && !errors.As(err, &NotFoundError{}) {
+				return err
+			}
+		}
+
 		now := time.Now().UTC()
+		expiresAt := now.Add(c.ttl)
+
+		bootstrap, err := mintBootstrapToken(ctx, store, agentID, expiresAt)
+		if err != nil {
+			return err
+		}
+
 		existing.TokenHashed = HashTokenValue(plain)
-		existing.ExpiresAt = now.Add(c.ttl)
+		existing.ExpiresAt = expiresAt
+		existing.BootstrapTokenID = &bootstrap.ID
 		existing.PlainToken = plain
+		existing.PlainBootstrapToken = bootstrap.PlainValue
 
 		if err := store.AgentInstallCommandRepo().Save(ctx, existing); err != nil {
 			return err
@@ -207,8 +265,14 @@ func (c *agentInstallCommandCommander) Revoke(ctx context.Context, agentID prope
 	}
 
 	return c.store.Atomic(ctx, func(store Store) error {
-		if _, err := store.AgentInstallCommandRepo().GetByAgentID(ctx, agentID); err != nil {
+		existing, err := store.AgentInstallCommandRepo().GetByAgentID(ctx, agentID)
+		if err != nil {
 			return err
+		}
+		if existing.BootstrapTokenID != nil {
+			if err := store.TokenRepo().Delete(ctx, *existing.BootstrapTokenID); err != nil && !errors.As(err, &NotFoundError{}) {
+				return err
+			}
 		}
 		if err := store.AgentInstallCommandRepo().DeleteByAgentID(ctx, agentID); err != nil {
 			return err

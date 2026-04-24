@@ -2,11 +2,14 @@ package api
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/schema"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
@@ -14,6 +17,7 @@ type AgentInstallCommandHandler struct {
 	querier       domain.AgentInstallCommandQuerier
 	commander     domain.AgentInstallCommandCommander
 	agentQuerier  domain.AgentQuerier
+	vault         schema.Vault
 	publicBaseURL string
 }
 
@@ -21,12 +25,14 @@ func NewAgentInstallCommandHandler(
 	querier domain.AgentInstallCommandQuerier,
 	commander domain.AgentInstallCommandCommander,
 	agentQuerier domain.AgentQuerier,
+	vault schema.Vault,
 	publicBaseURL string,
 ) *AgentInstallCommandHandler {
 	return &AgentInstallCommandHandler{
 		querier:       querier,
 		commander:     commander,
 		agentQuerier:  agentQuerier,
+		vault:         vault,
 		publicBaseURL: publicBaseURL,
 	}
 }
@@ -110,6 +116,69 @@ func (h *AgentInstallCommandHandler) Revoke(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// Fetch serves the rendered agent configuration to an installer. It is mounted
+// behind the standard auth middleware and restricted to participant/agent
+// roles; the install token in the URL is the per-resource secret that selects
+// which install command to render. Any error or exceptional state yields a
+// uniform 404 with an empty body — server-side logs describe the real cause
+// for ops debugging. No information leak.
+func (h *AgentInstallCommandHandler) Fetch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	token := chi.URLParam(r, "token")
+	if token == "" {
+		uniform404(w, "empty token")
+		return
+	}
+
+	cmd, err := h.querier.FindByHashedToken(ctx, domain.HashTokenValue(token))
+	if err != nil {
+		uniform404(w, "install command lookup failed: "+err.Error())
+		return
+	}
+	if cmd.IsExpired() {
+		uniform404(w, "install command expired")
+		return
+	}
+
+	agent := cmd.Agent
+	if agent == nil || agent.AgentType == nil || agent.AgentType.ConfigTemplate == "" {
+		uniform404(w, "agent type has no install templates configured")
+		return
+	}
+
+	data := map[string]any{}
+	if agent.Configuration != nil {
+		data = map[string]any(*agent.Configuration)
+	}
+
+	resolved, err := domain.ResolveVaultRefs(ctx, h.vault, agent.AgentType.ConfigurationSchema, data)
+	if err != nil {
+		uniform404(w, "vault resolution failed: "+err.Error())
+		return
+	}
+
+	body, err := domain.RenderConfigTemplate(agent.AgentType, resolved)
+	if err != nil {
+		uniform404(w, "config template render failed: "+err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", agent.AgentType.ConfigContentType)
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(body))
+}
+
+// uniform404 writes a 404 with an empty body. The reason is logged server-side
+// so ops can distinguish unknown / expired / template / vault / render failures
+// without leaking anything to the caller.
+func uniform404(w http.ResponseWriter, reason string) {
+	slog.Info("install fetch → 404", "reason", reason)
+	w.WriteHeader(http.StatusNotFound)
+}
+
 func (h *AgentInstallCommandHandler) renderInstallCommand(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -131,7 +200,7 @@ func (h *AgentInstallCommandHandler) renderInstallCommand(
 		data = map[string]any(*agent.Configuration)
 	}
 
-	cmdText, err := domain.RenderCmdTemplate(agent.AgentType, data, url)
+	cmdText, err := domain.RenderCmdTemplate(agent.AgentType, data, url, cmd.PlainBootstrapToken)
 	if err != nil {
 		render.Render(w, r, ErrInternal(err))
 		return

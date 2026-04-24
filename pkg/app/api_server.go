@@ -129,9 +129,6 @@ func BuildHttpServer(
 
 	authMiddleware := middlewares.Auth(app.CompositeAuthenticator)
 
-	// Public install endpoint — bypasses authMiddleware by construction (mounted outside /api/v1).
-	r.Get("/install/{token}", app.AgentInstallPublicHandler.Fetch)
-
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authMiddleware)

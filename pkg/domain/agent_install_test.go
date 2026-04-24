@@ -52,9 +52,9 @@ func TestBuildInstallURL(t *testing.T) {
 	tests := []struct {
 		base, token, want string
 	}{
-		{"http://localhost:8080", "abc", "http://localhost:8080/install/abc"},
-		{"http://localhost:8080/", "abc", "http://localhost:8080/install/abc"},
-		{"https://fulcrum.example.com///", "xyz", "https://fulcrum.example.com/install/xyz"},
+		{"http://localhost:8080", "abc", "http://localhost:8080/api/v1/agents/install/abc"},
+		{"http://localhost:8080/", "abc", "http://localhost:8080/api/v1/agents/install/abc"},
+		{"https://fulcrum.example.com///", "xyz", "https://fulcrum.example.com/api/v1/agents/install/xyz"},
 	}
 	for _, tc := range tests {
 		got := BuildInstallURL(tc.base, tc.token)
@@ -66,12 +66,13 @@ func TestBuildInstallURL(t *testing.T) {
 
 func TestRenderCmdTemplate(t *testing.T) {
 	tests := []struct {
-		name    string
-		at      *AgentType
-		data    map[string]any
-		url     string
-		want    string
-		wantErr string
+		name      string
+		at        *AgentType
+		data      map[string]any
+		url       string
+		authToken string
+		want      string
+		wantErr   string
 	}{
 		{
 			name: "empty template returns empty",
@@ -79,11 +80,12 @@ func TestRenderCmdTemplate(t *testing.T) {
 			want: "",
 		},
 		{
-			name: "happy path with configUrl and property",
-			at:   &AgentType{CmdTemplate: "curl {{.configUrl}} > /etc/{{.name}}.conf"},
-			data: map[string]any{"name": "svc"},
-			url:  "http://host/install/tok",
-			want: "curl http://host/install/tok > /etc/svc.conf",
+			name:      "happy path with configUrl, authToken and property",
+			at:        &AgentType{CmdTemplate: "curl -H 'Authorization: Bearer {{.authToken}}' {{.configUrl}} > /etc/{{.name}}.conf"},
+			data:      map[string]any{"name": "svc"},
+			url:       "http://host/install/tok",
+			authToken: "bearer-123",
+			want:      "curl -H 'Authorization: Bearer bearer-123' http://host/install/tok > /etc/svc.conf",
 		},
 		{
 			name:    "unknown reference surfaces missingkey error",
@@ -93,7 +95,7 @@ func TestRenderCmdTemplate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := RenderCmdTemplate(tc.at, tc.data, tc.url)
+			got, err := RenderCmdTemplate(tc.at, tc.data, tc.url, tc.authToken)
 			if tc.wantErr != "" {
 				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
 					t.Fatalf("want error containing %q; got %v", tc.wantErr, err)
@@ -111,13 +113,16 @@ func TestRenderCmdTemplate(t *testing.T) {
 }
 
 func TestRenderCmdTemplate_DoesNotMutateCaller(t *testing.T) {
-	at := &AgentType{CmdTemplate: "{{.configUrl}}-{{.k}}"}
+	at := &AgentType{CmdTemplate: "{{.configUrl}}-{{.authToken}}-{{.k}}"}
 	data := map[string]any{"k": "v"}
-	if _, err := RenderCmdTemplate(at, data, "URL"); err != nil {
+	if _, err := RenderCmdTemplate(at, data, "URL", "TOKEN"); err != nil {
 		t.Fatal(err)
 	}
 	if _, has := data["configUrl"]; has {
 		t.Errorf("caller's map was mutated with configUrl")
+	}
+	if _, has := data["authToken"]; has {
+		t.Errorf("caller's map was mutated with authToken")
 	}
 }
 

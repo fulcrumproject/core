@@ -61,7 +61,7 @@ Content-Type: application/json
     },
     "configContentType": "text/plain",
     "configTemplate": "[agent]\nendpoint={{.apiEndpoint}}\napi_key={{.apiKey}}\nretries={{.maxRetries}}\n",
-    "cmdTemplate": "curl -fsSL {{.configUrl}} -o /tmp/agent.conf && cat /tmp/agent.conf"
+    "cmdTemplate": "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}' -o /tmp/agent.conf && cat /tmp/agent.conf"
 }
 
 @ic_agentTypeId = {{ic_createAgentType.response.body.$.id}}

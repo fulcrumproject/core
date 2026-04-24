@@ -24,18 +24,23 @@ func GenerateInstallToken() (string, error) {
 }
 
 // BuildInstallURL joins the public base URL with the install token path.
+// The endpoint is authenticated: callers must also supply a Bearer token
+// (issued alongside the install token — see AgentInstallCommand.BootstrapTokenID).
 func BuildInstallURL(publicBaseURL, token string) string {
-	return strings.TrimRight(publicBaseURL, "/") + "/install/" + token
+	return strings.TrimRight(publicBaseURL, "/") + "/api/v1/agents/install/" + token
 }
 
-// RenderCmdTemplate renders the AgentType's CmdTemplate with schemaData + configUrl.
+// RenderCmdTemplate renders the AgentType's CmdTemplate with schemaData plus
+// configUrl and authToken. The authToken is the plain value of the bootstrap
+// bearer token and is expected to appear in the template's Authorization header.
 // Returns "" when CmdTemplate is empty.
-func RenderCmdTemplate(at *AgentType, schemaData map[string]any, configURL string) (string, error) {
+func RenderCmdTemplate(at *AgentType, schemaData map[string]any, configURL, authToken string) (string, error) {
 	if at.CmdTemplate == "" {
 		return "", nil
 	}
 	data := copyDataMap(schemaData)
 	data[cmdTemplateExtraRef] = configURL
+	data[cmdTemplateExtraAuthTokenRef] = authToken
 	return renderTemplate("cmdTemplate", at.CmdTemplate, data)
 }
 
