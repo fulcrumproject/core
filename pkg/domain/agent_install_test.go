@@ -52,9 +52,9 @@ func TestBuildInstallURL(t *testing.T) {
 	tests := []struct {
 		base, token, want string
 	}{
-		{"http://localhost:8080", "abc", "http://localhost:8080/api/v1/agents/install/abc"},
-		{"http://localhost:8080/", "abc", "http://localhost:8080/api/v1/agents/install/abc"},
-		{"https://fulcrum.example.com///", "xyz", "https://fulcrum.example.com/api/v1/agents/install/xyz"},
+		{"http://localhost:8080", "abc", "http://localhost:8080/api/v1/agents/install/abc/config"},
+		{"http://localhost:8080/", "abc", "http://localhost:8080/api/v1/agents/install/abc/config"},
+		{"https://fulcrum.example.com///", "xyz", "https://fulcrum.example.com/api/v1/agents/install/xyz/config"},
 	}
 	for _, tc := range tests {
 		got := BuildInstallURL(tc.base, tc.token)

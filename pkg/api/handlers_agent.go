@@ -73,12 +73,13 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 			middlewares.AuthzFromBody[CreateAgentReq](authz.ObjectTypeAgent, authz.ActionCreate, h.authz),
 		).Post("/", Create(h.Create, AgentToRes))
 
-		// Install fetch — token-keyed, no agent ID in URL. Requires a bearer
-		// token with participant or agent role in addition to the install
-		// token (issued by POST /{id}/install-command).
+		// Install-config fetch — token-keyed, no agent ID in URL. Requires a
+		// bearer token with participant or agent role in addition to the install
+		// token (issued by POST /{id}/install-command). The trailing /config
+		// segment exists to keep the path unambiguous against /{id}/install-command.
 		r.With(
 			middlewares.MustHaveRoles(auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent),
-		).Get("/install/{token}", h.installToken.Fetch)
+		).Get("/install/{token}/config", h.installToken.Fetch)
 
 		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {

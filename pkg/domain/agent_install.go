@@ -15,7 +15,7 @@ const vaultRefPrefix = "vault://"
 // The endpoint is authenticated: callers must also supply a Bearer token
 // (issued alongside the install token — see AgentInstallToken.BootstrapTokenID).
 func BuildInstallURL(publicBaseURL, token string) string {
-	return strings.TrimRight(publicBaseURL, "/") + "/api/v1/agents/install/" + token
+	return strings.TrimRight(publicBaseURL, "/") + "/api/v1/agents/install/" + token + "/config"
 }
 
 // RenderCmdTemplate renders the AgentType's CmdTemplate with schemaData plus

@@ -95,6 +95,10 @@ components:
       $ref: ./components/schemas/events.yaml#/EventRes
     FailJobReq:
       $ref: ./components/schemas/jobs.yaml#/FailJobReq
+    InstallTokenRes:
+      $ref: ./components/schemas/agents.yaml#/InstallTokenRes
+    InstallTokenMetaRes:
+      $ref: ./components/schemas/agents.yaml#/InstallTokenMetaRes
     JSONObject:
       $ref: ./components/schemas/common.yaml#/JSONObject
     CreateKeycloakUserReq:
@@ -221,8 +225,14 @@ paths:
     $ref: ./paths/agents@me.yaml
   /agents/me/status:
     $ref: ./paths/agents@me@status.yaml
+  /agents/install/{token}/config:
+    $ref: ./paths/agents@install@{token}@config.yaml
   /agents/{id}:
     $ref: ./paths/agents@{id}.yaml
+  /agents/{id}/install-command:
+    $ref: ./paths/agents@{id}@install-command.yaml
+  /agents/{id}/install-command/regenerate:
+    $ref: ./paths/agents@{id}@install-command@regenerate.yaml
   /agent-pools:
     $ref: ./paths/agent-pools.yaml
   /agent-pools/{id}:

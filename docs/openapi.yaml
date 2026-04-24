@@ -433,6 +433,71 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorRes'
+  /agents/install/{token}/config:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Per-resource install token issued by POST /agents/{id}/install-command.
+    get:
+      operationId: agentsFetchInstallConfig
+      summary: Fetch rendered agent install configuration
+      tags:
+        - Agents
+      description: |
+        Returns the rendered agent configuration file for a freshly installed
+        agent. The caller must present BOTH:
+
+        1. A bearer token with `admin`, `participant`, or `agent` role (standard
+           API authentication).
+        2. A valid install token embedded in the URL (the per-resource secret
+           issued by POST `/agents/{id}/install-command`).
+
+        The response body is the rendered configuration — its media type matches
+        the agent type's `configContentType` (commonly `text/plain`,
+        `application/yaml`, or `application/json`). Install tokens are
+        short-lived (≈5 minutes) and single-use per install.
+
+        Any failure (unknown token, expired token, missing template, vault
+        resolution failure, render error) returns a uniform `404` with an empty
+        body to avoid leaking information. Server-side logs describe the real
+        cause for ops debugging.
+      x-auth-permissions:
+        - role: admin
+          permission: authorized with a valid install token
+        - role: participant
+          permission: authorized with a valid install token
+        - role: agent
+          permission: authorized with a valid install token
+      responses:
+        '200':
+          description: Rendered agent configuration. Media type is dynamic (matches the agent type's `configContentType`).
+          headers:
+            Content-Type:
+              schema:
+                type: string
+              description: Matches the agent type's `configContentType`.
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                example: nosniff
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: |
+            Install token not found, expired, or the agent's configuration could
+            not be rendered. Body is empty — consult server logs for the real
+            cause.
   /agents/{id}:
     parameters:
       - name: id
@@ -514,6 +579,155 @@ paths:
       responses:
         '204':
           description: Agent deleted successfully
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+  /agents/{id}/install-command:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/properties.UUID'
+    get:
+      operationId: agentsGetInstallCommand
+      summary: Get install-command metadata
+      tags:
+        - Agents
+      description: |
+        Returns metadata about the current install token for the agent (id,
+        expiration, creation time). Never returns the plain token or rendered
+        install URL — once the token leaves the Create/Regenerate response it
+        cannot be recovered. If the token has expired, returns 404.
+      x-auth-permissions:
+        - role: admin
+          permission: all agents
+        - role: participant
+          permission: agents belonging to its participant
+        - role: agent
+          permission: not authorized
+      responses:
+        '200':
+          description: Install token metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallTokenMetaRes'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Agent or install token not found (or token expired)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+    post:
+      operationId: agentsCreateInstallCommand
+      summary: Create install command
+      tags:
+        - Agents
+      description: |
+        Issues a new install token for the agent and returns the one-shot
+        install command plus fetch URL. Install tokens are short-lived
+        (≈5 minutes) and the plain token is rendered exactly once — the
+        response is the only opportunity to capture it. If lost, use
+        `/install-command/regenerate` to rotate.
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: agents belonging to its participant
+        - role: agent
+          permission: not authorized
+      responses:
+        '201':
+          description: Install token created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallTokenRes'
+        '400':
+          description: Invalid request (for example, the agent type has no install templates configured)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+    delete:
+      operationId: agentsRevokeInstallCommand
+      summary: Revoke install command
+      tags:
+        - Agents
+      description: Revokes the agent's current install token. Subsequent fetch attempts on that token return 404.
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: agents belonging to its participant
+        - role: agent
+          permission: not authorized
+      responses:
+        '204':
+          description: Install token revoked
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Agent or install token not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+  /agents/{id}/install-command/regenerate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/properties.UUID'
+    post:
+      operationId: agentsRegenerateInstallCommand
+      summary: Regenerate install command
+      tags:
+        - Agents
+      description: |
+        Rotates the agent's install token. Invalidates any previously issued
+        install token and returns a fresh install command plus fetch URL. As
+        with Create, the plain token is rendered exactly once and cannot be
+        recovered later.
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: agents belonging to its participant
+        - role: agent
+          permission: not authorized
+      responses:
+        '200':
+          description: Install token regenerated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallTokenRes'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Agent not found
           content:
@@ -4436,6 +4650,50 @@ components:
             Error message describing the failure. This message is matched against
             lifecycle transition regexps to determine the next service state.
           example: 'Failed to create VM: insufficient resources'
+    InstallTokenRes:
+      type: object
+      description: |
+        One-shot install token response. Returned by Create and Regenerate.
+        `installCommand` and `url` contain the plain token; they cannot be
+        recovered later — if lost, the token must be regenerated.
+      properties:
+        installCommand:
+          type: string
+          description: Rendered install command (copy-paste onto the target host).
+          example: agent install --config https://api.fulcrum.testudosrl.dev/api/v1/agents/install/tkn_9fUw8J3lA2bN5yQrK7zX/config
+        url:
+          type: string
+          format: uri
+          description: Install fetch URL containing the plain token.
+          example: https://api.fulcrum.testudosrl.dev/api/v1/agents/install/tkn_9fUw8J3lA2bN5yQrK7zX/config
+        expiresAt:
+          type: string
+          format: date-time
+          example: '2026-04-24T14:35:00Z'
+      required:
+        - installCommand
+        - url
+        - expiresAt
+    InstallTokenMetaRes:
+      type: object
+      description: |
+        Metadata-only view of the current install token. Never exposes the
+        plain token or rendered URL.
+      properties:
+        id:
+          $ref: '#/components/schemas/properties.UUID'
+        expiresAt:
+          type: string
+          format: date-time
+          example: '2026-04-24T14:35:00Z'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-04-24T14:30:00Z'
+      required:
+        - id
+        - expiresAt
+        - createdAt
     JSONObject:
       type: object
       additionalProperties: true
