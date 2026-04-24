@@ -12,17 +12,17 @@ import (
 )
 
 const (
-	EventTypeAgentInstallCommandCreated     EventType = "agent.install_command_created"
-	EventTypeAgentInstallCommandRegenerated EventType = "agent.install_command_regenerated"
-	EventTypeAgentInstallCommandRevoked     EventType = "agent.install_command_revoked"
+	EventTypeAgentInstallTokenCreated     EventType = "agent.install_token_created"
+	EventTypeAgentInstallTokenRegenerated EventType = "agent.install_token_regenerated"
+	EventTypeAgentInstallTokenRevoked     EventType = "agent.install_token_revoked"
 )
 
-// AgentInstallCommand is the 1:1-per-agent record that gates access to an
+// AgentInstallToken is the 1:1-per-agent record that gates access to an
 // install URL. TokenHashed is the SHA256 of the plain token (used by the public
-// fetch endpoint to look up the command). The plain token is never persisted:
+// fetch endpoint to look up the record). The plain token is never persisted:
 // it is returned to the caller exactly once in the Create/Regenerate response
 // and cannot be recovered thereafter — if lost, Regenerate.
-type AgentInstallCommand struct {
+type AgentInstallToken struct {
 	BaseEntity
 
 	AgentID     properties.UUID `json:"agentId" gorm:"type:uuid;uniqueIndex;not null"`
@@ -30,14 +30,14 @@ type AgentInstallCommand struct {
 	ExpiresAt   time.Time       `json:"expiresAt" gorm:"not null"`
 
 	// BootstrapTokenID references an agent-role Token minted alongside the
-	// install command. The plain value of that token is rendered into the
+	// install token. The plain value of that token is rendered into the
 	// cmdTemplate's Authorization header so the installer can authenticate
 	// against the protected fetch endpoint. Its lifecycle is tied to this
-	// command: rotated on Regenerate, deleted on Revoke.
+	// record: rotated on Regenerate, deleted on Revoke.
 	BootstrapTokenID *properties.UUID `json:"-" gorm:"type:uuid"`
 
 	// PlainToken is transient: set only on freshly minted (Create) or rotated
-	// (Regenerate) commands so the HTTP handler can render the URL in the same
+	// (Regenerate) records so the HTTP handler can render the URL in the same
 	// response. Never persisted, never serialized.
 	PlainToken string `json:"-" gorm:"-"`
 
@@ -49,47 +49,47 @@ type AgentInstallCommand struct {
 }
 
 // TableName returns the table name for the entity.
-func (AgentInstallCommand) TableName() string {
-	return "agent_install_commands"
+func (AgentInstallToken) TableName() string {
+	return "agent_install_tokens"
 }
 
-// IsExpired reports whether the command is past its expiry.
-func (c *AgentInstallCommand) IsExpired() bool {
+// IsExpired reports whether the token is past its expiry.
+func (c *AgentInstallToken) IsExpired() bool {
 	return time.Now().UTC().After(c.ExpiresAt)
 }
 
-// AgentInstallCommandCommander defines the interface for install-command write operations.
-type AgentInstallCommandCommander interface {
-	// Create mints a fresh install command for the agent. Fails with a ConflictError
+// AgentInstallTokenCommander defines the interface for install-token write operations.
+type AgentInstallTokenCommander interface {
+	// Create mints a fresh install token for the agent. Fails with a ConflictError
 	// if one already exists for the agent (use Regenerate instead).
-	Create(ctx context.Context, agentID properties.UUID) (*AgentInstallCommand, error)
+	Create(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error)
 
-	// Regenerate rotates an existing install command's token and expiry. Fails
+	// Regenerate rotates an existing install token and its expiry. Fails
 	// with a NotFoundError if none exists (use Create first).
-	Regenerate(ctx context.Context, agentID properties.UUID) (*AgentInstallCommand, error)
+	Regenerate(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error)
 
-	// Revoke deletes the install command for the agent without minting a new one.
+	// Revoke deletes the install token for the agent without minting a new one.
 	// Returns NotFoundError if none exists.
 	Revoke(ctx context.Context, agentID properties.UUID) error
 }
 
-// AgentInstallCommandRepository is the persistence interface.
-type AgentInstallCommandRepository interface {
-	AgentInstallCommandQuerier
+// AgentInstallTokenRepository is the persistence interface.
+type AgentInstallTokenRepository interface {
+	AgentInstallTokenQuerier
 
-	Create(ctx context.Context, cmd *AgentInstallCommand) error
-	Save(ctx context.Context, cmd *AgentInstallCommand) error
+	Create(ctx context.Context, tok *AgentInstallToken) error
+	Save(ctx context.Context, tok *AgentInstallToken) error
 	DeleteByAgentID(ctx context.Context, agentID properties.UUID) error
 }
 
-// AgentInstallCommandQuerier is the read-only interface.
-type AgentInstallCommandQuerier interface {
-	// GetByAgentID returns the install command for the given agent, or NotFoundError.
-	GetByAgentID(ctx context.Context, agentID properties.UUID) (*AgentInstallCommand, error)
+// AgentInstallTokenQuerier is the read-only interface.
+type AgentInstallTokenQuerier interface {
+	// GetByAgentID returns the install token for the given agent, or NotFoundError.
+	GetByAgentID(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error)
 
-	// FindByHashedToken looks up a command by the SHA256 hash of the plain token.
+	// FindByHashedToken looks up a record by the SHA256 hash of the plain token.
 	// Used by the public /install/{token} handler after hashing the inbound token.
-	FindByHashedToken(ctx context.Context, hashed string) (*AgentInstallCommand, error)
+	FindByHashedToken(ctx context.Context, hashed string) (*AgentInstallToken, error)
 }
 
 // mintBootstrapToken creates an agent-role Token scoped to agentID, expiring at
@@ -113,20 +113,20 @@ func mintBootstrapToken(ctx context.Context, store Store, agentID properties.UUI
 	return token, nil
 }
 
-type agentInstallCommandCommander struct {
+type agentInstallTokenCommander struct {
 	store Store
 	ttl   time.Duration
 }
 
-// NewAgentInstallCommandCommander creates a new default AgentInstallCommandCommander.
-func NewAgentInstallCommandCommander(store Store, ttl time.Duration) *agentInstallCommandCommander {
-	return &agentInstallCommandCommander{
+// NewAgentInstallTokenCommander creates a new default AgentInstallTokenCommander.
+func NewAgentInstallTokenCommander(store Store, ttl time.Duration) *agentInstallTokenCommander {
+	return &agentInstallTokenCommander{
 		store: store,
 		ttl:   ttl,
 	}
 }
 
-func (c *agentInstallCommandCommander) Create(ctx context.Context, agentID properties.UUID) (*AgentInstallCommand, error) {
+func (c *agentInstallTokenCommander) Create(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error) {
 	agent, err := c.store.AgentRepo().Get(ctx, agentID)
 	if err != nil {
 		return nil, err
@@ -135,10 +135,10 @@ func (c *agentInstallCommandCommander) Create(ctx context.Context, agentID prope
 		return nil, NewInvalidInputErrorf("agent type has no install templates configured")
 	}
 
-	var cmd *AgentInstallCommand
+	var tok *AgentInstallToken
 	err = c.store.Atomic(ctx, func(store Store) error {
-		if _, existsErr := store.AgentInstallCommandRepo().GetByAgentID(ctx, agentID); existsErr == nil {
-			return NewConflictErrorf("install command already exists for agent %s", agentID)
+		if _, existsErr := store.AgentInstallTokenRepo().GetByAgentID(ctx, agentID); existsErr == nil {
+			return NewConflictErrorf("install token already exists for agent %s", agentID)
 		} else if !errors.As(existsErr, &NotFoundError{}) {
 			return existsErr
 		}
@@ -156,7 +156,7 @@ func (c *agentInstallCommandCommander) Create(ctx context.Context, agentID prope
 			return err
 		}
 
-		cmd = &AgentInstallCommand{
+		tok = &AgentInstallToken{
 			BaseEntity:          BaseEntity{ID: properties.UUID(uuid.New())},
 			AgentID:             agentID,
 			TokenHashed:         HashTokenValue(plain),
@@ -165,12 +165,12 @@ func (c *agentInstallCommandCommander) Create(ctx context.Context, agentID prope
 			PlainToken:          plain,
 			PlainBootstrapToken: bootstrap.PlainValue,
 		}
-		if err := store.AgentInstallCommandRepo().Create(ctx, cmd); err != nil {
+		if err := store.AgentInstallTokenRepo().Create(ctx, tok); err != nil {
 			return err
 		}
 
 		event, err := NewEvent(
-			EventTypeAgentInstallCommandCreated,
+			EventTypeAgentInstallTokenCreated,
 			WithInitiatorCtx(ctx),
 			WithAgent(agent),
 		)
@@ -179,17 +179,17 @@ func (c *agentInstallCommandCommander) Create(ctx context.Context, agentID prope
 		}
 		event.Payload = properties.JSON{
 			"createdAt": now.Format(time.RFC3339Nano),
-			"expiresAt": cmd.ExpiresAt.Format(time.RFC3339Nano),
+			"expiresAt": tok.ExpiresAt.Format(time.RFC3339Nano),
 		}
 		return store.EventRepo().Create(ctx, event)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return cmd, nil
+	return tok, nil
 }
 
-func (c *agentInstallCommandCommander) Regenerate(ctx context.Context, agentID properties.UUID) (*AgentInstallCommand, error) {
+func (c *agentInstallTokenCommander) Regenerate(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error) {
 	agent, err := c.store.AgentRepo().Get(ctx, agentID)
 	if err != nil {
 		return nil, err
@@ -198,9 +198,9 @@ func (c *agentInstallCommandCommander) Regenerate(ctx context.Context, agentID p
 		return nil, NewInvalidInputErrorf("agent type has no install templates configured")
 	}
 
-	var cmd *AgentInstallCommand
+	var tok *AgentInstallToken
 	err = c.store.Atomic(ctx, func(store Store) error {
-		existing, err := store.AgentInstallCommandRepo().GetByAgentID(ctx, agentID)
+		existing, err := store.AgentInstallTokenRepo().GetByAgentID(ctx, agentID)
 		if err != nil {
 			return err
 		}
@@ -230,12 +230,12 @@ func (c *agentInstallCommandCommander) Regenerate(ctx context.Context, agentID p
 		existing.PlainToken = plain
 		existing.PlainBootstrapToken = bootstrap.PlainValue
 
-		if err := store.AgentInstallCommandRepo().Save(ctx, existing); err != nil {
+		if err := store.AgentInstallTokenRepo().Save(ctx, existing); err != nil {
 			return err
 		}
 
 		event, err := NewEvent(
-			EventTypeAgentInstallCommandRegenerated,
+			EventTypeAgentInstallTokenRegenerated,
 			WithInitiatorCtx(ctx),
 			WithAgent(agent),
 		)
@@ -249,23 +249,23 @@ func (c *agentInstallCommandCommander) Regenerate(ctx context.Context, agentID p
 		if err := store.EventRepo().Create(ctx, event); err != nil {
 			return err
 		}
-		cmd = existing
+		tok = existing
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return cmd, nil
+	return tok, nil
 }
 
-func (c *agentInstallCommandCommander) Revoke(ctx context.Context, agentID properties.UUID) error {
+func (c *agentInstallTokenCommander) Revoke(ctx context.Context, agentID properties.UUID) error {
 	agent, err := c.store.AgentRepo().Get(ctx, agentID)
 	if err != nil {
 		return err
 	}
 
 	return c.store.Atomic(ctx, func(store Store) error {
-		existing, err := store.AgentInstallCommandRepo().GetByAgentID(ctx, agentID)
+		existing, err := store.AgentInstallTokenRepo().GetByAgentID(ctx, agentID)
 		if err != nil {
 			return err
 		}
@@ -274,12 +274,12 @@ func (c *agentInstallCommandCommander) Revoke(ctx context.Context, agentID prope
 				return err
 			}
 		}
-		if err := store.AgentInstallCommandRepo().DeleteByAgentID(ctx, agentID); err != nil {
+		if err := store.AgentInstallTokenRepo().DeleteByAgentID(ctx, agentID); err != nil {
 			return err
 		}
 
 		event, err := NewEvent(
-			EventTypeAgentInstallCommandRevoked,
+			EventTypeAgentInstallTokenRevoked,
 			WithInitiatorCtx(ctx),
 			WithAgent(agent),
 		)

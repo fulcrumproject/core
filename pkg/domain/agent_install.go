@@ -25,7 +25,7 @@ func GenerateInstallToken() (string, error) {
 
 // BuildInstallURL joins the public base URL with the install token path.
 // The endpoint is authenticated: callers must also supply a Bearer token
-// (issued alongside the install token — see AgentInstallCommand.BootstrapTokenID).
+// (issued alongside the install token — see AgentInstallToken.BootstrapTokenID).
 func BuildInstallURL(publicBaseURL, token string) string {
 	return strings.TrimRight(publicBaseURL, "/") + "/api/v1/agents/install/" + token
 }

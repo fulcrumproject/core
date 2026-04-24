@@ -13,22 +13,22 @@ import (
 	"github.com/go-chi/render"
 )
 
-type AgentInstallCommandHandler struct {
-	querier       domain.AgentInstallCommandQuerier
-	commander     domain.AgentInstallCommandCommander
+type AgentInstallTokenHandler struct {
+	querier       domain.AgentInstallTokenQuerier
+	commander     domain.AgentInstallTokenCommander
 	agentQuerier  domain.AgentQuerier
 	vault         schema.Vault
 	publicBaseURL string
 }
 
-func NewAgentInstallCommandHandler(
-	querier domain.AgentInstallCommandQuerier,
-	commander domain.AgentInstallCommandCommander,
+func NewAgentInstallTokenHandler(
+	querier domain.AgentInstallTokenQuerier,
+	commander domain.AgentInstallTokenCommander,
 	agentQuerier domain.AgentQuerier,
 	vault schema.Vault,
 	publicBaseURL string,
-) *AgentInstallCommandHandler {
-	return &AgentInstallCommandHandler{
+) *AgentInstallTokenHandler {
+	return &AgentInstallTokenHandler{
 		querier:       querier,
 		commander:     commander,
 		agentQuerier:  agentQuerier,
@@ -37,74 +37,74 @@ func NewAgentInstallCommandHandler(
 	}
 }
 
-// InstallCommandRes is the Create/Regenerate response — the plain token is
+// InstallTokenRes is the Create/Regenerate response — the plain token is
 // rendered into InstallCommand and URL exactly once and is not recoverable
 // afterwards.
-type InstallCommandRes struct {
+type InstallTokenRes struct {
 	InstallCommand string      `json:"installCommand"`
 	URL            string      `json:"url"`
 	ExpiresAt      JSONUTCTime `json:"expiresAt"`
 }
 
-// InstallCommandMetaRes is the GET response — metadata only, no token, no URL.
+// InstallTokenMetaRes is the GET response — metadata only, no token, no URL.
 // If the admin lost the token, they must Regenerate.
-type InstallCommandMetaRes struct {
+type InstallTokenMetaRes struct {
 	ID        properties.UUID `json:"id"`
 	ExpiresAt JSONUTCTime     `json:"expiresAt"`
 	CreatedAt JSONUTCTime     `json:"createdAt"`
 }
 
-func (h *AgentInstallCommandHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *AgentInstallTokenHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := middlewares.MustGetID(ctx)
 
-	cmd, err := h.commander.Create(ctx, id)
+	tok, err := h.commander.Create(ctx, id)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
 
-	h.renderInstallCommand(w, r, cmd, cmd.PlainToken, http.StatusCreated)
+	h.renderInstallToken(w, r, tok, tok.PlainToken, http.StatusCreated)
 }
 
-func (h *AgentInstallCommandHandler) Regenerate(w http.ResponseWriter, r *http.Request) {
+func (h *AgentInstallTokenHandler) Regenerate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := middlewares.MustGetID(ctx)
 
-	cmd, err := h.commander.Regenerate(ctx, id)
+	tok, err := h.commander.Regenerate(ctx, id)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
 
-	h.renderInstallCommand(w, r, cmd, cmd.PlainToken, http.StatusOK)
+	h.renderInstallToken(w, r, tok, tok.PlainToken, http.StatusOK)
 }
 
-// Get returns metadata about the current install command. It never returns the
+// Get returns metadata about the current install token. It never returns the
 // plain token nor the rendered install URL — once the token leaves the
 // Create/Regenerate response, it cannot be recovered.
-func (h *AgentInstallCommandHandler) Get(w http.ResponseWriter, r *http.Request) {
+func (h *AgentInstallTokenHandler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := middlewares.MustGetID(ctx)
 
-	cmd, err := h.querier.GetByAgentID(ctx, id)
+	tok, err := h.querier.GetByAgentID(ctx, id)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
-	if cmd.IsExpired() {
+	if tok.IsExpired() {
 		render.Render(w, r, ErrNotFound())
 		return
 	}
 
-	render.JSON(w, r, InstallCommandMetaRes{
-		ID:        cmd.ID,
-		ExpiresAt: JSONUTCTime(cmd.ExpiresAt),
-		CreatedAt: JSONUTCTime(cmd.CreatedAt),
+	render.JSON(w, r, InstallTokenMetaRes{
+		ID:        tok.ID,
+		ExpiresAt: JSONUTCTime(tok.ExpiresAt),
+		CreatedAt: JSONUTCTime(tok.CreatedAt),
 	})
 }
 
-func (h *AgentInstallCommandHandler) Revoke(w http.ResponseWriter, r *http.Request) {
+func (h *AgentInstallTokenHandler) Revoke(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := middlewares.MustGetID(ctx)
 
@@ -119,10 +119,10 @@ func (h *AgentInstallCommandHandler) Revoke(w http.ResponseWriter, r *http.Reque
 // Fetch serves the rendered agent configuration to an installer. It is mounted
 // behind the standard auth middleware and restricted to participant/agent
 // roles; the install token in the URL is the per-resource secret that selects
-// which install command to render. Any error or exceptional state yields a
+// which install record to render. Any error or exceptional state yields a
 // uniform 404 with an empty body — server-side logs describe the real cause
 // for ops debugging. No information leak.
-func (h *AgentInstallCommandHandler) Fetch(w http.ResponseWriter, r *http.Request) {
+func (h *AgentInstallTokenHandler) Fetch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	token := chi.URLParam(r, "token")
@@ -131,17 +131,17 @@ func (h *AgentInstallCommandHandler) Fetch(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	cmd, err := h.querier.FindByHashedToken(ctx, domain.HashTokenValue(token))
+	tok, err := h.querier.FindByHashedToken(ctx, domain.HashTokenValue(token))
 	if err != nil {
-		uniform404(w, "install command lookup failed: "+err.Error())
+		uniform404(w, "install token lookup failed: "+err.Error())
 		return
 	}
-	if cmd.IsExpired() {
-		uniform404(w, "install command expired")
+	if tok.IsExpired() {
+		uniform404(w, "install token expired")
 		return
 	}
 
-	agent := cmd.Agent
+	agent := tok.Agent
 	if agent == nil || agent.AgentType == nil || agent.AgentType.ConfigTemplate == "" {
 		uniform404(w, "agent type has no install templates configured")
 		return
@@ -179,15 +179,15 @@ func uniform404(w http.ResponseWriter, reason string) {
 	w.WriteHeader(http.StatusNotFound)
 }
 
-func (h *AgentInstallCommandHandler) renderInstallCommand(
+func (h *AgentInstallTokenHandler) renderInstallToken(
 	w http.ResponseWriter,
 	r *http.Request,
-	cmd *domain.AgentInstallCommand,
+	tok *domain.AgentInstallToken,
 	plain string,
 	status int,
 ) {
 	ctx := r.Context()
-	agent, err := h.agentQuerier.Get(ctx, cmd.AgentID)
+	agent, err := h.agentQuerier.Get(ctx, tok.AgentID)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -200,7 +200,7 @@ func (h *AgentInstallCommandHandler) renderInstallCommand(
 		data = map[string]any(*agent.Configuration)
 	}
 
-	cmdText, err := domain.RenderCmdTemplate(agent.AgentType, data, url, cmd.PlainBootstrapToken)
+	cmdText, err := domain.RenderCmdTemplate(agent.AgentType, data, url, tok.PlainBootstrapToken)
 	if err != nil {
 		render.Render(w, r, ErrInternal(err))
 		return
@@ -212,9 +212,9 @@ func (h *AgentInstallCommandHandler) renderInstallCommand(
 	w.WriteHeader(status)
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
-	_ = enc.Encode(InstallCommandRes{
+	_ = enc.Encode(InstallTokenRes{
 		InstallCommand: cmdText,
 		URL:            url,
-		ExpiresAt:      JSONUTCTime(cmd.ExpiresAt),
+		ExpiresAt:      JSONUTCTime(tok.ExpiresAt),
 	})
 }

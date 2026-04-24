@@ -1,8 +1,8 @@
-### Agent Install Command Flow
+### Agent Install Token Flow
 ###
 ### Walk through this file top-to-bottom to exercise the full install flow:
 ###   1. Create provider, agent type with install templates, and agent with secret config
-###   2. Mint an install command (POST) — returns {installCommand, url, expiresAt} ONCE
+###   2. Mint an install token (POST) — returns {installCommand, url, expiresAt} ONCE
 ###   3. GET metadata — returns {id, expiresAt, createdAt}; no token, no url
 ###   4. Fetch the public install URL — returns rendered config with vault secret resolved
 ###   5. Regenerate — new url; old url 404s; new url works
@@ -88,11 +88,11 @@ Content-Type: application/json
 
 ### --- Happy path ---------------------------------------------------------
 
-### GET install-command BEFORE creation — expect 404 install_command_not_found
+### GET install-command BEFORE creation — expect 404 install_token_not_found
 GET {{baseUrl}}/agents/{{ic_agentId}}/install-command
 Authorization: Bearer {{adminToken}}
 
-### Create the install command (operator mints it)
+### Create the install token (operator mints it)
 ### Expect 201 with { installCommand, url, expiresAt ~= now+24h }
 # @name ic_createInstall
 POST {{baseUrl}}/agents/{{ic_agentId}}/install-command
@@ -112,7 +112,7 @@ GET {{ic_installUrl}}
 
 ### --- Conflict and re-mint -----------------------------------------------
 
-### Creating twice must conflict — expect 409 install_command_exists
+### Creating twice must conflict — expect 409 install_token_exists
 POST {{baseUrl}}/agents/{{ic_agentId}}/install-command
 Authorization: Bearer {{adminToken}}
 
@@ -135,7 +135,7 @@ Authorization: Bearer {{adminToken}}
 
 ### --- Revoke -------------------------------------------------------------
 
-### Revoke the command without minting a new one — expect 204
+### Revoke the install token without minting a new one — expect 204
 DELETE {{baseUrl}}/agents/{{ic_agentId}}/install-command
 Authorization: Bearer {{adminToken}}
 
@@ -146,7 +146,7 @@ GET {{ic_installUrlNew}}
 GET {{baseUrl}}/agents/{{ic_agentId}}/install-command
 Authorization: Bearer {{adminToken}}
 
-### Revoking again with nothing outstanding — expect 404 install_command_not_found
+### Revoking again with nothing outstanding — expect 404 install_token_not_found
 DELETE {{baseUrl}}/agents/{{ic_agentId}}/install-command
 Authorization: Bearer {{adminToken}}
 
@@ -168,7 +168,7 @@ GET {{publicBase}}/install/garbage-token-nothing-here
 ### Public endpoint with empty token — expect 404
 GET {{publicBase}}/install/
 
-### Regenerate on an agent with no install command — expect 404 install_command_not_found
+### Regenerate on an agent with no install token — expect 404 install_token_not_found
 # @name ic_createAgentNoCmd
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
@@ -190,7 +190,7 @@ Content-Type: application/json
 POST {{baseUrl}}/agents/{{ic_agentIdNoCmd}}/install-command/regenerate
 Authorization: Bearer {{adminToken}}
 
-### Create install command on the no-cmd agent, then delete the agent
+### Create install token on the no-cmd agent, then delete the agent
 ### — FK cascade drops the DB row; old url 404s afterward.
 # @name ic_createInstall2
 POST {{baseUrl}}/agents/{{ic_agentIdNoCmd}}/install-command
@@ -249,7 +249,7 @@ Authorization: Bearer {{adminToken}}
 
 ### --- Cleanup ------------------------------------------------------------
 
-### Delete the main install-flow agent (also drops its install command via cascade)
+### Delete the main install-flow agent (also drops its install token via cascade)
 DELETE {{baseUrl}}/agents/{{ic_agentId}}
 Authorization: Bearer {{adminToken}}
 

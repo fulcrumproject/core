@@ -40,23 +40,23 @@ type UpdateAgentStatusReq struct {
 }
 
 type AgentHandler struct {
-	querier        domain.AgentQuerier
-	commander      domain.AgentCommander
-	authz          authz.Authorizer
-	installCommand *AgentInstallCommandHandler
+	querier      domain.AgentQuerier
+	commander    domain.AgentCommander
+	authz        authz.Authorizer
+	installToken *AgentInstallTokenHandler
 }
 
 func NewAgentHandler(
 	querier domain.AgentQuerier,
 	commander domain.AgentCommander,
 	authz authz.Authorizer,
-	installCommand *AgentInstallCommandHandler,
+	installToken *AgentInstallTokenHandler,
 ) *AgentHandler {
 	return &AgentHandler{
-		querier:        querier,
-		commander:      commander,
-		authz:          authz,
-		installCommand: installCommand,
+		querier:      querier,
+		commander:    commander,
+		authz:        authz,
+		installToken: installToken,
 	}
 }
 
@@ -78,7 +78,7 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 		// token (issued by POST /{id}/install-command).
 		r.With(
 			middlewares.MustHaveRoles(auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent),
-		).Get("/install/{token}", h.installCommand.Fetch)
+		).Get("/install/{token}", h.installToken.Fetch)
 
 		// Resource-specific routes with ID
 		r.Group(func(r chi.Router) {
@@ -103,16 +103,16 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 			// Install-command endpoints (agent-scoped authz using the agent's provider)
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionRead, h.authz, h.querier.AuthScope),
-			).Get("/{id}/install-command", h.installCommand.Get)
+			).Get("/{id}/install-command", h.installToken.Get)
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionUpdate, h.authz, h.querier.AuthScope),
-			).Post("/{id}/install-command", h.installCommand.Create)
+			).Post("/{id}/install-command", h.installToken.Create)
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionUpdate, h.authz, h.querier.AuthScope),
-			).Post("/{id}/install-command/regenerate", h.installCommand.Regenerate)
+			).Post("/{id}/install-command/regenerate", h.installToken.Regenerate)
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionUpdate, h.authz, h.querier.AuthScope),
-			).Delete("/{id}/install-command", h.installCommand.Revoke)
+			).Delete("/{id}/install-command", h.installToken.Revoke)
 		})
 
 		// Agent-specific routes (me endpoints)
