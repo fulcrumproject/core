@@ -1772,63 +1772,6 @@ func (_c *MockAgentInstallCommandCommander_Create_Call) RunAndReturn(run func(ct
 	return _c
 }
 
-// DeleteByAgentID provides a mock function for the type MockAgentInstallCommandCommander
-func (_mock *MockAgentInstallCommandCommander) DeleteByAgentID(ctx context.Context, agentID properties.UUID) error {
-	ret := _mock.Called(ctx, agentID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for DeleteByAgentID")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
-		r0 = returnFunc(ctx, agentID)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockAgentInstallCommandCommander_DeleteByAgentID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteByAgentID'
-type MockAgentInstallCommandCommander_DeleteByAgentID_Call struct {
-	*mock.Call
-}
-
-// DeleteByAgentID is a helper method to define mock.On call
-//   - ctx context.Context
-//   - agentID properties.UUID
-func (_e *MockAgentInstallCommandCommander_Expecter) DeleteByAgentID(ctx interface{}, agentID interface{}) *MockAgentInstallCommandCommander_DeleteByAgentID_Call {
-	return &MockAgentInstallCommandCommander_DeleteByAgentID_Call{Call: _e.mock.On("DeleteByAgentID", ctx, agentID)}
-}
-
-func (_c *MockAgentInstallCommandCommander_DeleteByAgentID_Call) Run(run func(ctx context.Context, agentID properties.UUID)) *MockAgentInstallCommandCommander_DeleteByAgentID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 properties.UUID
-		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAgentInstallCommandCommander_DeleteByAgentID_Call) Return(err error) *MockAgentInstallCommandCommander_DeleteByAgentID_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockAgentInstallCommandCommander_DeleteByAgentID_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID) error) *MockAgentInstallCommandCommander_DeleteByAgentID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // Regenerate provides a mock function for the type MockAgentInstallCommandCommander
 func (_mock *MockAgentInstallCommandCommander) Regenerate(ctx context.Context, agentID properties.UUID) (*AgentInstallCommand, error) {
 	ret := _mock.Called(ctx, agentID)
@@ -1893,6 +1836,63 @@ func (_c *MockAgentInstallCommandCommander_Regenerate_Call) Return(agentInstallC
 }
 
 func (_c *MockAgentInstallCommandCommander_Regenerate_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID) (*AgentInstallCommand, error)) *MockAgentInstallCommandCommander_Regenerate_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Revoke provides a mock function for the type MockAgentInstallCommandCommander
+func (_mock *MockAgentInstallCommandCommander) Revoke(ctx context.Context, agentID properties.UUID) error {
+	ret := _mock.Called(ctx, agentID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Revoke")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
+		r0 = returnFunc(ctx, agentID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockAgentInstallCommandCommander_Revoke_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Revoke'
+type MockAgentInstallCommandCommander_Revoke_Call struct {
+	*mock.Call
+}
+
+// Revoke is a helper method to define mock.On call
+//   - ctx context.Context
+//   - agentID properties.UUID
+func (_e *MockAgentInstallCommandCommander_Expecter) Revoke(ctx interface{}, agentID interface{}) *MockAgentInstallCommandCommander_Revoke_Call {
+	return &MockAgentInstallCommandCommander_Revoke_Call{Call: _e.mock.On("Revoke", ctx, agentID)}
+}
+
+func (_c *MockAgentInstallCommandCommander_Revoke_Call) Run(run func(ctx context.Context, agentID properties.UUID)) *MockAgentInstallCommandCommander_Revoke_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentInstallCommandCommander_Revoke_Call) Return(err error) *MockAgentInstallCommandCommander_Revoke_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockAgentInstallCommandCommander_Revoke_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID) error) *MockAgentInstallCommandCommander_Revoke_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -2,11 +2,12 @@
 ###
 ### Walk through this file top-to-bottom to exercise the full install flow:
 ###   1. Create provider, agent type with install templates, and agent with secret config
-###   2. Mint an install command (POST) — returns {installCommand, url, expiresAt}
-###   3. Re-copy the command (GET) — returns the same url
+###   2. Mint an install command (POST) — returns {installCommand, url, expiresAt} ONCE
+###   3. GET metadata — returns {id, expiresAt, createdAt}; no token, no url
 ###   4. Fetch the public install URL — returns rendered config with vault secret resolved
 ###   5. Regenerate — new url; old url 404s; new url works
-###   6. Conflict (409) and not-found (404) paths
+###   6. Revoke (DELETE) — existing url 404s; metadata GET 404s
+###   7. Conflict (409) and not-found (404) paths
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
@@ -99,8 +100,9 @@ Authorization: Bearer {{adminToken}}
 
 @ic_installUrl = {{ic_createInstall.response.body.$.url}}
 
-### Re-copy the install command (GET) — returns the SAME url, no rotation
-### This is the "manager wants re-copy" flow.
+### GET install-command metadata — returns {id, expiresAt, createdAt}.
+### The plaintext token is NEVER returned after Create/Regenerate. If the
+### operator lost the url, they must Regenerate (which invalidates the old one).
 GET {{baseUrl}}/agents/{{ic_agentId}}/install-command
 Authorization: Bearer {{adminToken}}
 
@@ -127,9 +129,36 @@ GET {{ic_installUrl}}
 ### New URL still works — 200, body with secrets resolved
 GET {{ic_installUrlNew}}
 
-### GET install-command again — returns the rotated url (same as ic_installUrlNew)
+### GET install-command again — returns updated expiresAt, still no token/url
 GET {{baseUrl}}/agents/{{ic_agentId}}/install-command
 Authorization: Bearer {{adminToken}}
+
+### --- Revoke -------------------------------------------------------------
+
+### Revoke the command without minting a new one — expect 204
+DELETE {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### After revoke, the rotated public URL must 404
+GET {{ic_installUrlNew}}
+
+### Metadata GET now 404s
+GET {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### Revoking again with nothing outstanding — expect 404 install_command_not_found
+DELETE {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### Re-mint after revoke works (fresh Create, no 409)
+# @name ic_createAfterRevoke
+POST {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+@ic_installUrlAfterRevoke = {{ic_createAfterRevoke.response.body.$.url}}
+
+### New URL works
+GET {{ic_installUrlAfterRevoke}}
 
 ### --- Negative paths -----------------------------------------------------
 
@@ -162,7 +191,7 @@ POST {{baseUrl}}/agents/{{ic_agentIdNoCmd}}/install-command/regenerate
 Authorization: Bearer {{adminToken}}
 
 ### Create install command on the no-cmd agent, then delete the agent
-### — vault key + DB row should be cleaned up; old url 404s afterward.
+### — FK cascade drops the DB row; old url 404s afterward.
 # @name ic_createInstall2
 POST {{baseUrl}}/agents/{{ic_agentIdNoCmd}}/install-command
 Authorization: Bearer {{adminToken}}
@@ -176,7 +205,7 @@ GET {{ic_installUrl2}}
 DELETE {{baseUrl}}/agents/{{ic_agentIdNoCmd}}
 Authorization: Bearer {{adminToken}}
 
-### Install URL should 404 after agent deletion (FK cascade + vault.Delete)
+### Install URL should 404 after agent deletion (FK cascade drops the row)
 GET {{ic_installUrl2}}
 
 ### --- Templates-not-configured path --------------------------------------

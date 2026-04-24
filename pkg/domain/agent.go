@@ -210,21 +210,18 @@ type UpdateAgentStatusParams struct {
 
 // agentCommander is the concrete implementation of AgentCommander
 type agentCommander struct {
-	store                   Store
-	configEngine            *schema.Engine[AgentConfigContext]
-	installCommandCommander AgentInstallCommandCommander
+	store        Store
+	configEngine *schema.Engine[AgentConfigContext]
 }
 
 // NewAgentCommander creates a new default AgentCommander
 func NewAgentCommander(
 	store Store,
 	configEngine *schema.Engine[AgentConfigContext],
-	installCommandCommander AgentInstallCommandCommander,
 ) *agentCommander {
 	return &agentCommander{
-		store:                   store,
-		configEngine:            configEngine,
-		installCommandCommander: installCommandCommander,
+		store:        store,
+		configEngine: configEngine,
 	}
 }
 
@@ -422,10 +419,6 @@ func (s *agentCommander) Delete(ctx context.Context, id properties.UUID) error {
 		}
 
 		if err := store.TokenRepo().DeleteByAgentID(ctx, id); err != nil {
-			return err
-		}
-
-		if err := s.installCommandCommander.DeleteByAgentID(ctx, id); err != nil {
 			return err
 		}
 

@@ -103,6 +103,9 @@ func (h *AgentHandler) Routes() func(r chi.Router) {
 			r.With(
 				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionUpdate, h.authz, h.querier.AuthScope),
 			).Post("/{id}/install-command/regenerate", h.installCommand.Regenerate)
+			r.With(
+				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionUpdate, h.authz, h.querier.AuthScope),
+			).Delete("/{id}/install-command", h.installCommand.Revoke)
 		})
 
 		// Agent-specific routes (me endpoints)
