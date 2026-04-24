@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/fulcrumproject/core/pkg/domain"
@@ -55,14 +54,6 @@ func (h *AgentInstallCommandHandler) Create(w http.ResponseWriter, r *http.Reque
 
 	cmd, err := h.commander.Create(ctx, id)
 	if err != nil {
-		if errors.As(err, &domain.ConflictError{}) {
-			render.Render(w, r, ErrConflictWithCode("install_command_exists", err.Error()))
-			return
-		}
-		if errors.As(err, &domain.InvalidInputError{}) {
-			render.Render(w, r, ErrUnprocessableWithCode("install_not_configured", err.Error()))
-			return
-		}
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
@@ -76,14 +67,6 @@ func (h *AgentInstallCommandHandler) Regenerate(w http.ResponseWriter, r *http.R
 
 	cmd, err := h.commander.Regenerate(ctx, id)
 	if err != nil {
-		if errors.As(err, &domain.NotFoundError{}) {
-			render.Render(w, r, ErrNotFoundWithCode("install_command_not_found"))
-			return
-		}
-		if errors.As(err, &domain.InvalidInputError{}) {
-			render.Render(w, r, ErrUnprocessableWithCode("install_not_configured", err.Error()))
-			return
-		}
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
@@ -100,15 +83,11 @@ func (h *AgentInstallCommandHandler) Get(w http.ResponseWriter, r *http.Request)
 
 	cmd, err := h.querier.GetByAgentID(ctx, id)
 	if err != nil {
-		if errors.As(err, &domain.NotFoundError{}) {
-			render.Render(w, r, ErrNotFoundWithCode("install_command_not_found"))
-			return
-		}
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
 	if cmd.IsExpired() {
-		render.Render(w, r, ErrNotFoundWithCode("install_command_expired"))
+		render.Render(w, r, ErrNotFound())
 		return
 	}
 
@@ -124,10 +103,6 @@ func (h *AgentInstallCommandHandler) Revoke(w http.ResponseWriter, r *http.Reque
 	id := middlewares.MustGetID(ctx)
 
 	if err := h.commander.Revoke(ctx, id); err != nil {
-		if errors.As(err, &domain.NotFoundError{}) {
-			render.Render(w, r, ErrNotFoundWithCode("install_command_not_found"))
-			return
-		}
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
@@ -146,13 +121,6 @@ func (h *AgentInstallCommandHandler) renderInstallCommand(
 	agent, err := h.agentQuerier.Get(ctx, cmd.AgentID)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
-		return
-	}
-	if agent.AgentType == nil || agent.AgentType.CmdTemplate == "" {
-		render.Render(w, r, ErrUnprocessableWithCode(
-			"install_not_configured",
-			"agent type has no install templates configured",
-		))
 		return
 	}
 
