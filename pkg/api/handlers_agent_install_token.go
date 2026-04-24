@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -16,7 +17,6 @@ import (
 type AgentInstallTokenHandler struct {
 	querier       domain.AgentInstallTokenQuerier
 	commander     domain.AgentInstallTokenCommander
-	agentQuerier  domain.AgentQuerier
 	vault         schema.Vault
 	publicBaseURL string
 }
@@ -24,14 +24,12 @@ type AgentInstallTokenHandler struct {
 func NewAgentInstallTokenHandler(
 	querier domain.AgentInstallTokenQuerier,
 	commander domain.AgentInstallTokenCommander,
-	agentQuerier domain.AgentQuerier,
 	vault schema.Vault,
 	publicBaseURL string,
 ) *AgentInstallTokenHandler {
 	return &AgentInstallTokenHandler{
 		querier:       querier,
 		commander:     commander,
-		agentQuerier:  agentQuerier,
 		vault:         vault,
 		publicBaseURL: publicBaseURL,
 	}
@@ -127,23 +125,27 @@ func (h *AgentInstallTokenHandler) Fetch(w http.ResponseWriter, r *http.Request)
 
 	token := chi.URLParam(r, "token")
 	if token == "" {
-		uniform404(w, "empty token")
+		uniform404(w, slog.LevelInfo, "empty token")
 		return
 	}
 
 	tok, err := h.querier.FindByHashedToken(ctx, domain.HashTokenValue(token))
 	if err != nil {
-		uniform404(w, "install token lookup failed: "+err.Error())
+		if errors.As(err, &domain.NotFoundError{}) {
+			uniform404(w, slog.LevelInfo, "install token not found")
+		} else {
+			uniform404(w, slog.LevelWarn, "install token lookup failed: "+err.Error())
+		}
 		return
 	}
 	if tok.IsExpired() {
-		uniform404(w, "install token expired")
+		uniform404(w, slog.LevelInfo, "install token expired")
 		return
 	}
 
 	agent := tok.Agent
 	if agent == nil || agent.AgentType == nil || agent.AgentType.ConfigTemplate == "" {
-		uniform404(w, "agent type has no install templates configured")
+		uniform404(w, slog.LevelInfo, "agent type has no install templates configured")
 		return
 	}
 
@@ -154,13 +156,13 @@ func (h *AgentInstallTokenHandler) Fetch(w http.ResponseWriter, r *http.Request)
 
 	resolved, err := domain.ResolveVaultRefs(ctx, h.vault, agent.AgentType.ConfigurationSchema, data)
 	if err != nil {
-		uniform404(w, "vault resolution failed: "+err.Error())
+		uniform404(w, slog.LevelWarn, "vault resolution failed: "+err.Error())
 		return
 	}
 
 	body, err := domain.RenderConfigTemplate(agent.AgentType, resolved)
 	if err != nil {
-		uniform404(w, "config template render failed: "+err.Error())
+		uniform404(w, slog.LevelWarn, "config template render failed: "+err.Error())
 		return
 	}
 
@@ -173,9 +175,17 @@ func (h *AgentInstallTokenHandler) Fetch(w http.ResponseWriter, r *http.Request)
 
 // uniform404 writes a 404 with an empty body. The reason is logged server-side
 // so ops can distinguish unknown / expired / template / vault / render failures
-// without leaking anything to the caller.
-func uniform404(w http.ResponseWriter, reason string) {
-	slog.Info("install fetch → 404", "reason", reason)
+// without leaking anything to the caller. Use Info for client-caused misses
+// (unknown token, expired) and Warn for server-side failures (db, vault,
+// template) so monitoring can alert on the latter.
+func uniform404(w http.ResponseWriter, level slog.Level, reason string) {
+	const msg = "install fetch → 404"
+	switch level {
+	case slog.LevelWarn:
+		slog.Warn(msg, "reason", reason)
+	default:
+		slog.Info(msg, "reason", reason)
+	}
 	w.WriteHeader(http.StatusNotFound)
 }
 
@@ -186,13 +196,7 @@ func (h *AgentInstallTokenHandler) renderInstallToken(
 	plain string,
 	status int,
 ) {
-	ctx := r.Context()
-	agent, err := h.agentQuerier.Get(ctx, tok.AgentID)
-	if err != nil {
-		render.Render(w, r, ErrDomain(err))
-		return
-	}
-
+	agent := tok.Agent
 	url := domain.BuildInstallURL(h.publicBaseURL, plain)
 
 	data := map[string]any{}

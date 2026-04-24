@@ -17,6 +17,11 @@ const (
 	EventTypeAgentInstallTokenRevoked     EventType = "agent.install_token_revoked"
 )
 
+// installTokenTTL is how long a freshly minted or regenerated install token
+// (and its paired bootstrap bearer) remains usable. Short by design: the token
+// is meant to be consumed immediately by an installer script.
+const installTokenTTL = 5 * time.Minute
+
 // AgentInstallToken is the 1:1-per-agent record that gates access to an
 // install URL. TokenHashed is the SHA256 of the plain token (used by the public
 // fetch endpoint to look up the record). The plain token is never persisted:
@@ -115,15 +120,11 @@ func mintBootstrapToken(ctx context.Context, store Store, agentID properties.UUI
 
 type agentInstallTokenCommander struct {
 	store Store
-	ttl   time.Duration
 }
 
 // NewAgentInstallTokenCommander creates a new default AgentInstallTokenCommander.
-func NewAgentInstallTokenCommander(store Store, ttl time.Duration) *agentInstallTokenCommander {
-	return &agentInstallTokenCommander{
-		store: store,
-		ttl:   ttl,
-	}
+func NewAgentInstallTokenCommander(store Store) *agentInstallTokenCommander {
+	return &agentInstallTokenCommander{store: store}
 }
 
 func (c *agentInstallTokenCommander) Create(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error) {
@@ -143,13 +144,13 @@ func (c *agentInstallTokenCommander) Create(ctx context.Context, agentID propert
 			return existsErr
 		}
 
-		plain, err := GenerateInstallToken()
+		plain, err := generateSecureToken()
 		if err != nil {
 			return err
 		}
 
 		now := time.Now().UTC()
-		expiresAt := now.Add(c.ttl)
+		expiresAt := now.Add(installTokenTTL)
 
 		bootstrap, err := mintBootstrapToken(ctx, store, agentID, expiresAt)
 		if err != nil {
@@ -164,6 +165,7 @@ func (c *agentInstallTokenCommander) Create(ctx context.Context, agentID propert
 			BootstrapTokenID:    &bootstrap.ID,
 			PlainToken:          plain,
 			PlainBootstrapToken: bootstrap.PlainValue,
+			Agent:               agent,
 		}
 		if err := store.AgentInstallTokenRepo().Create(ctx, tok); err != nil {
 			return err
@@ -205,7 +207,7 @@ func (c *agentInstallTokenCommander) Regenerate(ctx context.Context, agentID pro
 			return err
 		}
 
-		plain, err := GenerateInstallToken()
+		plain, err := generateSecureToken()
 		if err != nil {
 			return err
 		}
@@ -217,7 +219,7 @@ func (c *agentInstallTokenCommander) Regenerate(ctx context.Context, agentID pro
 		}
 
 		now := time.Now().UTC()
-		expiresAt := now.Add(c.ttl)
+		expiresAt := now.Add(installTokenTTL)
 
 		bootstrap, err := mintBootstrapToken(ctx, store, agentID, expiresAt)
 		if err != nil {
@@ -229,6 +231,7 @@ func (c *agentInstallTokenCommander) Regenerate(ctx context.Context, agentID pro
 		existing.BootstrapTokenID = &bootstrap.ID
 		existing.PlainToken = plain
 		existing.PlainBootstrapToken = bootstrap.PlainValue
+		existing.Agent = agent
 
 		if err := store.AgentInstallTokenRepo().Save(ctx, existing); err != nil {
 			return err
@@ -259,12 +262,12 @@ func (c *agentInstallTokenCommander) Regenerate(ctx context.Context, agentID pro
 }
 
 func (c *agentInstallTokenCommander) Revoke(ctx context.Context, agentID properties.UUID) error {
-	agent, err := c.store.AgentRepo().Get(ctx, agentID)
-	if err != nil {
-		return err
-	}
-
 	return c.store.Atomic(ctx, func(store Store) error {
+		agent, err := store.AgentRepo().Get(ctx, agentID)
+		if err != nil {
+			return err
+		}
+
 		existing, err := store.AgentInstallTokenRepo().GetByAgentID(ctx, agentID)
 		if err != nil {
 			return err

@@ -3,25 +3,13 @@ package domain
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"strings"
-	"text/template"
 
 	"github.com/fulcrumproject/core/pkg/schema"
 )
 
 const vaultRefPrefix = "vault://"
-
-// GenerateInstallToken returns a 32-byte base64url-encoded secret.
-func GenerateInstallToken() (string, error) {
-	buf := make([]byte, 32)
-	if _, err := rand.Read(buf); err != nil {
-		return "", fmt.Errorf("failed to generate install token: %w", err)
-	}
-	return base64.URLEncoding.EncodeToString(buf), nil
-}
 
 // BuildInstallURL joins the public base URL with the install token path.
 // The endpoint is authenticated: callers must also supply a Bearer token
@@ -38,10 +26,17 @@ func RenderCmdTemplate(at *AgentType, schemaData map[string]any, configURL, auth
 	if at.CmdTemplate == "" {
 		return "", nil
 	}
-	data := copyDataMap(schemaData)
+	data := make(map[string]any, len(schemaData)+2)
+	for k, v := range schemaData {
+		data[k] = v
+	}
 	data[cmdTemplateExtraRef] = configURL
 	data[cmdTemplateExtraAuthTokenRef] = authToken
-	return renderTemplate("cmdTemplate", at.CmdTemplate, data)
+	var buf bytes.Buffer
+	if err := executeTemplate("cmdTemplate", at.CmdTemplate, data, &buf); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 // RenderConfigTemplate renders the AgentType's ConfigTemplate with schemaData.
@@ -50,27 +45,11 @@ func RenderConfigTemplate(at *AgentType, schemaData map[string]any) (string, err
 	if at.ConfigTemplate == "" {
 		return "", nil
 	}
-	return renderTemplate("configTemplate", at.ConfigTemplate, schemaData)
-}
-
-func renderTemplate(name, body string, data map[string]any) (string, error) {
-	tmpl, err := template.New(name).Option("missingkey=error").Parse(body)
-	if err != nil {
-		return "", fmt.Errorf("%s: %w", name, err)
-	}
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("%s: %w", name, err)
+	if err := executeTemplate("configTemplate", at.ConfigTemplate, schemaData, &buf); err != nil {
+		return "", err
 	}
 	return buf.String(), nil
-}
-
-func copyDataMap(src map[string]any) map[string]any {
-	dst := make(map[string]any, len(src)+1)
-	for k, v := range src {
-		dst[k] = v
-	}
-	return dst
 }
 
 // ResolveVaultRefs walks `props` according to `sch` and, for every string value

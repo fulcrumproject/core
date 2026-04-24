@@ -149,19 +149,22 @@ func (t *Token) IsExpired() bool {
 // GenerateTokenValue creates a secure random token and sets the HashedValue field
 // The plain text value is only returned and never stored in the entity
 func (t *Token) GenerateTokenValue() error {
-	// Generate a secure random token (32 bytes = 256 bits)
-	tokenBytes := make([]byte, 32)
-	if _, err := rand.Read(tokenBytes); err != nil {
-		return fmt.Errorf("failed to generate token: %w", err)
+	plain, err := generateSecureToken()
+	if err != nil {
+		return err
 	}
-
-	// Convert to base64
-	t.PlainValue = base64.URLEncoding.EncodeToString(tokenBytes)
-
-	// Store only the hash of the token
-	t.HashedValue = HashTokenValue(t.PlainValue)
-
+	t.PlainValue = plain
+	t.HashedValue = HashTokenValue(plain)
 	return nil
+}
+
+// generateSecureToken returns a 32-byte (256-bit) random value base64url-encoded.
+func generateSecureToken() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("failed to generate token: %w", err)
+	}
+	return base64.URLEncoding.EncodeToString(buf), nil
 }
 
 // VerifyTokenValue checks if a token matches the stored hash

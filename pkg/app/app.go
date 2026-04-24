@@ -209,7 +209,7 @@ func NewApp() *App {
 	jobCmd := domain.NewJobCommander(store, propertyEngine)
 	metricEntryCmd := domain.NewMetricEntryCommander(store, metricEntryRepo)
 	metricTypeCmd := domain.NewMetricTypeCommander(store, metricEntryRepo)
-	installTokenCmd := domain.NewAgentInstallTokenCommander(store, cfg.InstallTokenTTL)
+	installTokenCmd := domain.NewAgentInstallTokenCommander(store)
 	agentCmd := domain.NewAgentCommander(store, agentConfigEngine)
 	tokenCmd := domain.NewTokenCommander(store)
 	eventSubscriptionCmd := domain.NewEventSubscriptionCommander(store)
@@ -282,7 +282,7 @@ func NewApp() *App {
 		ServicePoolHandler:       api.NewServicePoolHandler(store.ServicePoolRepo(), servicePoolCmd, athz),
 		ServicePoolValueHandler:  api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), servicePoolValueCmd, athz),
 		ParticipantHandler:       api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz),
-		AgentHandler:             api.NewAgentHandler(store.AgentRepo(), agentCmd, athz, api.NewAgentInstallTokenHandler(store.AgentInstallTokenRepo(), installTokenCmd, store.AgentRepo(), vault, cfg.PublicBaseURL)),
+		AgentHandler:             api.NewAgentHandler(store.AgentRepo(), agentCmd, athz, api.NewAgentInstallTokenHandler(store.AgentInstallTokenRepo(), installTokenCmd, vault, cfg.PublicBaseURL)),
 		AgentPoolHandler:         api.NewAgentPoolHandler(store.AgentPoolRepo(), agentPoolCmd, athz),
 		AgentPoolValueHandler:    api.NewAgentPoolValueHandler(store.AgentPoolValueRepo(), agentPoolValueCmd, athz),
 		AgentTypeHandler:         api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz),

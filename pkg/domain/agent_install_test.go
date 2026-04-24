@@ -10,7 +10,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/schema"
 )
 
-func TestGenerateInstallToken_Unique(t *testing.T) {
+func TestGenerateSecureToken_Unique(t *testing.T) {
 	const n = 256
 	var (
 		wg   sync.WaitGroup
@@ -21,9 +21,9 @@ func TestGenerateInstallToken_Unique(t *testing.T) {
 	for i := 0; i < n; i++ {
 		go func() {
 			defer wg.Done()
-			tok, err := GenerateInstallToken()
+			tok, err := generateSecureToken()
 			if err != nil {
-				t.Errorf("GenerateInstallToken: %v", err)
+				t.Errorf("generateSecureToken: %v", err)
 				return
 			}
 			mu.Lock()
@@ -37,10 +37,10 @@ func TestGenerateInstallToken_Unique(t *testing.T) {
 	}
 }
 
-func TestGenerateInstallToken_Length(t *testing.T) {
-	tok, err := GenerateInstallToken()
+func TestGenerateSecureToken_Length(t *testing.T) {
+	tok, err := generateSecureToken()
 	if err != nil {
-		t.Fatalf("GenerateInstallToken: %v", err)
+		t.Fatalf("generateSecureToken: %v", err)
 	}
 	// 32 bytes → base64url of length 44 (with padding).
 	if len(tok) != 44 {

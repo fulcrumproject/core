@@ -24,10 +24,10 @@ func (at *AgentType) validateTemplates() error {
 	cmdData[cmdTemplateExtraRef] = ""
 	cmdData[cmdTemplateExtraAuthTokenRef] = ""
 
-	if err := parseAndRender("configTemplate", at.ConfigTemplate, configData); err != nil {
+	if err := executeTemplate("configTemplate", at.ConfigTemplate, configData, io.Discard); err != nil {
 		return err
 	}
-	if err := parseAndRender("cmdTemplate", at.CmdTemplate, cmdData); err != nil {
+	if err := executeTemplate("cmdTemplate", at.CmdTemplate, cmdData, io.Discard); err != nil {
 		return err
 	}
 
@@ -45,7 +45,7 @@ func (at *AgentType) validateTemplates() error {
 					data[k] = ""
 				}
 			}
-			err := parseAndRender("cmdTemplate", at.CmdTemplate, data)
+			err := executeTemplate("cmdTemplate", at.CmdTemplate, data, io.Discard)
 			if err == nil {
 				return fmt.Errorf("cmdTemplate must reference {{.%s}} when configTemplate is set", required)
 			}
@@ -63,7 +63,10 @@ func (at *AgentType) validateTemplates() error {
 	return nil
 }
 
-func parseAndRender(name, body string, data map[string]any) error {
+// executeTemplate parses body and executes it into out with missingkey=error.
+// Empty body is a no-op. Missing-key execution errors are rewritten to the
+// friendlier "%s references unknown property %q" form.
+func executeTemplate(name, body string, data map[string]any, out io.Writer) error {
 	if body == "" {
 		return nil
 	}
@@ -71,7 +74,7 @@ func parseAndRender(name, body string, data map[string]any) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", name, err)
 	}
-	if err := tmpl.Execute(io.Discard, data); err != nil {
+	if err := tmpl.Execute(out, data); err != nil {
 		if m := missingKeyRe.FindStringSubmatch(err.Error()); len(m) == 2 {
 			return fmt.Errorf("%s references unknown property %q", name, m[1])
 		}
