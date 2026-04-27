@@ -54,6 +54,7 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.Token{},
 		&domain.Participant{},
 		&domain.Agent{},
+		&domain.AgentInstallToken{},
 		&domain.AgentType{},
 		&domain.AgentPool{},
 		&domain.AgentPoolValue{},

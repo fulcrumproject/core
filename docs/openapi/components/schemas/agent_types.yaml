@@ -14,6 +14,19 @@ AgentTypeRes:
     configurationSchema:
       $ref: "./agent_types.yaml#/ConfigurationSchema"
       description: "Schema defining the structure and validation rules for agent configuration"
+    configTemplate:
+      type: string
+      description: "Go text/template rendered at install time to produce the agent config file. Placeholder refs (e.g. {{.host}}) must be keys of configurationSchema.properties."
+      example: "host={{.host}}\nport={{.port}}"
+    cmdTemplate:
+      type: string
+      description: "Go text/template rendered at install time to produce the agent install command. Placeholder refs must be keys of configurationSchema.properties or the special {{.configUrl}}."
+      example: "agent install --config {{.configUrl}}"
+    configContentType:
+      type: string
+      description: "Media type (RFC 6838) of the rendered configTemplate output. Defaults to text/plain."
+      default: "text/plain"
+      example: "application/yaml"
     createdAt:
       type: string
       format: date-time
@@ -46,6 +59,19 @@ CreateAgentTypeReq:
     configurationSchema:
       $ref: "./agent_types.yaml#/ConfigurationSchema"
       description: "Schema defining the structure and validation rules for agent configuration"
+    configTemplate:
+      type: string
+      description: "Go text/template for the agent config file. Placeholder refs must be keys of configurationSchema.properties."
+      example: "host={{.host}}\nport={{.port}}"
+    cmdTemplate:
+      type: string
+      description: "Go text/template for the agent install command. Placeholder refs must be keys of configurationSchema.properties or {{.configUrl}}."
+      example: "agent install --config {{.configUrl}}"
+    configContentType:
+      type: string
+      description: "Media type (RFC 6838) of the rendered configTemplate output. Defaults to text/plain when omitted."
+      default: "text/plain"
+      example: "application/yaml"
 
 UpdateAgentTypeReq:
   type: object
@@ -68,6 +94,16 @@ UpdateAgentTypeReq:
     configurationSchema:
       $ref: "./agent_types.yaml#/ConfigurationSchema"
       description: "Updated configuration schema"
+    configTemplate:
+      type: string
+      description: "Updated Go text/template for the agent config file."
+    cmdTemplate:
+      type: string
+      description: "Updated Go text/template for the agent install command."
+    configContentType:
+      type: string
+      description: "Updated media type for the rendered configTemplate output. Empty resets to text/plain."
+      default: "text/plain"
 
 ConfigurationSchema:
   type: object

@@ -133,6 +133,226 @@ func TestAgentType_WithConfigurationSchema(t *testing.T) {
 	}
 }
 
+func TestAgentType_ValidateTemplates(t *testing.T) {
+	baseProps := map[string]schema.PropertyDefinition{
+		"host": {Type: "string"},
+		"port": {Type: "integer"},
+	}
+	arrayProps := map[string]schema.PropertyDefinition{
+		"servers": {Type: "array"},
+	}
+	nestedProps := map[string]schema.PropertyDefinition{
+		"proxmoxAPI": {
+			Type: "object",
+			Properties: map[string]schema.PropertyDefinition{
+				"apiToken": {Type: "string"},
+				"apiUrls": {
+					Type:  "array",
+					Items: &schema.PropertyDefinition{Type: "string"},
+				},
+			},
+		},
+	}
+	nestedMissingProps := map[string]schema.PropertyDefinition{
+		"proxmoxAPI": {
+			Type:       "object",
+			Properties: map[string]schema.PropertyDefinition{},
+		},
+	}
+
+	tests := []struct {
+		name              string
+		props             map[string]schema.PropertyDefinition
+		configTemplate    string
+		cmdTemplate       string
+		configContentType string
+		wantErr           bool
+		wantMsgContains   string
+	}{
+		{
+			name:              "accept valid refs",
+			props:             baseProps,
+			configTemplate:    "host={{.host}}\nport={{.port}}",
+			cmdTemplate:       "run --p {{.port}} --tok {{.authToken}} --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "accept empty templates",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "reject unknown ref in configTemplate",
+			props:             baseProps,
+			configTemplate:    "{{.missing}}",
+			cmdTemplate:       "",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "missing",
+		},
+		{
+			name:              "reject unknown ref in cmdTemplate",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "{{.unknown}}",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "unknown",
+		},
+		{
+			name:              "reject configUrl in configTemplate",
+			props:             baseProps,
+			configTemplate:    "url={{.configUrl}}",
+			cmdTemplate:       "",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "configUrl",
+		},
+		{
+			name:              "reject configUrl in cmdTemplate only (coupling)",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "{{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "both be set or both be empty",
+		},
+		{
+			name:              "reject unparseable template",
+			props:             baseProps,
+			configTemplate:    "{{.host",
+			cmdTemplate:       "",
+			configContentType: "text/plain",
+			wantErr:           true,
+		},
+		{
+			name:              "accept range over declared array prop",
+			props:             arrayProps,
+			configTemplate:    "{{range .servers}}x{{end}}",
+			cmdTemplate:       "install --tok {{.authToken}} --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "accept nested object ref",
+			props:             nestedProps,
+			configTemplate:    "token={{.proxmoxAPI.apiToken}}",
+			cmdTemplate:       "install --tok {{.authToken}} --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "reject nested ref to missing nested prop",
+			props:             nestedMissingProps,
+			configTemplate:    "token={{.proxmoxAPI.apiToken}}",
+			cmdTemplate:       "install --tok {{.authToken}} --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "apiToken",
+		},
+		{
+			name:              "accept range over nested array-of-string",
+			props:             nestedProps,
+			configTemplate:    "{{range .proxmoxAPI.apiUrls}}{{.}}\n{{end}}",
+			cmdTemplate:       "install --tok {{.authToken}} --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "reject configTemplate set but cmdTemplate empty",
+			props:             baseProps,
+			configTemplate:    "host={{.host}}",
+			cmdTemplate:       "",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "both be set or both be empty",
+		},
+		{
+			name:              "reject cmdTemplate set but configTemplate empty",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "install --tok {{.authToken}} --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "both be set or both be empty",
+		},
+		{
+			name:              "reject both set but cmd missing configUrl",
+			props:             baseProps,
+			configTemplate:    "host={{.host}}",
+			cmdTemplate:       "run --h {{.host}} --tok {{.authToken}}",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "must reference {{.configUrl}}",
+		},
+		{
+			name:              "reject both set but cmd missing authToken",
+			props:             baseProps,
+			configTemplate:    "host={{.host}}",
+			cmdTemplate:       "run --h {{.host}} --url {{.configUrl}}",
+			configContentType: "text/plain",
+			wantErr:           true,
+			wantMsgContains:   "must reference {{.authToken}}",
+		},
+		{
+			name:              "accept configUrl with whitespace and trim markers",
+			props:             baseProps,
+			configTemplate:    "host={{.host}}",
+			cmdTemplate:       "run --url {{- .configUrl -}} --tok {{ .authToken }} --host {{ .host }}",
+			configContentType: "text/plain",
+			wantErr:           false,
+		},
+		{
+			name:              "reject malformed mime type",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "",
+			configContentType: "not a mime",
+			wantErr:           true,
+			wantMsgContains:   "configContentType",
+		},
+		{
+			name:              "accept common mime type",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "",
+			configContentType: "application/yaml",
+			wantErr:           false,
+		},
+		{
+			name:              "accept mime type with params",
+			props:             baseProps,
+			configTemplate:    "",
+			cmdTemplate:       "",
+			configContentType: "text/plain; charset=utf-8",
+			wantErr:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			at := &AgentType{
+				Name:                "Test Agent",
+				ConfigurationSchema: schema.Schema{Properties: tt.props},
+				ConfigTemplate:      tt.configTemplate,
+				CmdTemplate:         tt.cmdTemplate,
+				ConfigContentType:   tt.configContentType,
+			}
+			err := at.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantMsgContains != "" && !strings.Contains(err.Error(), tt.wantMsgContains) {
+				t.Errorf("expected error to contain %q, got: %v", tt.wantMsgContains, err)
+			}
+		})
+	}
+}
+
 func TestAgentType_ValidateWithEngine_EmptyName(t *testing.T) {
 	engine := NewAgentConfigSchemaEngine(nil)
 

@@ -1,0 +1,40 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      $ref: "../components/schemas/common.yaml#/properties.UUID"
+post:
+  operationId: agentsRegenerateInstallCommand
+  summary: Regenerate install command
+  tags:
+    - Agents
+  description: |
+    Rotates the agent's install token. Invalidates any previously issued
+    install token and returns a fresh install command plus fetch URL. As
+    with Create, the plain token is rendered exactly once and cannot be
+    recovered later.
+  x-auth-permissions:
+    - role: admin
+      permission: always
+    - role: participant
+      permission: agents belonging to its participant
+    - role: agent
+      permission: not authorized
+  responses:
+    "200":
+      description: Install token regenerated
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/agents.yaml#/InstallTokenRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Agent not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

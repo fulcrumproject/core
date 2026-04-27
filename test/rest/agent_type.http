@@ -92,7 +92,10 @@ Content-Type: application/json
             ]
             }
         }
-    }
+    },
+    "configTemplate": "apiEndpoint={{.apiEndpoint}}\napiKey={{.apiKey}}\nmaxRetries={{.maxRetries}}\npollingInterval={{.pollingInterval}}\nenableMetrics={{.enableMetrics}}\nlogLevel={{.logLevel}}",
+    "cmdTemplate": "agent install --config {{.configUrl}} --poll {{.pollingInterval}}",
+    "configContentType": "text/plain"
 }
 
 @createdAgentTypeId = {{createAgentType.response.body.id}}
@@ -188,7 +191,10 @@ Content-Type: application/json
             ]
             }
         }
-    }
+    },
+    "configTemplate": "endpoint: {{.apiEndpoint}}\nkey: {{.apiKey}}\ntracing: {{.enableTracing}}",
+    "cmdTemplate": "agent install --config {{.configUrl}}",
+    "configContentType": "application/yaml"
 }
 
 ### Get the updated agent type
@@ -197,4 +203,157 @@ Authorization: Bearer {{adminToken}}
 
 ### Delete the agent type
 DELETE {{baseUrl}}/agent-types/{{createdAgentTypeId}}
+Authorization: Bearer {{adminToken}}
+
+### --- Template validation: negative cases (expect 400) ---
+
+### Reject unknown ref in configTemplate
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Invalid Config Ref",
+    "configurationSchema": {
+        "properties": {
+            "host": { "type": "string", "required": true }
+        }
+    },
+    "configTemplate": "host={{.missing}}",
+    "configContentType": "text/plain"
+}
+
+### Reject configUrl in configTemplate (only allowed in cmdTemplate)
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "ConfigUrl In Wrong Place",
+    "configurationSchema": {
+        "properties": {
+            "host": { "type": "string", "required": true }
+        }
+    },
+    "configTemplate": "url={{.configUrl}}",
+    "configContentType": "text/plain"
+}
+
+### Reject unknown ref in cmdTemplate
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Invalid Cmd Ref",
+    "configurationSchema": {
+        "properties": {
+            "host": { "type": "string", "required": true }
+        }
+    },
+    "cmdTemplate": "run --flag {{.unknown}}",
+    "configContentType": "text/plain"
+}
+
+### Reject unparseable template
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Broken Template",
+    "configurationSchema": {
+        "properties": {
+            "host": { "type": "string", "required": true }
+        }
+    },
+    "configTemplate": "host={{.host",
+    "configContentType": "text/plain"
+}
+
+### Reject malformed configContentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Bad Mime",
+    "configurationSchema": {
+        "properties": {
+            "host": { "type": "string", "required": true }
+        }
+    },
+    "configContentType": "not a mime"
+}
+
+### Reject configTemplate set but cmdTemplate empty (coupling)
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Config Only",
+    "configurationSchema": {
+        "properties": {
+            "host": { "type": "string", "required": true }
+        }
+    },
+    "configTemplate": "host: {{.host}}",
+    "configContentType": "text/plain"
+}
+
+### Reject both templates set but cmdTemplate missing configUrl
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Cmd Missing ConfigUrl",
+    "configurationSchema": {
+        "properties": {
+            "host": { "type": "string", "required": true }
+        }
+    },
+    "configTemplate": "host: {{.host}}",
+    "cmdTemplate": "install --host {{.host}}",
+    "configContentType": "text/plain"
+}
+
+### --- Template validation: happy paths (expect 200) ---
+
+### Accept both templates with configUrl and default configContentType
+# @name templateHappyPath
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Both Templates",
+    "configurationSchema": {
+        "properties": {
+            "host": { "type": "string", "required": true }
+        }
+    },
+    "configTemplate": "host: {{.host}}",
+    "cmdTemplate": "agent install --url {{.configUrl}} --host {{.host}}"
+}
+
+@templateHappyPathId = {{templateHappyPath.response.body.id}}
+
+### Verify configContentType defaulted to text/plain
+GET {{baseUrl}}/agent-types/{{templateHappyPathId}}
+Authorization: Bearer {{adminToken}}
+
+### Update templates on the created agent type
+PATCH {{baseUrl}}/agent-types/{{templateHappyPathId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "configTemplate": "host={{.host}}",
+    "configContentType": "text/plain; charset=utf-8"
+}
+
+### Cleanup
+DELETE {{baseUrl}}/agent-types/{{templateHappyPathId}}
 Authorization: Bearer {{adminToken}}

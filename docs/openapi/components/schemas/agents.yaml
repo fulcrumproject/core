@@ -108,4 +108,43 @@ AgentCreateRes:
         token:
           $ref: "./tokens.yaml#/TokenRes"
           description: "The agent authentication token"
+
+InstallTokenRes:
+  type: object
+  description: |
+    One-shot install token response. Returned by Create and Regenerate.
+    `installCommand` and `url` contain the plain token; they cannot be
+    recovered later — if lost, the token must be regenerated.
+  properties:
+    installCommand:
+      type: string
+      description: Rendered install command (copy-paste onto the target host).
+      example: "agent install --config https://api.fulcrum.testudosrl.dev/api/v1/agents/install/tkn_9fUw8J3lA2bN5yQrK7zX/config"
+    url:
+      type: string
+      format: uri
+      description: Install fetch URL containing the plain token.
+      example: "https://api.fulcrum.testudosrl.dev/api/v1/agents/install/tkn_9fUw8J3lA2bN5yQrK7zX/config"
+    expiresAt:
+      type: string
+      format: date-time
+      example: "2026-04-24T14:35:00Z"
+  required: [installCommand, url, expiresAt]
+
+InstallTokenMetaRes:
+  type: object
+  description: |
+    Metadata-only view of the current install token. Never exposes the
+    plain token or rendered URL.
+  properties:
+    expiresAt:
+      type: string
+      format: date-time
+      example: "2026-04-24T14:35:00Z"
+    createdAt:
+      type: string
+      format: date-time
+      example: "2026-04-24T14:30:00Z"
+  required: [expiresAt, createdAt]
+
 # Agent Type schemas

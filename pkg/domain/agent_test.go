@@ -210,7 +210,7 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 		ms.On("EventRepo").Return(eventRepo).Maybe()
 
 		engine := NewAgentConfigSchemaEngine(nil)
-		commander := NewAgentCommander(ms, engine)
+			commander := NewAgentCommander(ms, engine)
 
 		identity := &auth.Identity{
 			Role: auth.RoleAdmin,
@@ -275,7 +275,7 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 		ms.On("AgentTypeRepo").Return(agentTypeRepo).Maybe()
 
 		engine := NewAgentConfigSchemaEngine(nil)
-		commander := NewAgentCommander(ms, engine)
+			commander := NewAgentCommander(ms, engine)
 
 		identity := &auth.Identity{
 			Role: auth.RoleAdmin,

@@ -1,0 +1,258 @@
+### Agent Install Token Flow
+###
+### Walk through this file top-to-bottom to exercise the full install flow:
+###   1. Create provider, agent type with install templates, and agent with secret config
+###   2. Mint an install token (POST) — returns {installCommand, url, expiresAt} ONCE
+###   3. GET metadata — returns {id, expiresAt, createdAt}; no token, no url
+###   4. Fetch the public install URL — returns rendered config with vault secret resolved
+###   5. Regenerate — new url; old url 404s; new url works
+###   6. Revoke (DELETE) — existing url 404s; metadata GET 404s
+###   7. Conflict (409) and not-found (404) paths
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@publicBase = http://localhost:3000
+@adminToken = change-me
+
+### --- Setup --------------------------------------------------------------
+
+### Create a provider
+# @name ic_createProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Install Flow Provider {{$timestamp}}",
+    "status": "Enabled"
+}
+
+@ic_providerId = {{ic_createProvider.response.body.$.id}}
+
+### Create an agent type with install templates
+### - configTemplate is what the install host downloads (with vault:// resolved)
+### - cmdTemplate is what the operator copies (must reference {{.configUrl}})
+# @name ic_createAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Install Flow Agent Type {{$timestamp}}",
+    "configurationSchema": {
+        "properties": {
+            "apiEndpoint": {
+                "type": "string",
+                "label": "API Endpoint",
+                "required": true
+            },
+            "apiKey": {
+                "type": "string",
+                "label": "API Key",
+                "required": true,
+                "secret": { "type": "persistent" }
+            },
+            "maxRetries": {
+                "type": "integer",
+                "label": "Max Retries",
+                "default": 3
+            }
+        }
+    },
+    "configContentType": "text/plain",
+    "configTemplate": "[agent]\nendpoint={{.apiEndpoint}}\napi_key={{.apiKey}}\nretries={{.maxRetries}}\n",
+    "cmdTemplate": "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}' -o /tmp/agent.conf && cat /tmp/agent.conf"
+}
+
+@ic_agentTypeId = {{ic_createAgentType.response.body.$.id}}
+
+### Create an agent with a secret in its configuration
+# @name ic_createAgent
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Install Flow Agent",
+    "providerId": "{{ic_providerId}}",
+    "agentTypeId": "{{ic_agentTypeId}}",
+    "tags": ["install-flow-test"],
+    "configuration": {
+        "apiEndpoint": "https://api.example.com",
+        "apiKey": "super-secret-api-key-42",
+        "maxRetries": 5
+    }
+}
+
+@ic_agentId = {{ic_createAgent.response.body.$.id}}
+
+### --- Happy path ---------------------------------------------------------
+
+### GET install-command BEFORE creation — expect 404 install_token_not_found
+GET {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### Create the install token (operator mints it)
+### Expect 201 with { installCommand, url, expiresAt ~= now+24h }
+# @name ic_createInstall
+POST {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+@ic_installUrl = {{ic_createInstall.response.body.$.url}}
+
+### GET install-command metadata — returns {id, expiresAt, createdAt}.
+### The plaintext token is NEVER returned after Create/Regenerate. If the
+### operator lost the url, they must Regenerate (which invalidates the old one).
+GET {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### Fetch the public install URL (what the install host runs)
+### Expect 200, Content-Type: text/plain, body has apiKey RESOLVED (not vault://...)
+GET {{ic_installUrl}}
+
+### --- Conflict and re-mint -----------------------------------------------
+
+### Creating twice must conflict — expect 409 install_token_exists
+POST {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### Regenerate rotates token and expiry — expect 200 with DIFFERENT url
+# @name ic_regenerate
+POST {{baseUrl}}/agents/{{ic_agentId}}/install-command/regenerate
+Authorization: Bearer {{adminToken}}
+
+@ic_installUrlNew = {{ic_regenerate.response.body.$.url}}
+
+### Old URL must now 404 (token was rotated)
+GET {{ic_installUrl}}
+
+### New URL still works — 200, body with secrets resolved
+GET {{ic_installUrlNew}}
+
+### GET install-command again — returns updated expiresAt, still no token/url
+GET {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### --- Revoke -------------------------------------------------------------
+
+### Revoke the install token without minting a new one — expect 204
+DELETE {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### After revoke, the rotated public URL must 404
+GET {{ic_installUrlNew}}
+
+### Metadata GET now 404s
+GET {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### Revoking again with nothing outstanding — expect 404 install_token_not_found
+DELETE {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### Re-mint after revoke works (fresh Create, no 409)
+# @name ic_createAfterRevoke
+POST {{baseUrl}}/agents/{{ic_agentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+@ic_installUrlAfterRevoke = {{ic_createAfterRevoke.response.body.$.url}}
+
+### New URL works
+GET {{ic_installUrlAfterRevoke}}
+
+### --- Negative paths -----------------------------------------------------
+
+### Public endpoint with garbage token — expect 404 (empty body)
+GET {{publicBase}}/install/garbage-token-nothing-here
+
+### Public endpoint with empty token — expect 404
+GET {{publicBase}}/install/
+
+### Regenerate on an agent with no install token — expect 404 install_token_not_found
+# @name ic_createAgentNoCmd
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Install Flow Agent (no install yet)",
+    "providerId": "{{ic_providerId}}",
+    "agentTypeId": "{{ic_agentTypeId}}",
+    "tags": ["install-flow-test"],
+    "configuration": {
+        "apiEndpoint": "https://api.example.com",
+        "apiKey": "another-secret-99"
+    }
+}
+
+@ic_agentIdNoCmd = {{ic_createAgentNoCmd.response.body.$.id}}
+
+POST {{baseUrl}}/agents/{{ic_agentIdNoCmd}}/install-command/regenerate
+Authorization: Bearer {{adminToken}}
+
+### Create install token on the no-cmd agent, then delete the agent
+### — FK cascade drops the DB row; old url 404s afterward.
+# @name ic_createInstall2
+POST {{baseUrl}}/agents/{{ic_agentIdNoCmd}}/install-command
+Authorization: Bearer {{adminToken}}
+
+@ic_installUrl2 = {{ic_createInstall2.response.body.$.url}}
+
+### Confirm it works before we delete
+GET {{ic_installUrl2}}
+
+### Delete the agent
+DELETE {{baseUrl}}/agents/{{ic_agentIdNoCmd}}
+Authorization: Bearer {{adminToken}}
+
+### Install URL should 404 after agent deletion (FK cascade drops the row)
+GET {{ic_installUrl2}}
+
+### --- Templates-not-configured path --------------------------------------
+
+### Create an agent type WITHOUT install templates
+# @name ic_createPlainAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Plain Agent Type {{$timestamp}}",
+    "configurationSchema": {
+        "properties": {
+            "name": { "type": "string", "label": "Name" }
+        }
+    }
+}
+
+@ic_plainAgentTypeId = {{ic_createPlainAgentType.response.body.$.id}}
+
+### Agent on a template-less type
+# @name ic_createPlainAgent
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Plain Agent",
+    "providerId": "{{ic_providerId}}",
+    "agentTypeId": "{{ic_plainAgentTypeId}}",
+    "tags": ["install-flow-test"],
+    "configuration": { "name": "demo" }
+}
+
+@ic_plainAgentId = {{ic_createPlainAgent.response.body.$.id}}
+
+### POST install-command on template-less agent — expect 422 install_not_configured
+POST {{baseUrl}}/agents/{{ic_plainAgentId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### --- Cleanup ------------------------------------------------------------
+
+### Delete the main install-flow agent (also drops its install token via cascade)
+DELETE {{baseUrl}}/agents/{{ic_agentId}}
+Authorization: Bearer {{adminToken}}
+
+### Delete the plain agent
+DELETE {{baseUrl}}/agents/{{ic_plainAgentId}}
+Authorization: Bearer {{adminToken}}

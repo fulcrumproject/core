@@ -42,7 +42,19 @@ func ErrDomain(err error) render.Renderer {
 	if errors.As(err, &domain.UnauthorizedError{}) {
 		return ErrUnauthorized(err)
 	}
+	if errors.As(err, &domain.ConflictError{}) {
+		return ErrConflict(err)
+	}
 	return ErrInternal(err)
+}
+
+func ErrConflict(err error) render.Renderer {
+	return &ErrRes{
+		Err:            err,
+		HTTPStatusCode: http.StatusConflict,
+		StatusText:     "Conflict",
+		ErrorText:      err.Error(),
+	}
 }
 
 func ErrInvalidRequest(err error) render.Renderer {

@@ -28,6 +28,7 @@ type Config struct {
 	MetricDBConfig          gormpg.Conf           `json:"metricDb" env:"METRIC_DB" validate:"required"`
 	OAuthConfig             keycloak.Config       `json:"oauth" validate:"required"`
 	VaultEncryptionKey      string                `json:"vaultEncryptionKey" env:"VAULT_ENCRYPTION_KEY" validate:"omitempty,len=64"`
+	PublicBaseURL           string                `json:"publicBaseUrl" env:"PUBLIC_BASE_URL" validate:"required,url"`
 	ApiServer               bool                  `json:"apiServer" env:"API_SERVER" validate:"boolean"`
 	JobMaintenance          bool                  `json:"jobMaintenance" env:"JOB_MAINTENANCE" validate:"boolean"`
 	AgentMaintenance        bool                  `json:"agentMaintenance" env:"AGENT_MAINTENANCE" validate:"boolean"`

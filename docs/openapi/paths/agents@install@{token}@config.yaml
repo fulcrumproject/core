@@ -1,0 +1,72 @@
+parameters:
+  - name: token
+    in: path
+    required: true
+    schema:
+      type: string
+    description: Per-resource install token issued by POST /agents/{id}/install-command.
+get:
+  operationId: agentsFetchInstallConfig
+  summary: Fetch rendered agent install configuration
+  tags:
+    - Agents
+  description: |
+    Returns the rendered agent configuration file for a freshly installed
+    agent. The caller must present BOTH:
+
+    1. A bearer token with `admin`, `participant`, or `agent` role (standard
+       API authentication).
+    2. A valid install token embedded in the URL (the per-resource secret
+       issued by POST `/agents/{id}/install-command`).
+
+    The response body is the rendered configuration — its media type matches
+    the agent type's `configContentType` (commonly `text/plain`,
+    `application/yaml`, or `application/json`). Install tokens are
+    short-lived (≈5 minutes) and single-use per install.
+
+    Auth failures (missing or wrong-role bearer) return `401`/`403` from the
+    standard auth middleware. Past that gate, every failure mode (unknown
+    token, expired token, missing template, vault resolution failure, render
+    error) collapses into a uniform `404` with the standard error envelope —
+    the precise cause is only in the server-side log so callers cannot
+    distinguish them.
+  x-auth-permissions:
+    - role: admin
+      permission: authorized with a valid install token
+    - role: participant
+      permission: authorized with a valid install token
+    - role: agent
+      permission: authorized with a valid install token
+  responses:
+    "200":
+      description: Rendered agent configuration. Media type is dynamic (matches the agent type's `configContentType`).
+      headers:
+        Content-Type:
+          schema:
+            type: string
+          description: Matches the agent type's `configContentType`.
+        Cache-Control:
+          schema:
+            type: string
+            example: no-store
+        X-Content-Type-Options:
+          schema:
+            type: string
+            example: nosniff
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: |
+        Install token not found, expired, or the agent's configuration could
+        not be rendered. Body is the standard error envelope — consult server
+        logs for the real cause.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

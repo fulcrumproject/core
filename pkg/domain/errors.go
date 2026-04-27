@@ -51,3 +51,19 @@ func (e UnauthorizedError) Error() string {
 func (e UnauthorizedError) Unwrap() error {
 	return e.Err
 }
+
+type ConflictError struct {
+	Err error
+}
+
+func NewConflictErrorf(format string, a ...any) ConflictError {
+	return ConflictError{Err: fmt.Errorf(format, a...)}
+}
+
+func (e ConflictError) Error() string {
+	return fmt.Sprintf("conflict: %v", e.Err)
+}
+
+func (e ConflictError) Unwrap() error {
+	return e.Err
+}
