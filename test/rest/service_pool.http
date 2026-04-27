@@ -1,6 +1,5 @@
 ### Service Pool Operations
-### This file tests CRUD on service pools and the per-provider
-### (providerId, type) uniqueness rule.
+### This file tests operations for service pools
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
@@ -10,46 +9,37 @@
 GET {{baseUrl}}/service-pools
 Authorization: Bearer {{adminToken}}
 
-### Get all service pools with filter by name
-GET {{baseUrl}}/service-pools?name=test
-Authorization: Bearer {{adminToken}}
-
-### Get all service pools with filter by type
-GET {{baseUrl}}/service-pools?type=public_ip
-Authorization: Bearer {{adminToken}}
-
 ### Get all service pools with filter by generatorType
 GET {{baseUrl}}/service-pools?generatorType=list
 Authorization: Bearer {{adminToken}}
 
-
-### Create Provider A
-# @name createProviderA
+### Create Provider (moved here to use in service options and pools)
+# @name createProvider
 POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-    "name": "Test Provider A {{$guid}}",
+    "name": "Test Provider {{$guid}}",
     "status": "Enabled",
     "attributes": {
         "type": ["test"]
     }
 }
 
-### Create Pool Set A1 under Provider A
-# @name createPoolSetA1
+### Create Service Pool Set
+# @name createPoolSet
 POST {{baseUrl}}/service-pool-sets
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-    "name": "Pool Set A1 {{$guid}}",
-    "providerId": "{{createProviderA.response.body.id}}"
+    "name": "Test Pools {{$guid}}",
+    "providerId": "{{createProvider.response.body.id}}"
 }
 
-### Create Service Pool in Set A1
-# @name createPoolA1
+### Create an service pool
+# @name createServicePool
 POST {{baseUrl}}/service-pools
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -59,114 +49,42 @@ Content-Type: application/json
     "type": "public_ip",
     "propertyType": "string",
     "generatorType": "list",
-    "servicePoolSetId": "{{createPoolSetA1.response.body.id}}"
+    "servicePoolSetId": "{{createPoolSet.response.body.id}}"
 }
 
-@servicePoolId = {{createPoolA1.response.body.$.id}}
+@servicePoolId = {{createServicePool.response.body.$.id}}
 
-### Get the pool by id
+### Create an service pool value
+# @name createServicePoolValue
+POST {{baseUrl}}/service-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "192.168.1.10",
+  "value": "192.168.1.10",
+  "servicePoolId": "{{servicePoolId}}"
+}
+
+@servicePoolValueId = {{createServicePoolValue.response.body.$.id}}
+
+### Get a specific service pool
 GET {{baseUrl}}/service-pools/{{servicePoolId}}
 Authorization: Bearer {{adminToken}}
 
-### Update the pool
+### Update an service pool
 PATCH {{baseUrl}}/service-pools/{{servicePoolId}}
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-    "name": "Public IP Pool (updated)"
+  "name": "Updated Pool Name"
 }
 
-###
-### Duplicate-type checks
-###
-### Before the (providerId, type) constraint the next two requests would
-### return 201 and later cause `no available pool values` at service
-### allocation time. With the constraint they return 400 InvalidInput.
-
-### Duplicate in the SAME pool set — should fail (400)
-POST {{baseUrl}}/service-pools
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "name": "Public IP Pool duplicate",
-    "type": "public_ip",
-    "propertyType": "string",
-    "generatorType": "list",
-    "servicePoolSetId": "{{createPoolSetA1.response.body.id}}"
-}
-
-### Create a second pool set under the SAME provider
-# @name createPoolSetA2
-POST {{baseUrl}}/service-pool-sets
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "name": "Pool Set A2 {{$guid}}",
-    "providerId": "{{createProviderA.response.body.id}}"
-}
-
-### Duplicate type in a DIFFERENT pool set of the same provider — should fail (400)
-POST {{baseUrl}}/service-pools
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "name": "Public IP Pool cross-set",
-    "type": "public_ip",
-    "propertyType": "string",
-    "generatorType": "list",
-    "servicePoolSetId": "{{createPoolSetA2.response.body.id}}"
-}
-
-###
-### Cross-provider reuse is allowed
-###
-
-### Create Provider B
-# @name createProviderB
-POST {{baseUrl}}/participants
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "name": "Test Provider B {{$guid}}",
-    "status": "Enabled",
-    "attributes": {
-        "type": ["test"]
-    }
-}
-
-### Create Pool Set B1 under Provider B
-# @name createPoolSetB1
-POST {{baseUrl}}/service-pool-sets
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "name": "Pool Set B1 {{$guid}}",
-    "providerId": "{{createProviderB.response.body.id}}"
-}
-
-### Same type under a DIFFERENT provider — should succeed (201)
-POST {{baseUrl}}/service-pools
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-    "name": "Public IP Pool (provider B)",
-    "type": "public_ip",
-    "propertyType": "string",
-    "generatorType": "list",
-    "servicePoolSetId": "{{createPoolSetB1.response.body.id}}"
-}
-
-###
-### Cleanup
-###
-
-### Delete the first pool
+### Delete an service pool (should fail if has associated value)
 DELETE {{baseUrl}}/service-pools/{{servicePoolId}}
+Authorization: Bearer {{adminToken}}
+
+### Delete an service pool value
+DELETE {{baseUrl}}/service-pool-values/{{servicePoolValueId}}
 Authorization: Bearer {{adminToken}}

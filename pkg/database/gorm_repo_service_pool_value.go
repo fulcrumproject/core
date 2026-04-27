@@ -51,8 +51,8 @@ func NewServicePoolValueRepository(db *gorm.DB) *GormServicePoolValueRepository 
 			applyServicePoolValueFilter,
 			applyServicePoolValueSort,
 			servicePoolValueAuthzFilterApplier,
-			[]string{"ServicePool", "Service"}, 
-			[]string{"ServicePool", "Service"}, 
+			[]string{"ServicePool", "Service"},
+			[]string{"ServicePool", "Service"},
 		),
 	}
 	return repo
@@ -143,6 +143,15 @@ func (r *GormServicePoolValueRepository) FindByService(
 // Update updates an existing service pool value
 func (r *GormServicePoolValueRepository) Update(ctx context.Context, value *domain.ServicePoolValue) error {
 	return r.Save(ctx, value)
+}
+
+func (r *GormServicePoolValueRepository) CountByPool(ctx context.Context, poolID properties.UUID) (int64, error) {
+	var count int64
+	result := r.db.WithContext(ctx).Model(&domain.ServicePoolValue{}).Where("service_pool_id = ?", poolID).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
 }
 
 // AuthScope returns the authorization scope for a service pool value (via pool -> pool set -> provider)

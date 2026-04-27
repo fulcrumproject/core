@@ -53,6 +53,15 @@ func (r *GormAgentPoolValueRepository) FindByAgent(ctx context.Context, agentID 
 	return values, result.Error
 }
 
+func (r *GormAgentPoolValueRepository) CountByPool(ctx context.Context, poolID properties.UUID) (int64, error) {
+	var count int64
+	result := r.db.WithContext(ctx).Model(&domain.AgentPoolValue{}).Where("agent_pool_id = ?", poolID).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}
+
 func (r *GormAgentPoolValueRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	return &authz.AllwaysMatchObjectScope{}, nil
 }

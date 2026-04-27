@@ -3338,6 +3338,72 @@ func (_c *MockAgentPoolValueQuerier_Count_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
+// CountByPool provides a mock function for the type MockAgentPoolValueQuerier
+func (_mock *MockAgentPoolValueQuerier) CountByPool(ctx context.Context, poolID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, poolID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByPool")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, poolID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, poolID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, poolID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentPoolValueQuerier_CountByPool_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByPool'
+type MockAgentPoolValueQuerier_CountByPool_Call struct {
+	*mock.Call
+}
+
+// CountByPool is a helper method to define mock.On call
+//   - ctx context.Context
+//   - poolID properties.UUID
+func (_e *MockAgentPoolValueQuerier_Expecter) CountByPool(ctx interface{}, poolID interface{}) *MockAgentPoolValueQuerier_CountByPool_Call {
+	return &MockAgentPoolValueQuerier_CountByPool_Call{Call: _e.mock.On("CountByPool", ctx, poolID)}
+}
+
+func (_c *MockAgentPoolValueQuerier_CountByPool_Call) Run(run func(ctx context.Context, poolID properties.UUID)) *MockAgentPoolValueQuerier_CountByPool_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentPoolValueQuerier_CountByPool_Call) Return(n int64, err error) *MockAgentPoolValueQuerier_CountByPool_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentPoolValueQuerier_CountByPool_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) (int64, error)) *MockAgentPoolValueQuerier_CountByPool_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Exists provides a mock function for the type MockAgentPoolValueQuerier
 func (_mock *MockAgentPoolValueQuerier) Exists(ctx context.Context, id properties.UUID) (bool, error) {
 	ret := _mock.Called(ctx, id)
@@ -3833,6 +3899,72 @@ func (_c *MockAgentPoolValueRepository_Count_Call) Return(n int64, err error) *M
 }
 
 func (_c *MockAgentPoolValueRepository_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockAgentPoolValueRepository_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountByPool provides a mock function for the type MockAgentPoolValueRepository
+func (_mock *MockAgentPoolValueRepository) CountByPool(ctx context.Context, poolID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, poolID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByPool")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, poolID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, poolID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, poolID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentPoolValueRepository_CountByPool_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByPool'
+type MockAgentPoolValueRepository_CountByPool_Call struct {
+	*mock.Call
+}
+
+// CountByPool is a helper method to define mock.On call
+//   - ctx context.Context
+//   - poolID properties.UUID
+func (_e *MockAgentPoolValueRepository_Expecter) CountByPool(ctx interface{}, poolID interface{}) *MockAgentPoolValueRepository_CountByPool_Call {
+	return &MockAgentPoolValueRepository_CountByPool_Call{Call: _e.mock.On("CountByPool", ctx, poolID)}
+}
+
+func (_c *MockAgentPoolValueRepository_CountByPool_Call) Run(run func(ctx context.Context, poolID properties.UUID)) *MockAgentPoolValueRepository_CountByPool_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentPoolValueRepository_CountByPool_Call) Return(n int64, err error) *MockAgentPoolValueRepository_CountByPool_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentPoolValueRepository_CountByPool_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) (int64, error)) *MockAgentPoolValueRepository_CountByPool_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -25832,6 +25964,72 @@ func (_c *MockServicePoolValueRepository_Count_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
+// CountByPool provides a mock function for the type MockServicePoolValueRepository
+func (_mock *MockServicePoolValueRepository) CountByPool(ctx context.Context, poolID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, poolID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByPool")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, poolID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, poolID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, poolID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueRepository_CountByPool_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByPool'
+type MockServicePoolValueRepository_CountByPool_Call struct {
+	*mock.Call
+}
+
+// CountByPool is a helper method to define mock.On call
+//   - ctx context.Context
+//   - poolID properties.UUID
+func (_e *MockServicePoolValueRepository_Expecter) CountByPool(ctx interface{}, poolID interface{}) *MockServicePoolValueRepository_CountByPool_Call {
+	return &MockServicePoolValueRepository_CountByPool_Call{Call: _e.mock.On("CountByPool", ctx, poolID)}
+}
+
+func (_c *MockServicePoolValueRepository_CountByPool_Call) Run(run func(ctx context.Context, poolID properties.UUID)) *MockServicePoolValueRepository_CountByPool_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_CountByPool_Call) Return(n int64, err error) *MockServicePoolValueRepository_CountByPool_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_CountByPool_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) (int64, error)) *MockServicePoolValueRepository_CountByPool_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function for the type MockServicePoolValueRepository
 func (_mock *MockServicePoolValueRepository) Create(ctx context.Context, value *ServicePoolValue) error {
 	ret := _mock.Called(ctx, value)
@@ -26702,6 +26900,72 @@ func (_c *MockServicePoolValueQuerier_Count_Call) Return(n int64, err error) *Mo
 }
 
 func (_c *MockServicePoolValueQuerier_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockServicePoolValueQuerier_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountByPool provides a mock function for the type MockServicePoolValueQuerier
+func (_mock *MockServicePoolValueQuerier) CountByPool(ctx context.Context, poolID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, poolID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByPool")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, poolID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, poolID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, poolID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockServicePoolValueQuerier_CountByPool_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByPool'
+type MockServicePoolValueQuerier_CountByPool_Call struct {
+	*mock.Call
+}
+
+// CountByPool is a helper method to define mock.On call
+//   - ctx context.Context
+//   - poolID properties.UUID
+func (_e *MockServicePoolValueQuerier_Expecter) CountByPool(ctx interface{}, poolID interface{}) *MockServicePoolValueQuerier_CountByPool_Call {
+	return &MockServicePoolValueQuerier_CountByPool_Call{Call: _e.mock.On("CountByPool", ctx, poolID)}
+}
+
+func (_c *MockServicePoolValueQuerier_CountByPool_Call) Run(run func(ctx context.Context, poolID properties.UUID)) *MockServicePoolValueQuerier_CountByPool_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_CountByPool_Call) Return(n int64, err error) *MockServicePoolValueQuerier_CountByPool_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockServicePoolValueQuerier_CountByPool_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) (int64, error)) *MockServicePoolValueQuerier_CountByPool_Call {
 	_c.Call.Return(run)
 	return _c
 }
