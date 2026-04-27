@@ -42,6 +42,7 @@ jobs:
       - name: Unit Tests with Coverage
         env:
           FULCRUM_DB_DSN: host=localhost user=${{ env.TEST_DB_USER }} password=${{ env.TEST_DB_PASSWORD }} dbname=${{ env.TEST_DB_NAME }} port=${{ env.TEST_DB_PORT }} sslmode=disable
+          FULCRUM_PUBLIC_BASE_URL: http://localhost:3000
         run: |
           go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
           go tool cover -func=coverage.out
