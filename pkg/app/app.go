@@ -31,6 +31,7 @@ type App struct {
 	MetricDb                 *gorm.DB
 	Authenticators           []auth.Authenticator
 	AgentTypeHandler         *api.AgentTypeHandler
+	AgentInstallTokenHandler *api.AgentInstallTokenHandler
 	ServiceTypeHandler       *api.ServiceTypeHandler
 	ServiceOptionTypeHandler *api.ServiceOptionTypeHandler
 	ServiceOptionHandler     *api.ServiceOptionHandler
@@ -282,7 +283,8 @@ func NewApp() *App {
 		ServicePoolHandler:       api.NewServicePoolHandler(store.ServicePoolRepo(), servicePoolCmd, athz),
 		ServicePoolValueHandler:  api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), servicePoolValueCmd, athz),
 		ParticipantHandler:       api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz),
-		AgentHandler:             api.NewAgentHandler(store.AgentRepo(), agentCmd, athz, api.NewAgentInstallTokenHandler(store.AgentInstallTokenRepo(), installTokenCmd, vault, cfg.PublicBaseURL)),
+		AgentHandler:             api.NewAgentHandler(store.AgentRepo(), agentCmd, athz),
+		AgentInstallTokenHandler: api.NewAgentInstallTokenHandler(store.AgentInstallTokenRepo(), installTokenCmd, store.AgentRepo().AuthScope, athz, vault, cfg.PublicBaseURL),
 		AgentPoolHandler:         api.NewAgentPoolHandler(store.AgentPoolRepo(), agentPoolCmd, athz),
 		AgentPoolValueHandler:    api.NewAgentPoolValueHandler(store.AgentPoolValueRepo(), agentPoolValueCmd, athz),
 		AgentTypeHandler:         api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz),

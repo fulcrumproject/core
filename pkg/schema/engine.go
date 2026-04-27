@@ -152,8 +152,8 @@ func extractVaultReferencesFromValue(value any, references *[]string) {
 	switch v := value.(type) {
 	case string:
 		// Check if this is a vault reference
-		if strings.HasPrefix(v, "vault://") {
-			ref := strings.TrimPrefix(v, "vault://")
+		if strings.HasPrefix(v, VaultRefPrefix) {
+			ref := strings.TrimPrefix(v, VaultRefPrefix)
 			*references = append(*references, ref)
 		}
 	case map[string]any:
@@ -305,7 +305,7 @@ func isVaultReference(value any, secretConfig *SecretConfig) bool {
 		return false
 	}
 	strVal, ok := value.(string)
-	return ok && strings.HasPrefix(strVal, "vault://")
+	return ok && strings.HasPrefix(strVal, VaultRefPrefix)
 }
 
 // checkImmutability verifies immutability constraints
@@ -540,7 +540,7 @@ func (e *Engine[C]) processSecret(
 	}
 
 	// Check if already a vault reference
-	if strVal, ok := value.(string); ok && strings.HasPrefix(strVal, "vault://") {
+	if strVal, ok := value.(string); ok && strings.HasPrefix(strVal, VaultRefPrefix) {
 		return strVal, nil
 	}
 
@@ -555,12 +555,12 @@ func (e *Engine[C]) processSecret(
 	}
 
 	// Clean up old vault reference if this is a rotation
-	if oldStrVal, ok := oldValue.(string); ok && strings.HasPrefix(oldStrVal, "vault://") {
-		oldRef := strings.TrimPrefix(oldStrVal, "vault://")
+	if oldStrVal, ok := oldValue.(string); ok && strings.HasPrefix(oldStrVal, VaultRefPrefix) {
+		oldRef := strings.TrimPrefix(oldStrVal, VaultRefPrefix)
 		_ = e.vault.Delete(ctx, oldRef) // Best-effort cleanup
 	}
 
-	return fmt.Sprintf("vault://%s", reference), nil
+	return VaultRefPrefix + reference, nil
 }
 
 // validateSchema runs schema-level validators

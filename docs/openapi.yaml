@@ -460,10 +460,12 @@ paths:
         `application/yaml`, or `application/json`). Install tokens are
         short-lived (≈5 minutes) and single-use per install.
 
-        Any failure (unknown token, expired token, missing template, vault
-        resolution failure, render error) returns a uniform `404` with an empty
-        body to avoid leaking information. Server-side logs describe the real
-        cause for ops debugging.
+        Auth failures (missing or wrong-role bearer) return `401`/`403` from the
+        standard auth middleware. Past that gate, every failure mode (unknown
+        token, expired token, missing template, vault resolution failure, render
+        error) collapses into a uniform `404` with the standard error envelope —
+        the precise cause is only in the server-side log so callers cannot
+        distinguish them.
       x-auth-permissions:
         - role: admin
           permission: authorized with a valid install token
@@ -493,11 +495,17 @@ paths:
                 type: string
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: |
             Install token not found, expired, or the agent's configuration could
-            not be rendered. Body is empty — consult server logs for the real
-            cause.
+            not be rendered. Body is the standard error envelope — consult server
+            logs for the real cause.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
   /agents/{id}:
     parameters:
       - name: id
@@ -598,8 +606,8 @@ paths:
       tags:
         - Agents
       description: |
-        Returns metadata about the current install token for the agent (id,
-        expiration, creation time). Never returns the plain token or rendered
+        Returns metadata about the current install token for the agent
+        (expiration, creation time). Never returns the plain token or rendered
         install URL — once the token leaves the Create/Regenerate response it
         cannot be recovered. If the token has expired, returns 404.
       x-auth-permissions:
@@ -4680,8 +4688,6 @@ components:
         Metadata-only view of the current install token. Never exposes the
         plain token or rendered URL.
       properties:
-        id:
-          $ref: '#/components/schemas/properties.UUID'
         expiresAt:
           type: string
           format: date-time
@@ -4691,7 +4697,6 @@ components:
           format: date-time
           example: '2026-04-24T14:30:00Z'
       required:
-        - id
         - expiresAt
         - createdAt
     JSONObject:

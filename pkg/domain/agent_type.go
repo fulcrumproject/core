@@ -55,6 +55,13 @@ func (AgentType) TableName() string {
 	return "agent_types"
 }
 
+// HasInstallTemplates reports whether both install templates are configured.
+// Validation enforces "both set or both empty"; callers use this single check
+// to avoid divergence between the cmd-side and config-side branches.
+func (at *AgentType) HasInstallTemplates() bool {
+	return at.CmdTemplate != "" && at.ConfigTemplate != ""
+}
+
 // Validate ensures all AgentType fields are valid (without schema validation)
 func (at *AgentType) Validate() error {
 	if at.Name == "" {

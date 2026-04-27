@@ -70,11 +70,13 @@ type AgentInstallTokenCommander interface {
 	Create(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error)
 
 	// Regenerate rotates an existing install token and its expiry. Fails
-	// with a NotFoundError if none exists (use Create first).
+	// with a NotFoundError if none exists (use Create first). Operates on
+	// expired records by design — rotation is the standard recovery path.
 	Regenerate(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error)
 
 	// Revoke deletes the install token for the agent without minting a new one.
-	// Returns NotFoundError if none exists.
+	// Returns NotFoundError if none exists. Operates on expired records by
+	// design so admins can clean up stale rows.
 	Revoke(ctx context.Context, agentID properties.UUID) error
 }
 
@@ -101,6 +103,13 @@ type AgentInstallTokenQuerier interface {
 // expiresAt, and persists it via store.TokenRepo(). The returned token carries
 // PlainValue (needed for the installer's Authorization header) which is never
 // persisted.
+//
+// The token is written directly through the repo (no `token.created` /
+// `token.deleted` events) because the bootstrap token's lifecycle is owned by
+// the install-token flow — it is created, rotated, and revoked alongside the
+// surrounding AgentInstallToken, and those transitions are captured by the
+// `agent.install_token_*` events. Going through tokenCommander would emit
+// duplicate audit entries with no extra information.
 func mintBootstrapToken(ctx context.Context, store Store, agentID properties.UUID, expiresAt time.Time) (*Token, error) {
 	scope := agentID
 	token, err := NewToken(ctx, store, CreateTokenParams{
@@ -128,16 +137,16 @@ func NewAgentInstallTokenCommander(store Store) *agentInstallTokenCommander {
 }
 
 func (c *agentInstallTokenCommander) Create(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error) {
-	agent, err := c.store.AgentRepo().Get(ctx, agentID)
-	if err != nil {
-		return nil, err
-	}
-	if agent.AgentType == nil || agent.AgentType.CmdTemplate == "" {
-		return nil, NewInvalidInputErrorf("agent type has no install templates configured")
-	}
-
 	var tok *AgentInstallToken
-	err = c.store.Atomic(ctx, func(store Store) error {
+	err := c.store.Atomic(ctx, func(store Store) error {
+		agent, err := store.AgentRepo().Get(ctx, agentID)
+		if err != nil {
+			return err
+		}
+		if agent.AgentType == nil || !agent.AgentType.HasInstallTemplates() {
+			return NewInvalidInputErrorf("agent type has no install templates configured")
+		}
+
 		if _, existsErr := store.AgentInstallTokenRepo().GetByAgentID(ctx, agentID); existsErr == nil {
 			return NewConflictErrorf("install token already exists for agent %s", agentID)
 		} else if !errors.As(existsErr, &NotFoundError{}) {
@@ -192,16 +201,16 @@ func (c *agentInstallTokenCommander) Create(ctx context.Context, agentID propert
 }
 
 func (c *agentInstallTokenCommander) Regenerate(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error) {
-	agent, err := c.store.AgentRepo().Get(ctx, agentID)
-	if err != nil {
-		return nil, err
-	}
-	if agent.AgentType == nil || agent.AgentType.CmdTemplate == "" {
-		return nil, NewInvalidInputErrorf("agent type has no install templates configured")
-	}
-
 	var tok *AgentInstallToken
-	err = c.store.Atomic(ctx, func(store Store) error {
+	err := c.store.Atomic(ctx, func(store Store) error {
+		agent, err := store.AgentRepo().Get(ctx, agentID)
+		if err != nil {
+			return err
+		}
+		if agent.AgentType == nil || !agent.AgentType.HasInstallTemplates() {
+			return NewInvalidInputErrorf("agent type has no install templates configured")
+		}
+
 		existing, err := store.AgentInstallTokenRepo().GetByAgentID(ctx, agentID)
 		if err != nil {
 			return err

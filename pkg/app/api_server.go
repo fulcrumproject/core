@@ -140,7 +140,10 @@ func BuildHttpServer(
 		r.Route("/service-pools", app.ServicePoolHandler.Routes())
 		r.Route("/service-pool-values", app.ServicePoolValueHandler.Routes())
 		r.Route("/participants", app.ParticipantHandler.Routes())
-		r.Route("/agents", app.AgentHandler.Routes())
+		r.Route("/agents", func(r chi.Router) {
+			app.AgentHandler.Routes()(r)
+			app.AgentInstallTokenHandler.Routes()(r)
+		})
 		r.Route("/agent-pools", app.AgentPoolHandler.Routes())
 		r.Route("/agent-pool-values", app.AgentPoolValueHandler.Routes())
 		r.Route("/service-groups", app.ServiceGroupHandler.Routes())

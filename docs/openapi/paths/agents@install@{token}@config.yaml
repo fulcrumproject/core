@@ -24,10 +24,12 @@ get:
     `application/yaml`, or `application/json`). Install tokens are
     short-lived (≈5 minutes) and single-use per install.
 
-    Any failure (unknown token, expired token, missing template, vault
-    resolution failure, render error) returns a uniform `404` with an empty
-    body to avoid leaking information. Server-side logs describe the real
-    cause for ops debugging.
+    Auth failures (missing or wrong-role bearer) return `401`/`403` from the
+    standard auth middleware. Past that gate, every failure mode (unknown
+    token, expired token, missing template, vault resolution failure, render
+    error) collapses into a uniform `404` with the standard error envelope —
+    the precise cause is only in the server-side log so callers cannot
+    distinguish them.
   x-auth-permissions:
     - role: admin
       permission: authorized with a valid install token
@@ -57,8 +59,14 @@ get:
             type: string
     "401":
       $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
     "404":
       description: |
         Install token not found, expired, or the agent's configuration could
-        not be rendered. Body is empty — consult server logs for the real
-        cause.
+        not be rendered. Body is the standard error envelope — consult server
+        logs for the real cause.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

@@ -5,33 +5,92 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
+	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
-	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
+// InstallConfigSubPath is the install-config route relative to the /agents
+// mount; used both by the chi route registration (it accepts {token} as a
+// chi placeholder) and by buildInstallURL (which substitutes the placeholder
+// with the actual plain token). Keeping a single source means renaming the
+// route updates the rendered installCommand automatically.
+const InstallConfigSubPath = "/install/{token}/config"
+
+const installConfigFullPath = "/api/v1/agents" + InstallConfigSubPath
+
+// buildInstallURL joins the public base URL with the install-config path,
+// substituting the chi {token} placeholder. The endpoint is authenticated:
+// callers must also supply a Bearer token (issued alongside the install
+// token — see AgentInstallToken.BootstrapTokenID).
+func buildInstallURL(publicBaseURL, token string) string {
+	return strings.TrimRight(publicBaseURL, "/") + strings.Replace(installConfigFullPath, "{token}", token, 1)
+}
+
 type AgentInstallTokenHandler struct {
-	querier       domain.AgentInstallTokenQuerier
-	commander     domain.AgentInstallTokenCommander
-	vault         schema.Vault
-	publicBaseURL string
+	querier        domain.AgentInstallTokenQuerier
+	commander      domain.AgentInstallTokenCommander
+	agentAuthScope middlewares.ObjectScopeLoader
+	authz          authz.Authorizer
+	vault          schema.Vault
+	publicBaseURL  string
 }
 
 func NewAgentInstallTokenHandler(
 	querier domain.AgentInstallTokenQuerier,
 	commander domain.AgentInstallTokenCommander,
+	agentAuthScope middlewares.ObjectScopeLoader,
+	authorizer authz.Authorizer,
 	vault schema.Vault,
 	publicBaseURL string,
 ) *AgentInstallTokenHandler {
 	return &AgentInstallTokenHandler{
-		querier:       querier,
-		commander:     commander,
-		vault:         vault,
-		publicBaseURL: publicBaseURL,
+		querier:        querier,
+		commander:      commander,
+		agentAuthScope: agentAuthScope,
+		authz:          authorizer,
+		vault:          vault,
+		publicBaseURL:  publicBaseURL,
+	}
+}
+
+// Routes registers all install-token endpoints. Mount under `/agents`
+// alongside AgentHandler.Routes(); the install-token routes are split into
+// the token-keyed Fetch (no agent ID in URL) and the agent-scoped CRUD
+// (`/{id}/install-command…`).
+func (h *AgentInstallTokenHandler) Routes() func(r chi.Router) {
+	return func(r chi.Router) {
+		// Install-config fetch — token-keyed, no agent ID in URL. Requires a
+		// bearer token with admin / participant / agent role in addition to
+		// the install token (issued by POST /{id}/install-command). The
+		// trailing /config segment exists to keep the path unambiguous
+		// against /{id}/install-command.
+		r.With(
+			middlewares.MustHaveRoles(auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent),
+		).Get(InstallConfigSubPath, h.Fetch)
+
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.ID)
+
+			r.With(
+				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionRead, h.authz, h.agentAuthScope),
+			).Get("/{id}/install-command", h.Get)
+			r.With(
+				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionUpdate, h.authz, h.agentAuthScope),
+			).Post("/{id}/install-command", h.Create)
+			r.With(
+				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionUpdate, h.authz, h.agentAuthScope),
+			).Post("/{id}/install-command/regenerate", h.Regenerate)
+			r.With(
+				middlewares.AuthzFromID(authz.ObjectTypeAgent, authz.ActionUpdate, h.authz, h.agentAuthScope),
+			).Delete("/{id}/install-command", h.Revoke)
+		})
 	}
 }
 
@@ -47,9 +106,8 @@ type InstallTokenRes struct {
 // InstallTokenMetaRes is the GET response — metadata only, no token, no URL.
 // If the admin lost the token, they must Regenerate.
 type InstallTokenMetaRes struct {
-	ID        properties.UUID `json:"id"`
-	ExpiresAt JSONUTCTime     `json:"expiresAt"`
-	CreatedAt JSONUTCTime     `json:"createdAt"`
+	ExpiresAt JSONUTCTime `json:"expiresAt"`
+	CreatedAt JSONUTCTime `json:"createdAt"`
 }
 
 func (h *AgentInstallTokenHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +120,7 @@ func (h *AgentInstallTokenHandler) Create(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	h.renderInstallToken(w, r, tok, tok.PlainToken, http.StatusCreated)
+	h.renderInstallToken(w, r, tok, http.StatusCreated)
 }
 
 func (h *AgentInstallTokenHandler) Regenerate(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +133,7 @@ func (h *AgentInstallTokenHandler) Regenerate(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	h.renderInstallToken(w, r, tok, tok.PlainToken, http.StatusOK)
+	h.renderInstallToken(w, r, tok, http.StatusOK)
 }
 
 // Get returns metadata about the current install token. It never returns the
@@ -96,7 +154,6 @@ func (h *AgentInstallTokenHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.JSON(w, r, InstallTokenMetaRes{
-		ID:        tok.ID,
 		ExpiresAt: JSONUTCTime(tok.ExpiresAt),
 		CreatedAt: JSONUTCTime(tok.CreatedAt),
 	})
@@ -114,38 +171,45 @@ func (h *AgentInstallTokenHandler) Revoke(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// Fetch serves the rendered agent configuration to an installer. It is mounted
-// behind the standard auth middleware and restricted to participant/agent
-// roles; the install token in the URL is the per-resource secret that selects
-// which install record to render. Any error or exceptional state yields a
-// uniform 404 with an empty body — server-side logs describe the real cause
-// for ops debugging. No information leak.
+// Fetch serves the rendered agent configuration to an installer. The route is
+// guarded by the standard auth middleware (admin/participant/agent roles), so
+// callers without a valid bearer token receive 401/403 from the middleware.
+// Past that gate, every failure mode (unknown / expired install token, missing
+// templates, vault resolution failure, render error) collapses into the
+// codebase's standard 404 response — the precise reason is recorded only in
+// the server-side log so ops can alert without leaking the cause to the
+// caller. Info is used for client-caused misses, Warn for server-side
+// failures.
 func (h *AgentInstallTokenHandler) Fetch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	token := chi.URLParam(r, "token")
 	if token == "" {
-		uniform404(w, slog.LevelInfo, "empty token")
+		slog.Info("install fetch → 404", "reason", "empty token")
+		render.Render(w, r, ErrNotFound())
 		return
 	}
 
 	tok, err := h.querier.FindByHashedToken(ctx, domain.HashTokenValue(token))
 	if err != nil {
 		if errors.As(err, &domain.NotFoundError{}) {
-			uniform404(w, slog.LevelInfo, "install token not found")
+			slog.Info("install fetch → 404", "reason", "install token not found")
 		} else {
-			uniform404(w, slog.LevelWarn, "install token lookup failed: "+err.Error())
+			slog.Warn("install fetch → 404", "reason", "install token lookup failed: "+err.Error())
 		}
+		render.Render(w, r, ErrNotFound())
 		return
 	}
 	if tok.IsExpired() {
-		uniform404(w, slog.LevelInfo, "install token expired")
+		slog.Info("install fetch → 404", "reason", "install token expired")
+		render.Render(w, r, ErrNotFound())
 		return
 	}
 
 	agent := tok.Agent
-	if agent == nil || agent.AgentType == nil || agent.AgentType.ConfigTemplate == "" {
-		uniform404(w, slog.LevelInfo, "agent type has no install templates configured")
+	if agent == nil || agent.AgentType == nil || !agent.AgentType.HasInstallTemplates() {
+		slog.Info("install fetch → 404", "reason", "agent type has no install templates configured")
+		render.Render(w, r, ErrNotFound())
 		return
 	}
 
@@ -154,15 +218,17 @@ func (h *AgentInstallTokenHandler) Fetch(w http.ResponseWriter, r *http.Request)
 		data = map[string]any(*agent.Configuration)
 	}
 
-	resolved, err := domain.ResolveVaultRefs(ctx, h.vault, agent.AgentType.ConfigurationSchema, data)
+	resolved, err := schema.ResolveSecrets(ctx, h.vault, agent.AgentType.ConfigurationSchema, data)
 	if err != nil {
-		uniform404(w, slog.LevelWarn, "vault resolution failed: "+err.Error())
+		slog.Warn("install fetch → 404", "reason", "vault resolution failed: "+err.Error())
+		render.Render(w, r, ErrNotFound())
 		return
 	}
 
 	body, err := domain.RenderConfigTemplate(agent.AgentType, resolved)
 	if err != nil {
-		uniform404(w, slog.LevelWarn, "config template render failed: "+err.Error())
+		slog.Warn("install fetch → 404", "reason", "config template render failed: "+err.Error())
+		render.Render(w, r, ErrNotFound())
 		return
 	}
 
@@ -173,31 +239,14 @@ func (h *AgentInstallTokenHandler) Fetch(w http.ResponseWriter, r *http.Request)
 	_, _ = w.Write([]byte(body))
 }
 
-// uniform404 writes a 404 with an empty body. The reason is logged server-side
-// so ops can distinguish unknown / expired / template / vault / render failures
-// without leaking anything to the caller. Use Info for client-caused misses
-// (unknown token, expired) and Warn for server-side failures (db, vault,
-// template) so monitoring can alert on the latter.
-func uniform404(w http.ResponseWriter, level slog.Level, reason string) {
-	const msg = "install fetch → 404"
-	switch level {
-	case slog.LevelWarn:
-		slog.Warn(msg, "reason", reason)
-	default:
-		slog.Info(msg, "reason", reason)
-	}
-	w.WriteHeader(http.StatusNotFound)
-}
-
 func (h *AgentInstallTokenHandler) renderInstallToken(
 	w http.ResponseWriter,
 	r *http.Request,
 	tok *domain.AgentInstallToken,
-	plain string,
 	status int,
 ) {
 	agent := tok.Agent
-	url := domain.BuildInstallURL(h.publicBaseURL, plain)
+	url := buildInstallURL(h.publicBaseURL, tok.PlainToken)
 
 	data := map[string]any{}
 	if agent.Configuration != nil {
@@ -211,7 +260,11 @@ func (h *AgentInstallTokenHandler) renderInstallToken(
 	}
 
 	// Emit JSON without HTML-escaping so installCommand stays copy-pasteable:
-	// Go's default json.Marshal would write `&&` as `&&`.
+	// Go's default json.Marshal would write `&&` (and other HTML-significant
+	// chars) as `&&`. Decoders parse the escape correctly, but the
+	// installCommand field is meant to be eyeballed and pasted into a shell
+	// straight from the response, where the literal `&` survives and
+	// breaks curl.
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	enc := json.NewEncoder(w)

@@ -72,7 +72,7 @@ func TestHandleGetMe(t *testing.T) {
 			tc.mockSetup(querier)
 
 			// Create the handler
-			handler := NewAgentHandler(querier, commander, mockAuthz, nil)
+			handler := NewAgentHandler(querier, commander, mockAuthz)
 
 			// Create request
 			req := httptest.NewRequest("GET", "/agents/me", nil)
@@ -98,7 +98,7 @@ func TestNewAgentHandler(t *testing.T) {
 	commander := domain.NewMockAgentCommander(t)
 	authz := authz.NewMockAuthorizer(t)
 
-	handler := NewAgentHandler(querier, commander, authz, nil)
+	handler := NewAgentHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
 	assert.Equal(t, querier, handler.querier)
 	assert.Equal(t, commander, handler.commander)

@@ -10,8 +10,8 @@ get:
   tags:
     - Agents
   description: |
-    Returns metadata about the current install token for the agent (id,
-    expiration, creation time). Never returns the plain token or rendered
+    Returns metadata about the current install token for the agent
+    (expiration, creation time). Never returns the plain token or rendered
     install URL — once the token leaves the Create/Regenerate response it
     cannot be recovered. If the token has expired, returns 404.
   x-auth-permissions:
