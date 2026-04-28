@@ -11,9 +11,12 @@ get:
     - Agents
   description: |
     Returns metadata about the current install token for the agent
-    (expiration, creation time). Never returns the plain token or rendered
-    install URL — once the token leaves the Create/Regenerate response it
-    cannot be recovered. If the token has expired, returns 404.
+    (id, expiration, creation time). Never returns the plain token or
+    rendered install URL — once the token leaves the Create/Regenerate
+    response it cannot be recovered. Metadata is returned even when the
+    token has expired so callers can disambiguate "no token yet"
+    (404 → POST to create) from "token exists but expired"
+    (200 with past `expiresAt` → POST to `/install-command/regenerate`).
   x-auth-permissions:
     - role: admin
       permission: all agents
@@ -33,7 +36,7 @@ get:
     "403":
       $ref: "../components/responses.yaml#/Forbidden"
     "404":
-      description: Agent or install token not found (or token expired)
+      description: Agent or install token not found
       content:
         application/json:
           schema:

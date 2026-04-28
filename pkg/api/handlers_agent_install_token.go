@@ -11,6 +11,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/middlewares"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -106,8 +107,9 @@ type InstallTokenRes struct {
 // InstallTokenMetaRes is the GET response — metadata only, no token, no URL.
 // If the admin lost the token, they must Regenerate.
 type InstallTokenMetaRes struct {
-	ExpiresAt JSONUTCTime `json:"expiresAt"`
-	CreatedAt JSONUTCTime `json:"createdAt"`
+	ID        properties.UUID `json:"id"`
+	ExpiresAt JSONUTCTime     `json:"expiresAt"`
+	CreatedAt JSONUTCTime     `json:"createdAt"`
 }
 
 func (h *AgentInstallTokenHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +140,10 @@ func (h *AgentInstallTokenHandler) Regenerate(w http.ResponseWriter, r *http.Req
 
 // Get returns metadata about the current install token. It never returns the
 // plain token nor the rendered install URL — once the token leaves the
-// Create/Regenerate response, it cannot be recovered.
+// Create/Regenerate response, it cannot be recovered. Metadata is returned
+// even when the token is expired so callers can disambiguate "no token yet"
+// (404 → Create) from "token exists but expired" (200 with past expiresAt →
+// Regenerate); only the public Fetch endpoint hides expired tokens.
 func (h *AgentInstallTokenHandler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := middlewares.MustGetID(ctx)
@@ -148,12 +153,9 @@ func (h *AgentInstallTokenHandler) Get(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
-	if tok.IsExpired() {
-		render.Render(w, r, ErrNotFound())
-		return
-	}
 
 	render.JSON(w, r, InstallTokenMetaRes{
+		ID:        tok.ID,
 		ExpiresAt: JSONUTCTime(tok.ExpiresAt),
 		CreatedAt: JSONUTCTime(tok.CreatedAt),
 	})

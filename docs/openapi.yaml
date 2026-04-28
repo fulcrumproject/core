@@ -607,9 +607,12 @@ paths:
         - Agents
       description: |
         Returns metadata about the current install token for the agent
-        (expiration, creation time). Never returns the plain token or rendered
-        install URL — once the token leaves the Create/Regenerate response it
-        cannot be recovered. If the token has expired, returns 404.
+        (id, expiration, creation time). Never returns the plain token or
+        rendered install URL — once the token leaves the Create/Regenerate
+        response it cannot be recovered. Metadata is returned even when the
+        token has expired so callers can disambiguate "no token yet"
+        (404 → POST to create) from "token exists but expired"
+        (200 with past `expiresAt` → POST to `/install-command/regenerate`).
       x-auth-permissions:
         - role: admin
           permission: all agents
@@ -629,7 +632,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: Agent or install token not found (or token expired)
+          description: Agent or install token not found
           content:
             application/json:
               schema:
@@ -4688,6 +4691,8 @@ components:
         Metadata-only view of the current install token. Never exposes the
         plain token or rendered URL.
       properties:
+        id:
+          $ref: '#/components/schemas/properties.UUID'
         expiresAt:
           type: string
           format: date-time
@@ -4697,6 +4702,7 @@ components:
           format: date-time
           example: '2026-04-24T14:30:00Z'
       required:
+        - id
         - expiresAt
         - createdAt
     JSONObject:
