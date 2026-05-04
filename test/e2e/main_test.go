@@ -1,15 +1,15 @@
 package e2e
 
 import (
-	"log"
 	"testing"
+
+	"github.com/fulcrumproject/core/pkg/database"
 )
 
-func TestMain(t *testing.T) {
-	adminToken, err := GetToken("admin1", "admin1")
-	if err != nil {
-		log.Fatalf("admin token: %v", err)
-	}
-	NewClient(adminToken)
+func TestE2E(t *testing.T) {
+	tdb := database.NewTestDB(t)
+	t.Cleanup(func() { tdb.Cleanup(t) })
+
+	mustSeed(t, tdb.DB)
 
 }
