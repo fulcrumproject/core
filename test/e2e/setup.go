@@ -57,8 +57,9 @@ func buildBinary(t *testing.T) string {
 }
 
 // startServer execs the fulcrum binary against tdb, waits for /ready, and
-// registers cleanup. Returns the API base URL (no trailing slash, no /api/v1).
-func startServer(t *testing.T, tdb *database.TestDB) string {
+// registers cleanup. Returns the API base URL and the health server base URL
+// (both without trailing slash; API URL has no /api/v1 prefix).
+func startServer(t *testing.T, tdb *database.TestDB) (apiURL, healthURL string) {
 	t.Helper()
 
 	bin := buildBinary(t)
@@ -104,7 +105,8 @@ func startServer(t *testing.T, tdb *database.TestDB) string {
 	})
 
 	waitReady(t, healthPort, 60*time.Second)
-	return fmt.Sprintf("http://127.0.0.1:%d", apiPort)
+	return fmt.Sprintf("http://127.0.0.1:%d", apiPort),
+		fmt.Sprintf("http://127.0.0.1:%d", healthPort)
 }
 
 func waitReady(t *testing.T, healthPort int, timeout time.Duration) {

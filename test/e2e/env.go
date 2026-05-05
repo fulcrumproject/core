@@ -13,6 +13,7 @@ import (
 
 type Env struct {
 	ServerURL string
+	HealthURL string
 	DB        *gorm.DB
 	Seed      *Fixtures
 
@@ -22,10 +23,11 @@ type Env struct {
 	AgentClient       *resty.Client
 }
 
-func newEnv(t *testing.T, tdb *database.TestDB, serverURL string, seed *Fixtures) *Env {
+func newEnv(t *testing.T, tdb *database.TestDB, serverURL, healthURL string, seed *Fixtures) *Env {
 	t.Helper()
 	return &Env{
 		ServerURL:         serverURL,
+		HealthURL:         healthURL,
 		DB:                tdb.DB,
 		Seed:              seed,
 		AdminClient:       roleClient(t, serverURL, "admin1"),
