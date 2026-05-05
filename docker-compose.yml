@@ -5,7 +5,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     environment:
       FULCRUM_DB_DSN: host=postgres user=${POSTGRES_USER:-fulcrum} password=${POSTGRES_PASSWORD:-fulcrum_password} dbname=${POSTGRES_DB:-fulcrum_db} port=5432 sslmode=disable
       FULCRUM_METRIC_DB_DSN: host=postgres user=${POSTGRES_USER:-fulcrum} password=${POSTGRES_PASSWORD:-fulcrum_password} dbname=${POSTGRES_DB:-fulcrum_db} port=5432 sslmode=disable
