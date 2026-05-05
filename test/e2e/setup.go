@@ -82,6 +82,7 @@ func startServer(t *testing.T, tdb *database.TestDB) (apiURL, healthURL string) 
 		"FULCRUM_API_SERVER=true",
 		"FULCRUM_JOB_MAINTENANCE=false",
 		"FULCRUM_AGENT_MAINTENANCE=false",
+		"FULCRUM_KEYCLOAK_ADMIN=true",
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
