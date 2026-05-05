@@ -97,6 +97,8 @@ func TestE2E(t *testing.T) {
 	t.Run("service groups", func(t *testing.T) { testServiceGroup(t, env) })
 	t.Run("services", func(t *testing.T) { testService(t, env) })
 	t.Run("jobs", func(t *testing.T) { testJob(t, env) })
+	t.Run("scenario: agent install lifecycle", func(t *testing.T) { testAgentInstallScenario(t, env) })
+	t.Run("scenario: service lifecycle", func(t *testing.T) { testServiceLifecycleScenario(t, env) })
 	t.Run("events", func(t *testing.T) { testEvent(t, env) })
 	t.Run("metric types", func(t *testing.T) { testMetricType(t, env) })
 	t.Run("metric entries", func(t *testing.T) { testMetricEntry(t, env) })

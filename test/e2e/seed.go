@@ -90,11 +90,19 @@ func mustSeed(t *testing.T, db *gorm.DB) *Fixtures {
 			Status:     domain.ParticipantEnabled,
 		})
 		f.AgentType = mustCreate(t, tx, &domain.AgentType{
-			Name:                "vm",
-			ConfigurationSchema: schema.Schema{},
-			ConfigTemplate:      "# e2e agent config\n",
-			CmdTemplate:         "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
-			ConfigContentType:   "text/plain",
+			Name: "vm",
+			// One placeholder property so the AgentType passes the same
+			// "schema must have at least one property" validator the API
+			// applies on PATCH; otherwise tests that mutate this fixture
+			// 400 even when not touching the schema.
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"placeholder": {Type: "string", Label: "Placeholder"},
+				},
+			},
+			ConfigTemplate:    "# e2e agent config\n",
+			CmdTemplate:       "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
+			ConfigContentType: "text/plain",
 		})
 		// Link AgentType→ServiceType: without it the service create API rejects with
 		// "agent type does not support service type".
