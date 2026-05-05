@@ -34,4 +34,8 @@ func TestE2E(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode(), "body: %s", resp.String())
 		require.Equal(t, env.Seed.Agent.ID, body.ID)
 	})
+
+	t.Run("participants", func(t *testing.T) { testParticipant(t, env) })
+	t.Run("tokens", func(t *testing.T) { testToken(t, env) })
+	t.Run("agents", func(t *testing.T) { testAgent(t, env) })
 }

@@ -73,6 +73,9 @@ func mustSeed(t *testing.T, db *gorm.DB) *Fixtures {
 		f.AgentType = mustCreate(t, tx, &domain.AgentType{
 			Name:                "vm",
 			ConfigurationSchema: schema.Schema{},
+			ConfigTemplate:      "# e2e agent config\n",
+			CmdTemplate:         "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
+			ConfigContentType:   "text/plain",
 		})
 		f.AgentPool = mustCreate(t, tx, &domain.AgentPool{
 			Name:          "default",
