@@ -5,8 +5,10 @@ package e2e
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/api"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,17 +23,33 @@ func testServiceOption(t *testing.T, env *Env) {
 			Value:               "small",
 			Enabled:             &enabled,
 		})
+		require.Equal(t, name, created.Name)
 		require.Equal(t, env.Seed.Provider.ID, created.ProviderID)
+		require.Equal(t, env.Seed.OptionType.ID, created.ServiceOptionTypeID)
 		require.True(t, created.Enabled)
+		require.NotEqual(t, properties.UUID{}, created.ID)
+		require.False(t, time.Time(created.CreatedAt).IsZero())
 
 		got := mustGet[api.ServiceOptionRes](t, env.AdminClient, "/service-options", created.ID)
 		require.Equal(t, created.ID, got.ID)
+		require.Equal(t, created.Name, got.Name)
+		require.Equal(t, created.ProviderID, got.ProviderID)
+		require.Equal(t, created.ServiceOptionTypeID, got.ServiceOptionTypeID)
+		require.Equal(t, created.Enabled, got.Enabled)
 
 		newName := "opt-renamed-" + uniq()
 		updated := mustPatch[api.UpdateServiceOptionReq, api.ServiceOptionRes](t, env.AdminClient, "/service-options", created.ID, api.UpdateServiceOptionReq{Name: &newName})
 		require.Equal(t, newName, updated.Name)
+		require.Equal(t, created.ID, updated.ID)
+		require.Equal(t, created.ProviderID, updated.ProviderID, "PATCH must not change FK")
+		require.Equal(t, created.ServiceOptionTypeID, updated.ServiceOptionTypeID, "PATCH must not change FK")
+		require.Equal(t, created.Enabled, updated.Enabled, "PATCH name-only must not flip enabled")
+
+		page := mustList[api.ServiceOptionRes](t, env.AdminClient, "/service-options")
+		require.True(t, containsID(page.Items, created.ID), "list must include just-created option")
 
 		mustDelete(t, env.AdminClient, "/service-options", created.ID)
+		assertGone(t, env.AdminClient, "/service-options", created.ID)
 	})
 
 	t.Run("participant cannot create option for another provider", func(t *testing.T) {

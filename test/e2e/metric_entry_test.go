@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/api"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,6 +16,7 @@ func testMetricEntry(t *testing.T, env *Env) {
 	svcID := env.Seed.Service.ID
 	resourceID := "cpu-" + uniq()
 
+	var entryID properties.UUID
 	t.Run("agent creates metric entry for service", func(t *testing.T) {
 		entry := mustPost[api.CreateMetricEntryReq, api.MetricEntryRes](t, env.AgentClient, "/metric-entries", api.CreateMetricEntryReq{
 			ServiceID:    &svcID,
@@ -26,11 +28,15 @@ func testMetricEntry(t *testing.T, env *Env) {
 		require.Equal(t, svcID, entry.ServiceID)
 		require.Equal(t, resourceID, entry.ResourceID)
 		require.InDelta(t, 42.5, entry.Value, 1e-9)
+		require.Equal(t, env.Seed.MetricType.ID.String(), entry.TypeID, "TypeID echoes the metric type")
+		require.Equal(t, env.Seed.Agent.ID, entry.AgentID, "agent identity derived from JWT")
+		require.NotEqual(t, properties.UUID{}, entry.ID)
+		entryID = entry.ID
 	})
 
-	t.Run("admin lists entries", func(t *testing.T) {
+	t.Run("admin lists entries includes the just-created one", func(t *testing.T) {
 		page := mustList[api.MetricEntryRes](t, env.AdminClient, "/metric-entries")
-		require.GreaterOrEqual(t, page.TotalItems, int64(1))
+		require.True(t, containsID(page.Items, entryID), "list must include just-created entry")
 	})
 
 	t.Run("/resource-ids returns the seeded resource", func(t *testing.T) {

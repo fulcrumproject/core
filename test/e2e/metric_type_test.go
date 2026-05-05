@@ -5,9 +5,11 @@ package e2e
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,18 +21,26 @@ func testMetricType(t *testing.T, env *Env) {
 			EntityType: domain.MetricEntityTypeService,
 		})
 		require.Equal(t, name, created.Name)
+		require.Equal(t, domain.MetricEntityTypeService, created.EntityType)
+		require.NotEqual(t, properties.UUID{}, created.ID)
+		require.False(t, time.Time(created.CreatedAt).IsZero())
 
 		got := mustGet[api.MetricTypeRes](t, env.AdminClient, "/metric-types", created.ID)
 		require.Equal(t, created.ID, got.ID)
+		require.Equal(t, created.Name, got.Name)
+		require.Equal(t, created.EntityType, got.EntityType)
 
 		newName := "mt-renamed-" + uniq()
 		updated := mustPatch[api.UpdateMetricTypeReq, api.MetricTypeRes](t, env.AdminClient, "/metric-types", created.ID, api.UpdateMetricTypeReq{Name: &newName})
 		require.Equal(t, newName, updated.Name)
+		require.Equal(t, created.ID, updated.ID)
+		require.Equal(t, created.EntityType, updated.EntityType, "PATCH name-only must not change entityType")
 
 		page := mustList[api.MetricTypeRes](t, env.AdminClient, "/metric-types")
-		require.GreaterOrEqual(t, page.TotalItems, int64(2))
+		require.True(t, containsID(page.Items, created.ID), "list must include just-created metric type")
 
 		mustDelete(t, env.AdminClient, "/metric-types", created.ID)
+		assertGone(t, env.AdminClient, "/metric-types", created.ID)
 	})
 
 	t.Run("participant cannot create metric type", func(t *testing.T) {

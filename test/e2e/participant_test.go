@@ -5,9 +5,11 @@ package e2e
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,18 +22,25 @@ func testParticipant(t *testing.T, env *Env) {
 		})
 		require.Equal(t, name, created.Name)
 		require.Equal(t, domain.ParticipantEnabled, created.Status)
+		require.NotEqual(t, properties.UUID{}, created.ID)
+		require.False(t, time.Time(created.CreatedAt).IsZero())
 
 		got := mustGet[api.ParticipantRes](t, env.AdminClient, "/participants", created.ID)
 		require.Equal(t, created.ID, got.ID)
+		require.Equal(t, created.Name, got.Name)
+		require.Equal(t, created.Status, got.Status)
 
 		newName := "p-renamed-" + uniq()
 		updated := mustPatch[api.UpdateParticipantReq, api.ParticipantRes](t, env.AdminClient, "/participants", created.ID, api.UpdateParticipantReq{Name: &newName})
 		require.Equal(t, newName, updated.Name)
+		require.Equal(t, created.ID, updated.ID)
+		require.Equal(t, created.Status, updated.Status, "PATCH must not silently change status")
 
 		page := mustList[api.ParticipantRes](t, env.AdminClient, "/participants")
-		require.GreaterOrEqual(t, page.TotalItems, int64(3), "seed (2) + new (1)")
+		require.True(t, containsID(page.Items, created.ID), "list must include just-created participant")
 
 		mustDelete(t, env.AdminClient, "/participants", created.ID)
+		assertGone(t, env.AdminClient, "/participants", created.ID)
 	})
 
 	t.Run("create rejects invalid status", func(t *testing.T) {

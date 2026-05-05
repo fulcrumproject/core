@@ -19,9 +19,10 @@ func testKeycloakUser(t *testing.T, env *Env) {
 
 	t.Run("admin creates+gets+updates+deletes keycloak user", func(t *testing.T) {
 		username := "e2e-" + uniq()
+		email := username + "@example.com"
 		created := mustPost[api.CreateKeycloakUserReq, api.KeycloakUserRes](t, env.AdminClient, "/keycloak-users", api.CreateKeycloakUserReq{
 			Username:      username,
-			Email:         username + "@example.com",
+			Email:         email,
 			EmailVerified: true,
 			FirstName:     "E2E",
 			LastName:      "User",
@@ -31,6 +32,14 @@ func testKeycloakUser(t *testing.T, env *Env) {
 			ParticipantID: env.Seed.Provider.ID.String(),
 		})
 		require.Equal(t, username, created.Username)
+		require.Equal(t, email, created.Email)
+		require.True(t, created.EmailVerified)
+		require.Equal(t, "E2E", created.FirstName)
+		require.Equal(t, "User", created.LastName)
+		require.True(t, created.Enabled)
+		require.Equal(t, env.Seed.Provider.ID.String(), created.ParticipantID)
+		require.Contains(t, created.Roles, auth.RoleParticipant, "participant role assigned")
+		require.NotEmpty(t, created.ID)
 		t.Cleanup(func() {
 			// Best-effort delete; any leftover doesn't break later runs since
 			// usernames carry a unique suffix.
@@ -47,6 +56,11 @@ func testKeycloakUser(t *testing.T, env *Env) {
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode())
 		require.Equal(t, username, got.Username)
+		require.Equal(t, email, got.Email)
+		require.Equal(t, "E2E", got.FirstName)
+		require.Equal(t, "User", got.LastName)
+		require.Equal(t, env.Seed.Provider.ID.String(), got.ParticipantID)
+		require.Contains(t, got.Roles, auth.RoleParticipant)
 
 		newFirst := "Updated"
 		var updated api.KeycloakUserRes
@@ -58,6 +72,18 @@ func testKeycloakUser(t *testing.T, env *Env) {
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode())
 		require.Equal(t, newFirst, updated.FirstName)
+		require.Equal(t, username, updated.Username, "PATCH firstName-only must not change username")
+		require.Equal(t, "User", updated.LastName, "PATCH firstName-only must not change lastName")
+
+		// Read-back independent of the PATCH response — confirms persistence.
+		var afterPatch api.KeycloakUserRes
+		resp, err = env.AdminClient.R().
+			SetPathParam("id", created.ID).
+			SetResult(&afterPatch).
+			Get("/keycloak-users/{id}")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode())
+		require.Equal(t, newFirst, afterPatch.FirstName, "PATCH must persist, not just echo")
 	})
 
 	t.Run("participant cannot list keycloak users", func(t *testing.T) {

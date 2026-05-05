@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/api"
+	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/require"
 )
@@ -55,6 +56,9 @@ func testJob(t *testing.T, env *Env) {
 		job := findJobForService(pending, svc.ID)
 		require.NotNil(t, job, "no pending job for svc %s", svc.ID)
 		require.Equal(t, "create", job.Action)
+		require.Equal(t, svc.ID, job.ServiceID)
+		require.Equal(t, env.Seed.Agent.ID, job.AgentID)
+		require.Equal(t, domain.JobPending, job.Status)
 
 		resp, err := env.AgentClient.R().
 			SetPathParam("id", job.ID.String()).
@@ -71,6 +75,17 @@ func testJob(t *testing.T, env *Env) {
 
 		after := mustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
 		require.Equal(t, "created", after.Status, "service should advance after job completion")
+
+		// The completed job must be persisted with status=Completed and a
+		// CompletedAt timestamp, and must no longer surface in /pending.
+		jobAfter := mustGet[api.JobRes](t, env.AdminClient, "/jobs", job.ID)
+		require.Equal(t, domain.JobCompleted, jobAfter.Status)
+		require.NotNil(t, jobAfter.CompletedAt, "CompletedAt must be set after complete")
+
+		var pendingAfter []*api.JobRes
+		_, err = env.AgentClient.R().SetResult(&pendingAfter).Get("/jobs/pending")
+		require.NoError(t, err)
+		require.Nil(t, findJobForService(pendingAfter, svc.ID), "completed job must not reappear in /pending")
 	})
 }
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,11 +27,24 @@ func testAgent(t *testing.T, env *Env) {
 			AgentTypeID: env.Seed.AgentType.ID,
 		})
 		require.Equal(t, name, created.Name)
+		require.Equal(t, env.Seed.Provider.ID, created.ProviderID)
+		require.Equal(t, env.Seed.AgentType.ID, created.AgentTypeID)
+		require.NotEmpty(t, created.Status, "Status populated on create")
+		require.NotEqual(t, properties.UUID{}, created.ID)
+		require.False(t, time.Time(created.CreatedAt).IsZero())
 
 		got := mustGet[api.AgentRes](t, env.AdminClient, "/agents", created.ID)
 		require.Equal(t, created.ID, got.ID)
+		require.Equal(t, created.Name, got.Name)
+		require.Equal(t, created.ProviderID, got.ProviderID)
+		require.Equal(t, created.AgentTypeID, got.AgentTypeID)
+		require.Equal(t, created.Status, got.Status)
+
+		page := mustList[api.AgentRes](t, env.AdminClient, "/agents")
+		require.True(t, containsID(page.Items, created.ID), "list must include just-created agent")
 
 		mustDelete(t, env.AdminClient, "/agents", created.ID)
+		assertGone(t, env.AdminClient, "/agents", created.ID)
 	})
 
 	t.Run("install-command GET returns metadata even when expired (regression #208)", func(t *testing.T) {
@@ -46,6 +60,7 @@ func testAgent(t *testing.T, env *Env) {
 		issued := mustCreateInstallToken(t, env.AdminClient, ag.ID)
 		require.NotEmpty(t, issued.InstallCommand)
 		require.NotEmpty(t, issued.URL)
+		require.True(t, time.Time(issued.ExpiresAt).After(time.Now()), "fresh install token must expire in the future")
 
 		// Expire the token directly in the DB. The HTTP API doesn't expose a
 		// way to backdate the expiry on demand.

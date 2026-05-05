@@ -5,8 +5,10 @@ package e2e
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/api"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/stretchr/testify/require"
 )
@@ -14,6 +16,8 @@ import (
 func testAgentType(t *testing.T, env *Env) {
 	t.Run("admin creates, gets, updates, lists, deletes", func(t *testing.T) {
 		name := "at-" + uniq()
+		cfgTpl := "[agent]\nendpoint={{.apiEndpoint}}\n"
+		cmdTpl := "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'"
 		created := mustPost[api.CreateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", api.CreateAgentTypeReq{
 			Name: name,
 			ConfigurationSchema: schema.Schema{
@@ -22,23 +26,35 @@ func testAgentType(t *testing.T, env *Env) {
 				},
 			},
 			ConfigContentType: "text/plain",
-			ConfigTemplate:    "[agent]\nendpoint={{.apiEndpoint}}\n",
-			CmdTemplate:       "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
+			ConfigTemplate:    cfgTpl,
+			CmdTemplate:       cmdTpl,
 		})
 		require.Equal(t, name, created.Name)
+		require.Equal(t, cfgTpl, created.ConfigTemplate)
+		require.Equal(t, cmdTpl, created.CmdTemplate)
+		require.Equal(t, "text/plain", created.ConfigContentType)
+		require.NotEqual(t, properties.UUID{}, created.ID)
+		require.False(t, time.Time(created.CreatedAt).IsZero())
 
 		got := mustGet[api.AgentTypeRes](t, env.AdminClient, "/agent-types", created.ID)
 		require.Equal(t, created.ID, got.ID)
-		require.Equal(t, "[agent]\nendpoint={{.apiEndpoint}}\n", got.ConfigTemplate)
+		require.Equal(t, created.Name, got.Name)
+		require.Equal(t, created.ConfigTemplate, got.ConfigTemplate)
+		require.Equal(t, created.CmdTemplate, got.CmdTemplate)
+		require.Equal(t, created.ConfigContentType, got.ConfigContentType)
 
 		newName := "at-renamed-" + uniq()
 		updated := mustPatch[api.UpdateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", created.ID, api.UpdateAgentTypeReq{Name: &newName})
 		require.Equal(t, newName, updated.Name)
+		require.Equal(t, created.ID, updated.ID)
+		require.Equal(t, created.ConfigTemplate, updated.ConfigTemplate, "PATCH name-only must not change templates")
+		require.Equal(t, created.CmdTemplate, updated.CmdTemplate, "PATCH name-only must not change templates")
 
 		page := mustList[api.AgentTypeRes](t, env.AdminClient, "/agent-types")
-		require.GreaterOrEqual(t, page.TotalItems, int64(2), "seed (1) + new (1)")
+		require.True(t, containsID(page.Items, created.ID), "list must include just-created agent type")
 
 		mustDelete(t, env.AdminClient, "/agent-types", created.ID)
+		assertGone(t, env.AdminClient, "/agent-types", created.ID)
 	})
 
 	t.Run("rejects configTemplate referencing unknown schema field", func(t *testing.T) {

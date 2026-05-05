@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"net/http"
+	"reflect"
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/api"
@@ -79,4 +80,40 @@ func mustList[T any](t *testing.T, c *resty.Client, path string) *api.PageRes[T]
 	require.NoError(t, err)
 	require.Equalf(t, http.StatusOK, resp.StatusCode(), "list %s: %s", path, resp.String())
 	return &out
+}
+
+// assertGone asserts the row at path/{id} is no longer accessible. Accepts
+// either 404 or 403: this API's authz middleware can't determine scope on a
+// missing row and returns 403 with a "resource not found" body — semantically
+// "gone from your perspective". Either status proves the delete happened.
+func assertGone(t *testing.T, c *resty.Client, path string, id properties.UUID) {
+	t.Helper()
+	resp, err := c.R().
+		SetPathParam("id", id.String()).
+		Get(path + "/{id}")
+	require.NoError(t, err)
+	code := resp.StatusCode()
+	require.Truef(t,
+		code == http.StatusNotFound || code == http.StatusForbidden,
+		"GET %s/%s after delete: expected 404 or 403, got %d: %s", path, id, code, resp.String())
+	if code == http.StatusForbidden {
+		require.Containsf(t, resp.String(), "not found",
+			"GET %s/%s returned 403 but body lacks 'not found' marker: %s", path, id, resp.String())
+	}
+}
+
+// containsID reports whether items contains a *Res whose top-level ID field
+// equals id. All e2e *Res types declare ID as properties.UUID at struct top
+// level (no shared base type), so a reflect-based extractor keeps call sites
+// flat across 18 entity tests without forcing a GetID() method on each Res.
+func containsID[T any](items []*T, id properties.UUID) bool {
+	for _, it := range items {
+		v := reflect.ValueOf(it).Elem().FieldByName("ID")
+		if v.IsValid() {
+			if got, ok := v.Interface().(properties.UUID); ok && got == id {
+				return true
+			}
+		}
+	}
+	return false
 }

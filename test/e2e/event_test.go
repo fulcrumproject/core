@@ -53,6 +53,17 @@ func testEvent(t *testing.T, env *Env) {
 		require.NoError(t, err)
 		require.Equalf(t, http.StatusOK, resp.StatusCode(), "ack: %s", resp.String())
 		require.Equal(t, maxSeq, ack.LastEventSequenceProcessed)
+
+		// Re-acking the same sequence must 409, not no-op: per-subscriber sequences are strictly increasing.
+		resp, err = env.AdminClient.R().
+			SetBody(api.EventAckReq{
+				SubscriberID:               subscriberID,
+				InstanceID:                 instanceID,
+				LastEventSequenceProcessed: maxSeq,
+			}).
+			Post("/events/ack")
+		require.NoError(t, err)
+		require.Equalf(t, http.StatusConflict, resp.StatusCode(), "re-ack of same sequence must 409: %s", resp.String())
 	})
 
 	t.Run("lease without subscriberId is rejected", func(t *testing.T) {
