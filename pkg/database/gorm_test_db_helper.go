@@ -17,6 +17,7 @@ type TestDB struct {
 	DB       *gorm.DB
 	MetricDB *gorm.DB
 	DBName   string
+	DSN      string
 }
 
 // NewTestDB creates a new instance of TestDB
@@ -67,6 +68,7 @@ func NewTestDB(t *testing.T) *TestDB {
 		DB:       db,
 		MetricDB: metricDb,
 		DBName:   dbName,
+		DSN:      appConfig.DBConfig.DSN,
 	}
 }
 

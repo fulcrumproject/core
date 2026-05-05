@@ -1,3 +1,5 @@
+//go:build e2e
+
 package e2e
 
 import (
@@ -12,12 +14,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// Deterministic Participant IDs. The Keycloak realm's `participant_id` claim
-// for participant1 / consumer1 must match these UUIDs for role-scoped tokens
-// to resolve to the seeded rows.
+// Deterministic fixture IDs. The Keycloak realm's `participant_id` and
+// `agent_id` claims must match these UUIDs so JWTs resolve to seeded rows.
 var (
 	providerID = uuid.MustParse("11111111-1111-1111-1111-111111111111")
 	consumerID = uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	agentID    = uuid.MustParse("33333333-3333-3333-3333-333333333333")
 )
 
 type Fixtures struct {
@@ -90,6 +92,7 @@ func mustSeed(t *testing.T, db *gorm.DB) *Fixtures {
 			ServicePoolSetID: f.PoolSet.ID,
 		})
 		f.Agent = mustCreate(t, tx, &domain.Agent{
+			BaseEntity:       domain.BaseEntity{ID: agentID},
 			Name:             "agent1",
 			Status:           domain.AgentNew,
 			ProviderID:       f.Provider.ID,

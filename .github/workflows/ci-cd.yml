@@ -57,10 +57,39 @@ jobs:
           path: coverage.html
           retention-days: 7
 
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          check-latest: true
+
+      - name: Boot Postgres + Keycloak
+        # Keycloak realm import via GH Actions `services:` is awkward (mounts);
+        # we use docker compose for this job specifically.
+        run: docker compose up -d postgres keycloak keycloak-provisioning --wait
+
+      - name: Run e2e suite
+        run: go test -tags e2e -timeout 10m -v ./test/e2e/...
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
   build-and-push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [test, e2e-tests]
     # Only run on push events to dev, main, or release/* branches (not on pull requests)
     if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
     permissions:

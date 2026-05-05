@@ -33,3 +33,4 @@ specs/
 # Project-specific binaries
 /fulcrum
 generated-client/
+/bin

@@ -1,3 +1,5 @@
+//go:build e2e
+
 package e2e
 
 import (
@@ -6,18 +8,18 @@ import (
 	"resty.dev/v3"
 )
 
-const keycloakTokenURL = "http://localhost:8080/realms/fulcrum/protocol/openid-connect/token"
-
 func GetToken(username, password string) (string, error) {
+	tokenURL := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", keycloakURL, keycloakRealm)
 	var out struct {
 		AccessToken string `json:"access_token"`
 	}
 	resp, err := resty.New().R().SetFormData(map[string]string{
-		"grant_type": "password",
-		"client_id":  "fulcrum-ui",
-		"username":   username,
-		"password":   password,
-	}).SetResult(&out).Post(keycloakTokenURL)
+		"grant_type":    "password",
+		"client_id":     oauthClientID,
+		"client_secret": oauthSecret,
+		"username":      username,
+		"password":      password,
+	}).SetResult(&out).Post(tokenURL)
 
 	if err != nil {
 		return "", fmt.Errorf("keycloak token: %w", err)
