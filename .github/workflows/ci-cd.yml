@@ -78,6 +78,17 @@ jobs:
         run: docker compose up -d postgres keycloak keycloak-provisioning --wait
 
       - name: Run e2e suite
+        env:
+          FULCRUM_DB_DSN: host=localhost user=${{ env.TEST_DB_USER }} password=${{
+            env.TEST_DB_PASSWORD }} dbname=postgres port=${{ env.TEST_DB_PORT }}
+            sslmode=disable
+          FULCRUM_METRIC_DB_DSN: host=localhost user=${{ env.TEST_DB_USER }} password=${{
+            env.TEST_DB_PASSWORD }} dbname=postgres port=${{ env.TEST_DB_PORT }}
+            sslmode=disable
+          FULCRUM_SCHEDULER_LOCKER_DB_DSN: host=localhost user=${{ env.TEST_DB_USER }}
+            password=${{ env.TEST_DB_PASSWORD }} dbname=postgres port=${{
+            env.TEST_DB_PORT }} sslmode=disable
+          FULCRUM_PUBLIC_BASE_URL: http://127.0.0.1:0
         run: go test -tags e2e -timeout 10m -v ./test/e2e/...
 
       - name: Dump container logs on failure
