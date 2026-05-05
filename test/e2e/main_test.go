@@ -42,4 +42,11 @@ func TestE2E(t *testing.T) {
 	t.Run("service types", func(t *testing.T) { testServiceType(t, env) })
 	t.Run("service option types", func(t *testing.T) { testServiceOptionType(t, env) })
 	t.Run("service options", func(t *testing.T) { testServiceOption(t, env) })
+	t.Run("agent pools", func(t *testing.T) { testAgentPool(t, env) })
+	t.Run("agent pool values", func(t *testing.T) { testAgentPoolValue(t, env) })
+	t.Run("service pool sets", func(t *testing.T) { testServicePoolSet(t, env) })
+	t.Run("service pools", func(t *testing.T) { testServicePool(t, env) })
+	t.Run("service pool values", func(t *testing.T) { testServicePoolValue(t, env) })
+	t.Run("service groups", func(t *testing.T) { testServiceGroup(t, env) })
+	t.Run("services", func(t *testing.T) { testService(t, env) })
 }

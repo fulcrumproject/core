@@ -48,9 +48,28 @@ func mustSeed(t *testing.T, db *gorm.DB) *Fixtures {
 
 	require.NoError(t, db.Transaction(func(tx *gorm.DB) error {
 		f.ServiceType = mustCreate(t, tx, &domain.ServiceType{
-			Name:            "compute",
-			PropertySchema:  schema.Schema{},
-			LifecycleSchema: domain.LifecycleSchema{InitialState: "creating"},
+			Name:           "compute",
+			PropertySchema: schema.Schema{},
+			LifecycleSchema: domain.LifecycleSchema{
+				States: []domain.LifecycleState{
+					{Name: "creating"}, {Name: "created"}, {Name: "deleted"},
+				},
+				Actions: []domain.LifecycleAction{
+					{
+						Name:        "create",
+						Transitions: []domain.LifecycleTransition{{From: "creating", To: "created"}},
+					},
+					{
+						Name: "delete",
+						Transitions: []domain.LifecycleTransition{
+							{From: "creating", To: "deleted"},
+							{From: "created", To: "deleted"},
+						},
+					},
+				},
+				InitialState:   "creating",
+				TerminalStates: []string{"deleted"},
+			},
 		})
 		f.OptionType = mustCreate(t, tx, &domain.ServiceOptionType{
 			Name: "size",
@@ -77,6 +96,9 @@ func mustSeed(t *testing.T, db *gorm.DB) *Fixtures {
 			CmdTemplate:         "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
 			ConfigContentType:   "text/plain",
 		})
+		// Link AgentType→ServiceType: without it the service create API rejects with
+		// "agent type does not support service type".
+		require.NoError(t, tx.Model(f.AgentType).Association("ServiceTypes").Append(f.ServiceType))
 		f.AgentPool = mustCreate(t, tx, &domain.AgentPool{
 			Name:          "default",
 			Type:          "agent-pool-test",
