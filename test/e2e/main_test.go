@@ -3,10 +3,76 @@
 package e2e
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/database"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+	"resty.dev/v3"
 )
+
+type Env struct {
+	ServerURL string
+	HealthURL string
+	DB        *gorm.DB
+	Seed      *Fixtures
+
+	AdminClient       *resty.Client
+	ParticipantClient *resty.Client
+	ConsumerClient    *resty.Client
+	AgentClient       *resty.Client
+}
+
+func newEnv(t *testing.T, tdb *database.TestDB, serverURL, healthURL string, seed *Fixtures) *Env {
+	t.Helper()
+	return &Env{
+		ServerURL:         serverURL,
+		HealthURL:         healthURL,
+		DB:                tdb.DB,
+		Seed:              seed,
+		AdminClient:       roleClient(t, serverURL, "admin1"),
+		ParticipantClient: roleClient(t, serverURL, "participant1"),
+		ConsumerClient:    roleClient(t, serverURL, "consumer1"),
+		AgentClient:       roleClient(t, serverURL, "agent1"),
+	}
+}
+
+func roleClient(t *testing.T, serverURL, username string) *resty.Client {
+	t.Helper()
+	tok, err := GetToken(username, "password")
+	require.NoErrorf(t, err, "keycloak token for %s", username)
+	return NewClient(serverURL, tok)
+}
+
+func NewClient(serverURL, authToken string) *resty.Client {
+	return resty.New().
+		SetBaseURL(serverURL + "/api/v1").
+		SetAuthToken(authToken)
+}
+
+func GetToken(username, password string) (string, error) {
+	tokenURL := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", keycloakURL, keycloakRealm)
+	var out struct {
+		AccessToken string `json:"access_token"`
+	}
+	resp, err := resty.New().R().SetFormData(map[string]string{
+		"grant_type":    "password",
+		"client_id":     oauthClientID,
+		"client_secret": oauthSecret,
+		"username":      username,
+		"password":      password,
+	}).SetResult(&out).Post(tokenURL)
+
+	if err != nil {
+		return "", fmt.Errorf("keycloak token: %w", err)
+	}
+	if resp.IsError() {
+		return "", fmt.Errorf("keycloak token: %s", resp.String())
+	}
+
+	return out.AccessToken, nil
+}
 
 func TestE2E(t *testing.T) {
 	tdb := database.NewTestDB(t)
