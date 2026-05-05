@@ -14,10 +14,7 @@ import (
 
 func testAgent(t *testing.T, env *Env) {
 	t.Run("admin lists agents includes seed", func(t *testing.T) {
-		var page api.PageRes[api.AgentRes]
-		resp, err := env.AdminClient.R().SetResult(&page).Get("/agents")
-		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, resp.StatusCode())
+		page := mustList[api.AgentRes](t, env.AdminClient, "/agents")
 		require.GreaterOrEqual(t, page.TotalItems, int64(1))
 	})
 

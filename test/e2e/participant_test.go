@@ -25,20 +25,10 @@ func testParticipant(t *testing.T, env *Env) {
 		require.Equal(t, created.ID, got.ID)
 
 		newName := "p-renamed-" + uniq()
-		var updated api.ParticipantRes
-		resp, err := env.AdminClient.R().
-			SetPathParam("id", created.ID.String()).
-			SetBody(api.UpdateParticipantReq{Name: &newName}).
-			SetResult(&updated).
-			Patch("/participants/{id}")
-		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, resp.StatusCode())
+		updated := mustPatch[api.UpdateParticipantReq, api.ParticipantRes](t, env.AdminClient, "/participants", created.ID, api.UpdateParticipantReq{Name: &newName})
 		require.Equal(t, newName, updated.Name)
 
-		var page api.PageRes[api.ParticipantRes]
-		resp, err = env.AdminClient.R().SetResult(&page).Get("/participants")
-		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, resp.StatusCode())
+		page := mustList[api.ParticipantRes](t, env.AdminClient, "/participants")
 		require.GreaterOrEqual(t, page.TotalItems, int64(3), "seed (2) + new (1)")
 
 		mustDelete(t, env.AdminClient, "/participants", created.ID)

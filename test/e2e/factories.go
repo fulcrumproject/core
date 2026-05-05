@@ -58,3 +58,25 @@ func mustPost[TReq any, TRes any](t *testing.T, c *resty.Client, path string, re
 	require.Equalf(t, http.StatusCreated, resp.StatusCode(), "create %s: %s", path, resp.String())
 	return &out
 }
+
+func mustPatch[TReq any, TRes any](t *testing.T, c *resty.Client, path string, id properties.UUID, req TReq) *TRes {
+	t.Helper()
+	var out TRes
+	resp, err := c.R().
+		SetPathParam("id", id.String()).
+		SetBody(req).
+		SetResult(&out).
+		Patch(path + "/{id}")
+	require.NoError(t, err)
+	require.Equalf(t, http.StatusOK, resp.StatusCode(), "patch %s: %s", path, resp.String())
+	return &out
+}
+
+func mustList[T any](t *testing.T, c *resty.Client, path string) *api.PageRes[T] {
+	t.Helper()
+	var out api.PageRes[T]
+	resp, err := c.R().SetResult(&out).Get(path)
+	require.NoError(t, err)
+	require.Equalf(t, http.StatusOK, resp.StatusCode(), "list %s: %s", path, resp.String())
+	return &out
+}
