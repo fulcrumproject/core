@@ -102,12 +102,16 @@ jobs:
           go tool covdata percent -i="$GOCOVERDIR"
           go tool covdata textfmt -i="$GOCOVERDIR" -o=coverage-e2e.out
 
+      - name: Generate HTML e2e coverage report
+        if: always()
+        run: go tool cover -html=coverage-e2e.out -o coverage-e2e.html
+
       - name: Upload e2e coverage as artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-e2e
-          path: coverage-e2e.out
+          name: coverage-e2e-report
+          path: coverage-e2e.html
           retention-days: 7
 
       - name: Dump container logs on failure
