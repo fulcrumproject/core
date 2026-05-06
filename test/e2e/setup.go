@@ -45,26 +45,20 @@ func freePort(t *testing.T) int {
 	return l.Addr().(*net.TCPAddr).Port
 }
 
-func buildBinary(t *testing.T) string {
-	t.Helper()
-	root := repoRoot(t)
-	out := filepath.Join(root, "bin", "fulcrum-e2e")
-	cmd := exec.Command("go", "build", "-o", out, "./cmd/fulcrum")
-	cmd.Dir = root
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-	require.NoError(t, cmd.Run(), "go build failed")
-	return out
-}
-
 // startServer execs the fulcrum binary against tdb, waits for /ready, and
 // registers cleanup. Returns the API base URL and the health server base URL
 // (both without trailing slash; API URL has no /api/v1 prefix).
 func startServer(t *testing.T, tdb *database.TestDB) (apiURL, healthURL string) {
 	t.Helper()
 
-	bin := buildBinary(t)
 	apiPort := freePort(t)
 	healthPort := freePort(t)
+
+	coverDir := os.Getenv("GOCOVERDIR")
+	if coverDir == "" {
+		coverDir = t.TempDir()
+	}
+	require.NoError(t, os.MkdirAll(coverDir, 0o755))
 
 	env := append(os.Environ(),
 		"FULCRUM_PORT="+strconv.Itoa(apiPort),
@@ -83,10 +77,12 @@ func startServer(t *testing.T, tdb *database.TestDB) (apiURL, healthURL string) 
 		"FULCRUM_JOB_MAINTENANCE=false",
 		"FULCRUM_AGENT_MAINTENANCE=false",
 		"FULCRUM_KEYCLOAK_ADMIN=true",
+		"GOCOVERDIR="+coverDir,
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cmd := exec.CommandContext(ctx, bin)
+	cmd := exec.CommandContext(ctx, "go", "run", "-cover", "-coverpkg=./...", "./cmd/fulcrum")
+	cmd.Dir = repoRoot(t)
 	cmd.Env = env
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -94,12 +90,13 @@ func startServer(t *testing.T, tdb *database.TestDB) (apiURL, healthURL string) 
 	require.NoError(t, cmd.Start(), "failed to start fulcrum binary")
 
 	t.Cleanup(func() {
-		_ = cmd.Process.Signal(syscall.SIGTERM)
+		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
 		done := make(chan struct{})
 		go func() { _ = cmd.Wait(); close(done) }()
 		select {
 		case <-done:
-		case <-time.After(5 * time.Second):
+		case <-time.After(20 * time.Second):
+			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 			cancel()
 			<-done
 		}

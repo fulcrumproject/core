@@ -63,6 +63,8 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     needs: [ test ]
+    env:
+      GOCOVERDIR: /tmp/covdata-e2e
     steps:
       - uses: actions/checkout@v4
 
@@ -77,6 +79,9 @@ jobs:
         # we use docker compose for this job specifically.
         run: docker compose up -d postgres keycloak keycloak-provisioning --wait
 
+      - name: Prepare coverage dir
+        run: mkdir -p "$GOCOVERDIR"
+
       - name: Run e2e suite
         env:
           FULCRUM_DB_DSN: host=localhost user=${{ env.TEST_DB_USER }} password=${{
@@ -90,6 +95,20 @@ jobs:
             env.TEST_DB_PORT }} sslmode=disable
           FULCRUM_PUBLIC_BASE_URL: http://127.0.0.1:0
         run: go test -tags e2e -timeout 10m -v ./test/e2e/...
+
+      - name: Convert e2e coverage
+        if: always()
+        run: |
+          go tool covdata percent -i="$GOCOVERDIR"
+          go tool covdata textfmt -i="$GOCOVERDIR" -o=coverage-e2e.out
+
+      - name: Upload e2e coverage as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-e2e
+          path: coverage-e2e.out
+          retention-days: 7
 
       - name: Dump container logs on failure
         if: failure()
