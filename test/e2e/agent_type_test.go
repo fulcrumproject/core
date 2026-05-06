@@ -76,7 +76,7 @@ func testAgentType(t *testing.T, env *Env) {
 	})
 
 	t.Run("participant cannot create agent type", func(t *testing.T) {
-		resp, err := env.ParticipantClient.R().
+		resp, err := env.ProviderClient.R().
 			SetBody(api.CreateAgentTypeReq{
 				Name:                "p-" + uniq(),
 				ConfigurationSchema: schema.Schema{},

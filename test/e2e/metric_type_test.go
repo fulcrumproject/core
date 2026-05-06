@@ -44,7 +44,7 @@ func testMetricType(t *testing.T, env *Env) {
 	})
 
 	t.Run("participant cannot create metric type", func(t *testing.T) {
-		resp, err := env.ParticipantClient.R().
+		resp, err := env.ProviderClient.R().
 			SetBody(api.CreateMetricTypeReq{
 				Name:       "p-" + uniq(),
 				EntityType: domain.MetricEntityTypeService,

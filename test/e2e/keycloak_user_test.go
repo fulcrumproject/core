@@ -87,7 +87,7 @@ func testKeycloakUser(t *testing.T, env *Env) {
 	})
 
 	t.Run("participant cannot list keycloak users", func(t *testing.T) {
-		resp, err := env.ParticipantClient.R().Get("/keycloak-users")
+		resp, err := env.ProviderClient.R().Get("/keycloak-users")
 		require.NoError(t, err)
 		require.Equalf(t, http.StatusForbidden, resp.StatusCode(), "body: %s", resp.String())
 	})

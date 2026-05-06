@@ -54,7 +54,7 @@ func testParticipant(t *testing.T, env *Env) {
 	t.Run("participant cannot read another participant", func(t *testing.T) {
 		// participant1 maps to provider (Seed.Provider). Reading consumer
 		// (Seed.Consumer) is out of scope and must 403.
-		resp, err := env.ParticipantClient.R().
+		resp, err := env.ProviderClient.R().
 			SetPathParam("id", env.Seed.Consumer.ID.String()).
 			Get("/participants/{id}")
 		require.NoError(t, err)

@@ -53,7 +53,7 @@ func testServiceGroup(t *testing.T, env *Env) {
 
 	t.Run("provider participant cannot create group for consumer", func(t *testing.T) {
 		// participant1 is mapped to Provider; ConsumerID=Consumer is out of scope.
-		resp, err := env.ParticipantClient.R().
+		resp, err := env.ProviderClient.R().
 			SetBody(api.CreateServiceGroupReq{
 				Name:       "x-" + uniq(),
 				ConsumerID: env.Seed.Consumer.ID,

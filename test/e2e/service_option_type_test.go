@@ -48,7 +48,7 @@ func testServiceOptionType(t *testing.T, env *Env) {
 	})
 
 	t.Run("participant cannot create option type", func(t *testing.T) {
-		resp, err := env.ParticipantClient.R().
+		resp, err := env.ProviderClient.R().
 			SetBody(api.CreateServiceOptionTypeReq{
 				Name: "p-" + uniq(),
 				Type: "size_" + uniq(),

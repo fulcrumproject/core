@@ -55,7 +55,7 @@ func testServiceOption(t *testing.T, env *Env) {
 	t.Run("participant cannot create option for another provider", func(t *testing.T) {
 		// participant1 is mapped to Provider; creating an option scoped to
 		// Consumer must 403 since it's not in their participant scope.
-		resp, err := env.ParticipantClient.R().
+		resp, err := env.ProviderClient.R().
 			SetBody(api.CreateServiceOptionReq{
 				ProviderID:          env.Seed.Consumer.ID,
 				ServiceOptionTypeID: env.Seed.OptionType.ID,

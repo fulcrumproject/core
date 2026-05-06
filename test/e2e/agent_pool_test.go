@@ -53,7 +53,7 @@ func testAgentPool(t *testing.T, env *Env) {
 	})
 
 	t.Run("participant cannot create agent pool", func(t *testing.T) {
-		resp, err := env.ParticipantClient.R().
+		resp, err := env.ProviderClient.R().
 			SetBody(api.CreateAgentPoolReq{
 				Name:          "p-" + uniq(),
 				Type:          "type_" + uniq(),

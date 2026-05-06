@@ -58,7 +58,7 @@ func testToken(t *testing.T, env *Env) {
 	})
 
 	t.Run("participant cannot create admin token", func(t *testing.T) {
-		resp, err := env.ParticipantClient.R().
+		resp, err := env.ProviderClient.R().
 			SetBody(api.CreateTokenReq{
 				Name: "esc-" + uniq(),
 				Role: auth.RoleAdmin,
@@ -71,7 +71,7 @@ func testToken(t *testing.T, env *Env) {
 	t.Run("participant cannot create token scoped to another participant", func(t *testing.T) {
 		// participant1 owns Provider; trying to mint a participant token for
 		// the Consumer must 403.
-		resp, err := env.ParticipantClient.R().
+		resp, err := env.ProviderClient.R().
 			SetBody(api.CreateTokenReq{
 				Name:    "x-scope-" + uniq(),
 				Role:    auth.RoleParticipant,

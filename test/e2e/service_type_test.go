@@ -69,7 +69,7 @@ func testServiceType(t *testing.T, env *Env) {
 	})
 
 	t.Run("participant cannot create service type", func(t *testing.T) {
-		resp, err := env.ParticipantClient.R().
+		resp, err := env.ProviderClient.R().
 			SetBody(api.CreateServiceTypeReq{
 				Name: "p-" + uniq(),
 				PropertySchema: schema.Schema{
