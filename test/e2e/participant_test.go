@@ -10,13 +10,14 @@ import (
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
 func testParticipant(t *testing.T, env *Env) {
 	t.Run("admin creates, gets, updates, lists, deletes", func(t *testing.T) {
-		name := "p-" + uniq()
-		created := mustPost[api.CreateParticipantReq, api.ParticipantRes](t, env.AdminClient, "/participants", api.CreateParticipantReq{
+		name := "p-" + testhelpers.Uniq()
+		created := testhelpers.MustPost[api.CreateParticipantReq, api.ParticipantRes](t, env.AdminClient, "/participants", api.CreateParticipantReq{
 			Name:   name,
 			Status: domain.ParticipantEnabled,
 		})
@@ -25,27 +26,27 @@ func testParticipant(t *testing.T, env *Env) {
 		require.NotEqual(t, properties.UUID{}, created.ID)
 		require.False(t, time.Time(created.CreatedAt).IsZero())
 
-		got := mustGet[api.ParticipantRes](t, env.AdminClient, "/participants", created.ID)
+		got := testhelpers.MustGet[api.ParticipantRes](t, env.AdminClient, "/participants", created.ID)
 		require.Equal(t, created.ID, got.ID)
 		require.Equal(t, created.Name, got.Name)
 		require.Equal(t, created.Status, got.Status)
 
-		newName := "p-renamed-" + uniq()
-		updated := mustPatch[api.UpdateParticipantReq, api.ParticipantRes](t, env.AdminClient, "/participants", created.ID, api.UpdateParticipantReq{Name: &newName})
+		newName := "p-renamed-" + testhelpers.Uniq()
+		updated := testhelpers.MustPatch[api.UpdateParticipantReq, api.ParticipantRes](t, env.AdminClient, "/participants", created.ID, api.UpdateParticipantReq{Name: &newName})
 		require.Equal(t, newName, updated.Name)
 		require.Equal(t, created.ID, updated.ID)
 		require.Equal(t, created.Status, updated.Status, "PATCH must not silently change status")
 
-		page := mustList[api.ParticipantRes](t, env.AdminClient, "/participants")
-		require.True(t, containsID(page.Items, created.ID), "list must include just-created participant")
+		page := testhelpers.MustList[api.ParticipantRes](t, env.AdminClient, "/participants")
+		require.True(t, testhelpers.ContainsID(page.Items, created.ID), "list must include just-created participant")
 
-		mustDelete(t, env.AdminClient, "/participants", created.ID)
-		assertGone(t, env.AdminClient, "/participants", created.ID)
+		testhelpers.MustDelete(t, env.AdminClient, "/participants", created.ID)
+		testhelpers.AssertGone(t, env.AdminClient, "/participants", created.ID)
 	})
 
 	t.Run("create rejects invalid status", func(t *testing.T) {
 		resp, err := env.AdminClient.R().
-			SetBody(api.CreateParticipantReq{Name: "bad-" + uniq(), Status: domain.ParticipantStatus("Bogus")}).
+			SetBody(api.CreateParticipantReq{Name: "bad-" + testhelpers.Uniq(), Status: domain.ParticipantStatus("Bogus")}).
 			Post("/participants")
 		require.NoError(t, err)
 		require.Equalf(t, http.StatusBadRequest, resp.StatusCode(), "body: %s", resp.String())

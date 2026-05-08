@@ -10,6 +10,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,24 +28,24 @@ func testServiceLifecycleScenario(t *testing.T, env *Env) {
 		internalIP    = "10.0.0.42"
 	)
 
-	poolType := "public_ip_" + uniq()
+	poolType := "public_ip_" + testhelpers.Uniq()
 
-	pool := mustPost[api.CreateServicePoolReq, api.ServicePoolRes](t, env.AdminClient, "/service-pools", api.CreateServicePoolReq{
-		Name:             "lifecycle-pool-" + uniq(),
+	pool := testhelpers.MustPost[api.CreateServicePoolReq, api.ServicePoolRes](t, env.AdminClient, "/service-pools", api.CreateServicePoolReq{
+		Name:             "lifecycle-pool-" + testhelpers.Uniq(),
 		Type:             poolType,
 		PropertyType:     "string",
 		GeneratorType:    domain.PoolGeneratorList,
-		ServicePoolSetID: env.Seed.PoolSet.ID,
+		ServicePoolSetID: env.Seed.ServicePoolSet.ID,
 	})
 
-	poolValue := mustPost[api.CreateServicePoolValueReq, api.ServicePoolValueRes](t, env.AdminClient, "/service-pool-values", api.CreateServicePoolValueReq{
+	poolValue := testhelpers.MustPost[api.CreateServicePoolValueReq, api.ServicePoolValueRes](t, env.AdminClient, "/service-pool-values", api.CreateServicePoolValueReq{
 		ServicePoolID: pool.ID,
 		Name:          publicIPValue,
 		Value:         publicIPValue,
 	})
 
-	svcType := mustPost[api.CreateServiceTypeReq, api.ServiceTypeRes](t, env.AdminClient, "/service-types", api.CreateServiceTypeReq{
-		Name: "vm-lifecycle-" + uniq(),
+	svcType := testhelpers.MustPost[api.CreateServiceTypeReq, api.ServiceTypeRes](t, env.AdminClient, "/service-types", api.CreateServiceTypeReq{
+		Name: "vm-lifecycle-" + testhelpers.Uniq(),
 		PropertySchema: schema.Schema{
 			Properties: map[string]schema.PropertyDefinition{
 				"cpu": {
@@ -110,7 +111,7 @@ func testServiceLifecycleScenario(t *testing.T, env *Env) {
 	// can serve jobs for services of this type.
 	originalSvcTypeIDs := []properties.UUID{env.Seed.ServiceType.ID}
 	mergedSvcTypeIDs := append([]properties.UUID{env.Seed.ServiceType.ID}, svcType.ID)
-	mustPatch[api.UpdateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", env.Seed.AgentType.ID, api.UpdateAgentTypeReq{
+	testhelpers.MustPatch[api.UpdateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", env.Seed.AgentType.ID, api.UpdateAgentTypeReq{
 		ServiceTypeIds: &mergedSvcTypeIDs,
 	})
 	t.Cleanup(func() {
@@ -121,17 +122,17 @@ func testServiceLifecycleScenario(t *testing.T, env *Env) {
 	})
 
 	// Dedicated group: /jobs/pending returns one job per group.
-	group := mustPost[api.CreateServiceGroupReq, api.ServiceGroupRes](t, env.AdminClient, "/service-groups", api.CreateServiceGroupReq{
-		Name:       "g-svc-lifecycle-" + uniq(),
+	group := testhelpers.MustPost[api.CreateServiceGroupReq, api.ServiceGroupRes](t, env.AdminClient, "/service-groups", api.CreateServiceGroupReq{
+		Name:       "g-svc-lifecycle-" + testhelpers.Uniq(),
 		ConsumerID: env.Seed.Consumer.ID,
 	})
 
 	agentID := env.Seed.Agent.ID
-	svc := mustPost[api.CreateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", api.CreateServiceReq{
+	svc := testhelpers.MustPost[api.CreateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", api.CreateServiceReq{
 		GroupID:       group.ID,
 		AgentID:       &agentID,
 		ServiceTypeID: svcType.ID,
-		Name:          "svc-lifecycle-" + uniq(),
+		Name:          "svc-lifecycle-" + testhelpers.Uniq(),
 		Properties: properties.JSON{
 			"cpu":   4,
 			"image": "ubuntu:20.04",
@@ -140,14 +141,14 @@ func testServiceLifecycleScenario(t *testing.T, env *Env) {
 	require.Equal(t, "New", svc.Status, "service starts in InitialState")
 
 	t.Run("create job: pool allocates publicIp, agent sets internalIp", func(t *testing.T) {
-		instanceID := "vm-" + uniq()
+		instanceID := "vm-" + testhelpers.Uniq()
 		ip := internalIP
 		claimAndComplete(t, env, svc.ID, "create", &api.CompleteJobReq{
 			Properties:      &properties.JSON{"internalIp": ip},
 			AgentInstanceID: &instanceID,
 		})
 
-		got := mustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
+		got := testhelpers.MustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
 		require.Equal(t, "Stopped", got.Status, "create transitions New→Stopped")
 		require.NotNil(t, got.Properties)
 		require.Equalf(t, publicIPValue, (*got.Properties)["publicIp"], "publicIp must be auto-allocated from pool: %v", *got.Properties)
@@ -158,7 +159,7 @@ func testServiceLifecycleScenario(t *testing.T, env *Env) {
 		actionService(t, env, svc.ID, "start", http.StatusOK)
 		claimAndComplete(t, env, svc.ID, "start", &api.CompleteJobReq{})
 
-		got := mustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
+		got := testhelpers.MustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
 		require.Equal(t, "Started", got.Status)
 	})
 
@@ -176,29 +177,29 @@ func testServiceLifecycleScenario(t *testing.T, env *Env) {
 		actionService(t, env, svc.ID, "stop", http.StatusOK)
 		claimAndComplete(t, env, svc.ID, "stop", &api.CompleteJobReq{})
 
-		got := mustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
+		got := testhelpers.MustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
 		require.Equal(t, "Stopped", got.Status)
 	})
 
 	t.Run("cold update while Stopped enqueues update job and applies new cpu", func(t *testing.T) {
 		newProps := properties.JSON{"cpu": 8}
-		mustPatch[api.UpdateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", svc.ID, api.UpdateServiceReq{Properties: &newProps})
+		testhelpers.MustPatch[api.UpdateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", svc.ID, api.UpdateServiceReq{Properties: &newProps})
 		claimAndComplete(t, env, svc.ID, "update", &api.CompleteJobReq{})
 
-		got := mustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
+		got := testhelpers.MustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
 		require.Equal(t, "Stopped", got.Status, "update transitions Stopped→Stopped")
 		require.NotNil(t, got.Properties)
 		require.EqualValues(t, 8, (*got.Properties)["cpu"], "cold update must persist new cpu: %v", *got.Properties)
 	})
 
 	t.Run("delete releases publicIp back to the pool", func(t *testing.T) {
-		mustDelete(t, env.AdminClient, "/services", svc.ID)
+		testhelpers.MustDelete(t, env.AdminClient, "/services", svc.ID)
 		claimAndComplete(t, env, svc.ID, "delete", &api.CompleteJobReq{})
 
-		got := mustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
+		got := testhelpers.MustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
 		require.Equal(t, "Deleted", got.Status)
 
-		gotPoolValue := mustGet[api.ServicePoolValueRes](t, env.AdminClient, "/service-pool-values", poolValue.ID)
+		gotPoolValue := testhelpers.MustGet[api.ServicePoolValueRes](t, env.AdminClient, "/service-pool-values", poolValue.ID)
 		require.Nilf(t, gotPoolValue.ServiceID, "publicIp pool value must be released after service delete (serviceId still set: %v)", gotPoolValue.ServiceID)
 	})
 }

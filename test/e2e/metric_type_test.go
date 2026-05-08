@@ -10,13 +10,14 @@ import (
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
 func testMetricType(t *testing.T, env *Env) {
 	t.Run("admin creates, gets, updates, lists, deletes", func(t *testing.T) {
-		name := "mt-" + uniq()
-		created := mustPost[api.CreateMetricTypeReq, api.MetricTypeRes](t, env.AdminClient, "/metric-types", api.CreateMetricTypeReq{
+		name := "mt-" + testhelpers.Uniq()
+		created := testhelpers.MustPost[api.CreateMetricTypeReq, api.MetricTypeRes](t, env.AdminClient, "/metric-types", api.CreateMetricTypeReq{
 			Name:       name,
 			EntityType: domain.MetricEntityTypeService,
 		})
@@ -25,28 +26,28 @@ func testMetricType(t *testing.T, env *Env) {
 		require.NotEqual(t, properties.UUID{}, created.ID)
 		require.False(t, time.Time(created.CreatedAt).IsZero())
 
-		got := mustGet[api.MetricTypeRes](t, env.AdminClient, "/metric-types", created.ID)
+		got := testhelpers.MustGet[api.MetricTypeRes](t, env.AdminClient, "/metric-types", created.ID)
 		require.Equal(t, created.ID, got.ID)
 		require.Equal(t, created.Name, got.Name)
 		require.Equal(t, created.EntityType, got.EntityType)
 
-		newName := "mt-renamed-" + uniq()
-		updated := mustPatch[api.UpdateMetricTypeReq, api.MetricTypeRes](t, env.AdminClient, "/metric-types", created.ID, api.UpdateMetricTypeReq{Name: &newName})
+		newName := "mt-renamed-" + testhelpers.Uniq()
+		updated := testhelpers.MustPatch[api.UpdateMetricTypeReq, api.MetricTypeRes](t, env.AdminClient, "/metric-types", created.ID, api.UpdateMetricTypeReq{Name: &newName})
 		require.Equal(t, newName, updated.Name)
 		require.Equal(t, created.ID, updated.ID)
 		require.Equal(t, created.EntityType, updated.EntityType, "PATCH name-only must not change entityType")
 
-		page := mustList[api.MetricTypeRes](t, env.AdminClient, "/metric-types")
-		require.True(t, containsID(page.Items, created.ID), "list must include just-created metric type")
+		page := testhelpers.MustList[api.MetricTypeRes](t, env.AdminClient, "/metric-types")
+		require.True(t, testhelpers.ContainsID(page.Items, created.ID), "list must include just-created metric type")
 
-		mustDelete(t, env.AdminClient, "/metric-types", created.ID)
-		assertGone(t, env.AdminClient, "/metric-types", created.ID)
+		testhelpers.MustDelete(t, env.AdminClient, "/metric-types", created.ID)
+		testhelpers.AssertGone(t, env.AdminClient, "/metric-types", created.ID)
 	})
 
 	t.Run("participant cannot create metric type", func(t *testing.T) {
 		resp, err := env.ProviderClient.R().
 			SetBody(api.CreateMetricTypeReq{
-				Name:       "p-" + uniq(),
+				Name:       "p-" + testhelpers.Uniq(),
 				EntityType: domain.MetricEntityTypeService,
 			}).
 			Post("/metric-types")

@@ -10,15 +10,16 @@ import (
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
 func testAgentType(t *testing.T, env *Env) {
 	t.Run("admin creates, gets, updates, lists, deletes", func(t *testing.T) {
-		name := "at-" + uniq()
+		name := "at-" + testhelpers.Uniq()
 		cfgTpl := "[agent]\nendpoint={{.apiEndpoint}}\n"
 		cmdTpl := "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'"
-		created := mustPost[api.CreateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", api.CreateAgentTypeReq{
+		created := testhelpers.MustPost[api.CreateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", api.CreateAgentTypeReq{
 			Name: name,
 			ConfigurationSchema: schema.Schema{
 				Properties: map[string]schema.PropertyDefinition{
@@ -36,25 +37,25 @@ func testAgentType(t *testing.T, env *Env) {
 		require.NotEqual(t, properties.UUID{}, created.ID)
 		require.False(t, time.Time(created.CreatedAt).IsZero())
 
-		got := mustGet[api.AgentTypeRes](t, env.AdminClient, "/agent-types", created.ID)
+		got := testhelpers.MustGet[api.AgentTypeRes](t, env.AdminClient, "/agent-types", created.ID)
 		require.Equal(t, created.ID, got.ID)
 		require.Equal(t, created.Name, got.Name)
 		require.Equal(t, created.ConfigTemplate, got.ConfigTemplate)
 		require.Equal(t, created.CmdTemplate, got.CmdTemplate)
 		require.Equal(t, created.ConfigContentType, got.ConfigContentType)
 
-		newName := "at-renamed-" + uniq()
-		updated := mustPatch[api.UpdateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", created.ID, api.UpdateAgentTypeReq{Name: &newName})
+		newName := "at-renamed-" + testhelpers.Uniq()
+		updated := testhelpers.MustPatch[api.UpdateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", created.ID, api.UpdateAgentTypeReq{Name: &newName})
 		require.Equal(t, newName, updated.Name)
 		require.Equal(t, created.ID, updated.ID)
 		require.Equal(t, created.ConfigTemplate, updated.ConfigTemplate, "PATCH name-only must not change templates")
 		require.Equal(t, created.CmdTemplate, updated.CmdTemplate, "PATCH name-only must not change templates")
 
-		page := mustList[api.AgentTypeRes](t, env.AdminClient, "/agent-types")
-		require.True(t, containsID(page.Items, created.ID), "list must include just-created agent type")
+		page := testhelpers.MustList[api.AgentTypeRes](t, env.AdminClient, "/agent-types")
+		require.True(t, testhelpers.ContainsID(page.Items, created.ID), "list must include just-created agent type")
 
-		mustDelete(t, env.AdminClient, "/agent-types", created.ID)
-		assertGone(t, env.AdminClient, "/agent-types", created.ID)
+		testhelpers.MustDelete(t, env.AdminClient, "/agent-types", created.ID)
+		testhelpers.AssertGone(t, env.AdminClient, "/agent-types", created.ID)
 	})
 
 	t.Run("rejects configTemplate referencing unknown schema field", func(t *testing.T) {
@@ -62,7 +63,7 @@ func testAgentType(t *testing.T, env *Env) {
 		// this validation as a 400 case.
 		resp, err := env.AdminClient.R().
 			SetBody(api.CreateAgentTypeReq{
-				Name: "bad-cfg-ref-" + uniq(),
+				Name: "bad-cfg-ref-" + testhelpers.Uniq(),
 				ConfigurationSchema: schema.Schema{
 					Properties: map[string]schema.PropertyDefinition{
 						"host": {Type: "string", Required: true},
@@ -78,7 +79,7 @@ func testAgentType(t *testing.T, env *Env) {
 	t.Run("participant cannot create agent type", func(t *testing.T) {
 		resp, err := env.ProviderClient.R().
 			SetBody(api.CreateAgentTypeReq{
-				Name:                "p-" + uniq(),
+				Name:                "p-" + testhelpers.Uniq(),
 				ConfigurationSchema: schema.Schema{},
 			}).
 			Post("/agent-types")

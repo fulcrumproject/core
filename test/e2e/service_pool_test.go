@@ -9,28 +9,29 @@ import (
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
 func testServicePool(t *testing.T, env *Env) {
-	name := "sp-" + uniq()
-	typeVal := "type_" + uniq()
-	created := mustPost[api.CreateServicePoolReq, api.ServicePoolRes](t, env.AdminClient, "/service-pools", api.CreateServicePoolReq{
+	name := "sp-" + testhelpers.Uniq()
+	typeVal := "type_" + testhelpers.Uniq()
+	created := testhelpers.MustPost[api.CreateServicePoolReq, api.ServicePoolRes](t, env.AdminClient, "/service-pools", api.CreateServicePoolReq{
 		Name:             name,
 		Type:             typeVal,
 		PropertyType:     "string",
 		GeneratorType:    domain.PoolGeneratorList,
-		ServicePoolSetID: env.Seed.PoolSet.ID,
+		ServicePoolSetID: env.Seed.ServicePoolSet.ID,
 	})
 	require.Equal(t, name, created.Name)
 	require.Equal(t, typeVal, created.Type)
 	require.Equal(t, "string", created.PropertyType)
 	require.Equal(t, domain.PoolGeneratorList, created.GeneratorType)
-	require.Equal(t, env.Seed.PoolSet.ID, created.ServicePoolSetID)
+	require.Equal(t, env.Seed.ServicePoolSet.ID, created.ServicePoolSetID)
 	require.NotEqual(t, properties.UUID{}, created.ID)
 	require.False(t, time.Time(created.CreatedAt).IsZero())
 
-	got := mustGet[api.ServicePoolRes](t, env.AdminClient, "/service-pools", created.ID)
+	got := testhelpers.MustGet[api.ServicePoolRes](t, env.AdminClient, "/service-pools", created.ID)
 	require.Equal(t, created.ID, got.ID)
 	require.Equal(t, created.Name, got.Name)
 	require.Equal(t, created.Type, got.Type)
@@ -38,15 +39,15 @@ func testServicePool(t *testing.T, env *Env) {
 	require.Equal(t, created.GeneratorType, got.GeneratorType)
 	require.Equal(t, created.ServicePoolSetID, got.ServicePoolSetID)
 
-	newName := "sp-renamed-" + uniq()
-	updated := mustPatch[api.UpdateServicePoolReq, api.ServicePoolRes](t, env.AdminClient, "/service-pools", created.ID, api.UpdateServicePoolReq{Name: &newName})
+	newName := "sp-renamed-" + testhelpers.Uniq()
+	updated := testhelpers.MustPatch[api.UpdateServicePoolReq, api.ServicePoolRes](t, env.AdminClient, "/service-pools", created.ID, api.UpdateServicePoolReq{Name: &newName})
 	require.Equal(t, newName, updated.Name)
 	require.Equal(t, created.ID, updated.ID)
 	require.Equal(t, created.ServicePoolSetID, updated.ServicePoolSetID, "PATCH name-only must not change FK")
 
-	page := mustList[api.ServicePoolRes](t, env.AdminClient, "/service-pools")
-	require.True(t, containsID(page.Items, created.ID), "list must include just-created service pool")
+	page := testhelpers.MustList[api.ServicePoolRes](t, env.AdminClient, "/service-pools")
+	require.True(t, testhelpers.ContainsID(page.Items, created.ID), "list must include just-created service pool")
 
-	mustDelete(t, env.AdminClient, "/service-pools", created.ID)
-	assertGone(t, env.AdminClient, "/service-pools", created.ID)
+	testhelpers.MustDelete(t, env.AdminClient, "/service-pools", created.ID)
+	testhelpers.AssertGone(t, env.AdminClient, "/service-pools", created.ID)
 }

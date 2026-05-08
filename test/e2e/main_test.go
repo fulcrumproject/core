@@ -3,10 +3,10 @@
 package e2e
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/database"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"resty.dev/v3"
@@ -16,7 +16,7 @@ type Env struct {
 	ServerURL string
 	HealthURL string
 	DB        *gorm.DB
-	Seed      *Fixtures
+	Seed      *testhelpers.CoreFixtures
 
 	AdminClient    *resty.Client
 	ProviderClient *resty.Client
@@ -24,7 +24,7 @@ type Env struct {
 	AgentClient    *resty.Client
 }
 
-func newEnv(t *testing.T, tdb *database.TestDB, serverURL, healthURL string, seed *Fixtures) *Env {
+func newEnv(t *testing.T, tdb *database.TestDB, serverURL, healthURL string, seed *testhelpers.CoreFixtures) *Env {
 	t.Helper()
 	return &Env{
 		ServerURL:      serverURL,
@@ -40,38 +40,9 @@ func newEnv(t *testing.T, tdb *database.TestDB, serverURL, healthURL string, see
 
 func roleClient(t *testing.T, serverURL, username string) *resty.Client {
 	t.Helper()
-	tok, err := GetToken(username, "password")
+	tok, err := coreRealm.GetToken(username, "password")
 	require.NoErrorf(t, err, "keycloak token for %s", username)
-	return NewClient(serverURL, tok)
-}
-
-func NewClient(serverURL, authToken string) *resty.Client {
-	return resty.New().
-		SetBaseURL(serverURL + "/api/v1").
-		SetAuthToken(authToken)
-}
-
-func GetToken(username, password string) (string, error) {
-	tokenURL := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", keycloakURL, keycloakRealm)
-	var out struct {
-		AccessToken string `json:"access_token"`
-	}
-	resp, err := resty.New().R().SetFormData(map[string]string{
-		"grant_type":    "password",
-		"client_id":     oauthClientID,
-		"client_secret": oauthSecret,
-		"username":      username,
-		"password":      password,
-	}).SetResult(&out).Post(tokenURL)
-
-	if err != nil {
-		return "", fmt.Errorf("keycloak token: %w", err)
-	}
-	if resp.IsError() {
-		return "", fmt.Errorf("keycloak token: %s", resp.String())
-	}
-
-	return out.AccessToken, nil
+	return testhelpers.NewClient(serverURL, tok)
 }
 
 func TestE2E(t *testing.T) {
@@ -79,7 +50,17 @@ func TestE2E(t *testing.T) {
 	t.Cleanup(func() { tdb.Cleanup(t) })
 
 	serverURL, healthURL := startServer(t, tdb)
-	seed := mustSeed(t, tdb.DB)
+
+	var seed *testhelpers.CoreFixtures
+	require.NoError(t, tdb.DB.Transaction(func(tx *gorm.DB) error {
+		s, err := testhelpers.SeedCore(tx)
+		if err != nil {
+			return err
+		}
+		seed = s
+		return nil
+	}))
+
 	env := newEnv(t, tdb, serverURL, healthURL, seed)
 
 	t.Run("participants", func(t *testing.T) { testParticipant(t, env) })

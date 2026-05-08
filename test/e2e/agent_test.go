@@ -10,18 +10,19 @@ import (
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
 func testAgent(t *testing.T, env *Env) {
 	t.Run("admin lists agents includes seed", func(t *testing.T) {
-		page := mustList[api.AgentRes](t, env.AdminClient, "/agents")
+		page := testhelpers.MustList[api.AgentRes](t, env.AdminClient, "/agents")
 		require.GreaterOrEqual(t, page.TotalItems, int64(1))
 	})
 
 	t.Run("create+get+delete agent", func(t *testing.T) {
-		name := "agent-" + uniq()
-		created := mustPost[api.CreateAgentReq, api.AgentRes](t, env.AdminClient, "/agents", api.CreateAgentReq{
+		name := "agent-" + testhelpers.Uniq()
+		created := testhelpers.MustPost[api.CreateAgentReq, api.AgentRes](t, env.AdminClient, "/agents", api.CreateAgentReq{
 			Name:        name,
 			ProviderID:  env.Seed.Provider.ID,
 			AgentTypeID: env.Seed.AgentType.ID,
@@ -33,29 +34,29 @@ func testAgent(t *testing.T, env *Env) {
 		require.NotEqual(t, properties.UUID{}, created.ID)
 		require.False(t, time.Time(created.CreatedAt).IsZero())
 
-		got := mustGet[api.AgentRes](t, env.AdminClient, "/agents", created.ID)
+		got := testhelpers.MustGet[api.AgentRes](t, env.AdminClient, "/agents", created.ID)
 		require.Equal(t, created.ID, got.ID)
 		require.Equal(t, created.Name, got.Name)
 		require.Equal(t, created.ProviderID, got.ProviderID)
 		require.Equal(t, created.AgentTypeID, got.AgentTypeID)
 		require.Equal(t, created.Status, got.Status)
 
-		page := mustList[api.AgentRes](t, env.AdminClient, "/agents")
-		require.True(t, containsID(page.Items, created.ID), "list must include just-created agent")
+		page := testhelpers.MustList[api.AgentRes](t, env.AdminClient, "/agents")
+		require.True(t, testhelpers.ContainsID(page.Items, created.ID), "list must include just-created agent")
 
-		mustDelete(t, env.AdminClient, "/agents", created.ID)
-		assertGone(t, env.AdminClient, "/agents", created.ID)
+		testhelpers.MustDelete(t, env.AdminClient, "/agents", created.ID)
+		testhelpers.AssertGone(t, env.AdminClient, "/agents", created.ID)
 	})
 
 	t.Run("install-command GET returns metadata even when expired (regression #208)", func(t *testing.T) {
 		// Spin up a fresh agent so we don't perturb the seed agent's install
 		// token (the smoke /me subtest already used it).
-		ag := mustPost[api.CreateAgentReq, api.AgentRes](t, env.AdminClient, "/agents", api.CreateAgentReq{
-			Name:        "agent-it-" + uniq(),
+		ag := testhelpers.MustPost[api.CreateAgentReq, api.AgentRes](t, env.AdminClient, "/agents", api.CreateAgentReq{
+			Name:        "agent-it-" + testhelpers.Uniq(),
 			ProviderID:  env.Seed.Provider.ID,
 			AgentTypeID: env.Seed.AgentType.ID,
 		})
-		t.Cleanup(func() { mustDelete(t, env.AdminClient, "/agents", ag.ID) })
+		t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/agents", ag.ID) })
 
 		issued := mustCreateInstallToken(t, env.AdminClient, ag.ID)
 		require.NotEmpty(t, issued.InstallCommand)

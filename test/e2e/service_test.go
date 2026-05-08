@@ -9,19 +9,20 @@ import (
 
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
 func testService(t *testing.T, env *Env) {
 	t.Run("admin lists services includes seed", func(t *testing.T) {
-		page := mustList[api.ServiceRes](t, env.AdminClient, "/services")
+		page := testhelpers.MustList[api.ServiceRes](t, env.AdminClient, "/services")
 		require.GreaterOrEqual(t, page.TotalItems, int64(1))
 	})
 
 	t.Run("admin creates+gets+updates service", func(t *testing.T) {
 		agentID := env.Seed.Agent.ID
-		name := "svc-" + uniq()
-		created := mustPost[api.CreateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", api.CreateServiceReq{
+		name := "svc-" + testhelpers.Uniq()
+		created := testhelpers.MustPost[api.CreateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", api.CreateServiceReq{
 			GroupID:       env.Seed.Group.ID,
 			AgentID:       &agentID,
 			ServiceTypeID: env.Seed.ServiceType.ID,
@@ -44,7 +45,7 @@ func testService(t *testing.T, env *Env) {
 				Delete("/services/{id}")
 		})
 
-		got := mustGet[api.ServiceRes](t, env.AdminClient, "/services", created.ID)
+		got := testhelpers.MustGet[api.ServiceRes](t, env.AdminClient, "/services", created.ID)
 		require.Equal(t, created.ID, got.ID)
 		require.Equal(t, created.Name, got.Name)
 		require.Equal(t, created.Status, got.Status)
@@ -54,11 +55,11 @@ func testService(t *testing.T, env *Env) {
 		require.Equal(t, created.ProviderID, got.ProviderID)
 		require.Equal(t, created.ConsumerID, got.ConsumerID)
 
-		page := mustList[api.ServiceRes](t, env.AdminClient, "/services")
-		require.True(t, containsID(page.Items, created.ID), "list must include just-created service")
+		page := testhelpers.MustList[api.ServiceRes](t, env.AdminClient, "/services")
+		require.True(t, testhelpers.ContainsID(page.Items, created.ID), "list must include just-created service")
 
-		newName := "svc-renamed-" + uniq()
-		updated := mustPatch[api.UpdateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", created.ID, api.UpdateServiceReq{Name: &newName})
+		newName := "svc-renamed-" + testhelpers.Uniq()
+		updated := testhelpers.MustPatch[api.UpdateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", created.ID, api.UpdateServiceReq{Name: &newName})
 		require.Equal(t, newName, updated.Name)
 		require.Equal(t, created.ID, updated.ID)
 		require.Equal(t, created.Status, updated.Status, "PATCH must not transition status")

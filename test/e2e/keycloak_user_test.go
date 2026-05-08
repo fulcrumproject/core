@@ -8,19 +8,20 @@ import (
 
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
 func testKeycloakUser(t *testing.T, env *Env) {
 	t.Run("admin lists keycloak users includes seeded usernames", func(t *testing.T) {
-		page := mustList[api.KeycloakUserListItemRes](t, env.AdminClient, "/keycloak-users")
+		page := testhelpers.MustList[api.KeycloakUserListItemRes](t, env.AdminClient, "/keycloak-users")
 		require.GreaterOrEqual(t, page.TotalItems, int64(4), "admin1 + participant1 + consumer1 + agent1")
 	})
 
 	t.Run("admin creates+gets+updates+deletes keycloak user", func(t *testing.T) {
-		username := "e2e-" + uniq()
+		username := "e2e-" + testhelpers.Uniq()
 		email := username + "@example.com"
-		created := mustPost[api.CreateKeycloakUserReq, api.KeycloakUserRes](t, env.AdminClient, "/keycloak-users", api.CreateKeycloakUserReq{
+		created := testhelpers.MustPost[api.CreateKeycloakUserReq, api.KeycloakUserRes](t, env.AdminClient, "/keycloak-users", api.CreateKeycloakUserReq{
 			Username:      username,
 			Email:         email,
 			EmailVerified: true,

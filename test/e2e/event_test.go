@@ -7,18 +7,19 @@ import (
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/api"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
 func testEvent(t *testing.T, env *Env) {
 	t.Run("admin lists events", func(t *testing.T) {
-		page := mustList[api.EventRes](t, env.AdminClient, "/events")
+		page := testhelpers.MustList[api.EventRes](t, env.AdminClient, "/events")
 		require.GreaterOrEqual(t, page.TotalItems, int64(1))
 	})
 
 	t.Run("subscriber leases events and acks", func(t *testing.T) {
 		subscriberID := env.Seed.EventSub.SubscriberID
-		instanceID := "e2e-instance-" + uniq()
+		instanceID := "e2e-instance-" + testhelpers.Uniq()
 
 		var lease api.EventLeaseRes
 		resp, err := env.AdminClient.R().

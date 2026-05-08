@@ -9,16 +9,17 @@ import (
 
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
 func testMetricEntry(t *testing.T, env *Env) {
 	svcID := env.Seed.Service.ID
-	resourceID := "cpu-" + uniq()
+	resourceID := "cpu-" + testhelpers.Uniq()
 
 	var entryID properties.UUID
 	t.Run("agent creates metric entry for service", func(t *testing.T) {
-		entry := mustPost[api.CreateMetricEntryReq, api.MetricEntryRes](t, env.AgentClient, "/metric-entries", api.CreateMetricEntryReq{
+		entry := testhelpers.MustPost[api.CreateMetricEntryReq, api.MetricEntryRes](t, env.AgentClient, "/metric-entries", api.CreateMetricEntryReq{
 			ServiceID:    &svcID,
 			ResourceID:   resourceID,
 			Value:        42.5,
@@ -35,12 +36,12 @@ func testMetricEntry(t *testing.T, env *Env) {
 	})
 
 	t.Run("admin lists entries includes the just-created one", func(t *testing.T) {
-		page := mustList[api.MetricEntryRes](t, env.AdminClient, "/metric-entries")
-		require.True(t, containsID(page.Items, entryID), "list must include just-created entry")
+		page := testhelpers.MustList[api.MetricEntryRes](t, env.AdminClient, "/metric-entries")
+		require.True(t, testhelpers.ContainsID(page.Items, entryID), "list must include just-created entry")
 	})
 
 	t.Run("/resource-ids returns the seeded resource", func(t *testing.T) {
-		page := mustList[string](t, env.AdminClient, "/metric-entries/resource-ids")
+		page := testhelpers.MustList[string](t, env.AdminClient, "/metric-entries/resource-ids")
 		require.GreaterOrEqual(t, page.TotalItems, int64(1))
 	})
 

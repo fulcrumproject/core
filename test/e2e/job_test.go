@@ -9,28 +9,29 @@ import (
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
 func testJob(t *testing.T, env *Env) {
 	// /jobs/pending returns at most one job per service group, so use a
 	// dedicated group to keep this suite's job findable.
-	group := mustPost[api.CreateServiceGroupReq, api.ServiceGroupRes](t, env.AdminClient, "/service-groups", api.CreateServiceGroupReq{
-		Name:       "g-jobs-" + uniq(),
+	group := testhelpers.MustPost[api.CreateServiceGroupReq, api.ServiceGroupRes](t, env.AdminClient, "/service-groups", api.CreateServiceGroupReq{
+		Name:       "g-jobs-" + testhelpers.Uniq(),
 		ConsumerID: env.Seed.Consumer.ID,
 	})
 
 	aid := env.Seed.Agent.ID
-	svc := mustPost[api.CreateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", api.CreateServiceReq{
+	svc := testhelpers.MustPost[api.CreateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", api.CreateServiceReq{
 		GroupID:       group.ID,
 		AgentID:       &aid,
 		ServiceTypeID: env.Seed.ServiceType.ID,
-		Name:          "svc-job-" + uniq(),
+		Name:          "svc-job-" + testhelpers.Uniq(),
 		Properties:    properties.JSON{},
 	})
 
 	t.Run("admin lists jobs includes the dispatched job", func(t *testing.T) {
-		page := mustList[api.JobRes](t, env.AdminClient, "/jobs")
+		page := testhelpers.MustList[api.JobRes](t, env.AdminClient, "/jobs")
 		require.GreaterOrEqual(t, page.TotalItems, int64(1))
 	})
 
@@ -73,12 +74,12 @@ func testJob(t *testing.T, env *Env) {
 		require.NoError(t, err)
 		require.Equalf(t, http.StatusNoContent, resp.StatusCode(), "complete: %s", resp.String())
 
-		after := mustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
+		after := testhelpers.MustGet[api.ServiceRes](t, env.AdminClient, "/services", svc.ID)
 		require.Equal(t, "created", after.Status, "service should advance after job completion")
 
 		// The completed job must be persisted with status=Completed and a
 		// CompletedAt timestamp, and must no longer surface in /pending.
-		jobAfter := mustGet[api.JobRes](t, env.AdminClient, "/jobs", job.ID)
+		jobAfter := testhelpers.MustGet[api.JobRes](t, env.AdminClient, "/jobs", job.ID)
 		require.Equal(t, domain.JobCompleted, jobAfter.Status)
 		require.NotNil(t, jobAfter.CompletedAt, "CompletedAt must be set after complete")
 

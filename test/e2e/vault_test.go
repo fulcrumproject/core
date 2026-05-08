@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +21,7 @@ func testVault(t *testing.T, env *Env) {
 
 	t.Run("agent gets 404 for unknown reference", func(t *testing.T) {
 		resp, err := env.AgentClient.R().
-			SetPathParam("reference", "no-such-secret-"+uniq()).
+			SetPathParam("reference", "no-such-secret-"+testhelpers.Uniq()).
 			Get("/vault/secrets/{reference}")
 		require.NoError(t, err)
 		require.Equalf(t, http.StatusNotFound, resp.StatusCode(), "body: %s", resp.String())

@@ -10,6 +10,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
+	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 	"resty.dev/v3"
 )
@@ -25,8 +26,8 @@ func testAgentInstallScenario(t *testing.T, env *Env) {
 		maxRetries  = 5
 	)
 
-	agentType := mustPost[api.CreateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", api.CreateAgentTypeReq{
-		Name: "install-scenario-type-" + uniq(),
+	agentType := testhelpers.MustPost[api.CreateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", api.CreateAgentTypeReq{
+		Name: "install-scenario-type-" + testhelpers.Uniq(),
 		ConfigurationSchema: schema.Schema{
 			Properties: map[string]schema.PropertyDefinition{
 				"apiEndpoint": {Type: "string", Label: "API Endpoint", Required: true},
@@ -44,8 +45,8 @@ func testAgentInstallScenario(t *testing.T, env *Env) {
 		"apiKey":      apiKey,
 		"maxRetries":  maxRetries,
 	}
-	agent := mustPost[api.CreateAgentReq, api.AgentRes](t, env.AdminClient, "/agents", api.CreateAgentReq{
-		Name:          "install-scenario-agent-" + uniq(),
+	agent := testhelpers.MustPost[api.CreateAgentReq, api.AgentRes](t, env.AdminClient, "/agents", api.CreateAgentReq{
+		Name:          "install-scenario-agent-" + testhelpers.Uniq(),
 		ProviderID:    env.Seed.Provider.ID,
 		AgentTypeID:   agentType.ID,
 		Tags:          []string{"install-scenario"},
@@ -53,9 +54,9 @@ func testAgentInstallScenario(t *testing.T, env *Env) {
 	})
 
 	t.Cleanup(func() {
-		mustDelete(t, env.AdminClient, "/agents", agent.ID)
-		assertGone(t, env.AdminClient, "/agents", agent.ID)
-		mustDelete(t, env.AdminClient, "/agent-types", agentType.ID)
+		testhelpers.MustDelete(t, env.AdminClient, "/agents", agent.ID)
+		testhelpers.AssertGone(t, env.AdminClient, "/agents", agent.ID)
+		testhelpers.MustDelete(t, env.AdminClient, "/agent-types", agentType.ID)
 	})
 
 	assertRendered := func(t *testing.T, body string) {
