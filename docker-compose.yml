@@ -5,16 +5,22 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    env_file:
+      - path: .env
+        required: false
     environment:
-      - FULCRUM_DB_HOST=postgres
-      - FULCRUM_DB_USER=fulcrum
-      - FULCRUM_DB_PASSWORD=fulcrum_password
-      - FULCRUM_DB_NAME=fulcrum_db
-      - FULCRUM_DB_PORT=5432
-      - FULCRUM_DB_SSL_MODE=disable
+      FULCRUM_DB_DSN: host=postgres user=${POSTGRES_USER:-fulcrum} password=${POSTGRES_PASSWORD:-fulcrum_password} dbname=${POSTGRES_DB:-fulcrum_db} port=5432 sslmode=disable
+      FULCRUM_METRIC_DB_DSN: host=postgres user=${POSTGRES_USER:-fulcrum} password=${POSTGRES_PASSWORD:-fulcrum_password} dbname=${POSTGRES_DB:-fulcrum_db} port=5432 sslmode=disable
+      FULCRUM_SCHEDULER_LOCKER_DB_DSN: host=postgres user=${POSTGRES_USER:-fulcrum} password=${POSTGRES_PASSWORD:-fulcrum_password} dbname=${POSTGRES_DB:-fulcrum_db} port=5432 sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      keycloak-provisioning:
+        condition: service_completed_successfully
+    extra_hosts:
+      - "localhost:host-gateway"
     networks:
       - fulcrum-network
 
@@ -44,6 +50,9 @@ services:
       KC_HEALTH_ENABLED: "true"
       KC_LOG_LEVEL: info
     command: ["start-dev", "--http-port", "8080", "--https-port", "8443"]
+    healthcheck:
+      test:
+        ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/localhost/8080' || exit 1"]
     ports:
       - "8080:8080"
       - "8443:8443"

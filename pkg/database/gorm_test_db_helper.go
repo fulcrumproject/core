@@ -17,7 +17,12 @@ type TestDB struct {
 	DB       *gorm.DB
 	MetricDB *gorm.DB
 	DBName   string
+	dsn      string
 }
+
+// DSN returns the PostgreSQL DSN for this test database. Lets *TestDB
+// satisfy the testhelpers.DBSource interface.
+func (tdb *TestDB) DSN() string { return tdb.dsn }
 
 // NewTestDB creates a new instance of TestDB
 func NewTestDB(t *testing.T) *TestDB {
@@ -67,6 +72,7 @@ func NewTestDB(t *testing.T) *TestDB {
 		DB:       db,
 		MetricDB: metricDb,
 		DBName:   dbName,
+		dsn:      appConfig.DBConfig.DSN,
 	}
 }
 
