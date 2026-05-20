@@ -435,7 +435,7 @@ func createTestServiceEvent(t *testing.T, repo *GormEventRepository, serviceID p
 			"diff": []map[string]interface{}{
 				{
 					"op":    "replace",
-					"path":  "/currentStatus",
+					"path":  "/status",
 					"value": string(newStatus),
 				},
 			},

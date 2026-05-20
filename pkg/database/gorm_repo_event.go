@@ -215,7 +215,7 @@ func (r *GormEventRepository) extractServiceStatusFromEvent(event *domain.Event)
 		}
 
 		if op, ok := patch["op"].(string); ok && (op == "replace" || op == "add") {
-			if path, ok := patch["path"].(string); ok && path == "/currentStatus" {
+			if path, ok := patch["path"].(string); ok && path == "/status" {
 				if value, ok := patch["value"].(string); ok {
 					return value, nil
 				}
