@@ -444,3 +444,107 @@ func createTestServiceEvent(t *testing.T, repo *GormEventRepository, serviceID p
 	err := repo.Create(context.Background(), event)
 	require.NoError(t, err)
 }
+
+// createTestPropertyOnlyServiceEvent writes a service.transitioned event whose
+// diff carries property/heartbeat changes but NO /status patch — the shape the
+// jobCommander emits when a job completes without an actual status change.
+func createTestPropertyOnlyServiceEvent(t *testing.T, repo *GormEventRepository, serviceID properties.UUID, createdAt time.Time) {
+	t.Helper()
+	event := &domain.Event{
+		BaseEntity: domain.BaseEntity{
+			CreatedAt: createdAt,
+			UpdatedAt: createdAt,
+		},
+		InitiatorType: domain.InitiatorTypeSystem,
+		InitiatorID:   "test-system",
+		Type:          domain.EventTypeServiceTransitioned,
+		EntityID:      &serviceID,
+		Payload: properties.JSON{
+			"diff": []map[string]interface{}{
+				{"op": "replace", "path": "/properties/cpu", "value": "high"},
+				{"op": "replace", "path": "/agentInstanceData/ts", "value": createdAt.Format(time.RFC3339)},
+			},
+		},
+	}
+	require.NoError(t, repo.Create(context.Background(), event))
+}
+
+// createTestMalformedServiceEvent writes a service.transitioned event whose
+// payload.diff is the wrong shape — used to confirm tolerance of missing
+// /status patches does NOT mask genuine parse errors.
+func createTestMalformedServiceEvent(t *testing.T, repo *GormEventRepository, serviceID properties.UUID, createdAt time.Time) {
+	t.Helper()
+	event := &domain.Event{
+		BaseEntity: domain.BaseEntity{
+			CreatedAt: createdAt,
+			UpdatedAt: createdAt,
+		},
+		InitiatorType: domain.InitiatorTypeSystem,
+		InitiatorID:   "test-system",
+		Type:          domain.EventTypeServiceTransitioned,
+		EntityID:      &serviceID,
+		Payload: properties.JSON{
+			"diff": "not-an-array",
+		},
+	}
+	require.NoError(t, repo.Create(context.Background(), event))
+}
+
+// TestGormEventRepository_Uptime_PropertyOnlyEvents covers the case where
+// service.transitioned events are emitted for property/heartbeat updates and
+// carry no /status patch. The uptime computation must tolerate them.
+func TestGormEventRepository_Uptime_PropertyOnlyEvents(t *testing.T) {
+	testDB := NewTestDB(t)
+	defer testDB.Cleanup(t)
+
+	repo := NewEventRepository(testDB.DB)
+	serviceTypeRepo := NewServiceTypeRepository(testDB.DB)
+	serviceRepo := NewServiceRepository(testDB.DB)
+	serviceType := createTestServiceType(t)
+	require.NoError(t, serviceTypeRepo.Create(context.Background(), serviceType))
+
+	baseTime := time.Date(2023, 6, 1, 12, 0, 0, 0, time.UTC)
+	start := baseTime
+	end := baseTime.Add(1 * time.Hour)
+
+	t.Run("Property-only event mid-window is skipped", func(t *testing.T) {
+		serviceID := properties.UUID(uuid.New())
+		createTestServiceForUptime(t, serviceRepo, serviceType.ID, serviceID)
+
+		// Service started 30 minutes before the window opens.
+		createTestServiceEvent(t, repo, serviceID, "Started", baseTime.Add(-30*time.Minute))
+		// A property-only event lands 30 minutes into the window — no /status patch.
+		createTestPropertyOnlyServiceEvent(t, repo, serviceID, start.Add(30*time.Minute))
+
+		uptimeSeconds, downtimeSeconds, err := repo.ServiceUptime(context.Background(), serviceID, start, end)
+		require.NoError(t, err)
+		assert.Equal(t, uint64(3600), uptimeSeconds)
+		assert.Equal(t, uint64(0), downtimeSeconds)
+	})
+
+	t.Run("Initial status walks back past property-only most-recent event", func(t *testing.T) {
+		serviceID := properties.UUID(uuid.New())
+		createTestServiceForUptime(t, serviceRepo, serviceType.ID, serviceID)
+
+		// Real Started transition 60 minutes before window.
+		createTestServiceEvent(t, repo, serviceID, "Started", baseTime.Add(-60*time.Minute))
+		// Most-recent prior event is property-only.
+		createTestPropertyOnlyServiceEvent(t, repo, serviceID, baseTime.Add(-15*time.Minute))
+
+		uptimeSeconds, downtimeSeconds, err := repo.ServiceUptime(context.Background(), serviceID, start, end)
+		require.NoError(t, err)
+		assert.Equal(t, uint64(3600), uptimeSeconds)
+		assert.Equal(t, uint64(0), downtimeSeconds)
+	})
+
+	t.Run("Malformed diff still errors", func(t *testing.T) {
+		serviceID := properties.UUID(uuid.New())
+		createTestServiceForUptime(t, serviceRepo, serviceType.ID, serviceID)
+
+		createTestServiceEvent(t, repo, serviceID, "Started", baseTime.Add(-30*time.Minute))
+		createTestMalformedServiceEvent(t, repo, serviceID, start.Add(15*time.Minute))
+
+		_, _, err := repo.ServiceUptime(context.Background(), serviceID, start, end)
+		require.Error(t, err)
+	})
+}

@@ -82,39 +82,41 @@ func (r *GormEventRepository) ServiceUptime(ctx context.Context, serviceID prope
 		return 0, 0, fmt.Errorf("failed to get initial service status: %w", err)
 	}
 
-	// Stream through service transition events within the time range using Rows()
-	// Use a fresh session to avoid inheriting conditions from previous queries
-
-	var event domain.Event
-	rows, err := r.db.WithContext(ctx).
-		Model(&event).
+	// Load all in-window service transition events. We don't stream with
+	// Rows/ScanRows because ScanRows mutates the shared *gorm.DB statement and
+	// leaks the events table into other callers using the same DB instance.
+	var events []domain.Event
+	if err := r.db.WithContext(ctx).
 		Where("entity_id = ?", serviceID).
 		Where("type = ?", domain.EventTypeServiceTransitioned).
 		Where("created_at >= ?", start).
 		Where("created_at <= ?", end).
 		Order("created_at ASC").
-		Rows()
-	if err != nil {
+		Find(&events).Error; err != nil {
 		return 0, 0, fmt.Errorf("failed to query service transition events: %w", err)
 	}
-	defer rows.Close()
 
-	// Calculate uptime progressively by streaming through events
 	var totalUptime time.Duration
 	totalDuration := end.Sub(start)
 	currentTime := start
 	hasEvents := false
 
-	// Stream through each event
-	for rows.Next() {
-		hasEvents = true
-		var event domain.Event
+	for i := range events {
+		event := &events[i]
 
-		// Scan the row into the event struct
-		if err := r.db.ScanRows(rows, &event); err != nil {
-			return 0, 0, fmt.Errorf("failed to scan event row: %w", err)
+		// service.transitioned events are emitted on every job completion (see
+		// jobCommander), so the diff may carry only property/heartbeat changes
+		// with no /status patch — those events represent no actual status change
+		// and must be skipped.
+		newStatus, hasStatus, err := r.extractServiceStatusFromEvent(event)
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to extract service status from event %s: %w", event.ID, err)
+		}
+		if !hasStatus {
+			continue
 		}
 
+		hasEvents = true
 		eventTime := event.CreatedAt
 
 		// Add uptime for the period before this event if service was running
@@ -122,19 +124,8 @@ func (r *GormEventRepository) ServiceUptime(ctx context.Context, serviceID prope
 			totalUptime += eventTime.Sub(currentTime)
 		}
 
-		// Extract new status from event payload
-		newStatus, err := r.extractServiceStatusFromEvent(&event)
-		if err != nil {
-			return 0, 0, fmt.Errorf("failed to extract service status from event %s: %w", event.ID, err)
-		}
-
 		currentStatus = newStatus
 		currentTime = eventTime
-	}
-
-	// Check for any errors that occurred during iteration
-	if err := rows.Err(); err != nil {
-		return 0, 0, fmt.Errorf("error occurred while iterating through events: %w", err)
 	}
 
 	// If no transition events found within the range, check if service was running the entire period
@@ -157,71 +148,69 @@ func (r *GormEventRepository) ServiceUptime(ctx context.Context, serviceID prope
 	return uptimeSeconds, downtimeSeconds, nil
 }
 
-// getServiceStatusAtTime retrieves the service status at a specific point in time
-// by looking for the most recent transition event before that time
+// getServiceStatusAtTime retrieves the service status at a specific point in
+// time by looking for the most recent prior service.transitioned event that
+// actually carries a /status patch. Property-only events (heartbeats / property
+// updates emitted by jobCommander) are filtered out at the DB level via a
+// JSONB containment predicate, so no in-memory walk-back is needed.
 func (r *GormEventRepository) getServiceStatusAtTime(ctx context.Context, serviceID properties.UUID, timestamp time.Time) (string, error) {
 	var event domain.Event
-	result := r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).
 		Where("entity_id = ?", serviceID).
 		Where("type = ?", domain.EventTypeServiceTransitioned).
 		Where("created_at <= ?", timestamp).
+		Where("payload->'diff' @> ?::jsonb", `[{"path":"/status"}]`).
 		Order("created_at DESC").
-		First(&event)
-
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			// No transition events found before this time, return empty string
-			// Caller should determine appropriate initial state
+		First(&event).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
 			return "", nil
 		}
-		return "", fmt.Errorf("failed to query service status: %w", result.Error)
+		return "", fmt.Errorf("failed to query service status: %w", err)
 	}
 
-	// Extract status from the event
-	status, err := r.extractServiceStatusFromEvent(&event)
+	status, _, err := r.extractServiceStatusFromEvent(&event)
 	if err != nil {
 		return "", fmt.Errorf("failed to extract status from event: %w", err)
 	}
-
 	return status, nil
 }
 
-// extractServiceStatusFromEvent extracts the service status from a service transition event
-func (r *GormEventRepository) extractServiceStatusFromEvent(event *domain.Event) (string, error) {
-	// The event payload contains a diff with the service status change
-	// We need to extract the "after" state of the currentStatus field
-
+// extractServiceStatusFromEvent extracts the service status from a service transition event.
+//
+// service.transitioned events are emitted on every job completion with a diff
+// of all changed fields, not only status — see jobCommander.Complete/Fail. An
+// event without a /status patch means "no status change at this point in time"
+// (e.g. heartbeat or property-only update) and is signalled by hasStatus=false
+// with a nil error so callers can skip it without aborting.
+func (r *GormEventRepository) extractServiceStatusFromEvent(event *domain.Event) (status string, hasStatus bool, err error) {
 	if event.Payload == nil {
-		return "", fmt.Errorf("event payload is nil")
+		return "", false, fmt.Errorf("event payload is nil")
 	}
 
-	// Parse the diff from the payload
 	diffInterface, exists := event.Payload["diff"]
 	if !exists {
-		return "", fmt.Errorf("no diff found in event payload")
+		return "", false, fmt.Errorf("no diff found in event payload")
 	}
 
-	// Type cast diff to JSON patches (optimized - avoids marshal/unmarshal)
 	patchesSlice, ok := diffInterface.([]any)
 	if !ok {
-		return "", fmt.Errorf("diff is not in expected array format, got type: %T", diffInterface)
+		return "", false, fmt.Errorf("diff is not in expected array format, got type: %T", diffInterface)
 	}
 
-	// Look for patches that modify the currentStatus field
 	for _, patchInterface := range patchesSlice {
 		patch, ok := patchInterface.(map[string]any)
 		if !ok {
-			continue // Skip invalid patch entries
+			continue
 		}
-
 		if op, ok := patch["op"].(string); ok && (op == "replace" || op == "add") {
 			if path, ok := patch["path"].(string); ok && path == "/status" {
 				if value, ok := patch["value"].(string); ok {
-					return value, nil
+					return value, true, nil
 				}
 			}
 		}
 	}
 
-	return "", fmt.Errorf("no currentStatus change found in event diff")
+	return "", false, nil
 }
