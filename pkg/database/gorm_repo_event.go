@@ -148,41 +148,32 @@ func (r *GormEventRepository) ServiceUptime(ctx context.Context, serviceID prope
 	return uptimeSeconds, downtimeSeconds, nil
 }
 
-// getServiceStatusAtTime retrieves the service status at a specific point in time
-// by walking back through service.transitioned events until one carrying an
-// actual /status patch is found. Property-only events (no /status patch) are
-// skipped because they don't represent a status change.
-//
-// Uses Find on a bounded batch rather than streaming with Rows/ScanRows —
-// ScanRows mutates the shared *gorm.DB statement and would leak the events
-// table into other callers across subtests.
+// getServiceStatusAtTime retrieves the service status at a specific point in
+// time by looking for the most recent prior service.transitioned event that
+// actually carries a /status patch. Property-only events (heartbeats / property
+// updates emitted by jobCommander) are filtered out at the DB level via a
+// JSONB containment predicate, so no in-memory walk-back is needed.
 func (r *GormEventRepository) getServiceStatusAtTime(ctx context.Context, serviceID properties.UUID, timestamp time.Time) (string, error) {
-	const lookbackLimit = 50
-
-	var events []domain.Event
-	if err := r.db.WithContext(ctx).
+	var event domain.Event
+	err := r.db.WithContext(ctx).
 		Where("entity_id = ?", serviceID).
 		Where("type = ?", domain.EventTypeServiceTransitioned).
 		Where("created_at <= ?", timestamp).
+		Where("payload->'diff' @> ?::jsonb", `[{"path":"/status"}]`).
 		Order("created_at DESC").
-		Limit(lookbackLimit).
-		Find(&events).Error; err != nil {
+		First(&event).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return "", nil
+		}
 		return "", fmt.Errorf("failed to query service status: %w", err)
 	}
 
-	for i := range events {
-		status, hasStatus, err := r.extractServiceStatusFromEvent(&events[i])
-		if err != nil {
-			return "", fmt.Errorf("failed to extract status from event: %w", err)
-		}
-		if hasStatus {
-			return status, nil
-		}
+	status, _, err := r.extractServiceStatusFromEvent(&event)
+	if err != nil {
+		return "", fmt.Errorf("failed to extract status from event: %w", err)
 	}
-
-	// No prior transition event carries a /status patch — caller decides what
-	// "no prior state" means.
-	return "", nil
+	return status, nil
 }
 
 // extractServiceStatusFromEvent extracts the service status from a service transition event.
