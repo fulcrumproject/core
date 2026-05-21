@@ -1,4 +1,4 @@
-CreateAgentPoolReq:
+CreateConfigPoolReq:
   type: object
   required:
     - name
@@ -9,7 +9,7 @@ CreateAgentPoolReq:
     name:
       type: string
       example: "Public IP Pool"
-      description: "Name of the agent pool"
+      description: "Name of the config pool"
     type:
       type: string
       example: "public_ip"
@@ -28,8 +28,14 @@ CreateAgentPoolReq:
       type: object
       description: "Generator-specific configuration"
       example: { "cidr": "192.168.1.0/24", "excludeFirst": 1, "excludeLast": 1 }
+    participantId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: |
+        Owner of this pool. Omit (or set null) to create a global pool — admin only.
+        When set, the pool is scoped to that participant; participants may only set
+        their own ID. Two participants may have pools sharing the same `type`.
 
-UpdateAgentPoolReq:
+UpdateConfigPoolReq:
   type: object
   properties:
     name:
@@ -39,7 +45,7 @@ UpdateAgentPoolReq:
       type: object
       description: "Generator-specific configuration"
 
-AgentPoolRes:
+ConfigPoolRes:
   type: object
   properties:
     id:
@@ -62,6 +68,9 @@ AgentPoolRes:
     generatorConfig:
       type: object
       example: { "cidr": "192.168.1.0/24" }
+    participantId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "Owning participant (null = global pool managed by admin)"
     createdAt:
       type: string
       format: date-time

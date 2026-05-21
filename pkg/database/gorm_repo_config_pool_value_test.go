@@ -14,32 +14,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createTestAgentPoolValue(t *testing.T, poolID properties.UUID) *domain.AgentPoolValue {
+func createTestConfigPoolValue(t *testing.T, poolID properties.UUID) *domain.ConfigPoolValue {
 	t.Helper()
 	randomSuffix := uuid.New().String()
-	return &domain.AgentPoolValue{
-		Name:        fmt.Sprintf("Value %s", randomSuffix),
-		Value:       fmt.Sprintf("192.168.1.%s", randomSuffix[:3]),
-		AgentPoolID: poolID,
+	return &domain.ConfigPoolValue{
+		Name:         fmt.Sprintf("Value %s", randomSuffix),
+		Value:        fmt.Sprintf("192.168.1.%s", randomSuffix[:3]),
+		ConfigPoolID: poolID,
 	}
 }
 
-func TestAgentPoolValueRepository(t *testing.T) {
+func TestConfigPoolValueRepository(t *testing.T) {
 	tdb := NewTestDB(t)
 	t.Logf("Temp test DB name %s", tdb.DBName)
 	defer tdb.Cleanup(t)
 
-	poolRepo := NewAgentPoolRepository(tdb.DB)
-	repo := NewAgentPoolValueRepository(tdb.DB)
+	poolRepo := NewConfigPoolRepository(tdb.DB)
+	repo := NewConfigPoolValueRepository(tdb.DB)
 	ctx := context.Background()
 
 	// Create a parent pool for FK
-	pool := createTestAgentPool(t)
+	pool := createTestConfigPool(t)
 	require.NoError(t, poolRepo.Create(ctx, pool))
 
 	t.Run("Create", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
-			value := createTestAgentPoolValue(t, pool.ID)
+			value := createTestConfigPoolValue(t, pool.ID)
 
 			err := repo.Create(ctx, value)
 
@@ -50,7 +50,7 @@ func TestAgentPoolValueRepository(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, value.Name, found.Name)
 			assert.Equal(t, value.Value, found.Value)
-			assert.Equal(t, pool.ID, found.AgentPoolID)
+			assert.Equal(t, pool.ID, found.ConfigPoolID)
 			assert.Nil(t, found.AgentID)
 			assert.Nil(t, found.PropertyName)
 			assert.Nil(t, found.AllocatedAt)
@@ -59,7 +59,7 @@ func TestAgentPoolValueRepository(t *testing.T) {
 
 	t.Run("Get", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
-			value := createTestAgentPoolValue(t, pool.ID)
+			value := createTestConfigPoolValue(t, pool.ID)
 			require.NoError(t, repo.Create(ctx, value))
 
 			found, err := repo.Get(ctx, value.ID)
@@ -78,9 +78,9 @@ func TestAgentPoolValueRepository(t *testing.T) {
 
 	t.Run("List", func(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
-			value1 := createTestAgentPoolValue(t, pool.ID)
+			value1 := createTestConfigPoolValue(t, pool.ID)
 			require.NoError(t, repo.Create(ctx, value1))
-			value2 := createTestAgentPoolValue(t, pool.ID)
+			value2 := createTestConfigPoolValue(t, pool.ID)
 			require.NoError(t, repo.Create(ctx, value2))
 
 			page := &domain.PageReq{
@@ -95,7 +95,7 @@ func TestAgentPoolValueRepository(t *testing.T) {
 		})
 
 		t.Run("success - filter by name", func(t *testing.T) {
-			value := createTestAgentPoolValue(t, pool.ID)
+			value := createTestConfigPoolValue(t, pool.ID)
 			require.NoError(t, repo.Create(ctx, value))
 
 			page := &domain.PageReq{
@@ -111,31 +111,31 @@ func TestAgentPoolValueRepository(t *testing.T) {
 			assert.Equal(t, value.Name, result.Items[0].Name)
 		})
 
-		t.Run("success - filter by agentPoolId", func(t *testing.T) {
+		t.Run("success - filter by configPoolId", func(t *testing.T) {
 			// Create a second pool
-			pool2 := createTestAgentPool(t)
+			pool2 := createTestConfigPool(t)
 			pool2.Type = fmt.Sprintf("type-%s", uuid.New().String())
 			require.NoError(t, poolRepo.Create(ctx, pool2))
 
-			value := createTestAgentPoolValue(t, pool2.ID)
+			value := createTestConfigPoolValue(t, pool2.ID)
 			require.NoError(t, repo.Create(ctx, value))
 
 			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
-				Filters:  map[string][]string{"agentPoolId": {pool2.ID.String()}},
+				Filters:  map[string][]string{"configPoolId": {pool2.ID.String()}},
 			}
 
 			result, err := repo.List(ctx, &auth.IdentityScope{}, page)
 
 			require.NoError(t, err)
 			require.Len(t, result.Items, 1)
-			assert.Equal(t, pool2.ID, result.Items[0].AgentPoolID)
+			assert.Equal(t, pool2.ID, result.Items[0].ConfigPoolID)
 		})
 
 		t.Run("success - filter by agentId", func(t *testing.T) {
 			agentID := properties.NewUUID()
-			value := createTestAgentPoolValue(t, pool.ID)
+			value := createTestConfigPoolValue(t, pool.ID)
 			value.AgentID = &agentID
 			propName := "test_prop"
 			value.PropertyName = &propName
@@ -155,11 +155,11 @@ func TestAgentPoolValueRepository(t *testing.T) {
 		})
 
 		t.Run("success - with sorting", func(t *testing.T) {
-			v1 := createTestAgentPoolValue(t, pool.ID)
+			v1 := createTestConfigPoolValue(t, pool.ID)
 			v1.Name = "A Value"
 			require.NoError(t, repo.Create(ctx, v1))
 
-			v2 := createTestAgentPoolValue(t, pool.ID)
+			v2 := createTestConfigPoolValue(t, pool.ID)
 			v2.Name = "B Value"
 			require.NoError(t, repo.Create(ctx, v2))
 
@@ -182,19 +182,19 @@ func TestAgentPoolValueRepository(t *testing.T) {
 
 		t.Run("success - with pagination", func(t *testing.T) {
 			// Create enough values for pagination
-			uniquePool := createTestAgentPool(t)
+			uniquePool := createTestConfigPool(t)
 			uniquePool.Type = fmt.Sprintf("pagination-type-%s", uuid.New().String())
 			require.NoError(t, poolRepo.Create(ctx, uniquePool))
 
 			for i := 0; i < 5; i++ {
-				v := createTestAgentPoolValue(t, uniquePool.ID)
+				v := createTestConfigPoolValue(t, uniquePool.ID)
 				require.NoError(t, repo.Create(ctx, v))
 			}
 
 			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 2,
-				Filters:  map[string][]string{"agentPoolId": {uniquePool.ID.String()}},
+				Filters:  map[string][]string{"configPoolId": {uniquePool.ID.String()}},
 			}
 
 			result, err := repo.List(ctx, &auth.IdentityScope{}, page)
@@ -215,7 +215,7 @@ func TestAgentPoolValueRepository(t *testing.T) {
 
 	t.Run("Update", func(t *testing.T) {
 		t.Run("success - allocate and release", func(t *testing.T) {
-			value := createTestAgentPoolValue(t, pool.ID)
+			value := createTestConfigPoolValue(t, pool.ID)
 			require.NoError(t, repo.Create(ctx, value))
 
 			// Allocate
@@ -243,7 +243,7 @@ func TestAgentPoolValueRepository(t *testing.T) {
 
 	t.Run("Delete", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
-			value := createTestAgentPoolValue(t, pool.ID)
+			value := createTestConfigPoolValue(t, pool.ID)
 			require.NoError(t, repo.Create(ctx, value))
 
 			err := repo.Delete(ctx, value.ID)
@@ -258,14 +258,14 @@ func TestAgentPoolValueRepository(t *testing.T) {
 
 	t.Run("FindAvailable", func(t *testing.T) {
 		t.Run("success - returns unallocated values", func(t *testing.T) {
-			uniquePool := createTestAgentPool(t)
+			uniquePool := createTestConfigPool(t)
 			uniquePool.Type = fmt.Sprintf("avail-type-%s", uuid.New().String())
 			require.NoError(t, poolRepo.Create(ctx, uniquePool))
 
-			available := createTestAgentPoolValue(t, uniquePool.ID)
+			available := createTestConfigPoolValue(t, uniquePool.ID)
 			require.NoError(t, repo.Create(ctx, available))
 
-			allocated := createTestAgentPoolValue(t, uniquePool.ID)
+			allocated := createTestConfigPoolValue(t, uniquePool.ID)
 			agentID := properties.NewUUID()
 			allocated.Allocate(agentID, "prop")
 			require.NoError(t, repo.Create(ctx, allocated))
@@ -278,11 +278,11 @@ func TestAgentPoolValueRepository(t *testing.T) {
 		})
 
 		t.Run("success - empty when all allocated", func(t *testing.T) {
-			uniquePool := createTestAgentPool(t)
+			uniquePool := createTestConfigPool(t)
 			uniquePool.Type = fmt.Sprintf("all-alloc-type-%s", uuid.New().String())
 			require.NoError(t, poolRepo.Create(ctx, uniquePool))
 
-			allocated := createTestAgentPoolValue(t, uniquePool.ID)
+			allocated := createTestConfigPoolValue(t, uniquePool.ID)
 			agentID := properties.NewUUID()
 			allocated.Allocate(agentID, "prop")
 			require.NoError(t, repo.Create(ctx, allocated))
@@ -298,17 +298,17 @@ func TestAgentPoolValueRepository(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			agentID := properties.NewUUID()
 
-			v1 := createTestAgentPoolValue(t, pool.ID)
+			v1 := createTestConfigPoolValue(t, pool.ID)
 			v1.Allocate(agentID, "prop1")
 			require.NoError(t, repo.Create(ctx, v1))
 
-			v2 := createTestAgentPoolValue(t, pool.ID)
+			v2 := createTestConfigPoolValue(t, pool.ID)
 			v2.Allocate(agentID, "prop2")
 			require.NoError(t, repo.Create(ctx, v2))
 
 			// Different agent
 			otherAgentID := properties.NewUUID()
-			v3 := createTestAgentPoolValue(t, pool.ID)
+			v3 := createTestConfigPoolValue(t, pool.ID)
 			v3.Allocate(otherAgentID, "prop3")
 			require.NoError(t, repo.Create(ctx, v3))
 
@@ -330,15 +330,37 @@ func TestAgentPoolValueRepository(t *testing.T) {
 	})
 
 	t.Run("AuthScope", func(t *testing.T) {
-		t.Run("success - returns always match scope", func(t *testing.T) {
-			value := createTestAgentPoolValue(t, pool.ID)
+		t.Run("value under global pool returns admin-only scope", func(t *testing.T) {
+			value := createTestConfigPoolValue(t, pool.ID)
 			require.NoError(t, repo.Create(ctx, value))
 
 			scope, err := repo.AuthScope(ctx, value.ID)
 
 			require.NoError(t, err)
-			_, ok := scope.(*authz.AllwaysMatchObjectScope)
-			require.True(t, ok)
+			_, ok := scope.(authz.AdminOnlyObjectScope)
+			require.True(t, ok, "expected AdminOnlyObjectScope: parent pool has nil participant_id")
+		})
+
+		t.Run("value under participant pool inherits participant scope", func(t *testing.T) {
+			// Seed a participant + a participant-owned pool that this value will live under.
+			participantRepo := NewParticipantRepository(tdb.DB)
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
+
+			scopedPool := createTestConfigPool(t)
+			scopedPool.ParticipantID = &participant.ID
+			require.NoError(t, poolRepo.Create(ctx, scopedPool))
+
+			value := createTestConfigPoolValue(t, scopedPool.ID)
+			require.NoError(t, repo.Create(ctx, value))
+
+			scope, err := repo.AuthScope(ctx, value.ID)
+
+			require.NoError(t, err)
+			def, ok := scope.(*authz.DefaultObjectScope)
+			require.True(t, ok, "expected *DefaultObjectScope inherited from parent pool, got %T", scope)
+			require.NotNil(t, def.ParticipantID)
+			assert.Equal(t, participant.ID, *def.ParticipantID)
 		})
 	})
 }

@@ -14,24 +14,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewAgentPoolHandler(t *testing.T) {
-	querier := domain.NewMockAgentPoolQuerier(t)
-	commander := domain.NewMockAgentPoolCommander(t)
+func TestNewConfigPoolHandler(t *testing.T) {
+	querier := domain.NewMockConfigPoolQuerier(t)
+	commander := domain.NewMockConfigPoolCommander(t)
 	authz := authz.NewMockAuthorizer(t)
 
-	handler := NewAgentPoolHandler(querier, commander, authz)
+	handler := NewConfigPoolHandler(querier, commander, authz)
 	assert.NotNil(t, handler)
 	assert.Equal(t, querier, handler.querier)
 	assert.Equal(t, commander, handler.commander)
 	assert.Equal(t, authz, handler.authz)
 }
 
-func TestAgentPoolHandlerRoutes(t *testing.T) {
-	querier := domain.NewMockAgentPoolQuerier(t)
-	commander := domain.NewMockAgentPoolCommander(t)
+func TestConfigPoolHandlerRoutes(t *testing.T) {
+	querier := domain.NewMockConfigPoolQuerier(t)
+	commander := domain.NewMockConfigPoolCommander(t)
 	authz := authz.NewMockAuthorizer(t)
 
-	handler := NewAgentPoolHandler(querier, commander, authz)
+	handler := NewConfigPoolHandler(querier, commander, authz)
 
 	routeFunc := handler.Routes()
 	assert.NotNil(t, routeFunc)
@@ -56,7 +56,48 @@ func TestAgentPoolHandlerRoutes(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAgentPoolToRes(t *testing.T) {
+func TestCreateConfigPoolReq_ObjectScope(t *testing.T) {
+	participantID := properties.UUID(uuid.New())
+
+	tests := []struct {
+		name             string
+		req              CreateConfigPoolReq
+		wantAdminOnly    bool
+		wantParticipant  *properties.UUID
+	}{
+		{
+			name:          "nil participant_id resolves to AdminOnly scope",
+			req:           CreateConfigPoolReq{ParticipantID: nil},
+			wantAdminOnly: true,
+		},
+		{
+			name:            "set participant_id resolves to Default scope with that participant",
+			req:             CreateConfigPoolReq{ParticipantID: &participantID},
+			wantParticipant: &participantID,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scope, err := tt.req.ObjectScope()
+			assert.NoError(t, err)
+			assert.NotNil(t, scope)
+
+			if tt.wantAdminOnly {
+				_, ok := scope.(authz.AdminOnlyObjectScope)
+				assert.True(t, ok, "expected AdminOnlyObjectScope, got %T", scope)
+				return
+			}
+
+			def, ok := scope.(*authz.DefaultObjectScope)
+			if assert.True(t, ok, "expected *DefaultObjectScope, got %T", scope) {
+				assert.Equal(t, tt.wantParticipant, def.ParticipantID)
+			}
+		})
+	}
+}
+
+func TestConfigPoolToRes(t *testing.T) {
 	id := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
@@ -64,7 +105,7 @@ func TestAgentPoolToRes(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		pool            *domain.AgentPool
+		pool            *domain.ConfigPool
 		expectedName    string
 		expectedType    string
 		expectedGenType domain.PoolGeneratorType
@@ -72,7 +113,7 @@ func TestAgentPoolToRes(t *testing.T) {
 	}{
 		{
 			name: "with config",
-			pool: &domain.AgentPool{
+			pool: &domain.ConfigPool{
 				BaseEntity:      domain.BaseEntity{ID: id, CreatedAt: createdAt, UpdatedAt: updatedAt},
 				Name:            "Public IPs",
 				Type:            "public_ip",
@@ -87,7 +128,7 @@ func TestAgentPoolToRes(t *testing.T) {
 		},
 		{
 			name: "nil config",
-			pool: &domain.AgentPool{
+			pool: &domain.ConfigPool{
 				BaseEntity:    domain.BaseEntity{ID: id, CreatedAt: createdAt, UpdatedAt: updatedAt},
 				Name:          "Operating Systems",
 				Type:          "operating_system",
@@ -103,7 +144,7 @@ func TestAgentPoolToRes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := AgentPoolToRes(tt.pool)
+			res := ConfigPoolToRes(tt.pool)
 
 			assert.Equal(t, properties.UUID(id), res.ID)
 			assert.Equal(t, tt.expectedName, res.Name)

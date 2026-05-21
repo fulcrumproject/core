@@ -1,0 +1,173 @@
+package domain
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/fulcrumproject/core/pkg/properties"
+)
+
+const (
+	EventTypeConfigPoolValueCreated EventType = "config_pool_value.created"
+	EventTypeConfigPoolValueDeleted EventType = "config_pool_value.deleted"
+)
+
+type ConfigPoolValue struct {
+	BaseEntity
+	Name         string           `json:"name" gorm:"not null"`
+	Value        any              `json:"value" gorm:"type:jsonb;serializer:json;not null"`
+	ConfigPoolID properties.UUID  `json:"configPoolId" gorm:"not null;index"`
+	ConfigPool   *ConfigPool      `json:"-" gorm:"foreignKey:ConfigPoolID"`
+	AgentID      *properties.UUID `json:"agentId,omitempty" gorm:"index"`
+	Agent        *Agent           `json:"-" gorm:"foreignKey:AgentID"`
+	PropertyName *string          `json:"propertyName"`
+	AllocatedAt  *time.Time       `json:"allocatedAt,omitempty"`
+}
+
+func (ConfigPoolValue) TableName() string {
+	return "config_pool_values"
+}
+
+func (ag *ConfigPoolValue) Validate() error {
+	if ag.Name == "" {
+		return fmt.Errorf("config pool value name is required")
+	}
+
+	if ag.Value == nil {
+		return fmt.Errorf("config pool value is required")
+	}
+
+	if ag.ConfigPoolID == (properties.UUID{}) {
+		return fmt.Errorf("config pool ID cannot be empty")
+	}
+	return nil
+}
+
+func (ag *ConfigPoolValue) IsAllocated() bool {
+	return ag.AgentID != nil
+}
+
+func (ag *ConfigPoolValue) Allocate(agentID properties.UUID, propertyName string) {
+	allocated := time.Now()
+	ag.AgentID = &agentID
+	ag.AllocatedAt = &allocated
+	ag.PropertyName = &propertyName
+}
+
+func (ag *ConfigPoolValue) Release() {
+	ag.AgentID = nil
+	ag.AllocatedAt = nil
+	ag.PropertyName = nil
+}
+
+func (ag *ConfigPoolValue) PoolID() properties.UUID {
+	return ag.ConfigPoolID
+}
+
+func (ag *ConfigPoolValue) RawValue() any {
+	return ag.Value
+}
+
+type CreateConfigPoolValueParams struct {
+	Name         string
+	Value        any
+	ConfigPoolID properties.UUID
+}
+
+func NewConfigPoolValue(c CreateConfigPoolValueParams) *ConfigPoolValue {
+	return &ConfigPoolValue{
+		Name:         c.Name,
+		Value:        c.Value,
+		ConfigPoolID: c.ConfigPoolID,
+	}
+}
+
+type ConfigPoolValueQuerier interface {
+	BaseEntityQuerier[ConfigPoolValue]
+	CountByPool(ctx context.Context, poolID properties.UUID) (int64, error)
+	FindAvailable(ctx context.Context, poolID properties.UUID) ([]*ConfigPoolValue, error)
+	FindByAgent(ctx context.Context, agentID properties.UUID) ([]*ConfigPoolValue, error)
+}
+
+type ConfigPoolValueRepository interface {
+	ConfigPoolValueQuerier
+	Create(ctx context.Context, value *ConfigPoolValue) error
+	Update(ctx context.Context, value *ConfigPoolValue) error
+	Delete(ctx context.Context, id properties.UUID) error
+}
+
+type ConfigPoolValueCommander interface {
+	Create(ctx context.Context, params CreateConfigPoolValueParams) (*ConfigPoolValue, error)
+	Delete(ctx context.Context, id properties.UUID) error
+}
+
+type configPoolValueCommander struct {
+	store Store
+}
+
+func NewConfigPoolValueCommander(store Store) ConfigPoolValueCommander {
+	return &configPoolValueCommander{store: store}
+}
+
+func (c *configPoolValueCommander) Create(ctx context.Context, params CreateConfigPoolValueParams) (*ConfigPoolValue, error) {
+	var poolValue *ConfigPoolValue
+	err := c.store.Atomic(ctx, func(s Store) error {
+		exists, err := s.ConfigPoolRepo().Exists(ctx, params.ConfigPoolID)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return NewNotFoundErrorf("config pool with id %s not found", params.ConfigPoolID)
+		}
+
+		poolValue = NewConfigPoolValue(params)
+		if err := poolValue.Validate(); err != nil {
+			return err
+		}
+
+		if err := s.ConfigPoolValueRepo().Create(ctx, poolValue); err != nil {
+			return err
+		}
+
+		eventEntry, err := NewEvent(EventTypeConfigPoolValueCreated, WithInitiatorCtx(ctx), WithConfigPoolValue(poolValue))
+		if err != nil {
+			return err
+		}
+
+		if err := s.EventRepo().Create(ctx, eventEntry); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return poolValue, nil
+}
+
+func (c *configPoolValueCommander) Delete(ctx context.Context, id properties.UUID) error {
+	return c.store.Atomic(ctx, func(s Store) error {
+		value, err := s.ConfigPoolValueRepo().Get(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		if value.IsAllocated() {
+			return NewInvalidInputErrorf("cannot delete allocated pool value")
+		}
+
+		eventEntry, err := NewEvent(EventTypeConfigPoolValueDeleted, WithInitiatorCtx(ctx), WithConfigPoolValue(value))
+		if err != nil {
+			return err
+		}
+		if err := s.EventRepo().Create(ctx, eventEntry); err != nil {
+			return err
+		}
+
+		return s.ConfigPoolValueRepo().Delete(ctx, id)
+	})
+}

@@ -17,13 +17,13 @@ import (
 // Deterministic fixture IDs. The test Keycloak realm's `participant_id` and
 // `agent_id` claims must match these UUIDs so JWTs resolve to seeded rows.
 var (
-	ProviderID   = properties.UUID(uuid.MustParse("11111111-1111-4111-8111-111111111111"))
-	ConsumerID   = properties.UUID(uuid.MustParse("22222222-2222-4222-8222-222222222222"))
-	AgentID      = properties.UUID(uuid.MustParse("33333333-3333-4333-8333-333333333333"))
-	ServiceID    = properties.UUID(uuid.MustParse("44444444-4444-4444-8444-444444444444"))
+	ProviderID = properties.UUID(uuid.MustParse("11111111-1111-4111-8111-111111111111"))
+	ConsumerID = properties.UUID(uuid.MustParse("22222222-2222-4222-8222-222222222222"))
+	AgentID    = properties.UUID(uuid.MustParse("33333333-3333-4333-8333-333333333333"))
+	ServiceID  = properties.UUID(uuid.MustParse("44444444-4444-4444-8444-444444444444"))
 
-	AgentPoolID         = properties.UUID(uuid.MustParse("aaaaaaaa-1111-4111-8111-111111111111"))
-	AgentPoolValueID    = properties.UUID(uuid.MustParse("aaaaaaaa-2222-4222-8222-222222222222"))
+	ConfigPoolID        = properties.UUID(uuid.MustParse("aaaaaaaa-1111-4111-8111-111111111111"))
+	ConfigPoolValueID   = properties.UUID(uuid.MustParse("aaaaaaaa-2222-4222-8222-222222222222"))
 	AgentInstallTokenID = properties.UUID(uuid.MustParse("aaaaaaaa-3333-4333-8333-333333333333"))
 	AgentTokenID        = properties.UUID(uuid.MustParse("aaaaaaaa-4444-4444-8444-444444444444"))
 
@@ -48,8 +48,8 @@ type CoreFixtures struct {
 	Agent             *domain.Agent
 	AgentToken        *domain.Token
 	AgentInstallToken *domain.AgentInstallToken
-	AgentPool         *domain.AgentPool
-	AgentPoolValue    *domain.AgentPoolValue
+	ConfigPool        *domain.ConfigPool
+	ConfigPoolValue   *domain.ConfigPoolValue
 	Group             *domain.ServiceGroup
 	Service           *domain.Service
 	ServiceOptionType *domain.ServiceOptionType
@@ -205,8 +205,8 @@ func SeedCore(tx *gorm.DB) (*CoreFixtures, error) {
 		return nil, err
 	}
 
-	if f.AgentPool, err = create(tx, &domain.AgentPool{
-		BaseEntity:    domain.BaseEntity{ID: AgentPoolID},
+	if f.ConfigPool, err = create(tx, &domain.ConfigPool{
+		BaseEntity:    domain.BaseEntity{ID: ConfigPoolID},
 		Name:          "Internal IPs",
 		Type:          "internalIp",
 		PropertyType:  "string",
@@ -214,11 +214,11 @@ func SeedCore(tx *gorm.DB) (*CoreFixtures, error) {
 	}); err != nil {
 		return nil, err
 	}
-	if f.AgentPoolValue, err = create(tx, &domain.AgentPoolValue{
-		BaseEntity:  domain.BaseEntity{ID: AgentPoolValueID},
-		Name:        "10.0.0.10",
-		Value:       "10.0.0.10",
-		AgentPoolID: f.AgentPool.ID,
+	if f.ConfigPoolValue, err = create(tx, &domain.ConfigPoolValue{
+		BaseEntity:   domain.BaseEntity{ID: ConfigPoolValueID},
+		Name:         "10.0.0.10",
+		Value:        "10.0.0.10",
+		ConfigPoolID: f.ConfigPool.ID,
 	}); err != nil {
 		return nil, err
 	}

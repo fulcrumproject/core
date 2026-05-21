@@ -745,18 +745,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorRes'
-  /agent-pools:
+  /config-pools:
     get:
-      operationId: agentPoolsList
-      summary: List agent pools
+      operationId: configPoolsList
+      summary: List config pools
       tags:
         - Agents
-      description: Retrieves a paginated list of agent pools
+      description: Retrieves a paginated list of config pools
       x-auth-permissions:
         - role: admin
-          permission: all agent pools
+          permission: all config pools
         - role: agent
-          permission: all agent pools (read-only)
+          permission: all config pools (read-only)
       parameters:
         - name: page
           in: query
@@ -799,7 +799,7 @@ paths:
           description: Filter by generator type (can specify multiple values)
       responses:
         '200':
-          description: A paginated list of agent pools
+          description: A paginated list of config pools
           content:
             application/json:
               schema:
@@ -810,17 +810,17 @@ paths:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/AgentPoolRes'
+                          $ref: '#/components/schemas/ConfigPoolRes'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
     post:
-      operationId: agentPoolsCreate
-      summary: Create an agent pool
+      operationId: configPoolsCreate
+      summary: Create a config pool
       tags:
         - Agents
-      description: Creates a new agent pool
+      description: Creates a new config pool
       x-auth-permissions:
         - role: admin
           permission: always
@@ -829,27 +829,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAgentPoolReq'
+              $ref: '#/components/schemas/CreateConfigPoolReq'
       responses:
         '201':
-          description: Agent pool created successfully
+          description: Config pool created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentPoolRes'
+                $ref: '#/components/schemas/ConfigPoolRes'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /agent-pools/{id}:
+  /config-pools/{id}:
     get:
-      operationId: agentPoolsGet
-      summary: Get an agent pool by ID
+      operationId: configPoolsGet
+      summary: Get an config pool by ID
       tags:
         - Agents
-      description: Retrieves details of a specific agent pool
+      description: Retrieves details of a specific config pool
       x-auth-permissions:
         - role: admin
           permission: always
@@ -863,23 +863,23 @@ paths:
             $ref: '#/components/schemas/properties.UUID'
       responses:
         '200':
-          description: Agent pool retrieved successfully
+          description: Config pool retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentPoolRes'
+                $ref: '#/components/schemas/ConfigPoolRes'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: Agent pool not found
+          description: Config pool not found
     patch:
-      operationId: agentPoolsUpdate
-      summary: Update an agent pool
+      operationId: configPoolsUpdate
+      summary: Update an config pool
       tags:
         - Agents
-      description: Updates an existing agent pool
+      description: Updates an existing config pool
       x-auth-permissions:
         - role: admin
           permission: always
@@ -894,14 +894,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateAgentPoolReq'
+              $ref: '#/components/schemas/UpdateConfigPoolReq'
       responses:
         '200':
-          description: Agent pool updated successfully
+          description: Config pool updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentPoolRes'
+                $ref: '#/components/schemas/ConfigPoolRes'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -909,13 +909,13 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: Agent pool not found
+          description: Config pool not found
     delete:
-      operationId: agentPoolsDelete
-      summary: Delete an agent pool
+      operationId: configPoolsDelete
+      summary: Delete an config pool
       tags:
         - Agents
-      description: Deletes an existing agent pool
+      description: Deletes an existing config pool
       x-auth-permissions:
         - role: admin
           permission: always
@@ -927,23 +927,23 @@ paths:
             $ref: '#/components/schemas/properties.UUID'
       responses:
         '204':
-          description: Agent pool deleted successfully
+          description: Config pool deleted successfully
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: Agent pool not found
-  /agent-pool-values:
+          description: Config pool not found
+  /config-pool-values:
     get:
-      operationId: agentPoolValuesList
-      summary: List agent pool values
+      operationId: configPoolValuesList
+      summary: List config pool values
       tags:
         - Agents
-      description: Retrieves a paginated list of agent pool values
+      description: Retrieves a paginated list of config pool values
       x-auth-permissions:
         - role: admin
-          permission: all agent pool values
+          permission: all config pool values
       parameters:
         - name: page
           in: query
@@ -968,13 +968,13 @@ paths:
             items:
               type: string
           description: Filter by name (case-insensitive substring match, can specify multiple values)
-        - name: agentPoolId
+        - name: configPoolId
           in: query
           schema:
             type: array
             items:
               $ref: '#/components/schemas/properties.UUID'
-          description: Filter by agent pool ID (can specify multiple values)
+          description: Filter by config pool ID (can specify multiple values)
         - name: agentId
           in: query
           schema:
@@ -984,7 +984,7 @@ paths:
           description: Filter by agent ID (can specify multiple values)
       responses:
         '200':
-          description: A paginated list of agent pool values
+          description: A paginated list of config pool values
           content:
             application/json:
               schema:
@@ -995,17 +995,17 @@ paths:
                       items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/AgentPoolValueRes'
+                          $ref: '#/components/schemas/ConfigPoolValueRes'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
     post:
-      operationId: agentPoolValuesCreate
-      summary: Create an agent pool value
+      operationId: configPoolValuesCreate
+      summary: Create an config pool value
       tags:
         - Agents
-      description: Creates a new agent pool value
+      description: Creates a new config pool value
       x-auth-permissions:
         - role: admin
           permission: always
@@ -1014,27 +1014,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAgentPoolValueReq'
+              $ref: '#/components/schemas/CreateConfigPoolValueReq'
       responses:
         '201':
-          description: Agent pool value created successfully
+          description: Config pool value created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentPoolValueRes'
+                $ref: '#/components/schemas/ConfigPoolValueRes'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /agent-pool-values/{id}:
+  /config-pool-values/{id}:
     get:
-      operationId: agentPoolValuesGet
-      summary: Get an agent pool value by ID
+      operationId: configPoolValuesGet
+      summary: Get an config pool value by ID
       tags:
         - Agents
-      description: Retrieves details of a specific agent pool value
+      description: Retrieves details of a specific config pool value
       x-auth-permissions:
         - role: admin
           permission: always
@@ -1046,23 +1046,23 @@ paths:
             $ref: '#/components/schemas/properties.UUID'
       responses:
         '200':
-          description: Agent pool value retrieved successfully
+          description: Config pool value retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AgentPoolValueRes'
+                $ref: '#/components/schemas/ConfigPoolValueRes'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: Agent pool value not found
+          description: Config pool value not found
     delete:
-      operationId: agentPoolValuesDelete
-      summary: Delete an agent pool value
+      operationId: configPoolValuesDelete
+      summary: Delete an config pool value
       tags:
         - Agents
-      description: Deletes an existing agent pool value. Cannot delete a value that is currently allocated.
+      description: Deletes an existing config pool value. Cannot delete a value that is currently allocated.
       x-auth-permissions:
         - role: admin
           permission: always
@@ -1074,7 +1074,7 @@ paths:
             $ref: '#/components/schemas/properties.UUID'
       responses:
         '204':
-          description: Agent pool value deleted successfully
+          description: Config pool value deleted successfully
         '400':
           description: Cannot delete allocated pool value
         '401':
@@ -1082,7 +1082,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: Agent pool value not found
+          description: Config pool value not found
   /events:
     get:
       operationId: eventsList
@@ -4250,7 +4250,7 @@ components:
         - Disconnected
         - Error
         - Disabled
-    AgentPoolRes:
+    ConfigPoolRes:
       type: object
       properties:
         id:
@@ -4280,13 +4280,16 @@ components:
           type: object
           example:
             cidr: 192.168.1.0/24
+        participantId:
+          $ref: '#/components/schemas/properties.UUID'
+          description: Owning participant (null = global pool managed by admin)
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-    AgentPoolValueRes:
+    ConfigPoolValueRes:
       type: object
       properties:
         id:
@@ -4297,11 +4300,11 @@ components:
         value:
           description: Any JSON value (string, number, object, array)
           example: 192.168.1.10
-        agentPoolId:
+        configPoolId:
           $ref: '#/components/schemas/properties.UUID'
-        agentPool:
-          $ref: '#/components/schemas/AgentPoolRes'
-          description: The agent pool this value belongs to
+        configPool:
+          $ref: '#/components/schemas/ConfigPoolRes'
+          description: The config pool this value belongs to
         agentId:
           $ref: '#/components/schemas/properties.UUID'
           description: Agent this value is allocated to (null if available)
@@ -4383,7 +4386,7 @@ components:
           example:
             ipAddress: 192.168.1.100
             port: 8080
-    CreateAgentPoolReq:
+    CreateConfigPoolReq:
       type: object
       required:
         - name
@@ -4394,7 +4397,7 @@ components:
         name:
           type: string
           example: Public IP Pool
-          description: Name of the agent pool
+          description: Name of the config pool
         type:
           type: string
           example: public_ip
@@ -4422,14 +4425,20 @@ components:
             cidr: 192.168.1.0/24
             excludeFirst: 1
             excludeLast: 1
-    CreateAgentPoolValueReq:
+        participantId:
+          $ref: '#/components/schemas/properties.UUID'
+          description: |
+            Owner of this pool. Omit (or set null) to create a global pool — admin only.
+            When set, the pool is scoped to that participant; participants may only set
+            their own ID. Two participants may have pools sharing the same `type`.
+    CreateConfigPoolValueReq:
       type: object
       required:
-        - agentPoolId
+        - configPoolId
         - name
         - value
       properties:
-        agentPoolId:
+        configPoolId:
           $ref: '#/components/schemas/properties.UUID'
         name:
           type: string
@@ -5726,7 +5735,7 @@ components:
           type: string
           description: Plain token value. Only returned during token creation or regeneration
           example: eyJhbGciOiJIUzI1NiIsInR5c...
-    UpdateAgentPoolReq:
+    UpdateConfigPoolReq:
       type: object
       properties:
         name:

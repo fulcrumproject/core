@@ -1,7 +1,8 @@
 openapi: 3.1.0
 info:
   title: Fulcrum Core API
-  description: A comprehensive cloud infrastructure management system designed to
+  description:
+    A comprehensive cloud infrastructure management system designed to
     orchestrate and monitor distributed cloud resources across multiple
     providers.
   version: 1.0.0
@@ -50,7 +51,8 @@ components:
           authorizationUrl: https://api.fulcrum.testudosrl.dev/oauth/authorize
           scopes:
             admin: System administrator with unrestricted access
-            participant: Participant administrator that can act as both provider and
+            participant:
+              Participant administrator that can act as both provider and
               consumer
             agent: Agent role with access to specific operations
 
@@ -61,20 +63,20 @@ components:
       $ref: ./components/schemas/agents.yaml#/AgentRes
     AgentStatus:
       $ref: ./components/schemas/agents.yaml#/AgentStatus
-    AgentPoolRes:
-      $ref: ./components/schemas/agent_pools.yaml#/AgentPoolRes
-    AgentPoolValueRes:
-      $ref: ./components/schemas/agent_pool_values.yaml#/AgentPoolValueRes
+    ConfigPoolRes:
+      $ref: ./components/schemas/config_pools.yaml#/ConfigPoolRes
+    ConfigPoolValueRes:
+      $ref: ./components/schemas/config_pool_values.yaml#/ConfigPoolValueRes
     AgentTypeRes:
       $ref: ./components/schemas/agent_types.yaml#/AgentTypeRes
     AuthRole:
       $ref: ./components/schemas/tokens.yaml#/AuthRole
     CompleteJobReq:
       $ref: ./components/schemas/jobs.yaml#/CompleteJobReq
-    CreateAgentPoolReq:
-      $ref: ./components/schemas/agent_pools.yaml#/CreateAgentPoolReq
-    CreateAgentPoolValueReq:
-      $ref: ./components/schemas/agent_pool_values.yaml#/CreateAgentPoolValueReq
+    CreateConfigPoolReq:
+      $ref: ./components/schemas/config_pools.yaml#/CreateConfigPoolReq
+    CreateConfigPoolValueReq:
+      $ref: ./components/schemas/config_pool_values.yaml#/CreateConfigPoolValueReq
     CreateAgentReq:
       $ref: ./components/schemas/agents.yaml#/CreateAgentReq
     CreateAgentTypeReq:
@@ -187,8 +189,8 @@ components:
       $ref: ./components/schemas/tokens.yaml#/TokenReq
     TokenRes:
       $ref: ./components/schemas/tokens.yaml#/TokenRes
-    UpdateAgentPoolReq:
-      $ref: ./components/schemas/agent_pools.yaml#/UpdateAgentPoolReq
+    UpdateConfigPoolReq:
+      $ref: ./components/schemas/config_pools.yaml#/UpdateConfigPoolReq
     UpdateAgentReq:
       $ref: ./components/schemas/agents.yaml#/UpdateAgentReq
     UpdateAgentTypeReq:
@@ -233,14 +235,14 @@ paths:
     $ref: ./paths/agents@{id}@install-command.yaml
   /agents/{id}/install-command/regenerate:
     $ref: ./paths/agents@{id}@install-command@regenerate.yaml
-  /agent-pools:
-    $ref: ./paths/agent-pools.yaml
-  /agent-pools/{id}:
-    $ref: ./paths/agent-pools@{id}.yaml
-  /agent-pool-values:
-    $ref: ./paths/agent-pool-values.yaml
-  /agent-pool-values/{id}:
-    $ref: ./paths/agent-pool-values@{id}.yaml
+  /config-pools:
+    $ref: ./paths/config-pools.yaml
+  /config-pools/{id}:
+    $ref: ./paths/config-pools@{id}.yaml
+  /config-pool-values:
+    $ref: ./paths/config-pool-values.yaml
+  /config-pool-values/{id}:
+    $ref: ./paths/config-pool-values@{id}.yaml
   /events:
     $ref: ./paths/events.yaml
   /events/ack:

@@ -9,66 +9,66 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewAgentPoolValue(t *testing.T) {
-	params := CreateAgentPoolValueParams{
-		Name:        "127.0.0.0",
-		Value:       "127.0.0.0",
-		AgentPoolID: properties.NewUUID(),
+func TestNewConfigPoolValue(t *testing.T) {
+	params := CreateConfigPoolValueParams{
+		Name:         "127.0.0.0",
+		Value:        "127.0.0.0",
+		ConfigPoolID: properties.NewUUID(),
 	}
-	poolValue := NewAgentPoolValue(params)
+	poolValue := NewConfigPoolValue(params)
 
 	assert.NoError(t, poolValue.Validate())
 	assert.Equal(t, params.Name, poolValue.Name)
 	assert.Equal(t, params.Value, poolValue.Value)
-	assert.Equal(t, params.AgentPoolID, poolValue.AgentPoolID)
+	assert.Equal(t, params.ConfigPoolID, poolValue.ConfigPoolID)
 	assert.Nil(t, poolValue.AgentID)
 	assert.Nil(t, poolValue.PropertyName)
 	assert.Nil(t, poolValue.AllocatedAt)
 }
 
-func TestAgentPoolValue_Validate(t *testing.T) {
+func TestConfigPoolValue_Validate(t *testing.T) {
 	tests := []struct {
 		name      string
-		pool      *AgentPoolValue
+		pool      *ConfigPoolValue
 		wantError bool
 		errorMsg  string
 	}{
 		{
 			name: "empty name",
-			pool: &AgentPoolValue{
-				Name:        "",
-				Value:       "127.0.0.0",
-				AgentPoolID: properties.NewUUID(),
+			pool: &ConfigPoolValue{
+				Name:         "",
+				Value:        "127.0.0.0",
+				ConfigPoolID: properties.NewUUID(),
 			},
 			wantError: true,
-			errorMsg:  "agent pool value name is required",
+			errorMsg:  "config pool value name is required",
 		},
 		{
 			name: "nil value",
-			pool: &AgentPoolValue{
-				Name:        "127.0.0.0",
-				Value:       nil,
-				AgentPoolID: properties.NewUUID(),
+			pool: &ConfigPoolValue{
+				Name:         "127.0.0.0",
+				Value:        nil,
+				ConfigPoolID: properties.NewUUID(),
 			},
 			wantError: true,
-			errorMsg:  "agent pool value is required",
+			errorMsg:  "config pool value is required",
 		},
 		{
-			name: "empty agent pool id",
-			pool: &AgentPoolValue{
-				Name:        "127.0.0.0",
-				Value:       "127.0.0.0",
-				AgentPoolID: properties.UUID{},
+			name: "empty config pool id",
+			pool: &ConfigPoolValue{
+				Name:         "127.0.0.0",
+				Value:        "127.0.0.0",
+				ConfigPoolID: properties.UUID{},
 			},
 			wantError: true,
-			errorMsg:  "agent pool ID cannot be empty",
+			errorMsg:  "config pool ID cannot be empty",
 		},
 		{
 			name: "valid",
-			pool: &AgentPoolValue{
-				Name:        "127.0.0.0",
-				Value:       "127.0.0.0",
-				AgentPoolID: properties.NewUUID(),
+			pool: &ConfigPoolValue{
+				Name:         "127.0.0.0",
+				Value:        "127.0.0.0",
+				ConfigPoolID: properties.NewUUID(),
 			},
 			wantError: false,
 		},
@@ -86,11 +86,11 @@ func TestAgentPoolValue_Validate(t *testing.T) {
 	}
 }
 
-func TestAgentPoolValue_TableName(t *testing.T) {
-	assert.Equal(t, "agent_pool_values", AgentPoolValue{}.TableName())
+func TestConfigPoolValue_TableName(t *testing.T) {
+	assert.Equal(t, "config_pool_values", ConfigPoolValue{}.TableName())
 }
 
-func TestAgentPoolValue_IsAllocated(t *testing.T) {
+func TestConfigPoolValue_IsAllocated(t *testing.T) {
 	tests := []struct {
 		name     string
 		agentID  *properties.UUID
@@ -101,31 +101,31 @@ func TestAgentPoolValue_IsAllocated(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := &AgentPoolValue{AgentID: tt.agentID}
+			v := &ConfigPoolValue{AgentID: tt.agentID}
 			assert.Equal(t, tt.expected, v.IsAllocated())
 		})
 	}
 }
 
-func TestAgentPoolValue_Allocate(t *testing.T) {
+func TestConfigPoolValue_Allocate(t *testing.T) {
 	tests := []struct {
 		name         string
-		initial      *AgentPoolValue
+		initial      *ConfigPoolValue
 		agentID      properties.UUID
 		propertyName string
 	}{
 		{
 			name:         "allocate fresh value",
-			initial:      &AgentPoolValue{},
+			initial:      &ConfigPoolValue{},
 			agentID:      properties.NewUUID(),
 			propertyName: "ip_address",
 		},
 		{
 			name: "re-allocate already allocated value",
-			initial: func() *AgentPoolValue {
+			initial: func() *ConfigPoolValue {
 				id := properties.NewUUID()
 				now := time.Now()
-				return &AgentPoolValue{
+				return &ConfigPoolValue{
 					AgentID:      &id,
 					PropertyName: helpers.StringPtr("old_prop"),
 					AllocatedAt:  &now,
@@ -148,17 +148,17 @@ func TestAgentPoolValue_Allocate(t *testing.T) {
 	}
 }
 
-func TestAgentPoolValue_Release(t *testing.T) {
+func TestConfigPoolValue_Release(t *testing.T) {
 	tests := []struct {
 		name    string
-		initial *AgentPoolValue
+		initial *ConfigPoolValue
 	}{
 		{
 			name: "release allocated value",
-			initial: func() *AgentPoolValue {
+			initial: func() *ConfigPoolValue {
 				id := properties.NewUUID()
 				now := time.Now()
-				return &AgentPoolValue{
+				return &ConfigPoolValue{
 					AgentID:      &id,
 					PropertyName: helpers.StringPtr("ip_address"),
 					AllocatedAt:  &now,
@@ -167,7 +167,7 @@ func TestAgentPoolValue_Release(t *testing.T) {
 		},
 		{
 			name:    "release already released value",
-			initial: &AgentPoolValue{},
+			initial: &ConfigPoolValue{},
 		},
 	}
 
@@ -182,4 +182,3 @@ func TestAgentPoolValue_Release(t *testing.T) {
 		})
 	}
 }
-

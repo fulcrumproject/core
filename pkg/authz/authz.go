@@ -24,6 +24,13 @@ func (a AllwaysMatchObjectScope) Matches(identity *auth.Identity) bool {
 	return true // Always matches, used for global actions
 }
 
+// Used for resources whose write authority belongs to admins regardles of role rules
+type AdminOnlyObjectScope struct{}
+
+func (a AdminOnlyObjectScope) Matches(identity *auth.Identity) bool {
+	return identity != nil && identity.Scope.ParticipantID == nil && identity.Scope.AgentID == nil
+}
+
 // DefaultObjectScope is the default implementation of ObjectScope
 type DefaultObjectScope struct {
 	ParticipantID *properties.UUID

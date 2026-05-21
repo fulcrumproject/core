@@ -1,13 +1,13 @@
 ### Agent Pool Value Operations
-### This file tests operations for agent pool values
+### This file tests operations for config pool values
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
 @adminToken = change-me
 
-### Create an agent pool (needed for agent pool values)
-# @name createAgentPool
-POST {{baseUrl}}/agent-pools
+### Create an config pool (needed for config pool values)
+# @name createConfigPool
+POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
@@ -18,44 +18,44 @@ Content-Type: application/json
   "generatorType": "list"
 }
 
-@agentPoolId = {{createAgentPool.response.body.$.id}}
+@configPoolId = {{createConfigPool.response.body.$.id}}
 
-### Get all agent pool values
-GET {{baseUrl}}/agent-pool-values
+### Get all config pool values
+GET {{baseUrl}}/config-pool-values
 Authorization: Bearer {{adminToken}}
 
-### Get all agent pool values with filter by name
-GET {{baseUrl}}/agent-pool-values?name=192
+### Get all config pool values with filter by name
+GET {{baseUrl}}/config-pool-values?name=192
 Authorization: Bearer {{adminToken}}
 
-### Get all agent pool values with filter by agentPoolId
-GET {{baseUrl}}/agent-pool-values?agentPoolId={{agentPoolId}}
+### Get all config pool values with filter by configPoolId
+GET {{baseUrl}}/config-pool-values?configPoolId={{configPoolId}}
 Authorization: Bearer {{adminToken}}
 
-### Get all agent pool values with filter by agentId
-GET {{baseUrl}}/agent-pool-values?agentId=change-me
+### Get all config pool values with filter by agentId
+GET {{baseUrl}}/config-pool-values?agentId=change-me
 Authorization: Bearer {{adminToken}}
 
-### Create an agent pool value
-# @name createAgentPoolValue
-POST {{baseUrl}}/agent-pool-values
+### Create an config pool value
+# @name createConfigPoolValue
+POST {{baseUrl}}/config-pool-values
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
   "name": "192.168.1.10",
   "value": "192.168.1.10",
-  "agentPoolId": "{{agentPoolId}}"
+  "configPoolId": "{{configPoolId}}"
 }
 
-@agentPoolValueId = {{createAgentPoolValue.response.body.$.id}}
+@configPoolValueId = {{createConfigPoolValue.response.body.$.id}}
 
-### Get a specific agent pool value
-GET {{baseUrl}}/agent-pool-values/{{agentPoolValueId}}
+### Get a specific config pool value
+GET {{baseUrl}}/config-pool-values/{{configPoolValueId}}
 Authorization: Bearer {{adminToken}}
 
-### Delete an agent pool value
-DELETE {{baseUrl}}/agent-pool-values/{{agentPoolValueId}}
+### Delete an config pool value
+DELETE {{baseUrl}}/config-pool-values/{{configPoolValueId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
@@ -85,7 +85,7 @@ Authorization: Bearer {{adminToken}}
 
 ### Create a pool dedicated to this scenario
 # @name createPoolGenPool
-POST {{baseUrl}}/agent-pools
+POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
@@ -100,28 +100,28 @@ Content-Type: application/json
 
 ### Seed the pool with two values
 # @name createPoolGenValue1
-POST {{baseUrl}}/agent-pool-values
+POST {{baseUrl}}/config-pool-values
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
   "name": "203.0.113.10",
   "value": "203.0.113.10",
-  "agentPoolId": "{{poolGenPoolId}}"
+  "configPoolId": "{{poolGenPoolId}}"
 }
 
 @poolGenValueId1 = {{createPoolGenValue1.response.body.$.id}}
 
 ### Seed the pool with two values
 # @name createPoolGenValue2
-POST {{baseUrl}}/agent-pool-values
+POST {{baseUrl}}/config-pool-values
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
   "name": "203.0.113.11",
   "value": "203.0.113.11",
-  "agentPoolId": "{{poolGenPoolId}}"
+  "configPoolId": "{{poolGenPoolId}}"
 }
 
 @poolGenValueId2 = {{createPoolGenValue2.response.body.$.id}}
@@ -173,7 +173,7 @@ GET {{baseUrl}}/agents/{{poolGenAgent1Id}}
 Authorization: Bearer {{adminToken}}
 
 ### Verify agent 1 is stamped on one of the pool values
-GET {{baseUrl}}/agent-pool-values?agentId={{poolGenAgent1Id}}
+GET {{baseUrl}}/config-pool-values?agentId={{poolGenAgent1Id}}
 Authorization: Bearer {{adminToken}}
 
 ### ✅ Create second agent — takes the remaining pool value
@@ -197,7 +197,7 @@ GET {{baseUrl}}/agents/{{poolGenAgent2Id}}
 Authorization: Bearer {{adminToken}}
 
 ### List all values in the pool — both should be allocated
-GET {{baseUrl}}/agent-pool-values?agentPoolId={{poolGenPoolId}}
+GET {{baseUrl}}/config-pool-values?configPoolId={{poolGenPoolId}}
 Authorization: Bearer {{adminToken}}
 
 ### ❌ TEST: third agent fails — no available values in pool
@@ -231,11 +231,11 @@ DELETE {{baseUrl}}/agents/{{poolGenAgent1Id}}
 Authorization: Bearer {{adminToken}}
 
 ### Verify agent 1's values were released (agentId filter should return empty)
-GET {{baseUrl}}/agent-pool-values?agentId={{poolGenAgent1Id}}
+GET {{baseUrl}}/config-pool-values?agentId={{poolGenAgent1Id}}
 Authorization: Bearer {{adminToken}}
 
 ### List pool values — one should now be available again (agentId=null)
-GET {{baseUrl}}/agent-pool-values?agentPoolId={{poolGenPoolId}}
+GET {{baseUrl}}/config-pool-values?configPoolId={{poolGenPoolId}}
 Authorization: Bearer {{adminToken}}
 
 ### ✅ New agent now succeeds because the released value is available again
@@ -255,5 +255,5 @@ Content-Type: application/json
 @poolGenAgent3Id = {{createPoolGenAgent3.response.body.$.id}}
 
 ### Confirm the previously released value is now stamped on agent 3
-GET {{baseUrl}}/agent-pool-values?agentId={{poolGenAgent3Id}}
+GET {{baseUrl}}/config-pool-values?agentId={{poolGenAgent3Id}}
 Authorization: Bearer {{adminToken}}

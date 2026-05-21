@@ -8,20 +8,20 @@ import (
 	"github.com/fulcrumproject/core/pkg/schema"
 )
 
-// SchemaAgentPoolGenerator adapts AgentPool allocation into the schema package's generator interface.
-// It dispatches concrete allocation through an AgentPoolGeneratorFactory so new generator types
+// SchemaConfigPoolGenerator adapts ConfigPool allocation into the schema package's generator interface.
+// It dispatches concrete allocation through an ConfigPoolGeneratorFactory so new generator types
 // (e.g. subnet) can be added without touching the schema engine wiring or the commander.
-type SchemaAgentPoolGenerator struct{}
+type SchemaConfigPoolGenerator struct{}
 
-// NewSchemaAgentPoolGenerator creates a generator that constructs its factory from the
+// NewSchemaConfigPoolGenerator creates a generator that constructs its factory from the
 // transactional Store carried in AgentConfigContext at Generate time.
-func NewSchemaAgentPoolGenerator() *SchemaAgentPoolGenerator {
-	return &SchemaAgentPoolGenerator{}
+func NewSchemaConfigPoolGenerator() *SchemaConfigPoolGenerator {
+	return &SchemaConfigPoolGenerator{}
 }
 
-// Generate resolves the AgentPool by Type and allocates an available AgentPoolValue.
+// Generate resolves the ConfigPool by Type and allocates an available ConfigPoolValue.
 // Skips generation if a value is already present (idempotent on update).
-func (g *SchemaAgentPoolGenerator) Generate(
+func (g *SchemaConfigPoolGenerator) Generate(
 	ctx context.Context,
 	schemaCtx AgentConfigContext,
 	propPath string,
@@ -44,12 +44,12 @@ func (g *SchemaAgentPoolGenerator) Generate(
 		return nil, false, fmt.Errorf("%s: agent ID required for pool allocation", propPath)
 	}
 
-	pool, err := schemaCtx.Store.AgentPoolRepo().FindByType(ctx, poolType)
+	pool, err := schemaCtx.Store.ConfigPoolRepo().FindByTypeAndParticipant(ctx, poolType, &schemaCtx.AgentProviderID)
 	if err != nil {
-		return nil, false, fmt.Errorf("%s: failed to find agent pool with type %q: %w", propPath, poolType, err)
+		return nil, false, fmt.Errorf("%s: failed to find config pool with type %q: %w", propPath, poolType, err)
 	}
 
-	factory := NewDefaultAgentPoolGeneratorFactory(schemaCtx.Store.AgentPoolValueRepo())
+	factory := NewDefaultConfigPoolGeneratorFactory(schemaCtx.Store.ConfigPoolValueRepo())
 	generator, err := factory.CreateGenerator(pool)
 	if err != nil {
 		return nil, false, fmt.Errorf("%s: failed to create generator for pool: %w", propPath, err)
@@ -66,7 +66,7 @@ func (g *SchemaAgentPoolGenerator) Generate(
 // ValidateConfig checks that poolType is present, a non-empty string.
 // Called by the schema engine at schema-validation time (see pkg/schema/engine.go) so
 // malformed configs are rejected when the AgentType is saved, before any agent exists.
-func (g *SchemaAgentPoolGenerator) ValidateConfig(propPath string, config map[string]any) error {
+func (g *SchemaConfigPoolGenerator) ValidateConfig(propPath string, config map[string]any) error {
 	_, err := parsePoolTypeConfig(config)
 	return err
 }
@@ -88,4 +88,4 @@ func parsePoolTypeConfig(config map[string]any) (string, error) {
 	return poolType, nil
 }
 
-var _ schema.Generator[AgentConfigContext] = (*SchemaAgentPoolGenerator)(nil)
+var _ schema.Generator[AgentConfigContext] = (*SchemaConfigPoolGenerator)(nil)

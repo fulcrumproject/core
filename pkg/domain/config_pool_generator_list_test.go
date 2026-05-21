@@ -11,27 +11,27 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestAgentPoolListGenerator_Allocate(t *testing.T) {
+func TestConfigPoolListGenerator_Allocate(t *testing.T) {
 	ctx := context.Background()
 	poolID := properties.UUID(uuid.New())
 	agentID := properties.UUID(uuid.New())
 
 	tests := []struct {
 		name      string
-		setupRepo func(*MockAgentPoolValueRepository)
+		setupRepo func(*MockConfigPoolValueRepository)
 		wantValue any
 		wantErr   bool
 		errSubstr string
 	}{
 		{
 			name: "happy path",
-			setupRepo: func(repo *MockAgentPoolValueRepository) {
-				values := []*AgentPoolValue{
-					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolID, Value: "10.0.0.1"},
-					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolID, Value: "10.0.0.2"},
+			setupRepo: func(repo *MockConfigPoolValueRepository) {
+				values := []*ConfigPoolValue{
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "10.0.0.1"},
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "10.0.0.2"},
 				}
 				repo.On("FindAvailable", ctx, poolID).Return(values, nil)
-				repo.On("Update", ctx, mock.MatchedBy(func(v *AgentPoolValue) bool {
+				repo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
 					return v.AgentID != nil && *v.AgentID == agentID &&
 						v.PropertyName != nil && *v.PropertyName == "propA" &&
 						v.AllocatedAt != nil
@@ -41,15 +41,15 @@ func TestAgentPoolListGenerator_Allocate(t *testing.T) {
 		},
 		{
 			name: "no available values",
-			setupRepo: func(repo *MockAgentPoolValueRepository) {
-				repo.On("FindAvailable", ctx, poolID).Return([]*AgentPoolValue{}, nil)
+			setupRepo: func(repo *MockConfigPoolValueRepository) {
+				repo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{}, nil)
 			},
 			wantErr:   true,
 			errSubstr: "no available values",
 		},
 		{
 			name: "find available errors",
-			setupRepo: func(repo *MockAgentPoolValueRepository) {
+			setupRepo: func(repo *MockConfigPoolValueRepository) {
 				repo.On("FindAvailable", ctx, poolID).Return(nil, errors.New("db boom"))
 			},
 			wantErr:   true,
@@ -57,12 +57,12 @@ func TestAgentPoolListGenerator_Allocate(t *testing.T) {
 		},
 		{
 			name: "update errors",
-			setupRepo: func(repo *MockAgentPoolValueRepository) {
-				values := []*AgentPoolValue{
-					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolID, Value: "x"},
+			setupRepo: func(repo *MockConfigPoolValueRepository) {
+				values := []*ConfigPoolValue{
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "x"},
 				}
 				repo.On("FindAvailable", ctx, poolID).Return(values, nil)
-				repo.On("Update", ctx, mock.AnythingOfType("*domain.AgentPoolValue")).Return(errors.New("update boom"))
+				repo.On("Update", ctx, mock.AnythingOfType("*domain.ConfigPoolValue")).Return(errors.New("update boom"))
 			},
 			wantErr:   true,
 			errSubstr: "update boom",
@@ -71,10 +71,10 @@ func TestAgentPoolListGenerator_Allocate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := NewMockAgentPoolValueRepository(t)
+			repo := NewMockConfigPoolValueRepository(t)
 			tt.setupRepo(repo)
 
-			gen := NewAgentPoolListGenerator(repo, poolID)
+			gen := NewConfigPoolListGenerator(repo, poolID)
 			got, err := gen.Allocate(ctx, agentID, "propA")
 
 			if tt.wantErr {
@@ -96,7 +96,7 @@ func TestAgentPoolListGenerator_Allocate(t *testing.T) {
 	}
 }
 
-func TestAgentPoolListGenerator_Release(t *testing.T) {
+func TestConfigPoolListGenerator_Release(t *testing.T) {
 	ctx := context.Background()
 	poolID := properties.UUID(uuid.New())
 	otherPoolID := properties.UUID(uuid.New())
@@ -105,36 +105,36 @@ func TestAgentPoolListGenerator_Release(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		values    []*AgentPoolValue
-		setupRepo func(*MockAgentPoolValueRepository)
+		values    []*ConfigPoolValue
+		setupRepo func(*MockConfigPoolValueRepository)
 		wantErr   bool
 		errSubstr string
 	}{
 		{
 			name: "releases only values from this pool",
-			values: []*AgentPoolValue{
-				{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolID, AgentID: &agentID, AllocatedAt: &now, Value: "a"},
-				{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: otherPoolID, AgentID: &agentID, AllocatedAt: &now, Value: "b"},
-				{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolID, AgentID: &agentID, AllocatedAt: &now, Value: "c"},
+			values: []*ConfigPoolValue{
+				{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, AgentID: &agentID, AllocatedAt: &now, Value: "a"},
+				{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: otherPoolID, AgentID: &agentID, AllocatedAt: &now, Value: "b"},
+				{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, AgentID: &agentID, AllocatedAt: &now, Value: "c"},
 			},
-			setupRepo: func(repo *MockAgentPoolValueRepository) {
-				repo.On("Update", ctx, mock.MatchedBy(func(v *AgentPoolValue) bool {
-					return v.AgentPoolID == poolID && v.AgentID == nil && v.PropertyName == nil && v.AllocatedAt == nil
+			setupRepo: func(repo *MockConfigPoolValueRepository) {
+				repo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+					return v.ConfigPoolID == poolID && v.AgentID == nil && v.PropertyName == nil && v.AllocatedAt == nil
 				})).Return(nil).Twice()
 			},
 		},
 		{
 			name:      "no allocations — no updates",
-			values:    []*AgentPoolValue{},
-			setupRepo: func(repo *MockAgentPoolValueRepository) {},
+			values:    []*ConfigPoolValue{},
+			setupRepo: func(repo *MockConfigPoolValueRepository) {},
 		},
 		{
 			name: "update errors",
-			values: []*AgentPoolValue{
-				{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolID, AgentID: &agentID, AllocatedAt: &now, Value: "x"},
+			values: []*ConfigPoolValue{
+				{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, AgentID: &agentID, AllocatedAt: &now, Value: "x"},
 			},
-			setupRepo: func(repo *MockAgentPoolValueRepository) {
-				repo.On("Update", ctx, mock.AnythingOfType("*domain.AgentPoolValue")).Return(errors.New("update boom"))
+			setupRepo: func(repo *MockConfigPoolValueRepository) {
+				repo.On("Update", ctx, mock.AnythingOfType("*domain.ConfigPoolValue")).Return(errors.New("update boom"))
 			},
 			wantErr:   true,
 			errSubstr: "update boom",
@@ -143,10 +143,10 @@ func TestAgentPoolListGenerator_Release(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := NewMockAgentPoolValueRepository(t)
+			repo := NewMockConfigPoolValueRepository(t)
 			tt.setupRepo(repo)
 
-			gen := NewAgentPoolListGenerator(repo, poolID)
+			gen := NewConfigPoolListGenerator(repo, poolID)
 			err := gen.Release(ctx, tt.values)
 
 			if tt.wantErr {
