@@ -32,7 +32,7 @@ func NewConfigPoolRepository(db *gorm.DB) *GormConfigPoolRepository {
 			db,
 			applyConfigPoolFilter,
 			applyConfigPoolSort,
-			nil,
+			participantAuthzFilterApplier,
 			[]string{},
 			[]string{},
 		),

@@ -54,6 +54,84 @@ Content-Type: application/json
 GET {{baseUrl}}/config-pool-values/{{configPoolValueId}}
 Authorization: Bearer {{adminToken}}
 
+###############################################################################
+### Auth: global pool (admin-only) vs participant-scoped pool
+###############################################################################
+### Verifies the recent auth work:
+###   - List filter applier hides other-scope rows from a participant.
+###   - AuthScope returns AdminOnlyObjectScope for global pool values (403).
+###   - AuthScope returns the owning DefaultObjectScope for scoped values (200).
+
+### Create a participant that will own the scoped pool
+# @name createScopedParticipant
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Config Pool Participant",
+  "status": "Enabled"
+}
+
+@scopedParticipantId = {{createScopedParticipant.response.body.$.id}}
+
+### Issue a participant-scoped token
+# @name createScopedParticipantToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Scoped Participant Token",
+  "role": "participant",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{scopedParticipantId}}"
+}
+
+@participantToken = {{createScopedParticipantToken.response.body.value}}
+
+### Create a participant-scoped pool (participantId set => non-global)
+# @name createScopedPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Participant Pool",
+  "type": "scopedIp",
+  "propertyType": "string",
+  "generatorType": "list",
+  "participantId": "{{scopedParticipantId}}"
+}
+
+@scopedPoolId = {{createScopedPool.response.body.$.id}}
+
+### Seed a value in the scoped pool
+# @name createScopedValue
+POST {{baseUrl}}/config-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "10.0.0.1",
+  "value": "10.0.0.1",
+  "configPoolId": "{{scopedPoolId}}"
+}
+
+@scopedValueId = {{createScopedValue.response.body.$.id}}
+
+### Participant LIST — expect only the scoped value; global value filtered out
+GET {{baseUrl}}/config-pool-values
+Authorization: Bearer {{participantToken}}
+
+###  Participant GET on the global value — expect 403 (AdminOnlyObjectScope)
+GET {{baseUrl}}/config-pool-values/{{configPoolValueId}}
+Authorization: Bearer {{participantToken}}
+
+###  Participant GET on their own scoped value — expect 200
+GET {{baseUrl}}/config-pool-values/{{scopedValueId}}
+Authorization: Bearer {{participantToken}}
+
 ### Delete an config pool value
 DELETE {{baseUrl}}/config-pool-values/{{configPoolValueId}}
 Authorization: Bearer {{adminToken}}

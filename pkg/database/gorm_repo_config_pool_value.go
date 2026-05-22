@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -25,13 +26,22 @@ var applyConfigPoolValueSort = MapSortApplier(map[string]string{
 	"createdAt": "created_at",
 })
 
+// Lives here (not gorm_repo_base.go) because it's ConfigPoolValue-specific:
+// the table has no participant_id column, so ownership must be joined from the parent pool.
+func configPoolValueAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) *gorm.DB {
+	if s.ParticipantID != nil {
+		return q.Joins("JOIN config_pools ON config_pools.id = config_pool_values.config_pool_id").Where("config_pools.participant_id = ?", s.ParticipantID)
+	}
+	return q
+}
+
 func NewConfigPoolValueRepository(db *gorm.DB) *GormConfigPoolValueRepository {
 	return &GormConfigPoolValueRepository{
 		GormRepository: NewGormRepository[domain.ConfigPoolValue](
 			db,
 			applyConfigPoolValueFilter,
 			applyConfigPoolValueSort,
-			nil,
+			configPoolValueAuthzFilterApplier,
 			[]string{"ConfigPool", "Agent"},
 			[]string{"ConfigPool", "Agent"},
 		),
