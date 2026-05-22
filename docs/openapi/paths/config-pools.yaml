@@ -48,6 +48,14 @@ get:
           type: string
           enum: [list]
       description: Filter by generator type (can specify multiple values)
+    - name: participantId
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+          format: uuid
+      description: Filter by owning participant ID (can specify multiple values)
   responses:
     "200":
       description: A paginated list of config pools

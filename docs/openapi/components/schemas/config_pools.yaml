@@ -71,6 +71,9 @@ ConfigPoolRes:
     participantId:
       $ref: "./common.yaml#/properties.UUID"
       description: "Owning participant (null = global pool managed by admin)"
+    participant:
+      $ref: "./participants.yaml#/ParticipantRes"
+      description: "Owning participant (omitted when this is a global pool)"
     createdAt:
       type: string
       format: date-time

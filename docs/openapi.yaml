@@ -797,6 +797,14 @@ paths:
               enum:
                 - list
           description: Filter by generator type (can specify multiple values)
+        - name: participantId
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+          description: Filter by owning participant ID (can specify multiple values)
       responses:
         '200':
           description: A paginated list of config pools
@@ -4283,6 +4291,9 @@ components:
         participantId:
           $ref: '#/components/schemas/properties.UUID'
           description: Owning participant (null = global pool managed by admin)
+        participant:
+          $ref: '#/components/schemas/ParticipantRes'
+          description: Owning participant (omitted when this is a global pool)
         createdAt:
           type: string
           format: date-time

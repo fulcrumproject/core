@@ -111,12 +111,13 @@ type ConfigPoolRes struct {
 	GeneratorType   domain.PoolGeneratorType `json:"generatorType"`
 	GeneratorConfig *properties.JSON         `json:"generatorConfig,omitempty"`
 	ParticipantID   *properties.UUID         `json:"participantId,omitempty"`
+	Participant     *ParticipantRes          `json:"participant,omitempty"`
 	CreatedAt       JSONUTCTime              `json:"createdAt"`
 	UpdatedAt       JSONUTCTime              `json:"updatedAt"`
 }
 
 func ConfigPoolToRes(a *domain.ConfigPool) *ConfigPoolRes {
-	return &ConfigPoolRes{
+	res := &ConfigPoolRes{
 		ID:              a.ID,
 		Name:            a.Name,
 		Type:            a.Type,
@@ -127,4 +128,8 @@ func ConfigPoolToRes(a *domain.ConfigPool) *ConfigPoolRes {
 		CreatedAt:       JSONUTCTime(a.CreatedAt),
 		UpdatedAt:       JSONUTCTime(a.UpdatedAt),
 	}
+	if a.Participant != nil {
+		res.Participant = ParticipantToRes(a.Participant)
+	}
+	return res
 }

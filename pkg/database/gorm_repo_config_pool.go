@@ -18,6 +18,7 @@ var applyConfigPoolFilter = MapFilterApplier(map[string]FilterFieldApplier{
 	"name":          StringContainsInsensitiveFilterFieldApplier("name"),
 	"type":          StringInFilterFieldApplier("type"),
 	"generatorType": StringInFilterFieldApplier("generator_type"),
+	"participantId": ParserInFilterFieldApplier("participant_id", properties.ParseUUID),
 })
 
 var applyConfigPoolSort = MapSortApplier(map[string]string{
@@ -33,8 +34,8 @@ func NewConfigPoolRepository(db *gorm.DB) *GormConfigPoolRepository {
 			applyConfigPoolFilter,
 			applyConfigPoolSort,
 			participantAuthzFilterApplier,
-			[]string{},
-			[]string{},
+			[]string{"Participant"},
+			[]string{"Participant"},
 		),
 	}
 }

@@ -169,6 +169,31 @@ func TestConfigPoolRepository(t *testing.T) {
 			}
 		})
 
+		t.Run("success - filter by participantId", func(t *testing.T) {
+			owner := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, owner))
+
+			scopedPool := createTestConfigPool(t)
+			scopedPool.ParticipantID = &owner.ID
+			require.NoError(t, repo.Create(ctx, scopedPool))
+
+			globalPool := createTestConfigPool(t)
+			require.NoError(t, repo.Create(ctx, globalPool))
+
+			page := &domain.PageReq{
+				Page:     1,
+				PageSize: 10,
+				Filters:  map[string][]string{"participantId": {owner.ID.String()}},
+			}
+
+			result, err := repo.List(ctx, &auth.IdentityScope{}, page)
+
+			require.NoError(t, err)
+			require.Len(t, result.Items, 1)
+			require.NotNil(t, result.Items[0].ParticipantID)
+			assert.Equal(t, owner.ID, *result.Items[0].ParticipantID)
+		})
+
 		t.Run("success - with sorting", func(t *testing.T) {
 			pool1 := createTestConfigPool(t)
 			pool1.Name = "A Agent Pool"
