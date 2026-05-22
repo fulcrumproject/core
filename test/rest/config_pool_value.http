@@ -230,7 +230,7 @@ Content-Type: application/json
 
 @poolGenAgentTypeId = {{createPoolGenAgentType.response.body.$.id}}
 
-### ✅ Create first agent — expect publicIP to be auto-allocated from the pool
+### Create first agent — expect publicIP to be auto-allocated from the pool
 # @name createPoolGenAgent1
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
@@ -254,7 +254,7 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/config-pool-values?agentId={{poolGenAgent1Id}}
 Authorization: Bearer {{adminToken}}
 
-### ✅ Create second agent — takes the remaining pool value
+### Create second agent — takes the remaining pool value
 # @name createPoolGenAgent2
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
@@ -278,7 +278,7 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/config-pool-values?configPoolId={{poolGenPoolId}}
 Authorization: Bearer {{adminToken}}
 
-### ❌ TEST: third agent fails — no available values in pool
+### TEST: third agent fails — no available values in pool
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -291,7 +291,7 @@ Content-Type: application/json
   "configuration": {}
 }
 
-### ✅ Idempotent update — re-applying schema on update does NOT reallocate
+### Idempotent update — re-applying schema on update does NOT reallocate
 PATCH {{baseUrl}}/agents/{{poolGenAgent1Id}}
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -316,7 +316,7 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/config-pool-values?configPoolId={{poolGenPoolId}}
 Authorization: Bearer {{adminToken}}
 
-### ✅ New agent now succeeds because the released value is available again
+### New agent now succeeds because the released value is available again
 # @name createPoolGenAgent3
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
@@ -351,6 +351,19 @@ Authorization: Bearer {{adminToken}}
 ### a templated value would produce a different effective type per request and
 ### break the global/scoped lookup. Edit this if re-running on a dirty DB.
 @scopedGenPoolType = scopedGenIp
+
+### Create a global pool with a participant token should fail
+# @name createScopedGenGlobalPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{participantToken}}
+Content-Type: application/json
+
+{
+  "name": "Scoped Gen Global Pool",
+  "type": "{{scopedGenPoolType}}",
+  "propertyType": "string",
+  "generatorType": "list"
+}
 
 ### Create a global pool with the shared type
 # @name createScopedGenGlobalPool
