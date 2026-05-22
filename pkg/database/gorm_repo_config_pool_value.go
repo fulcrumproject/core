@@ -2,9 +2,7 @@ package database
 
 import (
 	"context"
-	"errors"
 
-	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -26,22 +24,13 @@ var applyConfigPoolValueSort = MapSortApplier(map[string]string{
 	"createdAt": "created_at",
 })
 
-// Lives here (not gorm_repo_base.go) because it's ConfigPoolValue-specific:
-// the table has no participant_id column, so ownership must be joined from the parent pool.
-func configPoolValueAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) *gorm.DB {
-	if s.ParticipantID != nil {
-		return q.Joins("JOIN config_pools ON config_pools.id = config_pool_values.config_pool_id").Where("config_pools.participant_id = ?", s.ParticipantID)
-	}
-	return q
-}
-
 func NewConfigPoolValueRepository(db *gorm.DB) *GormConfigPoolValueRepository {
 	return &GormConfigPoolValueRepository{
 		GormRepository: NewGormRepository[domain.ConfigPoolValue](
 			db,
 			applyConfigPoolValueFilter,
 			applyConfigPoolValueSort,
-			configPoolValueAuthzFilterApplier,
+			participantAuthzFilterApplier,
 			[]string{"ConfigPool", "Agent"},
 			[]string{"ConfigPool", "Agent"},
 		),
@@ -73,29 +62,16 @@ func (r *GormConfigPoolValueRepository) CountByPool(ctx context.Context, poolID 
 	return count, nil
 }
 
-// AuthScope returns the authorization scope for a config pool value, inherited from
-// its parent config_pool's participant_id. Global pools (nil participant_id) become
-// AdminOnlyObjectScope so participants can't write to globals.
+// AuthScope returns the authorization scope for a config pool value. Values inherit
+// participant ownership from their parent pool at creation time; global pools (nil
+// participant_id) yield AdminOnlyObjectScope so participants can't write to globals.
 func (r *GormConfigPoolValueRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
-	var result struct {
-		ParticipantID *properties.UUID `gorm:"column:participant_id"`
-	}
-
-	err := r.db.WithContext(ctx).
-		Table("config_pool_values").
-		Select("config_pools.participant_id").
-		Joins("JOIN config_pools ON config_pools.id = config_pool_values.config_pool_id").
-		Where("config_pool_values.id = ?", id).
-		Scan(&result).Error
+	scope, err := r.AuthScopeByFields(ctx, id, "participant_id", "null", "null", "null")
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, domain.NotFoundError{Err: err}
-		}
 		return nil, err
 	}
-
-	if result.ParticipantID == nil {
+	if d, ok := scope.(*authz.DefaultObjectScope); ok && d.ParticipantID == nil {
 		return authz.AdminOnlyObjectScope{}, nil
 	}
-	return &authz.DefaultObjectScope{ParticipantID: result.ParticipantID}, nil
+	return scope, nil
 }

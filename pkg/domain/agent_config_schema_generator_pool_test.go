@@ -19,6 +19,9 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 	matchProvider := mock.MatchedBy(func(p *properties.UUID) bool {
 		return p != nil && *p == providerID
 	})
+	matchGlobal := mock.MatchedBy(func(p *properties.UUID) bool {
+		return p == nil
+	})
 
 	tests := []struct {
 		name         string
@@ -33,7 +36,7 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 		errSubstr    string
 	}{
 		{
-			name:         "happy path",
+			name:         "resolves provider-scoped pool when present",
 			config:       map[string]any{"poolType": "public_ip"},
 			currentValue: nil,
 			agentID:      &agentID,
@@ -63,6 +66,71 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 			},
 			wantValue: "192.168.1.10",
 			wantGen:   true,
+		},
+		{
+			name:         "falls back to global when provider-scoped pool not found",
+			config:       map[string]any{"poolType": "public_ip"},
+			currentValue: nil,
+			agentID:      &agentID,
+			withStore:    true,
+			setupMock: func(store *MockStore) {
+				poolRepo := NewMockConfigPoolRepository(t)
+				valueRepo := NewMockConfigPoolValueRepository(t)
+
+				globalPool := &ConfigPool{
+					BaseEntity:    BaseEntity{ID: poolID},
+					Type:          "public_ip",
+					PropertyType:  "string",
+					GeneratorType: PoolGeneratorList,
+				}
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).
+					Return(nil, NewNotFoundErrorf("config pool with type public_ip for participant"))
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchGlobal).
+					Return(globalPool, nil)
+				valueRepo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "10.0.0.5"},
+				}, nil)
+				valueRepo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+					return v.AgentID != nil && *v.AgentID == agentID
+				})).Return(nil)
+
+				store.On("ConfigPoolRepo").Return(poolRepo)
+				store.On("ConfigPoolValueRepo").Return(valueRepo)
+			},
+			wantValue: "10.0.0.5",
+			wantGen:   true,
+		},
+		{
+			name:         "surfaces non-NotFound error from provider lookup",
+			config:       map[string]any{"poolType": "public_ip"},
+			currentValue: nil,
+			agentID:      &agentID,
+			withStore:    true,
+			setupMock: func(store *MockStore) {
+				poolRepo := NewMockConfigPoolRepository(t)
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).
+					Return(nil, errors.New("db down"))
+				store.On("ConfigPoolRepo").Return(poolRepo)
+			},
+			wantErr:   true,
+			errSubstr: "db down",
+		},
+		{
+			name:         "surfaces NotFound when neither provider nor global pool exists",
+			config:       map[string]any{"poolType": "public_ip"},
+			currentValue: nil,
+			agentID:      &agentID,
+			withStore:    true,
+			setupMock: func(store *MockStore) {
+				poolRepo := NewMockConfigPoolRepository(t)
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).
+					Return(nil, NewNotFoundErrorf("config pool with type public_ip for participant"))
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchGlobal).
+					Return(nil, NewNotFoundErrorf("global config pool with type public_ip"))
+				store.On("ConfigPoolRepo").Return(poolRepo)
+			},
+			wantErr:   true,
+			errSubstr: "public_ip",
 		},
 		{
 			name:         "skip when value exists",
@@ -123,20 +191,6 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 			setupMock:    func(store *MockStore) {},
 			wantErr:      true,
 			errSubstr:    "missing store",
-		},
-		{
-			name:         "FindByType errors",
-			config:       map[string]any{"poolType": "public_ip"},
-			currentValue: nil,
-			agentID:      &agentID,
-			withStore:    true,
-			setupMock: func(store *MockStore) {
-				poolRepo := NewMockConfigPoolRepository(t)
-				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).Return(nil, errors.New("pool lookup boom"))
-				store.On("ConfigPoolRepo").Return(poolRepo)
-			},
-			wantErr:   true,
-			errSubstr: "pool lookup boom",
 		},
 		{
 			name:         "no available values",

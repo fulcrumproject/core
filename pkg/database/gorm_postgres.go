@@ -76,7 +76,33 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.EventSubscription{},
 		&vaultSecret{},
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return backfillConfigPoolValueParticipant(db)
+}
+
+// backfillConfigPoolValueParticipant copies participant_id from the parent pool onto
+// rows that predate the denormalization. Idempotent — the IS NULL guard keeps it safe
+// to re-run on every boot. Must run after AutoMigrate since the column it writes to
+// is introduced by AutoMigrate on first upgrade.
+func backfillConfigPoolValueParticipant(db *gorm.DB) error {
+	res := db.Exec(`
+		UPDATE config_pool_values v
+		SET participant_id = p.participant_id
+		FROM config_pools p
+		WHERE v.config_pool_id = p.id
+		  AND v.participant_id IS NULL
+		  AND p.participant_id IS NOT NULL
+	`)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected > 0 {
+		db.Logger.Info(db.Statement.Context, "backfilled participant_id on %d config_pool_values rows", res.RowsAffected)
+	}
+	return nil
 }
 
 func migrateConfigPoolScope(db *gorm.DB) error {

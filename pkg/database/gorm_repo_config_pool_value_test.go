@@ -51,9 +51,32 @@ func TestConfigPoolValueRepository(t *testing.T) {
 			assert.Equal(t, value.Name, found.Name)
 			assert.Equal(t, value.Value, found.Value)
 			assert.Equal(t, pool.ID, found.ConfigPoolID)
+			assert.Nil(t, found.ParticipantID)
 			assert.Nil(t, found.AgentID)
 			assert.Nil(t, found.PropertyName)
 			assert.Nil(t, found.AllocatedAt)
+		})
+
+		t.Run("success with participant", func(t *testing.T) {
+			randomSuffix := properties.NewUUID().String()
+			participantId := properties.NewUUID()
+			scopedPool := &domain.ConfigPool{
+				Name:          fmt.Sprintf("Test Pool %s", randomSuffix),
+				Type:          fmt.Sprintf("ipv4-%s", randomSuffix),
+				PropertyType:  "string",
+				GeneratorType: domain.PoolGeneratorList,
+				ParticipantID: &participantId,
+			}
+			require.NoError(t, poolRepo.Create(ctx, scopedPool))
+
+			value := createTestConfigPoolValue(t, scopedPool.ID)
+			value.ParticipantID = &participantId
+			require.NoError(t, repo.Create(ctx, value))
+
+			found, err := repo.Get(ctx, value.ID)
+			require.NoError(t, err)
+			require.NotNil(t, found.ParticipantID, "participant_id in pool value is required for participant")
+			assert.Equal(t, participantId, *found.ParticipantID)
 		})
 	})
 
@@ -341,14 +364,16 @@ func TestConfigPoolValueRepository(t *testing.T) {
 		cases := []struct {
 			name            string
 			parentPoolID    properties.UUID
+			participantID   *properties.UUID
 			expectAdminOnly bool
 		}{
-			{name: "value under global pool returns admin-only scope", parentPoolID: pool.ID, expectAdminOnly: true},
-			{name: "value under participant pool inherits participant scope", parentPoolID: scopedPool.ID, expectAdminOnly: false},
+			{name: "value under global pool returns admin-only scope", parentPoolID: pool.ID, participantID: nil, expectAdminOnly: true},
+			{name: "value under participant pool inherits participant scope", parentPoolID: scopedPool.ID, participantID: &scopedParticipant.ID, expectAdminOnly: false},
 		}
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
 				value := createTestConfigPoolValue(t, tc.parentPoolID)
+				value.ParticipantID = tc.participantID
 				require.NoError(t, repo.Create(ctx, value))
 
 				scope, err := repo.AuthScope(ctx, value.ID)
@@ -356,11 +381,11 @@ func TestConfigPoolValueRepository(t *testing.T) {
 
 				if tc.expectAdminOnly {
 					_, ok := scope.(authz.AdminOnlyObjectScope)
-					require.True(t, ok, "expected AdminOnlyObjectScope: parent pool has nil participant_id")
+					require.True(t, ok, "expected AdminOnlyObjectScope: row has nil participant_id")
 					return
 				}
 				def, ok := scope.(*authz.DefaultObjectScope)
-				require.True(t, ok, "expected *DefaultObjectScope inherited from parent pool, got %T", scope)
+				require.True(t, ok, "expected *DefaultObjectScope, got %T", scope)
 				require.NotNil(t, def.ParticipantID)
 				assert.Equal(t, scopedParticipant.ID, *def.ParticipantID)
 			})

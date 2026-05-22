@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,14 +16,16 @@ const (
 
 type ConfigPoolValue struct {
 	BaseEntity
-	Name         string           `json:"name" gorm:"not null"`
-	Value        any              `json:"value" gorm:"type:jsonb;serializer:json;not null"`
-	ConfigPoolID properties.UUID  `json:"configPoolId" gorm:"not null;index"`
-	ConfigPool   *ConfigPool      `json:"-" gorm:"foreignKey:ConfigPoolID"`
-	AgentID      *properties.UUID `json:"agentId,omitempty" gorm:"index"`
-	Agent        *Agent           `json:"-" gorm:"foreignKey:AgentID"`
-	PropertyName *string          `json:"propertyName"`
-	AllocatedAt  *time.Time       `json:"allocatedAt,omitempty"`
+	Name          string           `json:"name" gorm:"not null"`
+	Value         any              `json:"value" gorm:"type:jsonb;serializer:json;not null"`
+	ConfigPoolID  properties.UUID  `json:"configPoolId" gorm:"not null;index"`
+	ConfigPool    *ConfigPool      `json:"-" gorm:"foreignKey:ConfigPoolID"`
+	AgentID       *properties.UUID `json:"agentId,omitempty" gorm:"index"`
+	Agent         *Agent           `json:"-" gorm:"foreignKey:AgentID"`
+	PropertyName  *string          `json:"propertyName"`
+	AllocatedAt   *time.Time       `json:"allocatedAt,omitempty"`
+	ParticipantID *properties.UUID `json:"participantId,omitempty" gorm:"index"`
+	Participant   *Participant     `json:"-" gorm:"foreignKey:ParticipantID"`
 }
 
 func (ConfigPoolValue) TableName() string {
@@ -113,15 +116,16 @@ func NewConfigPoolValueCommander(store Store) ConfigPoolValueCommander {
 func (c *configPoolValueCommander) Create(ctx context.Context, params CreateConfigPoolValueParams) (*ConfigPoolValue, error) {
 	var poolValue *ConfigPoolValue
 	err := c.store.Atomic(ctx, func(s Store) error {
-		exists, err := s.ConfigPoolRepo().Exists(ctx, params.ConfigPoolID)
+		pool, err := s.ConfigPoolRepo().Get(ctx, params.ConfigPoolID)
 		if err != nil {
+			if errors.As(err, &NotFoundError{}) {
+				return NewNotFoundErrorf("config pool with id %s not found", params.ConfigPoolID)
+			}
 			return err
-		}
-		if !exists {
-			return NewNotFoundErrorf("config pool with id %s not found", params.ConfigPoolID)
 		}
 
 		poolValue = NewConfigPoolValue(params)
+		poolValue.ParticipantID = pool.ParticipantID
 		if err := poolValue.Validate(); err != nil {
 			return err
 		}

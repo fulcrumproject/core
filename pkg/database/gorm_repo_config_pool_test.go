@@ -315,6 +315,30 @@ func TestConfigPoolRepository(t *testing.T) {
 			assert.Equal(t, poolB.ID, gotB.ID)
 		})
 
+		t.Run("global and participant-scoped of same type coexist", func(t *testing.T) {
+			sharedType := fmt.Sprintf("mixed-type-%s", uuid.New().String())
+
+			globalPool := createTestConfigPool(t)
+			globalPool.Type = sharedType
+			require.NoError(t, repo.Create(ctx, globalPool))
+
+			scopedPool := createTestConfigPool(t)
+			scopedPool.Type = sharedType
+			scopedPool.ParticipantID = &scopedParticipant.ID
+			require.NoError(t, repo.Create(ctx, scopedPool))
+
+			gotGlobal, err := repo.FindByTypeAndParticipant(ctx, sharedType, nil)
+			require.NoError(t, err)
+			assert.Equal(t, globalPool.ID, gotGlobal.ID)
+			assert.Nil(t, gotGlobal.ParticipantID)
+
+			gotScoped, err := repo.FindByTypeAndParticipant(ctx, sharedType, &scopedParticipant.ID)
+			require.NoError(t, err)
+			assert.Equal(t, scopedPool.ID, gotScoped.ID)
+			require.NotNil(t, gotScoped.ParticipantID)
+			assert.Equal(t, scopedParticipant.ID, *gotScoped.ParticipantID)
+		})
+
 		t.Run("not found", func(t *testing.T) {
 			found, err := repo.FindByTypeAndParticipant(ctx, "nonexistent_type", nil)
 

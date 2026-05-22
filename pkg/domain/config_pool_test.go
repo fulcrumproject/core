@@ -219,8 +219,19 @@ func TestConfigPoolCommander_Create(t *testing.T) {
 			},
 		},
 		{
-			name:              "rejects duplicate within the same scope",
+			name:              "rejects duplicate within global scope",
 			params:            baseParams(),
+			existingSameScope: true,
+			wantErr:           true,
+			errContains:       "already exists",
+		},
+		{
+			name: "rejects duplicate within participant scope",
+			params: func() CreateConfigPoolParams {
+				p := baseParams()
+				p.ParticipantID = &participantID
+				return p
+			}(),
 			existingSameScope: true,
 			wantErr:           true,
 			errContains:       "already exists",
