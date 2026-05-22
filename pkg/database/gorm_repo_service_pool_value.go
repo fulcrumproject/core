@@ -154,6 +154,14 @@ func (r *GormServicePoolValueRepository) CountByPool(ctx context.Context, poolID
 	return count, nil
 }
 
+func (r *GormServicePoolValueRepository) ReleaseByService(ctx context.Context, serviceID properties.UUID) error {
+	return r.db.WithContext(ctx).Model(&domain.ServicePoolValue{}).Where("service_id = ?", serviceID).Updates(map[string]any{
+		"service_id":    nil,
+		"property_name": nil,
+		"allocated_at":  nil,
+	}).Error
+}
+
 // AuthScope returns the authorization scope for a service pool value (via pool -> pool set -> provider)
 func (r *GormServicePoolValueRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	// Join through service_pools and service_pool_sets to get provider_id

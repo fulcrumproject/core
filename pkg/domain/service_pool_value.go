@@ -103,6 +103,7 @@ type ServicePoolValueRepository interface {
 	Create(ctx context.Context, value *ServicePoolValue) error
 	Update(ctx context.Context, value *ServicePoolValue) error
 	Delete(ctx context.Context, id properties.UUID) error
+	ReleaseByService(ctx context.Context, serviceID properties.UUID) error
 }
 
 // ServicePoolValueQuerier provides read-only access to ServicePoolValue entities

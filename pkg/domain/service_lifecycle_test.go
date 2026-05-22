@@ -2,6 +2,7 @@
 package domain
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -128,12 +129,8 @@ func TestResolveNextState_ErrorNoMatchingTransition(t *testing.T) {
 	// No error transition defined
 	errorCode := "SOME_ERROR"
 	_, err := lifecycle.ResolveNextState("New", "create", &errorCode)
-	if err == nil {
-		t.Error("ResolveNextState() should fail when no error transition exists")
-	}
-	expectedMsg := "no valid error transition found for action \"create\" from state \"New\" with error code \"SOME_ERROR\""
-	if err.Error() != expectedMsg {
-		t.Errorf("unexpected error message: %v", err)
+	if !errors.Is(err, ErrNoLifecycleTransition) {
+		t.Errorf("expected error wrapping ErrNoLifecycleTransition, got %v", err)
 	}
 }
 
@@ -158,9 +155,8 @@ func TestResolveNextState_ActionNotFound(t *testing.T) {
 	if err == nil {
 		t.Error("ResolveNextState() should fail for nonexistent action")
 	}
-	expectedMsg := "action \"nonexistent\" not found in lifecycle schema"
-	if err.Error() != expectedMsg {
-		t.Errorf("unexpected error message: %v", err)
+	if errors.Is(err, ErrNoLifecycleTransition) {
+		t.Error("action-not-found must not wrap ErrNoLifecycleTransition")
 	}
 }
 
@@ -182,12 +178,8 @@ func TestResolveNextState_InvalidCurrentState(t *testing.T) {
 	}
 
 	_, err := lifecycle.ResolveNextState("Stopped", "create", nil)
-	if err == nil {
-		t.Error("ResolveNextState() should fail when current state has no valid transition")
-	}
-	expectedMsg := "no valid transition found for action \"create\" from state \"Stopped\""
-	if err.Error() != expectedMsg {
-		t.Errorf("unexpected error message: %v", err)
+	if !errors.Is(err, ErrNoLifecycleTransition) {
+		t.Errorf("expected error wrapping ErrNoLifecycleTransition, got %v", err)
 	}
 }
 
