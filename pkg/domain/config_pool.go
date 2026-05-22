@@ -58,33 +58,33 @@ func (ConfigPool) TableName() string {
 	return "config_pools"
 }
 
-func (ap *ConfigPool) Validate() error {
-	if ap.Name == "" {
+func (cp *ConfigPool) Validate() error {
+	if cp.Name == "" {
 		return fmt.Errorf("config pool name cannot be empty")
 	}
 
-	if ap.Type == "" {
+	if cp.Type == "" {
 		return fmt.Errorf("config pool type cannot be empty")
 	}
 
-	if !slices.Contains(ValidPoolPropertyTypes, ap.PropertyType) {
-		return fmt.Errorf("invalid property type: %s (must be one of: %v)", ap.PropertyType, ValidPoolPropertyTypes)
+	if !slices.Contains(ValidPoolPropertyTypes, cp.PropertyType) {
+		return fmt.Errorf("invalid property type: %s (must be one of: %v)", cp.PropertyType, ValidPoolPropertyTypes)
 	}
 
-	if ap.GeneratorType != PoolGeneratorList {
-		return fmt.Errorf("invalid generator type for config pool: %s (must be %s)", ap.GeneratorType, PoolGeneratorList)
+	if cp.GeneratorType != PoolGeneratorList {
+		return fmt.Errorf("invalid generator type for config pool: %s (must be %s)", cp.GeneratorType, PoolGeneratorList)
 	}
 
 	return nil
 }
 
 // Update modifies the ConfigPool with provided parameters
-func (ap *ConfigPool) Update(params UpdateConfigPoolParams) {
+func (cp *ConfigPool) Update(params UpdateConfigPoolParams) {
 	if params.Name != nil {
-		ap.Name = *params.Name
+		cp.Name = *params.Name
 	}
 	if params.GeneratorConfig != nil {
-		ap.GeneratorConfig = params.GeneratorConfig
+		cp.GeneratorConfig = params.GeneratorConfig
 	}
 }
 

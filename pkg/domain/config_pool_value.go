@@ -29,44 +29,44 @@ func (ConfigPoolValue) TableName() string {
 	return "config_pool_values"
 }
 
-func (ag *ConfigPoolValue) Validate() error {
-	if ag.Name == "" {
+func (cv *ConfigPoolValue) Validate() error {
+	if cv.Name == "" {
 		return fmt.Errorf("config pool value name is required")
 	}
 
-	if ag.Value == nil {
+	if cv.Value == nil {
 		return fmt.Errorf("config pool value is required")
 	}
 
-	if ag.ConfigPoolID == (properties.UUID{}) {
+	if cv.ConfigPoolID == (properties.UUID{}) {
 		return fmt.Errorf("config pool ID cannot be empty")
 	}
 	return nil
 }
 
-func (ag *ConfigPoolValue) IsAllocated() bool {
-	return ag.AgentID != nil
+func (cv *ConfigPoolValue) IsAllocated() bool {
+	return cv.AgentID != nil
 }
 
-func (ag *ConfigPoolValue) Allocate(agentID properties.UUID, propertyName string) {
+func (cv *ConfigPoolValue) Allocate(agentID properties.UUID, propertyName string) {
 	allocated := time.Now()
-	ag.AgentID = &agentID
-	ag.AllocatedAt = &allocated
-	ag.PropertyName = &propertyName
+	cv.AgentID = &agentID
+	cv.AllocatedAt = &allocated
+	cv.PropertyName = &propertyName
 }
 
-func (ag *ConfigPoolValue) Release() {
-	ag.AgentID = nil
-	ag.AllocatedAt = nil
-	ag.PropertyName = nil
+func (cv *ConfigPoolValue) Release() {
+	cv.AgentID = nil
+	cv.AllocatedAt = nil
+	cv.PropertyName = nil
 }
 
-func (ag *ConfigPoolValue) PoolID() properties.UUID {
-	return ag.ConfigPoolID
+func (cv *ConfigPoolValue) PoolID() properties.UUID {
+	return cv.ConfigPoolID
 }
 
-func (ag *ConfigPoolValue) RawValue() any {
-	return ag.Value
+func (cv *ConfigPoolValue) RawValue() any {
+	return cv.Value
 }
 
 type CreateConfigPoolValueParams struct {

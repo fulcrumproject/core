@@ -8,6 +8,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
 	"github.com/fulcrumproject/core/pkg/domain"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -323,29 +324,33 @@ func TestConfigPoolRepository(t *testing.T) {
 	})
 
 	t.Run("AuthScope", func(t *testing.T) {
-		t.Run("global pool returns admin-only scope", func(t *testing.T) {
-			pool := createTestConfigPool(t)
-			require.NoError(t, repo.Create(ctx, pool))
+		cases := []struct {
+			name            string
+			participantID   *properties.UUID
+			expectAdminOnly bool
+		}{
+			{name: "global pool returns admin-only scope", participantID: nil, expectAdminOnly: true},
+			{name: "participant-owned pool returns default scope", participantID: &scopedParticipant.ID, expectAdminOnly: false},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				pool := createTestConfigPool(t)
+				pool.ParticipantID = tc.participantID
+				require.NoError(t, repo.Create(ctx, pool))
 
-			scope, err := repo.AuthScope(ctx, pool.ID)
+				scope, err := repo.AuthScope(ctx, pool.ID)
+				require.NoError(t, err)
 
-			require.NoError(t, err)
-			_, ok := scope.(authz.AdminOnlyObjectScope)
-			require.True(t, ok, "expected AdminOnlyObjectScope for nil participant_id")
-		})
-
-		t.Run("participant-owned pool returns default scope", func(t *testing.T) {
-			pool := createTestConfigPool(t)
-			pool.ParticipantID = &scopedParticipant.ID
-			require.NoError(t, repo.Create(ctx, pool))
-
-			scope, err := repo.AuthScope(ctx, pool.ID)
-
-			require.NoError(t, err)
-			def, ok := scope.(*authz.DefaultObjectScope)
-			require.True(t, ok, "expected *DefaultObjectScope for set participant_id, got %T", scope)
-			require.NotNil(t, def.ParticipantID)
-			assert.Equal(t, scopedParticipant.ID, *def.ParticipantID)
-		})
+				if tc.expectAdminOnly {
+					_, ok := scope.(authz.AdminOnlyObjectScope)
+					require.True(t, ok, "expected AdminOnlyObjectScope for nil participant_id")
+					return
+				}
+				def, ok := scope.(*authz.DefaultObjectScope)
+				require.True(t, ok, "expected *DefaultObjectScope for set participant_id, got %T", scope)
+				require.NotNil(t, def.ParticipantID)
+				assert.Equal(t, *tc.participantID, *def.ParticipantID)
+			})
+		}
 	})
 }
