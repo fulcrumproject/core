@@ -1,0 +1,409 @@
+### Service Creation Failure Lifecycle (branch: fix/service-creation-on-error)
+###
+### Showcases two failure paths on POST /jobs/{id}/fail for a create job:
+###
+###   A) Lifecycle DEFINES an OnError transition into a terminal state.
+###      => Service transitions to creationFailed AND pool-allocated values
+###         are released back to the pool (serviceId/propertyName/allocatedAt
+###         cleared by ServicePoolValueRepository.ReleaseByService).
+###
+###   B) Lifecycle has NO error transition for the action.
+###      => /jobs/{id}/fail must still return 204 (previously 500), the job
+###         is marked Failed, and the service stays in its current state so
+###         the operator can retry/delete. Pool values stay allocated because
+###         the service is not in a terminal state.
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+###############################################################################
+### PART 1: SHARED SETUP
+###############################################################################
+
+### Create Provider
+# @name createProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Failure Showcase Provider {{$guid}}",
+    "status": "Enabled",
+    "attributes": {
+        "type": ["test"]
+    }
+}
+
+### Create Service Pool Set
+# @name createPoolSet
+POST {{baseUrl}}/service-pool-sets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Failure Pools {{$guid}}",
+    "providerId": "{{createProvider.response.body.id}}"
+}
+
+### Pool A (used by scenario A: OnError into terminal)
+# @name createPoolA
+POST {{baseUrl}}/service-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Public IP Pool A",
+    "type": "public_ip_fail_terminal",
+    "propertyType": "string",
+    "generatorType": "list",
+    "servicePoolSetId": "{{createPoolSet.response.body.id}}"
+}
+
+### Pool A value
+# @name createPoolAValue
+POST {{baseUrl}}/service-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "servicePoolId": "{{createPoolA.response.body.id}}",
+    "name": "185.123.45.21",
+    "value": "185.123.45.21"
+}
+
+@poolAValueId = {{createPoolAValue.response.body.id}}
+
+### Pool B (used by scenario B: no error transition)
+# @name createPoolB
+POST {{baseUrl}}/service-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Public IP Pool B",
+    "type": "public_ip_fail_no_transition",
+    "propertyType": "string",
+    "generatorType": "list",
+    "servicePoolSetId": "{{createPoolSet.response.body.id}}"
+}
+
+### Pool B value
+# @name createPoolBValue
+POST {{baseUrl}}/service-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "servicePoolId": "{{createPoolB.response.body.id}}",
+    "name": "185.123.45.22",
+    "value": "185.123.45.22"
+}
+
+@poolBValueId = {{createPoolBValue.response.body.id}}
+
+### Service Type A: lifecycle DEFINES OnError -> creationFailed (terminal)
+# @name createServiceTypeA
+POST {{baseUrl}}/service-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "vm-fail-terminal {{$guid}}",
+    "propertySchema": {
+        "properties": {
+            "publicIp": {
+                "type": "string",
+                "label": "Public IP",
+                "immutable": true,
+                "authorizers": [
+                    {"type": "actor", "config": {"actors": ["system"]}}
+                ],
+                "generator": {
+                    "type": "pool",
+                    "config": {"poolType": "public_ip_fail_terminal"}
+                }
+            }
+        }
+    },
+    "lifecycleSchema": {
+        "states": [
+            {"name": "creating"},
+            {"name": "created"},
+            {"name": "creationFailed"},
+            {"name": "deleted"}
+        ],
+        "actions": [
+            {
+                "name": "create",
+                "transitions": [
+                    {"from": "creating", "to": "created"},
+                    {"from": "creating", "to": "creationFailed", "onError": true}
+                ]
+            },
+            {
+                "name": "delete",
+                "transitions": [
+                    {"from": "created", "to": "deleted"}
+                ]
+            }
+        ],
+        "initialState": "creating",
+        "terminalStates": ["deleted", "creationFailed"]
+    }
+}
+
+### Service Type B: lifecycle has NO error transition for create
+# @name createServiceTypeB
+POST {{baseUrl}}/service-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "vm-fail-no-transition {{$guid}}",
+    "propertySchema": {
+        "properties": {
+            "publicIp": {
+                "type": "string",
+                "label": "Public IP",
+                "immutable": true,
+                "authorizers": [
+                    {"type": "actor", "config": {"actors": ["system"]}}
+                ],
+                "generator": {
+                    "type": "pool",
+                    "config": {"poolType": "public_ip_fail_no_transition"}
+                }
+            }
+        }
+    },
+    "lifecycleSchema": {
+        "states": [
+            {"name": "creating"},
+            {"name": "created"},
+            {"name": "deleted"}
+        ],
+        "actions": [
+            {
+                "name": "create",
+                "transitions": [
+                    {"from": "creating", "to": "created"}
+                ]
+            },
+            {
+                "name": "delete",
+                "transitions": [
+                    {"from": "created", "to": "deleted"}
+                ]
+            }
+        ],
+        "initialState": "creating",
+        "terminalStates": ["deleted"]
+    }
+}
+
+### Agent Type wiring both service types
+# @name createAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "vm-fail-agent {{$guid}}",
+    "serviceTypeIds": [
+        "{{createServiceTypeA.response.body.id}}",
+        "{{createServiceTypeB.response.body.id}}"
+    ],
+    "configurationSchema": {
+        "properties": {
+            "endpoint": {
+                "type": "string",
+                "label": "Endpoint",
+                "required": true
+            }
+        }
+    }
+}
+
+### Agent (linked to pool set so create-job auto-allocates publicIp)
+# @name createAgent
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Failure Showcase Agent {{$guid}}",
+    "agentTypeId": "{{createAgentType.response.body.id}}",
+    "providerId": "{{createProvider.response.body.id}}",
+    "servicePoolSetId": "{{createPoolSet.response.body.id}}",
+    "configuration": {
+        "endpoint": "https://hypervisor.example.com"
+    }
+}
+
+@agentId = {{createAgent.response.body.id}}
+
+### Agent token
+# @name createAgentToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Failure Showcase Agent Token",
+    "role": "agent",
+    "expireAt": "{{$datetime iso8601 1 y}}",
+    "scopeId": "{{agentId}}"
+}
+
+@agentToken = {{createAgentToken.response.body.value}}
+
+### Consumer
+# @name createConsumer
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Failure Showcase Consumer {{$guid}}",
+    "status": "Enabled"
+}
+
+### Service Group
+# @name createServiceGroup
+POST {{baseUrl}}/service-groups
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Failure Showcase Group {{$guid}}",
+    "consumerId": "{{createConsumer.response.body.id}}"
+}
+
+###############################################################################
+### PART 2 -- SCENARIO A: OnError -> terminal, pool value RELEASED
+###############################################################################
+
+### Create service A (publicIp gets allocated from Pool A)
+# @name createServiceA
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "svc-fail-terminal {{$guid}}",
+    "properties": {},
+    "agentId": "{{agentId}}",
+    "serviceTypeId": "{{createServiceTypeA.response.body.id}}",
+    "groupId": "{{createServiceGroup.response.body.id}}"
+}
+
+@serviceAId = {{createServiceA.response.body.id}}
+
+### Service is in "creating" and publicIp is the allocated pool value
+GET {{baseUrl}}/services/{{serviceAId}}
+Authorization: Bearer {{adminToken}}
+# Expect: status="creating", properties.publicIp="185.123.45.21"
+
+### Pool A value shows serviceId == serviceAId (allocated)
+GET {{baseUrl}}/service-pool-values/{{poolAValueId}}
+Authorization: Bearer {{adminToken}}
+# Expect: serviceId == {{serviceAId}}
+
+### Pick up the pending create job for service A
+# @name pendingJobsA
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceAId}}
+Authorization: Bearer {{agentToken}}
+
+@createJobAId = {{pendingJobsA.response.body.$[0].id}}
+
+### Claim the create job
+POST {{baseUrl}}/jobs/{{createJobAId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Fail the create job (lifecycle has OnError -> creationFailed)
+POST {{baseUrl}}/jobs/{{createJobAId}}/fail
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "errorMessage": "Failed to create VM: simulated error"
+}
+# Expect: 204
+
+### Service transitioned to terminal creationFailed
+GET {{baseUrl}}/services/{{serviceAId}}
+Authorization: Bearer {{adminToken}}
+# Expect: status="creationFailed"
+
+### Pool A value RELEASED (serviceId == null) -- this is the fix
+GET {{baseUrl}}/service-pool-values/{{poolAValueId}}
+Authorization: Bearer {{adminToken}}
+# Expect: serviceId == null, propertyName == null, allocatedAt == null
+
+###############################################################################
+### PART 3 -- SCENARIO B: no error transition, Fail tolerated (was 500)
+###############################################################################
+
+### Create service B (publicIp gets allocated from Pool B)
+# @name createServiceB
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "svc-fail-no-transition {{$guid}}",
+    "properties": {},
+    "agentId": "{{agentId}}",
+    "serviceTypeId": "{{createServiceTypeB.response.body.id}}",
+    "groupId": "{{createServiceGroup.response.body.id}}"
+}
+
+@serviceBId = {{createServiceB.response.body.id}}
+
+### Service B is "creating" and publicIp is allocated
+GET {{baseUrl}}/services/{{serviceBId}}
+Authorization: Bearer {{adminToken}}
+# Expect: status="creating", properties.publicIp="185.123.45.22"
+
+### Pool B value shows serviceId == serviceBId
+GET {{baseUrl}}/service-pool-values/{{poolBValueId}}
+Authorization: Bearer {{adminToken}}
+# Expect: serviceId == {{serviceBId}}
+
+### Pick up the pending create job for service B
+# @name pendingJobsB
+GET {{baseUrl}}/jobs/pending?serviceId={{serviceBId}}
+Authorization: Bearer {{agentToken}}
+
+@createJobBId = {{pendingJobsB.response.body.$[0].id}}
+
+### Claim the create job
+POST {{baseUrl}}/jobs/{{createJobBId}}/claim
+Authorization: Bearer {{agentToken}}
+
+### Fail the create job (lifecycle has NO error transition for create).
+### Before the fix this returned 500. After the fix it must return 204.
+POST {{baseUrl}}/jobs/{{createJobBId}}/fail
+Authorization: Bearer {{agentToken}}
+Content-Type: application/json
+
+{
+    "errorMessage": "Failed to create VM: simulated error"
+}
+# Expect: 204 (previously 500)
+
+### Service B unchanged: still "creating" -- operator can retry/delete
+GET {{baseUrl}}/services/{{serviceBId}}
+Authorization: Bearer {{adminToken}}
+# Expect: status="creating"
+
+### Job B is marked Failed even though the service didn't move
+GET {{baseUrl}}/jobs/{{createJobBId}}
+Authorization: Bearer {{adminToken}}
+# Expect: status="Failed"
+
+### Pool B value remains allocated (service isn't in a terminal state)
+GET {{baseUrl}}/service-pool-values/{{poolBValueId}}
+Authorization: Bearer {{adminToken}}
+# Expect: serviceId == {{serviceBId}} (still allocated)
