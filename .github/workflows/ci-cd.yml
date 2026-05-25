@@ -76,8 +76,12 @@ jobs:
 
       - name: Boot Postgres + Keycloak
         # Keycloak realm import via GH Actions `services:` is awkward (mounts);
-        # we use docker compose for this job specifically.
-        run: docker compose up -d postgres keycloak keycloak-provisioning --wait
+        # we use docker compose for this job specifically. Run provisioning in
+        # the foreground so the realm import is guaranteed to finish before
+        # the e2e suite starts.
+        run: |
+          docker compose up -d postgres keycloak --wait
+          docker compose run --rm keycloak-provisioning
 
       - name: Prepare coverage dir
         run: mkdir -p "$GOCOVERDIR"
