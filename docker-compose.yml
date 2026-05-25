@@ -74,7 +74,7 @@ services:
       - fulcrum-network
 
   keycloak-provisioning:
-    image: quay.io/adorsys/keycloak-config-cli:latest
+    image: quay.io/adorsys/keycloak-config-cli:6.5.0-26.1.0
     depends_on:
       keycloak:
         condition: service_healthy
