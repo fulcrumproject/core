@@ -37,9 +37,11 @@ func setupInstallTokenTest(t *testing.T) (*MockStore, *MockAgentInstallTokenRepo
 		BaseEntity: BaseEntity{ID: agentID},
 		ProviderID: properties.UUID(uuid.New()),
 		AgentType: &AgentType{
-			BaseEntity:     BaseEntity{ID: properties.UUID(uuid.New())},
-			CmdTemplate:    "curl {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
-			ConfigTemplate: "agent: {{.name}}",
+			BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())},
+			TemplateValidation: TemplateValidation{
+				CmdTemplate:    "curl {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
+				ConfigTemplate: "agent: {{.name}}",
+			},
 		},
 	}
 

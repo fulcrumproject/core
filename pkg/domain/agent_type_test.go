@@ -121,8 +121,10 @@ func TestAgentType_WithConfigurationSchema(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			agentType := &AgentType{
-				Name:                "Test Agent",
-				ConfigurationSchema: tt.schema,
+				Name: "Test Agent",
+				TemplateValidation: TemplateValidation{
+					ConfigurationSchema: tt.schema,
+				},
 			}
 
 			err := agentType.ValidateWithEngine(engine)
@@ -336,11 +338,13 @@ func TestAgentType_ValidateTemplates(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			at := &AgentType{
-				Name:                "Test Agent",
-				ConfigurationSchema: schema.Schema{Properties: tt.props},
-				ConfigTemplate:      tt.configTemplate,
-				CmdTemplate:         tt.cmdTemplate,
-				ConfigContentType:   tt.configContentType,
+				Name: "Test Agent",
+				TemplateValidation: TemplateValidation{
+					ConfigurationSchema: schema.Schema{Properties: tt.props},
+					ConfigTemplate:      tt.configTemplate,
+					CmdTemplate:         tt.cmdTemplate,
+					ConfigContentType:   tt.configContentType,
+				},
 			}
 			err := at.Validate()
 			if (err != nil) != tt.wantErr {
@@ -358,8 +362,10 @@ func TestAgentType_ValidateWithEngine_EmptyName(t *testing.T) {
 
 	agentType := &AgentType{
 		Name: "",
-		ConfigurationSchema: schema.Schema{
-			Properties: map[string]schema.PropertyDefinition{},
+		TemplateValidation: TemplateValidation{
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{},
+			},
 		},
 	}
 
@@ -480,10 +486,12 @@ func TestAgentType_Update(t *testing.T) {
 
 	agentType := &AgentType{
 		Name: "Initial Agent",
-		ConfigurationSchema: schema.Schema{
-			Properties: map[string]schema.PropertyDefinition{
-				"apiKey": {
-					Type: "string",
+		TemplateValidation: TemplateValidation{
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"apiKey": {
+						Type: "string",
+					},
 				},
 			},
 		},

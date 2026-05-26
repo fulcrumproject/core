@@ -18,26 +18,33 @@ const (
 
 var missingKeyRe = regexp.MustCompile(`map has no entry for key "([^"]+)"`)
 
-func (at *AgentType) validateTemplates() error {
-	configData := mockDataFromSchema(at.ConfigurationSchema.Properties)
-	cmdData := mockDataFromSchema(at.ConfigurationSchema.Properties)
+type TemplateValidation struct {
+	ConfigurationSchema schema.Schema `json:"configurationSchema" gorm:"type:jsonb;not null"`
+	ConfigTemplate      string        `json:"configTemplate" gorm:"type:text"`
+	CmdTemplate         string        `json:"cmdTemplate" gorm:"type:text"`
+	ConfigContentType   string        `json:"configContentType" gorm:"type:text;not null;default:'text/plain'"`
+}
+
+func (tv *TemplateValidation) validateTemplates() error {
+	configData := mockDataFromSchema(tv.ConfigurationSchema.Properties)
+	cmdData := mockDataFromSchema(tv.ConfigurationSchema.Properties)
 	cmdData[cmdTemplateExtraRef] = ""
 	cmdData[cmdTemplateExtraAuthTokenRef] = ""
 
-	if err := executeTemplate("configTemplate", at.ConfigTemplate, configData, io.Discard); err != nil {
+	if err := executeTemplate("configTemplate", tv.ConfigTemplate, configData, io.Discard); err != nil {
 		return err
 	}
-	if err := executeTemplate("cmdTemplate", at.CmdTemplate, cmdData, io.Discard); err != nil {
+	if err := executeTemplate("cmdTemplate", tv.CmdTemplate, cmdData, io.Discard); err != nil {
 		return err
 	}
 
-	if (at.ConfigTemplate == "") != (at.CmdTemplate == "") {
+	if (tv.ConfigTemplate == "") != (tv.CmdTemplate == "") {
 		return fmt.Errorf("configTemplate and cmdTemplate must both be set or both be empty")
 	}
 
-	if at.ConfigTemplate != "" && at.CmdTemplate != "" {
+	if tv.ConfigTemplate != "" && tv.CmdTemplate != "" {
 		for _, required := range []string{cmdTemplateExtraRef, cmdTemplateExtraAuthTokenRef} {
-			data := mockDataFromSchema(at.ConfigurationSchema.Properties)
+			data := mockDataFromSchema(tv.ConfigurationSchema.Properties)
 			// Populate every required key except the one under test so a missing
 			// reference in cmdTemplate is the only way Execute can fail.
 			for _, k := range []string{cmdTemplateExtraRef, cmdTemplateExtraAuthTokenRef} {
@@ -45,7 +52,7 @@ func (at *AgentType) validateTemplates() error {
 					data[k] = ""
 				}
 			}
-			err := executeTemplate("cmdTemplate", at.CmdTemplate, data, io.Discard)
+			err := executeTemplate("cmdTemplate", tv.CmdTemplate, data, io.Discard)
 			if err == nil {
 				return fmt.Errorf("cmdTemplate must reference {{.%s}} when configTemplate is set", required)
 			}
@@ -55,9 +62,9 @@ func (at *AgentType) validateTemplates() error {
 		}
 	}
 
-	if at.ConfigContentType != "" {
-		if _, _, err := mime.ParseMediaType(at.ConfigContentType); err != nil {
-			return fmt.Errorf("configContentType %q is not a valid media type: %v", at.ConfigContentType, err)
+	if tv.ConfigContentType != "" {
+		if _, _, err := mime.ParseMediaType(tv.ConfigContentType); err != nil {
+			return fmt.Errorf("configContentType %q is not a valid media type: %v", tv.ConfigContentType, err)
 		}
 	}
 	return nil

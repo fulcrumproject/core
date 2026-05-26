@@ -127,14 +127,16 @@ func SeedCore(tx *gorm.DB) (*CoreFixtures, error) {
 		// "schema must have at least one property" validator the API
 		// applies on PATCH; otherwise tests that mutate this fixture
 		// 400 even when not touching the schema.
-		ConfigurationSchema: schema.Schema{
-			Properties: map[string]schema.PropertyDefinition{
-				"placeholder": {Type: "string", Label: "Placeholder"},
+		TemplateValidation: domain.TemplateValidation{
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"placeholder": {Type: "string", Label: "Placeholder"},
+				},
 			},
+			ConfigTemplate:    "# e2e agent config\n",
+			CmdTemplate:       "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
+			ConfigContentType: "text/plain",
 		},
-		ConfigTemplate:    "# e2e agent config\n",
-		CmdTemplate:       "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
-		ConfigContentType: "text/plain",
 	}); err != nil {
 		return nil, err
 	}

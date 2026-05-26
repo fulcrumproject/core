@@ -56,20 +56,29 @@ func TestRenderCmdTemplate(t *testing.T) {
 	}{
 		{
 			name: "empty template returns empty",
-			at:   &AgentType{CmdTemplate: ""},
+			at: &AgentType{
+				TemplateValidation: TemplateValidation{
+					CmdTemplate: "",
+				},
+			},
 			want: "",
 		},
 		{
-			name:      "happy path with configUrl, authToken and property",
-			at:        &AgentType{CmdTemplate: "curl -H 'Authorization: Bearer {{.authToken}}' {{.configUrl}} > /etc/{{.name}}.conf"},
+			name: "happy path with configUrl, authToken and property",
+			at: &AgentType{
+				TemplateValidation: TemplateValidation{
+					CmdTemplate: "curl -H 'Authorization: Bearer {{.authToken}}' {{.configUrl}} > /etc/{{.name}}.conf",
+				},
+			},
 			data:      map[string]any{"name": "svc"},
 			url:       "http://host/install/tok",
 			authToken: "bearer-123",
 			want:      "curl -H 'Authorization: Bearer bearer-123' http://host/install/tok > /etc/svc.conf",
 		},
 		{
-			name:    "unknown reference surfaces missingkey error",
-			at:      &AgentType{CmdTemplate: "{{.nope}}"},
+			name: "unknown reference surfaces missingkey error",
+			at: &AgentType{
+				TemplateValidation: TemplateValidation{CmdTemplate: "{{.nope}}"}},
 			wantErr: "nope",
 		},
 	}
@@ -93,7 +102,11 @@ func TestRenderCmdTemplate(t *testing.T) {
 }
 
 func TestRenderCmdTemplate_DoesNotMutateCaller(t *testing.T) {
-	at := &AgentType{CmdTemplate: "{{.configUrl}}-{{.authToken}}-{{.k}}"}
+	at := &AgentType{
+		TemplateValidation: TemplateValidation{
+			CmdTemplate: "{{.configUrl}}-{{.authToken}}-{{.k}}",
+		},
+	}
 	data := map[string]any{"k": "v"}
 	if _, err := RenderCmdTemplate(at, data, "URL", "TOKEN"); err != nil {
 		t.Fatal(err)
@@ -116,18 +129,30 @@ func TestRenderConfigTemplate(t *testing.T) {
 	}{
 		{
 			name: "empty template returns empty",
-			at:   &AgentType{ConfigTemplate: ""},
+			at: &AgentType{
+				TemplateValidation: TemplateValidation{
+					ConfigTemplate: "",
+				},
+			},
 			want: "",
 		},
 		{
 			name: "happy path",
-			at:   &AgentType{ConfigTemplate: "name={{.name}}"},
+			at: &AgentType{
+				TemplateValidation: TemplateValidation{
+					ConfigTemplate: "name={{.name}}",
+				},
+			},
 			data: map[string]any{"name": "svc"},
 			want: "name=svc",
 		},
 		{
-			name:    "configUrl is not injected into config template",
-			at:      &AgentType{ConfigTemplate: "{{.configUrl}}"},
+			name: "configUrl is not injected into config template",
+			at: &AgentType{
+				TemplateValidation: TemplateValidation{
+					ConfigTemplate: "{{.configUrl}}",
+				},
+			},
 			data:    map[string]any{},
 			wantErr: "configUrl",
 		},
@@ -150,4 +175,3 @@ func TestRenderConfigTemplate(t *testing.T) {
 		})
 	}
 }
-

@@ -17,12 +17,9 @@ const (
 // AgentType represents a type of service manager agent
 type AgentType struct {
 	BaseEntity
-	Name                string        `json:"name" gorm:"not null;unique"`
-	ServiceTypes        []ServiceType `json:"-" gorm:"many2many:agent_type_service_types;"`
-	ConfigurationSchema schema.Schema `json:"configurationSchema" gorm:"type:jsonb;not null"`
-	ConfigTemplate      string        `json:"configTemplate" gorm:"type:text"`
-	CmdTemplate         string        `json:"cmdTemplate" gorm:"type:text"`
-	ConfigContentType   string        `json:"configContentType" gorm:"type:text;not null;default:'text/plain'"`
+	Name         string        `json:"name" gorm:"not null;unique"`
+	ServiceTypes []ServiceType `json:"-" gorm:"many2many:agent_type_service_types;"`
+	TemplateValidation
 }
 
 // NewAgentType creates a new agent type without validation
@@ -41,12 +38,14 @@ func NewAgentType(params CreateAgentTypeParams) *AgentType {
 	}
 
 	return &AgentType{
-		Name:                params.Name,
-		ServiceTypes:        serviceTypes,
-		ConfigurationSchema: params.ConfigurationSchema,
-		ConfigTemplate:      params.ConfigTemplate,
-		CmdTemplate:         params.CmdTemplate,
-		ConfigContentType:   configContentType,
+		Name:         params.Name,
+		ServiceTypes: serviceTypes,
+		TemplateValidation: TemplateValidation{
+			ConfigurationSchema: params.ConfigurationSchema,
+			ConfigTemplate:      params.ConfigTemplate,
+			CmdTemplate:         params.CmdTemplate,
+			ConfigContentType:   configContentType,
+		},
 	}
 }
 

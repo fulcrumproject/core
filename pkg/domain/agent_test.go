@@ -85,17 +85,19 @@ func TestAgentCommander_CreateWithConfiguration(t *testing.T) {
 			agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
 				BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())},
 				Name:       "Test Agent Type",
-				ConfigurationSchema: schema.Schema{
-					Properties: map[string]schema.PropertyDefinition{
-						"apiEndpoint": {
-							Type:     "string",
-							Label:    "API Endpoint",
-							Required: true,
-						},
-						"maxRetries": {
-							Type:    "integer",
-							Label:   "Max Retries",
-							Default: 3,
+				TemplateValidation: TemplateValidation{
+					ConfigurationSchema: schema.Schema{
+						Properties: map[string]schema.PropertyDefinition{
+							"apiEndpoint": {
+								Type:     "string",
+								Label:    "API Endpoint",
+								Required: true,
+							},
+							"maxRetries": {
+								Type:    "integer",
+								Label:   "Max Retries",
+								Default: 3,
+							},
 						},
 					},
 				},
@@ -188,17 +190,19 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 		agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
 			BaseEntity: BaseEntity{ID: existingAgent.AgentTypeID},
 			Name:       "Test Agent Type",
-			ConfigurationSchema: schema.Schema{
-				Properties: map[string]schema.PropertyDefinition{
-					"apiEndpoint": {
-						Type:     "string",
-						Label:    "API Endpoint",
-						Required: true,
-					},
-					"maxRetries": {
-						Type:    "integer",
-						Label:   "Max Retries",
-						Default: 3,
+			TemplateValidation: TemplateValidation{
+				ConfigurationSchema: schema.Schema{
+					Properties: map[string]schema.PropertyDefinition{
+						"apiEndpoint": {
+							Type:     "string",
+							Label:    "API Endpoint",
+							Required: true,
+						},
+						"maxRetries": {
+							Type:    "integer",
+							Label:   "Max Retries",
+							Default: 3,
+						},
 					},
 				},
 			},
@@ -257,17 +261,19 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 		agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
 			BaseEntity: BaseEntity{ID: existingAgent.AgentTypeID},
 			Name:       "Test Agent Type",
-			ConfigurationSchema: schema.Schema{
-				Properties: map[string]schema.PropertyDefinition{
-					"apiEndpoint": {
-						Type:     "string",
-						Label:    "API Endpoint",
-						Required: true,
-					},
-					"maxRetries": {
-						Type:    "integer",
-						Label:   "Max Retries",
-						Default: 3,
+			TemplateValidation: TemplateValidation{
+				ConfigurationSchema: schema.Schema{
+					Properties: map[string]schema.PropertyDefinition{
+						"apiEndpoint": {
+							Type:     "string",
+							Label:    "API Endpoint",
+							Required: true,
+						},
+						"maxRetries": {
+							Type:    "integer",
+							Label:   "Max Retries",
+							Default: 3,
+						},
 					},
 				},
 			},
@@ -326,8 +332,10 @@ func TestAgentCommander_ServicePoolSetValidation(t *testing.T) {
 
 		agentTypeRepo := NewMockAgentTypeRepository(t)
 		agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
-			BaseEntity:          BaseEntity{ID: agentTypeID},
-			ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			BaseEntity: BaseEntity{ID: agentTypeID},
+			TemplateValidation: TemplateValidation{
+				ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			},
 		}, nil).Maybe()
 		ms.On("AgentTypeRepo").Return(agentTypeRepo).Maybe()
 
@@ -369,8 +377,10 @@ func TestAgentCommander_ServicePoolSetValidation(t *testing.T) {
 
 		agentTypeRepo := NewMockAgentTypeRepository(t)
 		agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
-			BaseEntity:          BaseEntity{ID: agentTypeID},
-			ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			BaseEntity: BaseEntity{ID: agentTypeID},
+			TemplateValidation: TemplateValidation{
+				ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			},
 		}, nil).Maybe()
 		ms.On("AgentTypeRepo").Return(agentTypeRepo).Maybe()
 
@@ -415,8 +425,10 @@ func TestAgentCommander_ServicePoolSetValidation(t *testing.T) {
 
 		agentTypeRepo := NewMockAgentTypeRepository(t)
 		agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
-			BaseEntity:          BaseEntity{ID: agentTypeID},
-			ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			BaseEntity: BaseEntity{ID: agentTypeID},
+			TemplateValidation: TemplateValidation{
+				ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			},
 		}, nil).Maybe()
 		ms.On("AgentTypeRepo").Return(agentTypeRepo).Maybe()
 
@@ -450,14 +462,16 @@ func TestAgentCommander_CreateWithPoolGenerator(t *testing.T) {
 	agentType := &AgentType{
 		BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())},
 		Name:       "Pool-Using Agent Type",
-		ConfigurationSchema: schema.Schema{
-			Properties: map[string]schema.PropertyDefinition{
-				"publicIP": {
-					Type:  "string",
-					Label: "Public IP",
-					Generator: &schema.GeneratorConfig{
-						Type:   "pool",
-						Config: map[string]any{"poolType": "public_ip"},
+		TemplateValidation: TemplateValidation{
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"publicIP": {
+						Type:  "string",
+						Label: "Public IP",
+						Generator: &schema.GeneratorConfig{
+							Type:   "pool",
+							Config: map[string]any{"poolType": "public_ip"},
+						},
 					},
 				},
 			},
