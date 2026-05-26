@@ -4,10 +4,16 @@ package domain
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
 )
+
+// ErrNoLifecycleTransition is returned by ResolveNextState when the lifecycle
+// schema has no transition defined for the requested (state, action, error)
+// triple. Callers can use errors.Is to fall back to "leave service state unchanged".
+var ErrNoLifecycleTransition = errors.New("no lifecycle transition found")
 
 // LifecycleSchema defines the state machine for a service type
 type LifecycleSchema struct {
@@ -80,7 +86,7 @@ func (ls *LifecycleSchema) ResolveNextState(currentState string, action string, 
 				return transition.To, nil
 			}
 		}
-		return "", fmt.Errorf("no valid transition found for action %q from state %q", action, currentState)
+		return "", fmt.Errorf("no valid transition found for action %q from state %q: %w", action, currentState, ErrNoLifecycleTransition)
 	}
 
 	// Error code provided - find matching error transition
@@ -107,7 +113,7 @@ func (ls *LifecycleSchema) ResolveNextState(currentState string, action string, 
 		}
 	}
 
-	return "", fmt.Errorf("no valid error transition found for action %q from state %q with error code %q", action, currentState, *errorCode)
+	return "", fmt.Errorf("no valid error transition found for action %q from state %q with error code %q: %w", action, currentState, *errorCode, ErrNoLifecycleTransition)
 }
 
 // ValidateActionAllowed checks if an action is allowed from the current state

@@ -254,21 +254,8 @@ func (s *jobCommander) Complete(ctx context.Context, params CompleteJobParams) e
 
 		// Release pool allocations if service reached a terminal state
 		if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
-			// Find all ServicePoolValues allocated to this service and release them
-			allocatedValues, err := store.ServicePoolValueRepo().FindByService(ctx, svc.ID)
-			if err != nil {
-				return fmt.Errorf("failed to find allocated pool values: %w", err)
-			}
-
-			// Release each value
-			for _, value := range allocatedValues {
-				value.ServiceID = nil
-				value.PropertyName = nil
-				value.AllocatedAt = nil
-
-				if err := store.ServicePoolValueRepo().Update(ctx, value); err != nil {
-					return fmt.Errorf("failed to release pool value %s: %w", value.ID, err)
-				}
+			if err := store.ServicePoolValueRepo().ReleaseByService(ctx, svc.ID); err != nil {
+				return fmt.Errorf("failed to release pool values: %w", err)
 			}
 
 			// Clean up ALL remaining vault secrets from service properties (best-effort)
@@ -316,16 +303,29 @@ func (s *jobCommander) Fail(ctx context.Context, params FailJobParams) error {
 			return err
 		}
 
-		// Update service state using error message for transition logic (regexp matching)
+		// Update service state using error message for transition logic (regexp matching).
+		// If the lifecycle has no error transition for this (state, action) the job is
+		// still recorded as Failed, but the service stays in its current state so the
+		// operator can retry or delete it.
 		errorCode := &params.ErrorMessage
-		if err := svc.HandleJobComplete(serviceType.LifecycleSchema, job.Action, errorCode, job.Params, nil, nil); err != nil {
-			return InvalidInputError{Err: err}
+		transitionErr := svc.HandleJobComplete(serviceType.LifecycleSchema, job.Action, errorCode, job.Params, nil, nil)
+		if transitionErr != nil && !errors.Is(transitionErr, ErrNoLifecycleTransition) {
+			return InvalidInputError{Err: transitionErr}
 		}
-		if err := svc.Validate(); err != nil {
-			return InvalidInputError{Err: err}
-		}
-		if err := store.ServiceRepo().Save(ctx, svc); err != nil {
-			return err
+		if transitionErr == nil {
+			if err := svc.Validate(); err != nil {
+				return InvalidInputError{Err: err}
+			}
+			if err := store.ServiceRepo().Save(ctx, svc); err != nil {
+				return err
+			}
+
+			// Release pool allocations if the failure transition reached a terminal state.
+			if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
+				if err := store.ServicePoolValueRepo().ReleaseByService(ctx, svc.ID); err != nil {
+					return fmt.Errorf("failed to release pool values: %w", err)
+				}
+			}
 		}
 
 		// Clean up ephemeral secrets after job failure (best-effort)

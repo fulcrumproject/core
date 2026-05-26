@@ -51,8 +51,19 @@ services:
       KC_LOG_LEVEL: info
     command: ["start-dev", "--http-port", "8080", "--https-port", "8443"]
     healthcheck:
+      # Keycloak 26 exposes /health/ready on the management port (9000) when
+      # KC_HEALTH_ENABLED=true. The image has no curl/wget, so use bash's
+      # /dev/tcp to hit the endpoint and grep for an UP status.
       test:
-        ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/localhost/8080' || exit 1"]
+        - CMD-SHELL
+        - |
+          exec 3<>/dev/tcp/127.0.0.1/9000 \
+            && printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 \
+            && timeout --preserve-status 2 cat <&3 | grep -q '"status": "UP"'
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
     ports:
       - "8080:8080"
       - "8443:8443"
@@ -63,7 +74,10 @@ services:
       - fulcrum-network
 
   keycloak-provisioning:
-    image: quay.io/adorsys/keycloak-config-cli:latest
+    image: quay.io/adorsys/keycloak-config-cli:6.5.0-26.1.0
+    depends_on:
+      keycloak:
+        condition: service_healthy
     environment:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_USER: admin

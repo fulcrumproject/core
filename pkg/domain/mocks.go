@@ -27421,6 +27421,63 @@ func (_c *MockServicePoolValueRepository_ListByService_Call) RunAndReturn(run fu
 	return _c
 }
 
+// ReleaseByService provides a mock function for the type MockServicePoolValueRepository
+func (_mock *MockServicePoolValueRepository) ReleaseByService(ctx context.Context, serviceID properties.UUID) error {
+	ret := _mock.Called(ctx, serviceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReleaseByService")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
+		r0 = returnFunc(ctx, serviceID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockServicePoolValueRepository_ReleaseByService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReleaseByService'
+type MockServicePoolValueRepository_ReleaseByService_Call struct {
+	*mock.Call
+}
+
+// ReleaseByService is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceID properties.UUID
+func (_e *MockServicePoolValueRepository_Expecter) ReleaseByService(ctx interface{}, serviceID interface{}) *MockServicePoolValueRepository_ReleaseByService_Call {
+	return &MockServicePoolValueRepository_ReleaseByService_Call{Call: _e.mock.On("ReleaseByService", ctx, serviceID)}
+}
+
+func (_c *MockServicePoolValueRepository_ReleaseByService_Call) Run(run func(ctx context.Context, serviceID properties.UUID)) *MockServicePoolValueRepository_ReleaseByService_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_ReleaseByService_Call) Return(err error) *MockServicePoolValueRepository_ReleaseByService_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockServicePoolValueRepository_ReleaseByService_Call) RunAndReturn(run func(ctx context.Context, serviceID properties.UUID) error) *MockServicePoolValueRepository_ReleaseByService_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Update provides a mock function for the type MockServicePoolValueRepository
 func (_mock *MockServicePoolValueRepository) Update(ctx context.Context, value *ServicePoolValue) error {
 	ret := _mock.Called(ctx, value)
