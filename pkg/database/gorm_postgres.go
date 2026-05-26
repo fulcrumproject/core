@@ -80,7 +80,11 @@ func autoMigrate(db *gorm.DB) error {
 		return err
 	}
 
-	return backfillConfigPoolValueParticipant(db)
+	if err := backfillConfigPoolValueParticipant(db); err != nil {
+		return err
+	}
+
+	return backfillServicePoolParticipant(db)
 }
 
 // backfillConfigPoolValueParticipant copies participant_id from the parent pool onto
@@ -101,6 +105,41 @@ func backfillConfigPoolValueParticipant(db *gorm.DB) error {
 	}
 	if res.RowsAffected > 0 {
 		db.Logger.Info(db.Statement.Context, "backfilled participant_id on %d config_pool_values rows", res.RowsAffected)
+	}
+	return nil
+}
+
+// backfillServicePoolParticipant copies provider_id from the parent pool set onto
+// service_pools, then propagates to service_pool_values. Idempotent via IS NULL guards.
+// Must run after AutoMigrate since the columns it writes to are introduced there.
+func backfillServicePoolParticipant(db *gorm.DB) error {
+	res := db.Exec(`
+		UPDATE service_pools sp
+		SET participant_id = s.provider_id
+		FROM service_pool_sets s
+		WHERE sp.service_pool_set_id = s.id
+		  AND sp.participant_id IS NULL
+	`)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected > 0 {
+		db.Logger.Info(db.Statement.Context, "backfilled participant_id on %d service_pools rows", res.RowsAffected)
+	}
+
+	res = db.Exec(`
+		UPDATE service_pool_values v
+		SET participant_id = p.participant_id
+		FROM service_pools p
+		WHERE v.service_pool_id = p.id
+		  AND v.participant_id IS NULL
+		  AND p.participant_id IS NOT NULL
+	`)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected > 0 {
+		db.Logger.Info(db.Statement.Context, "backfilled participant_id on %d service_pool_values rows", res.RowsAffected)
 	}
 	return nil
 }

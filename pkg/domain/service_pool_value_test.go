@@ -2,13 +2,16 @@
 package domain
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/helpers"
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -187,4 +190,87 @@ func TestServicePoolValue_Release(t *testing.T) {
 func TestServicePoolValue_TableName(t *testing.T) {
 	poolValue := &ServicePoolValue{}
 	assert.Equal(t, "service_pool_values", poolValue.TableName())
+}
+
+func TestServicePoolValueCommander_Create(t *testing.T) {
+	participantID := properties.UUID(uuid.New())
+	poolID := properties.UUID(uuid.New())
+
+	tests := []struct {
+		name              string
+		pool              *ServicePool
+		poolGetErr        error
+		wantErr           bool
+		errContains       string
+		expectParticipant *properties.UUID
+	}{
+		{
+			name: "stamps ParticipantID from parent pool",
+			pool: &ServicePool{
+				BaseEntity:    BaseEntity{ID: poolID},
+				Name:          "Scoped",
+				Type:          "publicIp",
+				PropertyType:  "string",
+				GeneratorType: PoolGeneratorList,
+				ParticipantID: &participantID,
+			},
+			expectParticipant: &participantID,
+		},
+		{
+			name:        "returns NotFound when parent pool missing",
+			poolGetErr:  NewNotFoundErrorf("missing"),
+			wantErr:     true,
+			errContains: "service pool with id",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ms := setupMockStore(t)
+
+			poolRepo := NewMockServicePoolRepository(t)
+			if tt.poolGetErr != nil {
+				poolRepo.On("Get", mock.Anything, poolID).Return(nil, tt.poolGetErr).Once()
+			} else {
+				poolRepo.On("Get", mock.Anything, poolID).Return(tt.pool, nil).Once()
+			}
+			ms.On("ServicePoolRepo").Return(poolRepo).Maybe()
+
+			valueRepo := NewMockServicePoolValueRepository(t)
+			if !tt.wantErr {
+				valueRepo.On("Create", mock.Anything, mock.MatchedBy(func(v *ServicePoolValue) bool {
+					if tt.expectParticipant == nil {
+						return v.ParticipantID == nil
+					}
+					return v.ParticipantID != nil && *v.ParticipantID == *tt.expectParticipant
+				})).Return(nil).Once()
+			}
+			ms.On("ServicePoolValueRepo").Return(valueRepo).Maybe()
+
+			eventRepo := NewMockEventRepository(t)
+			if !tt.wantErr {
+				eventRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Once()
+			}
+			ms.On("EventRepo").Return(eventRepo).Maybe()
+
+			ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
+			cmd := NewServicePoolValueCommander(ms)
+
+			value, err := cmd.Create(ctx, CreateServicePoolValueParams{
+				Name:          "203.0.113.10",
+				Value:         "203.0.113.10",
+				ServicePoolID: poolID,
+			})
+
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errContains)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, value)
+			require.NotNil(t, value.ParticipantID)
+			assert.Equal(t, *tt.expectParticipant, *value.ParticipantID)
+		})
+	}
 }

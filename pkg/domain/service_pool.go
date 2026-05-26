@@ -48,6 +48,8 @@ type ServicePool struct {
 	GeneratorConfig  *properties.JSON  `json:"generatorConfig,omitempty" gorm:"type:jsonb"`
 	ServicePoolSetID properties.UUID   `json:"servicePoolSetId" gorm:"not null;index"`
 	ServicePoolSet   *ServicePoolSet   `json:"-" gorm:"foreignKey:ServicePoolSetID"`
+	ParticipantID    *properties.UUID  `json:"participantId,omitempty" gorm:"index"`
+	Participant      *Participant      `json:"-" gorm:"foreignKey:ParticipantID"`
 }
 
 // CreateServicePoolParams defines parameters for creating a ServicePool
@@ -168,6 +170,7 @@ func (c *servicePoolCommander) Create(
 
 		// Create the pool
 		pool = NewServicePool(params)
+		pool.ParticipantID = &poolSet.ProviderID
 		if err := pool.Validate(); err != nil {
 			return err
 		}

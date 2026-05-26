@@ -400,19 +400,20 @@ func TestServicePoolRepository(t *testing.T) {
 	})
 
 	t.Run("AuthScope", func(t *testing.T) {
-		t.Run("success - returns provider scope", func(t *testing.T) {
+		t.Run("returns DefaultObjectScope with denormalized ParticipantID", func(t *testing.T) {
 			ctx := context.Background()
 
 			pool := createTestServicePool(t, poolSet.ID)
+			pool.ParticipantID = &participant.ID
 			require.NoError(t, repo.Create(ctx, pool))
 
 			scope, err := repo.AuthScope(ctx, pool.ID)
 
 			require.NoError(t, err)
 			defaultScope, ok := scope.(*authz.DefaultObjectScope)
-			require.True(t, ok)
-			assert.NotNil(t, defaultScope.ProviderID)
-			assert.Equal(t, participant.ID, *defaultScope.ProviderID)
+			require.True(t, ok, "expected *DefaultObjectScope, got %T", scope)
+			require.NotNil(t, defaultScope.ParticipantID)
+			assert.Equal(t, participant.ID, *defaultScope.ParticipantID)
 		})
 	})
 }

@@ -3,6 +3,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -29,6 +30,9 @@ type ServicePoolValue struct {
 	Service      *Service         `json:"-" gorm:"foreignKey:ServiceID"`
 	PropertyName *string          `json:"propertyName,omitempty"`
 	AllocatedAt  *time.Time       `json:"allocatedAt,omitempty"`
+
+	ParticipantID *properties.UUID `json:"participantId,omitempty" gorm:"index"`
+	Participant   *Participant     `json:"-" gorm:"foreignKey:ParticipantID"`
 }
 
 // CreateServicePoolValueParams defines parameters for creating a ServicePoolValue
@@ -141,17 +145,18 @@ func (c *servicePoolValueCommander) Create(
 ) (*ServicePoolValue, error) {
 	var value *ServicePoolValue
 	err := c.store.Atomic(ctx, func(store Store) error {
-		// Validate that the service pool exists
-		exists, err := store.ServicePoolRepo().Exists(ctx, params.ServicePoolID)
+		// Fetch the parent pool so we can inherit ParticipantID
+		pool, err := store.ServicePoolRepo().Get(ctx, params.ServicePoolID)
 		if err != nil {
+			if errors.As(err, &NotFoundError{}) {
+				return NewNotFoundErrorf("service pool with id %s not found", params.ServicePoolID)
+			}
 			return err
-		}
-		if !exists {
-			return NewNotFoundErrorf("service pool with id %s not found", params.ServicePoolID)
 		}
 
 		// Create the pool value
 		value = NewServicePoolValue(params)
+		value.ParticipantID = pool.ParticipantID
 		if err := value.Validate(); err != nil {
 			return err
 		}
