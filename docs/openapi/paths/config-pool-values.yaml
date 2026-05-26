@@ -1,12 +1,12 @@
 get:
-  operationId: agentPoolValuesList
-  summary: List agent pool values
+  operationId: configPoolValuesList
+  summary: List config pool values
   tags:
     - Agents
-  description: Retrieves a paginated list of agent pool values
+  description: Retrieves a paginated list of config pool values
   x-auth-permissions:
     - role: admin
-      permission: all agent pool values
+      permission: all config pool values
   parameters:
     - name: page
       in: query
@@ -31,13 +31,13 @@ get:
         items:
           type: string
       description: Filter by name (case-insensitive substring match, can specify multiple values)
-    - name: agentPoolId
+    - name: configPoolId
       in: query
       schema:
         type: array
         items:
           $ref: "../components/schemas/common.yaml#/properties.UUID"
-      description: Filter by agent pool ID (can specify multiple values)
+      description: Filter by config pool ID (can specify multiple values)
     - name: agentId
       in: query
       schema:
@@ -47,7 +47,7 @@ get:
       description: Filter by agent ID (can specify multiple values)
   responses:
     "200":
-      description: A paginated list of agent pool values
+      description: A paginated list of config pool values
       content:
         application/json:
           schema:
@@ -58,17 +58,17 @@ get:
                   items:
                     type: array
                     items:
-                      $ref: "../components/schemas/agent_pool_values.yaml#/AgentPoolValueRes"
+                      $ref: "../components/schemas/config_pool_values.yaml#/ConfigPoolValueRes"
     "401":
       $ref: "../components/responses.yaml#/Unauthorized"
     "403":
       $ref: "../components/responses.yaml#/Forbidden"
 post:
-  operationId: agentPoolValuesCreate
-  summary: Create an agent pool value
+  operationId: configPoolValuesCreate
+  summary: Create an config pool value
   tags:
     - Agents
-  description: Creates a new agent pool value
+  description: Creates a new config pool value
   x-auth-permissions:
     - role: admin
       permission: always
@@ -77,14 +77,14 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../components/schemas/agent_pool_values.yaml#/CreateAgentPoolValueReq"
+          $ref: "../components/schemas/config_pool_values.yaml#/CreateConfigPoolValueReq"
   responses:
     "201":
-      description: Agent pool value created successfully
+      description: Config pool value created successfully
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/agent_pool_values.yaml#/AgentPoolValueRes"
+            $ref: "../components/schemas/config_pool_values.yaml#/ConfigPoolValueRes"
     "400":
       $ref: "../components/responses.yaml#/BadRequest"
     "401":

@@ -154,15 +154,15 @@ func WithServicePoolValue(t *ServicePoolValue) EventOption {
 	}
 }
 
-// WithAgentPool sets the entity ID for the event
-func WithAgentPool(t *AgentPool) EventOption {
+// WithConfigPool sets the entity ID for the event
+func WithConfigPool(t *ConfigPool) EventOption {
 	return func(e *Event) error {
 		e.EntityID = &t.ID
 		return nil
 	}
 }
 
-func WithAgentPoolValue(t *AgentPoolValue) EventOption {
+func WithConfigPoolValue(t *ConfigPoolValue) EventOption {
 	return func(e *Event) error {
 		e.EntityID = &t.ID
 		return nil

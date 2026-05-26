@@ -10,10 +10,18 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestSchemaAgentPoolGenerator_Generate(t *testing.T) {
+func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 	ctx := context.Background()
 	poolID := properties.UUID(uuid.New())
 	agentID := properties.UUID(uuid.New())
+	providerID := properties.UUID(uuid.New())
+
+	matchProvider := mock.MatchedBy(func(p *properties.UUID) bool {
+		return p != nil && *p == providerID
+	})
+	matchGlobal := mock.MatchedBy(func(p *properties.UUID) bool {
+		return p == nil
+	})
 
 	tests := []struct {
 		name         string
@@ -28,36 +36,101 @@ func TestSchemaAgentPoolGenerator_Generate(t *testing.T) {
 		errSubstr    string
 	}{
 		{
-			name:         "happy path",
+			name:         "resolves provider-scoped pool when present",
 			config:       map[string]any{"poolType": "public_ip"},
 			currentValue: nil,
 			agentID:      &agentID,
 			withStore:    true,
 			setupMock: func(store *MockStore) {
-				poolRepo := NewMockAgentPoolRepository(t)
-				valueRepo := NewMockAgentPoolValueRepository(t)
+				poolRepo := NewMockConfigPoolRepository(t)
+				valueRepo := NewMockConfigPoolValueRepository(t)
 
-				pool := &AgentPool{
+				pool := &ConfigPool{
 					BaseEntity:    BaseEntity{ID: poolID},
 					Type:          "public_ip",
 					PropertyType:  "string",
 					GeneratorType: PoolGeneratorList,
 				}
-				poolRepo.On("FindByType", ctx, "public_ip").Return(pool, nil)
-				valueRepo.On("FindAvailable", ctx, poolID).Return([]*AgentPoolValue{
-					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolID, Value: "192.168.1.10"},
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).Return(pool, nil)
+				valueRepo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "192.168.1.10"},
 				}, nil)
-				valueRepo.On("Update", ctx, mock.MatchedBy(func(v *AgentPoolValue) bool {
+				valueRepo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
 					return v.AgentID != nil && *v.AgentID == agentID &&
 						v.PropertyName != nil && *v.PropertyName == "testProp" &&
 						v.AllocatedAt != nil
 				})).Return(nil)
 
-				store.On("AgentPoolRepo").Return(poolRepo)
-				store.On("AgentPoolValueRepo").Return(valueRepo)
+				store.On("ConfigPoolRepo").Return(poolRepo)
+				store.On("ConfigPoolValueRepo").Return(valueRepo)
 			},
 			wantValue: "192.168.1.10",
 			wantGen:   true,
+		},
+		{
+			name:         "falls back to global when provider-scoped pool not found",
+			config:       map[string]any{"poolType": "public_ip"},
+			currentValue: nil,
+			agentID:      &agentID,
+			withStore:    true,
+			setupMock: func(store *MockStore) {
+				poolRepo := NewMockConfigPoolRepository(t)
+				valueRepo := NewMockConfigPoolValueRepository(t)
+
+				globalPool := &ConfigPool{
+					BaseEntity:    BaseEntity{ID: poolID},
+					Type:          "public_ip",
+					PropertyType:  "string",
+					GeneratorType: PoolGeneratorList,
+				}
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).
+					Return(nil, NewNotFoundErrorf("config pool with type public_ip for participant"))
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchGlobal).
+					Return(globalPool, nil)
+				valueRepo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "10.0.0.5"},
+				}, nil)
+				valueRepo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+					return v.AgentID != nil && *v.AgentID == agentID
+				})).Return(nil)
+
+				store.On("ConfigPoolRepo").Return(poolRepo)
+				store.On("ConfigPoolValueRepo").Return(valueRepo)
+			},
+			wantValue: "10.0.0.5",
+			wantGen:   true,
+		},
+		{
+			name:         "surfaces non-NotFound error from provider lookup",
+			config:       map[string]any{"poolType": "public_ip"},
+			currentValue: nil,
+			agentID:      &agentID,
+			withStore:    true,
+			setupMock: func(store *MockStore) {
+				poolRepo := NewMockConfigPoolRepository(t)
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).
+					Return(nil, errors.New("db down"))
+				store.On("ConfigPoolRepo").Return(poolRepo)
+			},
+			wantErr:   true,
+			errSubstr: "db down",
+		},
+		{
+			name:         "surfaces NotFound when neither provider nor global pool exists",
+			config:       map[string]any{"poolType": "public_ip"},
+			currentValue: nil,
+			agentID:      &agentID,
+			withStore:    true,
+			setupMock: func(store *MockStore) {
+				poolRepo := NewMockConfigPoolRepository(t)
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).
+					Return(nil, NewNotFoundErrorf("config pool with type public_ip for participant"))
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchGlobal).
+					Return(nil, NewNotFoundErrorf("global config pool with type public_ip"))
+				store.On("ConfigPoolRepo").Return(poolRepo)
+			},
+			wantErr:   true,
+			errSubstr: "public_ip",
 		},
 		{
 			name:         "skip when value exists",
@@ -120,40 +193,26 @@ func TestSchemaAgentPoolGenerator_Generate(t *testing.T) {
 			errSubstr:    "missing store",
 		},
 		{
-			name:         "FindByType errors",
-			config:       map[string]any{"poolType": "public_ip"},
-			currentValue: nil,
-			agentID:      &agentID,
-			withStore:    true,
-			setupMock: func(store *MockStore) {
-				poolRepo := NewMockAgentPoolRepository(t)
-				poolRepo.On("FindByType", ctx, "public_ip").Return(nil, errors.New("pool lookup boom"))
-				store.On("AgentPoolRepo").Return(poolRepo)
-			},
-			wantErr:   true,
-			errSubstr: "pool lookup boom",
-		},
-		{
 			name:         "no available values",
 			config:       map[string]any{"poolType": "public_ip"},
 			currentValue: nil,
 			agentID:      &agentID,
 			withStore:    true,
 			setupMock: func(store *MockStore) {
-				poolRepo := NewMockAgentPoolRepository(t)
-				valueRepo := NewMockAgentPoolValueRepository(t)
+				poolRepo := NewMockConfigPoolRepository(t)
+				valueRepo := NewMockConfigPoolValueRepository(t)
 
-				pool := &AgentPool{
+				pool := &ConfigPool{
 					BaseEntity:    BaseEntity{ID: poolID},
 					Type:          "public_ip",
 					PropertyType:  "string",
 					GeneratorType: PoolGeneratorList,
 				}
-				poolRepo.On("FindByType", ctx, "public_ip").Return(pool, nil)
-				valueRepo.On("FindAvailable", ctx, poolID).Return([]*AgentPoolValue{}, nil)
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).Return(pool, nil)
+				valueRepo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{}, nil)
 
-				store.On("AgentPoolRepo").Return(poolRepo)
-				store.On("AgentPoolValueRepo").Return(valueRepo)
+				store.On("ConfigPoolRepo").Return(poolRepo)
+				store.On("ConfigPoolValueRepo").Return(valueRepo)
 			},
 			wantErr:   true,
 			errSubstr: "no available values",
@@ -165,23 +224,23 @@ func TestSchemaAgentPoolGenerator_Generate(t *testing.T) {
 			agentID:      &agentID,
 			withStore:    true,
 			setupMock: func(store *MockStore) {
-				poolRepo := NewMockAgentPoolRepository(t)
-				valueRepo := NewMockAgentPoolValueRepository(t)
+				poolRepo := NewMockConfigPoolRepository(t)
+				valueRepo := NewMockConfigPoolValueRepository(t)
 
-				pool := &AgentPool{
+				pool := &ConfigPool{
 					BaseEntity:    BaseEntity{ID: poolID},
 					Type:          "public_ip",
 					PropertyType:  "string",
 					GeneratorType: PoolGeneratorList,
 				}
-				poolRepo.On("FindByType", ctx, "public_ip").Return(pool, nil)
-				valueRepo.On("FindAvailable", ctx, poolID).Return([]*AgentPoolValue{
-					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolID, Value: "x"},
+				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).Return(pool, nil)
+				valueRepo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "x"},
 				}, nil)
-				valueRepo.On("Update", ctx, mock.AnythingOfType("*domain.AgentPoolValue")).Return(errors.New("update boom"))
+				valueRepo.On("Update", ctx, mock.AnythingOfType("*domain.ConfigPoolValue")).Return(errors.New("update boom"))
 
-				store.On("AgentPoolRepo").Return(poolRepo)
-				store.On("AgentPoolValueRepo").Return(valueRepo)
+				store.On("ConfigPoolRepo").Return(poolRepo)
+				store.On("ConfigPoolValueRepo").Return(valueRepo)
 			},
 			wantErr:   true,
 			errSubstr: "update boom",
@@ -191,14 +250,14 @@ func TestSchemaAgentPoolGenerator_Generate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var store *MockStore
-			schemaCtx := AgentConfigContext{AgentID: tt.agentID}
+			schemaCtx := AgentConfigContext{AgentID: tt.agentID, AgentProviderID: providerID}
 			if tt.withStore {
 				store = NewMockStore(t)
 				tt.setupMock(store)
 				schemaCtx.Store = store
 			}
 
-			gen := NewSchemaAgentPoolGenerator()
+			gen := NewSchemaConfigPoolGenerator()
 			got, generated, err := gen.Generate(ctx, schemaCtx, "testProp", tt.currentValue, tt.config)
 
 			if tt.wantErr {
@@ -223,8 +282,8 @@ func TestSchemaAgentPoolGenerator_Generate(t *testing.T) {
 	}
 }
 
-func TestSchemaAgentPoolGenerator_ValidateConfig(t *testing.T) {
-	gen := NewSchemaAgentPoolGenerator()
+func TestSchemaConfigPoolGenerator_ValidateConfig(t *testing.T) {
+	gen := NewSchemaConfigPoolGenerator()
 
 	tests := []struct {
 		name      string

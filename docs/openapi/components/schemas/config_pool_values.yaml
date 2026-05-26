@@ -1,11 +1,11 @@
-CreateAgentPoolValueReq:
+CreateConfigPoolValueReq:
   type: object
   required:
-    - agentPoolId
+    - configPoolId
     - name
     - value
   properties:
-    agentPoolId:
+    configPoolId:
       $ref: "./common.yaml#/properties.UUID"
     name:
       type: string
@@ -15,7 +15,7 @@ CreateAgentPoolValueReq:
       description: "Any JSON value (string, number, object, array)"
       example: "192.168.1.10"
 
-AgentPoolValueRes:
+ConfigPoolValueRes:
   type: object
   properties:
     id:
@@ -26,11 +26,11 @@ AgentPoolValueRes:
     value:
       description: "Any JSON value (string, number, object, array)"
       example: "192.168.1.10"
-    agentPoolId:
+    configPoolId:
       $ref: "./common.yaml#/properties.UUID"
-    agentPool:
-      $ref: "./agent_pools.yaml#/AgentPoolRes"
-      description: "The agent pool this value belongs to"
+    configPool:
+      $ref: "./config_pools.yaml#/ConfigPoolRes"
+      description: "The config pool this value belongs to"
     agentId:
       $ref: "./common.yaml#/properties.UUID"
       description: "Agent this value is allocated to (null if available)"

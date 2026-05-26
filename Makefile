@@ -14,3 +14,8 @@ e2e-down:
 # `make e2e-down` (or just `docker compose stop`) when you're done.
 e2e: e2e-up
 	go test -tags e2e -timeout 5m -count=1 ./test/e2e/...
+
+dev: ## Start development
+	docker compose up postgres keycloak keycloak-provisioning --wait
+	trap 'kill %1 2>/dev/null; docker compose down' EXIT; \
+	air

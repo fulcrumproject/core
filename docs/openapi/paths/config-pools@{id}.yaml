@@ -1,9 +1,9 @@
 get:
-  operationId: agentPoolsGet
-  summary: Get an agent pool by ID
+  operationId: configPoolsGet
+  summary: Get an config pool by ID
   tags:
     - Agents
-  description: Retrieves details of a specific agent pool
+  description: Retrieves details of a specific config pool
   x-auth-permissions:
     - role: admin
       permission: always
@@ -17,23 +17,23 @@ get:
         $ref: "../components/schemas/common.yaml#/properties.UUID"
   responses:
     "200":
-      description: Agent pool retrieved successfully
+      description: Config pool retrieved successfully
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/agent_pools.yaml#/AgentPoolRes"
+            $ref: "../components/schemas/config_pools.yaml#/ConfigPoolRes"
     "401":
       $ref: "../components/responses.yaml#/Unauthorized"
     "403":
       $ref: "../components/responses.yaml#/Forbidden"
     "404":
-      description: Agent pool not found
+      description: Config pool not found
 patch:
-  operationId: agentPoolsUpdate
-  summary: Update an agent pool
+  operationId: configPoolsUpdate
+  summary: Update an config pool
   tags:
     - Agents
-  description: Updates an existing agent pool
+  description: Updates an existing config pool
   x-auth-permissions:
     - role: admin
       permission: always
@@ -48,14 +48,14 @@ patch:
     content:
       application/json:
         schema:
-          $ref: "../components/schemas/agent_pools.yaml#/UpdateAgentPoolReq"
+          $ref: "../components/schemas/config_pools.yaml#/UpdateConfigPoolReq"
   responses:
     "200":
-      description: Agent pool updated successfully
+      description: Config pool updated successfully
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/agent_pools.yaml#/AgentPoolRes"
+            $ref: "../components/schemas/config_pools.yaml#/ConfigPoolRes"
     "400":
       $ref: "../components/responses.yaml#/BadRequest"
     "401":
@@ -63,13 +63,13 @@ patch:
     "403":
       $ref: "../components/responses.yaml#/Forbidden"
     "404":
-      description: Agent pool not found
+      description: Config pool not found
 delete:
-  operationId: agentPoolsDelete
-  summary: Delete an agent pool
+  operationId: configPoolsDelete
+  summary: Delete an config pool
   tags:
     - Agents
-  description: Deletes an existing agent pool
+  description: Deletes an existing config pool
   x-auth-permissions:
     - role: admin
       permission: always
@@ -81,10 +81,10 @@ delete:
         $ref: "../components/schemas/common.yaml#/properties.UUID"
   responses:
     "204":
-      description: Agent pool deleted successfully
+      description: Config pool deleted successfully
     "401":
       $ref: "../components/responses.yaml#/Unauthorized"
     "403":
       $ref: "../components/responses.yaml#/Forbidden"
     "404":
-      description: Agent pool not found
+      description: Config pool not found

@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewAgentPool(t *testing.T) {
+func TestNewConfigPool(t *testing.T) {
 	config := properties.JSON{"values": []string{"a", "b"}}
-	params := CreateAgentPoolParams{
+	params := CreateConfigPoolParams{
 		Name:            "Test Pool",
 		Type:            "publicIp",
 		PropertyType:    "string",
@@ -24,7 +24,7 @@ func TestNewAgentPool(t *testing.T) {
 		GeneratorConfig: &config,
 	}
 
-	pool := NewAgentPool(params)
+	pool := NewConfigPool(params)
 
 	assert.Equal(t, "Test Pool", pool.Name)
 	assert.Equal(t, "publicIp", pool.Type)
@@ -33,16 +33,16 @@ func TestNewAgentPool(t *testing.T) {
 	assert.Equal(t, &config, pool.GeneratorConfig)
 }
 
-func TestAgentPool_Validate(t *testing.T) {
+func TestConfigPool_Validate(t *testing.T) {
 	tests := []struct {
 		name      string
-		pool      *AgentPool
+		pool      *ConfigPool
 		wantError bool
 		errorMsg  string
 	}{
 		{
 			name: "valid list pool",
-			pool: &AgentPool{
+			pool: &ConfigPool{
 				Name:          "Valid Pool",
 				Type:          "publicIp",
 				PropertyType:  "string",
@@ -52,40 +52,40 @@ func TestAgentPool_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid subnet generator type",
-			pool: &AgentPool{
+			pool: &ConfigPool{
 				Name:          "Valid Subnet Pool",
 				Type:          "internalIp",
 				PropertyType:  "json",
 				GeneratorType: PoolGeneratorSubnet,
 			},
 			wantError: true,
-			errorMsg:  "invalid generator type for agent pool",
+			errorMsg:  "invalid generator type for config pool",
 		},
 		{
 			name: "empty name",
-			pool: &AgentPool{
+			pool: &ConfigPool{
 				Name:          "",
 				Type:          "publicIp",
 				PropertyType:  "string",
 				GeneratorType: PoolGeneratorList,
 			},
 			wantError: true,
-			errorMsg:  "agent pool name cannot be empty",
+			errorMsg:  "config pool name cannot be empty",
 		},
 		{
 			name: "empty type",
-			pool: &AgentPool{
+			pool: &ConfigPool{
 				Name:          "Test Pool",
 				Type:          "",
 				PropertyType:  "string",
 				GeneratorType: PoolGeneratorList,
 			},
 			wantError: true,
-			errorMsg:  "agent pool type cannot be empty",
+			errorMsg:  "config pool type cannot be empty",
 		},
 		{
 			name: "invalid property type",
-			pool: &AgentPool{
+			pool: &ConfigPool{
 				Name:          "Test Pool",
 				Type:          "publicIp",
 				PropertyType:  "invalid",
@@ -96,7 +96,7 @@ func TestAgentPool_Validate(t *testing.T) {
 		},
 		{
 			name: "empty property type",
-			pool: &AgentPool{
+			pool: &ConfigPool{
 				Name:          "Test Pool",
 				Type:          "publicIp",
 				PropertyType:  "",
@@ -107,7 +107,7 @@ func TestAgentPool_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid generator type",
-			pool: &AgentPool{
+			pool: &ConfigPool{
 				Name:          "Test Pool",
 				Type:          "publicIp",
 				PropertyType:  "string",
@@ -131,39 +131,39 @@ func TestAgentPool_Validate(t *testing.T) {
 	}
 }
 
-func TestAgentPool_TableName(t *testing.T) {
-	pool := &AgentPool{}
-	assert.Equal(t, "agent_pools", pool.TableName())
+func TestConfigPool_TableName(t *testing.T) {
+	pool := &ConfigPool{}
+	assert.Equal(t, "config_pools", pool.TableName())
 }
 
-func TestAgentPool_Update(t *testing.T) {
+func TestConfigPool_Update(t *testing.T) {
 	tests := []struct {
 		name           string
-		params         UpdateAgentPoolParams
+		params         UpdateConfigPoolParams
 		expectedName   string
 		expectedConfig *properties.JSON
 	}{
 		{
 			name:           "update name only",
-			params:         UpdateAgentPoolParams{Name: helpers.StringPtr("New Name")},
+			params:         UpdateConfigPoolParams{Name: helpers.StringPtr("New Name")},
 			expectedName:   "New Name",
 			expectedConfig: nil,
 		},
 		{
 			name:           "update config only",
-			params:         UpdateAgentPoolParams{GeneratorConfig: &properties.JSON{"key": "val"}},
+			params:         UpdateConfigPoolParams{GeneratorConfig: &properties.JSON{"key": "val"}},
 			expectedName:   "Original",
 			expectedConfig: &properties.JSON{"key": "val"},
 		},
 		{
 			name:           "update both",
-			params:         UpdateAgentPoolParams{Name: helpers.StringPtr("Updated"), GeneratorConfig: &properties.JSON{"a": "b"}},
+			params:         UpdateConfigPoolParams{Name: helpers.StringPtr("Updated"), GeneratorConfig: &properties.JSON{"a": "b"}},
 			expectedName:   "Updated",
 			expectedConfig: &properties.JSON{"a": "b"},
 		},
 		{
 			name:           "update nothing",
-			params:         UpdateAgentPoolParams{},
+			params:         UpdateConfigPoolParams{},
 			expectedName:   "Original",
 			expectedConfig: nil,
 		},
@@ -171,7 +171,7 @@ func TestAgentPool_Update(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pool := &AgentPool{Name: "Original"}
+			pool := &ConfigPool{Name: "Original"}
 			pool.Update(tt.params)
 			assert.Equal(t, tt.expectedName, pool.Name)
 			assert.Equal(t, tt.expectedConfig, pool.GeneratorConfig)
@@ -179,7 +179,111 @@ func TestAgentPool_Update(t *testing.T) {
 	}
 }
 
-func TestAgentPoolCommander_Delete(t *testing.T) {
+func TestConfigPoolCommander_Create(t *testing.T) {
+	participantID := properties.UUID(uuid.New())
+
+	baseParams := func() CreateConfigPoolParams {
+		return CreateConfigPoolParams{
+			Name:          "Public IP",
+			Type:          "publicIp",
+			PropertyType:  "string",
+			GeneratorType: PoolGeneratorList,
+		}
+	}
+
+	tests := []struct {
+		name              string
+		params            CreateConfigPoolParams
+		existingSameScope bool // FindByTypeAndParticipant returns an existing row
+		wantErr           bool
+		errContains       string
+		assertOnCreate    func(t *testing.T, p *ConfigPool)
+	}{
+		{
+			name:   "creates global pool when ParticipantID nil",
+			params: baseParams(),
+			assertOnCreate: func(t *testing.T, p *ConfigPool) {
+				assert.Nil(t, p.ParticipantID, "global pool must keep ParticipantID nil")
+			},
+		},
+		{
+			name: "creates participant-owned pool when ParticipantID set",
+			params: func() CreateConfigPoolParams {
+				p := baseParams()
+				p.ParticipantID = &participantID
+				return p
+			}(),
+			assertOnCreate: func(t *testing.T, p *ConfigPool) {
+				require.NotNil(t, p.ParticipantID)
+				assert.Equal(t, participantID, *p.ParticipantID)
+			},
+		},
+		{
+			name:              "rejects duplicate within global scope",
+			params:            baseParams(),
+			existingSameScope: true,
+			wantErr:           true,
+			errContains:       "already exists",
+		},
+		{
+			name: "rejects duplicate within participant scope",
+			params: func() CreateConfigPoolParams {
+				p := baseParams()
+				p.ParticipantID = &participantID
+				return p
+			}(),
+			existingSameScope: true,
+			wantErr:           true,
+			errContains:       "already exists",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ms := setupMockStore(t)
+
+			poolRepo := NewMockConfigPoolRepository(t)
+			if tt.existingSameScope {
+				poolRepo.On("FindByTypeAndParticipant", mock.Anything, tt.params.Type, tt.params.ParticipantID).
+					Return(&ConfigPool{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}}, nil).Once()
+			} else {
+				poolRepo.On("FindByTypeAndParticipant", mock.Anything, tt.params.Type, tt.params.ParticipantID).
+					Return(nil, NewNotFoundErrorf("not found")).Once()
+				poolRepo.On("Create", mock.Anything, mock.MatchedBy(func(p *ConfigPool) bool {
+					if tt.params.ParticipantID == nil {
+						return p.ParticipantID == nil
+					}
+					return p.ParticipantID != nil && *p.ParticipantID == *tt.params.ParticipantID
+				})).Return(nil).Once()
+			}
+			ms.On("ConfigPoolRepo").Return(poolRepo).Maybe()
+
+			eventRepo := NewMockEventRepository(t)
+			if !tt.wantErr {
+				eventRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Once()
+			}
+			ms.On("EventRepo").Return(eventRepo).Maybe()
+
+			ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
+			cmd := NewConfigPoolCommander(ms)
+
+			pool, err := cmd.Create(ctx, tt.params)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errContains)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, pool)
+			if tt.assertOnCreate != nil {
+				tt.assertOnCreate(t, pool)
+			}
+		})
+	}
+}
+
+func TestConfigPoolCommander_Delete(t *testing.T) {
 	poolID := properties.UUID(uuid.New())
 
 	tests := []struct {
@@ -217,8 +321,8 @@ func TestAgentPoolCommander_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := setupMockStore(t)
 
-			poolRepo := NewMockAgentPoolRepository(t)
-			poolRepo.On("Get", mock.Anything, poolID).Return(&AgentPool{
+			poolRepo := NewMockConfigPoolRepository(t)
+			poolRepo.On("Get", mock.Anything, poolID).Return(&ConfigPool{
 				BaseEntity:    BaseEntity{ID: poolID},
 				Name:          "p",
 				Type:          "publicIp",
@@ -228,11 +332,11 @@ func TestAgentPoolCommander_Delete(t *testing.T) {
 			if tt.expectDel {
 				poolRepo.On("Delete", mock.Anything, poolID).Return(nil).Once()
 			}
-			ms.On("AgentPoolRepo").Return(poolRepo).Maybe()
+			ms.On("ConfigPoolRepo").Return(poolRepo).Maybe()
 
-			valueRepo := NewMockAgentPoolValueRepository(t)
+			valueRepo := NewMockConfigPoolValueRepository(t)
 			valueRepo.On("CountByPool", mock.Anything, poolID).Return(tt.count, tt.countErr).Once()
-			ms.On("AgentPoolValueRepo").Return(valueRepo).Maybe()
+			ms.On("ConfigPoolValueRepo").Return(valueRepo).Maybe()
 
 			eventRepo := NewMockEventRepository(t)
 			if tt.expectEvent {
@@ -241,7 +345,7 @@ func TestAgentPoolCommander_Delete(t *testing.T) {
 			ms.On("EventRepo").Return(eventRepo).Maybe()
 
 			ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
-			cmd := NewAgentPoolCommander(ms)
+			cmd := NewConfigPoolCommander(ms)
 			err := cmd.Delete(ctx, poolID)
 
 			if tt.wantErr {

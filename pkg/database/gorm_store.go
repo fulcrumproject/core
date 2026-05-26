@@ -16,8 +16,8 @@ type GormStore struct {
 	agentTypeRepo         domain.AgentTypeRepository
 	agentRepo             domain.AgentRepository
 	agentInstallTokenRepo domain.AgentInstallTokenRepository
-	agentPoolRepo         domain.AgentPoolRepository
-	agentPoolValueRepo    domain.AgentPoolValueRepository
+	configPoolRepo        domain.ConfigPoolRepository
+	configPoolValueRepo   domain.ConfigPoolValueRepository
 	serviceTypeRepo       domain.ServiceTypeRepository
 	serviceGroupRepo      domain.ServiceGroupRepository
 	serviceRepo           domain.ServiceRepository
@@ -84,18 +84,18 @@ func (s *GormStore) AgentInstallTokenRepo() domain.AgentInstallTokenRepository {
 	return s.agentInstallTokenRepo
 }
 
-func (s *GormStore) AgentPoolRepo() domain.AgentPoolRepository {
-	if s.agentPoolRepo == nil {
-		s.agentPoolRepo = NewAgentPoolRepository(s.db)
+func (s *GormStore) ConfigPoolRepo() domain.ConfigPoolRepository {
+	if s.configPoolRepo == nil {
+		s.configPoolRepo = NewConfigPoolRepository(s.db)
 	}
-	return s.agentPoolRepo
+	return s.configPoolRepo
 }
 
-func (s *GormStore) AgentPoolValueRepo() domain.AgentPoolValueRepository {
-	if s.agentPoolValueRepo == nil {
-		s.agentPoolValueRepo = NewAgentPoolValueRepository(s.db)
+func (s *GormStore) ConfigPoolValueRepo() domain.ConfigPoolValueRepository {
+	if s.configPoolValueRepo == nil {
+		s.configPoolValueRepo = NewConfigPoolValueRepository(s.db)
 	}
-	return s.agentPoolValueRepo
+	return s.configPoolValueRepo
 }
 
 func (s *GormStore) ServiceTypeRepo() domain.ServiceTypeRepository {
@@ -202,12 +202,12 @@ func (s *GormReadOnlyStore) AgentQuerier() domain.AgentQuerier {
 	return NewAgentRepository(s.db)
 }
 
-func (s *GormReadOnlyStore) AgentPoolQuerier() domain.AgentPoolQuerier {
-	return NewAgentPoolRepository(s.db)
+func (s *GormReadOnlyStore) ConfigPoolQuerier() domain.ConfigPoolQuerier {
+	return NewConfigPoolRepository(s.db)
 }
 
-func (s *GormReadOnlyStore) AgentPoolValueQuerier() domain.AgentPoolValueQuerier {
-	return NewAgentPoolValueRepository(s.db)
+func (s *GormReadOnlyStore) ConfigPoolValueQuerier() domain.ConfigPoolValueQuerier {
+	return NewConfigPoolValueRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) TokenQuerier() domain.TokenQuerier {

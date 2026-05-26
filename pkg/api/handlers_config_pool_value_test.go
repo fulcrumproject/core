@@ -14,24 +14,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewAgentPoolValueHandler(t *testing.T) {
-	querier := domain.NewMockAgentPoolValueQuerier(t)
-	commander := domain.NewMockAgentPoolValueCommander(t)
+func TestNewConfigPoolValueHandler(t *testing.T) {
+	querier := domain.NewMockConfigPoolValueQuerier(t)
+	poolQuerier := domain.NewMockConfigPoolQuerier(t)
+	commander := domain.NewMockConfigPoolValueCommander(t)
 	authz := authz.NewMockAuthorizer(t)
 
-	handler := NewAgentPoolValueHandler(querier, commander, authz)
+	handler := NewConfigPoolValueHandler(querier, poolQuerier, commander, authz)
 	assert.NotNil(t, handler)
 	assert.Equal(t, querier, handler.querier)
+	assert.Equal(t, poolQuerier, handler.poolQuerier)
 	assert.Equal(t, commander, handler.commander)
 	assert.Equal(t, authz, handler.authz)
 }
 
-func TestAgentPoolValueHandlerRoutes(t *testing.T) {
-	querier := domain.NewMockAgentPoolValueQuerier(t)
-	commander := domain.NewMockAgentPoolValueCommander(t)
+func TestConfigPoolValueHandlerRoutes(t *testing.T) {
+	querier := domain.NewMockConfigPoolValueQuerier(t)
+	poolQuerier := domain.NewMockConfigPoolQuerier(t)
+	commander := domain.NewMockConfigPoolValueCommander(t)
 	authz := authz.NewMockAuthorizer(t)
 
-	handler := NewAgentPoolValueHandler(querier, commander, authz)
+	handler := NewConfigPoolValueHandler(querier, poolQuerier, commander, authz)
 
 	routeFunc := handler.Routes()
 	assert.NotNil(t, routeFunc)
@@ -55,7 +58,7 @@ func TestAgentPoolValueHandlerRoutes(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAgentPoolValueToRes(t *testing.T) {
+func TestConfigPoolValueToRes(t *testing.T) {
 	id := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 	poolID := uuid.MustParse("660e8400-e29b-41d4-a716-446655440000")
 	agentID := uuid.MustParse("770e8400-e29b-41d4-a716-446655440000")
@@ -66,18 +69,18 @@ func TestAgentPoolValueToRes(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		value            *domain.AgentPoolValue
+		value            *domain.ConfigPoolValue
 		expectedAgentID  *properties.UUID
 		expectedAllocAt  *JSONUTCTime
 		expectedPropName *string
 	}{
 		{
 			name: "not allocated",
-			value: &domain.AgentPoolValue{
-				BaseEntity:  domain.BaseEntity{ID: properties.UUID(id), CreatedAt: createdAt, UpdatedAt: updatedAt},
-				Name:        "value-1",
-				Value:       "192.168.1.1",
-				AgentPoolID: properties.UUID(poolID),
+			value: &domain.ConfigPoolValue{
+				BaseEntity:   domain.BaseEntity{ID: properties.UUID(id), CreatedAt: createdAt, UpdatedAt: updatedAt},
+				Name:         "value-1",
+				Value:        "192.168.1.1",
+				ConfigPoolID: properties.UUID(poolID),
 			},
 			expectedAgentID:  nil,
 			expectedAllocAt:  nil,
@@ -85,11 +88,11 @@ func TestAgentPoolValueToRes(t *testing.T) {
 		},
 		{
 			name: "allocated",
-			value: &domain.AgentPoolValue{
+			value: &domain.ConfigPoolValue{
 				BaseEntity:   domain.BaseEntity{ID: properties.UUID(id), CreatedAt: createdAt, UpdatedAt: updatedAt},
 				Name:         "value-2",
 				Value:        "192.168.1.2",
-				AgentPoolID:  properties.UUID(poolID),
+				ConfigPoolID: properties.UUID(poolID),
 				AgentID:      (*properties.UUID)(&agentID),
 				PropertyName: &propName,
 				AllocatedAt:  &allocatedAt,
@@ -102,12 +105,12 @@ func TestAgentPoolValueToRes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := AgentPoolValueToRes(tt.value)
+			res := ConfigPoolValueToRes(tt.value)
 
 			assert.Equal(t, properties.UUID(id), res.ID)
 			assert.Equal(t, tt.value.Name, res.Name)
 			assert.Equal(t, tt.value.Value, res.Value)
-			assert.Equal(t, properties.UUID(poolID), res.AgentPoolID)
+			assert.Equal(t, properties.UUID(poolID), res.ConfigPoolID)
 			assert.Equal(t, tt.expectedAgentID, res.AgentID)
 			assert.Equal(t, tt.expectedPropName, res.PropertyName)
 			assert.Equal(t, tt.expectedAllocAt, res.AllocatedAt)

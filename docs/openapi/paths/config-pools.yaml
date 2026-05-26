@@ -1,14 +1,14 @@
 get:
-  operationId: agentPoolsList
-  summary: List agent pools
+  operationId: configPoolsList
+  summary: List config pools
   tags:
     - Agents
-  description: Retrieves a paginated list of agent pools
+  description: Retrieves a paginated list of config pools
   x-auth-permissions:
     - role: admin
-      permission: all agent pools
+      permission: all config pools
     - role: agent
-      permission: all agent pools (read-only)
+      permission: all config pools (read-only)
   parameters:
     - name: page
       in: query
@@ -48,9 +48,17 @@ get:
           type: string
           enum: [list]
       description: Filter by generator type (can specify multiple values)
+    - name: participantId
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+          format: uuid
+      description: Filter by owning participant ID (can specify multiple values)
   responses:
     "200":
-      description: A paginated list of agent pools
+      description: A paginated list of config pools
       content:
         application/json:
           schema:
@@ -61,17 +69,17 @@ get:
                   items:
                     type: array
                     items:
-                      $ref: "../components/schemas/agent_pools.yaml#/AgentPoolRes"
+                      $ref: "../components/schemas/config_pools.yaml#/ConfigPoolRes"
     "401":
       $ref: "../components/responses.yaml#/Unauthorized"
     "403":
       $ref: "../components/responses.yaml#/Forbidden"
 post:
-  operationId: agentPoolsCreate
-  summary: Create an agent pool
+  operationId: configPoolsCreate
+  summary: Create a config pool
   tags:
     - Agents
-  description: Creates a new agent pool
+  description: Creates a new config pool
   x-auth-permissions:
     - role: admin
       permission: always
@@ -80,14 +88,14 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../components/schemas/agent_pools.yaml#/CreateAgentPoolReq"
+          $ref: "../components/schemas/config_pools.yaml#/CreateConfigPoolReq"
   responses:
     "201":
-      description: Agent pool created successfully
+      description: Config pool created successfully
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/agent_pools.yaml#/AgentPoolRes"
+            $ref: "../components/schemas/config_pools.yaml#/ConfigPoolRes"
     "400":
       $ref: "../components/responses.yaml#/BadRequest"
     "401":

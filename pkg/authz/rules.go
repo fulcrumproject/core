@@ -8,8 +8,8 @@ const (
 	ObjectTypeParticipant       ObjectType = "participant"
 	ObjectTypeAgent             ObjectType = "agent"
 	ObjectTypeAgentType         ObjectType = "agent_type"
-	ObjectTypeAgentPool         ObjectType = "agent_pool"
-	ObjectTypeAgentPoolValue    ObjectType = "agent_pool_value"
+	ObjectTypeConfigPool        ObjectType = "config_pool"
+	ObjectTypeConfigPoolValue   ObjectType = "config_pool_value"
 	ObjectTypeService           ObjectType = "service"
 	ObjectTypeServiceType       ObjectType = "service_type"
 	ObjectTypeServiceGroup      ObjectType = "service_group"
@@ -148,15 +148,15 @@ var Rules = []AuthorizationRule{
 	{Object: ObjectTypeKeycloakUser, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
 	{Object: ObjectTypeKeycloakUser, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
 
-	// AgentPool permissions
-	{Object: ObjectTypeAgentPool, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin}},
-	{Object: ObjectTypeAgentPool, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
-	{Object: ObjectTypeAgentPool, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
-	{Object: ObjectTypeAgentPool, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
+	// ConfigPool permissions — admin manages global + any participant; participant manages own
+	{Object: ObjectTypeConfigPool, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeConfigPool, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeConfigPool, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeConfigPool, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 
-	// AgentPoolValue permissions
-	{Object: ObjectTypeAgentPoolValue, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin}},
-	{Object: ObjectTypeAgentPoolValue, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
-	{Object: ObjectTypeAgentPoolValue, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
-	{Object: ObjectTypeAgentPoolValue, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
+	// ConfigPoolValue permissions — scope inherited from parent pool
+	{Object: ObjectTypeConfigPoolValue, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeConfigPoolValue, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeConfigPoolValue, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeConfigPoolValue, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 }

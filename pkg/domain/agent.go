@@ -246,15 +246,15 @@ func (s *agentCommander) Create(
 	}
 
 	if params.ServicePoolSetID != nil {
-    servicePoolSet, err := s.store.ServicePoolSetRepo().Get(ctx, *params.ServicePoolSetID)
-    if err != nil {
-      return nil, NewInvalidInputErrorf("service pool set with ID %s does not exist", params.ServicePoolSetID)
-    }
+		servicePoolSet, err := s.store.ServicePoolSetRepo().Get(ctx, *params.ServicePoolSetID)
+		if err != nil {
+			return nil, NewInvalidInputErrorf("service pool set with ID %s does not exist", params.ServicePoolSetID)
+		}
 
-    if servicePoolSet.ProviderID != params.ProviderID {
-      return nil, NewInvalidInputErrorf("service pool set with ID %s does not belong to provider %s", *params.ServicePoolSetID, params.ProviderID)
-    }
-  }
+		if servicePoolSet.ProviderID != params.ProviderID {
+			return nil, NewInvalidInputErrorf("service pool set with ID %s does not belong to provider %s", *params.ServicePoolSetID, params.ProviderID)
+		}
+	}
 
 	// Pre-generate agent ID upfront so pool generators can stamp allocations with it
 	// within the same transaction as the agent insert.
@@ -269,8 +269,9 @@ func (s *agentCommander) Create(
 		// Validate and process configuration against schema
 		if agent.Configuration != nil {
 			schemaCtx := AgentConfigContext{
-				Store:   store,
-				AgentID: &agentID,
+				Store:           store,
+				AgentID:         &agentID,
+				AgentProviderID: agent.ProviderID,
 			}
 
 			// Convert configuration to map
@@ -330,16 +331,16 @@ func (s *agentCommander) Update(ctx context.Context,
 		return nil, err
 	}
 
-  if params.ServicePoolSetID != nil {
-    servicePoolSet, err := s.store.ServicePoolSetRepo().Get(ctx, *params.ServicePoolSetID)
-    if err != nil {
-      return nil, err
-    }
-  
-    if servicePoolSet.ProviderID != agent.ProviderID {
-      return nil, NewInvalidInputErrorf("service pool set with ID %s does not belong to provider %s", params.ServicePoolSetID, agent.ProviderID)
-    }
-  }
+	if params.ServicePoolSetID != nil {
+		servicePoolSet, err := s.store.ServicePoolSetRepo().Get(ctx, *params.ServicePoolSetID)
+		if err != nil {
+			return nil, err
+		}
+
+		if servicePoolSet.ProviderID != agent.ProviderID {
+			return nil, NewInvalidInputErrorf("service pool set with ID %s does not belong to provider %s", params.ServicePoolSetID, agent.ProviderID)
+		}
+	}
 
 	// Update and validate
 	if params.Status != nil {
@@ -353,8 +354,9 @@ func (s *agentCommander) Update(ctx context.Context,
 		// Done inside the transaction so any pool allocations share the same tx as the save.
 		if params.Configuration != nil && agent.Configuration != nil {
 			schemaCtx := AgentConfigContext{
-				Store:   store,
-				AgentID: &agent.ID,
+				Store:           store,
+				AgentID:         &agent.ID,
+				AgentProviderID: agent.ProviderID,
 			}
 
 			var oldConfigMap map[string]any
@@ -422,22 +424,22 @@ func (s *agentCommander) Delete(ctx context.Context, id properties.UUID) error {
 			return err
 		}
 
-		// Release any AgentPoolValue rows allocated to this agent. Dispatched per pool via
+		// Release any ConfigPoolValue rows allocated to this agent. Dispatched per pool via
 		// the factory so release semantics stay consistent across generator types (list today,
 		// potentially subnet later).
-		allocated, err := store.AgentPoolValueRepo().FindByAgent(ctx, id)
+		allocated, err := store.ConfigPoolValueRepo().FindByAgent(ctx, id)
 		if err != nil {
 			return err
 		}
 		if len(allocated) > 0 {
-			factory := NewDefaultAgentPoolGeneratorFactory(store.AgentPoolValueRepo())
+			factory := NewDefaultConfigPoolGeneratorFactory(store.ConfigPoolValueRepo())
 			seen := make(map[properties.UUID]bool, len(allocated))
 			for _, v := range allocated {
-				if seen[v.AgentPoolID] {
+				if seen[v.ConfigPoolID] {
 					continue
 				}
-				seen[v.AgentPoolID] = true
-				pool, err := store.AgentPoolRepo().Get(ctx, v.AgentPoolID)
+				seen[v.ConfigPoolID] = true
+				pool, err := store.ConfigPoolRepo().Get(ctx, v.ConfigPoolID)
 				if err != nil {
 					return err
 				}

@@ -40,8 +40,8 @@ type App struct {
 	ServicePoolValueHandler  *api.ServicePoolValueHandler
 	ParticipantHandler       *api.ParticipantHandler
 	AgentHandler             *api.AgentHandler
-	AgentPoolHandler         *api.AgentPoolHandler
-	AgentPoolValueHandler    *api.AgentPoolValueHandler
+	ConfigPoolHandler        *api.ConfigPoolHandler
+	ConfigPoolValueHandler   *api.ConfigPoolValueHandler
 	ServiceGroupHandler      *api.ServiceGroupHandler
 	ServiceHandler           *api.ServiceHandler
 	MetricTypeHandler        *api.MetricTypeHandler
@@ -260,9 +260,9 @@ func NewApp() *App {
 	servicePoolCmd := domain.NewServicePoolCommander(store)
 	servicePoolValueCmd := domain.NewServicePoolValueCommander(store)
 
-	// Initialize commander for agent pools
-	agentPoolCmd := domain.NewAgentPoolCommander(store)
-	agentPoolValueCmd := domain.NewAgentPoolValueCommander(store)
+	// Initialize commander for config pools
+	configPoolCmd := domain.NewConfigPoolCommander(store)
+	configPoolValueCmd := domain.NewConfigPoolValueCommander(store)
 
 	return &App{
 		Config:                   cfg,
@@ -285,8 +285,8 @@ func NewApp() *App {
 		ParticipantHandler:       api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz),
 		AgentHandler:             api.NewAgentHandler(store.AgentRepo(), agentCmd, athz),
 		AgentInstallTokenHandler: api.NewAgentInstallTokenHandler(store.AgentInstallTokenRepo(), installTokenCmd, store.AgentRepo().AuthScope, athz, vault, cfg.PublicBaseURL),
-		AgentPoolHandler:         api.NewAgentPoolHandler(store.AgentPoolRepo(), agentPoolCmd, athz),
-		AgentPoolValueHandler:    api.NewAgentPoolValueHandler(store.AgentPoolValueRepo(), agentPoolValueCmd, athz),
+		ConfigPoolHandler:        api.NewConfigPoolHandler(store.ConfigPoolRepo(), configPoolCmd, athz),
+		ConfigPoolValueHandler:   api.NewConfigPoolValueHandler(store.ConfigPoolValueRepo(), store.ConfigPoolRepo(), configPoolValueCmd, athz),
 		AgentTypeHandler:         api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz),
 		ServiceGroupHandler:      api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz),
 		ServiceHandler:           api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, athz),

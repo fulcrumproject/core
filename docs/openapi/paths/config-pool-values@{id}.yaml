@@ -1,9 +1,9 @@
 get:
-  operationId: agentPoolValuesGet
-  summary: Get an agent pool value by ID
+  operationId: configPoolValuesGet
+  summary: Get an config pool value by ID
   tags:
     - Agents
-  description: Retrieves details of a specific agent pool value
+  description: Retrieves details of a specific config pool value
   x-auth-permissions:
     - role: admin
       permission: always
@@ -15,23 +15,23 @@ get:
         $ref: "../components/schemas/common.yaml#/properties.UUID"
   responses:
     "200":
-      description: Agent pool value retrieved successfully
+      description: Config pool value retrieved successfully
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/agent_pool_values.yaml#/AgentPoolValueRes"
+            $ref: "../components/schemas/config_pool_values.yaml#/ConfigPoolValueRes"
     "401":
       $ref: "../components/responses.yaml#/Unauthorized"
     "403":
       $ref: "../components/responses.yaml#/Forbidden"
     "404":
-      description: Agent pool value not found
+      description: Config pool value not found
 delete:
-  operationId: agentPoolValuesDelete
-  summary: Delete an agent pool value
+  operationId: configPoolValuesDelete
+  summary: Delete an config pool value
   tags:
     - Agents
-  description: Deletes an existing agent pool value. Cannot delete a value that is currently allocated.
+  description: Deletes an existing config pool value. Cannot delete a value that is currently allocated.
   x-auth-permissions:
     - role: admin
       permission: always
@@ -43,7 +43,7 @@ delete:
         $ref: "../components/schemas/common.yaml#/properties.UUID"
   responses:
     "204":
-      description: Agent pool value deleted successfully
+      description: Config pool value deleted successfully
     "400":
       description: Cannot delete allocated pool value
     "401":
@@ -51,4 +51,4 @@ delete:
     "403":
       $ref: "../components/responses.yaml#/Forbidden"
     "404":
-      description: Agent pool value not found
+      description: Config pool value not found

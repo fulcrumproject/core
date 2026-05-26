@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestDefaultAgentPoolGeneratorFactory_CreateGenerator(t *testing.T) {
+func TestDefaultConfigPoolGeneratorFactory_CreateGenerator(t *testing.T) {
 	tests := []struct {
 		name          string
 		generatorType PoolGeneratorType
@@ -16,30 +16,30 @@ func TestDefaultAgentPoolGeneratorFactory_CreateGenerator(t *testing.T) {
 		errSubstr     string
 	}{
 		{
-			name:          "list → AgentPoolListGenerator",
+			name:          "list → ConfigPoolListGenerator",
 			generatorType: PoolGeneratorList,
-			wantType:      (*AgentPoolListGenerator)(nil),
+			wantType:      (*ConfigPoolListGenerator)(nil),
 		},
 		{
 			name:          "subnet is not yet supported → error",
 			generatorType: PoolGeneratorSubnet,
 			wantErr:       true,
-			errSubstr:     "unsupported agent pool generator type",
+			errSubstr:     "unsupported config pool generator type",
 		},
 		{
 			name:          "unknown type → error",
 			generatorType: PoolGeneratorType("bogus"),
 			wantErr:       true,
-			errSubstr:     "unsupported agent pool generator type",
+			errSubstr:     "unsupported config pool generator type",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := NewMockAgentPoolValueRepository(t)
-			factory := NewDefaultAgentPoolGeneratorFactory(repo)
+			repo := NewMockConfigPoolValueRepository(t)
+			factory := NewDefaultConfigPoolGeneratorFactory(repo)
 
-			pool := &AgentPool{
+			pool := &ConfigPool{
 				BaseEntity:    BaseEntity{ID: properties.UUID(uuid.New())},
 				GeneratorType: tt.generatorType,
 			}
@@ -57,8 +57,8 @@ func TestDefaultAgentPoolGeneratorFactory_CreateGenerator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if _, ok := gen.(*AgentPoolListGenerator); !ok && tt.generatorType == PoolGeneratorList {
-				t.Errorf("expected *AgentPoolListGenerator, got %T", gen)
+			if _, ok := gen.(*ConfigPoolListGenerator); !ok && tt.generatorType == PoolGeneratorList {
+				t.Errorf("expected *ConfigPoolListGenerator, got %T", gen)
 			}
 		})
 	}

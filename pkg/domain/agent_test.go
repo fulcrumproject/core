@@ -210,7 +210,7 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 		ms.On("EventRepo").Return(eventRepo).Maybe()
 
 		engine := NewAgentConfigSchemaEngine(nil)
-			commander := NewAgentCommander(ms, engine)
+		commander := NewAgentCommander(ms, engine)
 
 		identity := &auth.Identity{
 			Role: auth.RoleAdmin,
@@ -275,7 +275,7 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 		ms.On("AgentTypeRepo").Return(agentTypeRepo).Maybe()
 
 		engine := NewAgentConfigSchemaEngine(nil)
-			commander := NewAgentCommander(ms, engine)
+		commander := NewAgentCommander(ms, engine)
 
 		identity := &auth.Identity{
 			Role: auth.RoleAdmin,
@@ -463,7 +463,7 @@ func TestAgentCommander_CreateWithPoolGenerator(t *testing.T) {
 			},
 		},
 	}
-	pool := &AgentPool{
+	pool := &ConfigPool{
 		BaseEntity:    BaseEntity{ID: poolID},
 		Type:          "public_ip",
 		PropertyType:  "string",
@@ -472,22 +472,22 @@ func TestAgentCommander_CreateWithPoolGenerator(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		setupPool   func(*MockAgentPoolRepository)
-		setupValue  func(*MockAgentPoolValueRepository)
+		setupPool   func(*MockConfigPoolRepository)
+		setupValue  func(*MockConfigPoolValueRepository)
 		wantErr     bool
 		errContains string
 		wantIP      string
 	}{
 		{
 			name: "happy path allocates from pool",
-			setupPool: func(r *MockAgentPoolRepository) {
-				r.On("FindByType", mock.Anything, "public_ip").Return(pool, nil)
+			setupPool: func(r *MockConfigPoolRepository) {
+				r.On("FindByTypeAndParticipant", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(pool, nil)
 			},
-			setupValue: func(r *MockAgentPoolValueRepository) {
-				r.On("FindAvailable", mock.Anything, poolID).Return([]*AgentPoolValue{
-					{BaseEntity: BaseEntity{ID: poolValueID}, AgentPoolID: poolID, Value: "203.0.113.10"},
+			setupValue: func(r *MockConfigPoolValueRepository) {
+				r.On("FindAvailable", mock.Anything, poolID).Return([]*ConfigPoolValue{
+					{BaseEntity: BaseEntity{ID: poolValueID}, ConfigPoolID: poolID, Value: "203.0.113.10"},
 				}, nil)
-				r.On("Update", mock.Anything, mock.MatchedBy(func(v *AgentPoolValue) bool {
+				r.On("Update", mock.Anything, mock.MatchedBy(func(v *ConfigPoolValue) bool {
 					return v.AgentID != nil && v.PropertyName != nil && *v.PropertyName == "publicIP" && v.AllocatedAt != nil
 				})).Return(nil).Once()
 			},
@@ -495,34 +495,34 @@ func TestAgentCommander_CreateWithPoolGenerator(t *testing.T) {
 		},
 		{
 			name: "FindByType errors",
-			setupPool: func(r *MockAgentPoolRepository) {
-				r.On("FindByType", mock.Anything, "public_ip").Return(nil, errors.New("pool lookup boom"))
+			setupPool: func(r *MockConfigPoolRepository) {
+				r.On("FindByTypeAndParticipant", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(nil, errors.New("pool lookup boom"))
 			},
-			setupValue:  func(r *MockAgentPoolValueRepository) {},
+			setupValue:  func(r *MockConfigPoolValueRepository) {},
 			wantErr:     true,
 			errContains: "pool lookup boom",
 		},
 		{
 			name: "no available values",
-			setupPool: func(r *MockAgentPoolRepository) {
-				r.On("FindByType", mock.Anything, "public_ip").Return(pool, nil)
+			setupPool: func(r *MockConfigPoolRepository) {
+				r.On("FindByTypeAndParticipant", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(pool, nil)
 			},
-			setupValue: func(r *MockAgentPoolValueRepository) {
-				r.On("FindAvailable", mock.Anything, poolID).Return([]*AgentPoolValue{}, nil)
+			setupValue: func(r *MockConfigPoolValueRepository) {
+				r.On("FindAvailable", mock.Anything, poolID).Return([]*ConfigPoolValue{}, nil)
 			},
 			wantErr:     true,
 			errContains: "no available values",
 		},
 		{
 			name: "Update errors",
-			setupPool: func(r *MockAgentPoolRepository) {
-				r.On("FindByType", mock.Anything, "public_ip").Return(pool, nil)
+			setupPool: func(r *MockConfigPoolRepository) {
+				r.On("FindByTypeAndParticipant", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(pool, nil)
 			},
-			setupValue: func(r *MockAgentPoolValueRepository) {
-				r.On("FindAvailable", mock.Anything, poolID).Return([]*AgentPoolValue{
-					{BaseEntity: BaseEntity{ID: poolValueID}, AgentPoolID: poolID, Value: "203.0.113.10"},
+			setupValue: func(r *MockConfigPoolValueRepository) {
+				r.On("FindAvailable", mock.Anything, poolID).Return([]*ConfigPoolValue{
+					{BaseEntity: BaseEntity{ID: poolValueID}, ConfigPoolID: poolID, Value: "203.0.113.10"},
 				}, nil)
-				r.On("Update", mock.Anything, mock.AnythingOfType("*domain.AgentPoolValue")).Return(errors.New("update boom"))
+				r.On("Update", mock.Anything, mock.AnythingOfType("*domain.ConfigPoolValue")).Return(errors.New("update boom"))
 			},
 			wantErr:     true,
 			errContains: "update boom",
@@ -541,13 +541,13 @@ func TestAgentCommander_CreateWithPoolGenerator(t *testing.T) {
 			agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(agentType, nil).Maybe()
 			ms.On("AgentTypeRepo").Return(agentTypeRepo).Maybe()
 
-			agentPoolRepo := NewMockAgentPoolRepository(t)
-			tt.setupPool(agentPoolRepo)
-			ms.On("AgentPoolRepo").Return(agentPoolRepo).Maybe()
+			configPoolRepo := NewMockConfigPoolRepository(t)
+			tt.setupPool(configPoolRepo)
+			ms.On("ConfigPoolRepo").Return(configPoolRepo).Maybe()
 
-			agentPoolValueRepo := NewMockAgentPoolValueRepository(t)
-			tt.setupValue(agentPoolValueRepo)
-			ms.On("AgentPoolValueRepo").Return(agentPoolValueRepo).Maybe()
+			configPoolValueRepo := NewMockConfigPoolValueRepository(t)
+			tt.setupValue(configPoolValueRepo)
+			ms.On("ConfigPoolValueRepo").Return(configPoolValueRepo).Maybe()
 
 			agentRepo := NewMockAgentRepository(t)
 			agentRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Maybe()
@@ -602,61 +602,61 @@ func TestAgentCommander_DeleteReleasesPoolValues(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		setupValues func(*MockAgentPoolValueRepository)
-		setupPools  func(*MockAgentPoolRepository)
+		setupValues func(*MockConfigPoolValueRepository)
+		setupPools  func(*MockConfigPoolRepository)
 		wantErr     bool
 		errContains string
 	}{
 		{
 			name: "single pool, two allocations",
-			setupValues: func(r *MockAgentPoolValueRepository) {
-				r.On("FindByAgent", mock.Anything, agentID).Return([]*AgentPoolValue{
-					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolA, AgentID: &agentID, AllocatedAt: &now, Value: "ip1"},
-					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolA, AgentID: &agentID, AllocatedAt: &now, Value: "ip2"},
+			setupValues: func(r *MockConfigPoolValueRepository) {
+				r.On("FindByAgent", mock.Anything, agentID).Return([]*ConfigPoolValue{
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolA, AgentID: &agentID, AllocatedAt: &now, Value: "ip1"},
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolA, AgentID: &agentID, AllocatedAt: &now, Value: "ip2"},
 				}, nil).Once()
-				r.On("Update", mock.Anything, mock.MatchedBy(func(v *AgentPoolValue) bool {
+				r.On("Update", mock.Anything, mock.MatchedBy(func(v *ConfigPoolValue) bool {
 					return v.AgentID == nil && v.AllocatedAt == nil && v.PropertyName == nil
 				})).Return(nil).Twice()
 			},
-			setupPools: func(r *MockAgentPoolRepository) {
-				r.On("Get", mock.Anything, poolA).Return(&AgentPool{
+			setupPools: func(r *MockConfigPoolRepository) {
+				r.On("Get", mock.Anything, poolA).Return(&ConfigPool{
 					BaseEntity: BaseEntity{ID: poolA}, Type: "public_ip", PropertyType: "string", GeneratorType: PoolGeneratorList,
 				}, nil).Once()
 			},
 		},
 		{
 			name: "multiple pools → dedup via seen map, one Get per pool",
-			setupValues: func(r *MockAgentPoolValueRepository) {
-				r.On("FindByAgent", mock.Anything, agentID).Return([]*AgentPoolValue{
-					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolA, AgentID: &agentID, AllocatedAt: &now, Value: "ip1"},
-					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, AgentPoolID: poolB, AgentID: &agentID, AllocatedAt: &now, Value: "hn1"},
+			setupValues: func(r *MockConfigPoolValueRepository) {
+				r.On("FindByAgent", mock.Anything, agentID).Return([]*ConfigPoolValue{
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolA, AgentID: &agentID, AllocatedAt: &now, Value: "ip1"},
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolB, AgentID: &agentID, AllocatedAt: &now, Value: "hn1"},
 				}, nil).Once()
-				r.On("Update", mock.Anything, mock.MatchedBy(func(v *AgentPoolValue) bool {
+				r.On("Update", mock.Anything, mock.MatchedBy(func(v *ConfigPoolValue) bool {
 					return v.AgentID == nil && v.AllocatedAt == nil && v.PropertyName == nil
 				})).Return(nil).Twice()
 			},
-			setupPools: func(r *MockAgentPoolRepository) {
-				r.On("Get", mock.Anything, poolA).Return(&AgentPool{
+			setupPools: func(r *MockConfigPoolRepository) {
+				r.On("Get", mock.Anything, poolA).Return(&ConfigPool{
 					BaseEntity: BaseEntity{ID: poolA}, Type: "public_ip", PropertyType: "string", GeneratorType: PoolGeneratorList,
 				}, nil).Once()
-				r.On("Get", mock.Anything, poolB).Return(&AgentPool{
+				r.On("Get", mock.Anything, poolB).Return(&ConfigPool{
 					BaseEntity: BaseEntity{ID: poolB}, Type: "hostname", PropertyType: "string", GeneratorType: PoolGeneratorList,
 				}, nil).Once()
 			},
 		},
 		{
 			name: "no allocations → no pool Get, no Update",
-			setupValues: func(r *MockAgentPoolValueRepository) {
-				r.On("FindByAgent", mock.Anything, agentID).Return([]*AgentPoolValue{}, nil).Once()
+			setupValues: func(r *MockConfigPoolValueRepository) {
+				r.On("FindByAgent", mock.Anything, agentID).Return([]*ConfigPoolValue{}, nil).Once()
 			},
-			setupPools: func(r *MockAgentPoolRepository) {},
+			setupPools: func(r *MockConfigPoolRepository) {},
 		},
 		{
 			name: "FindByAgent errors",
-			setupValues: func(r *MockAgentPoolValueRepository) {
+			setupValues: func(r *MockConfigPoolValueRepository) {
 				r.On("FindByAgent", mock.Anything, agentID).Return(nil, errors.New("db boom")).Once()
 			},
-			setupPools:  func(r *MockAgentPoolRepository) {},
+			setupPools:  func(r *MockConfigPoolRepository) {},
 			wantErr:     true,
 			errContains: "db boom",
 		},
@@ -686,13 +686,13 @@ func TestAgentCommander_DeleteReleasesPoolValues(t *testing.T) {
 			tokenRepo.On("DeleteByAgentID", mock.Anything, agentID).Return(nil).Maybe()
 			ms.On("TokenRepo").Return(tokenRepo).Maybe()
 
-			agentPoolValueRepo := NewMockAgentPoolValueRepository(t)
-			tt.setupValues(agentPoolValueRepo)
-			ms.On("AgentPoolValueRepo").Return(agentPoolValueRepo).Maybe()
+			configPoolValueRepo := NewMockConfigPoolValueRepository(t)
+			tt.setupValues(configPoolValueRepo)
+			ms.On("ConfigPoolValueRepo").Return(configPoolValueRepo).Maybe()
 
-			agentPoolRepo := NewMockAgentPoolRepository(t)
-			tt.setupPools(agentPoolRepo)
-			ms.On("AgentPoolRepo").Return(agentPoolRepo).Maybe()
+			configPoolRepo := NewMockConfigPoolRepository(t)
+			tt.setupPools(configPoolRepo)
+			ms.On("ConfigPoolRepo").Return(configPoolRepo).Maybe()
 
 			eventRepo := NewMockEventRepository(t)
 			eventRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Maybe()

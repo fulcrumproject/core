@@ -7,11 +7,12 @@ import (
 )
 
 // AgentConfigContext carries the contextual data the agent config schema engine needs.
-// Store exposes repositories to generators (e.g. the pool generator looks up AgentPool +
-// allocates AgentPoolValue rows); AgentID stamps allocated values to the owning agent.
+// Store exposes repositories to generators (e.g. the pool generator looks up ConfigPool +
+// allocates ConfigPoolValue rows); AgentID stamps allocated values to the owning agent.
 type AgentConfigContext struct {
-	Store   Store
-	AgentID *properties.UUID
+	Store           Store
+	AgentID         *properties.UUID
+	AgentProviderID properties.UUID
 }
 
 // buildAgentConfigValidatorRegistry creates a registry of property validators
@@ -49,10 +50,10 @@ func buildAgentConfigSchemaValidatorRegistry() map[string]schema.SchemaValidator
 }
 
 // buildAgentConfigGeneratorRegistry registers the generators available to agent configuration
-// schemas. The "pool" generator auto-allocates an AgentPoolValue at agent create time.
+// schemas. The "pool" generator auto-allocates an ConfigPoolValue at agent create time.
 func buildAgentConfigGeneratorRegistry() map[string]schema.Generator[AgentConfigContext] {
 	return map[string]schema.Generator[AgentConfigContext]{
-		"pool": NewSchemaAgentPoolGenerator(),
+		"pool": NewSchemaConfigPoolGenerator(),
 	}
 }
 
