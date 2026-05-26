@@ -100,26 +100,10 @@ func testConfigPoolValue(t *testing.T, env *Env) {
 		require.Containsf(t, []any{val.Value, "10.0.0.10"}, got, "allocated value %v not from global pool", got)
 	})
 
-	t.Run("agent under a provider allocates value from provider-owned pool, preferring it over a same-typed global", func(t *testing.T) {
+	t.Run("agent under a provider allocates value from provider-owned pool", func(t *testing.T) {
 		providerID := testhelpers.ProviderID
 		poolType := "provider-pool-" + testhelpers.Uniq()
 
-		// Pre-seed a same-typed global pool + value. If allocation incorrectly
-		// targets the global instead of the provider pool, the agent's poolIp
-		// will be globalValue and the assertion below will fail.
-		globalPool := testhelpers.MustPost[api.CreateConfigPoolReq, api.ConfigPoolRes](t, env.AdminClient, "/config-pools", api.CreateConfigPoolReq{
-			Name:          "global-" + poolType,
-			Type:          poolType,
-			PropertyType:  "string",
-			GeneratorType: domain.PoolGeneratorList,
-		})
-		globalValue := testhelpers.MustPost[api.CreateConfigPoolValueReq, api.ConfigPoolValueRes](t, env.AdminClient, "/config-pool-values", api.CreateConfigPoolValueReq{
-			Name:         "g-" + testhelpers.Uniq(),
-			Value:        "10.10.10.10",
-			ConfigPoolID: globalPool.ID,
-		})
-
-		// Provider-scoped pool of the same type, owned by the seed Provider.
 		providerPool := testhelpers.MustPost[api.CreateConfigPoolReq, api.ConfigPoolRes](t, env.ProviderClient, "/config-pools", api.CreateConfigPoolReq{
 			Name:          "own-" + poolType,
 			Type:          poolType,
@@ -161,13 +145,11 @@ func testConfigPoolValue(t *testing.T, env *Env) {
 			testhelpers.MustDelete(t, env.AdminClient, "/agents", agent.ID)
 			testhelpers.MustDelete(t, env.ProviderClient, "/config-pool-values", providerValue.ID)
 			testhelpers.MustDelete(t, env.ProviderClient, "/config-pools", providerPool.ID)
-			testhelpers.MustDelete(t, env.AdminClient, "/config-pool-values", globalValue.ID)
-			testhelpers.MustDelete(t, env.AdminClient, "/config-pools", globalPool.ID)
 		})
 
 		require.NotNil(t, agent.Configuration)
-		got := (*agent.Configuration)["poolIp"]
-		require.Equalf(t, providerValue.Value, got, "provider-owned pool must win over same-typed global (got=%v, providerValue=%v, globalValue=%v)", got, providerValue.Value, globalValue.Value)
+		require.Equalf(t, providerValue.Value, (*agent.Configuration)["poolIp"],
+			"agent must allocate from provider-owned pool (got %v)", (*agent.Configuration)["poolIp"])
 	})
 
 	t.Run("participant adds value to own pool", func(t *testing.T) {

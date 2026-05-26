@@ -139,4 +139,60 @@ func testConfigPool(t *testing.T, env *Env) {
 		require.NoError(t, err)
 		require.Equalf(t, http.StatusForbidden, resp.StatusCode(), "provider must not see other participant's pool. body: %s", resp.String())
 	})
+
+	t.Run("global and participant pool cannot share a type", func(t *testing.T) {
+		providerID := testhelpers.ProviderID
+
+		t.Run("global blocks participant", func(t *testing.T) {
+			sharedType := "type_global_first_" + testhelpers.Uniq()
+			globalPool := testhelpers.MustPost[api.CreateConfigPoolReq, api.ConfigPoolRes](t, env.AdminClient, "/config-pools", api.CreateConfigPoolReq{
+				Name:          "g-" + testhelpers.Uniq(),
+				Type:          sharedType,
+				PropertyType:  "string",
+				GeneratorType: domain.PoolGeneratorList,
+			})
+			t.Cleanup(func() {
+				testhelpers.MustDelete(t, env.AdminClient, "/config-pools", globalPool.ID)
+			})
+
+			resp, err := env.ProviderClient.R().
+				SetBody(api.CreateConfigPoolReq{
+					Name:          "p-" + testhelpers.Uniq(),
+					Type:          sharedType,
+					PropertyType:  "string",
+					GeneratorType: domain.PoolGeneratorList,
+					ParticipantID: &providerID,
+				}).
+				Post("/config-pools")
+			require.NoError(t, err)
+			require.Equalf(t, http.StatusBadRequest, resp.StatusCode(), "body: %s", resp.String())
+			require.Contains(t, resp.String(), "already exists in global scope")
+		})
+
+		t.Run("participant blocks global", func(t *testing.T) {
+			sharedType := "type_participant_first_" + testhelpers.Uniq()
+			participantPool := testhelpers.MustPost[api.CreateConfigPoolReq, api.ConfigPoolRes](t, env.ProviderClient, "/config-pools", api.CreateConfigPoolReq{
+				Name:          "p-" + testhelpers.Uniq(),
+				Type:          sharedType,
+				PropertyType:  "string",
+				GeneratorType: domain.PoolGeneratorList,
+				ParticipantID: &providerID,
+			})
+			t.Cleanup(func() {
+				testhelpers.MustDelete(t, env.ProviderClient, "/config-pools", participantPool.ID)
+			})
+
+			resp, err := env.AdminClient.R().
+				SetBody(api.CreateConfigPoolReq{
+					Name:          "g-" + testhelpers.Uniq(),
+					Type:          sharedType,
+					PropertyType:  "string",
+					GeneratorType: domain.PoolGeneratorList,
+				}).
+				Post("/config-pools")
+			require.NoError(t, err)
+			require.Equalf(t, http.StatusBadRequest, resp.StatusCode(), "body: %s", resp.String())
+			require.Contains(t, resp.String(), "participant "+providerID.String())
+		})
+	})
 }

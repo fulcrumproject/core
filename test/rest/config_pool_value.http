@@ -337,35 +337,37 @@ GET {{baseUrl}}/config-pool-values?agentId={{poolGenAgent3Id}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### Pool generator with participant scope: provider-scoped wins, global fallback
+### Type uniqueness across global vs participant + type-based allocation
 ###############################################################################
-### Verifies the provider-first / global-fallback resolution introduced for
-### ConfigPool scoping:
-###   1. Same Type used for a global pool AND for a provider-owned pool.
-###   2. Agent under that provider allocates from the provider pool (priority).
-###   3. Agent under a *different* provider has no own pool of this type, so
-###      allocation falls back to the global pool.
+### Verifies the cross-scope uniqueness rule and that allocation is resolved by
+### type alone (whichever scope owns the type, globals included):
+###   1. A type cannot exist as both global and participant — admin creates a
+###      global pool of type T; provider attempt to create a participant pool
+###      of type T returns 400.
+###   2. Symmetric direction: provider creates participant pool of type T2;
+###      admin attempt to create a global of T2 returns 400.
+###   3. Agent under any provider whose AgentType references type T allocates
+###      from the global pool of T (T is owned by the global scope, so the
+###      global pool is the pool of T — no fallback involved).
 
-### Pick a Type used by both a global and a participant-scoped pool below.
-### Static: REST Client re-evaluates `{{$timestamp}}` on every reference, so
-### a templated value would produce a different effective type per request and
-### break the global/scoped lookup. Edit this if re-running on a dirty DB.
+### Static type used by both a global and a participant pool to trigger the
+### conflict. Avoid {{$timestamp}} in @-vars (re-evaluated per request).
 @scopedGenPoolType = scopedGenIp
+@scopedGenPoolType2 = scopedGenIp2
 
-### Create a global pool with a participant token should fail
-# @name createScopedGenGlobalPool
+### Participant cannot create a global pool (auth, not the new rule) — expect 403
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{participantToken}}
 Content-Type: application/json
 
 {
-  "name": "Scoped Gen Global Pool",
+  "name": "Scoped Gen Global Pool (forbidden)",
   "type": "{{scopedGenPoolType}}",
   "propertyType": "string",
   "generatorType": "list"
 }
 
-### Create a global pool with the shared type
+### Admin creates a global pool of type T
 # @name createScopedGenGlobalPool
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
@@ -380,7 +382,7 @@ Content-Type: application/json
 
 @scopedGenGlobalPoolId = {{createScopedGenGlobalPool.response.body.$.id}}
 
-### Add a value to the global pool
+### Seed a value in the global pool (used by the fallback agent below)
 POST {{baseUrl}}/config-pool-values
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -391,7 +393,7 @@ Content-Type: application/json
   "configPoolId": "{{scopedGenGlobalPoolId}}"
 }
 
-### Create the provider that will own the participant-scoped pool
+### Create the provider that will exercise the cross-scope cases
 # @name createScopedGenProvider
 POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
@@ -404,49 +406,50 @@ Content-Type: application/json
 
 @scopedGenProviderId = {{createScopedGenProvider.response.body.$.id}}
 
-### Create a *second* provider with no pool of the shared type — used to exercise
-### the global-fallback path. Kept inside this scenario so the file is runnable
-### standalone (don't depend on @poolGenProviderId from the earlier section).
-# @name createScopedGenOtherProvider
-POST {{baseUrl}}/participants
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "name": "Scoped Gen Other Provider",
-  "status": "Enabled"
-}
-
-@scopedGenOtherProviderId = {{createScopedGenOtherProvider.response.body.$.id}}
-
-### Create the participant-scoped pool with the same type as the global pool
-# @name createScopedGenProviderPool
+### CONFLICT: provider attempts to create a participant pool of type T — expect
+### 400 with body "...already exists in global scope"
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "name": "Scoped Gen Provider Pool",
+  "name": "Scoped Gen Provider Pool (rejected)",
   "type": "{{scopedGenPoolType}}",
   "propertyType": "string",
   "generatorType": "list",
   "participantId": "{{scopedGenProviderId}}"
 }
 
-@scopedGenProviderPoolId = {{createScopedGenProviderPool.response.body.$.id}}
-
-### Add a value to the provider-scoped pool
-POST {{baseUrl}}/config-pool-values
+### Inverse direction: provider creates a participant pool of type T2
+# @name createScopedGenProviderPool2
+POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "name": "192.168.99.5",
-  "value": "192.168.99.5",
-  "configPoolId": "{{scopedGenProviderPoolId}}"
+  "name": "Scoped Gen Provider Pool T2",
+  "type": "{{scopedGenPoolType2}}",
+  "propertyType": "string",
+  "generatorType": "list",
+  "participantId": "{{scopedGenProviderId}}"
 }
 
-### Agent type that requests a value of the shared type
+@scopedGenProviderPool2Id = {{createScopedGenProviderPool2.response.body.$.id}}
+
+### CONFLICT: admin attempts to create a global pool of type T2 — expect 400
+### with body "...already exists in participant <scopedGenProviderId> scope"
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Scoped Gen Global Pool T2 (rejected)",
+  "type": "{{scopedGenPoolType2}}",
+  "propertyType": "string",
+  "generatorType": "list"
+}
+
+### Agent type that requests a value of type T
 # @name createScopedGenAgentType
 POST {{baseUrl}}/agent-types
 Authorization: Bearer {{adminToken}}
@@ -472,49 +475,27 @@ Content-Type: application/json
 
 @scopedGenAgentTypeId = {{createScopedGenAgentType.response.body.$.id}}
 
-### Agent under the scoped provider — expect poolIp = 192.168.99.5 (provider pool wins)
-# @name createScopedGenAgentProvider
+### Agent under the provider — type T is owned by the global scope (the
+### provider's same-type create was rejected above), so the agent allocates
+### from the global pool (10.10.10.10)
+# @name createScopedGenAgent
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "name": "Scoped Gen Agent (provider)",
+  "name": "Scoped Gen Agent (global fallback)",
   "providerId": "{{scopedGenProviderId}}",
   "agentTypeId": "{{scopedGenAgentTypeId}}",
   "configuration": {}
 }
 
-@scopedGenAgentProviderId = {{createScopedGenAgentProvider.response.body.$.id}}
+@scopedGenAgentId = {{createScopedGenAgent.response.body.$.id}}
 
-### Inspect provider agent's configuration — poolIp must be 192.168.99.5
-GET {{baseUrl}}/agents/{{scopedGenAgentProviderId}}
+### Inspect agent — poolIp must be 10.10.10.10 (allocated from the global pool of T)
+GET {{baseUrl}}/agents/{{scopedGenAgentId}}
 Authorization: Bearer {{adminToken}}
 
-### Sanity: the provider pool's value is now stamped on the provider agent
-GET {{baseUrl}}/config-pool-values?agentId={{scopedGenAgentProviderId}}
-Authorization: Bearer {{adminToken}}
-
-### Agent under a *different* provider (reuses the first scenario's provider)
-###    — that provider has no pool of this type, so allocation falls back to the global
-# @name createScopedGenAgentOther
-POST {{baseUrl}}/agents
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "name": "Scoped Gen Agent (other provider)",
-  "providerId": "{{scopedGenOtherProviderId}}",
-  "agentTypeId": "{{scopedGenAgentTypeId}}",
-  "configuration": {}
-}
-
-@scopedGenAgentOtherId = {{createScopedGenAgentOther.response.body.$.id}}
-
-### Inspect other-provider agent — poolIp must be 10.10.10.10 (global fallback)
-GET {{baseUrl}}/agents/{{scopedGenAgentOtherId}}
-Authorization: Bearer {{adminToken}}
-
-### Sanity: the global pool's value is now stamped on the other-provider agent
-GET {{baseUrl}}/config-pool-values?agentId={{scopedGenAgentOtherId}}
+### Sanity: the global pool's value is now stamped on the agent
+GET {{baseUrl}}/config-pool-values?agentId={{scopedGenAgentId}}
 Authorization: Bearer {{adminToken}}

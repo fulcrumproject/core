@@ -181,6 +181,7 @@ func TestConfigPool_Update(t *testing.T) {
 
 func TestConfigPoolCommander_Create(t *testing.T) {
 	participantID := properties.UUID(uuid.New())
+	otherParticipantID := properties.UUID(uuid.New())
 
 	baseParams := func() CreateConfigPoolParams {
 		return CreateConfigPoolParams{
@@ -192,22 +193,23 @@ func TestConfigPoolCommander_Create(t *testing.T) {
 	}
 
 	tests := []struct {
-		name              string
-		params            CreateConfigPoolParams
-		existingSameScope bool // FindByTypeAndParticipant returns an existing row
-		wantErr           bool
-		errContains       string
-		assertOnCreate    func(t *testing.T, p *ConfigPool)
+		name             string
+		params           CreateConfigPoolParams
+		conflictExists   bool             // FindByTypeAndProvider returns a row
+		conflictOwnedBy  *properties.UUID // ParticipantID of the conflicting row (nil = global)
+		wantErr          bool
+		errContains      string
+		assertOnCreate   func(t *testing.T, p *ConfigPool)
 	}{
 		{
-			name:   "creates global pool when ParticipantID nil",
+			name:   "creates global pool when no conflict",
 			params: baseParams(),
 			assertOnCreate: func(t *testing.T, p *ConfigPool) {
 				assert.Nil(t, p.ParticipantID, "global pool must keep ParticipantID nil")
 			},
 		},
 		{
-			name: "creates participant-owned pool when ParticipantID set",
+			name: "creates participant-owned pool when no conflict",
 			params: func() CreateConfigPoolParams {
 				p := baseParams()
 				p.ParticipantID = &participantID
@@ -219,11 +221,12 @@ func TestConfigPoolCommander_Create(t *testing.T) {
 			},
 		},
 		{
-			name:              "rejects duplicate within global scope",
-			params:            baseParams(),
-			existingSameScope: true,
-			wantErr:           true,
-			errContains:       "already exists",
+			name:            "rejects duplicate within global scope",
+			params:          baseParams(),
+			conflictExists:  true,
+			conflictOwnedBy: nil,
+			wantErr:         true,
+			errContains:     "already exists in global scope",
 		},
 		{
 			name: "rejects duplicate within participant scope",
@@ -232,9 +235,30 @@ func TestConfigPoolCommander_Create(t *testing.T) {
 				p.ParticipantID = &participantID
 				return p
 			}(),
-			existingSameScope: true,
-			wantErr:           true,
-			errContains:       "already exists",
+			conflictExists:  true,
+			conflictOwnedBy: &participantID,
+			wantErr:         true,
+			errContains:     "participant " + participantID.String(),
+		},
+		{
+			name:            "rejects creating global when a participant already owns the type",
+			params:          baseParams(),
+			conflictExists:  true,
+			conflictOwnedBy: &otherParticipantID,
+			wantErr:         true,
+			errContains:     "participant " + otherParticipantID.String(),
+		},
+		{
+			name: "rejects creating participant pool when a global already exists",
+			params: func() CreateConfigPoolParams {
+				p := baseParams()
+				p.ParticipantID = &participantID
+				return p
+			}(),
+			conflictExists:  true,
+			conflictOwnedBy: nil,
+			wantErr:         true,
+			errContains:     "already exists in global scope",
 		},
 	}
 
@@ -243,11 +267,14 @@ func TestConfigPoolCommander_Create(t *testing.T) {
 			ms := setupMockStore(t)
 
 			poolRepo := NewMockConfigPoolRepository(t)
-			if tt.existingSameScope {
-				poolRepo.On("FindByTypeAndParticipant", mock.Anything, tt.params.Type, tt.params.ParticipantID).
-					Return(&ConfigPool{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}}, nil).Once()
+			if tt.conflictExists {
+				poolRepo.On("FindByTypeAndProvider", mock.Anything, tt.params.Type, tt.params.ParticipantID).
+					Return(&ConfigPool{
+						BaseEntity:    BaseEntity{ID: properties.UUID(uuid.New())},
+						ParticipantID: tt.conflictOwnedBy,
+					}, nil).Once()
 			} else {
-				poolRepo.On("FindByTypeAndParticipant", mock.Anything, tt.params.Type, tt.params.ParticipantID).
+				poolRepo.On("FindByTypeAndProvider", mock.Anything, tt.params.Type, tt.params.ParticipantID).
 					Return(nil, NewNotFoundErrorf("not found")).Once()
 				poolRepo.On("Create", mock.Anything, mock.MatchedBy(func(p *ConfigPool) bool {
 					if tt.params.ParticipantID == nil {

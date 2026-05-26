@@ -44,24 +44,18 @@ func (r *GormConfigPoolRepository) Update(ctx context.Context, pool *domain.Conf
 	return r.Save(ctx, pool)
 }
 
-func (r *GormConfigPoolRepository) FindByTypeAndParticipant(ctx context.Context, poolType string, participantID *properties.UUID) (*domain.ConfigPool, error) {
+func (r *GormConfigPoolRepository) FindByTypeAndProvider(ctx context.Context, poolType string, providerID *properties.UUID) (*domain.ConfigPool, error) {
 	q := r.db.WithContext(ctx).Where("type = ?", poolType)
-	if participantID == nil {
-		q = q.Where("participant_id IS NULL")
-	} else {
-		q = q.Where("participant_id = ?", *participantID)
+	if providerID != nil {
+		q = q.Where("participant_id IS NULL OR participant_id = ?", *providerID)
 	}
 
 	var entity domain.ConfigPool
-	result := q.First(&entity)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			if participantID == nil {
-				return nil, domain.NewNotFoundErrorf("global config pool with type %s", poolType)
-			}
-			return nil, domain.NewNotFoundErrorf("config pool with type %s for participant %s", poolType, *participantID)
+	if err := q.First(&entity).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.NewNotFoundErrorf("no config pool with type %s for provider", poolType)
 		}
-		return nil, result.Error
+		return nil, err
 	}
 	return &entity, nil
 }
