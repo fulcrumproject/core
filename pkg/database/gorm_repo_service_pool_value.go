@@ -28,16 +28,10 @@ var applyServicePoolValueSort = MapSortApplier(map[string]string{
 // servicePoolValueAuthzFilterApplier applies authorization scoping to service pool value queries
 func servicePoolValueAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) *gorm.DB {
 	if s.ParticipantID != nil {
-		// Participants can only access values in their pool sets
-		return q.Joins("JOIN service_pools ON service_pools.id = service_pool_values.service_pool_id").
-			Joins("JOIN service_pool_sets ON service_pool_sets.id = service_pools.service_pool_set_id").
-			Where("service_pool_sets.provider_id = ?", s.ParticipantID)
+		return q.Where("service_pool_values.participant_id = ?", s.ParticipantID)
 	}
 	if s.AgentID != nil {
-		// Agents can only access values for their provider
-		return q.Joins("JOIN service_pools ON service_pools.id = service_pool_values.service_pool_id").
-			Joins("JOIN service_pool_sets ON service_pool_sets.id = service_pools.service_pool_set_id").
-			Joins("JOIN agents ON agents.provider_id = service_pool_sets.provider_id").
+		return q.Joins("JOIN agents ON agents.provider_id = service_pool_values.participant_id").
 			Where("agents.id = ?", s.AgentID)
 	}
 	return q
@@ -162,27 +156,7 @@ func (r *GormServicePoolValueRepository) ReleaseByService(ctx context.Context, s
 	}).Error
 }
 
-// AuthScope returns the authorization scope for a service pool value (via pool -> pool set -> provider)
+// AuthScope returns the authorization scope for a service pool value via its denormalized participant_id.
 func (r *GormServicePoolValueRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
-	// Join through service_pools and service_pool_sets to get provider_id
-	var result struct {
-		ProviderID properties.UUID `gorm:"column:provider_id"`
-	}
-
-	err := r.db.WithContext(ctx).
-		Table("service_pool_values").
-		Select("service_pool_sets.provider_id").
-		Joins("JOIN service_pools ON service_pools.id = service_pool_values.service_pool_id").
-		Joins("JOIN service_pool_sets ON service_pool_sets.id = service_pools.service_pool_set_id").
-		Where("service_pool_values.id = ?", id).
-		Scan(&result).Error
-
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, domain.NotFoundError{Err: err}
-		}
-		return nil, err
-	}
-
-	return &authz.DefaultObjectScope{ProviderID: &result.ProviderID}, nil
+	return r.AuthScopeByFields(ctx, id, "participant_id", "null", "null", "null")
 }

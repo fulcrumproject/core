@@ -192,6 +192,104 @@ func TestPoolGeneratorType_Validate(t *testing.T) {
 	}
 }
 
+func TestServicePoolCommander_Create(t *testing.T) {
+	poolSetID := properties.UUID(uuid.New())
+	providerID := properties.UUID(uuid.New())
+
+	baseParams := func() CreateServicePoolParams {
+		return CreateServicePoolParams{
+			ServicePoolSetID: poolSetID,
+			Name:             "Public IP",
+			Type:             "publicIp",
+			PropertyType:     "string",
+			GeneratorType:    PoolGeneratorList,
+		}
+	}
+
+	tests := []struct {
+		name              string
+		poolSetGetErr     error
+		existingSameType  bool
+		wantErr           bool
+		errContains       string
+		expectParticipant *properties.UUID
+	}{
+		{
+			name:              "stamps ParticipantID from poolSet.ProviderID",
+			expectParticipant: &providerID,
+		},
+		{
+			name:          "returns NotFound when pool set missing",
+			poolSetGetErr: NewNotFoundErrorf("missing"),
+			wantErr:       true,
+			errContains:   "service pool set with id",
+		},
+		{
+			name:             "rejects duplicate type for same provider",
+			existingSameType: true,
+			wantErr:          true,
+			errContains:      "already exists",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ms := setupMockStore(t)
+
+			poolSetRepo := NewMockServicePoolSetRepository(t)
+			if tt.poolSetGetErr != nil {
+				poolSetRepo.On("Get", mock.Anything, poolSetID).Return(nil, tt.poolSetGetErr).Once()
+			} else {
+				poolSetRepo.On("Get", mock.Anything, poolSetID).Return(&ServicePoolSet{
+					BaseEntity: BaseEntity{ID: poolSetID},
+					Name:       "Set",
+					ProviderID: providerID,
+				}, nil).Once()
+			}
+			ms.On("ServicePoolSetRepo").Return(poolSetRepo).Maybe()
+
+			poolRepo := NewMockServicePoolRepository(t)
+			if tt.poolSetGetErr == nil {
+				if tt.existingSameType {
+					poolRepo.On("FindByProviderAndType", mock.Anything, providerID, "publicIp").
+						Return(&ServicePool{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}}, nil).Once()
+				} else {
+					poolRepo.On("FindByProviderAndType", mock.Anything, providerID, "publicIp").
+						Return(nil, NewNotFoundErrorf("not found")).Once()
+					poolRepo.On("Create", mock.Anything, mock.MatchedBy(func(p *ServicePool) bool {
+						if tt.expectParticipant == nil {
+							return p.ParticipantID == nil
+						}
+						return p.ParticipantID != nil && *p.ParticipantID == *tt.expectParticipant
+					})).Return(nil).Once()
+				}
+			}
+			ms.On("ServicePoolRepo").Return(poolRepo).Maybe()
+
+			eventRepo := NewMockEventRepository(t)
+			if !tt.wantErr {
+				eventRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Once()
+			}
+			ms.On("EventRepo").Return(eventRepo).Maybe()
+
+			ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
+			cmd := NewServicePoolCommander(ms)
+
+			pool, err := cmd.Create(ctx, baseParams())
+
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errContains)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, pool)
+			require.NotNil(t, pool.ParticipantID)
+			assert.Equal(t, *tt.expectParticipant, *pool.ParticipantID)
+		})
+	}
+}
+
 func TestServicePoolCommander_Delete(t *testing.T) {
 	poolID := properties.UUID(uuid.New())
 	poolSetID := properties.UUID(uuid.New())

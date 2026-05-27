@@ -30,14 +30,10 @@ var applyServicePoolSort = MapSortApplier(map[string]string{
 // servicePoolAuthzFilterApplier applies authorization scoping to service pool queries
 func servicePoolAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) *gorm.DB {
 	if s.ParticipantID != nil {
-		// Participants can only access pools in their pool sets
-		return q.Joins("JOIN service_pool_sets ON service_pool_sets.id = service_pools.service_pool_set_id").
-			Where("service_pool_sets.provider_id = ?", s.ParticipantID)
+		return q.Where("service_pools.participant_id = ?", s.ParticipantID)
 	}
 	if s.AgentID != nil {
-		// Agents can only access pools for their provider
-		return q.Joins("JOIN service_pool_sets ON service_pool_sets.id = service_pools.service_pool_set_id").
-			Joins("JOIN agents ON agents.provider_id = service_pool_sets.provider_id").
+		return q.Joins("JOIN agents ON agents.provider_id = service_pools.participant_id").
 			Where("agents.id = ?", s.AgentID)
 	}
 	return q
@@ -122,26 +118,7 @@ func (r *GormServicePoolRepository) Update(ctx context.Context, pool *domain.Ser
 	return r.Save(ctx, pool)
 }
 
-// AuthScope returns the authorization scope for a service pool (via pool set -> provider)
+// AuthScope returns the authorization scope for a service pool via its denormalized participant_id.
 func (r *GormServicePoolRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
-	// Join through service_pool_sets to get provider_id
-	var result struct {
-		ProviderID properties.UUID `gorm:"column:provider_id"`
-	}
-
-	err := r.db.WithContext(ctx).
-		Table("service_pools").
-		Select("service_pool_sets.provider_id").
-		Joins("JOIN service_pool_sets ON service_pool_sets.id = service_pools.service_pool_set_id").
-		Where("service_pools.id = ?", id).
-		Scan(&result).Error
-
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, domain.NotFoundError{Err: err}
-		}
-		return nil, err
-	}
-
-	return &authz.DefaultObjectScope{ProviderID: &result.ProviderID}, nil
+	return r.AuthScopeByFields(ctx, id, "participant_id", "null", "null", "null")
 }
