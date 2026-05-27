@@ -4702,48 +4702,48 @@ func (_c *MockConfigPoolQuerier_Exists_Call) RunAndReturn(run func(ctx context.C
 	return _c
 }
 
-// FindByTypeAndParticipant provides a mock function for the type MockConfigPoolQuerier
-func (_mock *MockConfigPoolQuerier) FindByTypeAndParticipant(ctx context.Context, poolType string, participantID *properties.UUID) (*ConfigPool, error) {
-	ret := _mock.Called(ctx, poolType, participantID)
+// FindByTypeAndProvider provides a mock function for the type MockConfigPoolQuerier
+func (_mock *MockConfigPoolQuerier) FindByTypeAndProvider(ctx context.Context, poolType string, providerID *properties.UUID) (*ConfigPool, error) {
+	ret := _mock.Called(ctx, poolType, providerID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for FindByTypeAndParticipant")
+		panic("no return value specified for FindByTypeAndProvider")
 	}
 
 	var r0 *ConfigPool
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *properties.UUID) (*ConfigPool, error)); ok {
-		return returnFunc(ctx, poolType, participantID)
+		return returnFunc(ctx, poolType, providerID)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *properties.UUID) *ConfigPool); ok {
-		r0 = returnFunc(ctx, poolType, participantID)
+		r0 = returnFunc(ctx, poolType, providerID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ConfigPool)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *properties.UUID) error); ok {
-		r1 = returnFunc(ctx, poolType, participantID)
+		r1 = returnFunc(ctx, poolType, providerID)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockConfigPoolQuerier_FindByTypeAndParticipant_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByTypeAndParticipant'
-type MockConfigPoolQuerier_FindByTypeAndParticipant_Call struct {
+// MockConfigPoolQuerier_FindByTypeAndProvider_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByTypeAndProvider'
+type MockConfigPoolQuerier_FindByTypeAndProvider_Call struct {
 	*mock.Call
 }
 
-// FindByTypeAndParticipant is a helper method to define mock.On call
+// FindByTypeAndProvider is a helper method to define mock.On call
 //   - ctx context.Context
 //   - poolType string
-//   - participantID *properties.UUID
-func (_e *MockConfigPoolQuerier_Expecter) FindByTypeAndParticipant(ctx interface{}, poolType interface{}, participantID interface{}) *MockConfigPoolQuerier_FindByTypeAndParticipant_Call {
-	return &MockConfigPoolQuerier_FindByTypeAndParticipant_Call{Call: _e.mock.On("FindByTypeAndParticipant", ctx, poolType, participantID)}
+//   - providerID *properties.UUID
+func (_e *MockConfigPoolQuerier_Expecter) FindByTypeAndProvider(ctx interface{}, poolType interface{}, providerID interface{}) *MockConfigPoolQuerier_FindByTypeAndProvider_Call {
+	return &MockConfigPoolQuerier_FindByTypeAndProvider_Call{Call: _e.mock.On("FindByTypeAndProvider", ctx, poolType, providerID)}
 }
 
-func (_c *MockConfigPoolQuerier_FindByTypeAndParticipant_Call) Run(run func(ctx context.Context, poolType string, participantID *properties.UUID)) *MockConfigPoolQuerier_FindByTypeAndParticipant_Call {
+func (_c *MockConfigPoolQuerier_FindByTypeAndProvider_Call) Run(run func(ctx context.Context, poolType string, providerID *properties.UUID)) *MockConfigPoolQuerier_FindByTypeAndProvider_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -4766,12 +4766,12 @@ func (_c *MockConfigPoolQuerier_FindByTypeAndParticipant_Call) Run(run func(ctx 
 	return _c
 }
 
-func (_c *MockConfigPoolQuerier_FindByTypeAndParticipant_Call) Return(configPool *ConfigPool, err error) *MockConfigPoolQuerier_FindByTypeAndParticipant_Call {
+func (_c *MockConfigPoolQuerier_FindByTypeAndProvider_Call) Return(configPool *ConfigPool, err error) *MockConfigPoolQuerier_FindByTypeAndProvider_Call {
 	_c.Call.Return(configPool, err)
 	return _c
 }
 
-func (_c *MockConfigPoolQuerier_FindByTypeAndParticipant_Call) RunAndReturn(run func(ctx context.Context, poolType string, participantID *properties.UUID) (*ConfigPool, error)) *MockConfigPoolQuerier_FindByTypeAndParticipant_Call {
+func (_c *MockConfigPoolQuerier_FindByTypeAndProvider_Call) RunAndReturn(run func(ctx context.Context, poolType string, providerID *properties.UUID) (*ConfigPool, error)) *MockConfigPoolQuerier_FindByTypeAndProvider_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5253,48 +5253,48 @@ func (_c *MockConfigPoolRepository_Exists_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
-// FindByTypeAndParticipant provides a mock function for the type MockConfigPoolRepository
-func (_mock *MockConfigPoolRepository) FindByTypeAndParticipant(ctx context.Context, poolType string, participantID *properties.UUID) (*ConfigPool, error) {
-	ret := _mock.Called(ctx, poolType, participantID)
+// FindByTypeAndProvider provides a mock function for the type MockConfigPoolRepository
+func (_mock *MockConfigPoolRepository) FindByTypeAndProvider(ctx context.Context, poolType string, providerID *properties.UUID) (*ConfigPool, error) {
+	ret := _mock.Called(ctx, poolType, providerID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for FindByTypeAndParticipant")
+		panic("no return value specified for FindByTypeAndProvider")
 	}
 
 	var r0 *ConfigPool
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *properties.UUID) (*ConfigPool, error)); ok {
-		return returnFunc(ctx, poolType, participantID)
+		return returnFunc(ctx, poolType, providerID)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *properties.UUID) *ConfigPool); ok {
-		r0 = returnFunc(ctx, poolType, participantID)
+		r0 = returnFunc(ctx, poolType, providerID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ConfigPool)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *properties.UUID) error); ok {
-		r1 = returnFunc(ctx, poolType, participantID)
+		r1 = returnFunc(ctx, poolType, providerID)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockConfigPoolRepository_FindByTypeAndParticipant_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByTypeAndParticipant'
-type MockConfigPoolRepository_FindByTypeAndParticipant_Call struct {
+// MockConfigPoolRepository_FindByTypeAndProvider_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByTypeAndProvider'
+type MockConfigPoolRepository_FindByTypeAndProvider_Call struct {
 	*mock.Call
 }
 
-// FindByTypeAndParticipant is a helper method to define mock.On call
+// FindByTypeAndProvider is a helper method to define mock.On call
 //   - ctx context.Context
 //   - poolType string
-//   - participantID *properties.UUID
-func (_e *MockConfigPoolRepository_Expecter) FindByTypeAndParticipant(ctx interface{}, poolType interface{}, participantID interface{}) *MockConfigPoolRepository_FindByTypeAndParticipant_Call {
-	return &MockConfigPoolRepository_FindByTypeAndParticipant_Call{Call: _e.mock.On("FindByTypeAndParticipant", ctx, poolType, participantID)}
+//   - providerID *properties.UUID
+func (_e *MockConfigPoolRepository_Expecter) FindByTypeAndProvider(ctx interface{}, poolType interface{}, providerID interface{}) *MockConfigPoolRepository_FindByTypeAndProvider_Call {
+	return &MockConfigPoolRepository_FindByTypeAndProvider_Call{Call: _e.mock.On("FindByTypeAndProvider", ctx, poolType, providerID)}
 }
 
-func (_c *MockConfigPoolRepository_FindByTypeAndParticipant_Call) Run(run func(ctx context.Context, poolType string, participantID *properties.UUID)) *MockConfigPoolRepository_FindByTypeAndParticipant_Call {
+func (_c *MockConfigPoolRepository_FindByTypeAndProvider_Call) Run(run func(ctx context.Context, poolType string, providerID *properties.UUID)) *MockConfigPoolRepository_FindByTypeAndProvider_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -5317,12 +5317,12 @@ func (_c *MockConfigPoolRepository_FindByTypeAndParticipant_Call) Run(run func(c
 	return _c
 }
 
-func (_c *MockConfigPoolRepository_FindByTypeAndParticipant_Call) Return(configPool *ConfigPool, err error) *MockConfigPoolRepository_FindByTypeAndParticipant_Call {
+func (_c *MockConfigPoolRepository_FindByTypeAndProvider_Call) Return(configPool *ConfigPool, err error) *MockConfigPoolRepository_FindByTypeAndProvider_Call {
 	_c.Call.Return(configPool, err)
 	return _c
 }
 
-func (_c *MockConfigPoolRepository_FindByTypeAndParticipant_Call) RunAndReturn(run func(ctx context.Context, poolType string, participantID *properties.UUID) (*ConfigPool, error)) *MockConfigPoolRepository_FindByTypeAndParticipant_Call {
+func (_c *MockConfigPoolRepository_FindByTypeAndProvider_Call) RunAndReturn(run func(ctx context.Context, poolType string, providerID *properties.UUID) (*ConfigPool, error)) *MockConfigPoolRepository_FindByTypeAndProvider_Call {
 	_c.Call.Return(run)
 	return _c
 }

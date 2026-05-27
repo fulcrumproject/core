@@ -19,9 +19,6 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 	matchProvider := mock.MatchedBy(func(p *properties.UUID) bool {
 		return p != nil && *p == providerID
 	})
-	matchGlobal := mock.MatchedBy(func(p *properties.UUID) bool {
-		return p == nil
-	})
 
 	tests := []struct {
 		name         string
@@ -36,7 +33,7 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 		errSubstr    string
 	}{
 		{
-			name:         "resolves provider-scoped pool when present",
+			name:         "resolves pool by type and allocates",
 			config:       map[string]any{"poolType": "public_ip"},
 			currentValue: nil,
 			agentID:      &agentID,
@@ -51,7 +48,7 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 					PropertyType:  "string",
 					GeneratorType: PoolGeneratorList,
 				}
-				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).Return(pool, nil)
+				poolRepo.On("FindByTypeAndProvider", ctx, "public_ip", matchProvider).Return(pool, nil)
 				valueRepo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{
 					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "192.168.1.10"},
 				}, nil)
@@ -68,47 +65,14 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 			wantGen:   true,
 		},
 		{
-			name:         "falls back to global when provider-scoped pool not found",
+			name:         "surfaces error from pool lookup",
 			config:       map[string]any{"poolType": "public_ip"},
 			currentValue: nil,
 			agentID:      &agentID,
 			withStore:    true,
 			setupMock: func(store *MockStore) {
 				poolRepo := NewMockConfigPoolRepository(t)
-				valueRepo := NewMockConfigPoolValueRepository(t)
-
-				globalPool := &ConfigPool{
-					BaseEntity:    BaseEntity{ID: poolID},
-					Type:          "public_ip",
-					PropertyType:  "string",
-					GeneratorType: PoolGeneratorList,
-				}
-				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).
-					Return(nil, NewNotFoundErrorf("config pool with type public_ip for participant"))
-				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchGlobal).
-					Return(globalPool, nil)
-				valueRepo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{
-					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "10.0.0.5"},
-				}, nil)
-				valueRepo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
-					return v.AgentID != nil && *v.AgentID == agentID
-				})).Return(nil)
-
-				store.On("ConfigPoolRepo").Return(poolRepo)
-				store.On("ConfigPoolValueRepo").Return(valueRepo)
-			},
-			wantValue: "10.0.0.5",
-			wantGen:   true,
-		},
-		{
-			name:         "surfaces non-NotFound error from provider lookup",
-			config:       map[string]any{"poolType": "public_ip"},
-			currentValue: nil,
-			agentID:      &agentID,
-			withStore:    true,
-			setupMock: func(store *MockStore) {
-				poolRepo := NewMockConfigPoolRepository(t)
-				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).
+				poolRepo.On("FindByTypeAndProvider", ctx, "public_ip", matchProvider).
 					Return(nil, errors.New("db down"))
 				store.On("ConfigPoolRepo").Return(poolRepo)
 			},
@@ -116,17 +80,15 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 			errSubstr: "db down",
 		},
 		{
-			name:         "surfaces NotFound when neither provider nor global pool exists",
+			name:         "surfaces NotFound when no pool of type exists",
 			config:       map[string]any{"poolType": "public_ip"},
 			currentValue: nil,
 			agentID:      &agentID,
 			withStore:    true,
 			setupMock: func(store *MockStore) {
 				poolRepo := NewMockConfigPoolRepository(t)
-				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).
-					Return(nil, NewNotFoundErrorf("config pool with type public_ip for participant"))
-				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchGlobal).
-					Return(nil, NewNotFoundErrorf("global config pool with type public_ip"))
+				poolRepo.On("FindByTypeAndProvider", ctx, "public_ip", matchProvider).
+					Return(nil, NewNotFoundErrorf("no config pool with type public_ip for provider"))
 				store.On("ConfigPoolRepo").Return(poolRepo)
 			},
 			wantErr:   true,
@@ -208,7 +170,7 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 					PropertyType:  "string",
 					GeneratorType: PoolGeneratorList,
 				}
-				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).Return(pool, nil)
+				poolRepo.On("FindByTypeAndProvider", ctx, "public_ip", matchProvider).Return(pool, nil)
 				valueRepo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{}, nil)
 
 				store.On("ConfigPoolRepo").Return(poolRepo)
@@ -233,7 +195,7 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 					PropertyType:  "string",
 					GeneratorType: PoolGeneratorList,
 				}
-				poolRepo.On("FindByTypeAndParticipant", ctx, "public_ip", matchProvider).Return(pool, nil)
+				poolRepo.On("FindByTypeAndProvider", ctx, "public_ip", matchProvider).Return(pool, nil)
 				valueRepo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{
 					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "x"},
 				}, nil)

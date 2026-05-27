@@ -481,7 +481,7 @@ func TestAgentCommander_CreateWithPoolGenerator(t *testing.T) {
 		{
 			name: "happy path allocates from pool",
 			setupPool: func(r *MockConfigPoolRepository) {
-				r.On("FindByTypeAndParticipant", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(pool, nil)
+				r.On("FindByTypeAndProvider", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(pool, nil)
 			},
 			setupValue: func(r *MockConfigPoolValueRepository) {
 				r.On("FindAvailable", mock.Anything, poolID).Return([]*ConfigPoolValue{
@@ -496,7 +496,7 @@ func TestAgentCommander_CreateWithPoolGenerator(t *testing.T) {
 		{
 			name: "FindByType errors",
 			setupPool: func(r *MockConfigPoolRepository) {
-				r.On("FindByTypeAndParticipant", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(nil, errors.New("pool lookup boom"))
+				r.On("FindByTypeAndProvider", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(nil, errors.New("pool lookup boom"))
 			},
 			setupValue:  func(r *MockConfigPoolValueRepository) {},
 			wantErr:     true,
@@ -505,7 +505,7 @@ func TestAgentCommander_CreateWithPoolGenerator(t *testing.T) {
 		{
 			name: "no available values",
 			setupPool: func(r *MockConfigPoolRepository) {
-				r.On("FindByTypeAndParticipant", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(pool, nil)
+				r.On("FindByTypeAndProvider", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(pool, nil)
 			},
 			setupValue: func(r *MockConfigPoolValueRepository) {
 				r.On("FindAvailable", mock.Anything, poolID).Return([]*ConfigPoolValue{}, nil)
@@ -516,7 +516,7 @@ func TestAgentCommander_CreateWithPoolGenerator(t *testing.T) {
 		{
 			name: "Update errors",
 			setupPool: func(r *MockConfigPoolRepository) {
-				r.On("FindByTypeAndParticipant", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(pool, nil)
+				r.On("FindByTypeAndProvider", mock.Anything, "public_ip", mock.AnythingOfType("*uuid.UUID")).Return(pool, nil)
 			},
 			setupValue: func(r *MockConfigPoolValueRepository) {
 				r.On("FindAvailable", mock.Anything, poolID).Return([]*ConfigPoolValue{

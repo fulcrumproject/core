@@ -283,91 +283,81 @@ func TestConfigPoolRepository(t *testing.T) {
 		})
 	})
 
-	t.Run("FindByTypeAndParticipant", func(t *testing.T) {
-		t.Run("success - global scope", func(t *testing.T) {
-			uniqueType := fmt.Sprintf("unique-type-%s", uuid.New().String())
-			pool := createTestConfigPool(t)
-			pool.Type = uniqueType
-			require.NoError(t, repo.Create(ctx, pool))
+	t.Run("FindByTypeAndProvider", func(t *testing.T) {
+		t.Run("creating global - returns existing global with same type", func(t *testing.T) {
+			sharedType := fmt.Sprintf("conflict-type-%s", uuid.New().String())
 
-			found, err := repo.FindByTypeAndParticipant(ctx, uniqueType, nil)
+			existing := createTestConfigPool(t)
+			existing.Type = sharedType
+			require.NoError(t, repo.Create(ctx, existing))
 
+			got, err := repo.FindByTypeAndProvider(ctx, sharedType, nil)
 			require.NoError(t, err)
-			assert.Equal(t, pool.ID, found.ID)
-			assert.Equal(t, uniqueType, found.Type)
+			assert.Equal(t, existing.ID, got.ID)
+			assert.Nil(t, got.ParticipantID)
 		})
 
-		t.Run("success - participant scope", func(t *testing.T) {
-			uniqueType := fmt.Sprintf("unique-type-%s", uuid.New().String())
-			pool := createTestConfigPool(t)
-			pool.Type = uniqueType
-			pool.ParticipantID = &scopedParticipant.ID
-			require.NoError(t, repo.Create(ctx, pool))
+		t.Run("creating global - returns participant pool with same type", func(t *testing.T) {
+			sharedType := fmt.Sprintf("conflict-type-%s", uuid.New().String())
 
-			// Global lookup must NOT find a participant-owned pool.
-			missing, err := repo.FindByTypeAndParticipant(ctx, uniqueType, nil)
-			assert.Nil(t, missing)
-			assert.IsType(t, domain.NotFoundError{}, err)
+			existing := createTestConfigPool(t)
+			existing.Type = sharedType
+			existing.ParticipantID = &scopedParticipant.ID
+			require.NoError(t, repo.Create(ctx, existing))
 
-			// Owning-participant lookup finds it.
-			found, err := repo.FindByTypeAndParticipant(ctx, uniqueType, &scopedParticipant.ID)
+			got, err := repo.FindByTypeAndProvider(ctx, sharedType, nil)
 			require.NoError(t, err)
-			assert.Equal(t, pool.ID, found.ID)
-			assert.Equal(t, &scopedParticipant.ID, found.ParticipantID)
+			assert.Equal(t, existing.ID, got.ID)
+			require.NotNil(t, got.ParticipantID)
+			assert.Equal(t, scopedParticipant.ID, *got.ParticipantID)
 		})
 
-		t.Run("two participants may share the same type", func(t *testing.T) {
-			sharedType := fmt.Sprintf("shared-type-%s", uuid.New().String())
+		t.Run("creating participant - returns existing global pool with same type", func(t *testing.T) {
+			sharedType := fmt.Sprintf("conflict-type-%s", uuid.New().String())
+
+			existing := createTestConfigPool(t)
+			existing.Type = sharedType
+			require.NoError(t, repo.Create(ctx, existing))
+
+			got, err := repo.FindByTypeAndProvider(ctx, sharedType, &scopedParticipant.ID)
+			require.NoError(t, err)
+			assert.Equal(t, existing.ID, got.ID)
+			assert.Nil(t, got.ParticipantID)
+		})
+
+		t.Run("creating participant - returns same-participant pool with same type", func(t *testing.T) {
+			sharedType := fmt.Sprintf("conflict-type-%s", uuid.New().String())
+
+			existing := createTestConfigPool(t)
+			existing.Type = sharedType
+			existing.ParticipantID = &scopedParticipant.ID
+			require.NoError(t, repo.Create(ctx, existing))
+
+			got, err := repo.FindByTypeAndProvider(ctx, sharedType, &scopedParticipant.ID)
+			require.NoError(t, err)
+			assert.Equal(t, existing.ID, got.ID)
+			require.NotNil(t, got.ParticipantID)
+			assert.Equal(t, scopedParticipant.ID, *got.ParticipantID)
+		})
+
+		t.Run("creating participant - ignores other participants' pools of same type", func(t *testing.T) {
+			sharedType := fmt.Sprintf("conflict-type-%s", uuid.New().String())
 			other := createTestParticipant(t, domain.ParticipantEnabled)
 			require.NoError(t, participantRepo.Create(ctx, other))
 
-			poolA := createTestConfigPool(t)
-			poolA.Type = sharedType
-			poolA.ParticipantID = &scopedParticipant.ID
-			require.NoError(t, repo.Create(ctx, poolA))
+			otherPool := createTestConfigPool(t)
+			otherPool.Type = sharedType
+			otherPool.ParticipantID = &other.ID
+			require.NoError(t, repo.Create(ctx, otherPool))
 
-			poolB := createTestConfigPool(t)
-			poolB.Type = sharedType
-			poolB.ParticipantID = &other.ID
-			require.NoError(t, repo.Create(ctx, poolB))
-
-			gotA, err := repo.FindByTypeAndParticipant(ctx, sharedType, &scopedParticipant.ID)
-			require.NoError(t, err)
-			assert.Equal(t, poolA.ID, gotA.ID)
-
-			gotB, err := repo.FindByTypeAndParticipant(ctx, sharedType, &other.ID)
-			require.NoError(t, err)
-			assert.Equal(t, poolB.ID, gotB.ID)
+			got, err := repo.FindByTypeAndProvider(ctx, sharedType, &scopedParticipant.ID)
+			assert.Nil(t, got)
+			assert.IsType(t, domain.NotFoundError{}, err)
 		})
 
-		t.Run("global and participant-scoped of same type coexist", func(t *testing.T) {
-			sharedType := fmt.Sprintf("mixed-type-%s", uuid.New().String())
-
-			globalPool := createTestConfigPool(t)
-			globalPool.Type = sharedType
-			require.NoError(t, repo.Create(ctx, globalPool))
-
-			scopedPool := createTestConfigPool(t)
-			scopedPool.Type = sharedType
-			scopedPool.ParticipantID = &scopedParticipant.ID
-			require.NoError(t, repo.Create(ctx, scopedPool))
-
-			gotGlobal, err := repo.FindByTypeAndParticipant(ctx, sharedType, nil)
-			require.NoError(t, err)
-			assert.Equal(t, globalPool.ID, gotGlobal.ID)
-			assert.Nil(t, gotGlobal.ParticipantID)
-
-			gotScoped, err := repo.FindByTypeAndParticipant(ctx, sharedType, &scopedParticipant.ID)
-			require.NoError(t, err)
-			assert.Equal(t, scopedPool.ID, gotScoped.ID)
-			require.NotNil(t, gotScoped.ParticipantID)
-			assert.Equal(t, scopedParticipant.ID, *gotScoped.ParticipantID)
-		})
-
-		t.Run("not found", func(t *testing.T) {
-			found, err := repo.FindByTypeAndParticipant(ctx, "nonexistent_type", nil)
-
-			assert.Nil(t, found)
+		t.Run("no conflict returns NotFoundError", func(t *testing.T) {
+			got, err := repo.FindByTypeAndProvider(ctx, "nonexistent-conflict-type-"+uuid.New().String(), nil)
+			assert.Nil(t, got)
 			assert.IsType(t, domain.NotFoundError{}, err)
 		})
 	})

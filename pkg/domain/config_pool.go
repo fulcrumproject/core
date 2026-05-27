@@ -58,6 +58,13 @@ func (ConfigPool) TableName() string {
 	return "config_pools"
 }
 
+func configPoolScopeDesc(participantID *properties.UUID) string {
+	if participantID == nil {
+		return "global"
+	}
+	return fmt.Sprintf("participant %s", *participantID)
+}
+
 func (cp *ConfigPool) Validate() error {
 	if cp.Name == "" {
 		return fmt.Errorf("config pool name cannot be empty")
@@ -90,7 +97,7 @@ func (cp *ConfigPool) Update(params UpdateConfigPoolParams) {
 
 type ConfigPoolQuerier interface {
 	BaseEntityQuerier[ConfigPool]
-	FindByTypeAndParticipant(ctx context.Context, poolType string, participantID *properties.UUID) (*ConfigPool, error)
+	FindByTypeAndProvider(ctx context.Context, poolType string, providerID *properties.UUID) (*ConfigPool, error)
 }
 
 type ConfigPoolRepository interface {
@@ -126,16 +133,17 @@ func (c *configPoolCommander) Create(
 			return err
 		}
 
-		// Type must be globally unique — the schema engine's pool generator resolves pools
-		// by type, so two pools sharing a type silently collide at allocation time.
-		existing, err := store.ConfigPoolRepo().FindByTypeAndParticipant(ctx, pool.Type, pool.ParticipantID)
+		conflict, err := store.ConfigPoolRepo().FindByTypeAndProvider(ctx, pool.Type, pool.ParticipantID)
 		if err != nil {
 			var notFound NotFoundError
 			if !errors.As(err, &notFound) {
 				return err
 			}
-		} else if existing != nil {
-			return NewInvalidInputErrorf("config pool with type %q already exists for this scope", pool.Type)
+		} else if conflict != nil {
+			return NewInvalidInputErrorf(
+				"config pool with type %q already exists in %s scope",
+				pool.Type, configPoolScopeDesc(conflict.ParticipantID),
+			)
 		}
 
 		if err := store.ConfigPoolRepo().Create(ctx, pool); err != nil {

@@ -3,7 +3,6 @@ package domain
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/fulcrumproject/core/pkg/schema"
@@ -45,19 +44,9 @@ func (g *SchemaConfigPoolGenerator) Generate(
 		return nil, false, fmt.Errorf("%s: agent ID required for pool allocation", propPath)
 	}
 
-	// Provider-scoped first; fall back to a global pool (participant_id IS NULL) if the
-	// provider has no pool of this type. Admins can pre-seed shared globals while
-	// participants override per-provider — globals stay reachable for allocation.
-	pool, err := schemaCtx.Store.ConfigPoolRepo().FindByTypeAndParticipant(ctx, poolType, &schemaCtx.AgentProviderID)
+	pool, err := schemaCtx.Store.ConfigPoolRepo().FindByTypeAndProvider(ctx, poolType, &schemaCtx.AgentProviderID)
 	if err != nil {
-		var nf NotFoundError
-		if !errors.As(err, &nf) {
-			return nil, false, fmt.Errorf("%s: failed to find config pool with type %q: %w", propPath, poolType, err)
-		}
-		pool, err = schemaCtx.Store.ConfigPoolRepo().FindByTypeAndParticipant(ctx, poolType, nil)
-		if err != nil {
-			return nil, false, fmt.Errorf("%s: failed to find config pool with type %q: %w", propPath, poolType, err)
-		}
+		return nil, false, fmt.Errorf("%s: failed to find config pool with type %q: %w", propPath, poolType, err)
 	}
 
 	factory := NewDefaultConfigPoolGeneratorFactory(schemaCtx.Store.ConfigPoolValueRepo())
