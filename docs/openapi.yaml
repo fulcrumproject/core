@@ -257,6 +257,223 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorRes'
+  /infrastructure-types:
+    get:
+      operationId: infrastructureTypesList
+      summary: List infrastructure types
+      tags:
+        - Infrastructures
+      description: Retrieves a paginated list of infrastructure types
+      x-auth-permissions:
+        - role: admin
+          permission: all infrastructure types
+        - role: participant
+          permission: all infrastructure types
+        - role: agent
+          permission: all infrastructure types
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: sort
+          in: query
+          schema:
+            type: string
+          description: 'Sort field. Prefix with ''+'' for ascending or ''-'' for descending. Default is ascending. Supported fields: name'
+          example: +name
+        - name: name
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: Filter by infrastructure type name (can specify multiple values)
+      responses:
+        '200':
+          description: A paginated list of infrastructure types
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageRes'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/InfrastructureTypeRes'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: infrastructureTypesCreate
+      summary: Create an infrastructure type
+      tags:
+        - Infrastructures
+      description: Creates a new infrastructure type
+      x-auth-permissions:
+        - role: admin
+          permission: all infrastructure types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInfrastructureTypeReq'
+      responses:
+        '201':
+          description: Infrastructure type created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfrastructureTypeRes'
+        '400':
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '403':
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '409':
+          description: Infrastructure type with same name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+  /infrastructure-types/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/properties.UUID'
+    get:
+      operationId: infrastructureTypesGet
+      summary: Get an infrastructure type
+      tags:
+        - Infrastructures
+      description: Retrieves a specific infrastructure type by ID
+      x-auth-permissions:
+        - role: admin
+          permission: all infrastructure types
+        - role: participant
+          permission: all infrastructure types
+        - role: agent
+          permission: all infrastructure types
+      responses:
+        '200':
+          description: The infrastructure type details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfrastructureTypeRes'
+        '404':
+          description: Infrastructure type not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+    patch:
+      operationId: infrastructureTypesUpdate
+      summary: Update an infrastructure type
+      tags:
+        - Infrastructures
+      description: Partially updates an infrastructure type (PATCH semantics)
+      x-auth-permissions:
+        - role: admin
+          permission: all infrastructure types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInfrastructureTypeReq'
+      responses:
+        '200':
+          description: Infrastructure type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfrastructureTypeRes'
+        '400':
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '403':
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '404':
+          description: Infrastructure type not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '409':
+          description: Infrastructure type with same name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+    delete:
+      operationId: infrastructureTypesDelete
+      summary: Delete an infrastructure type
+      tags:
+        - Infrastructures
+      description: Deletes an infrastructure type
+      x-auth-permissions:
+        - role: admin
+          permission: all infrastructure types
+      responses:
+        '204':
+          description: Infrastructure type deleted successfully
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '403':
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '404':
+          description: Infrastructure type not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
   /agents:
     get:
       operationId: agentsList
@@ -5985,6 +6202,105 @@ components:
               - type: max
                 config:
                   value: 10
+    InfrastructureConfigurationSchema:
+      type: object
+      description: Schema defining validation rules and structure for infrastructure configuration properties
+      properties:
+        properties:
+          type: object
+          description: Property definitions keyed by property name
+          additionalProperties:
+            $ref: '#/components/schemas/PropertyDefinition'
+        validators:
+          type: array
+          description: Schema-level validators (e.g., exactlyOne)
+          items:
+            $ref: '#/components/schemas/SchemaValidatorConfig'
+      example:
+        properties:
+          endpoint:
+            type: string
+            label: Endpoint
+            required: true
+    InfrastructureTypeRes:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/properties.UUID'
+        name:
+          type: string
+          example: fulcrum-csp-node
+        configurationSchema:
+          $ref: '#/components/schemas/InfrastructureConfigurationSchema'
+          description: Schema defining the structure and validation rules for infrastructure configuration
+        configTemplate:
+          type: string
+          description: Go text/template rendered at install time to produce the infrastructure config file. Placeholder refs (e.g. {{.host}}) must be keys of configurationSchema.properties.
+          example: |
+            endpoint={{.endpoint}}
+        cmdTemplate:
+          type: string
+          description: Go text/template rendered at install time to produce the infrastructure install command. Placeholder refs must be keys of configurationSchema.properties or the special {{.configUrl}} / {{.authToken}}.
+          example: 'curl -fsSL {{.configUrl}} -H ''Authorization: Bearer {{.authToken}}'' | sh'
+        configContentType:
+          type: string
+          description: Media type (RFC 6838) of the rendered configTemplate output. Defaults to text/plain.
+          default: text/plain
+          example: text/yaml
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateInfrastructureTypeReq:
+      type: object
+      required:
+        - name
+        - configurationSchema
+      properties:
+        name:
+          type: string
+          description: Name of the infrastructure type
+          example: fulcrum-csp-node
+          minLength: 1
+        configurationSchema:
+          $ref: '#/components/schemas/InfrastructureConfigurationSchema'
+          description: Schema defining the structure and validation rules for infrastructure configuration
+        configTemplate:
+          type: string
+          description: Go text/template for the infrastructure config file. Placeholder refs must be keys of configurationSchema.properties.
+          example: |
+            endpoint={{.endpoint}}
+        cmdTemplate:
+          type: string
+          description: Go text/template for the infrastructure install command. Placeholder refs must be keys of configurationSchema.properties or {{.configUrl}} / {{.authToken}}.
+          example: 'curl -fsSL {{.configUrl}} -H ''Authorization: Bearer {{.authToken}}'' | sh'
+        configContentType:
+          type: string
+          description: Media type (RFC 6838) of the rendered configTemplate output. Defaults to text/plain when omitted.
+          default: text/plain
+          example: text/yaml
+    UpdateInfrastructureTypeReq:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated name of the infrastructure type
+          minLength: 1
+        configurationSchema:
+          $ref: '#/components/schemas/InfrastructureConfigurationSchema'
+          description: Updated configuration schema
+        configTemplate:
+          type: string
+          description: Updated Go text/template for the infrastructure config file.
+        cmdTemplate:
+          type: string
+          description: Updated Go text/template for the infrastructure install command.
+        configContentType:
+          type: string
+          description: Updated media type for the rendered configTemplate output. Empty resets to text/plain.
+          default: text/plain
     UpdateServiceOptionTypeReq:
       type: object
       properties:

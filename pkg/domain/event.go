@@ -177,6 +177,14 @@ func WithAgentType(t *AgentType) EventOption {
 	}
 }
 
+// WithInfrastructureType sets the entity ID for the event
+func WithInfrastructureType(t *InfrastructureType) EventOption {
+	return func(e *Event) error {
+		e.EntityID = &t.ID
+		return nil
+	}
+}
+
 // WithServiceOptionType sets the entity ID for the event
 func WithServiceOptionType(t *ServiceOptionType) EventOption {
 	return func(e *Event) error {

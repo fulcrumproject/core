@@ -26,42 +26,43 @@ import (
 )
 
 type App struct {
-	Config                   *config.Config
-	Db                       *gorm.DB
-	MetricDb                 *gorm.DB
-	Authenticators           []auth.Authenticator
-	AgentTypeHandler         *api.AgentTypeHandler
-	AgentInstallTokenHandler *api.AgentInstallTokenHandler
-	ServiceTypeHandler       *api.ServiceTypeHandler
-	ServiceOptionTypeHandler *api.ServiceOptionTypeHandler
-	ServiceOptionHandler     *api.ServiceOptionHandler
-	ServicePoolSetHandler    *api.ServicePoolSetHandler
-	ServicePoolHandler       *api.ServicePoolHandler
-	ServicePoolValueHandler  *api.ServicePoolValueHandler
-	ParticipantHandler       *api.ParticipantHandler
-	AgentHandler             *api.AgentHandler
-	ConfigPoolHandler        *api.ConfigPoolHandler
-	ConfigPoolValueHandler   *api.ConfigPoolValueHandler
-	ServiceGroupHandler      *api.ServiceGroupHandler
-	ServiceHandler           *api.ServiceHandler
-	MetricTypeHandler        *api.MetricTypeHandler
-	MetricEntryHandler       *api.MetricEntryHandler
-	MetricEntryRepo          *database.GormMetricEntryRepository
-	EventHandler             *api.EventHandler
-	JobHandler               *api.JobHandler
-	TokenHandler             *api.TokenHandler
-	VaultHandler             *api.VaultHandler
-	KeycloakUserHandler      *api.KeycloakUserHandler
-	HealthHandler            *health.Handler
-	Logger                   *slog.Logger
-	PropertyEngine           *schema.Engine[domain.ServicePropertyContext]
-	CompositeAuthenticator   *auth.CompositeAuthenticator
-	RuleBasedAuthorizer      *authz.RuleBasedAuthorizer
-	Store                    domain.Store
-	ServiceCmd               domain.ServiceCommander
-	Scheduler                *gocron.Scheduler
-	scheduleStarted          bool
-	WaitGroup                *sync.WaitGroup
+	Config                    *config.Config
+	Db                        *gorm.DB
+	MetricDb                  *gorm.DB
+	Authenticators            []auth.Authenticator
+	AgentTypeHandler          *api.AgentTypeHandler
+	AgentInstallTokenHandler  *api.AgentInstallTokenHandler
+	ServiceTypeHandler        *api.ServiceTypeHandler
+	ServiceOptionTypeHandler  *api.ServiceOptionTypeHandler
+	ServiceOptionHandler      *api.ServiceOptionHandler
+	ServicePoolSetHandler     *api.ServicePoolSetHandler
+	ServicePoolHandler        *api.ServicePoolHandler
+	ServicePoolValueHandler   *api.ServicePoolValueHandler
+	ParticipantHandler        *api.ParticipantHandler
+	AgentHandler              *api.AgentHandler
+	ConfigPoolHandler         *api.ConfigPoolHandler
+	ConfigPoolValueHandler    *api.ConfigPoolValueHandler
+	InfrastructureTypeHandler *api.InfrastructureTypeHandler
+	ServiceGroupHandler       *api.ServiceGroupHandler
+	ServiceHandler            *api.ServiceHandler
+	MetricTypeHandler         *api.MetricTypeHandler
+	MetricEntryHandler        *api.MetricEntryHandler
+	MetricEntryRepo           *database.GormMetricEntryRepository
+	EventHandler              *api.EventHandler
+	JobHandler                *api.JobHandler
+	TokenHandler              *api.TokenHandler
+	VaultHandler              *api.VaultHandler
+	KeycloakUserHandler       *api.KeycloakUserHandler
+	HealthHandler             *health.Handler
+	Logger                    *slog.Logger
+	PropertyEngine            *schema.Engine[domain.ServicePropertyContext]
+	CompositeAuthenticator    *auth.CompositeAuthenticator
+	RuleBasedAuthorizer       *authz.RuleBasedAuthorizer
+	Store                     domain.Store
+	ServiceCmd                domain.ServiceCommander
+	Scheduler                 *gocron.Scheduler
+	scheduleStarted           bool
+	WaitGroup                 *sync.WaitGroup
 }
 
 func readConfig() (*config.Config, error) {
@@ -200,6 +201,9 @@ func NewApp() *App {
 	// Initialize schema engine for agent configuration validation
 	agentConfigEngine := domain.NewAgentConfigSchemaEngine(vault)
 
+	// Initialize schema engine for infrastructure configuration validation
+	infraConfigEngine := domain.NewInfrastructureConfigSchemaEngine(vault)
+
 	serviceCmd := domain.NewServiceCommander(store, propertyEngine)
 	serviceTypeCmd := domain.NewServiceTypeCommander(store, propertyEngine)
 	serviceGroupCmd := domain.NewServiceGroupCommander(store)
@@ -207,6 +211,7 @@ func NewApp() *App {
 	serviceOptionCmd := domain.NewServiceOptionCommander(store)
 	participantCmd := domain.NewParticipantCommander(store)
 	agentTypeCmd := domain.NewAgentTypeCommander(store, agentConfigEngine)
+	infrastructureTypeCmd := domain.NewInfrastructureTypeCommander(store, infraConfigEngine)
 	jobCmd := domain.NewJobCommander(store, propertyEngine)
 	metricEntryCmd := domain.NewMetricEntryCommander(store, metricEntryRepo)
 	metricTypeCmd := domain.NewMetricTypeCommander(store, metricEntryRepo)
@@ -265,41 +270,42 @@ func NewApp() *App {
 	configPoolValueCmd := domain.NewConfigPoolValueCommander(store)
 
 	return &App{
-		Config:                   cfg,
-		Db:                       db,
-		MetricDb:                 metricDb,
-		Logger:                   logger,
-		Scheduler:                scheduler,
-		scheduleStarted:          false,
-		WaitGroup:                &sync.WaitGroup{},
-		Store:                    store,
-		Authenticators:           authenticators,
-		CompositeAuthenticator:   ath,
-		RuleBasedAuthorizer:      athz,
-		ServiceTypeHandler:       api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz, propertyEngine),
-		ServiceOptionTypeHandler: api.NewServiceOptionTypeHandler(store.ServiceOptionTypeRepo(), serviceOptionTypeCmd, athz),
-		ServiceOptionHandler:     api.NewServiceOptionHandler(store.ServiceOptionRepo(), serviceOptionCmd, athz),
-		ServicePoolSetHandler:    api.NewServicePoolSetHandler(store.ServicePoolSetRepo(), servicePoolSetCmd, athz),
-		ServicePoolHandler:       api.NewServicePoolHandler(store.ServicePoolRepo(), servicePoolCmd, athz),
-		ServicePoolValueHandler:  api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), servicePoolValueCmd, athz),
-		ParticipantHandler:       api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz),
-		AgentHandler:             api.NewAgentHandler(store.AgentRepo(), agentCmd, athz),
-		AgentInstallTokenHandler: api.NewAgentInstallTokenHandler(store.AgentInstallTokenRepo(), installTokenCmd, store.AgentRepo().AuthScope, athz, vault, cfg.PublicBaseURL),
-		ConfigPoolHandler:        api.NewConfigPoolHandler(store.ConfigPoolRepo(), configPoolCmd, athz),
-		ConfigPoolValueHandler:   api.NewConfigPoolValueHandler(store.ConfigPoolValueRepo(), store.ConfigPoolRepo(), configPoolValueCmd, athz),
-		AgentTypeHandler:         api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz),
-		ServiceGroupHandler:      api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz),
-		ServiceHandler:           api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, athz),
-		JobHandler:               api.NewJobHandler(store.JobRepo(), jobCmd, athz),
-		MetricTypeHandler:        api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, athz),
-		MetricEntryHandler:       api.NewMetricEntryHandler(metricEntryRepo, store.ServiceRepo(), metricEntryCmd, athz),
-		MetricEntryRepo:          metricEntryRepo,
-		EventHandler:             api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz),
-		TokenHandler:             api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz),
-		VaultHandler:             api.NewVaultHandler(vault),
-		KeycloakUserHandler:      keycloakUserHandler,
-		ServiceCmd:               serviceCmd,
-		PropertyEngine:           propertyEngine,
+		Config:                    cfg,
+		Db:                        db,
+		MetricDb:                  metricDb,
+		Logger:                    logger,
+		Scheduler:                 scheduler,
+		scheduleStarted:           false,
+		WaitGroup:                 &sync.WaitGroup{},
+		Store:                     store,
+		Authenticators:            authenticators,
+		CompositeAuthenticator:    ath,
+		RuleBasedAuthorizer:       athz,
+		ServiceTypeHandler:        api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz, propertyEngine),
+		ServiceOptionTypeHandler:  api.NewServiceOptionTypeHandler(store.ServiceOptionTypeRepo(), serviceOptionTypeCmd, athz),
+		ServiceOptionHandler:      api.NewServiceOptionHandler(store.ServiceOptionRepo(), serviceOptionCmd, athz),
+		ServicePoolSetHandler:     api.NewServicePoolSetHandler(store.ServicePoolSetRepo(), servicePoolSetCmd, athz),
+		ServicePoolHandler:        api.NewServicePoolHandler(store.ServicePoolRepo(), servicePoolCmd, athz),
+		ServicePoolValueHandler:   api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), servicePoolValueCmd, athz),
+		ParticipantHandler:        api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz),
+		AgentHandler:              api.NewAgentHandler(store.AgentRepo(), agentCmd, athz),
+		AgentInstallTokenHandler:  api.NewAgentInstallTokenHandler(store.AgentInstallTokenRepo(), installTokenCmd, store.AgentRepo().AuthScope, athz, vault, cfg.PublicBaseURL),
+		ConfigPoolHandler:         api.NewConfigPoolHandler(store.ConfigPoolRepo(), configPoolCmd, athz),
+		ConfigPoolValueHandler:    api.NewConfigPoolValueHandler(store.ConfigPoolValueRepo(), store.ConfigPoolRepo(), configPoolValueCmd, athz),
+		AgentTypeHandler:          api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz),
+		InfrastructureTypeHandler: api.NewInfrastructureTypeHandler(store.InfrastructureTypeRepo(), infrastructureTypeCmd, athz),
+		ServiceGroupHandler:       api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz),
+		ServiceHandler:            api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, athz),
+		JobHandler:                api.NewJobHandler(store.JobRepo(), jobCmd, athz),
+		MetricTypeHandler:         api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, athz),
+		MetricEntryHandler:        api.NewMetricEntryHandler(metricEntryRepo, store.ServiceRepo(), metricEntryCmd, athz),
+		MetricEntryRepo:           metricEntryRepo,
+		EventHandler:              api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz),
+		TokenHandler:              api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz),
+		VaultHandler:              api.NewVaultHandler(vault),
+		KeycloakUserHandler:       keycloakUserHandler,
+		ServiceCmd:                serviceCmd,
+		PropertyEngine:            propertyEngine,
 	}
 }
 

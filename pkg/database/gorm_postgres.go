@@ -60,6 +60,7 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.Agent{},
 		&domain.AgentInstallToken{},
 		&domain.AgentType{},
+		&domain.InfrastructureType{},
 		&domain.ConfigPool{},
 		&domain.ConfigPoolValue{},
 		&domain.ServiceType{},

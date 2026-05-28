@@ -1,0 +1,101 @@
+get:
+  operationId: infrastructureTypesList
+  summary: List infrastructure types
+  tags:
+    - Infrastructures
+  description: Retrieves a paginated list of infrastructure types
+  x-auth-permissions:
+    - role: admin
+      permission: all infrastructure types
+    - role: participant
+      permission: all infrastructure types
+    - role: agent
+      permission: all infrastructure types
+  parameters:
+    - name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    - name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 10
+    - name: sort
+      in: query
+      schema:
+        type: string
+      description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: name"
+      example: "+name"
+    - name: name
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+      description: Filter by infrastructure type name (can specify multiple values)
+  responses:
+    "200":
+      description: A paginated list of infrastructure types
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/common.yaml#/PageRes"
+              - type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/infrastructure_types.yaml#/InfrastructureTypeRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+post:
+  operationId: infrastructureTypesCreate
+  summary: Create an infrastructure type
+  tags:
+    - Infrastructures
+  description: Creates a new infrastructure type
+  x-auth-permissions:
+    - role: admin
+      permission: all infrastructure types
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/infrastructure_types.yaml#/CreateInfrastructureTypeReq"
+  responses:
+    "201":
+      description: Infrastructure type created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/infrastructure_types.yaml#/InfrastructureTypeRes"
+    "400":
+      description: Invalid request body or validation error
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "401":
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "403":
+      description: Administrator access required
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "409":
+      description: Infrastructure type with same name already exists
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

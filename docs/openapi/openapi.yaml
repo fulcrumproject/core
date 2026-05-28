@@ -221,6 +221,10 @@ paths:
     $ref: ./paths/agent-types.yaml
   /agent-types/{id}:
     $ref: ./paths/agent-types@{id}.yaml
+  /infrastructure-types:
+    $ref: ./paths/infrastructure-types.yaml
+  /infrastructure-types/{id}:
+    $ref: ./paths/infrastructure-types@{id}.yaml
   /agents:
     $ref: ./paths/agents.yaml
   /agents/me:

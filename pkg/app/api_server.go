@@ -133,6 +133,7 @@ func BuildHttpServer(
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authMiddleware)
 		r.Route("/agent-types", app.AgentTypeHandler.Routes())
+		r.Route("/infrastructure-types", app.InfrastructureTypeHandler.Routes())
 		r.Route("/service-types", app.ServiceTypeHandler.Routes())
 		r.Route("/service-option-types", app.ServiceOptionTypeHandler.Routes())
 		r.Route("/service-options", app.ServiceOptionHandler.Routes())

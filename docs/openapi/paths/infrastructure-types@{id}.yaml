@@ -1,0 +1,114 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      $ref: "../components/schemas/common.yaml#/properties.UUID"
+get:
+  operationId: infrastructureTypesGet
+  summary: Get an infrastructure type
+  tags:
+    - Infrastructures
+  description: Retrieves a specific infrastructure type by ID
+  x-auth-permissions:
+    - role: admin
+      permission: all infrastructure types
+    - role: participant
+      permission: all infrastructure types
+    - role: agent
+      permission: all infrastructure types
+  responses:
+    "200":
+      description: The infrastructure type details
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/infrastructure_types.yaml#/InfrastructureTypeRes"
+    "404":
+      description: Infrastructure type not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+patch:
+  operationId: infrastructureTypesUpdate
+  summary: Update an infrastructure type
+  tags:
+    - Infrastructures
+  description: Partially updates an infrastructure type (PATCH semantics)
+  x-auth-permissions:
+    - role: admin
+      permission: all infrastructure types
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/infrastructure_types.yaml#/UpdateInfrastructureTypeReq"
+  responses:
+    "200":
+      description: Infrastructure type updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/infrastructure_types.yaml#/InfrastructureTypeRes"
+    "400":
+      description: Invalid request body or validation error
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "401":
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "403":
+      description: Administrator access required
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "404":
+      description: Infrastructure type not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "409":
+      description: Infrastructure type with same name already exists
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+delete:
+  operationId: infrastructureTypesDelete
+  summary: Delete an infrastructure type
+  tags:
+    - Infrastructures
+  description: Deletes an infrastructure type
+  x-auth-permissions:
+    - role: admin
+      permission: all infrastructure types
+  responses:
+    "204":
+      description: Infrastructure type deleted successfully
+    "401":
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "403":
+      description: Administrator access required
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "404":
+      description: Infrastructure type not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

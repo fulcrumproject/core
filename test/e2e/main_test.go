@@ -67,6 +67,7 @@ func TestE2E(t *testing.T) {
 	t.Run("tokens", func(t *testing.T) { testToken(t, env) })
 	t.Run("agents", func(t *testing.T) { testAgent(t, env) })
 	t.Run("agent types", func(t *testing.T) { testAgentType(t, env) })
+	t.Run("infrastructure types", func(t *testing.T) { testInfrastructureType(t, env) })
 	t.Run("service types", func(t *testing.T) { testServiceType(t, env) })
 	t.Run("service option types", func(t *testing.T) { testServiceOptionType(t, env) })
 	t.Run("service options", func(t *testing.T) { testServiceOption(t, env) })

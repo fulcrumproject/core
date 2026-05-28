@@ -8,6 +8,7 @@ const (
 	ObjectTypeParticipant       ObjectType = "participant"
 	ObjectTypeAgent             ObjectType = "agent"
 	ObjectTypeAgentType         ObjectType = "agent_type"
+	ObjectTypeInfrastructureType ObjectType = "infrastructure_type"
 	ObjectTypeConfigPool        ObjectType = "config_pool"
 	ObjectTypeConfigPoolValue   ObjectType = "config_pool_value"
 	ObjectTypeService           ObjectType = "service"
@@ -64,6 +65,12 @@ var Rules = []AuthorizationRule{
 	{Object: ObjectTypeAgentType, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
 	{Object: ObjectTypeAgentType, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
 	{Object: ObjectTypeAgentType, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
+
+	// InfrastructureType permissions
+	{Object: ObjectTypeInfrastructureType, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+	{Object: ObjectTypeInfrastructureType, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeInfrastructureType, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeInfrastructureType, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
 
 	// Service permissions
 	{Object: ObjectTypeService, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
