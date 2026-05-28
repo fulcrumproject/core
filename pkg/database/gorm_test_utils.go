@@ -87,6 +87,16 @@ func createTestInfrastructureType(t *testing.T) *domain.InfrastructureType {
 	}
 }
 
+func createTestInfrastructure(t *testing.T, providerID, infraTypeID properties.UUID) *domain.Infrastructure {
+	t.Helper()
+	randomSuffix := uuid.New().String()
+	return &domain.Infrastructure{
+		Name:                 fmt.Sprintf("Test Infrastructure %s", randomSuffix),
+		ProviderID:           providerID,
+		InfrastructureTypeID: infraTypeID,
+	}
+}
+
 func createTestAgent(t *testing.T, participantID, agentTypeID properties.UUID, status domain.AgentStatus) *domain.Agent {
 	t.Helper()
 	return createTestAgentWithTags(t, participantID, agentTypeID, status, nil)

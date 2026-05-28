@@ -19,6 +19,7 @@ type GormStore struct {
 	configPoolRepo         domain.ConfigPoolRepository
 	configPoolValueRepo    domain.ConfigPoolValueRepository
 	infrastructureTypeRepo domain.InfrastructureTypeRepository
+	infrastructureRepo     domain.InfrastructureRepository
 	serviceTypeRepo        domain.ServiceTypeRepository
 	serviceGroupRepo       domain.ServiceGroupRepository
 	serviceRepo            domain.ServiceRepository
@@ -104,6 +105,13 @@ func (s *GormStore) InfrastructureTypeRepo() domain.InfrastructureTypeRepository
 		s.infrastructureTypeRepo = NewInfrastructureTypeRepository(s.db)
 	}
 	return s.infrastructureTypeRepo
+}
+
+func (s *GormStore) InfrastructureRepo() domain.InfrastructureRepository {
+	if s.infrastructureRepo == nil {
+		s.infrastructureRepo = NewInfrastructureRepository(s.db)
+	}
+	return s.infrastructureRepo
 }
 
 func (s *GormStore) ServiceTypeRepo() domain.ServiceTypeRepository {
@@ -220,6 +228,10 @@ func (s *GormReadOnlyStore) ConfigPoolValueQuerier() domain.ConfigPoolValueQueri
 
 func (s *GormReadOnlyStore) InfrastructureTypeQuerier() domain.InfrastructureTypeQuerier {
 	return NewInfrastructureTypeRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) InfrastructureQuerier() domain.InfrastructureQuerier {
+	return NewInfrastructureRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) TokenQuerier() domain.TokenQuerier {

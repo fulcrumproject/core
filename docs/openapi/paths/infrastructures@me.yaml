@@ -1,0 +1,27 @@
+get:
+  operationId: infrastructuresGetCurrent
+  summary: Get current infrastructure
+  tags:
+    - Infrastructures
+  description: Retrieves the infrastructure referenced by the bootstrap-token identity. Used by the install flow once the install-token issuer for Infrastructure ships (Phase 3).
+  security:
+    - BearerAuth: []
+  responses:
+    "200":
+      description: The infrastructure details
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/infrastructures.yaml#/InfrastructureRes"
+    "401":
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "404":
+      description: Infrastructure not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

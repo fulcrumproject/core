@@ -1,0 +1,96 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      $ref: "../components/schemas/common.yaml#/properties.UUID"
+get:
+  operationId: infrastructuresGet
+  summary: Get an infrastructure
+  tags:
+    - Infrastructures
+  description: Retrieves a specific infrastructure by ID
+  x-auth-permissions:
+    - role: admin
+      permission: all infrastructures
+    - role: participant
+      permission: own infrastructures
+    - role: agent
+      permission: own infrastructure
+  responses:
+    "200":
+      description: The infrastructure details
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/infrastructures.yaml#/InfrastructureRes"
+    "404":
+      description: Infrastructure not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+patch:
+  operationId: infrastructuresUpdate
+  summary: Update an infrastructure
+  tags:
+    - Infrastructures
+  description: Partially updates an infrastructure (PATCH semantics). Configuration changes are validated against the infrastructure type's configurationSchema.
+  x-auth-permissions:
+    - role: admin
+      permission: all infrastructures
+    - role: participant
+      permission: own infrastructures
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/infrastructures.yaml#/UpdateInfrastructureReq"
+  responses:
+    "200":
+      description: Infrastructure updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/infrastructures.yaml#/InfrastructureRes"
+    "400":
+      description: Invalid request body or configuration validation error
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Infrastructure not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+delete:
+  operationId: infrastructuresDelete
+  summary: Delete an infrastructure
+  tags:
+    - Infrastructures
+  description: Deletes an infrastructure
+  x-auth-permissions:
+    - role: admin
+      permission: all infrastructures
+    - role: participant
+      permission: own infrastructures
+  responses:
+    "204":
+      description: Infrastructure deleted successfully
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+    "404":
+      description: Infrastructure not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"

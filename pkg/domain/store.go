@@ -14,6 +14,7 @@ type Store interface {
 	ConfigPoolRepo() ConfigPoolRepository
 	ConfigPoolValueRepo() ConfigPoolValueRepository
 	InfrastructureTypeRepo() InfrastructureTypeRepository
+	InfrastructureRepo() InfrastructureRepository
 	TokenRepo() TokenRepository
 	ServiceTypeRepo() ServiceTypeRepository
 	ServiceGroupRepo() ServiceGroupRepository
@@ -38,6 +39,7 @@ type ReadOnlyStore interface {
 	ConfigPoolQuerier() ConfigPoolQuerier
 	ConfigPoolValueQuerier() ConfigPoolValueQuerier
 	InfrastructureTypeQuerier() InfrastructureTypeQuerier
+	InfrastructureQuerier() InfrastructureQuerier
 	TokenQuerier() TokenQuerier
 	ServiceTypeQuerier() ServiceTypeQuerier
 	ServiceGroupQuerier() ServiceGroupQuerier

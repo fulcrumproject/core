@@ -474,6 +474,235 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorRes'
+  /infrastructures:
+    get:
+      operationId: infrastructuresList
+      summary: List infrastructures
+      tags:
+        - Infrastructures
+      description: Retrieves a paginated list of infrastructures
+      x-auth-permissions:
+        - role: admin
+          permission: all infrastructures
+        - role: participant
+          permission: own infrastructures
+        - role: agent
+          permission: own infrastructure
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: sort
+          in: query
+          schema:
+            type: string
+          description: 'Sort field. Prefix with ''+'' for ascending or ''-'' for descending. Default is ascending. Supported fields: name'
+          example: +name
+        - name: name
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: Filter by infrastructure name (can specify multiple values)
+        - name: providerId
+          in: query
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/properties.UUID'
+          description: Filter by provider participant ID
+        - name: infrastructureTypeId
+          in: query
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/properties.UUID'
+          description: Filter by infrastructure type ID
+      responses:
+        '200':
+          description: A paginated list of infrastructures
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageRes'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/InfrastructureRes'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: infrastructuresCreate
+      summary: Create an infrastructure
+      tags:
+        - Infrastructures
+      description: Creates a new infrastructure instance under the given provider and infrastructure type. Configuration is validated against the infrastructure type's configurationSchema.
+      x-auth-permissions:
+        - role: admin
+          permission: all infrastructures
+        - role: participant
+          permission: own infrastructures
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInfrastructureReq'
+      responses:
+        '201':
+          description: Infrastructure created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfrastructureRes'
+        '400':
+          description: Invalid request body or configuration validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /infrastructures/me:
+    get:
+      operationId: infrastructuresGetCurrent
+      summary: Get current infrastructure
+      tags:
+        - Infrastructures
+      description: Retrieves the infrastructure referenced by the bootstrap-token identity. Used by the install flow once the install-token issuer for Infrastructure ships (Phase 3).
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: The infrastructure details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfrastructureRes'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '404':
+          description: Infrastructure not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+  /infrastructures/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/properties.UUID'
+    get:
+      operationId: infrastructuresGet
+      summary: Get an infrastructure
+      tags:
+        - Infrastructures
+      description: Retrieves a specific infrastructure by ID
+      x-auth-permissions:
+        - role: admin
+          permission: all infrastructures
+        - role: participant
+          permission: own infrastructures
+        - role: agent
+          permission: own infrastructure
+      responses:
+        '200':
+          description: The infrastructure details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfrastructureRes'
+        '404':
+          description: Infrastructure not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+    patch:
+      operationId: infrastructuresUpdate
+      summary: Update an infrastructure
+      tags:
+        - Infrastructures
+      description: Partially updates an infrastructure (PATCH semantics). Configuration changes are validated against the infrastructure type's configurationSchema.
+      x-auth-permissions:
+        - role: admin
+          permission: all infrastructures
+        - role: participant
+          permission: own infrastructures
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInfrastructureReq'
+      responses:
+        '200':
+          description: Infrastructure updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfrastructureRes'
+        '400':
+          description: Invalid request body or configuration validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Infrastructure not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+    delete:
+      operationId: infrastructuresDelete
+      summary: Delete an infrastructure
+      tags:
+        - Infrastructures
+      description: Deletes an infrastructure
+      x-auth-permissions:
+        - role: admin
+          permission: all infrastructures
+        - role: participant
+          permission: own infrastructures
+      responses:
+        '204':
+          description: Infrastructure deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Infrastructure not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
   /agents:
     get:
       operationId: agentsList
@@ -4942,6 +5171,71 @@ components:
         - id
         - expiresAt
         - createdAt
+    InfrastructureRes:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/properties.UUID'
+        name:
+          type: string
+          example: csi-node-01
+        providerId:
+          $ref: '#/components/schemas/properties.UUID'
+        infrastructureTypeId:
+          $ref: '#/components/schemas/properties.UUID'
+        tags:
+          type: array
+          items:
+            type: string
+          example:
+            - region:eu
+        configuration:
+          $ref: '#/components/schemas/JSONObject'
+          description: Instance-specific configuration values validated against the referenced InfrastructureType's configurationSchema.
+        participant:
+          $ref: '#/components/schemas/ParticipantRes'
+        infrastructureType:
+          $ref: '#/components/schemas/InfrastructureTypeRes'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateInfrastructureReq:
+      type: object
+      required:
+        - name
+        - providerId
+        - infrastructureTypeId
+      properties:
+        name:
+          type: string
+          example: csi-node-01
+          minLength: 1
+        providerId:
+          $ref: '#/components/schemas/properties.UUID'
+        infrastructureTypeId:
+          $ref: '#/components/schemas/properties.UUID'
+        tags:
+          type: array
+          items:
+            type: string
+        configuration:
+          $ref: '#/components/schemas/JSONObject'
+          description: Configuration values validated against the InfrastructureType's configurationSchema.
+    UpdateInfrastructureReq:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        tags:
+          type: array
+          items:
+            type: string
+        configuration:
+          $ref: '#/components/schemas/JSONObject'
     JSONObject:
       type: object
       additionalProperties: true

@@ -1,0 +1,114 @@
+### Infrastructure (instance) CRUD
+###
+### Walks through the Infrastructure lifecycle (Phase 2 — no Status,
+### no /me/status, no install flow yet):
+###   1. Create provider participant + InfrastructureType (preconditions)
+###   2. Create Infrastructure with full configuration → asserts round-trip
+###   3. Get → asserts the rendered configuration came back
+###   4. List with providerId filter → must include the just-created row
+###   5. Patch: rename + replace configuration → assert new values
+###   6. Patch with bad configuration type → 400 (schema engine rejection)
+###   7. Delete → 204; subsequent Get → 403/404
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+### --- Create provider participant ------------------------------------------
+# @name iCreateProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-provider-e2e",
+  "status": "Enabled"
+}
+
+@i_providerId = {{iCreateProvider.response.body.$.id}}
+
+### --- Create InfrastructureType (with required+default schema) -------------
+# @name iCreateInfraType
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-type-for-instance-e2e",
+  "configurationSchema": {
+    "properties": {
+      "endpoint": {
+        "type": "string",
+        "label": "Endpoint",
+        "required": true
+      },
+      "maxRetries": {
+        "type": "integer",
+        "label": "Max Retries",
+        "default": 3
+      }
+    }
+  }
+}
+
+@i_infraTypeId = {{iCreateInfraType.response.body.$.id}}
+
+### --- Create Infrastructure (full config) ----------------------------------
+# @name iCreateInfra
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "csi-node-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_infraTypeId}}",
+  "tags": ["region:eu"],
+  "configuration": {
+    "endpoint": "https://example.invalid",
+    "maxRetries": 5
+  }
+}
+
+@i_infraId = {{iCreateInfra.response.body.$.id}}
+
+### --- Get → asserts configuration round-trip --------------------------------
+GET {{baseUrl}}/infrastructures/{{i_infraId}}
+Authorization: Bearer {{adminToken}}
+
+### --- List with providerId filter ------------------------------------------
+GET {{baseUrl}}/infrastructures?providerId={{i_providerId}}
+Authorization: Bearer {{adminToken}}
+
+### --- Patch: rename + replace configuration --------------------------------
+PATCH {{baseUrl}}/infrastructures/{{i_infraId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "csi-node-e2e-renamed",
+  "configuration": {
+    "endpoint": "https://renamed.invalid",
+    "maxRetries": 7
+  }
+}
+
+### --- Patch with bad configuration type → 400 ------------------------------
+PATCH {{baseUrl}}/infrastructures/{{i_infraId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "configuration": {
+    "endpoint": "https://still-valid",
+    "maxRetries": "not-an-integer"
+  }
+}
+
+### --- Delete → 204 ---------------------------------------------------------
+DELETE {{baseUrl}}/infrastructures/{{i_infraId}}
+Authorization: Bearer {{adminToken}}
+
+### --- Get after delete → 403/404 -------------------------------------------
+GET {{baseUrl}}/infrastructures/{{i_infraId}}
+Authorization: Bearer {{adminToken}}

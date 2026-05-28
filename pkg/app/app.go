@@ -43,6 +43,7 @@ type App struct {
 	ConfigPoolHandler         *api.ConfigPoolHandler
 	ConfigPoolValueHandler    *api.ConfigPoolValueHandler
 	InfrastructureTypeHandler *api.InfrastructureTypeHandler
+	InfrastructureHandler     *api.InfrastructureHandler
 	ServiceGroupHandler       *api.ServiceGroupHandler
 	ServiceHandler            *api.ServiceHandler
 	MetricTypeHandler         *api.MetricTypeHandler
@@ -212,6 +213,7 @@ func NewApp() *App {
 	participantCmd := domain.NewParticipantCommander(store)
 	agentTypeCmd := domain.NewAgentTypeCommander(store, agentConfigEngine)
 	infrastructureTypeCmd := domain.NewInfrastructureTypeCommander(store, infraConfigEngine)
+	infrastructureCmd := domain.NewInfrastructureCommander(store, infraConfigEngine)
 	jobCmd := domain.NewJobCommander(store, propertyEngine)
 	metricEntryCmd := domain.NewMetricEntryCommander(store, metricEntryRepo)
 	metricTypeCmd := domain.NewMetricTypeCommander(store, metricEntryRepo)
@@ -294,6 +296,7 @@ func NewApp() *App {
 		ConfigPoolValueHandler:    api.NewConfigPoolValueHandler(store.ConfigPoolValueRepo(), store.ConfigPoolRepo(), configPoolValueCmd, athz),
 		AgentTypeHandler:          api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz),
 		InfrastructureTypeHandler: api.NewInfrastructureTypeHandler(store.InfrastructureTypeRepo(), infrastructureTypeCmd, athz),
+		InfrastructureHandler:     api.NewInfrastructureHandler(store.InfrastructureRepo(), infrastructureCmd, athz),
 		ServiceGroupHandler:       api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz),
 		ServiceHandler:            api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, athz),
 		JobHandler:                api.NewJobHandler(store.JobRepo(), jobCmd, athz),

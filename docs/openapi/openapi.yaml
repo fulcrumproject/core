@@ -101,6 +101,12 @@ components:
       $ref: ./components/schemas/agents.yaml#/InstallTokenRes
     InstallTokenMetaRes:
       $ref: ./components/schemas/agents.yaml#/InstallTokenMetaRes
+    InfrastructureRes:
+      $ref: ./components/schemas/infrastructures.yaml#/InfrastructureRes
+    CreateInfrastructureReq:
+      $ref: ./components/schemas/infrastructures.yaml#/CreateInfrastructureReq
+    UpdateInfrastructureReq:
+      $ref: ./components/schemas/infrastructures.yaml#/UpdateInfrastructureReq
     JSONObject:
       $ref: ./components/schemas/common.yaml#/JSONObject
     CreateKeycloakUserReq:
@@ -225,6 +231,12 @@ paths:
     $ref: ./paths/infrastructure-types.yaml
   /infrastructure-types/{id}:
     $ref: ./paths/infrastructure-types@{id}.yaml
+  /infrastructures:
+    $ref: ./paths/infrastructures.yaml
+  /infrastructures/me:
+    $ref: ./paths/infrastructures@me.yaml
+  /infrastructures/{id}:
+    $ref: ./paths/infrastructures@{id}.yaml
   /agents:
     $ref: ./paths/agents.yaml
   /agents/me:

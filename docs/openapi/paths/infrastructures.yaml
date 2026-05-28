@@ -1,0 +1,103 @@
+get:
+  operationId: infrastructuresList
+  summary: List infrastructures
+  tags:
+    - Infrastructures
+  description: Retrieves a paginated list of infrastructures
+  x-auth-permissions:
+    - role: admin
+      permission: all infrastructures
+    - role: participant
+      permission: own infrastructures
+    - role: agent
+      permission: own infrastructure
+  parameters:
+    - name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    - name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 10
+    - name: sort
+      in: query
+      schema:
+        type: string
+      description: "Sort field. Prefix with '+' for ascending or '-' for descending. Default is ascending. Supported fields: name"
+      example: "+name"
+    - name: name
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+      description: Filter by infrastructure name (can specify multiple values)
+    - name: providerId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by provider participant ID
+    - name: infrastructureTypeId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by infrastructure type ID
+  responses:
+    "200":
+      description: A paginated list of infrastructures
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/common.yaml#/PageRes"
+              - type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/infrastructures.yaml#/InfrastructureRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"
+post:
+  operationId: infrastructuresCreate
+  summary: Create an infrastructure
+  tags:
+    - Infrastructures
+  description: Creates a new infrastructure instance under the given provider and infrastructure type. Configuration is validated against the infrastructure type's configurationSchema.
+  x-auth-permissions:
+    - role: admin
+      permission: all infrastructures
+    - role: participant
+      permission: own infrastructures
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/infrastructures.yaml#/CreateInfrastructureReq"
+  responses:
+    "201":
+      description: Infrastructure created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/infrastructures.yaml#/InfrastructureRes"
+    "400":
+      description: Invalid request body or configuration validation error
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/common.yaml#/ErrorRes"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses.yaml#/Forbidden"

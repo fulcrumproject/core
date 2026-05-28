@@ -1,0 +1,66 @@
+InfrastructureRes:
+  type: object
+  properties:
+    id:
+      $ref: "./common.yaml#/properties.UUID"
+    name:
+      type: string
+      example: "csi-node-01"
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+    infrastructureTypeId:
+      $ref: "./common.yaml#/properties.UUID"
+    tags:
+      type: array
+      items:
+        type: string
+      example: ["region:eu"]
+    configuration:
+      $ref: "./common.yaml#/JSONObject"
+      description: "Instance-specific configuration values validated against the referenced InfrastructureType's configurationSchema."
+    participant:
+      $ref: "./participants.yaml#/ParticipantRes"
+    infrastructureType:
+      $ref: "./infrastructure_types.yaml#/InfrastructureTypeRes"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+CreateInfrastructureReq:
+  type: object
+  required:
+    - name
+    - providerId
+    - infrastructureTypeId
+  properties:
+    name:
+      type: string
+      example: "csi-node-01"
+      minLength: 1
+    providerId:
+      $ref: "./common.yaml#/properties.UUID"
+    infrastructureTypeId:
+      $ref: "./common.yaml#/properties.UUID"
+    tags:
+      type: array
+      items:
+        type: string
+    configuration:
+      $ref: "./common.yaml#/JSONObject"
+      description: "Configuration values validated against the InfrastructureType's configurationSchema."
+
+UpdateInfrastructureReq:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+    tags:
+      type: array
+      items:
+        type: string
+    configuration:
+      $ref: "./common.yaml#/JSONObject"
