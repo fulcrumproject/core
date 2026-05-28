@@ -70,6 +70,8 @@ type Agent struct {
 	Provider         *Participant     `json:"-" gorm:"foreignKey:ProviderID"`
 	ServicePoolSetID *properties.UUID `json:"servicePoolSetId,omitempty"`
 	ServicePoolSet   *ServicePoolSet  `json:"-" gorm:"foreignKey:ServicePoolSetID"`
+	InfrastructureID *properties.UUID `json:"infrastructureId,omitempty"`
+	Infrastructure   *Infrastructure  `json:"infrastructure,omitempty" gorm:"foreignKey:InfrastructureID"`
 }
 
 // NewAgent creates a new agent with proper validation
@@ -83,6 +85,7 @@ func NewAgent(params CreateAgentParams) *Agent {
 		Tags:             pq.StringArray(params.Tags),
 		Configuration:    params.Configuration,
 		ServicePoolSetID: params.ServicePoolSetID,
+		InfrastructureID: params.InfrastructureID,
 	}
 }
 
@@ -192,6 +195,7 @@ type CreateAgentParams struct {
 	Tags             []string         `json:"tags"`
 	Configuration    *properties.JSON `json:"configuration,omitempty"`
 	ServicePoolSetID *properties.UUID `json:"servicePoolSetId,omitempty"`
+	InfrastructureID *properties.UUID `json:"infrastructureId,omitempty"`
 }
 
 type UpdateAgentParams struct {
@@ -243,6 +247,27 @@ func (s *agentCommander) Create(
 	agentType, err := s.store.AgentTypeRepo().Get(ctx, params.AgentTypeID)
 	if err != nil {
 		return nil, NewInvalidInputErrorf("agent type with ID %s does not exist", params.AgentTypeID)
+	}
+
+	requiredIT := agentType.RequiredInfrastructureType()
+	if requiredIT == nil {
+		if params.InfrastructureID != nil {
+			return nil, NewInvalidInputErrorf("agent type %s does not allow an infrastructure", params.AgentTypeID)
+		}
+	} else {
+		if params.InfrastructureID == nil {
+			return nil, NewInvalidInputErrorf("agent type %s requires an infrastructure of type %s", params.AgentTypeID, requiredIT.ID)
+		}
+		infra, err := s.store.InfrastructureRepo().Get(ctx, *params.InfrastructureID)
+		if err != nil {
+			return nil, NewInvalidInputErrorf("infrastructure with ID %s does not exist", *params.InfrastructureID)
+		}
+		if infra.ProviderID != params.ProviderID {
+			return nil, NewInvalidInputErrorf("infrastructure with ID %s does not belong to provider %s", *params.InfrastructureID, params.ProviderID)
+		}
+		if infra.InfrastructureTypeID != requiredIT.ID {
+			return nil, NewInvalidInputErrorf("infrastructure with ID %s has type %s, expected %s", *params.InfrastructureID, infra.InfrastructureTypeID, requiredIT.ID)
+		}
 	}
 
 	if params.ServicePoolSetID != nil {
@@ -518,6 +543,9 @@ type AgentQuerier interface {
 
 	// CountByAgentType returns the number of agents for a specific agent type
 	CountByAgentType(ctx context.Context, agentTypeID properties.UUID) (int64, error)
+
+	// CountByInfrastructure returns the number of agents bound to a specific infrastructure
+	CountByInfrastructure(ctx context.Context, infrastructureID properties.UUID) (int64, error)
 
 	// FindByServiceTypeAndTags finds agents that support a service type and have all required tags
 	FindByServiceTypeAndTags(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*Agent, error)

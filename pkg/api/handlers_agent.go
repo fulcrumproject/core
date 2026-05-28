@@ -20,6 +20,7 @@ type CreateAgentReq struct {
 	Tags             []string         `json:"tags"`
 	Configuration    *properties.JSON `json:"configuration,omitempty"`
 	ServicePoolSetID *properties.UUID `json:"servicePoolSetId,omitempty"`
+	InfrastructureID *properties.UUID `json:"infrastructureId,omitempty"`
 }
 
 // authz.ObjectScope implements authz.ObjectScopeProvider interface
@@ -113,6 +114,7 @@ func (h *AgentHandler) Create(ctx context.Context, req *CreateAgentReq) (*domain
 		Tags:             req.Tags,
 		Configuration:    req.Configuration,
 		ServicePoolSetID: req.ServicePoolSetID,
+		InfrastructureID: req.InfrastructureID,
 	}
 	return h.commander.Create(ctx, params)
 }
@@ -164,8 +166,10 @@ type AgentRes struct {
 	Tags             []string           `json:"tags"`
 	Configuration    *properties.JSON   `json:"configuration,omitempty"`
 	ServicePoolSetID *properties.UUID   `json:"servicePoolSetId,omitempty"`
+	InfrastructureID *properties.UUID   `json:"infrastructureId,omitempty"`
 	Participant      *ParticipantRes    `json:"participant,omitempty"`
 	AgentType        *AgentTypeRes      `json:"agentType,omitempty"`
+	Infrastructure   *InfrastructureRes `json:"infrastructure,omitempty"`
 	CreatedAt        JSONUTCTime        `json:"createdAt"`
 	UpdatedAt        JSONUTCTime        `json:"updatedAt"`
 }
@@ -181,6 +185,7 @@ func AgentToRes(a *domain.Agent) *AgentRes {
 		Tags:             []string(a.Tags),
 		Configuration:    a.Configuration,
 		ServicePoolSetID: a.ServicePoolSetID,
+		InfrastructureID: a.InfrastructureID,
 		CreatedAt:        JSONUTCTime(a.CreatedAt),
 		UpdatedAt:        JSONUTCTime(a.UpdatedAt),
 	}
@@ -189,6 +194,9 @@ func AgentToRes(a *domain.Agent) *AgentRes {
 	}
 	if a.AgentType != nil {
 		response.AgentType = AgentTypeToRes(a.AgentType)
+	}
+	if a.Infrastructure != nil {
+		response.Infrastructure = InfrastructureToRes(a.Infrastructure)
 	}
 	return response
 }

@@ -68,52 +68,59 @@ func (h *AgentTypeHandler) Routes() func(r chi.Router) {
 
 // CreateAgentTypeReq represents the request body for creating agent types
 type CreateAgentTypeReq struct {
-	Name                string            `json:"name"`
-	ServiceTypeIds      []properties.UUID `json:"serviceTypeIds,omitempty"`
-	ConfigurationSchema schema.Schema     `json:"configurationSchema"`
-	ConfigTemplate      string            `json:"configTemplate,omitempty"`
-	CmdTemplate         string            `json:"cmdTemplate,omitempty"`
-	ConfigContentType   string            `json:"configContentType,omitempty"`
+	Name                  string            `json:"name"`
+	ServiceTypeIds        []properties.UUID `json:"serviceTypeIds,omitempty"`
+	InfrastructureTypeIds []properties.UUID `json:"infrastructureTypeIds,omitempty"`
+	ConfigurationSchema   schema.Schema     `json:"configurationSchema"`
+	ConfigTemplate        string            `json:"configTemplate,omitempty"`
+	CmdTemplate           string            `json:"cmdTemplate,omitempty"`
+	ConfigContentType     string            `json:"configContentType,omitempty"`
 }
 
 // UpdateAgentTypeReq represents the request body for updating agent types
 type UpdateAgentTypeReq struct {
-	Name                *string            `json:"name"`
-	ServiceTypeIds      *[]properties.UUID `json:"serviceTypeIds,omitempty"`
-	ConfigurationSchema *schema.Schema     `json:"configurationSchema,omitempty"`
-	ConfigTemplate      *string            `json:"configTemplate,omitempty"`
-	CmdTemplate         *string            `json:"cmdTemplate,omitempty"`
-	ConfigContentType   *string            `json:"configContentType,omitempty"`
+	Name                  *string            `json:"name"`
+	ServiceTypeIds        *[]properties.UUID `json:"serviceTypeIds,omitempty"`
+	InfrastructureTypeIds *[]properties.UUID `json:"infrastructureTypeIds,omitempty"`
+	ConfigurationSchema   *schema.Schema     `json:"configurationSchema,omitempty"`
+	ConfigTemplate        *string            `json:"configTemplate,omitempty"`
+	CmdTemplate           *string            `json:"cmdTemplate,omitempty"`
+	ConfigContentType     *string            `json:"configContentType,omitempty"`
 }
 
 // AgentTypeRes represents the response body for agent type operations
 type AgentTypeRes struct {
-	ID                  properties.UUID   `json:"id"`
-	Name                string            `json:"name"`
-	CreatedAt           JSONUTCTime       `json:"createdAt"`
-	UpdatedAt           JSONUTCTime       `json:"updatedAt"`
-	ServiceTypeIds      []properties.UUID `json:"serviceTypeIds"`
-	ConfigurationSchema schema.Schema     `json:"configurationSchema"`
-	ConfigTemplate      string            `json:"configTemplate"`
-	CmdTemplate         string            `json:"cmdTemplate"`
-	ConfigContentType   string            `json:"configContentType"`
+	ID                    properties.UUID   `json:"id"`
+	Name                  string            `json:"name"`
+	CreatedAt             JSONUTCTime       `json:"createdAt"`
+	UpdatedAt             JSONUTCTime       `json:"updatedAt"`
+	ServiceTypeIds        []properties.UUID `json:"serviceTypeIds"`
+	InfrastructureTypeIds []properties.UUID `json:"infrastructureTypeIds"`
+	ConfigurationSchema   schema.Schema     `json:"configurationSchema"`
+	ConfigTemplate        string            `json:"configTemplate"`
+	CmdTemplate           string            `json:"cmdTemplate"`
+	ConfigContentType     string            `json:"configContentType"`
 }
 
 // AgentTypeToRes converts a domain.AgentType to an AgentTypeResponse
 func AgentTypeToRes(at *domain.AgentType) *AgentTypeRes {
 	response := &AgentTypeRes{
-		ID:                  at.ID,
-		Name:                at.Name,
-		CreatedAt:           JSONUTCTime(at.CreatedAt),
-		UpdatedAt:           JSONUTCTime(at.UpdatedAt),
-		ServiceTypeIds:      make([]properties.UUID, 0),
-		ConfigurationSchema: at.ConfigurationSchema,
-		ConfigTemplate:      at.ConfigTemplate,
-		CmdTemplate:         at.CmdTemplate,
-		ConfigContentType:   at.ConfigContentType,
+		ID:                    at.ID,
+		Name:                  at.Name,
+		CreatedAt:             JSONUTCTime(at.CreatedAt),
+		UpdatedAt:             JSONUTCTime(at.UpdatedAt),
+		ServiceTypeIds:        make([]properties.UUID, 0),
+		InfrastructureTypeIds: make([]properties.UUID, 0),
+		ConfigurationSchema:   at.ConfigurationSchema,
+		ConfigTemplate:        at.ConfigTemplate,
+		CmdTemplate:           at.CmdTemplate,
+		ConfigContentType:     at.ConfigContentType,
 	}
 	for _, st := range at.ServiceTypes {
 		response.ServiceTypeIds = append(response.ServiceTypeIds, st.ID)
+	}
+	for _, it := range at.InfrastructureTypes {
+		response.InfrastructureTypeIds = append(response.InfrastructureTypeIds, it.ID)
 	}
 	return response
 }
@@ -122,25 +129,27 @@ func AgentTypeToRes(at *domain.AgentType) *AgentTypeRes {
 
 func (h *AgentTypeHandler) Create(ctx context.Context, req *CreateAgentTypeReq) (*domain.AgentType, error) {
 	params := domain.CreateAgentTypeParams{
-		Name:                req.Name,
-		ServiceTypeIds:      req.ServiceTypeIds,
-		ConfigurationSchema: req.ConfigurationSchema,
-		ConfigTemplate:      req.ConfigTemplate,
-		CmdTemplate:         req.CmdTemplate,
-		ConfigContentType:   req.ConfigContentType,
+		Name:                  req.Name,
+		ServiceTypeIds:        req.ServiceTypeIds,
+		InfrastructureTypeIds: req.InfrastructureTypeIds,
+		ConfigurationSchema:   req.ConfigurationSchema,
+		ConfigTemplate:        req.ConfigTemplate,
+		CmdTemplate:           req.CmdTemplate,
+		ConfigContentType:     req.ConfigContentType,
 	}
 	return h.commander.Create(ctx, params)
 }
 
 func (h *AgentTypeHandler) Update(ctx context.Context, id properties.UUID, req *UpdateAgentTypeReq) (*domain.AgentType, error) {
 	params := domain.UpdateAgentTypeParams{
-		ID:                  id,
-		Name:                req.Name,
-		ServiceTypeIds:      req.ServiceTypeIds,
-		ConfigurationSchema: req.ConfigurationSchema,
-		ConfigTemplate:      req.ConfigTemplate,
-		CmdTemplate:         req.CmdTemplate,
-		ConfigContentType:   req.ConfigContentType,
+		ID:                    id,
+		Name:                  req.Name,
+		ServiceTypeIds:        req.ServiceTypeIds,
+		InfrastructureTypeIds: req.InfrastructureTypeIds,
+		ConfigurationSchema:   req.ConfigurationSchema,
+		ConfigTemplate:        req.ConfigTemplate,
+		CmdTemplate:           req.CmdTemplate,
+		ConfigContentType:     req.ConfigContentType,
 	}
 	return h.commander.Update(ctx, params)
 }

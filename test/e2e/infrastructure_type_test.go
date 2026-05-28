@@ -107,4 +107,43 @@ func testInfrastructureType(t *testing.T, env *Env) {
 		require.NoError(t, err)
 		require.Equalf(t, http.StatusForbidden, resp.StatusCode(), "body: %s", resp.String())
 	})
+
+	t.Run("delete blocked by dependent infrastructure", func(t *testing.T) {
+		// Create IT first so its t.Cleanup runs LAST (after the dependent infra
+		// is removed). Same trick used elsewhere for FK-blocked cleanup.
+		itID := createInfraType(t, env)
+		infra := testhelpers.MustPost[api.CreateInfrastructureReq, api.InfrastructureRes](t, env.AdminClient, "/infrastructures", api.CreateInfrastructureReq{
+			Name:                 "infra-blocks-it-" + testhelpers.Uniq(),
+			ProviderID:           env.Seed.Provider.ID,
+			InfrastructureTypeID: itID,
+			Configuration:        &properties.JSON{"endpoint": "https://x.invalid"},
+		})
+		t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/infrastructures", infra.ID) })
+
+		resp, err := env.AdminClient.R().
+			SetPathParam("id", itID.String()).
+			Delete("/infrastructure-types/{id}")
+		require.NoError(t, err)
+		require.Equalf(t, http.StatusBadRequest, resp.StatusCode(), "expected dependency block, body: %s", resp.String())
+	})
+
+	t.Run("delete blocked by dependent agent type", func(t *testing.T) {
+		itID := createInfraType(t, env)
+		at := testhelpers.MustPost[api.CreateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", api.CreateAgentTypeReq{
+			Name:                  "at-blocks-it-" + testhelpers.Uniq(),
+			InfrastructureTypeIds: []properties.UUID{itID},
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"placeholder": {Type: "string"},
+				},
+			},
+		})
+		t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/agent-types", at.ID) })
+
+		resp, err := env.AdminClient.R().
+			SetPathParam("id", itID.String()).
+			Delete("/infrastructure-types/{id}")
+		require.NoError(t, err)
+		require.Equalf(t, http.StatusBadRequest, resp.StatusCode(), "expected dependency block, body: %s", resp.String())
+	})
 }

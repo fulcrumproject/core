@@ -56,3 +56,12 @@ func infrastructureAuthzFilterApplier(s *auth.IdentityScope, q *gorm.DB) *gorm.D
 func (r *GormInfrastructureRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
 	return r.AuthScopeByFields(ctx, id, "null", "provider_id", "id as agent_id", "null")
 }
+
+func (r *GormInfrastructureRepository) CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error) {
+	var count int64
+	result := r.db.WithContext(ctx).Model(&domain.Infrastructure{}).Where("infrastructure_type_id = ?", infrastructureTypeID).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}

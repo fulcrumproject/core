@@ -17,7 +17,13 @@ func NewClient(serverURL, authToken string) *resty.Client {
 		SetAuthToken(authToken)
 }
 
-func Uniq() string { return properties.NewUUID().String()[:8] }
+// Uniq returns 8 hex chars suitable as a unique suffix in test fixture names.
+// Uses the random/clock-seq tail of a UUIDv7, not the timestamp prefix — back-to-back
+// calls within the same millisecond would otherwise collide.
+func Uniq() string {
+	s := properties.NewUUID().String()
+	return s[len(s)-8:]
+}
 
 func MustGet[T any](t *testing.T, c *resty.Client, path string, id properties.UUID) *T {
 	t.Helper()

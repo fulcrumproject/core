@@ -118,4 +118,44 @@ func testInfrastructure(t *testing.T, env *Env) {
 		require.NoError(t, err)
 		require.Equalf(t, http.StatusBadRequest, resp.StatusCode(), "body: %s", resp.String())
 	})
+
+	t.Run("delete blocked by dependent agent", func(t *testing.T) {
+		itID := mkType(t)
+
+		// AgentType bound to the same IT so the Agent below can attach to the
+		// Infrastructure below.
+		at := testhelpers.MustPost[api.CreateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", api.CreateAgentTypeReq{
+			Name:                  "at-infra-block-" + testhelpers.Uniq(),
+			InfrastructureTypeIds: []properties.UUID{itID},
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"placeholder": {Type: "string"},
+				},
+			},
+		})
+		t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/agent-types", at.ID) })
+
+		infra := testhelpers.MustPost[api.CreateInfrastructureReq, api.InfrastructureRes](t, env.AdminClient, "/infrastructures", api.CreateInfrastructureReq{
+			Name:                 "infra-blocked-" + testhelpers.Uniq(),
+			ProviderID:           env.Seed.Provider.ID,
+			InfrastructureTypeID: itID,
+			Configuration:        &properties.JSON{"endpoint": "https://x.invalid"},
+		})
+		t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/infrastructures", infra.ID) })
+
+		ag := testhelpers.MustPost[api.CreateAgentReq, api.AgentRes](t, env.AdminClient, "/agents", api.CreateAgentReq{
+			Name:             "agent-blocks-infra-" + testhelpers.Uniq(),
+			ProviderID:       env.Seed.Provider.ID,
+			AgentTypeID:      at.ID,
+			InfrastructureID: &infra.ID,
+		})
+		t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/agents", ag.ID) })
+
+		// Block: Infrastructure can't be deleted while the Agent still binds it.
+		resp, err := env.AdminClient.R().
+			SetPathParam("id", infra.ID.String()).
+			Delete("/infrastructures/{id}")
+		require.NoError(t, err)
+		require.Equalf(t, http.StatusBadRequest, resp.StatusCode(), "expected dependency block, body: %s", resp.String())
+	})
 }

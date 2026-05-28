@@ -274,6 +274,70 @@ func TestAgentTypeRepository(t *testing.T) {
 		})
 	})
 
+	t.Run("Save replaces infrastructure type associations", func(t *testing.T) {
+		ctx := context.Background()
+		infraTypeRepo := NewInfrastructureTypeRepository(tdb.DB)
+
+		it1 := createTestInfrastructureType(t)
+		require.NoError(t, infraTypeRepo.Create(ctx, it1))
+		it2 := createTestInfrastructureType(t)
+		require.NoError(t, infraTypeRepo.Create(ctx, it2))
+
+		agentType := createTestAgentType(t)
+		agentType.InfrastructureTypes = []domain.InfrastructureType{*it1}
+		require.NoError(t, repo.Create(ctx, agentType))
+
+		found, err := repo.Get(ctx, agentType.ID)
+		require.NoError(t, err)
+		require.Len(t, found.InfrastructureTypes, 1)
+		assert.Equal(t, it1.ID, found.InfrastructureTypes[0].ID)
+
+		// Replace with it2
+		agentType.InfrastructureTypes = []domain.InfrastructureType{*it2}
+		require.NoError(t, repo.Save(ctx, agentType))
+
+		found, err = repo.Get(ctx, agentType.ID)
+		require.NoError(t, err)
+		require.Len(t, found.InfrastructureTypes, 1)
+		assert.Equal(t, it2.ID, found.InfrastructureTypes[0].ID)
+
+		// Replace with empty
+		agentType.InfrastructureTypes = []domain.InfrastructureType{}
+		require.NoError(t, repo.Save(ctx, agentType))
+
+		found, err = repo.Get(ctx, agentType.ID)
+		require.NoError(t, err)
+		assert.Len(t, found.InfrastructureTypes, 0)
+	})
+
+	t.Run("CountByInfrastructureType", func(t *testing.T) {
+		ctx := context.Background()
+		infraTypeRepo := NewInfrastructureTypeRepository(tdb.DB)
+
+		it := createTestInfrastructureType(t)
+		require.NoError(t, infraTypeRepo.Create(ctx, it))
+		other := createTestInfrastructureType(t)
+		require.NoError(t, infraTypeRepo.Create(ctx, other))
+
+		// 2 AgentTypes reference `it`; 1 references `other`
+		for i := 0; i < 2; i++ {
+			at := createTestAgentType(t)
+			at.InfrastructureTypes = []domain.InfrastructureType{*it}
+			require.NoError(t, repo.Create(ctx, at))
+		}
+		atOther := createTestAgentType(t)
+		atOther.InfrastructureTypes = []domain.InfrastructureType{*other}
+		require.NoError(t, repo.Create(ctx, atOther))
+
+		n, err := repo.CountByInfrastructureType(ctx, it.ID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), n)
+
+		n, err = repo.CountByInfrastructureType(ctx, other.ID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), n)
+	})
+
 	t.Run("AuthScope", func(t *testing.T) {
 		t.Run("success - returns empty auth scope", func(t *testing.T) {
 			ctx := context.Background()

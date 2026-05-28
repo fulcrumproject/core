@@ -129,10 +129,7 @@ func TestInfrastructure_Update(t *testing.T) {
 	t.Run("update name only", func(t *testing.T) {
 		infra := makeInfra()
 		newName := "Renamed"
-		updated := infra.Update(&newName, nil, nil)
-		if !updated {
-			t.Error("Expected Update() to return true")
-		}
+		infra.Update(UpdateInfrastructureParams{Name: &newName})
 		if infra.Name != "Renamed" {
 			t.Errorf("Expected 'Renamed', got %q", infra.Name)
 		}
@@ -141,10 +138,7 @@ func TestInfrastructure_Update(t *testing.T) {
 	t.Run("update tags only", func(t *testing.T) {
 		infra := makeInfra()
 		newTags := []string{"a", "b"}
-		updated := infra.Update(nil, &newTags, nil)
-		if !updated {
-			t.Error("Expected Update() to return true")
-		}
+		infra.Update(UpdateInfrastructureParams{Tags: &newTags})
 		if len(infra.Tags) != 2 || infra.Tags[0] != "a" || infra.Tags[1] != "b" {
 			t.Errorf("Expected new tags, got %v", infra.Tags)
 		}
@@ -153,10 +147,7 @@ func TestInfrastructure_Update(t *testing.T) {
 	t.Run("update configuration only", func(t *testing.T) {
 		infra := makeInfra()
 		cfg := properties.JSON{"endpoint": "https://x"}
-		updated := infra.Update(nil, nil, &cfg)
-		if !updated {
-			t.Error("Expected Update() to return true")
-		}
+		infra.Update(UpdateInfrastructureParams{Configuration: &cfg})
 		if infra.Configuration == nil || (*infra.Configuration)["endpoint"] != "https://x" {
 			t.Errorf("Expected configuration to be set, got %v", infra.Configuration)
 		}
@@ -165,10 +156,7 @@ func TestInfrastructure_Update(t *testing.T) {
 	t.Run("nil pointers leave fields untouched", func(t *testing.T) {
 		infra := makeInfra()
 		before := *infra
-		updated := infra.Update(nil, nil, nil)
-		if updated {
-			t.Error("Expected Update() with all-nil params to return false")
-		}
+		infra.Update(UpdateInfrastructureParams{})
 		if infra.Name != before.Name || len(infra.Tags) != len(before.Tags) {
 			t.Error("Update with nil params mutated fields")
 		}
@@ -258,9 +246,16 @@ func TestInfrastructureCommander_Create(t *testing.T) {
 		{
 			name:            "infrastructure type does not exist",
 			providerExists:  true,
-			infraTypeGetErr: errors.New("not found"),
+			infraTypeGetErr: NotFoundError{Err: errors.New("not found")},
 			wantErr:         true,
 			errContains:     "infrastructure type with ID",
+		},
+		{
+			name:            "infrastructure type lookup errors",
+			providerExists:  true,
+			infraTypeGetErr: errors.New("infra type lookup boom"),
+			wantErr:         true,
+			errContains:     "infra type lookup boom",
 		},
 	}
 
@@ -452,6 +447,10 @@ func TestInfrastructureCommander_Delete(t *testing.T) {
 		infraRepo.On("Delete", mock.Anything, infraID).Return(nil).Maybe()
 		ms.On("InfrastructureRepo").Return(infraRepo).Maybe()
 
+		agentRepo := NewMockAgentRepository(t)
+		agentRepo.On("CountByInfrastructure", mock.Anything, infraID).Return(int64(0), nil).Maybe()
+		ms.On("AgentRepo").Return(agentRepo).Maybe()
+
 		eventRepo := NewMockEventRepository(t)
 		eventRepo.On("Create", mock.Anything, mock.MatchedBy(func(e *Event) bool {
 			return e.Type == EventTypeInfrastructureDeleted
@@ -463,6 +462,34 @@ func TestInfrastructureCommander_Delete(t *testing.T) {
 
 		if err := commander.Delete(ctx, infraID); err != nil {
 			t.Fatalf("Delete() error = %v, want nil", err)
+		}
+	})
+
+	t.Run("blocks when dependent agents exist", func(t *testing.T) {
+		ms := setupInfraMockStore(t)
+
+		infraRepo := NewMockInfrastructureRepository(t)
+		infraRepo.On("Get", mock.Anything, infraID).Return(&Infrastructure{
+			BaseEntity:           BaseEntity{ID: infraID},
+			Name:                 "infra",
+			InfrastructureTypeID: properties.UUID(uuid.New()),
+			ProviderID:           properties.UUID(uuid.New()),
+		}, nil).Maybe()
+		ms.On("InfrastructureRepo").Return(infraRepo).Maybe()
+
+		agentRepo := NewMockAgentRepository(t)
+		agentRepo.On("CountByInfrastructure", mock.Anything, infraID).Return(int64(2), nil).Maybe()
+		ms.On("AgentRepo").Return(agentRepo).Maybe()
+
+		commander := NewInfrastructureCommander(ms, NewInfrastructureConfigSchemaEngine(nil))
+		ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
+
+		err := commander.Delete(ctx, infraID)
+		if err == nil {
+			t.Fatal("expected error for dependent agents")
+		}
+		if !strings.Contains(err.Error(), "dependent agent") {
+			t.Errorf("expected dependent-agent error, got %v", err)
 		}
 	})
 

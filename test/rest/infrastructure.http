@@ -1,7 +1,6 @@
-### Infrastructure (instance) CRUD
+### Infrastructure (instance) CRUD + Phase 4 AgentType/Agent binding
 ###
-### Walks through the Infrastructure lifecycle (Phase 2 — no Status,
-### no /me/status, no install flow yet):
+### Walks through the Infrastructure lifecycle (Phase 2):
 ###   1. Create provider participant + InfrastructureType (preconditions)
 ###   2. Create Infrastructure with full configuration → asserts round-trip
 ###   3. Get → asserts the rendered configuration came back
@@ -9,6 +8,8 @@
 ###   5. Patch: rename + replace configuration → assert new values
 ###   6. Patch with bad configuration type → 400 (schema engine rejection)
 ###   7. Delete → 204; subsequent Get → 403/404
+###
+### Then Phase 4 exercises AgentType↔InfraType + Agent.InfrastructureID (see below).
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
@@ -111,4 +112,145 @@ Authorization: Bearer {{adminToken}}
 
 ### --- Get after delete → 403/404 -------------------------------------------
 GET {{baseUrl}}/infrastructures/{{i_infraId}}
+Authorization: Bearer {{adminToken}}
+
+###
+### Phase 4 — AgentType ↔ InfrastructureType binding + Agent compatibility
+###   8.  Create a second InfraType (for the wrong-type negative case)
+###   9.  Create AgentType bound to the existing InfraType (IT-A)
+###  10.  Create Infrastructure of IT-A and one of IT-B under the same provider
+###  11.  POST /agents matching infra → 201, infrastructureId resolved in response
+###  12.  POST /agents with wrong-type infra → 400
+###  13.  POST /agents missing infrastructureId → 400
+###  14.  DELETE /infrastructures/{INFRA-A} while agent still binds it → 400
+###  15.  DELETE /infrastructure-types/{IT-A} while AgentType references it → 400
+
+### --- Create second InfrastructureType (IT-B) ------------------------------
+# @name iCreateInfraTypeB
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-type-b-e2e",
+  "configurationSchema": {
+    "properties": {
+      "endpoint": {
+        "type": "string",
+        "required": true
+      }
+    }
+  }
+}
+
+@i_infraTypeB_Id = {{iCreateInfraTypeB.response.body.$.id}}
+
+### --- Create AgentType bound to IT-A ---------------------------------------
+# @name iCreateAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "agent-type-bound-e2e",
+  "infrastructureTypeIds": ["{{i_infraTypeId}}"],
+  "configurationSchema": {
+    "properties": {
+      "endpoint": {
+        "type": "string",
+        "required": true
+      }
+    }
+  }
+}
+
+@i_agentTypeId = {{iCreateAgentType.response.body.$.id}}
+
+### --- Create Infrastructure A (IT-A, used for happy path) ------------------
+# @name iCreateInfraA
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-a-bound-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_infraTypeId}}",
+  "configuration": {
+    "endpoint": "https://a.invalid"
+  }
+}
+
+@i_infraA_Id = {{iCreateInfraA.response.body.$.id}}
+
+### --- Create Infrastructure B (IT-B, used for wrong-type case) -------------
+# @name iCreateInfraB
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-b-wrong-type-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_infraTypeB_Id}}",
+  "configuration": {
+    "endpoint": "https://b.invalid"
+  }
+}
+
+@i_infraB_Id = {{iCreateInfraB.response.body.$.id}}
+
+### --- Create Agent with matching infrastructure → 201 ----------------------
+# @name iCreateAgent
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "agent-bound-e2e",
+  "providerId": "{{i_providerId}}",
+  "agentTypeId": "{{i_agentTypeId}}",
+  "infrastructureId": "{{i_infraA_Id}}",
+  "configuration": {
+    "endpoint": "https://agent.invalid"
+  }
+}
+
+@i_agentId = {{iCreateAgent.response.body.$.id}}
+
+### --- Create Agent with wrong-type infra → 400 -----------------------------
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "agent-wrong-infra-e2e",
+  "providerId": "{{i_providerId}}",
+  "agentTypeId": "{{i_agentTypeId}}",
+  "infrastructureId": "{{i_infraB_Id}}",
+  "configuration": {
+    "endpoint": "https://agent.invalid"
+  }
+}
+
+### --- Create Agent without required infraId → 400 --------------------------
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "agent-missing-infra-e2e",
+  "providerId": "{{i_providerId}}",
+  "agentTypeId": "{{i_agentTypeId}}",
+  "configuration": {
+    "endpoint": "https://agent.invalid"
+  }
+}
+
+### --- Delete Infrastructure A while agent still binds it → 400 -------------
+DELETE {{baseUrl}}/infrastructures/{{i_infraA_Id}}
+Authorization: Bearer {{adminToken}}
+
+### --- Delete InfraType A while AgentType still references it → 400 --------
+DELETE {{baseUrl}}/infrastructure-types/{{i_infraTypeId}}
 Authorization: Bearer {{adminToken}}

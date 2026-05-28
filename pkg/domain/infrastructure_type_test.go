@@ -1,10 +1,15 @@
 package domain
 
 import (
+	"context"
 	"strings"
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/auth"
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestInfrastructureType_ValidateWithEngine_Schema(t *testing.T) {
@@ -262,4 +267,67 @@ func TestInfrastructureType_Update(t *testing.T) {
 			t.Errorf("Update with nil params mutated fields")
 		}
 	})
+}
+
+func TestInfrastructureTypeCommander_Delete(t *testing.T) {
+	itID := properties.UUID(uuid.New())
+
+	type stubs struct {
+		infraCount int64
+		atCount    int64
+	}
+
+	tests := []struct {
+		name        string
+		stubs       stubs
+		wantErr     bool
+		errContains string
+	}{
+		{name: "happy path", stubs: stubs{infraCount: 0, atCount: 0}, wantErr: false},
+		{name: "blocked by dependent infrastructures", stubs: stubs{infraCount: 1, atCount: 0}, wantErr: true, errContains: "dependent infrastructure"},
+		{name: "blocked by dependent agent types", stubs: stubs{infraCount: 0, atCount: 2}, wantErr: true, errContains: "dependent agent type"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ms := NewMockStore(t)
+			ms.EXPECT().Atomic(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, fn func(Store) error) error {
+				return fn(ms)
+			}).Maybe()
+
+			itRepo := NewMockInfrastructureTypeRepository(t)
+			itRepo.On("Get", mock.Anything, itID).Return(&InfrastructureType{BaseEntity: BaseEntity{ID: itID}, Name: "it"}, nil).Maybe()
+			itRepo.On("Delete", mock.Anything, itID).Return(nil).Maybe()
+			ms.On("InfrastructureTypeRepo").Return(itRepo).Maybe()
+
+			infraRepo := NewMockInfrastructureRepository(t)
+			infraRepo.On("CountByInfrastructureType", mock.Anything, itID).Return(tt.stubs.infraCount, nil).Maybe()
+			ms.On("InfrastructureRepo").Return(infraRepo).Maybe()
+
+			atRepo := NewMockAgentTypeRepository(t)
+			atRepo.On("CountByInfrastructureType", mock.Anything, itID).Return(tt.stubs.atCount, nil).Maybe()
+			ms.On("AgentTypeRepo").Return(atRepo).Maybe()
+
+			eventRepo := NewMockEventRepository(t)
+			eventRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Maybe()
+			ms.On("EventRepo").Return(eventRepo).Maybe()
+
+			commander := NewInfrastructureTypeCommander(ms, NewInfrastructureConfigSchemaEngine(nil))
+			ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
+
+			err := commander.Delete(ctx, itID)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error")
+				}
+				if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("expected error to contain %q, got %v", tt.errContains, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("Delete() error = %v", err)
+			}
+		})
+	}
 }

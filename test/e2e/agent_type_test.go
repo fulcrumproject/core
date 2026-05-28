@@ -86,4 +86,73 @@ func testAgentType(t *testing.T, env *Env) {
 		require.NoError(t, err)
 		require.Equalf(t, http.StatusForbidden, resp.StatusCode(), "body: %s", resp.String())
 	})
+
+	t.Run("infrastructureTypeIds round-trip + PATCH replace", func(t *testing.T) {
+		it1 := createInfraType(t, env)
+		it2 := createInfraType(t, env)
+
+		at := testhelpers.MustPost[api.CreateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", api.CreateAgentTypeReq{
+			Name:                  "at-with-it-" + testhelpers.Uniq(),
+			InfrastructureTypeIds: []properties.UUID{it1},
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"placeholder": {Type: "string"},
+				},
+			},
+		})
+		t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/agent-types", at.ID) })
+
+		require.Equal(t, []properties.UUID{it1}, at.InfrastructureTypeIds)
+
+		got := testhelpers.MustGet[api.AgentTypeRes](t, env.AdminClient, "/agent-types", at.ID)
+		require.Equal(t, []properties.UUID{it1}, got.InfrastructureTypeIds, "round-trip preserves InfrastructureTypeIds")
+
+		// PATCH replaces the bound type.
+		newIDs := []properties.UUID{it2}
+		updated := testhelpers.MustPatch[api.UpdateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", at.ID, api.UpdateAgentTypeReq{
+			InfrastructureTypeIds: &newIDs,
+		})
+		require.Equal(t, []properties.UUID{it2}, updated.InfrastructureTypeIds)
+
+		// PATCH with empty slice clears it.
+		emptyIDs := []properties.UUID{}
+		cleared := testhelpers.MustPatch[api.UpdateAgentTypeReq, api.AgentTypeRes](t, env.AdminClient, "/agent-types", at.ID, api.UpdateAgentTypeReq{
+			InfrastructureTypeIds: &emptyIDs,
+		})
+		require.Empty(t, cleared.InfrastructureTypeIds)
+	})
+
+	t.Run("rejects more than one infrastructure type", func(t *testing.T) {
+		it1 := createInfraType(t, env)
+		it2 := createInfraType(t, env)
+		resp, err := env.AdminClient.R().
+			SetBody(api.CreateAgentTypeReq{
+				Name:                  "at-many-it-" + testhelpers.Uniq(),
+				InfrastructureTypeIds: []properties.UUID{it1, it2},
+				ConfigurationSchema: schema.Schema{
+					Properties: map[string]schema.PropertyDefinition{
+						"placeholder": {Type: "string"},
+					},
+				},
+			}).
+			Post("/agent-types")
+		require.NoError(t, err)
+		require.Equalf(t, http.StatusBadRequest, resp.StatusCode(), "body: %s", resp.String())
+	})
+}
+
+// createInfraType is a small e2e helper for tests that just need a usable
+// InfrastructureType ID — registers t.Cleanup automatically.
+func createInfraType(t *testing.T, env *Env) properties.UUID {
+	t.Helper()
+	it := testhelpers.MustPost[api.CreateInfrastructureTypeReq, api.InfrastructureTypeRes](t, env.AdminClient, "/infrastructure-types", api.CreateInfrastructureTypeReq{
+		Name: "it-helper-" + testhelpers.Uniq(),
+		ConfigurationSchema: schema.Schema{
+			Properties: map[string]schema.PropertyDefinition{
+				"endpoint": {Type: "string", Required: true},
+			},
+		},
+	})
+	t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/infrastructure-types", it.ID) })
+	return it.ID
 }

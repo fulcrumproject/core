@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -75,22 +76,16 @@ func (i *Infrastructure) Validate() error {
 }
 
 // Update mutates the infrastructure's mutable fields when the pointer args are non-nil.
-// Returns true if any field changed.
-func (i *Infrastructure) Update(name *string, tags *[]string, configuration *properties.JSON) bool {
-	updated := false
-	if name != nil {
-		i.Name = *name
-		updated = true
+func (i *Infrastructure) Update(params UpdateInfrastructureParams) {
+	if params.Name != nil {
+		i.Name = *params.Name
 	}
-	if tags != nil {
-		i.Tags = pq.StringArray(*tags)
-		updated = true
+	if params.Tags != nil {
+		i.Tags = pq.StringArray(*params.Tags)
 	}
-	if configuration != nil {
-		i.Configuration = configuration
-		updated = true
+	if params.Configuration != nil {
+		i.Configuration = params.Configuration
 	}
-	return updated
 }
 
 // InfrastructureCommander defines the command operations for Infrastructure.
@@ -146,7 +141,11 @@ func (c *infrastructureCommander) Create(
 
 	infraType, err := c.store.InfrastructureTypeRepo().Get(ctx, params.InfrastructureTypeID)
 	if err != nil {
-		return nil, NewInvalidInputErrorf("infrastructure type with ID %s does not exist", params.InfrastructureTypeID)
+		var nfe NotFoundError
+		if errors.As(err, &nfe) {
+			return nil, NewInvalidInputErrorf("infrastructure type with ID %s does not exist", params.InfrastructureTypeID)
+		}
+		return nil, err
 	}
 
 	// Pre-generate the infrastructure ID so future pool generators can stamp
@@ -206,15 +205,14 @@ func (c *infrastructureCommander) Update(
 	}
 	beforeInfra := *infra
 
-	infraType, err := c.store.InfrastructureTypeRepo().Get(ctx, infra.InfrastructureTypeID)
-	if err != nil {
-		return nil, err
-	}
-
-	infra.Update(params.Name, params.Tags, params.Configuration)
+	infra.Update(params)
 
 	err = c.store.Atomic(ctx, func(store Store) error {
 		if params.Configuration != nil && infra.Configuration != nil {
+			infraType, err := store.InfrastructureTypeRepo().Get(ctx, infra.InfrastructureTypeID)
+			if err != nil {
+				return err
+			}
 			schemaCtx := InfrastructureConfigContext{
 				Store:                    store,
 				InfrastructureID:         &infra.ID,
@@ -259,8 +257,7 @@ func (c *infrastructureCommander) Update(
 	return infra, nil
 }
 
-// Delete removes an infrastructure by ID. No dependent-entity checks in Phase 2
-// (Agent→Infrastructure binding lands in Phase 4; pool releases in Phase 5).
+// Delete removes an infrastructure by ID. Blocks if any Agent still references it.
 func (c *infrastructureCommander) Delete(ctx context.Context, id properties.UUID) error {
 	infra, err := c.store.InfrastructureRepo().Get(ctx, id)
 	if err != nil {
@@ -268,6 +265,14 @@ func (c *infrastructureCommander) Delete(ctx context.Context, id properties.UUID
 	}
 
 	return c.store.Atomic(ctx, func(store Store) error {
+		agentCount, err := store.AgentRepo().CountByInfrastructure(ctx, id)
+		if err != nil {
+			return fmt.Errorf("failed to count agents for infrastructure %s: %w", id, err)
+		}
+		if agentCount > 0 {
+			return NewInvalidInputErrorf("cannot delete infrastructure %s: %d dependent agent(s) exist", id, agentCount)
+		}
+
 		eventEntry, err := NewEvent(EventTypeInfrastructureDeleted, WithInitiatorCtx(ctx), WithInfrastructure(infra))
 		if err != nil {
 			return err
@@ -288,4 +293,7 @@ type InfrastructureRepository interface {
 // InfrastructureQuerier defines the read-only operations for Infrastructure.
 type InfrastructureQuerier interface {
 	BaseEntityQuerier[Infrastructure]
+
+	// CountByInfrastructureType returns the number of infrastructures bound to a specific type
+	CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)
 }

@@ -34,6 +34,9 @@ CreateAgentReq:
     servicePoolSetId:
       $ref: "./common.yaml#/properties.UUID"
       description: "Optional service pool set for automatic resource allocation"
+    infrastructureId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "Required when the agent type declares an infrastructure type; must match that type and the agent's provider"
 
 UpdateAgentReq:
   type: object
@@ -89,10 +92,15 @@ AgentRes:
     servicePoolSetId:
       $ref: "./common.yaml#/properties.UUID"
       description: "Optional service pool set for automatic resource allocation"
+    infrastructureId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "Infrastructure this agent runs on (resolved at create time when the agent type requires it)"
     participant:
       $ref: "./participants.yaml#/ParticipantRes"
     agentType:
       $ref: "./agent_types.yaml#/AgentTypeRes"
+    infrastructure:
+      $ref: "./infrastructures.yaml#/InfrastructureRes"
     createdAt:
       type: string
       format: date-time

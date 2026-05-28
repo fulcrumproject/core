@@ -30,8 +30,8 @@ func NewAgentTypeRepository(db *gorm.DB) *GormAgentTypeRepository {
 			applyAgentTypeFilter,
 			applyAgentTypeSort,
 			nil,                      // No authz filters
-			[]string{"ServiceTypes"}, // Find preload paths
-			[]string{"ServiceTypes"}, // List preload paths
+			[]string{"ServiceTypes", "InfrastructureTypes"}, // Find preload paths
+			[]string{"ServiceTypes", "InfrastructureTypes"}, // List preload paths
 		),
 	}
 	return repo
@@ -55,7 +55,27 @@ func (r *GormAgentTypeRepository) Save(ctx context.Context, agentType *domain.Ag
 		}
 	}
 
+	if agentType.InfrastructureTypes != nil {
+		err := r.GormRepository.db.WithContext(ctx).Model(agentType).Association("InfrastructureTypes").Replace(agentType.InfrastructureTypes)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (r *GormAgentTypeRepository) CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error) {
+	var count int64
+	result := r.db.WithContext(ctx).
+		Model(&domain.AgentType{}).
+		Joins("JOIN agent_type_infrastructure_types ON agent_types.id = agent_type_infrastructure_types.agent_type_id").
+		Where("agent_type_infrastructure_types.infrastructure_type_id = ?", infrastructureTypeID).
+		Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
 }
 
 // AuthScope returns the auth scope for the agent type

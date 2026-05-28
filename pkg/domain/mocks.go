@@ -523,6 +523,72 @@ func (_c *MockAgentRepository_CountByAgentType_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
+// CountByInfrastructure provides a mock function for the type MockAgentRepository
+func (_mock *MockAgentRepository) CountByInfrastructure(ctx context.Context, infrastructureID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructure")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentRepository_CountByInfrastructure_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructure'
+type MockAgentRepository_CountByInfrastructure_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructure is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureID properties.UUID
+func (_e *MockAgentRepository_Expecter) CountByInfrastructure(ctx interface{}, infrastructureID interface{}) *MockAgentRepository_CountByInfrastructure_Call {
+	return &MockAgentRepository_CountByInfrastructure_Call{Call: _e.mock.On("CountByInfrastructure", ctx, infrastructureID)}
+}
+
+func (_c *MockAgentRepository_CountByInfrastructure_Call) Run(run func(ctx context.Context, infrastructureID properties.UUID)) *MockAgentRepository_CountByInfrastructure_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentRepository_CountByInfrastructure_Call) Return(n int64, err error) *MockAgentRepository_CountByInfrastructure_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentRepository_CountByInfrastructure_Call) RunAndReturn(run func(ctx context.Context, infrastructureID properties.UUID) (int64, error)) *MockAgentRepository_CountByInfrastructure_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CountByProvider provides a mock function for the type MockAgentRepository
 func (_mock *MockAgentRepository) CountByProvider(ctx context.Context, providerID properties.UUID) (int64, error) {
 	ret := _mock.Called(ctx, providerID)
@@ -1325,6 +1391,72 @@ func (_c *MockAgentQuerier_CountByAgentType_Call) Return(n int64, err error) *Mo
 }
 
 func (_c *MockAgentQuerier_CountByAgentType_Call) RunAndReturn(run func(ctx context.Context, agentTypeID properties.UUID) (int64, error)) *MockAgentQuerier_CountByAgentType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountByInfrastructure provides a mock function for the type MockAgentQuerier
+func (_mock *MockAgentQuerier) CountByInfrastructure(ctx context.Context, infrastructureID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructure")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentQuerier_CountByInfrastructure_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructure'
+type MockAgentQuerier_CountByInfrastructure_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructure is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureID properties.UUID
+func (_e *MockAgentQuerier_Expecter) CountByInfrastructure(ctx interface{}, infrastructureID interface{}) *MockAgentQuerier_CountByInfrastructure_Call {
+	return &MockAgentQuerier_CountByInfrastructure_Call{Call: _e.mock.On("CountByInfrastructure", ctx, infrastructureID)}
+}
+
+func (_c *MockAgentQuerier_CountByInfrastructure_Call) Run(run func(ctx context.Context, infrastructureID properties.UUID)) *MockAgentQuerier_CountByInfrastructure_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentQuerier_CountByInfrastructure_Call) Return(n int64, err error) *MockAgentQuerier_CountByInfrastructure_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentQuerier_CountByInfrastructure_Call) RunAndReturn(run func(ctx context.Context, infrastructureID properties.UUID) (int64, error)) *MockAgentQuerier_CountByInfrastructure_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2769,6 +2901,72 @@ func (_c *MockAgentTypeRepository_Count_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// CountByInfrastructureType provides a mock function for the type MockAgentTypeRepository
+func (_mock *MockAgentTypeRepository) CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructureType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentTypeRepository_CountByInfrastructureType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructureType'
+type MockAgentTypeRepository_CountByInfrastructureType_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructureType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureTypeID properties.UUID
+func (_e *MockAgentTypeRepository_Expecter) CountByInfrastructureType(ctx interface{}, infrastructureTypeID interface{}) *MockAgentTypeRepository_CountByInfrastructureType_Call {
+	return &MockAgentTypeRepository_CountByInfrastructureType_Call{Call: _e.mock.On("CountByInfrastructureType", ctx, infrastructureTypeID)}
+}
+
+func (_c *MockAgentTypeRepository_CountByInfrastructureType_Call) Run(run func(ctx context.Context, infrastructureTypeID properties.UUID)) *MockAgentTypeRepository_CountByInfrastructureType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentTypeRepository_CountByInfrastructureType_Call) Return(n int64, err error) *MockAgentTypeRepository_CountByInfrastructureType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentTypeRepository_CountByInfrastructureType_Call) RunAndReturn(run func(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)) *MockAgentTypeRepository_CountByInfrastructureType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function for the type MockAgentTypeRepository
 func (_mock *MockAgentTypeRepository) Create(ctx context.Context, entity *AgentType) error {
 	ret := _mock.Called(ctx, entity)
@@ -3299,6 +3497,72 @@ func (_c *MockAgentTypeQuerier_Count_Call) Return(n int64, err error) *MockAgent
 }
 
 func (_c *MockAgentTypeQuerier_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockAgentTypeQuerier_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountByInfrastructureType provides a mock function for the type MockAgentTypeQuerier
+func (_mock *MockAgentTypeQuerier) CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructureType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentTypeQuerier_CountByInfrastructureType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructureType'
+type MockAgentTypeQuerier_CountByInfrastructureType_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructureType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureTypeID properties.UUID
+func (_e *MockAgentTypeQuerier_Expecter) CountByInfrastructureType(ctx interface{}, infrastructureTypeID interface{}) *MockAgentTypeQuerier_CountByInfrastructureType_Call {
+	return &MockAgentTypeQuerier_CountByInfrastructureType_Call{Call: _e.mock.On("CountByInfrastructureType", ctx, infrastructureTypeID)}
+}
+
+func (_c *MockAgentTypeQuerier_CountByInfrastructureType_Call) Run(run func(ctx context.Context, infrastructureTypeID properties.UUID)) *MockAgentTypeQuerier_CountByInfrastructureType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentTypeQuerier_CountByInfrastructureType_Call) Return(n int64, err error) *MockAgentTypeQuerier_CountByInfrastructureType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentTypeQuerier_CountByInfrastructureType_Call) RunAndReturn(run func(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)) *MockAgentTypeQuerier_CountByInfrastructureType_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -11049,6 +11313,72 @@ func (_c *MockInfrastructureRepository_Count_Call) RunAndReturn(run func(ctx con
 	return _c
 }
 
+// CountByInfrastructureType provides a mock function for the type MockInfrastructureRepository
+func (_mock *MockInfrastructureRepository) CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructureType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureRepository_CountByInfrastructureType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructureType'
+type MockInfrastructureRepository_CountByInfrastructureType_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructureType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureTypeID properties.UUID
+func (_e *MockInfrastructureRepository_Expecter) CountByInfrastructureType(ctx interface{}, infrastructureTypeID interface{}) *MockInfrastructureRepository_CountByInfrastructureType_Call {
+	return &MockInfrastructureRepository_CountByInfrastructureType_Call{Call: _e.mock.On("CountByInfrastructureType", ctx, infrastructureTypeID)}
+}
+
+func (_c *MockInfrastructureRepository_CountByInfrastructureType_Call) Run(run func(ctx context.Context, infrastructureTypeID properties.UUID)) *MockInfrastructureRepository_CountByInfrastructureType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_CountByInfrastructureType_Call) Return(n int64, err error) *MockInfrastructureRepository_CountByInfrastructureType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_CountByInfrastructureType_Call) RunAndReturn(run func(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)) *MockInfrastructureRepository_CountByInfrastructureType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function for the type MockInfrastructureRepository
 func (_mock *MockInfrastructureRepository) Create(ctx context.Context, entity *Infrastructure) error {
 	ret := _mock.Called(ctx, entity)
@@ -11579,6 +11909,72 @@ func (_c *MockInfrastructureQuerier_Count_Call) Return(n int64, err error) *Mock
 }
 
 func (_c *MockInfrastructureQuerier_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockInfrastructureQuerier_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountByInfrastructureType provides a mock function for the type MockInfrastructureQuerier
+func (_mock *MockInfrastructureQuerier) CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructureType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureQuerier_CountByInfrastructureType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructureType'
+type MockInfrastructureQuerier_CountByInfrastructureType_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructureType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureTypeID properties.UUID
+func (_e *MockInfrastructureQuerier_Expecter) CountByInfrastructureType(ctx interface{}, infrastructureTypeID interface{}) *MockInfrastructureQuerier_CountByInfrastructureType_Call {
+	return &MockInfrastructureQuerier_CountByInfrastructureType_Call{Call: _e.mock.On("CountByInfrastructureType", ctx, infrastructureTypeID)}
+}
+
+func (_c *MockInfrastructureQuerier_CountByInfrastructureType_Call) Run(run func(ctx context.Context, infrastructureTypeID properties.UUID)) *MockInfrastructureQuerier_CountByInfrastructureType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_CountByInfrastructureType_Call) Return(n int64, err error) *MockInfrastructureQuerier_CountByInfrastructureType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_CountByInfrastructureType_Call) RunAndReturn(run func(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)) *MockInfrastructureQuerier_CountByInfrastructureType_Call {
 	_c.Call.Return(run)
 	return _c
 }

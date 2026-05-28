@@ -201,8 +201,7 @@ func (c *infrastructureTypeCommander) Update(
 	return infraType, nil
 }
 
-// Delete removes an infrastructure type by ID. No dependency check in Phase 1
-// (no entity references InfrastructureType yet).
+// Delete removes an infrastructure type by ID. Blocks if any AgentType still references it.
 func (c *infrastructureTypeCommander) Delete(ctx context.Context, id properties.UUID) error {
 	infraType, err := c.store.InfrastructureTypeRepo().Get(ctx, id)
 	if err != nil {
@@ -210,6 +209,22 @@ func (c *infrastructureTypeCommander) Delete(ctx context.Context, id properties.
 	}
 
 	return c.store.Atomic(ctx, func(store Store) error {
+		infraCount, err := store.InfrastructureRepo().CountByInfrastructureType(ctx, id)
+		if err != nil {
+			return fmt.Errorf("failed to count infrastructures for infrastructure type %s: %w", id, err)
+		}
+		if infraCount > 0 {
+			return NewInvalidInputErrorf("cannot delete infrastructure type %s: %d dependent infrastructure(s) exist", id, infraCount)
+		}
+
+		atCount, err := store.AgentTypeRepo().CountByInfrastructureType(ctx, id)
+		if err != nil {
+			return fmt.Errorf("failed to count agent types for infrastructure type %s: %w", id, err)
+		}
+		if atCount > 0 {
+			return NewInvalidInputErrorf("cannot delete infrastructure type %s: %d dependent agent type(s) exist", id, atCount)
+		}
+
 		eventEntry, err := NewEvent(EventTypeInfrastructureTypeDeleted, WithInitiatorCtx(ctx), WithInfrastructureType(infraType))
 		if err != nil {
 			return err
