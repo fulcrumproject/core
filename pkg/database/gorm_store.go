@@ -15,7 +15,7 @@ type GormStore struct {
 	tokenRepo              domain.TokenRepository
 	agentTypeRepo          domain.AgentTypeRepository
 	agentRepo              domain.AgentRepository
-	agentInstallTokenRepo  domain.AgentInstallTokenRepository
+	installTokenRepo       domain.InstallTokenRepository
 	configPoolRepo         domain.ConfigPoolRepository
 	configPoolValueRepo    domain.ConfigPoolValueRepository
 	infrastructureTypeRepo domain.InfrastructureTypeRepository
@@ -79,11 +79,11 @@ func (s *GormStore) AgentRepo() domain.AgentRepository {
 	return s.agentRepo
 }
 
-func (s *GormStore) AgentInstallTokenRepo() domain.AgentInstallTokenRepository {
-	if s.agentInstallTokenRepo == nil {
-		s.agentInstallTokenRepo = NewAgentInstallTokenRepository(s.db)
+func (s *GormStore) InstallTokenRepo() domain.InstallTokenRepository {
+	if s.installTokenRepo == nil {
+		s.installTokenRepo = NewInstallTokenRepository(s.db)
 	}
-	return s.agentInstallTokenRepo
+	return s.installTokenRepo
 }
 
 func (s *GormStore) ConfigPoolRepo() domain.ConfigPoolRepository {

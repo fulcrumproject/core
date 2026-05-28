@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -19,24 +18,24 @@ import (
 
 // InstallConfigSubPath is the install-config route relative to the /agents
 // mount; used both by the chi route registration (it accepts {token} as a
-// chi placeholder) and by buildInstallURL (which substitutes the placeholder
-// with the actual plain token). Keeping a single source means renaming the
-// route updates the rendered installCommand automatically.
+// chi placeholder) and by buildAgentInstallURL (which substitutes the
+// placeholder with the actual plain token). Keeping a single source means
+// renaming the route updates the rendered installCommand automatically.
 const InstallConfigSubPath = "/install/{token}/config"
 
-const installConfigFullPath = "/api/v1/agents" + InstallConfigSubPath
+const agentInstallConfigFullPath = "/api/v1/agents" + InstallConfigSubPath
 
-// buildInstallURL joins the public base URL with the install-config path,
+// buildAgentInstallURL joins the public base URL with the install-config path,
 // substituting the chi {token} placeholder. The endpoint is authenticated:
 // callers must also supply a Bearer token (issued alongside the install
-// token — see AgentInstallToken.BootstrapTokenID).
-func buildInstallURL(publicBaseURL, token string) string {
-	return strings.TrimRight(publicBaseURL, "/") + strings.Replace(installConfigFullPath, "{token}", token, 1)
+// token — see InstallToken.BootstrapTokenID).
+func buildAgentInstallURL(publicBaseURL, token string) string {
+	return strings.TrimRight(publicBaseURL, "/") + strings.Replace(agentInstallConfigFullPath, "{token}", token, 1)
 }
 
 type AgentInstallTokenHandler struct {
-	querier        domain.AgentInstallTokenQuerier
-	commander      domain.AgentInstallTokenCommander
+	querier        domain.InstallTokenQuerier
+	commander      domain.InstallTokenCommander
 	agentAuthScope middlewares.ObjectScopeLoader
 	authz          authz.Authorizer
 	vault          schema.Vault
@@ -44,8 +43,8 @@ type AgentInstallTokenHandler struct {
 }
 
 func NewAgentInstallTokenHandler(
-	querier domain.AgentInstallTokenQuerier,
-	commander domain.AgentInstallTokenCommander,
+	querier domain.InstallTokenQuerier,
+	commander domain.InstallTokenCommander,
 	agentAuthScope middlewares.ObjectScopeLoader,
 	authorizer authz.Authorizer,
 	vault schema.Vault,
@@ -116,7 +115,7 @@ func (h *AgentInstallTokenHandler) Create(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 	id := middlewares.MustGetID(ctx)
 
-	tok, err := h.commander.Create(ctx, id)
+	tok, err := h.commander.Create(ctx, domain.InstallTokenEntityTypeAgent, id)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -129,7 +128,7 @@ func (h *AgentInstallTokenHandler) Regenerate(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	id := middlewares.MustGetID(ctx)
 
-	tok, err := h.commander.Regenerate(ctx, id)
+	tok, err := h.commander.Regenerate(ctx, domain.InstallTokenEntityTypeAgent, id)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -148,7 +147,7 @@ func (h *AgentInstallTokenHandler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := middlewares.MustGetID(ctx)
 
-	tok, err := h.querier.GetByAgentID(ctx, id)
+	tok, err := h.querier.GetByEntity(ctx, domain.InstallTokenEntityTypeAgent, id)
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
@@ -165,7 +164,7 @@ func (h *AgentInstallTokenHandler) Revoke(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 	id := middlewares.MustGetID(ctx)
 
-	if err := h.commander.Revoke(ctx, id); err != nil {
+	if err := h.commander.Revoke(ctx, domain.InstallTokenEntityTypeAgent, id); err != nil {
 		render.Render(w, r, ErrDomain(err))
 		return
 	}
@@ -176,12 +175,12 @@ func (h *AgentInstallTokenHandler) Revoke(w http.ResponseWriter, r *http.Request
 // Fetch serves the rendered agent configuration to an installer. The route is
 // guarded by the standard auth middleware (admin/participant/agent roles), so
 // callers without a valid bearer token receive 401/403 from the middleware.
-// Past that gate, every failure mode (unknown / expired install token, missing
-// templates, vault resolution failure, render error) collapses into the
-// codebase's standard 404 response — the precise reason is recorded only in
-// the server-side log so ops can alert without leaking the cause to the
-// caller. Info is used for client-caused misses, Warn for server-side
-// failures.
+// Past that gate, every failure mode (unknown / expired install token,
+// wrong-entity-type token, missing templates, vault resolution failure,
+// render error) collapses into the codebase's standard 404 response — the
+// precise reason is recorded only in the server-side log so ops can alert
+// without leaking the cause to the caller. Info is used for client-caused
+// misses, Warn for server-side failures.
 func (h *AgentInstallTokenHandler) Fetch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -199,6 +198,14 @@ func (h *AgentInstallTokenHandler) Fetch(w http.ResponseWriter, r *http.Request)
 		} else {
 			slog.Warn("install fetch → 404", "reason", "install token lookup failed: "+err.Error())
 		}
+		render.Render(w, r, ErrNotFound())
+		return
+	}
+	if tok.EntityType != domain.InstallTokenEntityTypeAgent {
+		// Token exists but belongs to a different entity type. Keep it
+		// indistinguishable from "not found" externally — the URL surface is
+		// split per-entity precisely so each mount only serves its own kind.
+		slog.Info("install fetch → 404", "reason", "install token entity type mismatch", "got", string(tok.EntityType))
 		render.Render(w, r, ErrNotFound())
 		return
 	}
@@ -227,7 +234,7 @@ func (h *AgentInstallTokenHandler) Fetch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	body, err := domain.RenderConfigTemplate(agent.AgentType, resolved)
+	body, err := agent.AgentType.RenderConfigTemplate(resolved)
 	if err != nil {
 		slog.Warn("install fetch → 404", "reason", "config template render failed: "+err.Error())
 		render.Render(w, r, ErrNotFound())
@@ -244,34 +251,24 @@ func (h *AgentInstallTokenHandler) Fetch(w http.ResponseWriter, r *http.Request)
 func (h *AgentInstallTokenHandler) renderInstallToken(
 	w http.ResponseWriter,
 	r *http.Request,
-	tok *domain.AgentInstallToken,
+	tok *domain.InstallToken,
 	status int,
 ) {
 	agent := tok.Agent
-	url := buildInstallURL(h.publicBaseURL, tok.PlainToken)
+	url := buildAgentInstallURL(h.publicBaseURL, tok.PlainToken)
 
 	data := map[string]any{}
 	if agent.Configuration != nil {
 		data = map[string]any(*agent.Configuration)
 	}
 
-	cmdText, err := domain.RenderCmdTemplate(agent.AgentType, data, url, tok.PlainBootstrapToken)
+	cmdText, err := agent.AgentType.RenderCmdTemplate(data, url, tok.PlainBootstrapToken)
 	if err != nil {
 		render.Render(w, r, ErrInternal(err))
 		return
 	}
 
-	// Emit JSON without HTML-escaping so installCommand stays copy-pasteable:
-	// Go's default json.Marshal would write `&&` (and other HTML-significant
-	// chars) as `&&`. Decoders parse the escape correctly, but the
-	// installCommand field is meant to be eyeballed and pasted into a shell
-	// straight from the response, where the literal `&` survives and
-	// breaks curl.
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	enc := json.NewEncoder(w)
-	enc.SetEscapeHTML(false)
-	_ = enc.Encode(InstallTokenRes{
+	writeInstallTokenJSON(w, status, InstallTokenRes{
 		InstallCommand: cmdText,
 		URL:            url,
 		ExpiresAt:      JSONUTCTime(tok.ExpiresAt),

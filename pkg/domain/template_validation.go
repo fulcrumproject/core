@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"mime"
@@ -23,6 +24,47 @@ type TemplateValidation struct {
 	ConfigTemplate      string        `json:"configTemplate" gorm:"type:text"`
 	CmdTemplate         string        `json:"cmdTemplate" gorm:"type:text"`
 	ConfigContentType   string        `json:"configContentType" gorm:"type:text;not null;default:'text/plain'"`
+}
+
+// HasInstallTemplates reports whether both install templates are configured.
+// Validation enforces "both set or both empty"; callers use this single check
+// to avoid divergence between the cmd-side and config-side branches.
+func (tv *TemplateValidation) HasInstallTemplates() bool {
+	return tv.CmdTemplate != "" && tv.ConfigTemplate != ""
+}
+
+// RenderCmdTemplate renders CmdTemplate with schemaData plus configUrl and
+// authToken. The authToken is the plain value of the bootstrap bearer token
+// and is expected to appear in the template's Authorization header. Returns
+// "" when CmdTemplate is empty.
+func (tv *TemplateValidation) RenderCmdTemplate(schemaData map[string]any, configURL, authToken string) (string, error) {
+	if tv.CmdTemplate == "" {
+		return "", nil
+	}
+	data := make(map[string]any, len(schemaData)+2)
+	for k, v := range schemaData {
+		data[k] = v
+	}
+	data[cmdTemplateExtraRef] = configURL
+	data[cmdTemplateExtraAuthTokenRef] = authToken
+	var buf bytes.Buffer
+	if err := executeTemplate("cmdTemplate", tv.CmdTemplate, data, &buf); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+// RenderConfigTemplate renders ConfigTemplate with schemaData. Returns "" when
+// ConfigTemplate is empty.
+func (tv *TemplateValidation) RenderConfigTemplate(schemaData map[string]any) (string, error) {
+	if tv.ConfigTemplate == "" {
+		return "", nil
+	}
+	var buf bytes.Buffer
+	if err := executeTemplate("configTemplate", tv.ConfigTemplate, schemaData, &buf); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 func (tv *TemplateValidation) validateTemplates() error {

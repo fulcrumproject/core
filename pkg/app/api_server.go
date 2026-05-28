@@ -134,7 +134,10 @@ func BuildHttpServer(
 		r.Use(authMiddleware)
 		r.Route("/agent-types", app.AgentTypeHandler.Routes())
 		r.Route("/infrastructure-types", app.InfrastructureTypeHandler.Routes())
-		r.Route("/infrastructures", app.InfrastructureHandler.Routes())
+		r.Route("/infrastructures", func(r chi.Router) {
+			app.InfrastructureHandler.Routes()(r)
+			app.InfrastructureInstallTokenHandler.Routes()(r)
+		})
 		r.Route("/service-types", app.ServiceTypeHandler.Routes())
 		r.Route("/service-option-types", app.ServiceOptionTypeHandler.Routes())
 		r.Route("/service-options", app.ServiceOptionHandler.Routes())

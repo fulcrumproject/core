@@ -1,0 +1,189 @@
+### Infrastructure Install Token Flow
+###
+### Walk through this file top-to-bottom to exercise the full install flow:
+###   1. Create provider, infrastructure type with install templates, and infra with secret config
+###   2. Mint an install token (POST) — returns {installCommand, url, expiresAt} ONCE
+###   3. GET metadata — returns {id, expiresAt, createdAt}; no token, no url
+###   4. Fetch the public install URL — returns rendered config with vault secret resolved
+###   5. Regenerate — new url; old url 404s; new url works
+###   6. Revoke (DELETE) — existing url 404s; metadata GET 404s
+###   7. Conflict (409) and not-found (404) paths
+###   8. Cross-entity isolation: an infra-issued token does NOT fetch under /agents/install
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@publicBase = http://localhost:3000
+@adminToken = change-me
+
+### --- Setup --------------------------------------------------------------
+
+### Create a provider
+# @name iic_createProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Infra Install Provider {{$timestamp}}",
+    "status": "Enabled"
+}
+
+@iic_providerId = {{iic_createProvider.response.body.$.id}}
+
+### Create an infrastructure type with install templates
+### - configTemplate is what the deployed infrastructure downloads (with vault:// resolved)
+### - cmdTemplate is what the operator copies (must reference {{.configUrl}} and {{.authToken}})
+# @name iic_createInfraType
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Infra Install Flow Type {{$timestamp}}",
+    "configurationSchema": {
+        "properties": {
+            "endpoint": {
+                "type": "string",
+                "label": "Endpoint",
+                "required": true
+            },
+            "apiKey": {
+                "type": "string",
+                "label": "API Key",
+                "required": true,
+                "secret": { "type": "persistent" }
+            }
+        }
+    },
+    "configContentType": "text/plain",
+    "configTemplate": "[infra]\nendpoint={{.endpoint}}\napi_key={{.apiKey}}\n",
+    "cmdTemplate": "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}' -o /tmp/infra.conf && cat /tmp/infra.conf"
+}
+
+@iic_infraTypeId = {{iic_createInfraType.response.body.$.id}}
+
+### Create an infrastructure with a secret in its configuration
+# @name iic_createInfra
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Infra Install Flow",
+    "providerId": "{{iic_providerId}}",
+    "infrastructureTypeId": "{{iic_infraTypeId}}",
+    "tags": ["infra-install-flow"],
+    "configuration": {
+        "endpoint": "https://infra.example.com",
+        "apiKey": "super-secret-infra-api-key"
+    }
+}
+
+@iic_infraId = {{iic_createInfra.response.body.$.id}}
+
+### --- Happy path ---------------------------------------------------------
+
+### GET install-command BEFORE creation — expect 404
+GET {{baseUrl}}/infrastructures/{{iic_infraId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### Create the install token — expect 201 with { installCommand, url, expiresAt }
+# @name iic_createInstall
+POST {{baseUrl}}/infrastructures/{{iic_infraId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+@iic_installUrl = {{iic_createInstall.response.body.$.url}}
+
+### GET install-command metadata — returns {id, expiresAt, createdAt} only
+GET {{baseUrl}}/infrastructures/{{iic_infraId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### Fetch the public install URL (what the deployed infra runs)
+### Expect 200, Content-Type: text/plain, body has apiKey RESOLVED (not vault://...)
+GET {{iic_installUrl}}
+Authorization: Bearer {{adminToken}}
+
+### --- Conflict and re-mint -----------------------------------------------
+
+### Creating twice must conflict — expect 409
+POST {{baseUrl}}/infrastructures/{{iic_infraId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### Regenerate rotates token + expiry — expect 200 with DIFFERENT url
+# @name iic_regenerate
+POST {{baseUrl}}/infrastructures/{{iic_infraId}}/install-command/regenerate
+Authorization: Bearer {{adminToken}}
+
+@iic_installUrlNew = {{iic_regenerate.response.body.$.url}}
+
+### Old URL must now 404 (token was rotated)
+GET {{iic_installUrl}}
+Authorization: Bearer {{adminToken}}
+
+### New URL still works
+GET {{iic_installUrlNew}}
+Authorization: Bearer {{adminToken}}
+
+### --- Cross-entity isolation --------------------------------------------
+
+### An infra-issued install URL must not be served by the /agents/install
+### mount even though the token would otherwise be valid. Expect 404.
+###
+### Replace `/infrastructures/install/` with `/agents/install/` in the URL by
+### hand for this probe — REST Client doesn't have a string-replace primitive
+### so this is left as a manual edit when running the file interactively.
+# GET {{publicBase}}/api/v1/agents/install/<paste-the-infra-token-here>/config
+# Authorization: Bearer {{adminToken}}
+
+### --- Revoke -------------------------------------------------------------
+
+### Revoke the install token — expect 204
+DELETE {{baseUrl}}/infrastructures/{{iic_infraId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### After revoke, the rotated public URL must 404
+GET {{iic_installUrlNew}}
+Authorization: Bearer {{adminToken}}
+
+### Metadata GET now 404s
+GET {{baseUrl}}/infrastructures/{{iic_infraId}}/install-command
+Authorization: Bearer {{adminToken}}
+
+### --- Templates-not-configured path --------------------------------------
+
+### Create an infrastructure type WITHOUT install templates
+# @name iic_createPlainType
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Plain Infra Type {{$timestamp}}",
+    "configurationSchema": {
+        "properties": {
+            "endpoint": { "type": "string", "label": "Endpoint" }
+        }
+    }
+}
+
+@iic_plainInfraTypeId = {{iic_createPlainType.response.body.$.id}}
+
+### Infrastructure on a template-less type
+# @name iic_createPlainInfra
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Plain Infra",
+    "providerId": "{{iic_providerId}}",
+    "infrastructureTypeId": "{{iic_plainInfraTypeId}}",
+    "tags": ["infra-install-flow"],
+    "configuration": { "endpoint": "https://x.invalid" }
+}
+
+@iic_plainInfraId = {{iic_createPlainInfra.response.body.$.id}}
+
+### POST install-command on template-less infra — expect 422
+POST {{baseUrl}}/infrastructures/{{iic_plainInfraId}}/install-command
+Authorization: Bearer {{adminToken}}

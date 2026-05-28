@@ -66,8 +66,8 @@ func testAgent(t *testing.T, env *Env) {
 
 		// Expire the token directly in the DB. The HTTP API doesn't expose a
 		// way to backdate the expiry on demand.
-		require.NoError(t, env.DB.Model(&domain.AgentInstallToken{}).
-			Where("agent_id = ?", ag.ID).
+		require.NoError(t, env.DB.Model(&domain.InstallToken{}).
+			Where("entity_type = ? AND entity_id = ?", domain.InstallTokenEntityTypeAgent, ag.ID).
 			Update("expires_at", time.Now().Add(-1*time.Hour)).Error)
 
 		var meta api.InstallTokenMetaRes

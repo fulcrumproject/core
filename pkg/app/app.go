@@ -42,8 +42,9 @@ type App struct {
 	AgentHandler              *api.AgentHandler
 	ConfigPoolHandler         *api.ConfigPoolHandler
 	ConfigPoolValueHandler    *api.ConfigPoolValueHandler
-	InfrastructureTypeHandler *api.InfrastructureTypeHandler
-	InfrastructureHandler     *api.InfrastructureHandler
+	InfrastructureTypeHandler         *api.InfrastructureTypeHandler
+	InfrastructureHandler             *api.InfrastructureHandler
+	InfrastructureInstallTokenHandler *api.InfrastructureInstallTokenHandler
 	ServiceGroupHandler       *api.ServiceGroupHandler
 	ServiceHandler            *api.ServiceHandler
 	MetricTypeHandler         *api.MetricTypeHandler
@@ -217,7 +218,7 @@ func NewApp() *App {
 	jobCmd := domain.NewJobCommander(store, propertyEngine)
 	metricEntryCmd := domain.NewMetricEntryCommander(store, metricEntryRepo)
 	metricTypeCmd := domain.NewMetricTypeCommander(store, metricEntryRepo)
-	installTokenCmd := domain.NewAgentInstallTokenCommander(store)
+	installTokenCmd := domain.NewInstallTokenCommander(store)
 	agentCmd := domain.NewAgentCommander(store, agentConfigEngine)
 	tokenCmd := domain.NewTokenCommander(store)
 	eventSubscriptionCmd := domain.NewEventSubscriptionCommander(store)
@@ -291,12 +292,13 @@ func NewApp() *App {
 		ServicePoolValueHandler:   api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), servicePoolValueCmd, athz),
 		ParticipantHandler:        api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz),
 		AgentHandler:              api.NewAgentHandler(store.AgentRepo(), agentCmd, athz),
-		AgentInstallTokenHandler:  api.NewAgentInstallTokenHandler(store.AgentInstallTokenRepo(), installTokenCmd, store.AgentRepo().AuthScope, athz, vault, cfg.PublicBaseURL),
+		AgentInstallTokenHandler:  api.NewAgentInstallTokenHandler(store.InstallTokenRepo(), installTokenCmd, store.AgentRepo().AuthScope, athz, vault, cfg.PublicBaseURL),
 		ConfigPoolHandler:         api.NewConfigPoolHandler(store.ConfigPoolRepo(), configPoolCmd, athz),
 		ConfigPoolValueHandler:    api.NewConfigPoolValueHandler(store.ConfigPoolValueRepo(), store.ConfigPoolRepo(), configPoolValueCmd, athz),
 		AgentTypeHandler:          api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz),
 		InfrastructureTypeHandler: api.NewInfrastructureTypeHandler(store.InfrastructureTypeRepo(), infrastructureTypeCmd, athz),
-		InfrastructureHandler:     api.NewInfrastructureHandler(store.InfrastructureRepo(), infrastructureCmd, athz),
+		InfrastructureHandler:             api.NewInfrastructureHandler(store.InfrastructureRepo(), infrastructureCmd, athz),
+		InfrastructureInstallTokenHandler: api.NewInfrastructureInstallTokenHandler(store.InstallTokenRepo(), installTokenCmd, store.InfrastructureRepo().AuthScope, athz, vault, cfg.PublicBaseURL),
 		ServiceGroupHandler:       api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz),
 		ServiceHandler:            api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, athz),
 		JobHandler:                api.NewJobHandler(store.JobRepo(), jobCmd, athz),

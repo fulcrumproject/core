@@ -53,12 +53,15 @@ func autoMigrate(db *gorm.DB) error {
 	if err := migrateConfigPoolScope(db); err != nil {
 		return err
 	}
+	if err := migrateInstallTokens(db); err != nil {
+		return err
+	}
 
 	err := db.AutoMigrate(
 		&domain.Token{},
 		&domain.Participant{},
 		&domain.Agent{},
-		&domain.AgentInstallToken{},
+		&domain.InstallToken{},
 		&domain.AgentType{},
 		&domain.InfrastructureType{},
 		&domain.Infrastructure{},
@@ -142,6 +145,57 @@ func backfillServicePoolParticipant(db *gorm.DB) error {
 	}
 	if res.RowsAffected > 0 {
 		db.Logger.Info(db.Statement.Context, "backfilled participant_id on %d service_pool_values rows", res.RowsAffected)
+	}
+	return nil
+}
+
+// migrateInstallTokens promotes the legacy agent-only install-token table to
+// the generic install_tokens table that serves both Agent and Infrastructure.
+// Guarded by HasTable / HasColumn so fresh DBs skip cleanly and re-runs are
+// idempotent: AutoMigrate creates the new shape on first boot of a fresh DB,
+// while upgrades from a Phase 2 schema rename the table + column and add
+// entity_type defaulting to "agent" so existing rows stay valid.
+func migrateInstallTokens(db *gorm.DB) error {
+	m := db.Migrator()
+
+	// 1. Rename the table if the legacy name exists and the new one doesn't.
+	if m.HasTable("agent_install_tokens") && !m.HasTable("install_tokens") {
+		if err := db.Exec("ALTER TABLE agent_install_tokens RENAME TO install_tokens").Error; err != nil {
+			return fmt.Errorf("rename agent_install_tokens: %w", err)
+		}
+	}
+	if !m.HasTable("install_tokens") {
+		return nil // fresh DB; AutoMigrate will create install_tokens correctly
+	}
+
+	// 2. Rename agent_id -> entity_id.
+	if m.HasColumn("install_tokens", "agent_id") && !m.HasColumn("install_tokens", "entity_id") {
+		if err := db.Exec("ALTER TABLE install_tokens RENAME COLUMN agent_id TO entity_id").Error; err != nil {
+			return fmt.Errorf("rename agent_id column: %w", err)
+		}
+	}
+
+	// 3. Add entity_type with default 'agent', backfilling pre-existing rows
+	//    in one shot. AutoMigrate would add it later but without the default,
+	//    so legacy rows would fail the NOT NULL.
+	if !m.HasColumn("install_tokens", "entity_type") {
+		if err := db.Exec("ALTER TABLE install_tokens ADD COLUMN entity_type text NOT NULL DEFAULT 'agent'").Error; err != nil {
+			return fmt.Errorf("add entity_type column: %w", err)
+		}
+	}
+
+	// 4. Drop the legacy single-column unique on agent_id (whichever name it
+	//    carries — gorm names vary across versions). AutoMigrate recreates
+	//    the composite unique on (entity_type, entity_id) from the struct tag.
+	for _, c := range []string{
+		"uni_agent_install_tokens_agent_id",
+		"agent_install_tokens_agent_id_key",
+		"uni_install_tokens_entity_id",
+		"install_tokens_entity_id_key",
+	} {
+		if err := db.Exec(fmt.Sprintf("ALTER TABLE install_tokens DROP CONSTRAINT IF EXISTS %s", c)).Error; err != nil {
+			return fmt.Errorf("drop %s: %w", c, err)
+		}
 	}
 	return nil
 }

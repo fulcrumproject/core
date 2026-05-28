@@ -23,3 +23,15 @@ func mustCreateInstallToken(t *testing.T, c *resty.Client, agentID properties.UU
 	require.Equalf(t, http.StatusCreated, resp.StatusCode(), "create install command: %s", resp.String())
 	return &out
 }
+
+func mustCreateInfraInstallToken(t *testing.T, c *resty.Client, infraID properties.UUID) *api.InstallTokenRes {
+	t.Helper()
+	var out api.InstallTokenRes
+	resp, err := c.R().
+		SetPathParam("id", infraID.String()).
+		SetResult(&out).
+		Post("/infrastructures/{id}/install-command")
+	require.NoError(t, err)
+	require.Equalf(t, http.StatusCreated, resp.StatusCode(), "create install command: %s", resp.String())
+	return &out
+}
