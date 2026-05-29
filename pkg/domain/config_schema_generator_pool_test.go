@@ -142,7 +142,7 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 			withStore:    true,
 			setupMock:    func(store *MockStore) {},
 			wantErr:      true,
-			errSubstr:    "agent ID required",
+			errSubstr:    "entity ID required",
 		},
 		{
 			name:         "missing store",
@@ -219,7 +219,7 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 				schemaCtx.Store = store
 			}
 
-			gen := NewSchemaConfigPoolGenerator()
+			gen := NewSchemaConfigPoolGenerator[AgentConfigContext]()
 			got, generated, err := gen.Generate(ctx, schemaCtx, "testProp", tt.currentValue, tt.config)
 
 			if tt.wantErr {
@@ -244,8 +244,62 @@ func TestSchemaConfigPoolGenerator_Generate(t *testing.T) {
 	}
 }
 
+// TestSchemaConfigPoolGenerator_Generate_Infrastructure proves the same generic
+// generator works for the infrastructure context: it resolves the pool by the
+// infrastructure's provider and stamps the allocated value with the infrastructure id.
+func TestSchemaConfigPoolGenerator_Generate_Infrastructure(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	infraID := properties.UUID(uuid.New())
+	providerID := properties.UUID(uuid.New())
+
+	matchProvider := mock.MatchedBy(func(p *properties.UUID) bool {
+		return p != nil && *p == providerID
+	})
+
+	store := NewMockStore(t)
+	poolRepo := NewMockConfigPoolRepository(t)
+	valueRepo := NewMockConfigPoolValueRepository(t)
+
+	pool := &ConfigPool{
+		BaseEntity:    BaseEntity{ID: poolID},
+		Type:          "ptp_pool",
+		PropertyType:  "string",
+		GeneratorType: PoolGeneratorList,
+	}
+	poolRepo.On("FindByTypeAndProvider", ctx, "ptp_pool", matchProvider).Return(pool, nil)
+	valueRepo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{
+		{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "10.0.0.1"},
+	}, nil)
+	valueRepo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+		return v.AgentID != nil && *v.AgentID == infraID &&
+			v.PropertyName != nil && *v.PropertyName == "ptp" &&
+			v.AllocatedAt != nil
+	})).Return(nil)
+	store.On("ConfigPoolRepo").Return(poolRepo)
+	store.On("ConfigPoolValueRepo").Return(valueRepo)
+
+	schemaCtx := InfrastructureConfigContext{
+		Store:                    store,
+		InfrastructureID:         &infraID,
+		InfrastructureProviderID: providerID,
+	}
+
+	gen := NewSchemaConfigPoolGenerator[InfrastructureConfigContext]()
+	got, generated, err := gen.Generate(ctx, schemaCtx, "ptp", nil, map[string]any{"poolType": "ptp_pool"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !generated {
+		t.Errorf("expected generated=true")
+	}
+	if got != "10.0.0.1" {
+		t.Errorf("expected value=10.0.0.1, got %v", got)
+	}
+}
+
 func TestSchemaConfigPoolGenerator_ValidateConfig(t *testing.T) {
-	gen := NewSchemaConfigPoolGenerator()
+	gen := NewSchemaConfigPoolGenerator[AgentConfigContext]()
 
 	tests := []struct {
 		name      string

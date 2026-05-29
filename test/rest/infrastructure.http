@@ -254,3 +254,130 @@ Authorization: Bearer {{adminToken}}
 ### --- Delete InfraType A while AgentType still references it → 400 --------
 DELETE {{baseUrl}}/infrastructure-types/{{i_infraTypeId}}
 Authorization: Bearer {{adminToken}}
+
+###
+### Phase 5 — auto-allocation of an Infrastructure property from a `list` ConfigPool
+###   1. Seed a global `list` pool with two PtP-tuple values (objects).
+###   2. Create an InfraType whose `ptp` object property references the pool via a
+###      `generator: "pool"` annotation.
+###   3. Create Infrastructure with `configuration: {}` → `ptp` is auto-popped from
+###      the pool; GET asserts the full tuple landed in `configuration.ptp`.
+###   4. The allocated config_pool_values row carries agentId = the infrastructure id
+###      and propertyName = "ptp".
+###   5. A second Infrastructure takes the remaining tuple; a third fails (pool empty).
+
+### --- Seed a `list` pool of PtP tuples ---------------------------------------
+# @name iCreatePtpPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-pool-e2e",
+  "type": "ptp_pool",
+  "propertyType": "object",
+  "generatorType": "list"
+}
+
+@i_ptpPoolId = {{iCreatePtpPool.response.body.$.id}}
+
+### --- Seed tuple 1 -----------------------------------------------------------
+POST {{baseUrl}}/config-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-tuple-1",
+  "value": { "localIp": "10.0.0.1", "remoteIp": "10.0.0.2", "asn": 65001 },
+  "configPoolId": "{{i_ptpPoolId}}"
+}
+
+### --- Seed tuple 2 -----------------------------------------------------------
+POST {{baseUrl}}/config-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-tuple-2",
+  "value": { "localIp": "10.0.1.1", "remoteIp": "10.0.1.2", "asn": 65002 },
+  "configPoolId": "{{i_ptpPoolId}}"
+}
+
+### --- InfraType whose `ptp` object property auto-allocates from the pool ------
+# @name iCreatePtpInfraType
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-type-ptp-e2e",
+  "configurationSchema": {
+    "properties": {
+      "ptp": {
+        "type": "object",
+        "label": "Point-to-point link",
+        "generator": {
+          "type": "pool",
+          "config": { "poolType": "ptp_pool" }
+        },
+        "properties": {
+          "localIp": { "type": "string", "required": true },
+          "remoteIp": { "type": "string", "required": true },
+          "asn": { "type": "integer", "required": true }
+        }
+      }
+    }
+  }
+}
+
+@i_ptpInfraTypeId = {{iCreatePtpInfraType.response.body.$.id}}
+
+### --- Create Infrastructure with empty config → `ptp` auto-popped ------------
+# @name iCreatePtpInfra1
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-infra-1-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_ptpInfraTypeId}}",
+  "configuration": {}
+}
+
+@i_ptpInfra1Id = {{iCreatePtpInfra1.response.body.$.id}}
+
+### --- Get → assert the full tuple landed in configuration.ptp ----------------
+# Expect 200 with configuration.ptp = one of the seeded tuples (localIp/remoteIp/asn).
+GET {{baseUrl}}/infrastructures/{{i_ptpInfra1Id}}
+Authorization: Bearer {{adminToken}}
+
+### --- Assert the pool value is stamped with the infra id + propertyName ------
+# Expect exactly one row, with agentId = i_ptpInfra1Id and propertyName = "ptp".
+GET {{baseUrl}}/config-pool-values?agentId={{i_ptpInfra1Id}}
+Authorization: Bearer {{adminToken}}
+
+### --- Second Infrastructure takes the remaining tuple -----------------------
+# @name iCreatePtpInfra2
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-infra-2-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_ptpInfraTypeId}}",
+  "configuration": {}
+}
+
+### --- Third Infrastructure → 400, pool exhausted ----------------------------
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-infra-3-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_ptpInfraTypeId}}",
+  "configuration": {}
+}

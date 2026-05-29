@@ -51,10 +51,8 @@ func TestInfrastructureConfigSchemaValidatorRegistry(t *testing.T) {
 func TestInfrastructureConfigGeneratorRegistry(t *testing.T) {
 	generators := buildInfrastructureConfigGeneratorRegistry()
 
-	// Phase 1: generator registry is intentionally empty. Pool/range/subnet
-	// generators land in later phases when Infrastructure instances + the
-	// xlsx-driven pool model arrive.
-	if len(generators) != 0 {
-		t.Errorf("Expected empty generator registry in Phase 1, got %d generators", len(generators))
+	// The "pool" generator auto-allocates a ConfigPoolValue at infrastructure create time.
+	if _, ok := generators["pool"]; !ok {
+		t.Error("Expected pool generator to be registered")
 	}
 }

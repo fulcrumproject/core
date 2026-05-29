@@ -16,10 +16,11 @@ const (
 
 type ConfigPoolValue struct {
 	BaseEntity
-	Name          string           `json:"name" gorm:"not null"`
-	Value         any              `json:"value" gorm:"type:jsonb;serializer:json;not null"`
-	ConfigPoolID  properties.UUID  `json:"configPoolId" gorm:"not null;index"`
-	ConfigPool    *ConfigPool      `json:"-" gorm:"foreignKey:ConfigPoolID"`
+	Name         string          `json:"name" gorm:"not null"`
+	Value        any             `json:"value" gorm:"type:jsonb;serializer:json;not null"`
+	ConfigPoolID properties.UUID `json:"configPoolId" gorm:"not null;index"`
+	ConfigPool   *ConfigPool     `json:"-" gorm:"foreignKey:ConfigPoolID"`
+	// AgentID is the consuming entity's id; also holds an Infrastructure id when the consumer is an Infrastructure.
 	AgentID       *properties.UUID `json:"agentId,omitempty" gorm:"index"`
 	Agent         *Agent           `json:"-" gorm:"foreignKey:AgentID"`
 	PropertyName  *string          `json:"propertyName"`

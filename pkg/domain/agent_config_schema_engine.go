@@ -15,6 +15,10 @@ type AgentConfigContext struct {
 	AgentProviderID properties.UUID
 }
 
+func (c AgentConfigContext) poolStore() Store                { return c.Store }
+func (c AgentConfigContext) poolEntityID() *properties.UUID  { return c.AgentID }
+func (c AgentConfigContext) poolProviderID() properties.UUID { return c.AgentProviderID }
+
 // buildAgentConfigValidatorRegistry creates a registry of property validators
 // Only generic validators - no domain-specific ones (no source/mutable for agents)
 func buildAgentConfigValidatorRegistry() map[string]schema.PropertyValidator[AgentConfigContext] {
@@ -53,7 +57,7 @@ func buildAgentConfigSchemaValidatorRegistry() map[string]schema.SchemaValidator
 // schemas. The "pool" generator auto-allocates an ConfigPoolValue at agent create time.
 func buildAgentConfigGeneratorRegistry() map[string]schema.Generator[AgentConfigContext] {
 	return map[string]schema.Generator[AgentConfigContext]{
-		"pool": NewSchemaConfigPoolGenerator(),
+		"pool": NewSchemaConfigPoolGenerator[AgentConfigContext](),
 	}
 }
 

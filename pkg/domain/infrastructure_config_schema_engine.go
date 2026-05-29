@@ -16,6 +16,12 @@ type InfrastructureConfigContext struct {
 	InfrastructureProviderID properties.UUID
 }
 
+func (c InfrastructureConfigContext) poolStore() Store               { return c.Store }
+func (c InfrastructureConfigContext) poolEntityID() *properties.UUID { return c.InfrastructureID }
+func (c InfrastructureConfigContext) poolProviderID() properties.UUID {
+	return c.InfrastructureProviderID
+}
+
 // buildInfrastructureConfigValidatorRegistry registers the generic property
 // validators. No domain-specific validators (no source/mutable for infra).
 func buildInfrastructureConfigValidatorRegistry() map[string]schema.PropertyValidator[InfrastructureConfigContext] {
@@ -45,10 +51,12 @@ func buildInfrastructureConfigSchemaValidatorRegistry() map[string]schema.Schema
 	}
 }
 
-// buildInfrastructureConfigGeneratorRegistry registers generators. Empty in
-// Phase 1 — pool-driven allocation is deferred to later phases.
+// buildInfrastructureConfigGeneratorRegistry registers generators. The "pool"
+// generator auto-allocates a ConfigPoolValue at infrastructure create time.
 func buildInfrastructureConfigGeneratorRegistry() map[string]schema.Generator[InfrastructureConfigContext] {
-	return map[string]schema.Generator[InfrastructureConfigContext]{}
+	return map[string]schema.Generator[InfrastructureConfigContext]{
+		"pool": NewSchemaConfigPoolGenerator[InfrastructureConfigContext](),
+	}
 }
 
 // NewInfrastructureConfigSchemaEngine creates a new schema engine configured
