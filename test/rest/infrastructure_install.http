@@ -57,7 +57,7 @@ Content-Type: application/json
     },
     "configContentType": "text/plain",
     "configTemplate": "[infra]\nendpoint={{.endpoint}}\napi_key={{.apiKey}}\n",
-    "cmdTemplate": "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}' -o /tmp/infra.conf && cat /tmp/infra.conf"
+    "cmdTemplate": "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}' -o ./infra.conf && cat ./infra.conf"
 }
 
 @iic_infraTypeId = {{iic_createInfraType.response.body.$.id}}

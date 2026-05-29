@@ -606,6 +606,83 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorRes'
+  /infrastructures/install/{token}/config:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Per-resource install token issued by POST /infrastructures/{id}/install-command.
+    get:
+      operationId: infrastructuresFetchInstallConfig
+      summary: Fetch rendered infrastructure install configuration
+      tags:
+        - Infrastructures
+      description: |
+        Returns the rendered configuration for a freshly deployed infrastructure.
+        The caller must present BOTH:
+
+        1. A bearer token with `admin`, `participant`, or `agent` role (standard
+           API authentication).
+        2. A valid install token embedded in the URL (the per-resource secret
+           issued by POST `/infrastructures/{id}/install-command`).
+
+        The response body is the rendered configuration — its media type matches
+        the infrastructure type's `configContentType` (commonly `text/plain`,
+        `application/yaml`, or `application/json`). Install tokens are
+        short-lived (≈5 minutes) and single-use per install.
+
+        Auth failures (missing or wrong-role bearer) return `401`/`403` from the
+        standard auth middleware. Past that gate, every failure mode (unknown
+        token, expired token, wrong-entity-type token, missing template, vault
+        resolution failure, render error) collapses into a uniform `404` with
+        the standard error envelope — the precise cause is only in the
+        server-side log so callers cannot distinguish them.
+
+        Cross-mount isolation: a token issued by the `/agents` mount is not
+        accepted here, and vice versa. The two URL surfaces are strictly
+        separated.
+      x-auth-permissions:
+        - role: admin
+          permission: authorized with a valid install token
+        - role: participant
+          permission: authorized with a valid install token
+        - role: agent
+          permission: authorized with a valid install token
+      responses:
+        '200':
+          description: Rendered infrastructure configuration. Media type is dynamic (matches the infrastructure type's `configContentType`).
+          headers:
+            Content-Type:
+              schema:
+                type: string
+              description: Matches the infrastructure type's `configContentType`.
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                example: nosniff
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            Install token not found, expired, of the wrong entity type, or the
+            infrastructure's configuration could not be rendered. Body is the
+            standard error envelope — consult server logs for the real cause.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
   /infrastructures/{id}:
     parameters:
       - name: id
@@ -693,6 +770,158 @@ paths:
       responses:
         '204':
           description: Infrastructure deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Infrastructure not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+  /infrastructures/{id}/install-command:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/properties.UUID'
+    get:
+      operationId: infrastructuresGetInstallCommand
+      summary: Get install-command metadata
+      tags:
+        - Infrastructures
+      description: |
+        Returns metadata about the current install token for the infrastructure
+        (id, expiration, creation time). Never returns the plain token or
+        rendered install URL — once the token leaves the Create/Regenerate
+        response it cannot be recovered. Metadata is returned even when the
+        token has expired so callers can disambiguate "no token yet"
+        (404 → POST to create) from "token exists but expired"
+        (200 with past `expiresAt` → POST to `/install-command/regenerate`).
+      x-auth-permissions:
+        - role: admin
+          permission: all infrastructures
+        - role: participant
+          permission: infrastructures provided by its participant
+        - role: agent
+          permission: not authorized
+      responses:
+        '200':
+          description: Install token metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallTokenMetaRes'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Infrastructure or install token not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+    post:
+      operationId: infrastructuresCreateInstallCommand
+      summary: Create install command
+      tags:
+        - Infrastructures
+      description: |
+        Issues a new install token for the infrastructure and returns the
+        one-shot install command plus fetch URL. Install tokens are short-lived
+        (≈5 minutes) and the plain token is rendered exactly once — the response
+        is the only opportunity to capture it. If lost, use
+        `/install-command/regenerate` to rotate.
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: infrastructures provided by its participant
+        - role: agent
+          permission: not authorized
+      responses:
+        '201':
+          description: Install token created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallTokenRes'
+        '400':
+          description: Invalid request (for example, the infrastructure type has no install templates configured)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Infrastructure not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+    delete:
+      operationId: infrastructuresRevokeInstallCommand
+      summary: Revoke install command
+      tags:
+        - Infrastructures
+      description: Revokes the infrastructure's current install token. Subsequent fetch attempts on that token return 404.
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: infrastructures provided by its participant
+        - role: agent
+          permission: not authorized
+      responses:
+        '204':
+          description: Install token revoked
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Infrastructure or install token not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRes'
+  /infrastructures/{id}/install-command/regenerate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/properties.UUID'
+    post:
+      operationId: infrastructuresRegenerateInstallCommand
+      summary: Regenerate install command
+      tags:
+        - Infrastructures
+      description: |
+        Rotates the infrastructure's install token. Invalidates any previously
+        issued install token and returns a fresh install command plus fetch URL.
+        As with Create, the plain token is rendered exactly once and cannot be
+        recovered later.
+      x-auth-permissions:
+        - role: admin
+          permission: always
+        - role: participant
+          permission: infrastructures provided by its participant
+        - role: agent
+          permission: not authorized
+      responses:
+        '200':
+          description: Install token regenerated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallTokenRes'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

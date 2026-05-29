@@ -98,9 +98,9 @@ components:
     FailJobReq:
       $ref: ./components/schemas/jobs.yaml#/FailJobReq
     InstallTokenRes:
-      $ref: ./components/schemas/agents.yaml#/InstallTokenRes
+      $ref: ./components/schemas/install_tokens.yaml#/InstallTokenRes
     InstallTokenMetaRes:
-      $ref: ./components/schemas/agents.yaml#/InstallTokenMetaRes
+      $ref: ./components/schemas/install_tokens.yaml#/InstallTokenMetaRes
     InfrastructureRes:
       $ref: ./components/schemas/infrastructures.yaml#/InfrastructureRes
     CreateInfrastructureReq:
@@ -235,8 +235,14 @@ paths:
     $ref: ./paths/infrastructures.yaml
   /infrastructures/me:
     $ref: ./paths/infrastructures@me.yaml
+  /infrastructures/install/{token}/config:
+    $ref: ./paths/infrastructures@install@{token}@config.yaml
   /infrastructures/{id}:
     $ref: ./paths/infrastructures@{id}.yaml
+  /infrastructures/{id}/install-command:
+    $ref: ./paths/infrastructures@{id}@install-command.yaml
+  /infrastructures/{id}/install-command/regenerate:
+    $ref: ./paths/infrastructures@{id}@install-command@regenerate.yaml
   /agents:
     $ref: ./paths/agents.yaml
   /agents/me:
