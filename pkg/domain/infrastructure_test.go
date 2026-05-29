@@ -451,6 +451,10 @@ func TestInfrastructureCommander_Delete(t *testing.T) {
 		agentRepo.On("CountByInfrastructure", mock.Anything, infraID).Return(int64(0), nil).Maybe()
 		ms.On("AgentRepo").Return(agentRepo).Maybe()
 
+		valueRepo := NewMockConfigPoolValueRepository(t)
+		valueRepo.On("FindByInfrastructure", mock.Anything, infraID).Return([]*ConfigPoolValue{}, nil).Maybe()
+		ms.On("ConfigPoolValueRepo").Return(valueRepo).Maybe()
+
 		eventRepo := NewMockEventRepository(t)
 		eventRepo.On("Create", mock.Anything, mock.MatchedBy(func(e *Event) bool {
 			return e.Type == EventTypeInfrastructureDeleted

@@ -100,6 +100,69 @@ func testConfigPoolValue(t *testing.T, env *Env) {
 		require.Containsf(t, []any{val.Value, "10.0.0.10"}, got, "allocated value %v not from global pool", got)
 	})
 
+	t.Run("infrastructure allocates value and listing reports infrastructureId", func(t *testing.T) {
+		// Dedicated provider-owned pool so the allocated value is findable and
+		// can't be raced by other scenarios.
+		providerID := testhelpers.ProviderID
+		poolType := "infra-pool-" + testhelpers.Uniq()
+		pool := testhelpers.MustPost[api.CreateConfigPoolReq, api.ConfigPoolRes](t, env.ProviderClient, "/config-pools", api.CreateConfigPoolReq{
+			Name:          "own-" + poolType,
+			Type:          poolType,
+			PropertyType:  "string",
+			GeneratorType: domain.PoolGeneratorList,
+			ParticipantID: &providerID,
+		})
+		poolValue := testhelpers.MustPost[api.CreateConfigPoolValueReq, api.ConfigPoolValueRes](t, env.ProviderClient, "/config-pool-values", api.CreateConfigPoolValueReq{
+			Name:         "iv-" + testhelpers.Uniq(),
+			Value:        "172.16.0.9",
+			ConfigPoolID: pool.ID,
+		})
+
+		// InfrastructureType whose config schema auto-allocates from that pool.
+		it := testhelpers.MustPost[api.CreateInfrastructureTypeReq, api.InfrastructureTypeRes](t, env.AdminClient, "/infrastructure-types", api.CreateInfrastructureTypeReq{
+			Name: "it-pool-" + testhelpers.Uniq(),
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"poolIp": {
+						Type:  "string",
+						Label: "Pool IP",
+						Generator: &schema.GeneratorConfig{
+							Type:   "pool",
+							Config: map[string]any{"poolType": poolType},
+						},
+					},
+				},
+			},
+		})
+		t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/infrastructure-types", it.ID) })
+
+		cfg := properties.JSON{}
+		infra := testhelpers.MustPost[api.CreateInfrastructureReq, api.InfrastructureRes](t, env.AdminClient, "/infrastructures", api.CreateInfrastructureReq{
+			Name:                 "infra-pool-" + testhelpers.Uniq(),
+			ProviderID:           providerID,
+			InfrastructureTypeID: it.ID,
+			Configuration:        &cfg,
+		})
+		t.Cleanup(func() {
+			// Deleting the infrastructure releases its allocated pool value.
+			testhelpers.MustDelete(t, env.AdminClient, "/infrastructures", infra.ID)
+			testhelpers.MustDelete(t, env.ProviderClient, "/config-pool-values", poolValue.ID)
+			testhelpers.MustDelete(t, env.ProviderClient, "/config-pools", pool.ID)
+		})
+
+		require.NotNil(t, infra.Configuration)
+		require.Equalf(t, poolValue.Value, (*infra.Configuration)["poolIp"],
+			"infrastructure must allocate from its pool (got %v)", (*infra.Configuration)["poolIp"])
+
+		// The allocated value must report infrastructureId (not agentId).
+		page := testhelpers.MustList[api.ConfigPoolValueRes](t, env.ProviderClient, "/config-pool-values?infrastructureId="+infra.ID.String())
+		require.Lenf(t, page.Items, 1, "expected exactly one value allocated to the infrastructure, got %d", len(page.Items))
+		got := page.Items[0]
+		require.NotNil(t, got.InfrastructureID, "allocated value must carry infrastructureId")
+		require.Equal(t, infra.ID, *got.InfrastructureID)
+		require.Nil(t, got.AgentID, "infrastructure-owned value must not set agentId")
+	})
+
 	t.Run("agent under a provider allocates value from provider-owned pool", func(t *testing.T) {
 		providerID := testhelpers.ProviderID
 		poolType := "provider-pool-" + testhelpers.Uniq()

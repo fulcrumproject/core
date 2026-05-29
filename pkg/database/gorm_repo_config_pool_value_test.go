@@ -243,7 +243,7 @@ func TestConfigPoolValueRepository(t *testing.T) {
 
 			// Allocate
 			agentID := properties.NewUUID()
-			value.Allocate(agentID, "ip_address")
+			value.Allocate(domain.ConfigPoolValueEntityTypeAgent, agentID, "ip_address")
 			err := repo.Update(ctx, value)
 			require.NoError(t, err)
 
@@ -290,7 +290,7 @@ func TestConfigPoolValueRepository(t *testing.T) {
 
 			allocated := createTestConfigPoolValue(t, uniquePool.ID)
 			agentID := properties.NewUUID()
-			allocated.Allocate(agentID, "prop")
+			allocated.Allocate(domain.ConfigPoolValueEntityTypeAgent, agentID, "prop")
 			require.NoError(t, repo.Create(ctx, allocated))
 
 			values, err := repo.FindAvailable(ctx, uniquePool.ID)
@@ -307,7 +307,7 @@ func TestConfigPoolValueRepository(t *testing.T) {
 
 			allocated := createTestConfigPoolValue(t, uniquePool.ID)
 			agentID := properties.NewUUID()
-			allocated.Allocate(agentID, "prop")
+			allocated.Allocate(domain.ConfigPoolValueEntityTypeAgent, agentID, "prop")
 			require.NoError(t, repo.Create(ctx, allocated))
 
 			values, err := repo.FindAvailable(ctx, uniquePool.ID)
@@ -322,17 +322,17 @@ func TestConfigPoolValueRepository(t *testing.T) {
 			agentID := properties.NewUUID()
 
 			v1 := createTestConfigPoolValue(t, pool.ID)
-			v1.Allocate(agentID, "prop1")
+			v1.Allocate(domain.ConfigPoolValueEntityTypeAgent, agentID, "prop1")
 			require.NoError(t, repo.Create(ctx, v1))
 
 			v2 := createTestConfigPoolValue(t, pool.ID)
-			v2.Allocate(agentID, "prop2")
+			v2.Allocate(domain.ConfigPoolValueEntityTypeAgent, agentID, "prop2")
 			require.NoError(t, repo.Create(ctx, v2))
 
 			// Different agent
 			otherAgentID := properties.NewUUID()
 			v3 := createTestConfigPoolValue(t, pool.ID)
-			v3.Allocate(otherAgentID, "prop3")
+			v3.Allocate(domain.ConfigPoolValueEntityTypeAgent, otherAgentID, "prop3")
 			require.NoError(t, repo.Create(ctx, v3))
 
 			values, err := repo.FindByAgent(ctx, agentID)
@@ -346,6 +346,41 @@ func TestConfigPoolValueRepository(t *testing.T) {
 
 		t.Run("success - empty when none allocated", func(t *testing.T) {
 			values, err := repo.FindByAgent(ctx, properties.NewUUID())
+
+			require.NoError(t, err)
+			assert.Empty(t, values)
+		})
+	})
+
+	t.Run("FindByInfrastructure", func(t *testing.T) {
+		t.Run("success", func(t *testing.T) {
+			infraID := properties.NewUUID()
+
+			v1 := createTestConfigPoolValue(t, pool.ID)
+			v1.Allocate(domain.ConfigPoolValueEntityTypeInfrastructure, infraID, "prop1")
+			require.NoError(t, repo.Create(ctx, v1))
+
+			v2 := createTestConfigPoolValue(t, pool.ID)
+			v2.Allocate(domain.ConfigPoolValueEntityTypeInfrastructure, infraID, "prop2")
+			require.NoError(t, repo.Create(ctx, v2))
+
+			// Different infrastructure
+			otherInfraID := properties.NewUUID()
+			v3 := createTestConfigPoolValue(t, pool.ID)
+			v3.Allocate(domain.ConfigPoolValueEntityTypeInfrastructure, otherInfraID, "prop3")
+			require.NoError(t, repo.Create(ctx, v3))
+
+			values, err := repo.FindByInfrastructure(ctx, infraID)
+
+			require.NoError(t, err)
+			assert.Len(t, values, 2)
+			for _, v := range values {
+				assert.Equal(t, &infraID, v.InfrastructureID)
+			}
+		})
+
+		t.Run("success - empty when none allocated", func(t *testing.T) {
+			values, err := repo.FindByInfrastructure(ctx, properties.NewUUID())
 
 			require.NoError(t, err)
 			assert.Empty(t, values)

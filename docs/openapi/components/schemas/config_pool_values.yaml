@@ -33,10 +33,16 @@ ConfigPoolValueRes:
       description: "The config pool this value belongs to"
     agentId:
       $ref: "./common.yaml#/properties.UUID"
-      description: "Agent this value is allocated to (null if available)"
+      description: "Agent this value is allocated to (set only for agent-owned values)"
     agent:
       $ref: "./agents.yaml#/AgentRes"
-      description: "The agent this value is allocated to (only present if allocated)"
+      description: "The agent this value is allocated to (only present if allocated to an agent)"
+    infrastructureId:
+      $ref: "./common.yaml#/properties.UUID"
+      description: "Infrastructure this value is allocated to (set only for infrastructure-owned values)"
+    infrastructure:
+      $ref: "./infrastructures.yaml#/InfrastructureRes"
+      description: "The infrastructure this value is allocated to (only present if allocated to an infrastructure)"
     propertyName:
       type: string
       example: "ipAddress"

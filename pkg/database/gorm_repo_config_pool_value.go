@@ -14,9 +14,10 @@ type GormConfigPoolValueRepository struct {
 }
 
 var applyConfigPoolValueFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"name":         StringContainsInsensitiveFilterFieldApplier("name"),
-	"configPoolId": ParserInFilterFieldApplier("config_pool_id", properties.ParseUUID),
-	"agentId":      ParserInFilterFieldApplier("agent_id", properties.ParseUUID),
+	"name":             StringContainsInsensitiveFilterFieldApplier("name"),
+	"configPoolId":     ParserInFilterFieldApplier("config_pool_id", properties.ParseUUID),
+	"agentId":          ParserInFilterFieldApplier("agent_id", properties.ParseUUID),
+	"infrastructureId": ParserInFilterFieldApplier("infrastructure_id", properties.ParseUUID),
 })
 
 var applyConfigPoolValueSort = MapSortApplier(map[string]string{
@@ -31,8 +32,8 @@ func NewConfigPoolValueRepository(db *gorm.DB) *GormConfigPoolValueRepository {
 			applyConfigPoolValueFilter,
 			applyConfigPoolValueSort,
 			participantAuthzFilterApplier,
-			[]string{"ConfigPool", "Agent"},
-			[]string{"ConfigPool", "Agent"},
+			[]string{"ConfigPool", "Agent", "Infrastructure"},
+			[]string{"ConfigPool", "Agent", "Infrastructure"},
 		),
 	}
 }
@@ -43,13 +44,19 @@ func (r *GormConfigPoolValueRepository) Update(ctx context.Context, value *domai
 
 func (r *GormConfigPoolValueRepository) FindAvailable(ctx context.Context, poolID properties.UUID) ([]*domain.ConfigPoolValue, error) {
 	var values []*domain.ConfigPoolValue
-	result := r.db.WithContext(ctx).Where("config_pool_id = ? AND agent_id IS NULL", poolID).Order("name ASC").Find(&values)
+	result := r.db.WithContext(ctx).Where("config_pool_id = ? AND agent_id IS NULL AND infrastructure_id IS NULL", poolID).Order("name ASC").Find(&values)
 	return values, result.Error
 }
 
 func (r *GormConfigPoolValueRepository) FindByAgent(ctx context.Context, agentID properties.UUID) ([]*domain.ConfigPoolValue, error) {
 	var values []*domain.ConfigPoolValue
 	result := r.db.WithContext(ctx).Where("agent_id = ?", agentID).Order("name ASC").Find(&values)
+	return values, result.Error
+}
+
+func (r *GormConfigPoolValueRepository) FindByInfrastructure(ctx context.Context, infrastructureID properties.UUID) ([]*domain.ConfigPoolValue, error) {
+	var values []*domain.ConfigPoolValue
+	result := r.db.WithContext(ctx).Where("infrastructure_id = ?", infrastructureID).Order("name ASC").Find(&values)
 	return values, result.Error
 }
 

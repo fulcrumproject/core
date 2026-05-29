@@ -16,7 +16,10 @@ type InfrastructureConfigContext struct {
 	InfrastructureProviderID properties.UUID
 }
 
-func (c InfrastructureConfigContext) poolStore() Store               { return c.Store }
+func (c InfrastructureConfigContext) poolStore() Store { return c.Store }
+func (c InfrastructureConfigContext) poolEntityType() ConfigPoolValueEntityType {
+	return ConfigPoolValueEntityTypeInfrastructure
+}
 func (c InfrastructureConfigContext) poolEntityID() *properties.UUID { return c.InfrastructureID }
 func (c InfrastructureConfigContext) poolProviderID() properties.UUID {
 	return c.InfrastructureProviderID

@@ -272,7 +272,7 @@ func TestSchemaConfigPoolGenerator_Generate_Infrastructure(t *testing.T) {
 		{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "10.0.0.1"},
 	}, nil)
 	valueRepo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
-		return v.AgentID != nil && *v.AgentID == infraID &&
+		return v.InfrastructureID != nil && *v.InfrastructureID == infraID && v.AgentID == nil &&
 			v.PropertyName != nil && *v.PropertyName == "ptp" &&
 			v.AllocatedAt != nil
 	})).Return(nil)

@@ -10,11 +10,12 @@ import (
 )
 
 // poolAllocContext is the slice of a config schema context the pool generator needs:
-// the transactional Store, the consuming entity's id (stamped onto the allocated value),
-// and the provider scoping pool lookup. Implemented by AgentConfigContext and
+// the transactional Store, the consuming entity's type+id (stamped onto the allocated
+// value), and the provider scoping pool lookup. Implemented by AgentConfigContext and
 // InfrastructureConfigContext.
 type poolAllocContext interface {
 	poolStore() Store
+	poolEntityType() ConfigPoolValueEntityType
 	poolEntityID() *properties.UUID
 	poolProviderID() properties.UUID
 }
@@ -69,7 +70,7 @@ func (g *SchemaConfigPoolGenerator[C]) Generate(
 		return nil, false, fmt.Errorf("%s: failed to create generator for pool: %w", propPath, err)
 	}
 
-	allocatedValue, err := generator.Allocate(ctx, *entityID, propPath)
+	allocatedValue, err := generator.Allocate(ctx, schemaCtx.poolEntityType(), *entityID, propPath)
 	if err != nil {
 		return nil, false, fmt.Errorf("%s: failed to allocate from pool: %w", propPath, err)
 	}

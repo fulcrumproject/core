@@ -5327,8 +5327,8 @@ func (_m *MockConfigPoolGenerator) EXPECT() *MockConfigPoolGenerator_Expecter {
 }
 
 // Allocate provides a mock function for the type MockConfigPoolGenerator
-func (_mock *MockConfigPoolGenerator) Allocate(ctx context.Context, agentID properties.UUID, propertyName string) (any, error) {
-	ret := _mock.Called(ctx, agentID, propertyName)
+func (_mock *MockConfigPoolGenerator) Allocate(ctx context.Context, entityType ConfigPoolValueEntityType, entityID properties.UUID, propertyName string) (any, error) {
+	ret := _mock.Called(ctx, entityType, entityID, propertyName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Allocate")
@@ -5336,18 +5336,18 @@ func (_mock *MockConfigPoolGenerator) Allocate(ctx context.Context, agentID prop
 
 	var r0 any
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) (any, error)); ok {
-		return returnFunc(ctx, agentID, propertyName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ConfigPoolValueEntityType, properties.UUID, string) (any, error)); ok {
+		return returnFunc(ctx, entityType, entityID, propertyName)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) any); ok {
-		r0 = returnFunc(ctx, agentID, propertyName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ConfigPoolValueEntityType, properties.UUID, string) any); ok {
+		r0 = returnFunc(ctx, entityType, entityID, propertyName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(any)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, string) error); ok {
-		r1 = returnFunc(ctx, agentID, propertyName)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, ConfigPoolValueEntityType, properties.UUID, string) error); ok {
+		r1 = returnFunc(ctx, entityType, entityID, propertyName)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -5361,30 +5361,36 @@ type MockConfigPoolGenerator_Allocate_Call struct {
 
 // Allocate is a helper method to define mock.On call
 //   - ctx context.Context
-//   - agentID properties.UUID
+//   - entityType ConfigPoolValueEntityType
+//   - entityID properties.UUID
 //   - propertyName string
-func (_e *MockConfigPoolGenerator_Expecter) Allocate(ctx interface{}, agentID interface{}, propertyName interface{}) *MockConfigPoolGenerator_Allocate_Call {
-	return &MockConfigPoolGenerator_Allocate_Call{Call: _e.mock.On("Allocate", ctx, agentID, propertyName)}
+func (_e *MockConfigPoolGenerator_Expecter) Allocate(ctx interface{}, entityType interface{}, entityID interface{}, propertyName interface{}) *MockConfigPoolGenerator_Allocate_Call {
+	return &MockConfigPoolGenerator_Allocate_Call{Call: _e.mock.On("Allocate", ctx, entityType, entityID, propertyName)}
 }
 
-func (_c *MockConfigPoolGenerator_Allocate_Call) Run(run func(ctx context.Context, agentID properties.UUID, propertyName string)) *MockConfigPoolGenerator_Allocate_Call {
+func (_c *MockConfigPoolGenerator_Allocate_Call) Run(run func(ctx context.Context, entityType ConfigPoolValueEntityType, entityID properties.UUID, propertyName string)) *MockConfigPoolGenerator_Allocate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 ConfigPoolValueEntityType
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
+			arg1 = args[1].(ConfigPoolValueEntityType)
 		}
-		var arg2 string
+		var arg2 properties.UUID
 		if args[2] != nil {
-			arg2 = args[2].(string)
+			arg2 = args[2].(properties.UUID)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -5395,7 +5401,7 @@ func (_c *MockConfigPoolGenerator_Allocate_Call) Return(v any, err error) *MockC
 	return _c
 }
 
-func (_c *MockConfigPoolGenerator_Allocate_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID, propertyName string) (any, error)) *MockConfigPoolGenerator_Allocate_Call {
+func (_c *MockConfigPoolGenerator_Allocate_Call) RunAndReturn(run func(ctx context.Context, entityType ConfigPoolValueEntityType, entityID properties.UUID, propertyName string) (any, error)) *MockConfigPoolGenerator_Allocate_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5965,6 +5971,74 @@ func (_c *MockConfigPoolValueQuerier_FindByAgent_Call) Return(configPoolValues [
 }
 
 func (_c *MockConfigPoolValueQuerier_FindByAgent_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID) ([]*ConfigPoolValue, error)) *MockConfigPoolValueQuerier_FindByAgent_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByInfrastructure provides a mock function for the type MockConfigPoolValueQuerier
+func (_mock *MockConfigPoolValueQuerier) FindByInfrastructure(ctx context.Context, infrastructureID properties.UUID) ([]*ConfigPoolValue, error) {
+	ret := _mock.Called(ctx, infrastructureID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByInfrastructure")
+	}
+
+	var r0 []*ConfigPoolValue
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ConfigPoolValue, error)); ok {
+		return returnFunc(ctx, infrastructureID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ConfigPoolValue); ok {
+		r0 = returnFunc(ctx, infrastructureID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ConfigPoolValue)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockConfigPoolValueQuerier_FindByInfrastructure_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByInfrastructure'
+type MockConfigPoolValueQuerier_FindByInfrastructure_Call struct {
+	*mock.Call
+}
+
+// FindByInfrastructure is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureID properties.UUID
+func (_e *MockConfigPoolValueQuerier_Expecter) FindByInfrastructure(ctx interface{}, infrastructureID interface{}) *MockConfigPoolValueQuerier_FindByInfrastructure_Call {
+	return &MockConfigPoolValueQuerier_FindByInfrastructure_Call{Call: _e.mock.On("FindByInfrastructure", ctx, infrastructureID)}
+}
+
+func (_c *MockConfigPoolValueQuerier_FindByInfrastructure_Call) Run(run func(ctx context.Context, infrastructureID properties.UUID)) *MockConfigPoolValueQuerier_FindByInfrastructure_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockConfigPoolValueQuerier_FindByInfrastructure_Call) Return(configPoolValues []*ConfigPoolValue, err error) *MockConfigPoolValueQuerier_FindByInfrastructure_Call {
+	_c.Call.Return(configPoolValues, err)
+	return _c
+}
+
+func (_c *MockConfigPoolValueQuerier_FindByInfrastructure_Call) RunAndReturn(run func(ctx context.Context, infrastructureID properties.UUID) ([]*ConfigPoolValue, error)) *MockConfigPoolValueQuerier_FindByInfrastructure_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6648,6 +6722,74 @@ func (_c *MockConfigPoolValueRepository_FindByAgent_Call) RunAndReturn(run func(
 	return _c
 }
 
+// FindByInfrastructure provides a mock function for the type MockConfigPoolValueRepository
+func (_mock *MockConfigPoolValueRepository) FindByInfrastructure(ctx context.Context, infrastructureID properties.UUID) ([]*ConfigPoolValue, error) {
+	ret := _mock.Called(ctx, infrastructureID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByInfrastructure")
+	}
+
+	var r0 []*ConfigPoolValue
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ConfigPoolValue, error)); ok {
+		return returnFunc(ctx, infrastructureID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ConfigPoolValue); ok {
+		r0 = returnFunc(ctx, infrastructureID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ConfigPoolValue)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockConfigPoolValueRepository_FindByInfrastructure_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByInfrastructure'
+type MockConfigPoolValueRepository_FindByInfrastructure_Call struct {
+	*mock.Call
+}
+
+// FindByInfrastructure is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureID properties.UUID
+func (_e *MockConfigPoolValueRepository_Expecter) FindByInfrastructure(ctx interface{}, infrastructureID interface{}) *MockConfigPoolValueRepository_FindByInfrastructure_Call {
+	return &MockConfigPoolValueRepository_FindByInfrastructure_Call{Call: _e.mock.On("FindByInfrastructure", ctx, infrastructureID)}
+}
+
+func (_c *MockConfigPoolValueRepository_FindByInfrastructure_Call) Run(run func(ctx context.Context, infrastructureID properties.UUID)) *MockConfigPoolValueRepository_FindByInfrastructure_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockConfigPoolValueRepository_FindByInfrastructure_Call) Return(configPoolValues []*ConfigPoolValue, err error) *MockConfigPoolValueRepository_FindByInfrastructure_Call {
+	_c.Call.Return(configPoolValues, err)
+	return _c
+}
+
+func (_c *MockConfigPoolValueRepository_FindByInfrastructure_Call) RunAndReturn(run func(ctx context.Context, infrastructureID properties.UUID) ([]*ConfigPoolValue, error)) *MockConfigPoolValueRepository_FindByInfrastructure_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Get provides a mock function for the type MockConfigPoolValueRepository
 func (_mock *MockConfigPoolValueRepository) Get(ctx context.Context, id properties.UUID) (*ConfigPoolValue, error) {
 	ret := _mock.Called(ctx, id)
@@ -6995,6 +7137,215 @@ func (_c *MockConfigPoolValueCommander_Delete_Call) Return(err error) *MockConfi
 }
 
 func (_c *MockConfigPoolValueCommander_Delete_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockConfigPoolValueCommander_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockpoolAllocContext creates a new instance of MockpoolAllocContext. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockpoolAllocContext(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockpoolAllocContext {
+	mock := &MockpoolAllocContext{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockpoolAllocContext is an autogenerated mock type for the poolAllocContext type
+type MockpoolAllocContext struct {
+	mock.Mock
+}
+
+type MockpoolAllocContext_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockpoolAllocContext) EXPECT() *MockpoolAllocContext_Expecter {
+	return &MockpoolAllocContext_Expecter{mock: &_m.Mock}
+}
+
+// poolEntityID provides a mock function for the type MockpoolAllocContext
+func (_mock *MockpoolAllocContext) poolEntityID() *properties.UUID {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for poolEntityID")
+	}
+
+	var r0 *properties.UUID
+	if returnFunc, ok := ret.Get(0).(func() *properties.UUID); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*properties.UUID)
+		}
+	}
+	return r0
+}
+
+// MockpoolAllocContext_poolEntityID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'poolEntityID'
+type MockpoolAllocContext_poolEntityID_Call struct {
+	*mock.Call
+}
+
+// poolEntityID is a helper method to define mock.On call
+func (_e *MockpoolAllocContext_Expecter) poolEntityID() *MockpoolAllocContext_poolEntityID_Call {
+	return &MockpoolAllocContext_poolEntityID_Call{Call: _e.mock.On("poolEntityID")}
+}
+
+func (_c *MockpoolAllocContext_poolEntityID_Call) Run(run func()) *MockpoolAllocContext_poolEntityID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolEntityID_Call) Return(v *properties.UUID) *MockpoolAllocContext_poolEntityID_Call {
+	_c.Call.Return(v)
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolEntityID_Call) RunAndReturn(run func() *properties.UUID) *MockpoolAllocContext_poolEntityID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// poolEntityType provides a mock function for the type MockpoolAllocContext
+func (_mock *MockpoolAllocContext) poolEntityType() ConfigPoolValueEntityType {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for poolEntityType")
+	}
+
+	var r0 ConfigPoolValueEntityType
+	if returnFunc, ok := ret.Get(0).(func() ConfigPoolValueEntityType); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(ConfigPoolValueEntityType)
+	}
+	return r0
+}
+
+// MockpoolAllocContext_poolEntityType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'poolEntityType'
+type MockpoolAllocContext_poolEntityType_Call struct {
+	*mock.Call
+}
+
+// poolEntityType is a helper method to define mock.On call
+func (_e *MockpoolAllocContext_Expecter) poolEntityType() *MockpoolAllocContext_poolEntityType_Call {
+	return &MockpoolAllocContext_poolEntityType_Call{Call: _e.mock.On("poolEntityType")}
+}
+
+func (_c *MockpoolAllocContext_poolEntityType_Call) Run(run func()) *MockpoolAllocContext_poolEntityType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolEntityType_Call) Return(configPoolValueEntityType ConfigPoolValueEntityType) *MockpoolAllocContext_poolEntityType_Call {
+	_c.Call.Return(configPoolValueEntityType)
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolEntityType_Call) RunAndReturn(run func() ConfigPoolValueEntityType) *MockpoolAllocContext_poolEntityType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// poolProviderID provides a mock function for the type MockpoolAllocContext
+func (_mock *MockpoolAllocContext) poolProviderID() properties.UUID {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for poolProviderID")
+	}
+
+	var r0 properties.UUID
+	if returnFunc, ok := ret.Get(0).(func() properties.UUID); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(properties.UUID)
+		}
+	}
+	return r0
+}
+
+// MockpoolAllocContext_poolProviderID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'poolProviderID'
+type MockpoolAllocContext_poolProviderID_Call struct {
+	*mock.Call
+}
+
+// poolProviderID is a helper method to define mock.On call
+func (_e *MockpoolAllocContext_Expecter) poolProviderID() *MockpoolAllocContext_poolProviderID_Call {
+	return &MockpoolAllocContext_poolProviderID_Call{Call: _e.mock.On("poolProviderID")}
+}
+
+func (_c *MockpoolAllocContext_poolProviderID_Call) Run(run func()) *MockpoolAllocContext_poolProviderID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolProviderID_Call) Return(v properties.UUID) *MockpoolAllocContext_poolProviderID_Call {
+	_c.Call.Return(v)
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolProviderID_Call) RunAndReturn(run func() properties.UUID) *MockpoolAllocContext_poolProviderID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// poolStore provides a mock function for the type MockpoolAllocContext
+func (_mock *MockpoolAllocContext) poolStore() Store {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for poolStore")
+	}
+
+	var r0 Store
+	if returnFunc, ok := ret.Get(0).(func() Store); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(Store)
+		}
+	}
+	return r0
+}
+
+// MockpoolAllocContext_poolStore_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'poolStore'
+type MockpoolAllocContext_poolStore_Call struct {
+	*mock.Call
+}
+
+// poolStore is a helper method to define mock.On call
+func (_e *MockpoolAllocContext_Expecter) poolStore() *MockpoolAllocContext_poolStore_Call {
+	return &MockpoolAllocContext_poolStore_Call{Call: _e.mock.On("poolStore")}
+}
+
+func (_c *MockpoolAllocContext_poolStore_Call) Run(run func()) *MockpoolAllocContext_poolStore_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolStore_Call) Return(store Store) *MockpoolAllocContext_poolStore_Call {
+	_c.Call.Return(store)
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolStore_Call) RunAndReturn(run func() Store) *MockpoolAllocContext_poolStore_Call {
 	_c.Call.Return(run)
 	return _c
 }

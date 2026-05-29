@@ -36,6 +36,10 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/config-pool-values?agentId=change-me
 Authorization: Bearer {{adminToken}}
 
+### Get all config pool values with filter by infrastructureId
+GET {{baseUrl}}/config-pool-values?infrastructureId=change-me
+Authorization: Bearer {{adminToken}}
+
 ### Create an config pool value
 # @name createConfigPoolValue
 POST {{baseUrl}}/config-pool-values

@@ -273,6 +273,34 @@ func (c *infrastructureCommander) Delete(ctx context.Context, id properties.UUID
 			return NewInvalidInputErrorf("cannot delete infrastructure %s: %d dependent agent(s) exist", id, agentCount)
 		}
 
+		// Release any ConfigPoolValue rows allocated to this infrastructure. Dispatched per pool via
+		// the factory so release semantics stay consistent across generator types, mirroring agent Delete.
+		allocated, err := store.ConfigPoolValueRepo().FindByInfrastructure(ctx, id)
+		if err != nil {
+			return err
+		}
+		if len(allocated) > 0 {
+			factory := NewDefaultConfigPoolGeneratorFactory(store.ConfigPoolValueRepo())
+			seen := make(map[properties.UUID]bool, len(allocated))
+			for _, v := range allocated {
+				if seen[v.ConfigPoolID] {
+					continue
+				}
+				seen[v.ConfigPoolID] = true
+				pool, err := store.ConfigPoolRepo().Get(ctx, v.ConfigPoolID)
+				if err != nil {
+					return err
+				}
+				gen, err := factory.CreateGenerator(pool)
+				if err != nil {
+					return err
+				}
+				if err := gen.Release(ctx, allocated); err != nil {
+					return err
+				}
+			}
+		}
+
 		eventEntry, err := NewEvent(EventTypeInfrastructureDeleted, WithInitiatorCtx(ctx), WithInfrastructure(infra))
 		if err != nil {
 			return err

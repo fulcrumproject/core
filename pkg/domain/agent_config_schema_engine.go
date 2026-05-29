@@ -15,7 +15,10 @@ type AgentConfigContext struct {
 	AgentProviderID properties.UUID
 }
 
-func (c AgentConfigContext) poolStore() Store                { return c.Store }
+func (c AgentConfigContext) poolStore() Store { return c.Store }
+func (c AgentConfigContext) poolEntityType() ConfigPoolValueEntityType {
+	return ConfigPoolValueEntityTypeAgent
+}
 func (c AgentConfigContext) poolEntityID() *properties.UUID  { return c.AgentID }
 func (c AgentConfigContext) poolProviderID() properties.UUID { return c.AgentProviderID }
 

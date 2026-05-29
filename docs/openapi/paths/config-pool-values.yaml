@@ -45,6 +45,13 @@ get:
         items:
           $ref: "../components/schemas/common.yaml#/properties.UUID"
       description: Filter by agent ID (can specify multiple values)
+    - name: infrastructureId
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "../components/schemas/common.yaml#/properties.UUID"
+      description: Filter by infrastructure ID (can specify multiple values)
   responses:
     "200":
       description: A paginated list of config pool values

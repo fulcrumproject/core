@@ -9,8 +9,9 @@ import (
 
 // ConfigPoolGenerator defines the interface for config pool value allocation strategies
 type ConfigPoolGenerator interface {
-	// Allocate allocates a value from the pool for the given agent and property
-	Allocate(ctx context.Context, agentID properties.UUID, propertyName string) (any, error)
+	// Allocate allocates a value from the pool to the given entity (agent or
+	// infrastructure) for the given property.
+	Allocate(ctx context.Context, entityType ConfigPoolValueEntityType, entityID properties.UUID, propertyName string) (any, error)
 
 	// Release releases the given pre-fetched allocations that belong to this generator's pool.
 	// Callers pass the agent's full allocation slice; implementations filter to their own pool.

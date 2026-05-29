@@ -14,19 +14,28 @@ const (
 	EventTypeConfigPoolValueDeleted EventType = "config_pool_value.deleted"
 )
 
+// ConfigPoolValueEntityType is the kind of entity a value is allocated to.
+type ConfigPoolValueEntityType string
+
+const (
+	ConfigPoolValueEntityTypeAgent          ConfigPoolValueEntityType = "agent"
+	ConfigPoolValueEntityTypeInfrastructure ConfigPoolValueEntityType = "infrastructure"
+)
+
 type ConfigPoolValue struct {
 	BaseEntity
-	Name         string          `json:"name" gorm:"not null"`
-	Value        any             `json:"value" gorm:"type:jsonb;serializer:json;not null"`
-	ConfigPoolID properties.UUID `json:"configPoolId" gorm:"not null;index"`
-	ConfigPool   *ConfigPool     `json:"-" gorm:"foreignKey:ConfigPoolID"`
-	// AgentID is the consuming entity's id; also holds an Infrastructure id when the consumer is an Infrastructure.
-	AgentID       *properties.UUID `json:"agentId,omitempty" gorm:"index"`
-	Agent         *Agent           `json:"-" gorm:"foreignKey:AgentID"`
-	PropertyName  *string          `json:"propertyName"`
-	AllocatedAt   *time.Time       `json:"allocatedAt,omitempty"`
-	ParticipantID *properties.UUID `json:"participantId,omitempty" gorm:"index"`
-	Participant   *Participant     `json:"-" gorm:"foreignKey:ParticipantID"`
+	Name             string           `json:"name" gorm:"not null"`
+	Value            any              `json:"value" gorm:"type:jsonb;serializer:json;not null"`
+	ConfigPoolID     properties.UUID  `json:"configPoolId" gorm:"not null;index"`
+	ConfigPool       *ConfigPool      `json:"-" gorm:"foreignKey:ConfigPoolID"`
+	AgentID          *properties.UUID `json:"agentId,omitempty" gorm:"index"`
+	Agent            *Agent           `json:"-" gorm:"foreignKey:AgentID"`
+	InfrastructureID *properties.UUID `json:"infrastructureId,omitempty" gorm:"index"`
+	Infrastructure   *Infrastructure  `json:"-" gorm:"foreignKey:InfrastructureID"`
+	PropertyName     *string          `json:"propertyName"`
+	AllocatedAt      *time.Time       `json:"allocatedAt,omitempty"`
+	ParticipantID    *properties.UUID `json:"participantId,omitempty" gorm:"index"`
+	Participant      *Participant     `json:"-" gorm:"foreignKey:ParticipantID"`
 }
 
 func (ConfigPoolValue) TableName() string {
@@ -49,18 +58,24 @@ func (cv *ConfigPoolValue) Validate() error {
 }
 
 func (cv *ConfigPoolValue) IsAllocated() bool {
-	return cv.AgentID != nil
+	return cv.AgentID != nil || cv.InfrastructureID != nil
 }
 
-func (cv *ConfigPoolValue) Allocate(agentID properties.UUID, propertyName string) {
+func (cv *ConfigPoolValue) Allocate(entityType ConfigPoolValueEntityType, entityID properties.UUID, propertyName string) {
 	allocated := time.Now()
-	cv.AgentID = &agentID
+	switch entityType {
+	case ConfigPoolValueEntityTypeAgent:
+		cv.AgentID = &entityID
+	case ConfigPoolValueEntityTypeInfrastructure:
+		cv.InfrastructureID = &entityID
+	}
 	cv.AllocatedAt = &allocated
 	cv.PropertyName = &propertyName
 }
 
 func (cv *ConfigPoolValue) Release() {
 	cv.AgentID = nil
+	cv.InfrastructureID = nil
 	cv.AllocatedAt = nil
 	cv.PropertyName = nil
 }
@@ -92,6 +107,7 @@ type ConfigPoolValueQuerier interface {
 	CountByPool(ctx context.Context, poolID properties.UUID) (int64, error)
 	FindAvailable(ctx context.Context, poolID properties.UUID) ([]*ConfigPoolValue, error)
 	FindByAgent(ctx context.Context, agentID properties.UUID) ([]*ConfigPoolValue, error)
+	FindByInfrastructure(ctx context.Context, infrastructureID properties.UUID) ([]*ConfigPoolValue, error)
 }
 
 type ConfigPoolValueRepository interface {
