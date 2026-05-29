@@ -23,22 +23,22 @@ func TestBuildInstallURL(t *testing.T) {
 		{"https://fulcrum.example.com///", "xyz", "https://fulcrum.example.com/api/v1/agents/install/xyz/config"},
 	}
 	for _, tc := range tests {
-		got := buildAgentInstallURL(tc.base, tc.token)
+		got := buildInstallURL(agentInstallConfigFullPath, tc.base, tc.token)
 		if got != tc.want {
-			t.Errorf("buildAgentInstallURL(%q,%q) = %q; want %q", tc.base, tc.token, got, tc.want)
+			t.Errorf("buildInstallURL(%q,%q) = %q; want %q", tc.base, tc.token, got, tc.want)
 		}
 	}
 }
 
 // TestInstallConfigSubPath_RouteAndURLAgree guards against the two consumers
 // of the install-config path drifting apart. If chi can resolve the URL that
-// buildAgentInstallURL renders, the route and the URL builder share the same
+// buildInstallURL renders, the route and the URL builder share the same
 // template — exactly what InstallConfigSubPath promises.
 func TestInstallConfigSubPath_RouteAndURLAgree(t *testing.T) {
 	r := chi.NewRouter()
 	r.Get(InstallConfigSubPath, func(w http.ResponseWriter, r *http.Request) {})
 
-	url := buildAgentInstallURL("http://x", "the-token")
+	url := buildInstallURL(agentInstallConfigFullPath, "http://x", "the-token")
 	path := strings.TrimPrefix(url, "http://x/api/v1/agents")
 
 	rctx := chi.NewRouteContext()

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
@@ -15,15 +14,11 @@ import (
 	"github.com/go-chi/render"
 )
 
+// infrastructureInstallConfigFullPath is the infrastructure-mount twin of
+// agentInstallConfigFullPath. The two paths share InstallConfigSubPath
+// ("/install/{token}/config") so the trailing segment matches in both URL
+// surfaces and only the entity prefix differs.
 const infrastructureInstallConfigFullPath = "/api/v1/infrastructures" + InstallConfigSubPath
-
-// buildInfrastructureInstallURL is the infrastructure-mount twin of
-// buildAgentInstallURL. The two paths share InstallConfigSubPath ("/install/
-// {token}/config") so the trailing segment matches in both URL surfaces and
-// only the entity prefix differs.
-func buildInfrastructureInstallURL(publicBaseURL, token string) string {
-	return strings.TrimRight(publicBaseURL, "/") + strings.Replace(infrastructureInstallConfigFullPath, "{token}", token, 1)
-}
 
 type InfrastructureInstallTokenHandler struct {
 	querier                 domain.InstallTokenQuerier
@@ -207,7 +202,7 @@ func (h *InfrastructureInstallTokenHandler) renderInstallToken(
 	status int,
 ) {
 	infra := tok.Infrastructure
-	url := buildInfrastructureInstallURL(h.publicBaseURL, tok.PlainToken)
+	url := buildInstallURL(infrastructureInstallConfigFullPath, h.publicBaseURL, tok.PlainToken)
 
 	data := map[string]any{}
 	if infra.Configuration != nil {

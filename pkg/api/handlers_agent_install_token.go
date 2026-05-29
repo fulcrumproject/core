@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
@@ -23,15 +22,10 @@ import (
 // renaming the route updates the rendered installCommand automatically.
 const InstallConfigSubPath = "/install/{token}/config"
 
+// agentInstallConfigFullPath is the install-config endpoint relative to the API
+// root. The endpoint is authenticated: callers must also supply a Bearer token
+// (issued alongside the install token — see InstallToken.BootstrapTokenID).
 const agentInstallConfigFullPath = "/api/v1/agents" + InstallConfigSubPath
-
-// buildAgentInstallURL joins the public base URL with the install-config path,
-// substituting the chi {token} placeholder. The endpoint is authenticated:
-// callers must also supply a Bearer token (issued alongside the install
-// token — see InstallToken.BootstrapTokenID).
-func buildAgentInstallURL(publicBaseURL, token string) string {
-	return strings.TrimRight(publicBaseURL, "/") + strings.Replace(agentInstallConfigFullPath, "{token}", token, 1)
-}
 
 type AgentInstallTokenHandler struct {
 	querier        domain.InstallTokenQuerier
@@ -255,7 +249,7 @@ func (h *AgentInstallTokenHandler) renderInstallToken(
 	status int,
 ) {
 	agent := tok.Agent
-	url := buildAgentInstallURL(h.publicBaseURL, tok.PlainToken)
+	url := buildInstallURL(agentInstallConfigFullPath, h.publicBaseURL, tok.PlainToken)
 
 	data := map[string]any{}
 	if agent.Configuration != nil {
