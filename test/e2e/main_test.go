@@ -82,6 +82,7 @@ func TestE2E(t *testing.T) {
 	t.Run("jobs", func(t *testing.T) { testJob(t, env) })
 	t.Run("scenario: agent install lifecycle", func(t *testing.T) { testAgentInstallScenario(t, env) })
 	t.Run("scenario: infrastructure install lifecycle", func(t *testing.T) { testInfrastructureInstallScenario(t, env) })
+	t.Run("scenario: fae proxmox pool allocation", func(t *testing.T) { testFaeProxmoxScenario(t, env) })
 	t.Run("scenario: service lifecycle", func(t *testing.T) { testServiceLifecycleScenario(t, env) })
 	t.Run("scenario: service create failure", func(t *testing.T) { testServiceCreateFailureScenario(t, env) })
 	t.Run("events", func(t *testing.T) { testEvent(t, env) })

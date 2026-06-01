@@ -25,8 +25,8 @@ const (
 type ConfigPoolValue struct {
 	BaseEntity
 	Name             string           `json:"name" gorm:"not null"`
-	Value            any              `json:"value" gorm:"type:jsonb;serializer:json;not null"`
-	ConfigPoolID     properties.UUID  `json:"configPoolId" gorm:"not null;index"`
+	Value            any              `json:"value" gorm:"type:jsonb;serializer:json;not null;uniqueIndex:idx_config_pool_values_pool_value,priority:2"`
+	ConfigPoolID     properties.UUID  `json:"configPoolId" gorm:"not null;uniqueIndex:idx_config_pool_values_pool_value,priority:1"`
 	ConfigPool       *ConfigPool      `json:"-" gorm:"foreignKey:ConfigPoolID"`
 	AgentID          *properties.UUID `json:"agentId,omitempty" gorm:"index"`
 	Agent            *Agent           `json:"-" gorm:"foreignKey:AgentID"`
@@ -108,6 +108,7 @@ type ConfigPoolValueQuerier interface {
 	FindAvailable(ctx context.Context, poolID properties.UUID) ([]*ConfigPoolValue, error)
 	FindByAgent(ctx context.Context, agentID properties.UUID) ([]*ConfigPoolValue, error)
 	FindByInfrastructure(ctx context.Context, infrastructureID properties.UUID) ([]*ConfigPoolValue, error)
+	FindByPool(ctx context.Context, poolID properties.UUID) ([]*ConfigPoolValue, error)
 }
 
 type ConfigPoolValueRepository interface {
@@ -115,6 +116,7 @@ type ConfigPoolValueRepository interface {
 	Create(ctx context.Context, value *ConfigPoolValue) error
 	Update(ctx context.Context, value *ConfigPoolValue) error
 	Delete(ctx context.Context, id properties.UUID) error
+	DeleteByIDs(ctx context.Context, ids []properties.UUID) error
 }
 
 type ConfigPoolValueCommander interface {

@@ -78,8 +78,19 @@ func (cp *ConfigPool) Validate() error {
 		return fmt.Errorf("invalid property type: %s (must be one of: %v)", cp.PropertyType, ValidPoolPropertyTypes)
 	}
 
-	if cp.GeneratorType != PoolGeneratorList {
-		return fmt.Errorf("invalid generator type for config pool: %s (must be %s)", cp.GeneratorType, PoolGeneratorList)
+	if err := cp.GeneratorType.Validate(); err != nil {
+		return err
+	}
+
+	switch cp.GeneratorType {
+	case PoolGeneratorRange, PoolGeneratorSubnet:
+		if cp.GeneratorConfig == nil {
+			return fmt.Errorf("%s generator requires generatorConfig", cp.GeneratorType)
+		}
+		if cp.GeneratorType == PoolGeneratorRange {
+			return validateRangeGeneratorConfig(*cp.GeneratorConfig)
+		}
+		return validateSubnetGeneratorConfig(*cp.GeneratorConfig)
 	}
 
 	return nil

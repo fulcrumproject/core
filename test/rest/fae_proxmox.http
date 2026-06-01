@@ -1,0 +1,128 @@
+### FAE Proxmox onboarding
+### Range (ASN) + subnet (PtP /30 JSON, public IP) generators, two infrastructure types (GRE / L2)
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+### Create the provider (CSP) used by the infrastructure calls below
+# @name provider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE Provider",
+  "status": "Enabled"
+}
+
+@providerId = {{provider.response.body.$.id}}
+
+### ASN range pool (65000..65535, excluding 65500) - global (admin-only)
+# @name asnPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Fulcrum ASN",
+  "type": "fae-asn",
+  "propertyType": "integer",
+  "generatorType": "range",
+  "generatorConfig": { "min": 65000, "max": 65535, "exclude": [65500] }
+}
+
+### PtP /30 pool (carved from 10.255.1.0/24, emits JSON)
+# @name ptpPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Fulcrum PtP",
+  "type": "fae-ptp",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/24", "prefix": 30 }
+}
+
+### Public IP pool (212.78.11.0/24, skip network/gateway/broadcast)
+# @name pubPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Fulcrum Public IP",
+  "type": "fae-pubip",
+  "propertyType": "string",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "212.78.11.0/24", "excludeFirst": 2, "excludeLast": 1 }
+}
+
+### GRE infrastructure type (auto-allocates asn, ptpSubnet, publicIp)
+# @name greType
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE Proxmox - GRE",
+  "configurationSchema": {
+    "properties": {
+      "transport": { "type": "string", "default": "gre", "immutable": true },
+      "asn":       { "type": "integer", "generator": { "type": "pool", "config": { "poolType": "fae-asn" } } },
+      "ptpSubnet": { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-ptp" } } },
+      "publicIp":  { "type": "string",  "generator": { "type": "pool", "config": { "poolType": "fae-pubip" } } },
+      "nat":       { "type": "boolean" }
+    }
+  }
+}
+
+@greTypeId = {{greType.response.body.$.id}}
+
+### L2 infrastructure type (no publicIp; requires a VLAN)
+# @name l2Type
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE Proxmox - L2",
+  "configurationSchema": {
+    "properties": {
+      "transport":  { "type": "string", "default": "l2", "immutable": true },
+      "asn":        { "type": "integer", "generator": { "type": "pool", "config": { "poolType": "fae-asn" } } },
+      "ptpSubnet":  { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-ptp" } } },
+      "vlanPublic": { "type": "integer", "validators": [ { "type": "min", "config": { "value": 1 } }, { "type": "max", "config": { "value": 4094 } } ] }
+    }
+  }
+}
+
+@l2TypeId = {{l2Type.response.body.$.id}}
+
+### Onboard a GRE cluster -> asn 65000, ptpSubnet 10.255.1.0/30, publicIp 212.78.11.2
+# @name greCluster
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE-CEPH-ALPINE",
+  "providerId": "{{providerId}}",
+  "infrastructureTypeId": "{{greTypeId}}",
+  "configuration": { "nat": true }
+}
+
+### Onboard an L2 cluster -> asn 65001, ptpSubnet 10.255.1.4/30, no publicIp
+# @name l2Cluster
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "TOPIX-node",
+  "providerId": "{{providerId}}",
+  "infrastructureTypeId": "{{l2TypeId}}",
+  "configuration": { "vlanPublic": 200 }
+}

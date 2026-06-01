@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -9,11 +10,12 @@ import (
 
 func TestDefaultConfigPoolGeneratorFactory_CreateGenerator(t *testing.T) {
 	tests := []struct {
-		name          string
-		generatorType PoolGeneratorType
-		wantType      any
-		wantErr       bool
-		errSubstr     string
+		name            string
+		generatorType   PoolGeneratorType
+		generatorConfig *properties.JSON
+		wantType        any
+		wantErr         bool
+		errSubstr       string
 	}{
 		{
 			name:          "list → ConfigPoolListGenerator",
@@ -21,10 +23,28 @@ func TestDefaultConfigPoolGeneratorFactory_CreateGenerator(t *testing.T) {
 			wantType:      (*ConfigPoolListGenerator)(nil),
 		},
 		{
-			name:          "subnet is not yet supported → error",
+			name:            "range → ConfigPoolRangeGenerator",
+			generatorType:   PoolGeneratorRange,
+			generatorConfig: &properties.JSON{"min": float64(1), "max": float64(10)},
+			wantType:        (*ConfigPoolRangeGenerator)(nil),
+		},
+		{
+			name:          "range without config → error",
+			generatorType: PoolGeneratorRange,
+			wantErr:       true,
+			errSubstr:     "missing generatorConfig",
+		},
+		{
+			name:            "subnet → ConfigPoolSubnetGenerator",
+			generatorType:   PoolGeneratorSubnet,
+			generatorConfig: &properties.JSON{"cidr": "10.0.0.0/24"},
+			wantType:        (*ConfigPoolSubnetGenerator)(nil),
+		},
+		{
+			name:          "subnet without config → error",
 			generatorType: PoolGeneratorSubnet,
 			wantErr:       true,
-			errSubstr:     "unsupported config pool generator type",
+			errSubstr:     "missing generatorConfig",
 		},
 		{
 			name:          "unknown type → error",
@@ -40,8 +60,9 @@ func TestDefaultConfigPoolGeneratorFactory_CreateGenerator(t *testing.T) {
 			factory := NewDefaultConfigPoolGeneratorFactory(repo)
 
 			pool := &ConfigPool{
-				BaseEntity:    BaseEntity{ID: properties.UUID(uuid.New())},
-				GeneratorType: tt.generatorType,
+				BaseEntity:      BaseEntity{ID: properties.UUID(uuid.New())},
+				GeneratorType:   tt.generatorType,
+				GeneratorConfig: tt.generatorConfig,
 			}
 
 			gen, err := factory.CreateGenerator(pool)
@@ -57,8 +78,8 @@ func TestDefaultConfigPoolGeneratorFactory_CreateGenerator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if _, ok := gen.(*ConfigPoolListGenerator); !ok && tt.generatorType == PoolGeneratorList {
-				t.Errorf("expected *ConfigPoolListGenerator, got %T", gen)
+			if reflect.TypeOf(gen) != reflect.TypeOf(tt.wantType) {
+				t.Errorf("expected %T, got %T", tt.wantType, gen)
 			}
 		})
 	}

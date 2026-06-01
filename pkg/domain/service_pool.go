@@ -22,6 +22,7 @@ type PoolGeneratorType string
 const (
 	PoolGeneratorList   PoolGeneratorType = "list"
 	PoolGeneratorSubnet PoolGeneratorType = "subnet"
+	PoolGeneratorRange  PoolGeneratorType = "range"
 )
 
 // ValidPoolPropertyTypes lists the allowed property types for pools.
@@ -30,7 +31,7 @@ var ValidPoolPropertyTypes = []string{"string", "integer", "number", "boolean", 
 // Validate checks if the pool generator type is valid
 func (t PoolGeneratorType) Validate() error {
 	switch t {
-	case PoolGeneratorList, PoolGeneratorSubnet:
+	case PoolGeneratorList, PoolGeneratorSubnet, PoolGeneratorRange:
 		return nil
 	default:
 		return fmt.Errorf("invalid generator type: %s", t)

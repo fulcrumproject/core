@@ -78,6 +78,31 @@ func TestConfigPoolValueRepository(t *testing.T) {
 			require.NotNil(t, found.ParticipantID, "participant_id in pool value is required for participant")
 			assert.Equal(t, participantId, *found.ParticipantID)
 		})
+
+		t.Run("rejects duplicate value within the same pool", func(t *testing.T) {
+			first := createTestConfigPoolValue(t, pool.ID)
+			first.Value = "10.0.0.1"
+			require.NoError(t, repo.Create(ctx, first))
+
+			dup := createTestConfigPoolValue(t, pool.ID)
+			dup.Value = "10.0.0.1"
+			err := repo.Create(ctx, dup)
+			require.Error(t, err, "second allocation of the same value in a pool must violate the unique constraint")
+		})
+
+		t.Run("allows same value in a different pool", func(t *testing.T) {
+			otherPool := createTestConfigPool(t)
+			otherPool.Type = fmt.Sprintf("dup-ok-type-%s", uuid.New().String())
+			require.NoError(t, poolRepo.Create(ctx, otherPool))
+
+			v1 := createTestConfigPoolValue(t, pool.ID)
+			v1.Value = "10.0.0.2"
+			require.NoError(t, repo.Create(ctx, v1))
+
+			v2 := createTestConfigPoolValue(t, otherPool.ID)
+			v2.Value = "10.0.0.2"
+			require.NoError(t, repo.Create(ctx, v2), "the unique constraint is scoped per pool, not global")
+		})
 	})
 
 	t.Run("Get", func(t *testing.T) {
