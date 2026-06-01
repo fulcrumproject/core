@@ -107,6 +107,53 @@ func TestConfigPoolSubnetGenerator_Allocate(t *testing.T) {
 			wantErr:   true,
 			errSubstr: "is invalid",
 		},
+		{
+			name:      "block mode rejects excludeFirst (host mode only)",
+			config:    properties.JSON{"cidr": "10.255.1.0/24", "prefix": float64(30), "excludeFirst": float64(1)},
+			wantErr:   true,
+			errSubstr: "host mode only",
+		},
+		{
+			name:   "block mode /31 default hosts use RFC 3021 offsets 0 and 1",
+			config: properties.JSON{"cidr": "10.0.0.0/24", "prefix": float64(31)},
+			check: func(t *testing.T, got any) {
+				m := got.(map[string]any)
+				if m["cidr"] != "10.0.0.0/31" || m["prefix"] != 31 {
+					t.Errorf("unexpected block value: %v", m)
+				}
+				if m["host1"] != "10.0.0.0" || m["host2"] != "10.0.0.1" {
+					t.Errorf("expected host1 10.0.0.0 / host2 10.0.0.1, got %v", m)
+				}
+			},
+		},
+		{
+			name:   "block mode /32 drops both default hosts",
+			config: properties.JSON{"cidr": "10.0.0.0/24", "prefix": float64(32)},
+			check: func(t *testing.T, got any) {
+				m := got.(map[string]any)
+				if len(m) != 2 || m["cidr"] != "10.0.0.0/32" || m["prefix"] != 32 {
+					t.Errorf("expected only cidr+prefix, got %v", m)
+				}
+			},
+		},
+		{
+			name:      "excludeFirst beyond subnet size errors at validation",
+			config:    properties.JSON{"cidr": "10.0.0.0/30", "excludeFirst": float64(5)},
+			wantErr:   true,
+			errSubstr: "excludeFirst",
+		},
+		{
+			name:      "negative excludeFirst errors",
+			config:    properties.JSON{"cidr": "10.0.0.0/30", "excludeFirst": float64(-1)},
+			wantErr:   true,
+			errSubstr: "excludeFirst",
+		},
+		{
+			name:      "excludeFirst plus excludeLast leaving no addresses errors",
+			config:    properties.JSON{"cidr": "10.0.0.0/30", "excludeFirst": float64(2), "excludeLast": float64(2)},
+			wantErr:   true,
+			errSubstr: "excludeLast",
+		},
 	}
 
 	for _, tt := range tests {
@@ -136,5 +183,29 @@ func TestConfigPoolSubnetGenerator_Allocate(t *testing.T) {
 			}
 			tt.check(t, got)
 		})
+	}
+}
+
+func TestConfigPoolSubnetGenerator_Release(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	otherPool := properties.UUID(uuid.New())
+	id1 := properties.UUID(uuid.New())
+	id2 := properties.UUID(uuid.New())
+
+	values := []*ConfigPoolValue{
+		{BaseEntity: BaseEntity{ID: id1}, ConfigPoolID: poolID},
+		{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: otherPool},
+		{BaseEntity: BaseEntity{ID: id2}, ConfigPoolID: poolID},
+	}
+
+	repo := NewMockConfigPoolValueRepository(t)
+	repo.On("DeleteByIDs", ctx, mock.MatchedBy(func(ids []properties.UUID) bool {
+		return len(ids) == 2 && ids[0] == id1 && ids[1] == id2
+	})).Return(nil)
+
+	gen := NewConfigPoolSubnetGenerator(repo, poolID, properties.JSON{})
+	if err := gen.Release(ctx, values); err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

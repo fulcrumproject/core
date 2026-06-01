@@ -160,8 +160,30 @@ func parseSubnetConfig(cfg properties.JSON) (*subnetConfig, error) {
 			sc.hosts[name] = off
 		}
 	} else if sc.hasPrefix {
-		sc.hosts = map[string]int{"host1": 1, "host2": 2}
+		// Default host labels, chosen to fit the carved block:
+		//   /30 and larger -> {host1:1, host2:2} (skip network/broadcast)
+		//   /31            -> {host1:0, host2:1} (RFC 3021, both ends usable)
+		//   /32            -> none (single address; the cidr already names it)
+		blockSize := 1 << uint(sc.bits-sc.prefix)
+		switch {
+		case blockSize >= 4:
+			sc.hosts = map[string]int{"host1": 1, "host2": 2}
+		case blockSize == 2:
+			sc.hosts = map[string]int{"host1": 0, "host2": 1}
+		default:
+			sc.hosts = map[string]int{}
+		}
 	}
+
+	// excludeFirst/excludeLast/exclude trim the usable host range and apply to
+	// host mode only; block mode carves aligned blocks and has no host range.
+	_, hasExcludeFirst := cfg["excludeFirst"]
+	_, hasExcludeLast := cfg["excludeLast"]
+	_, hasExclude := cfg["exclude"]
+	if sc.hasPrefix && (hasExcludeFirst || hasExcludeLast || hasExclude) {
+		return nil, fmt.Errorf("subnet generator config 'excludeFirst'/'excludeLast'/'exclude' apply to host mode only (no 'prefix')")
+	}
+
 	if n, ok := toInt(cfg["excludeFirst"]); ok {
 		sc.excludeFirst = n
 	}
@@ -179,6 +201,16 @@ func parseSubnetConfig(cfg properties.JSON) (*subnetConfig, error) {
 				return nil, fmt.Errorf("subnet generator config 'exclude' entries must be IP strings")
 			}
 			sc.exclude[s] = true
+		}
+	}
+
+	if !sc.hasPrefix {
+		totalIPs := 1 << uint(sc.bits-sc.ones)
+		if sc.excludeFirst < 0 || sc.excludeLast < 0 {
+			return nil, fmt.Errorf("subnet generator config 'excludeFirst' (%d) and 'excludeLast' (%d) must be >= 0", sc.excludeFirst, sc.excludeLast)
+		}
+		if sc.excludeFirst+sc.excludeLast >= totalIPs {
+			return nil, fmt.Errorf("subnet generator config 'excludeFirst' (%d) + 'excludeLast' (%d) leave no addresses in the /%d subnet", sc.excludeFirst, sc.excludeLast, sc.ones)
 		}
 	}
 	return sc, nil

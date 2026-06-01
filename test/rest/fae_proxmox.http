@@ -176,3 +176,74 @@ Content-Type: application/json
   "infrastructureTypeId": "{{l2TypeId}}",
   "configuration": { "vlanPublic": 998 }
 }
+
+### --------------------------------------------------------------------------
+### /31 point-to-point links via default host labels (RFC 3021)
+### --------------------------------------------------------------------------
+### Point-to-point links are idiomatically /31 (RFC 3021: both addresses usable).
+### This pool carves 10.255.2.0/24 into /31 blocks relying on the DEFAULT host
+### labels (no "hosts" given). Defaults adapt to the block size: /30+ uses
+### {host1:1, host2:2}, /31 uses {host1:0, host2:1}, /32 emits no host labels.
+###
+### Each /31 block holds exactly its own two addresses, so the two allocations
+### below never overlap.
+# @name ptp31Pool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Fulcrum PtP /31 (overflow demo)",
+  "type": "fae-ptp31",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.2.0/24", "prefix": 31 }
+}
+
+### Infra type whose only allocated property is a /31 PtP subnet from the pool above
+# @name ptp31Type
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE PtP31 Demo",
+  "configurationSchema": {
+    "properties": {
+      "transport": { "type": "string", "default": "gre", "immutable": true },
+      "ptpSubnet": { "type": "json", "generator": { "type": "pool", "config": { "poolType": "fae-ptp31" } } }
+    }
+  }
+}
+
+@ptp31TypeId = {{ptp31Type.response.body.$.id}}
+
+### Infra A -> allocates block #0. Expect ptpSubnet:
+###   { "cidr": "10.255.2.0/31", "prefix": 31, "host1": "10.255.2.0", "host2": "10.255.2.1" }
+### Both addresses belong to 10.255.2.0/31.
+# @name ptp31A
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "PtP31 A",
+  "providerId": "{{providerId}}",
+  "infrastructureTypeId": "{{ptp31TypeId}}",
+  "configuration": {}
+}
+
+### Infra B -> allocates block #1. Expect ptpSubnet:
+###   { "cidr": "10.255.2.2/31", "prefix": 31, "host1": "10.255.2.2", "host2": "10.255.2.3" }
+### B's two addresses (10.255.2.2/.3) are disjoint from A's (10.255.2.0/.1) -- no overlap.
+# @name ptp31B
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "PtP31 B",
+  "providerId": "{{providerId}}",
+  "infrastructureTypeId": "{{ptp31TypeId}}",
+  "configuration": {}
+}
