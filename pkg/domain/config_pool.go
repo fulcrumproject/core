@@ -141,7 +141,7 @@ func (c *configPoolCommander) Create(
 	err := c.store.Atomic(ctx, func(store Store) error {
 		pool = NewConfigPool(params)
 		if err := pool.Validate(); err != nil {
-			return err
+			return InvalidInputError{Err: err}
 		}
 
 		conflict, err := store.ConfigPoolRepo().FindByTypeAndProvider(ctx, pool.Type, pool.ParticipantID)
@@ -198,7 +198,7 @@ func (c *configPoolCommander) Update(
 		pool.Update(params)
 
 		if err := pool.Validate(); err != nil {
-			return err
+			return InvalidInputError{Err: err}
 		}
 
 		if err := store.ConfigPoolRepo().Update(ctx, pool); err != nil {

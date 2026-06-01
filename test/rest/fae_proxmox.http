@@ -247,3 +247,100 @@ Content-Type: application/json
   "infrastructureTypeId": "{{ptp31TypeId}}",
   "configuration": {}
 }
+
+### --------------------------------------------------------------------------
+### Caught validation errors (expect 400 Invalid request)
+### --------------------------------------------------------------------------
+### Every request below is rejected by ConfigPool.Validate() before anything is
+### persisted, so each returns:
+###   { "status": "Invalid request", "error": "<reason>" }
+
+### Malformed CIDR -> 400
+### error: subnet generator config 'cidr' is invalid: invalid CIDR address: 10.255.1.0/33
+# @name errBadCidr
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE bad cidr",
+  "type": "fae-err-badcidr",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/33", "prefix": 30 }
+}
+
+### IPv6 CIDR -> 400 (generator is IPv4 only)
+### error: subnet generator config 'cidr' must be IPv4
+# @name errIpv6Cidr
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE ipv6 cidr",
+  "type": "fae-err-ipv6",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "2001:db8::/48", "prefix": 64 }
+}
+
+### Prefix larger than the address width -> 400
+### error: subnet generator config 'prefix' (33) must be between 24 and 32
+# @name errPrefixTooLarge
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE prefix too large",
+  "type": "fae-err-prefixbig",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/24", "prefix": 33 }
+}
+
+### Prefix narrower than the parent CIDR -> 400 (cannot carve a larger block than the parent)
+### error: subnet generator config 'prefix' (20) must be between 24 and 32
+# @name errPrefixTooSmall
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE prefix too small",
+  "type": "fae-err-prefixsmall",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/24", "prefix": 20 }
+}
+
+### hosts without prefix -> 400 (host labels only make sense in block mode)
+### error: subnet generator config 'hosts' requires 'prefix' (block mode)
+# @name errHostsNoPrefix
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE hosts no prefix",
+  "type": "fae-err-hostsnoprefix",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/24", "hosts": { "gateway": 1 } }
+}
+
+### exclude* combined with prefix -> 400 (exclusions are host mode only)
+### error: subnet generator config 'excludeFirst'/'excludeLast'/'exclude' apply to host mode only (no 'prefix')
+# @name errExcludeWithPrefix
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE exclude with prefix",
+  "type": "fae-err-excludeprefix",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/24", "prefix": 30, "excludeFirst": 2 }
+}
