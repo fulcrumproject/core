@@ -35,17 +35,52 @@ func TestConfigPoolSubnetGenerator_Allocate(t *testing.T) {
 			},
 		},
 		{
-			name:   "block mode allocates first free /30 as JSON with derived hosts",
+			name:   "block mode allocates first free /30 with default host1/host2",
 			config: properties.JSON{"cidr": "10.255.1.0/24", "prefix": float64(30)},
 			check: func(t *testing.T, got any) {
 				m, ok := got.(map[string]any)
 				if !ok {
 					t.Fatalf("expected map, got %T", got)
 				}
-				if m["cidr"] != "10.255.1.0/30" || m["fulcrumIp"] != "10.255.1.1" || m["cspIp"] != "10.255.1.2" || m["prefix"] != 30 {
+				if m["cidr"] != "10.255.1.0/30" || m["host1"] != "10.255.1.1" || m["host2"] != "10.255.1.2" || m["prefix"] != 30 {
 					t.Errorf("unexpected block value: %v", m)
 				}
 			},
+		},
+		{
+			name:   "block mode with empty hosts emits only cidr and prefix",
+			config: properties.JSON{"cidr": "10.255.242.0/23", "prefix": float64(24), "hosts": map[string]any{}},
+			check: func(t *testing.T, got any) {
+				m := got.(map[string]any)
+				if len(m) != 2 || m["cidr"] != "10.255.242.0/24" || m["prefix"] != 24 {
+					t.Errorf("expected only cidr+prefix, got %v", m)
+				}
+			},
+		},
+		{
+			name:   "block mode with custom host label",
+			config: properties.JSON{"cidr": "10.255.242.0/23", "prefix": float64(24), "hosts": map[string]any{"gateway": float64(1)}},
+			check: func(t *testing.T, got any) {
+				m := got.(map[string]any)
+				if m["cidr"] != "10.255.242.0/24" || m["gateway"] != "10.255.242.1" {
+					t.Errorf("unexpected block value: %v", m)
+				}
+				if _, ok := m["host1"]; ok {
+					t.Errorf("did not expect host1 in %v", m)
+				}
+			},
+		},
+		{
+			name:      "hosts without prefix errors",
+			config:    properties.JSON{"cidr": "10.255.1.0/24", "hosts": map[string]any{"gateway": float64(1)}},
+			wantErr:   true,
+			errSubstr: "requires 'prefix'",
+		},
+		{
+			name:      "hosts offset out of range errors",
+			config:    properties.JSON{"cidr": "10.255.1.0/24", "prefix": float64(30), "hosts": map[string]any{"x": float64(4)}},
+			wantErr:   true,
+			errSubstr: "must be 0..3",
 		},
 		{
 			name:   "block mode skips used /30",

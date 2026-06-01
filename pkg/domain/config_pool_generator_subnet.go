@@ -10,8 +10,9 @@ import (
 
 // ConfigPoolSubnetGenerator carves a parent CIDR. Without a prefix it allocates the
 // next free host IP (scalar string). With a prefix it allocates the next free aligned
-// /prefix block as a JSON object {cidr, fulcrumIp, cspIp, prefix}, pre-computing the
-// two host addresses so config templates need no IP math.
+// /prefix block as a JSON object {cidr, prefix} plus the named host addresses from the
+// "hosts" config (defaulting to {host1, host2}), pre-computing them so config templates
+// need no IP math.
 type ConfigPoolSubnetGenerator struct {
 	repo   ConfigPoolValueRepository
 	poolID properties.UUID
@@ -56,6 +57,7 @@ type subnetConfig struct {
 	ones, bits   int
 	prefix       int
 	hasPrefix    bool
+	hosts        map[string]int
 	excludeFirst int
 	excludeLast  int
 	exclude      map[string]bool
@@ -72,11 +74,9 @@ func (sc *subnetConfig) nextFree(used map[string]bool) (string, any, bool) {
 			if used[cidr] {
 				continue
 			}
-			value := map[string]any{
-				"cidr":      cidr,
-				"fulcrumIp": incrementIP(netAddr, 1).String(),
-				"cspIp":     incrementIP(netAddr, 2).String(),
-				"prefix":    sc.prefix,
+			value := map[string]any{"cidr": cidr, "prefix": sc.prefix}
+			for name, off := range sc.hosts {
+				value[name] = incrementIP(netAddr, off).String()
 			}
 			return cidr, value, true
 		}
@@ -138,6 +138,29 @@ func parseSubnetConfig(cfg properties.JSON) (*subnetConfig, error) {
 		}
 		sc.prefix = p
 		sc.hasPrefix = true
+	}
+	if raw, present := cfg["hosts"]; present {
+		if !sc.hasPrefix {
+			return nil, fmt.Errorf("subnet generator config 'hosts' requires 'prefix' (block mode)")
+		}
+		obj, ok := raw.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("subnet generator config 'hosts' must be an object of name->offset")
+		}
+		blockSize := 1 << uint(sc.bits-sc.prefix)
+		sc.hosts = make(map[string]int, len(obj))
+		for name, v := range obj {
+			if name == "" || name == "cidr" || name == "prefix" {
+				return nil, fmt.Errorf("subnet generator config 'hosts' key %q is reserved or empty", name)
+			}
+			off, ok := toInt(v)
+			if !ok || off < 0 || off >= blockSize {
+				return nil, fmt.Errorf("subnet generator config 'hosts' offset for %q must be 0..%d", name, blockSize-1)
+			}
+			sc.hosts[name] = off
+		}
+	} else if sc.hasPrefix {
+		sc.hosts = map[string]int{"host1": 1, "host2": 2}
 	}
 	if n, ok := toInt(cfg["excludeFirst"]); ok {
 		sc.excludeFirst = n

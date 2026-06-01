@@ -36,7 +36,7 @@ Content-Type: application/json
 }
 
 ### GLOBAL pool (admin-only) - Fulcrum<->CSP point-to-point /30s carved from 10.255.1.0/24
-### Emits JSON {cidr, fulcrumIp, cspIp, prefix} -> first allocation 10.255.1.0/30
+### Emits JSON {cidr, prefix, host1, host2} (default labels) -> first allocation 10.255.1.0/30
 # @name ptpPool
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
@@ -51,7 +51,7 @@ Content-Type: application/json
 }
 
 ### CSP pool (participant-scoped) - VMBR0 LAN /24 carved from 10.255.242.0/23
-### Emits JSON {cidr, fulcrumIp, cspIp, prefix} -> first 10.255.242.0/24, then 10.255.243.0/24
+### hosts {gateway:1} -> emits {cidr, prefix, gateway}; first 10.255.242.0/24, then 10.255.243.0/24
 # @name lanPool
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
@@ -62,7 +62,7 @@ Content-Type: application/json
   "type": "fae-lan",
   "propertyType": "json",
   "generatorType": "subnet",
-  "generatorConfig": { "cidr": "10.255.242.0/23", "prefix": 24 },
+  "generatorConfig": { "cidr": "10.255.242.0/23", "prefix": 24, "hosts": { "gateway": 1 } },
   "participantId": "{{providerId}}"
 }
 
@@ -83,7 +83,7 @@ Content-Type: application/json
 }
 
 ### CSP pool (participant-scoped) - GRE NAT /23 (172.30.232.0/23, single block)
-### Emits JSON {cidr, fulcrumIp, cspIp, prefix} -> 172.30.232.0/23
+### hosts {} -> emits {cidr, prefix} only -> 172.30.232.0/23
 # @name natPool
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
@@ -94,7 +94,7 @@ Content-Type: application/json
   "type": "fae-nat",
   "propertyType": "json",
   "generatorType": "subnet",
-  "generatorConfig": { "cidr": "172.30.232.0/23", "prefix": 23 },
+  "generatorConfig": { "cidr": "172.30.232.0/23", "prefix": 23, "hosts": {} },
   "participantId": "{{providerId}}"
 }
 
