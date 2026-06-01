@@ -1,11 +1,13 @@
 ### FAE Proxmox onboarding
-### Range (ASN) + subnet (PtP /30 JSON, public IP) generators, two infrastructure types (GRE / L2)
+### Mirrors the Fulcrum address-assignment plan: Fulcrum-global pools (ASN range, PtP /30 JSON)
+### + CSP/participant-scoped pools (VMBR0 LAN /24, public IP, GRE NAT /23), two infrastructure
+### types (GRE / L2), reserved agent hosts (.221/.222/.223), NAT flag.
 
 ### Variables
 @baseUrl = http://localhost:3000/api/v1
 @adminToken = change-me
 
-### Create the provider (CSP) used by the infrastructure calls below
+### Create the provider (CSP) that owns the participant-scoped pools and the clusters
 # @name provider
 POST {{baseUrl}}/participants
 Authorization: Bearer {{adminToken}}
@@ -18,7 +20,8 @@ Content-Type: application/json
 
 @providerId = {{provider.response.body.$.id}}
 
-### ASN range pool (65000..65535, excluding 65500) - global (admin-only)
+### GLOBAL pool (admin-only, no participantId) - Fulcrum ASN for the RRs
+### Range 65000..65535 excluding 65500 -> first allocation 65000
 # @name asnPool
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
@@ -32,7 +35,8 @@ Content-Type: application/json
   "generatorConfig": { "min": 65000, "max": 65535, "exclude": [65500] }
 }
 
-### PtP /30 pool (carved from 10.255.1.0/24, emits JSON)
+### GLOBAL pool (admin-only) - Fulcrum<->CSP point-to-point /30s carved from 10.255.1.0/24
+### Emits JSON {cidr, fulcrumIp, cspIp, prefix} -> first allocation 10.255.1.0/30
 # @name ptpPool
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
@@ -46,21 +50,57 @@ Content-Type: application/json
   "generatorConfig": { "cidr": "10.255.1.0/24", "prefix": 30 }
 }
 
-### Public IP pool (212.78.11.0/24, skip network/gateway/broadcast)
+### CSP pool (participant-scoped) - VMBR0 LAN /24 carved from 10.255.242.0/23
+### Emits JSON {cidr, fulcrumIp, cspIp, prefix} -> first 10.255.242.0/24, then 10.255.243.0/24
+# @name lanPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE VMBR0 LAN",
+  "type": "fae-lan",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.242.0/23", "prefix": 24 },
+  "participantId": "{{providerId}}"
+}
+
+### CSP pool (participant-scoped) - public IP for the Network Agent (212.78.11.0/24)
+### Skips network/gateway/broadcast -> first allocation 212.78.11.2
 # @name pubPool
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "name": "Fulcrum Public IP",
+  "name": "FAE Public IP",
   "type": "fae-pubip",
   "propertyType": "string",
   "generatorType": "subnet",
-  "generatorConfig": { "cidr": "212.78.11.0/24", "excludeFirst": 2, "excludeLast": 1 }
+  "generatorConfig": { "cidr": "212.78.11.0/24", "excludeFirst": 2, "excludeLast": 1 },
+  "participantId": "{{providerId}}"
 }
 
-### GRE infrastructure type (auto-allocates asn, ptpSubnet, publicIp)
+### CSP pool (participant-scoped) - GRE NAT /23 (172.30.232.0/23, single block)
+### Emits JSON {cidr, fulcrumIp, cspIp, prefix} -> 172.30.232.0/23
+# @name natPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE GRE NAT",
+  "type": "fae-nat",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "172.30.232.0/23", "prefix": 23 },
+  "participantId": "{{providerId}}"
+}
+
+### GRE infrastructure type (asn+ptp from global pools; publicIp+lan+nat from CSP pools)
+### reservedHosts encodes the .221 Network Agent / .222 NoVnc / .223 Fulcrum Agent convention
+### (.224-.236 are reserved). The nat boolean is a flag alongside the allocated natSubnet.
 # @name greType
 POST {{baseUrl}}/infrastructure-types
 Authorization: Bearer {{adminToken}}
@@ -70,18 +110,22 @@ Content-Type: application/json
   "name": "FAE Proxmox - GRE",
   "configurationSchema": {
     "properties": {
-      "transport": { "type": "string", "default": "gre", "immutable": true },
-      "asn":       { "type": "integer", "generator": { "type": "pool", "config": { "poolType": "fae-asn" } } },
-      "ptpSubnet": { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-ptp" } } },
-      "publicIp":  { "type": "string",  "generator": { "type": "pool", "config": { "poolType": "fae-pubip" } } },
-      "nat":       { "type": "boolean" }
+      "transport":     { "type": "string", "default": "gre", "immutable": true },
+      "asn":           { "type": "integer", "generator": { "type": "pool", "config": { "poolType": "fae-asn" } } },
+      "ptpSubnet":     { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-ptp" } } },
+      "publicIp":      { "type": "string",  "generator": { "type": "pool", "config": { "poolType": "fae-pubip" } } },
+      "lanSubnet":     { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-lan" } } },
+      "natSubnet":     { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-nat" } } },
+      "nat":           { "type": "boolean" },
+      "reservedHosts": { "type": "json", "default": { "networkAgent": 221, "novnc": 222, "fulcrumAgent": 223 } }
     }
   }
 }
 
 @greTypeId = {{greType.response.body.$.id}}
 
-### L2 infrastructure type (no publicIp; requires a VLAN)
+### L2 infrastructure type (no publicIp/nat; requires a public service VLAN)
+### vlanPublic is a CSP-provided user input (998/999 in the plan), validated 1..4094
 # @name l2Type
 POST {{baseUrl}}/infrastructure-types
 Authorization: Bearer {{adminToken}}
@@ -91,38 +135,44 @@ Content-Type: application/json
   "name": "FAE Proxmox - L2",
   "configurationSchema": {
     "properties": {
-      "transport":  { "type": "string", "default": "l2", "immutable": true },
-      "asn":        { "type": "integer", "generator": { "type": "pool", "config": { "poolType": "fae-asn" } } },
-      "ptpSubnet":  { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-ptp" } } },
-      "vlanPublic": { "type": "integer", "validators": [ { "type": "min", "config": { "value": 1 } }, { "type": "max", "config": { "value": 4094 } } ] }
+      "transport":     { "type": "string", "default": "l2", "immutable": true },
+      "asn":           { "type": "integer", "generator": { "type": "pool", "config": { "poolType": "fae-asn" } } },
+      "ptpSubnet":     { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-ptp" } } },
+      "lanSubnet":     { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-lan" } } },
+      "vlanPublic":    { "type": "integer", "validators": [ { "type": "min", "config": { "value": 1 } }, { "type": "max", "config": { "value": 4094 } } ] },
+      "reservedHosts": { "type": "json", "default": { "networkAgent": 221, "novnc": 222, "fulcrumAgent": 223 } }
     }
   }
 }
 
 @l2TypeId = {{l2Type.response.body.$.id}}
 
-### Onboard a GRE cluster -> asn 65000, ptpSubnet 10.255.1.0/30, publicIp 212.78.11.2
+### Onboard Opiquad (GRE) -> asn 65000, ptp 10.255.1.0/30, publicIp 212.78.11.2,
+### lan 10.255.242.0/24, nat 172.30.232.0/23, reservedHosts {221,222,223}
 # @name greCluster
 POST {{baseUrl}}/infrastructures
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "name": "FAE-CEPH-ALPINE",
+  "name": "Opiquad",
   "providerId": "{{providerId}}",
   "infrastructureTypeId": "{{greTypeId}}",
   "configuration": { "nat": true }
 }
 
-### Onboard an L2 cluster -> asn 65001, ptpSubnet 10.255.1.4/30, no publicIp
+### Onboard Fulcrum Core Prod (L2) -> asn 65001, ptp 10.255.1.4/30,
+### lan 10.255.243.0/24, vlanPublic 998, no publicIp/nat
+### (broader sheet customers: FAE-CEPH-ALPINE, TOPIX, GTT, ENGINEERING, CSI, BBBELL,
+###  SARENET, IKOULA, Fulcrum Core Dev)
 # @name l2Cluster
 POST {{baseUrl}}/infrastructures
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "name": "TOPIX-node",
+  "name": "Fulcrum Core Prod",
   "providerId": "{{providerId}}",
   "infrastructureTypeId": "{{l2TypeId}}",
-  "configuration": { "vlanPublic": 200 }
+  "configuration": { "vlanPublic": 998 }
 }
