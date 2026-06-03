@@ -1,0 +1,346 @@
+### FAE Proxmox onboarding
+### Mirrors the Fulcrum address-assignment plan: Fulcrum-global pools (ASN range, PtP /30 JSON)
+### + CSP/participant-scoped pools (VMBR0 LAN /24, public IP, GRE NAT /23), two infrastructure
+### types (GRE / L2), reserved agent hosts (.221/.222/.223), NAT flag.
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+### Create the provider (CSP) that owns the participant-scoped pools and the clusters
+# @name provider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE Provider",
+  "status": "Enabled"
+}
+
+@providerId = {{provider.response.body.$.id}}
+
+### GLOBAL pool (admin-only, no participantId) - Fulcrum ASN for the RRs
+### Range 65000..65535 excluding 65500 -> first allocation 65000
+# @name asnPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Fulcrum ASN",
+  "type": "fae-asn",
+  "propertyType": "integer",
+  "generatorType": "range",
+  "generatorConfig": { "min": 65000, "max": 65535, "exclude": [65500] }
+}
+
+### GLOBAL pool (admin-only) - Fulcrum<->CSP point-to-point /30s carved from 10.255.1.0/24
+### Emits JSON {cidr, prefix, host1, host2} (default labels) -> first allocation 10.255.1.0/30
+# @name ptpPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Fulcrum PtP",
+  "type": "fae-ptp",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/24", "prefix": 30 }
+}
+
+### CSP pool (participant-scoped) - VMBR0 LAN /24 carved from 10.255.242.0/23
+### hosts {gateway:1} -> emits {cidr, prefix, gateway}; first 10.255.242.0/24, then 10.255.243.0/24
+# @name lanPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE VMBR0 LAN",
+  "type": "fae-lan",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.242.0/23", "prefix": 24, "hosts": { "gateway": 1 } },
+  "participantId": "{{providerId}}"
+}
+
+### CSP pool (participant-scoped) - public IP for the Network Agent (212.78.11.0/24)
+### Skips network/gateway/broadcast -> first allocation 212.78.11.2
+# @name pubPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE Public IP",
+  "type": "fae-pubip",
+  "propertyType": "string",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "212.78.11.0/24", "excludeFirst": 2, "excludeLast": 1 },
+  "participantId": "{{providerId}}"
+}
+
+### CSP pool (participant-scoped) - GRE NAT /23 (172.30.232.0/23, single block)
+### hosts {} -> emits {cidr, prefix} only -> 172.30.232.0/23
+# @name natPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE GRE NAT",
+  "type": "fae-nat",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "172.30.232.0/23", "prefix": 23, "hosts": {} },
+  "participantId": "{{providerId}}"
+}
+
+### GRE infrastructure type (asn+ptp from global pools; publicIp+lan+nat from CSP pools)
+### reservedHosts encodes the .221 Network Agent / .222 NoVnc / .223 Fulcrum Agent convention
+### (.224-.236 are reserved). The nat boolean is a flag alongside the allocated natSubnet.
+# @name greType
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE Proxmox - GRE",
+  "configurationSchema": {
+    "properties": {
+      "transport":     { "type": "string", "default": "gre", "immutable": true },
+      "asn":           { "type": "integer", "generator": { "type": "pool", "config": { "poolType": "fae-asn" } } },
+      "ptpSubnet":     { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-ptp" } } },
+      "publicIp":      { "type": "string",  "generator": { "type": "pool", "config": { "poolType": "fae-pubip" } } },
+      "lanSubnet":     { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-lan" } } },
+      "natSubnet":     { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-nat" } } },
+      "nat":           { "type": "boolean" },
+      "reservedHosts": { "type": "json", "default": { "networkAgent": 221, "novnc": 222, "fulcrumAgent": 223 } }
+    }
+  }
+}
+
+@greTypeId = {{greType.response.body.$.id}}
+
+### L2 infrastructure type (no publicIp/nat; requires a public service VLAN)
+### vlanPublic is a CSP-provided user input (998/999 in the plan), validated 1..4094
+# @name l2Type
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE Proxmox - L2",
+  "configurationSchema": {
+    "properties": {
+      "transport":     { "type": "string", "default": "l2", "immutable": true },
+      "asn":           { "type": "integer", "generator": { "type": "pool", "config": { "poolType": "fae-asn" } } },
+      "ptpSubnet":     { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-ptp" } } },
+      "lanSubnet":     { "type": "json",    "generator": { "type": "pool", "config": { "poolType": "fae-lan" } } },
+      "vlanPublic":    { "type": "integer", "validators": [ { "type": "min", "config": { "value": 1 } }, { "type": "max", "config": { "value": 4094 } } ] },
+      "reservedHosts": { "type": "json", "default": { "networkAgent": 221, "novnc": 222, "fulcrumAgent": 223 } }
+    }
+  }
+}
+
+@l2TypeId = {{l2Type.response.body.$.id}}
+
+### Onboard Opiquad (GRE) -> asn 65000, ptp 10.255.1.0/30, publicIp 212.78.11.2,
+### lan 10.255.242.0/24, nat 172.30.232.0/23, reservedHosts {221,222,223}
+# @name greCluster
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Opiquad",
+  "providerId": "{{providerId}}",
+  "infrastructureTypeId": "{{greTypeId}}",
+  "configuration": { "nat": true }
+}
+
+### Onboard Fulcrum Core Prod (L2) -> asn 65001, ptp 10.255.1.4/30,
+### lan 10.255.243.0/24, vlanPublic 998, no publicIp/nat
+### (broader sheet customers: FAE-CEPH-ALPINE, TOPIX, GTT, ENGINEERING, CSI, BBBELL,
+###  SARENET, IKOULA, Fulcrum Core Dev)
+# @name l2Cluster
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Fulcrum Core Prod",
+  "providerId": "{{providerId}}",
+  "infrastructureTypeId": "{{l2TypeId}}",
+  "configuration": { "vlanPublic": 998 }
+}
+
+### --------------------------------------------------------------------------
+### /31 point-to-point links via default host labels (RFC 3021)
+### --------------------------------------------------------------------------
+### Point-to-point links are idiomatically /31 (RFC 3021: both addresses usable).
+### This pool carves 10.255.2.0/24 into /31 blocks relying on the DEFAULT host
+### labels (no "hosts" given). Defaults adapt to the block size: /30+ uses
+### {host1:1, host2:2}, /31 uses {host1:0, host2:1}, /32 emits no host labels.
+###
+### Each /31 block holds exactly its own two addresses, so the two allocations
+### below never overlap.
+# @name ptp31Pool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Fulcrum PtP /31 (overflow demo)",
+  "type": "fae-ptp31",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.2.0/24", "prefix": 31 }
+}
+
+### Infra type whose only allocated property is a /31 PtP subnet from the pool above
+# @name ptp31Type
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE PtP31 Demo",
+  "configurationSchema": {
+    "properties": {
+      "transport": { "type": "string", "default": "gre", "immutable": true },
+      "ptpSubnet": { "type": "json", "generator": { "type": "pool", "config": { "poolType": "fae-ptp31" } } }
+    }
+  }
+}
+
+@ptp31TypeId = {{ptp31Type.response.body.$.id}}
+
+### Infra A -> allocates block #0. Expect ptpSubnet:
+###   { "cidr": "10.255.2.0/31", "prefix": 31, "host1": "10.255.2.0", "host2": "10.255.2.1" }
+### Both addresses belong to 10.255.2.0/31.
+# @name ptp31A
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "PtP31 A",
+  "providerId": "{{providerId}}",
+  "infrastructureTypeId": "{{ptp31TypeId}}",
+  "configuration": {}
+}
+
+### Infra B -> allocates block #1. Expect ptpSubnet:
+###   { "cidr": "10.255.2.2/31", "prefix": 31, "host1": "10.255.2.2", "host2": "10.255.2.3" }
+### B's two addresses (10.255.2.2/.3) are disjoint from A's (10.255.2.0/.1) -- no overlap.
+# @name ptp31B
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "PtP31 B",
+  "providerId": "{{providerId}}",
+  "infrastructureTypeId": "{{ptp31TypeId}}",
+  "configuration": {}
+}
+
+### --------------------------------------------------------------------------
+### Caught validation errors (expect 400 Invalid request)
+### --------------------------------------------------------------------------
+### Every request below is rejected by ConfigPool.Validate() before anything is
+### persisted, so each returns:
+###   { "status": "Invalid request", "error": "<reason>" }
+
+### Malformed CIDR -> 400
+### error: subnet generator config 'cidr' is invalid: invalid CIDR address: 10.255.1.0/33
+# @name errBadCidr
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE bad cidr",
+  "type": "fae-err-badcidr",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/33", "prefix": 30 }
+}
+
+### IPv6 CIDR -> 400 (generator is IPv4 only)
+### error: subnet generator config 'cidr' must be IPv4
+# @name errIpv6Cidr
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE ipv6 cidr",
+  "type": "fae-err-ipv6",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "2001:db8::/48", "prefix": 64 }
+}
+
+### Prefix larger than the address width -> 400
+### error: subnet generator config 'prefix' (33) must be between 24 and 32
+# @name errPrefixTooLarge
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE prefix too large",
+  "type": "fae-err-prefixbig",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/24", "prefix": 33 }
+}
+
+### Prefix narrower than the parent CIDR -> 400 (cannot carve a larger block than the parent)
+### error: subnet generator config 'prefix' (20) must be between 24 and 32
+# @name errPrefixTooSmall
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE prefix too small",
+  "type": "fae-err-prefixsmall",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/24", "prefix": 20 }
+}
+
+### hosts without prefix -> 400 (host labels only make sense in block mode)
+### error: subnet generator config 'hosts' requires 'prefix' (block mode)
+# @name errHostsNoPrefix
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE hosts no prefix",
+  "type": "fae-err-hostsnoprefix",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/24", "hosts": { "gateway": 1 } }
+}
+
+### exclude* combined with prefix -> 400 (exclusions are host mode only)
+### error: subnet generator config 'excludeFirst'/'excludeLast'/'exclude' apply to host mode only (no 'prefix')
+# @name errExcludeWithPrefix
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FAE exclude with prefix",
+  "type": "fae-err-excludeprefix",
+  "propertyType": "json",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.255.1.0/24", "prefix": 30, "excludeFirst": 2 }
+}

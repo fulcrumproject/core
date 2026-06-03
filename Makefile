@@ -17,5 +17,6 @@ e2e: e2e-up
 
 dev: ## Start development
 	docker compose up postgres keycloak keycloak-provisioning --wait
+	docker compose wait keycloak-provisioning
 	trap 'kill %1 2>/dev/null; docker compose down' EXIT; \
 	air

@@ -599,6 +599,45 @@ func TestAgentRepository(t *testing.T) {
 		})
 	})
 
+	t.Run("CountByInfrastructure", func(t *testing.T) {
+		t.Run("counts only agents bound to the given infrastructure", func(t *testing.T) {
+			ctx := context.Background()
+			infraTypeRepo := NewInfrastructureTypeRepository(tdb.DB)
+			infraRepo := NewInfrastructureRepository(tdb.DB)
+
+			participant := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, participant))
+			agentType := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
+			infraType := createTestInfrastructureType(t)
+			require.NoError(t, infraTypeRepo.Create(ctx, infraType))
+			boundInfra := createTestInfrastructure(t, participant.ID, infraType.ID)
+			require.NoError(t, infraRepo.Create(ctx, boundInfra))
+			otherInfra := createTestInfrastructure(t, participant.ID, infraType.ID)
+			require.NoError(t, infraRepo.Create(ctx, otherInfra))
+
+			// 2 agents bound to boundInfra; 1 to otherInfra; 1 unbound (nil FK)
+			for i := 0; i < 2; i++ {
+				a := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
+				a.InfrastructureID = &boundInfra.ID
+				require.NoError(t, agentRepo.Create(ctx, a))
+			}
+			a := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
+			a.InfrastructureID = &otherInfra.ID
+			require.NoError(t, agentRepo.Create(ctx, a))
+			unbound := createTestAgent(t, participant.ID, agentType.ID, domain.AgentNew)
+			require.NoError(t, agentRepo.Create(ctx, unbound))
+
+			n, err := agentRepo.CountByInfrastructure(ctx, boundInfra.ID)
+			require.NoError(t, err)
+			assert.Equal(t, int64(2), n)
+
+			n, err = agentRepo.CountByInfrastructure(ctx, otherInfra.ID)
+			require.NoError(t, err)
+			assert.Equal(t, int64(1), n)
+		})
+	})
+
 	t.Run("AuthScope", func(t *testing.T) {
 		t.Run("success - returns correct auth scope", func(t *testing.T) {
 			ctx := context.Background()

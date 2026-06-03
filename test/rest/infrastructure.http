@@ -1,0 +1,383 @@
+### Infrastructure (instance) CRUD + Phase 4 AgentType/Agent binding
+###
+### Walks through the Infrastructure lifecycle (Phase 2):
+###   1. Create provider participant + InfrastructureType (preconditions)
+###   2. Create Infrastructure with full configuration → asserts round-trip
+###   3. Get → asserts the rendered configuration came back
+###   4. List with providerId filter → must include the just-created row
+###   5. Patch: rename + replace configuration → assert new values
+###   6. Patch with bad configuration type → 400 (schema engine rejection)
+###   7. Delete → 204; subsequent Get → 403/404
+###
+### Then Phase 4 exercises AgentType↔InfraType + Agent.InfrastructureID (see below).
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+### --- Create provider participant ------------------------------------------
+# @name iCreateProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-provider-e2e",
+  "status": "Enabled"
+}
+
+@i_providerId = {{iCreateProvider.response.body.$.id}}
+
+### --- Create InfrastructureType (with required+default schema) -------------
+# @name iCreateInfraType
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-type-for-instance-e2e",
+  "configurationSchema": {
+    "properties": {
+      "endpoint": {
+        "type": "string",
+        "label": "Endpoint",
+        "required": true
+      },
+      "maxRetries": {
+        "type": "integer",
+        "label": "Max Retries",
+        "default": 3
+      }
+    }
+  }
+}
+
+@i_infraTypeId = {{iCreateInfraType.response.body.$.id}}
+
+### --- Create Infrastructure (full config) ----------------------------------
+# @name iCreateInfra
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "csi-node-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_infraTypeId}}",
+  "tags": ["region:eu"],
+  "configuration": {
+    "endpoint": "https://example.invalid",
+    "maxRetries": 5
+  }
+}
+
+@i_infraId = {{iCreateInfra.response.body.$.id}}
+
+### --- Get → asserts configuration round-trip --------------------------------
+GET {{baseUrl}}/infrastructures/{{i_infraId}}
+Authorization: Bearer {{adminToken}}
+
+### --- List with providerId filter ------------------------------------------
+GET {{baseUrl}}/infrastructures?providerId={{i_providerId}}
+Authorization: Bearer {{adminToken}}
+
+### --- Patch: rename + replace configuration --------------------------------
+PATCH {{baseUrl}}/infrastructures/{{i_infraId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "csi-node-e2e-renamed",
+  "configuration": {
+    "endpoint": "https://renamed.invalid",
+    "maxRetries": 7
+  }
+}
+
+### --- Patch with bad configuration type → 400 ------------------------------
+PATCH {{baseUrl}}/infrastructures/{{i_infraId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "configuration": {
+    "endpoint": "https://still-valid",
+    "maxRetries": "not-an-integer"
+  }
+}
+
+### --- Delete → 204 ---------------------------------------------------------
+DELETE {{baseUrl}}/infrastructures/{{i_infraId}}
+Authorization: Bearer {{adminToken}}
+
+### --- Get after delete → 403/404 -------------------------------------------
+GET {{baseUrl}}/infrastructures/{{i_infraId}}
+Authorization: Bearer {{adminToken}}
+
+###
+### Phase 4 — AgentType ↔ InfrastructureType binding + Agent compatibility
+###   8.  Create a second InfraType (for the wrong-type negative case)
+###   9.  Create AgentType bound to the existing InfraType (IT-A)
+###  10.  Create Infrastructure of IT-A and one of IT-B under the same provider
+###  11.  POST /agents matching infra → 201, infrastructureId resolved in response
+###  12.  POST /agents with wrong-type infra → 400
+###  13.  POST /agents missing infrastructureId → 400
+###  14.  DELETE /infrastructures/{INFRA-A} while agent still binds it → 400
+###  15.  DELETE /infrastructure-types/{IT-A} while AgentType references it → 400
+
+### --- Create second InfrastructureType (IT-B) ------------------------------
+# @name iCreateInfraTypeB
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-type-b-e2e",
+  "configurationSchema": {
+    "properties": {
+      "endpoint": {
+        "type": "string",
+        "required": true
+      }
+    }
+  }
+}
+
+@i_infraTypeB_Id = {{iCreateInfraTypeB.response.body.$.id}}
+
+### --- Create AgentType bound to IT-A ---------------------------------------
+# @name iCreateAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "agent-type-bound-e2e",
+  "infrastructureTypeIds": ["{{i_infraTypeId}}"],
+  "configurationSchema": {
+    "properties": {
+      "endpoint": {
+        "type": "string",
+        "required": true
+      }
+    }
+  }
+}
+
+@i_agentTypeId = {{iCreateAgentType.response.body.$.id}}
+
+### --- Create Infrastructure A (IT-A, used for happy path) ------------------
+# @name iCreateInfraA
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-a-bound-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_infraTypeId}}",
+  "configuration": {
+    "endpoint": "https://a.invalid"
+  }
+}
+
+@i_infraA_Id = {{iCreateInfraA.response.body.$.id}}
+
+### --- Create Infrastructure B (IT-B, used for wrong-type case) -------------
+# @name iCreateInfraB
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-b-wrong-type-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_infraTypeB_Id}}",
+  "configuration": {
+    "endpoint": "https://b.invalid"
+  }
+}
+
+@i_infraB_Id = {{iCreateInfraB.response.body.$.id}}
+
+### --- Create Agent with matching infrastructure → 201 ----------------------
+# @name iCreateAgent
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "agent-bound-e2e",
+  "providerId": "{{i_providerId}}",
+  "agentTypeId": "{{i_agentTypeId}}",
+  "infrastructureId": "{{i_infraA_Id}}",
+  "configuration": {
+    "endpoint": "https://agent.invalid"
+  }
+}
+
+@i_agentId = {{iCreateAgent.response.body.$.id}}
+
+### --- Create Agent with wrong-type infra → 400 -----------------------------
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "agent-wrong-infra-e2e",
+  "providerId": "{{i_providerId}}",
+  "agentTypeId": "{{i_agentTypeId}}",
+  "infrastructureId": "{{i_infraB_Id}}",
+  "configuration": {
+    "endpoint": "https://agent.invalid"
+  }
+}
+
+### --- Create Agent without required infraId → 400 --------------------------
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "agent-missing-infra-e2e",
+  "providerId": "{{i_providerId}}",
+  "agentTypeId": "{{i_agentTypeId}}",
+  "configuration": {
+    "endpoint": "https://agent.invalid"
+  }
+}
+
+### --- Delete Infrastructure A while agent still binds it → 400 -------------
+DELETE {{baseUrl}}/infrastructures/{{i_infraA_Id}}
+Authorization: Bearer {{adminToken}}
+
+### --- Delete InfraType A while AgentType still references it → 400 --------
+DELETE {{baseUrl}}/infrastructure-types/{{i_infraTypeId}}
+Authorization: Bearer {{adminToken}}
+
+###
+### Phase 5 — auto-allocation of an Infrastructure property from a `list` ConfigPool
+###   1. Seed a global `list` pool with two PtP-tuple values (objects).
+###   2. Create an InfraType whose `ptp` object property references the pool via a
+###      `generator: "pool"` annotation.
+###   3. Create Infrastructure with `configuration: {}` → `ptp` is auto-popped from
+###      the pool; GET asserts the full tuple landed in `configuration.ptp`.
+###   4. The allocated config_pool_values row carries agentId = the infrastructure id
+###      and propertyName = "ptp".
+###   5. A second Infrastructure takes the remaining tuple; a third fails (pool empty).
+
+### --- Seed a `list` pool of PtP tuples ---------------------------------------
+# @name iCreatePtpPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-pool-e2e",
+  "type": "ptp_pool",
+  "propertyType": "object",
+  "generatorType": "list"
+}
+
+@i_ptpPoolId = {{iCreatePtpPool.response.body.$.id}}
+
+### --- Seed tuple 1 -----------------------------------------------------------
+POST {{baseUrl}}/config-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-tuple-1",
+  "value": { "localIp": "10.0.0.1", "remoteIp": "10.0.0.2", "asn": 65001 },
+  "configPoolId": "{{i_ptpPoolId}}"
+}
+
+### --- Seed tuple 2 -----------------------------------------------------------
+POST {{baseUrl}}/config-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-tuple-2",
+  "value": { "localIp": "10.0.1.1", "remoteIp": "10.0.1.2", "asn": 65002 },
+  "configPoolId": "{{i_ptpPoolId}}"
+}
+
+### --- InfraType whose `ptp` object property auto-allocates from the pool ------
+# @name iCreatePtpInfraType
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-type-ptp-e2e",
+  "configurationSchema": {
+    "properties": {
+      "ptp": {
+        "type": "object",
+        "label": "Point-to-point link",
+        "generator": {
+          "type": "pool",
+          "config": { "poolType": "ptp_pool" }
+        },
+        "properties": {
+          "localIp": { "type": "string", "required": true },
+          "remoteIp": { "type": "string", "required": true },
+          "asn": { "type": "integer", "required": true }
+        }
+      }
+    }
+  }
+}
+
+@i_ptpInfraTypeId = {{iCreatePtpInfraType.response.body.$.id}}
+
+### --- Create Infrastructure with empty config → `ptp` auto-popped ------------
+# @name iCreatePtpInfra1
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-infra-1-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_ptpInfraTypeId}}",
+  "configuration": {}
+}
+
+@i_ptpInfra1Id = {{iCreatePtpInfra1.response.body.$.id}}
+
+### --- Get → assert the full tuple landed in configuration.ptp ----------------
+# Expect 200 with configuration.ptp = one of the seeded tuples (localIp/remoteIp/asn).
+GET {{baseUrl}}/infrastructures/{{i_ptpInfra1Id}}
+Authorization: Bearer {{adminToken}}
+
+### --- Assert the pool value is stamped with the infra id + propertyName ------
+# Expect exactly one row, with agentId = i_ptpInfra1Id and propertyName = "ptp".
+GET {{baseUrl}}/config-pool-values?agentId={{i_ptpInfra1Id}}
+Authorization: Bearer {{adminToken}}
+
+### --- Second Infrastructure takes the remaining tuple -----------------------
+# @name iCreatePtpInfra2
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-infra-2-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_ptpInfraTypeId}}",
+  "configuration": {}
+}
+
+### --- Third Infrastructure → 400, pool exhausted ----------------------------
+POST {{baseUrl}}/infrastructures
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "ptp-infra-3-e2e",
+  "providerId": "{{i_providerId}}",
+  "infrastructureTypeId": "{{i_ptpInfraTypeId}}",
+  "configuration": {}
+}

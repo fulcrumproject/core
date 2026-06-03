@@ -1,0 +1,94 @@
+### Infrastructure Type CRUD
+###
+### Walks through the InfrastructureType lifecycle:
+###   1. Create → captures id, asserts configContentType defaults to text/plain when omitted
+###   2. Get    → round-trips schema + templates
+###   3. Patch  → renames + changes configContentType to text/yaml
+###   4. Patch with bad schema → 400 (engine validation)
+###   5. Patch with configTemplate set but cmdTemplate empty → 400 (template coupling)
+###   6. Delete → 204; subsequent Get → 404 (or 403 per project_api_403_for_missing_rows)
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+### --- Create (ConfigContentType omitted → defaults to text/plain) -----------
+# @name createInfraType
+POST {{baseUrl}}/infrastructure-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-type-e2e",
+  "configurationSchema": {
+    "properties": {
+      "endpoint": {
+        "type": "string",
+        "label": "Endpoint",
+        "required": true
+      },
+      "port": {
+        "type": "integer",
+        "label": "Port",
+        "default": 443
+      }
+    }
+  },
+  "configTemplate": "endpoint={{.endpoint}}\nport={{.port}}\n",
+  "cmdTemplate": "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}' | sh"
+}
+
+@infraTypeId = {{createInfraType.response.body.$.id}}
+
+### --- Get → assert schema, templates, default configContentType -----------
+GET {{baseUrl}}/infrastructure-types/{{infraTypeId}}
+Authorization: Bearer {{adminToken}}
+
+### --- List with name filter ------------------------------------------------
+GET {{baseUrl}}/infrastructure-types?name=infra-type-e2e
+Authorization: Bearer {{adminToken}}
+
+### --- Patch: rename + switch contentType to text/yaml --------------------
+PATCH {{baseUrl}}/infrastructure-types/{{infraTypeId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "infra-type-e2e-renamed",
+  "configContentType": "text/yaml"
+}
+
+### --- Patch with empty cmdTemplate while configTemplate is set → 400 -----
+PATCH {{baseUrl}}/infrastructure-types/{{infraTypeId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "cmdTemplate": ""
+}
+
+### --- Patch with malformed schema (unknown validator type) → 400 ----------
+PATCH {{baseUrl}}/infrastructure-types/{{infraTypeId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "configurationSchema": {
+    "properties": {
+      "endpoint": {
+        "type": "string",
+        "validators": [
+          { "type": "thisValidatorDoesNotExist", "config": {} }
+        ]
+      }
+    }
+  }
+}
+
+### --- Delete → 204 --------------------------------------------------------
+DELETE {{baseUrl}}/infrastructure-types/{{infraTypeId}}
+Authorization: Bearer {{adminToken}}
+
+### --- Get after delete → 403/404 (per project_api_403_for_missing_rows) ---
+GET {{baseUrl}}/infrastructure-types/{{infraTypeId}}
+Authorization: Bearer {{adminToken}}

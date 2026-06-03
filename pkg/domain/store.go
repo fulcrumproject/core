@@ -10,9 +10,11 @@ type Store interface {
 	// Repositories
 	AgentTypeRepo() AgentTypeRepository
 	AgentRepo() AgentRepository
-	AgentInstallTokenRepo() AgentInstallTokenRepository
+	InstallTokenRepo() InstallTokenRepository
 	ConfigPoolRepo() ConfigPoolRepository
 	ConfigPoolValueRepo() ConfigPoolValueRepository
+	InfrastructureTypeRepo() InfrastructureTypeRepository
+	InfrastructureRepo() InfrastructureRepository
 	TokenRepo() TokenRepository
 	ServiceTypeRepo() ServiceTypeRepository
 	ServiceGroupRepo() ServiceGroupRepository
@@ -36,6 +38,8 @@ type ReadOnlyStore interface {
 	AgentQuerier() AgentQuerier
 	ConfigPoolQuerier() ConfigPoolQuerier
 	ConfigPoolValueQuerier() ConfigPoolValueQuerier
+	InfrastructureTypeQuerier() InfrastructureTypeQuerier
+	InfrastructureQuerier() InfrastructureQuerier
 	TokenQuerier() TokenQuerier
 	ServiceTypeQuerier() ServiceTypeQuerier
 	ServiceGroupQuerier() ServiceGroupQuerier

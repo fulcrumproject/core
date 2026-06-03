@@ -62,7 +62,7 @@ func Delete[T domain.Entity](querier domain.BaseEntityQuerier[T], deleteFunc fun
 		}
 
 		if err := deleteFunc(r.Context(), id); err != nil {
-			render.Render(w, r, ErrInternal(err))
+			render.Render(w, r, ErrDomain(err))
 			return
 		}
 

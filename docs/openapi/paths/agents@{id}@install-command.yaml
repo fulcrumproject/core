@@ -30,7 +30,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/agents.yaml#/InstallTokenMetaRes"
+            $ref: "../components/schemas/install_tokens.yaml#/InstallTokenMetaRes"
     "401":
       $ref: "../components/responses.yaml#/Unauthorized"
     "403":
@@ -65,7 +65,7 @@ post:
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/agents.yaml#/InstallTokenRes"
+            $ref: "../components/schemas/install_tokens.yaml#/InstallTokenRes"
     "400":
       description: Invalid request (for example, the agent type has no install templates configured)
       content:

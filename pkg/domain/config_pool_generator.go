@@ -9,8 +9,9 @@ import (
 
 // ConfigPoolGenerator defines the interface for config pool value allocation strategies
 type ConfigPoolGenerator interface {
-	// Allocate allocates a value from the pool for the given agent and property
-	Allocate(ctx context.Context, agentID properties.UUID, propertyName string) (any, error)
+	// Allocate allocates a value from the pool to the given entity (agent or
+	// infrastructure) for the given property.
+	Allocate(ctx context.Context, entityType ConfigPoolValueEntityType, entityID properties.UUID, propertyName string) (any, error)
 
 	// Release releases the given pre-fetched allocations that belong to this generator's pool.
 	// Callers pass the agent's full allocation slice; implementations filter to their own pool.
@@ -38,6 +39,16 @@ func (f *DefaultConfigPoolGeneratorFactory) CreateGenerator(pool *ConfigPool) (C
 	switch pool.GeneratorType {
 	case PoolGeneratorList:
 		return NewConfigPoolListGenerator(f.valueRepo, pool.ID), nil
+	case PoolGeneratorRange:
+		if pool.GeneratorConfig == nil {
+			return nil, NewInvalidInputErrorf("range config pool missing generatorConfig")
+		}
+		return NewConfigPoolRangeGenerator(f.valueRepo, pool.ID, *pool.GeneratorConfig), nil
+	case PoolGeneratorSubnet:
+		if pool.GeneratorConfig == nil {
+			return nil, NewInvalidInputErrorf("subnet config pool missing generatorConfig")
+		}
+		return NewConfigPoolSubnetGenerator(f.valueRepo, pool.ID, *pool.GeneratorConfig), nil
 	default:
 		return nil, NewInvalidInputErrorf("unsupported config pool generator type: %s", pool.GeneratorType)
 	}

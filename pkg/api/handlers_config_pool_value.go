@@ -87,29 +87,32 @@ func (h *ConfigPoolValueHandler) Create(ctx context.Context, req *CreateConfigPo
 }
 
 type ConfigPoolValueRes struct {
-	ID           properties.UUID  `json:"id"`
-	Name         string           `json:"name"`
-	Value        any              `json:"value"`
-	ConfigPoolID properties.UUID  `json:"configPoolId"`
-	ConfigPool   *ConfigPoolRes   `json:"configPool,omitempty"`
-	AgentID      *properties.UUID `json:"agentId,omitempty"`
-	Agent        *AgentRes        `json:"agent,omitempty"`
-	PropertyName *string          `json:"propertyName,omitempty"`
-	AllocatedAt  *JSONUTCTime     `json:"allocatedAt,omitempty"`
-	CreatedAt    JSONUTCTime      `json:"createdAt"`
-	UpdatedAt    JSONUTCTime      `json:"updatedAt"`
+	ID               properties.UUID    `json:"id"`
+	Name             string             `json:"name"`
+	Value            any                `json:"value"`
+	ConfigPoolID     properties.UUID    `json:"configPoolId"`
+	ConfigPool       *ConfigPoolRes     `json:"configPool,omitempty"`
+	AgentID          *properties.UUID   `json:"agentId,omitempty"`
+	Agent            *AgentRes          `json:"agent,omitempty"`
+	InfrastructureID *properties.UUID   `json:"infrastructureId,omitempty"`
+	Infrastructure   *InfrastructureRes `json:"infrastructure,omitempty"`
+	PropertyName     *string            `json:"propertyName,omitempty"`
+	AllocatedAt      *JSONUTCTime       `json:"allocatedAt,omitempty"`
+	CreatedAt        JSONUTCTime        `json:"createdAt"`
+	UpdatedAt        JSONUTCTime        `json:"updatedAt"`
 }
 
 func ConfigPoolValueToRes(a *domain.ConfigPoolValue) *ConfigPoolValueRes {
 	res := &ConfigPoolValueRes{
-		ID:           a.ID,
-		Name:         a.Name,
-		Value:        a.Value,
-		ConfigPoolID: a.ConfigPoolID,
-		AgentID:      a.AgentID,
-		PropertyName: a.PropertyName,
-		CreatedAt:    JSONUTCTime(a.CreatedAt),
-		UpdatedAt:    JSONUTCTime(a.UpdatedAt),
+		ID:               a.ID,
+		Name:             a.Name,
+		Value:            a.Value,
+		ConfigPoolID:     a.ConfigPoolID,
+		AgentID:          a.AgentID,
+		InfrastructureID: a.InfrastructureID,
+		PropertyName:     a.PropertyName,
+		CreatedAt:        JSONUTCTime(a.CreatedAt),
+		UpdatedAt:        JSONUTCTime(a.UpdatedAt),
 	}
 	if a.AllocatedAt != nil {
 		allocatedAt := JSONUTCTime(*a.AllocatedAt)
@@ -122,6 +125,10 @@ func ConfigPoolValueToRes(a *domain.ConfigPoolValue) *ConfigPoolValueRes {
 
 	if a.Agent != nil {
 		res.Agent = AgentToRes(a.Agent)
+	}
+
+	if a.Infrastructure != nil {
+		res.Infrastructure = InfrastructureToRes(a.Infrastructure)
 	}
 
 	return res

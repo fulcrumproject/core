@@ -78,8 +78,19 @@ func (cp *ConfigPool) Validate() error {
 		return fmt.Errorf("invalid property type: %s (must be one of: %v)", cp.PropertyType, ValidPoolPropertyTypes)
 	}
 
-	if cp.GeneratorType != PoolGeneratorList {
-		return fmt.Errorf("invalid generator type for config pool: %s (must be %s)", cp.GeneratorType, PoolGeneratorList)
+	if err := cp.GeneratorType.Validate(); err != nil {
+		return err
+	}
+
+	switch cp.GeneratorType {
+	case PoolGeneratorRange, PoolGeneratorSubnet:
+		if cp.GeneratorConfig == nil {
+			return fmt.Errorf("%s generator requires generatorConfig", cp.GeneratorType)
+		}
+		if cp.GeneratorType == PoolGeneratorRange {
+			return validateRangeGeneratorConfig(*cp.GeneratorConfig)
+		}
+		return validateSubnetGeneratorConfig(*cp.GeneratorConfig)
 	}
 
 	return nil
@@ -130,7 +141,7 @@ func (c *configPoolCommander) Create(
 	err := c.store.Atomic(ctx, func(store Store) error {
 		pool = NewConfigPool(params)
 		if err := pool.Validate(); err != nil {
-			return err
+			return InvalidInputError{Err: err}
 		}
 
 		conflict, err := store.ConfigPoolRepo().FindByTypeAndProvider(ctx, pool.Type, pool.ParticipantID)
@@ -187,7 +198,7 @@ func (c *configPoolCommander) Update(
 		pool.Update(params)
 
 		if err := pool.Validate(); err != nil {
-			return err
+			return InvalidInputError{Err: err}
 		}
 
 		if err := store.ConfigPoolRepo().Update(ctx, pool); err != nil {

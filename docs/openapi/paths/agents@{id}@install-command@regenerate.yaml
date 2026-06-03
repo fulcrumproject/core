@@ -27,7 +27,7 @@ post:
       content:
         application/json:
           schema:
-            $ref: "../components/schemas/agents.yaml#/InstallTokenRes"
+            $ref: "../components/schemas/install_tokens.yaml#/InstallTokenRes"
     "401":
       $ref: "../components/responses.yaml#/Unauthorized"
     "403":

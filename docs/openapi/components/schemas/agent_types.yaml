@@ -11,6 +11,12 @@ AgentTypeRes:
       items:
         $ref: "./common.yaml#/properties.UUID"
       description: "IDs of service types that this agent type can provide"
+    infrastructureTypeIds:
+      type: array
+      maxItems: 1
+      items:
+        $ref: "./common.yaml#/properties.UUID"
+      description: "IDs of infrastructure types this agent type requires (currently at most one)"
     configurationSchema:
       $ref: "./agent_types.yaml#/ConfigurationSchema"
       description: "Schema defining the structure and validation rules for agent configuration"
@@ -56,6 +62,12 @@ CreateAgentTypeReq:
           "550e8400-e29b-41d4-a716-446655440000",
           "550e8400-e29b-41d4-a716-446655440001",
         ]
+    infrastructureTypeIds:
+      type: array
+      maxItems: 1
+      description: Optional list of infrastructure type IDs this agent type requires (currently at most one)
+      items:
+        $ref: "./common.yaml#/properties.UUID"
     configurationSchema:
       $ref: "./agent_types.yaml#/ConfigurationSchema"
       description: "Schema defining the structure and validation rules for agent configuration"
@@ -91,6 +103,12 @@ UpdateAgentTypeReq:
           "550e8400-e29b-41d4-a716-446655440000",
           "550e8400-e29b-41d4-a716-446655440002",
         ]
+    infrastructureTypeIds:
+      type: array
+      maxItems: 1
+      description: Updated list of infrastructure type IDs this agent type requires (currently at most one)
+      items:
+        $ref: "./common.yaml#/properties.UUID"
     configurationSchema:
       $ref: "./agent_types.yaml#/ConfigurationSchema"
       description: "Updated configuration schema"

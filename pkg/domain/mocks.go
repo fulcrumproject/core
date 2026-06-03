@@ -523,6 +523,72 @@ func (_c *MockAgentRepository_CountByAgentType_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
+// CountByInfrastructure provides a mock function for the type MockAgentRepository
+func (_mock *MockAgentRepository) CountByInfrastructure(ctx context.Context, infrastructureID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructure")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentRepository_CountByInfrastructure_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructure'
+type MockAgentRepository_CountByInfrastructure_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructure is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureID properties.UUID
+func (_e *MockAgentRepository_Expecter) CountByInfrastructure(ctx interface{}, infrastructureID interface{}) *MockAgentRepository_CountByInfrastructure_Call {
+	return &MockAgentRepository_CountByInfrastructure_Call{Call: _e.mock.On("CountByInfrastructure", ctx, infrastructureID)}
+}
+
+func (_c *MockAgentRepository_CountByInfrastructure_Call) Run(run func(ctx context.Context, infrastructureID properties.UUID)) *MockAgentRepository_CountByInfrastructure_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentRepository_CountByInfrastructure_Call) Return(n int64, err error) *MockAgentRepository_CountByInfrastructure_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentRepository_CountByInfrastructure_Call) RunAndReturn(run func(ctx context.Context, infrastructureID properties.UUID) (int64, error)) *MockAgentRepository_CountByInfrastructure_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CountByProvider provides a mock function for the type MockAgentRepository
 func (_mock *MockAgentRepository) CountByProvider(ctx context.Context, providerID properties.UUID) (int64, error) {
 	ret := _mock.Called(ctx, providerID)
@@ -1329,6 +1395,72 @@ func (_c *MockAgentQuerier_CountByAgentType_Call) RunAndReturn(run func(ctx cont
 	return _c
 }
 
+// CountByInfrastructure provides a mock function for the type MockAgentQuerier
+func (_mock *MockAgentQuerier) CountByInfrastructure(ctx context.Context, infrastructureID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructure")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentQuerier_CountByInfrastructure_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructure'
+type MockAgentQuerier_CountByInfrastructure_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructure is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureID properties.UUID
+func (_e *MockAgentQuerier_Expecter) CountByInfrastructure(ctx interface{}, infrastructureID interface{}) *MockAgentQuerier_CountByInfrastructure_Call {
+	return &MockAgentQuerier_CountByInfrastructure_Call{Call: _e.mock.On("CountByInfrastructure", ctx, infrastructureID)}
+}
+
+func (_c *MockAgentQuerier_CountByInfrastructure_Call) Run(run func(ctx context.Context, infrastructureID properties.UUID)) *MockAgentQuerier_CountByInfrastructure_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentQuerier_CountByInfrastructure_Call) Return(n int64, err error) *MockAgentQuerier_CountByInfrastructure_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentQuerier_CountByInfrastructure_Call) RunAndReturn(run func(ctx context.Context, infrastructureID properties.UUID) (int64, error)) *MockAgentQuerier_CountByInfrastructure_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CountByProvider provides a mock function for the type MockAgentQuerier
 func (_mock *MockAgentQuerier) CountByProvider(ctx context.Context, providerID properties.UUID) (int64, error) {
 	ret := _mock.Called(ctx, providerID)
@@ -1673,723 +1805,6 @@ func (_c *MockAgentQuerier_List_Call) Return(pageRes *PageRes[Agent], err error)
 }
 
 func (_c *MockAgentQuerier_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[Agent], error)) *MockAgentQuerier_List_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// NewMockAgentInstallTokenCommander creates a new instance of MockAgentInstallTokenCommander. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewMockAgentInstallTokenCommander(t interface {
-	mock.TestingT
-	Cleanup(func())
-}) *MockAgentInstallTokenCommander {
-	mock := &MockAgentInstallTokenCommander{}
-	mock.Mock.Test(t)
-
-	t.Cleanup(func() { mock.AssertExpectations(t) })
-
-	return mock
-}
-
-// MockAgentInstallTokenCommander is an autogenerated mock type for the AgentInstallTokenCommander type
-type MockAgentInstallTokenCommander struct {
-	mock.Mock
-}
-
-type MockAgentInstallTokenCommander_Expecter struct {
-	mock *mock.Mock
-}
-
-func (_m *MockAgentInstallTokenCommander) EXPECT() *MockAgentInstallTokenCommander_Expecter {
-	return &MockAgentInstallTokenCommander_Expecter{mock: &_m.Mock}
-}
-
-// Create provides a mock function for the type MockAgentInstallTokenCommander
-func (_mock *MockAgentInstallTokenCommander) Create(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error) {
-	ret := _mock.Called(ctx, agentID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Create")
-	}
-
-	var r0 *AgentInstallToken
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*AgentInstallToken, error)); ok {
-		return returnFunc(ctx, agentID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *AgentInstallToken); ok {
-		r0 = returnFunc(ctx, agentID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*AgentInstallToken)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
-		r1 = returnFunc(ctx, agentID)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockAgentInstallTokenCommander_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
-type MockAgentInstallTokenCommander_Create_Call struct {
-	*mock.Call
-}
-
-// Create is a helper method to define mock.On call
-//   - ctx context.Context
-//   - agentID properties.UUID
-func (_e *MockAgentInstallTokenCommander_Expecter) Create(ctx interface{}, agentID interface{}) *MockAgentInstallTokenCommander_Create_Call {
-	return &MockAgentInstallTokenCommander_Create_Call{Call: _e.mock.On("Create", ctx, agentID)}
-}
-
-func (_c *MockAgentInstallTokenCommander_Create_Call) Run(run func(ctx context.Context, agentID properties.UUID)) *MockAgentInstallTokenCommander_Create_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 properties.UUID
-		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAgentInstallTokenCommander_Create_Call) Return(agentInstallToken *AgentInstallToken, err error) *MockAgentInstallTokenCommander_Create_Call {
-	_c.Call.Return(agentInstallToken, err)
-	return _c
-}
-
-func (_c *MockAgentInstallTokenCommander_Create_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error)) *MockAgentInstallTokenCommander_Create_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Regenerate provides a mock function for the type MockAgentInstallTokenCommander
-func (_mock *MockAgentInstallTokenCommander) Regenerate(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error) {
-	ret := _mock.Called(ctx, agentID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Regenerate")
-	}
-
-	var r0 *AgentInstallToken
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*AgentInstallToken, error)); ok {
-		return returnFunc(ctx, agentID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *AgentInstallToken); ok {
-		r0 = returnFunc(ctx, agentID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*AgentInstallToken)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
-		r1 = returnFunc(ctx, agentID)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockAgentInstallTokenCommander_Regenerate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Regenerate'
-type MockAgentInstallTokenCommander_Regenerate_Call struct {
-	*mock.Call
-}
-
-// Regenerate is a helper method to define mock.On call
-//   - ctx context.Context
-//   - agentID properties.UUID
-func (_e *MockAgentInstallTokenCommander_Expecter) Regenerate(ctx interface{}, agentID interface{}) *MockAgentInstallTokenCommander_Regenerate_Call {
-	return &MockAgentInstallTokenCommander_Regenerate_Call{Call: _e.mock.On("Regenerate", ctx, agentID)}
-}
-
-func (_c *MockAgentInstallTokenCommander_Regenerate_Call) Run(run func(ctx context.Context, agentID properties.UUID)) *MockAgentInstallTokenCommander_Regenerate_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 properties.UUID
-		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAgentInstallTokenCommander_Regenerate_Call) Return(agentInstallToken *AgentInstallToken, err error) *MockAgentInstallTokenCommander_Regenerate_Call {
-	_c.Call.Return(agentInstallToken, err)
-	return _c
-}
-
-func (_c *MockAgentInstallTokenCommander_Regenerate_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error)) *MockAgentInstallTokenCommander_Regenerate_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Revoke provides a mock function for the type MockAgentInstallTokenCommander
-func (_mock *MockAgentInstallTokenCommander) Revoke(ctx context.Context, agentID properties.UUID) error {
-	ret := _mock.Called(ctx, agentID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Revoke")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
-		r0 = returnFunc(ctx, agentID)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockAgentInstallTokenCommander_Revoke_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Revoke'
-type MockAgentInstallTokenCommander_Revoke_Call struct {
-	*mock.Call
-}
-
-// Revoke is a helper method to define mock.On call
-//   - ctx context.Context
-//   - agentID properties.UUID
-func (_e *MockAgentInstallTokenCommander_Expecter) Revoke(ctx interface{}, agentID interface{}) *MockAgentInstallTokenCommander_Revoke_Call {
-	return &MockAgentInstallTokenCommander_Revoke_Call{Call: _e.mock.On("Revoke", ctx, agentID)}
-}
-
-func (_c *MockAgentInstallTokenCommander_Revoke_Call) Run(run func(ctx context.Context, agentID properties.UUID)) *MockAgentInstallTokenCommander_Revoke_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 properties.UUID
-		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAgentInstallTokenCommander_Revoke_Call) Return(err error) *MockAgentInstallTokenCommander_Revoke_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockAgentInstallTokenCommander_Revoke_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID) error) *MockAgentInstallTokenCommander_Revoke_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// NewMockAgentInstallTokenRepository creates a new instance of MockAgentInstallTokenRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewMockAgentInstallTokenRepository(t interface {
-	mock.TestingT
-	Cleanup(func())
-}) *MockAgentInstallTokenRepository {
-	mock := &MockAgentInstallTokenRepository{}
-	mock.Mock.Test(t)
-
-	t.Cleanup(func() { mock.AssertExpectations(t) })
-
-	return mock
-}
-
-// MockAgentInstallTokenRepository is an autogenerated mock type for the AgentInstallTokenRepository type
-type MockAgentInstallTokenRepository struct {
-	mock.Mock
-}
-
-type MockAgentInstallTokenRepository_Expecter struct {
-	mock *mock.Mock
-}
-
-func (_m *MockAgentInstallTokenRepository) EXPECT() *MockAgentInstallTokenRepository_Expecter {
-	return &MockAgentInstallTokenRepository_Expecter{mock: &_m.Mock}
-}
-
-// Create provides a mock function for the type MockAgentInstallTokenRepository
-func (_mock *MockAgentInstallTokenRepository) Create(ctx context.Context, tok *AgentInstallToken) error {
-	ret := _mock.Called(ctx, tok)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Create")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *AgentInstallToken) error); ok {
-		r0 = returnFunc(ctx, tok)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockAgentInstallTokenRepository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
-type MockAgentInstallTokenRepository_Create_Call struct {
-	*mock.Call
-}
-
-// Create is a helper method to define mock.On call
-//   - ctx context.Context
-//   - tok *AgentInstallToken
-func (_e *MockAgentInstallTokenRepository_Expecter) Create(ctx interface{}, tok interface{}) *MockAgentInstallTokenRepository_Create_Call {
-	return &MockAgentInstallTokenRepository_Create_Call{Call: _e.mock.On("Create", ctx, tok)}
-}
-
-func (_c *MockAgentInstallTokenRepository_Create_Call) Run(run func(ctx context.Context, tok *AgentInstallToken)) *MockAgentInstallTokenRepository_Create_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 *AgentInstallToken
-		if args[1] != nil {
-			arg1 = args[1].(*AgentInstallToken)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAgentInstallTokenRepository_Create_Call) Return(err error) *MockAgentInstallTokenRepository_Create_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockAgentInstallTokenRepository_Create_Call) RunAndReturn(run func(ctx context.Context, tok *AgentInstallToken) error) *MockAgentInstallTokenRepository_Create_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// DeleteByAgentID provides a mock function for the type MockAgentInstallTokenRepository
-func (_mock *MockAgentInstallTokenRepository) DeleteByAgentID(ctx context.Context, agentID properties.UUID) error {
-	ret := _mock.Called(ctx, agentID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for DeleteByAgentID")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
-		r0 = returnFunc(ctx, agentID)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockAgentInstallTokenRepository_DeleteByAgentID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteByAgentID'
-type MockAgentInstallTokenRepository_DeleteByAgentID_Call struct {
-	*mock.Call
-}
-
-// DeleteByAgentID is a helper method to define mock.On call
-//   - ctx context.Context
-//   - agentID properties.UUID
-func (_e *MockAgentInstallTokenRepository_Expecter) DeleteByAgentID(ctx interface{}, agentID interface{}) *MockAgentInstallTokenRepository_DeleteByAgentID_Call {
-	return &MockAgentInstallTokenRepository_DeleteByAgentID_Call{Call: _e.mock.On("DeleteByAgentID", ctx, agentID)}
-}
-
-func (_c *MockAgentInstallTokenRepository_DeleteByAgentID_Call) Run(run func(ctx context.Context, agentID properties.UUID)) *MockAgentInstallTokenRepository_DeleteByAgentID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 properties.UUID
-		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAgentInstallTokenRepository_DeleteByAgentID_Call) Return(err error) *MockAgentInstallTokenRepository_DeleteByAgentID_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockAgentInstallTokenRepository_DeleteByAgentID_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID) error) *MockAgentInstallTokenRepository_DeleteByAgentID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// FindByHashedToken provides a mock function for the type MockAgentInstallTokenRepository
-func (_mock *MockAgentInstallTokenRepository) FindByHashedToken(ctx context.Context, hashed string) (*AgentInstallToken, error) {
-	ret := _mock.Called(ctx, hashed)
-
-	if len(ret) == 0 {
-		panic("no return value specified for FindByHashedToken")
-	}
-
-	var r0 *AgentInstallToken
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*AgentInstallToken, error)); ok {
-		return returnFunc(ctx, hashed)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *AgentInstallToken); ok {
-		r0 = returnFunc(ctx, hashed)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*AgentInstallToken)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, hashed)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockAgentInstallTokenRepository_FindByHashedToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByHashedToken'
-type MockAgentInstallTokenRepository_FindByHashedToken_Call struct {
-	*mock.Call
-}
-
-// FindByHashedToken is a helper method to define mock.On call
-//   - ctx context.Context
-//   - hashed string
-func (_e *MockAgentInstallTokenRepository_Expecter) FindByHashedToken(ctx interface{}, hashed interface{}) *MockAgentInstallTokenRepository_FindByHashedToken_Call {
-	return &MockAgentInstallTokenRepository_FindByHashedToken_Call{Call: _e.mock.On("FindByHashedToken", ctx, hashed)}
-}
-
-func (_c *MockAgentInstallTokenRepository_FindByHashedToken_Call) Run(run func(ctx context.Context, hashed string)) *MockAgentInstallTokenRepository_FindByHashedToken_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAgentInstallTokenRepository_FindByHashedToken_Call) Return(agentInstallToken *AgentInstallToken, err error) *MockAgentInstallTokenRepository_FindByHashedToken_Call {
-	_c.Call.Return(agentInstallToken, err)
-	return _c
-}
-
-func (_c *MockAgentInstallTokenRepository_FindByHashedToken_Call) RunAndReturn(run func(ctx context.Context, hashed string) (*AgentInstallToken, error)) *MockAgentInstallTokenRepository_FindByHashedToken_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetByAgentID provides a mock function for the type MockAgentInstallTokenRepository
-func (_mock *MockAgentInstallTokenRepository) GetByAgentID(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error) {
-	ret := _mock.Called(ctx, agentID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetByAgentID")
-	}
-
-	var r0 *AgentInstallToken
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*AgentInstallToken, error)); ok {
-		return returnFunc(ctx, agentID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *AgentInstallToken); ok {
-		r0 = returnFunc(ctx, agentID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*AgentInstallToken)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
-		r1 = returnFunc(ctx, agentID)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockAgentInstallTokenRepository_GetByAgentID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByAgentID'
-type MockAgentInstallTokenRepository_GetByAgentID_Call struct {
-	*mock.Call
-}
-
-// GetByAgentID is a helper method to define mock.On call
-//   - ctx context.Context
-//   - agentID properties.UUID
-func (_e *MockAgentInstallTokenRepository_Expecter) GetByAgentID(ctx interface{}, agentID interface{}) *MockAgentInstallTokenRepository_GetByAgentID_Call {
-	return &MockAgentInstallTokenRepository_GetByAgentID_Call{Call: _e.mock.On("GetByAgentID", ctx, agentID)}
-}
-
-func (_c *MockAgentInstallTokenRepository_GetByAgentID_Call) Run(run func(ctx context.Context, agentID properties.UUID)) *MockAgentInstallTokenRepository_GetByAgentID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 properties.UUID
-		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAgentInstallTokenRepository_GetByAgentID_Call) Return(agentInstallToken *AgentInstallToken, err error) *MockAgentInstallTokenRepository_GetByAgentID_Call {
-	_c.Call.Return(agentInstallToken, err)
-	return _c
-}
-
-func (_c *MockAgentInstallTokenRepository_GetByAgentID_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error)) *MockAgentInstallTokenRepository_GetByAgentID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Save provides a mock function for the type MockAgentInstallTokenRepository
-func (_mock *MockAgentInstallTokenRepository) Save(ctx context.Context, tok *AgentInstallToken) error {
-	ret := _mock.Called(ctx, tok)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Save")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *AgentInstallToken) error); ok {
-		r0 = returnFunc(ctx, tok)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockAgentInstallTokenRepository_Save_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Save'
-type MockAgentInstallTokenRepository_Save_Call struct {
-	*mock.Call
-}
-
-// Save is a helper method to define mock.On call
-//   - ctx context.Context
-//   - tok *AgentInstallToken
-func (_e *MockAgentInstallTokenRepository_Expecter) Save(ctx interface{}, tok interface{}) *MockAgentInstallTokenRepository_Save_Call {
-	return &MockAgentInstallTokenRepository_Save_Call{Call: _e.mock.On("Save", ctx, tok)}
-}
-
-func (_c *MockAgentInstallTokenRepository_Save_Call) Run(run func(ctx context.Context, tok *AgentInstallToken)) *MockAgentInstallTokenRepository_Save_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 *AgentInstallToken
-		if args[1] != nil {
-			arg1 = args[1].(*AgentInstallToken)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAgentInstallTokenRepository_Save_Call) Return(err error) *MockAgentInstallTokenRepository_Save_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockAgentInstallTokenRepository_Save_Call) RunAndReturn(run func(ctx context.Context, tok *AgentInstallToken) error) *MockAgentInstallTokenRepository_Save_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// NewMockAgentInstallTokenQuerier creates a new instance of MockAgentInstallTokenQuerier. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewMockAgentInstallTokenQuerier(t interface {
-	mock.TestingT
-	Cleanup(func())
-}) *MockAgentInstallTokenQuerier {
-	mock := &MockAgentInstallTokenQuerier{}
-	mock.Mock.Test(t)
-
-	t.Cleanup(func() { mock.AssertExpectations(t) })
-
-	return mock
-}
-
-// MockAgentInstallTokenQuerier is an autogenerated mock type for the AgentInstallTokenQuerier type
-type MockAgentInstallTokenQuerier struct {
-	mock.Mock
-}
-
-type MockAgentInstallTokenQuerier_Expecter struct {
-	mock *mock.Mock
-}
-
-func (_m *MockAgentInstallTokenQuerier) EXPECT() *MockAgentInstallTokenQuerier_Expecter {
-	return &MockAgentInstallTokenQuerier_Expecter{mock: &_m.Mock}
-}
-
-// FindByHashedToken provides a mock function for the type MockAgentInstallTokenQuerier
-func (_mock *MockAgentInstallTokenQuerier) FindByHashedToken(ctx context.Context, hashed string) (*AgentInstallToken, error) {
-	ret := _mock.Called(ctx, hashed)
-
-	if len(ret) == 0 {
-		panic("no return value specified for FindByHashedToken")
-	}
-
-	var r0 *AgentInstallToken
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*AgentInstallToken, error)); ok {
-		return returnFunc(ctx, hashed)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *AgentInstallToken); ok {
-		r0 = returnFunc(ctx, hashed)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*AgentInstallToken)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, hashed)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockAgentInstallTokenQuerier_FindByHashedToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByHashedToken'
-type MockAgentInstallTokenQuerier_FindByHashedToken_Call struct {
-	*mock.Call
-}
-
-// FindByHashedToken is a helper method to define mock.On call
-//   - ctx context.Context
-//   - hashed string
-func (_e *MockAgentInstallTokenQuerier_Expecter) FindByHashedToken(ctx interface{}, hashed interface{}) *MockAgentInstallTokenQuerier_FindByHashedToken_Call {
-	return &MockAgentInstallTokenQuerier_FindByHashedToken_Call{Call: _e.mock.On("FindByHashedToken", ctx, hashed)}
-}
-
-func (_c *MockAgentInstallTokenQuerier_FindByHashedToken_Call) Run(run func(ctx context.Context, hashed string)) *MockAgentInstallTokenQuerier_FindByHashedToken_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAgentInstallTokenQuerier_FindByHashedToken_Call) Return(agentInstallToken *AgentInstallToken, err error) *MockAgentInstallTokenQuerier_FindByHashedToken_Call {
-	_c.Call.Return(agentInstallToken, err)
-	return _c
-}
-
-func (_c *MockAgentInstallTokenQuerier_FindByHashedToken_Call) RunAndReturn(run func(ctx context.Context, hashed string) (*AgentInstallToken, error)) *MockAgentInstallTokenQuerier_FindByHashedToken_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetByAgentID provides a mock function for the type MockAgentInstallTokenQuerier
-func (_mock *MockAgentInstallTokenQuerier) GetByAgentID(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error) {
-	ret := _mock.Called(ctx, agentID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetByAgentID")
-	}
-
-	var r0 *AgentInstallToken
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*AgentInstallToken, error)); ok {
-		return returnFunc(ctx, agentID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *AgentInstallToken); ok {
-		r0 = returnFunc(ctx, agentID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*AgentInstallToken)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
-		r1 = returnFunc(ctx, agentID)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockAgentInstallTokenQuerier_GetByAgentID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByAgentID'
-type MockAgentInstallTokenQuerier_GetByAgentID_Call struct {
-	*mock.Call
-}
-
-// GetByAgentID is a helper method to define mock.On call
-//   - ctx context.Context
-//   - agentID properties.UUID
-func (_e *MockAgentInstallTokenQuerier_Expecter) GetByAgentID(ctx interface{}, agentID interface{}) *MockAgentInstallTokenQuerier_GetByAgentID_Call {
-	return &MockAgentInstallTokenQuerier_GetByAgentID_Call{Call: _e.mock.On("GetByAgentID", ctx, agentID)}
-}
-
-func (_c *MockAgentInstallTokenQuerier_GetByAgentID_Call) Run(run func(ctx context.Context, agentID properties.UUID)) *MockAgentInstallTokenQuerier_GetByAgentID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 properties.UUID
-		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAgentInstallTokenQuerier_GetByAgentID_Call) Return(agentInstallToken *AgentInstallToken, err error) *MockAgentInstallTokenQuerier_GetByAgentID_Call {
-	_c.Call.Return(agentInstallToken, err)
-	return _c
-}
-
-func (_c *MockAgentInstallTokenQuerier_GetByAgentID_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID) (*AgentInstallToken, error)) *MockAgentInstallTokenQuerier_GetByAgentID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2765,6 +2180,72 @@ func (_c *MockAgentTypeRepository_Count_Call) Return(n int64, err error) *MockAg
 }
 
 func (_c *MockAgentTypeRepository_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockAgentTypeRepository_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountByInfrastructureType provides a mock function for the type MockAgentTypeRepository
+func (_mock *MockAgentTypeRepository) CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructureType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentTypeRepository_CountByInfrastructureType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructureType'
+type MockAgentTypeRepository_CountByInfrastructureType_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructureType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureTypeID properties.UUID
+func (_e *MockAgentTypeRepository_Expecter) CountByInfrastructureType(ctx interface{}, infrastructureTypeID interface{}) *MockAgentTypeRepository_CountByInfrastructureType_Call {
+	return &MockAgentTypeRepository_CountByInfrastructureType_Call{Call: _e.mock.On("CountByInfrastructureType", ctx, infrastructureTypeID)}
+}
+
+func (_c *MockAgentTypeRepository_CountByInfrastructureType_Call) Run(run func(ctx context.Context, infrastructureTypeID properties.UUID)) *MockAgentTypeRepository_CountByInfrastructureType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentTypeRepository_CountByInfrastructureType_Call) Return(n int64, err error) *MockAgentTypeRepository_CountByInfrastructureType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentTypeRepository_CountByInfrastructureType_Call) RunAndReturn(run func(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)) *MockAgentTypeRepository_CountByInfrastructureType_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -3299,6 +2780,72 @@ func (_c *MockAgentTypeQuerier_Count_Call) Return(n int64, err error) *MockAgent
 }
 
 func (_c *MockAgentTypeQuerier_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockAgentTypeQuerier_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountByInfrastructureType provides a mock function for the type MockAgentTypeQuerier
+func (_mock *MockAgentTypeQuerier) CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructureType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentTypeQuerier_CountByInfrastructureType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructureType'
+type MockAgentTypeQuerier_CountByInfrastructureType_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructureType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureTypeID properties.UUID
+func (_e *MockAgentTypeQuerier_Expecter) CountByInfrastructureType(ctx interface{}, infrastructureTypeID interface{}) *MockAgentTypeQuerier_CountByInfrastructureType_Call {
+	return &MockAgentTypeQuerier_CountByInfrastructureType_Call{Call: _e.mock.On("CountByInfrastructureType", ctx, infrastructureTypeID)}
+}
+
+func (_c *MockAgentTypeQuerier_CountByInfrastructureType_Call) Run(run func(ctx context.Context, infrastructureTypeID properties.UUID)) *MockAgentTypeQuerier_CountByInfrastructureType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentTypeQuerier_CountByInfrastructureType_Call) Return(n int64, err error) *MockAgentTypeQuerier_CountByInfrastructureType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentTypeQuerier_CountByInfrastructureType_Call) RunAndReturn(run func(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)) *MockAgentTypeQuerier_CountByInfrastructureType_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -5780,8 +5327,8 @@ func (_m *MockConfigPoolGenerator) EXPECT() *MockConfigPoolGenerator_Expecter {
 }
 
 // Allocate provides a mock function for the type MockConfigPoolGenerator
-func (_mock *MockConfigPoolGenerator) Allocate(ctx context.Context, agentID properties.UUID, propertyName string) (any, error) {
-	ret := _mock.Called(ctx, agentID, propertyName)
+func (_mock *MockConfigPoolGenerator) Allocate(ctx context.Context, entityType ConfigPoolValueEntityType, entityID properties.UUID, propertyName string) (any, error) {
+	ret := _mock.Called(ctx, entityType, entityID, propertyName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Allocate")
@@ -5789,18 +5336,18 @@ func (_mock *MockConfigPoolGenerator) Allocate(ctx context.Context, agentID prop
 
 	var r0 any
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) (any, error)); ok {
-		return returnFunc(ctx, agentID, propertyName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ConfigPoolValueEntityType, properties.UUID, string) (any, error)); ok {
+		return returnFunc(ctx, entityType, entityID, propertyName)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, string) any); ok {
-		r0 = returnFunc(ctx, agentID, propertyName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ConfigPoolValueEntityType, properties.UUID, string) any); ok {
+		r0 = returnFunc(ctx, entityType, entityID, propertyName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(any)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, string) error); ok {
-		r1 = returnFunc(ctx, agentID, propertyName)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, ConfigPoolValueEntityType, properties.UUID, string) error); ok {
+		r1 = returnFunc(ctx, entityType, entityID, propertyName)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -5814,30 +5361,36 @@ type MockConfigPoolGenerator_Allocate_Call struct {
 
 // Allocate is a helper method to define mock.On call
 //   - ctx context.Context
-//   - agentID properties.UUID
+//   - entityType ConfigPoolValueEntityType
+//   - entityID properties.UUID
 //   - propertyName string
-func (_e *MockConfigPoolGenerator_Expecter) Allocate(ctx interface{}, agentID interface{}, propertyName interface{}) *MockConfigPoolGenerator_Allocate_Call {
-	return &MockConfigPoolGenerator_Allocate_Call{Call: _e.mock.On("Allocate", ctx, agentID, propertyName)}
+func (_e *MockConfigPoolGenerator_Expecter) Allocate(ctx interface{}, entityType interface{}, entityID interface{}, propertyName interface{}) *MockConfigPoolGenerator_Allocate_Call {
+	return &MockConfigPoolGenerator_Allocate_Call{Call: _e.mock.On("Allocate", ctx, entityType, entityID, propertyName)}
 }
 
-func (_c *MockConfigPoolGenerator_Allocate_Call) Run(run func(ctx context.Context, agentID properties.UUID, propertyName string)) *MockConfigPoolGenerator_Allocate_Call {
+func (_c *MockConfigPoolGenerator_Allocate_Call) Run(run func(ctx context.Context, entityType ConfigPoolValueEntityType, entityID properties.UUID, propertyName string)) *MockConfigPoolGenerator_Allocate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 properties.UUID
+		var arg1 ConfigPoolValueEntityType
 		if args[1] != nil {
-			arg1 = args[1].(properties.UUID)
+			arg1 = args[1].(ConfigPoolValueEntityType)
 		}
-		var arg2 string
+		var arg2 properties.UUID
 		if args[2] != nil {
-			arg2 = args[2].(string)
+			arg2 = args[2].(properties.UUID)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -5848,7 +5401,7 @@ func (_c *MockConfigPoolGenerator_Allocate_Call) Return(v any, err error) *MockC
 	return _c
 }
 
-func (_c *MockConfigPoolGenerator_Allocate_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID, propertyName string) (any, error)) *MockConfigPoolGenerator_Allocate_Call {
+func (_c *MockConfigPoolGenerator_Allocate_Call) RunAndReturn(run func(ctx context.Context, entityType ConfigPoolValueEntityType, entityID properties.UUID, propertyName string) (any, error)) *MockConfigPoolGenerator_Allocate_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -6418,6 +5971,142 @@ func (_c *MockConfigPoolValueQuerier_FindByAgent_Call) Return(configPoolValues [
 }
 
 func (_c *MockConfigPoolValueQuerier_FindByAgent_Call) RunAndReturn(run func(ctx context.Context, agentID properties.UUID) ([]*ConfigPoolValue, error)) *MockConfigPoolValueQuerier_FindByAgent_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByInfrastructure provides a mock function for the type MockConfigPoolValueQuerier
+func (_mock *MockConfigPoolValueQuerier) FindByInfrastructure(ctx context.Context, infrastructureID properties.UUID) ([]*ConfigPoolValue, error) {
+	ret := _mock.Called(ctx, infrastructureID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByInfrastructure")
+	}
+
+	var r0 []*ConfigPoolValue
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ConfigPoolValue, error)); ok {
+		return returnFunc(ctx, infrastructureID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ConfigPoolValue); ok {
+		r0 = returnFunc(ctx, infrastructureID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ConfigPoolValue)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockConfigPoolValueQuerier_FindByInfrastructure_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByInfrastructure'
+type MockConfigPoolValueQuerier_FindByInfrastructure_Call struct {
+	*mock.Call
+}
+
+// FindByInfrastructure is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureID properties.UUID
+func (_e *MockConfigPoolValueQuerier_Expecter) FindByInfrastructure(ctx interface{}, infrastructureID interface{}) *MockConfigPoolValueQuerier_FindByInfrastructure_Call {
+	return &MockConfigPoolValueQuerier_FindByInfrastructure_Call{Call: _e.mock.On("FindByInfrastructure", ctx, infrastructureID)}
+}
+
+func (_c *MockConfigPoolValueQuerier_FindByInfrastructure_Call) Run(run func(ctx context.Context, infrastructureID properties.UUID)) *MockConfigPoolValueQuerier_FindByInfrastructure_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockConfigPoolValueQuerier_FindByInfrastructure_Call) Return(configPoolValues []*ConfigPoolValue, err error) *MockConfigPoolValueQuerier_FindByInfrastructure_Call {
+	_c.Call.Return(configPoolValues, err)
+	return _c
+}
+
+func (_c *MockConfigPoolValueQuerier_FindByInfrastructure_Call) RunAndReturn(run func(ctx context.Context, infrastructureID properties.UUID) ([]*ConfigPoolValue, error)) *MockConfigPoolValueQuerier_FindByInfrastructure_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByPool provides a mock function for the type MockConfigPoolValueQuerier
+func (_mock *MockConfigPoolValueQuerier) FindByPool(ctx context.Context, poolID properties.UUID) ([]*ConfigPoolValue, error) {
+	ret := _mock.Called(ctx, poolID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByPool")
+	}
+
+	var r0 []*ConfigPoolValue
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ConfigPoolValue, error)); ok {
+		return returnFunc(ctx, poolID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ConfigPoolValue); ok {
+		r0 = returnFunc(ctx, poolID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ConfigPoolValue)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, poolID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockConfigPoolValueQuerier_FindByPool_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByPool'
+type MockConfigPoolValueQuerier_FindByPool_Call struct {
+	*mock.Call
+}
+
+// FindByPool is a helper method to define mock.On call
+//   - ctx context.Context
+//   - poolID properties.UUID
+func (_e *MockConfigPoolValueQuerier_Expecter) FindByPool(ctx interface{}, poolID interface{}) *MockConfigPoolValueQuerier_FindByPool_Call {
+	return &MockConfigPoolValueQuerier_FindByPool_Call{Call: _e.mock.On("FindByPool", ctx, poolID)}
+}
+
+func (_c *MockConfigPoolValueQuerier_FindByPool_Call) Run(run func(ctx context.Context, poolID properties.UUID)) *MockConfigPoolValueQuerier_FindByPool_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockConfigPoolValueQuerier_FindByPool_Call) Return(configPoolValues []*ConfigPoolValue, err error) *MockConfigPoolValueQuerier_FindByPool_Call {
+	_c.Call.Return(configPoolValues, err)
+	return _c
+}
+
+func (_c *MockConfigPoolValueQuerier_FindByPool_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) ([]*ConfigPoolValue, error)) *MockConfigPoolValueQuerier_FindByPool_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -7101,6 +6790,142 @@ func (_c *MockConfigPoolValueRepository_FindByAgent_Call) RunAndReturn(run func(
 	return _c
 }
 
+// FindByInfrastructure provides a mock function for the type MockConfigPoolValueRepository
+func (_mock *MockConfigPoolValueRepository) FindByInfrastructure(ctx context.Context, infrastructureID properties.UUID) ([]*ConfigPoolValue, error) {
+	ret := _mock.Called(ctx, infrastructureID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByInfrastructure")
+	}
+
+	var r0 []*ConfigPoolValue
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ConfigPoolValue, error)); ok {
+		return returnFunc(ctx, infrastructureID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ConfigPoolValue); ok {
+		r0 = returnFunc(ctx, infrastructureID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ConfigPoolValue)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockConfigPoolValueRepository_FindByInfrastructure_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByInfrastructure'
+type MockConfigPoolValueRepository_FindByInfrastructure_Call struct {
+	*mock.Call
+}
+
+// FindByInfrastructure is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureID properties.UUID
+func (_e *MockConfigPoolValueRepository_Expecter) FindByInfrastructure(ctx interface{}, infrastructureID interface{}) *MockConfigPoolValueRepository_FindByInfrastructure_Call {
+	return &MockConfigPoolValueRepository_FindByInfrastructure_Call{Call: _e.mock.On("FindByInfrastructure", ctx, infrastructureID)}
+}
+
+func (_c *MockConfigPoolValueRepository_FindByInfrastructure_Call) Run(run func(ctx context.Context, infrastructureID properties.UUID)) *MockConfigPoolValueRepository_FindByInfrastructure_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockConfigPoolValueRepository_FindByInfrastructure_Call) Return(configPoolValues []*ConfigPoolValue, err error) *MockConfigPoolValueRepository_FindByInfrastructure_Call {
+	_c.Call.Return(configPoolValues, err)
+	return _c
+}
+
+func (_c *MockConfigPoolValueRepository_FindByInfrastructure_Call) RunAndReturn(run func(ctx context.Context, infrastructureID properties.UUID) ([]*ConfigPoolValue, error)) *MockConfigPoolValueRepository_FindByInfrastructure_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByPool provides a mock function for the type MockConfigPoolValueRepository
+func (_mock *MockConfigPoolValueRepository) FindByPool(ctx context.Context, poolID properties.UUID) ([]*ConfigPoolValue, error) {
+	ret := _mock.Called(ctx, poolID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByPool")
+	}
+
+	var r0 []*ConfigPoolValue
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*ConfigPoolValue, error)); ok {
+		return returnFunc(ctx, poolID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*ConfigPoolValue); ok {
+		r0 = returnFunc(ctx, poolID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*ConfigPoolValue)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, poolID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockConfigPoolValueRepository_FindByPool_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByPool'
+type MockConfigPoolValueRepository_FindByPool_Call struct {
+	*mock.Call
+}
+
+// FindByPool is a helper method to define mock.On call
+//   - ctx context.Context
+//   - poolID properties.UUID
+func (_e *MockConfigPoolValueRepository_Expecter) FindByPool(ctx interface{}, poolID interface{}) *MockConfigPoolValueRepository_FindByPool_Call {
+	return &MockConfigPoolValueRepository_FindByPool_Call{Call: _e.mock.On("FindByPool", ctx, poolID)}
+}
+
+func (_c *MockConfigPoolValueRepository_FindByPool_Call) Run(run func(ctx context.Context, poolID properties.UUID)) *MockConfigPoolValueRepository_FindByPool_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockConfigPoolValueRepository_FindByPool_Call) Return(configPoolValues []*ConfigPoolValue, err error) *MockConfigPoolValueRepository_FindByPool_Call {
+	_c.Call.Return(configPoolValues, err)
+	return _c
+}
+
+func (_c *MockConfigPoolValueRepository_FindByPool_Call) RunAndReturn(run func(ctx context.Context, poolID properties.UUID) ([]*ConfigPoolValue, error)) *MockConfigPoolValueRepository_FindByPool_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Get provides a mock function for the type MockConfigPoolValueRepository
 func (_mock *MockConfigPoolValueRepository) Get(ctx context.Context, id properties.UUID) (*ConfigPoolValue, error) {
 	ret := _mock.Called(ctx, id)
@@ -7448,6 +7273,215 @@ func (_c *MockConfigPoolValueCommander_Delete_Call) Return(err error) *MockConfi
 }
 
 func (_c *MockConfigPoolValueCommander_Delete_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockConfigPoolValueCommander_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockpoolAllocContext creates a new instance of MockpoolAllocContext. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockpoolAllocContext(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockpoolAllocContext {
+	mock := &MockpoolAllocContext{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockpoolAllocContext is an autogenerated mock type for the poolAllocContext type
+type MockpoolAllocContext struct {
+	mock.Mock
+}
+
+type MockpoolAllocContext_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockpoolAllocContext) EXPECT() *MockpoolAllocContext_Expecter {
+	return &MockpoolAllocContext_Expecter{mock: &_m.Mock}
+}
+
+// poolEntityID provides a mock function for the type MockpoolAllocContext
+func (_mock *MockpoolAllocContext) poolEntityID() *properties.UUID {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for poolEntityID")
+	}
+
+	var r0 *properties.UUID
+	if returnFunc, ok := ret.Get(0).(func() *properties.UUID); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*properties.UUID)
+		}
+	}
+	return r0
+}
+
+// MockpoolAllocContext_poolEntityID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'poolEntityID'
+type MockpoolAllocContext_poolEntityID_Call struct {
+	*mock.Call
+}
+
+// poolEntityID is a helper method to define mock.On call
+func (_e *MockpoolAllocContext_Expecter) poolEntityID() *MockpoolAllocContext_poolEntityID_Call {
+	return &MockpoolAllocContext_poolEntityID_Call{Call: _e.mock.On("poolEntityID")}
+}
+
+func (_c *MockpoolAllocContext_poolEntityID_Call) Run(run func()) *MockpoolAllocContext_poolEntityID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolEntityID_Call) Return(v *properties.UUID) *MockpoolAllocContext_poolEntityID_Call {
+	_c.Call.Return(v)
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolEntityID_Call) RunAndReturn(run func() *properties.UUID) *MockpoolAllocContext_poolEntityID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// poolEntityType provides a mock function for the type MockpoolAllocContext
+func (_mock *MockpoolAllocContext) poolEntityType() ConfigPoolValueEntityType {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for poolEntityType")
+	}
+
+	var r0 ConfigPoolValueEntityType
+	if returnFunc, ok := ret.Get(0).(func() ConfigPoolValueEntityType); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(ConfigPoolValueEntityType)
+	}
+	return r0
+}
+
+// MockpoolAllocContext_poolEntityType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'poolEntityType'
+type MockpoolAllocContext_poolEntityType_Call struct {
+	*mock.Call
+}
+
+// poolEntityType is a helper method to define mock.On call
+func (_e *MockpoolAllocContext_Expecter) poolEntityType() *MockpoolAllocContext_poolEntityType_Call {
+	return &MockpoolAllocContext_poolEntityType_Call{Call: _e.mock.On("poolEntityType")}
+}
+
+func (_c *MockpoolAllocContext_poolEntityType_Call) Run(run func()) *MockpoolAllocContext_poolEntityType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolEntityType_Call) Return(configPoolValueEntityType ConfigPoolValueEntityType) *MockpoolAllocContext_poolEntityType_Call {
+	_c.Call.Return(configPoolValueEntityType)
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolEntityType_Call) RunAndReturn(run func() ConfigPoolValueEntityType) *MockpoolAllocContext_poolEntityType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// poolProviderID provides a mock function for the type MockpoolAllocContext
+func (_mock *MockpoolAllocContext) poolProviderID() properties.UUID {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for poolProviderID")
+	}
+
+	var r0 properties.UUID
+	if returnFunc, ok := ret.Get(0).(func() properties.UUID); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(properties.UUID)
+		}
+	}
+	return r0
+}
+
+// MockpoolAllocContext_poolProviderID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'poolProviderID'
+type MockpoolAllocContext_poolProviderID_Call struct {
+	*mock.Call
+}
+
+// poolProviderID is a helper method to define mock.On call
+func (_e *MockpoolAllocContext_Expecter) poolProviderID() *MockpoolAllocContext_poolProviderID_Call {
+	return &MockpoolAllocContext_poolProviderID_Call{Call: _e.mock.On("poolProviderID")}
+}
+
+func (_c *MockpoolAllocContext_poolProviderID_Call) Run(run func()) *MockpoolAllocContext_poolProviderID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolProviderID_Call) Return(v properties.UUID) *MockpoolAllocContext_poolProviderID_Call {
+	_c.Call.Return(v)
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolProviderID_Call) RunAndReturn(run func() properties.UUID) *MockpoolAllocContext_poolProviderID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// poolStore provides a mock function for the type MockpoolAllocContext
+func (_mock *MockpoolAllocContext) poolStore() Store {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for poolStore")
+	}
+
+	var r0 Store
+	if returnFunc, ok := ret.Get(0).(func() Store); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(Store)
+		}
+	}
+	return r0
+}
+
+// MockpoolAllocContext_poolStore_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'poolStore'
+type MockpoolAllocContext_poolStore_Call struct {
+	*mock.Call
+}
+
+// poolStore is a helper method to define mock.On call
+func (_e *MockpoolAllocContext_Expecter) poolStore() *MockpoolAllocContext_poolStore_Call {
+	return &MockpoolAllocContext_poolStore_Call{Call: _e.mock.On("poolStore")}
+}
+
+func (_c *MockpoolAllocContext_poolStore_Call) Run(run func()) *MockpoolAllocContext_poolStore_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolStore_Call) Return(store Store) *MockpoolAllocContext_poolStore_Call {
+	_c.Call.Return(store)
+	return _c
+}
+
+func (_c *MockpoolAllocContext_poolStore_Call) RunAndReturn(run func() Store) *MockpoolAllocContext_poolStore_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -10670,6 +10704,3125 @@ func (_c *MockEventSubscriptionQuerier_Save_Call) Return(err error) *MockEventSu
 }
 
 func (_c *MockEventSubscriptionQuerier_Save_Call) RunAndReturn(run func(ctx context.Context, entity *EventSubscription) error) *MockEventSubscriptionQuerier_Save_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockInfrastructureCommander creates a new instance of MockInfrastructureCommander. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockInfrastructureCommander(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockInfrastructureCommander {
+	mock := &MockInfrastructureCommander{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockInfrastructureCommander is an autogenerated mock type for the InfrastructureCommander type
+type MockInfrastructureCommander struct {
+	mock.Mock
+}
+
+type MockInfrastructureCommander_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockInfrastructureCommander) EXPECT() *MockInfrastructureCommander_Expecter {
+	return &MockInfrastructureCommander_Expecter{mock: &_m.Mock}
+}
+
+// Create provides a mock function for the type MockInfrastructureCommander
+func (_mock *MockInfrastructureCommander) Create(ctx context.Context, params CreateInfrastructureParams) (*Infrastructure, error) {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 *Infrastructure
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateInfrastructureParams) (*Infrastructure, error)); ok {
+		return returnFunc(ctx, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateInfrastructureParams) *Infrastructure); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Infrastructure)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateInfrastructureParams) error); ok {
+		r1 = returnFunc(ctx, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureCommander_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockInfrastructureCommander_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params CreateInfrastructureParams
+func (_e *MockInfrastructureCommander_Expecter) Create(ctx interface{}, params interface{}) *MockInfrastructureCommander_Create_Call {
+	return &MockInfrastructureCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
+}
+
+func (_c *MockInfrastructureCommander_Create_Call) Run(run func(ctx context.Context, params CreateInfrastructureParams)) *MockInfrastructureCommander_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 CreateInfrastructureParams
+		if args[1] != nil {
+			arg1 = args[1].(CreateInfrastructureParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureCommander_Create_Call) Return(infrastructure *Infrastructure, err error) *MockInfrastructureCommander_Create_Call {
+	_c.Call.Return(infrastructure, err)
+	return _c
+}
+
+func (_c *MockInfrastructureCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateInfrastructureParams) (*Infrastructure, error)) *MockInfrastructureCommander_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockInfrastructureCommander
+func (_mock *MockInfrastructureCommander) Delete(ctx context.Context, id properties.UUID) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInfrastructureCommander_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockInfrastructureCommander_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureCommander_Expecter) Delete(ctx interface{}, id interface{}) *MockInfrastructureCommander_Delete_Call {
+	return &MockInfrastructureCommander_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
+}
+
+func (_c *MockInfrastructureCommander_Delete_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureCommander_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureCommander_Delete_Call) Return(err error) *MockInfrastructureCommander_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInfrastructureCommander_Delete_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockInfrastructureCommander_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type MockInfrastructureCommander
+func (_mock *MockInfrastructureCommander) Update(ctx context.Context, params UpdateInfrastructureParams) (*Infrastructure, error) {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 *Infrastructure
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateInfrastructureParams) (*Infrastructure, error)); ok {
+		return returnFunc(ctx, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateInfrastructureParams) *Infrastructure); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Infrastructure)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateInfrastructureParams) error); ok {
+		r1 = returnFunc(ctx, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureCommander_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockInfrastructureCommander_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params UpdateInfrastructureParams
+func (_e *MockInfrastructureCommander_Expecter) Update(ctx interface{}, params interface{}) *MockInfrastructureCommander_Update_Call {
+	return &MockInfrastructureCommander_Update_Call{Call: _e.mock.On("Update", ctx, params)}
+}
+
+func (_c *MockInfrastructureCommander_Update_Call) Run(run func(ctx context.Context, params UpdateInfrastructureParams)) *MockInfrastructureCommander_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 UpdateInfrastructureParams
+		if args[1] != nil {
+			arg1 = args[1].(UpdateInfrastructureParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureCommander_Update_Call) Return(infrastructure *Infrastructure, err error) *MockInfrastructureCommander_Update_Call {
+	_c.Call.Return(infrastructure, err)
+	return _c
+}
+
+func (_c *MockInfrastructureCommander_Update_Call) RunAndReturn(run func(ctx context.Context, params UpdateInfrastructureParams) (*Infrastructure, error)) *MockInfrastructureCommander_Update_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockInfrastructureRepository creates a new instance of MockInfrastructureRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockInfrastructureRepository(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockInfrastructureRepository {
+	mock := &MockInfrastructureRepository{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockInfrastructureRepository is an autogenerated mock type for the InfrastructureRepository type
+type MockInfrastructureRepository struct {
+	mock.Mock
+}
+
+type MockInfrastructureRepository_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockInfrastructureRepository) EXPECT() *MockInfrastructureRepository_Expecter {
+	return &MockInfrastructureRepository_Expecter{mock: &_m.Mock}
+}
+
+// AuthScope provides a mock function for the type MockInfrastructureRepository
+func (_mock *MockInfrastructureRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthScope")
+	}
+
+	var r0 authz.ObjectScope
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(authz.ObjectScope)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureRepository_AuthScope_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthScope'
+type MockInfrastructureRepository_AuthScope_Call struct {
+	*mock.Call
+}
+
+// AuthScope is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureRepository_Expecter) AuthScope(ctx interface{}, id interface{}) *MockInfrastructureRepository_AuthScope_Call {
+	return &MockInfrastructureRepository_AuthScope_Call{Call: _e.mock.On("AuthScope", ctx, id)}
+}
+
+func (_c *MockInfrastructureRepository_AuthScope_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureRepository_AuthScope_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockInfrastructureRepository_AuthScope_Call {
+	_c.Call.Return(objectScope, err)
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockInfrastructureRepository_AuthScope_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Count provides a mock function for the type MockInfrastructureRepository
+func (_mock *MockInfrastructureRepository) Count(ctx context.Context) (int64, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Count")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureRepository_Count_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Count'
+type MockInfrastructureRepository_Count_Call struct {
+	*mock.Call
+}
+
+// Count is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockInfrastructureRepository_Expecter) Count(ctx interface{}) *MockInfrastructureRepository_Count_Call {
+	return &MockInfrastructureRepository_Count_Call{Call: _e.mock.On("Count", ctx)}
+}
+
+func (_c *MockInfrastructureRepository_Count_Call) Run(run func(ctx context.Context)) *MockInfrastructureRepository_Count_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Count_Call) Return(n int64, err error) *MockInfrastructureRepository_Count_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockInfrastructureRepository_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountByInfrastructureType provides a mock function for the type MockInfrastructureRepository
+func (_mock *MockInfrastructureRepository) CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructureType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureRepository_CountByInfrastructureType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructureType'
+type MockInfrastructureRepository_CountByInfrastructureType_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructureType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureTypeID properties.UUID
+func (_e *MockInfrastructureRepository_Expecter) CountByInfrastructureType(ctx interface{}, infrastructureTypeID interface{}) *MockInfrastructureRepository_CountByInfrastructureType_Call {
+	return &MockInfrastructureRepository_CountByInfrastructureType_Call{Call: _e.mock.On("CountByInfrastructureType", ctx, infrastructureTypeID)}
+}
+
+func (_c *MockInfrastructureRepository_CountByInfrastructureType_Call) Run(run func(ctx context.Context, infrastructureTypeID properties.UUID)) *MockInfrastructureRepository_CountByInfrastructureType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_CountByInfrastructureType_Call) Return(n int64, err error) *MockInfrastructureRepository_CountByInfrastructureType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_CountByInfrastructureType_Call) RunAndReturn(run func(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)) *MockInfrastructureRepository_CountByInfrastructureType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Create provides a mock function for the type MockInfrastructureRepository
+func (_mock *MockInfrastructureRepository) Create(ctx context.Context, entity *Infrastructure) error {
+	ret := _mock.Called(ctx, entity)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *Infrastructure) error); ok {
+		r0 = returnFunc(ctx, entity)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInfrastructureRepository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockInfrastructureRepository_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entity *Infrastructure
+func (_e *MockInfrastructureRepository_Expecter) Create(ctx interface{}, entity interface{}) *MockInfrastructureRepository_Create_Call {
+	return &MockInfrastructureRepository_Create_Call{Call: _e.mock.On("Create", ctx, entity)}
+}
+
+func (_c *MockInfrastructureRepository_Create_Call) Run(run func(ctx context.Context, entity *Infrastructure)) *MockInfrastructureRepository_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *Infrastructure
+		if args[1] != nil {
+			arg1 = args[1].(*Infrastructure)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Create_Call) Return(err error) *MockInfrastructureRepository_Create_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Create_Call) RunAndReturn(run func(ctx context.Context, entity *Infrastructure) error) *MockInfrastructureRepository_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockInfrastructureRepository
+func (_mock *MockInfrastructureRepository) Delete(ctx context.Context, id properties.UUID) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInfrastructureRepository_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockInfrastructureRepository_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureRepository_Expecter) Delete(ctx interface{}, id interface{}) *MockInfrastructureRepository_Delete_Call {
+	return &MockInfrastructureRepository_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
+}
+
+func (_c *MockInfrastructureRepository_Delete_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureRepository_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Delete_Call) Return(err error) *MockInfrastructureRepository_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Delete_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockInfrastructureRepository_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Exists provides a mock function for the type MockInfrastructureRepository
+func (_mock *MockInfrastructureRepository) Exists(ctx context.Context, id properties.UUID) (bool, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Exists")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (bool, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) bool); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureRepository_Exists_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Exists'
+type MockInfrastructureRepository_Exists_Call struct {
+	*mock.Call
+}
+
+// Exists is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureRepository_Expecter) Exists(ctx interface{}, id interface{}) *MockInfrastructureRepository_Exists_Call {
+	return &MockInfrastructureRepository_Exists_Call{Call: _e.mock.On("Exists", ctx, id)}
+}
+
+func (_c *MockInfrastructureRepository_Exists_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureRepository_Exists_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Exists_Call) Return(b bool, err error) *MockInfrastructureRepository_Exists_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Exists_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (bool, error)) *MockInfrastructureRepository_Exists_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Get provides a mock function for the type MockInfrastructureRepository
+func (_mock *MockInfrastructureRepository) Get(ctx context.Context, id properties.UUID) (*Infrastructure, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Get")
+	}
+
+	var r0 *Infrastructure
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*Infrastructure, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *Infrastructure); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Infrastructure)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureRepository_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
+type MockInfrastructureRepository_Get_Call struct {
+	*mock.Call
+}
+
+// Get is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureRepository_Expecter) Get(ctx interface{}, id interface{}) *MockInfrastructureRepository_Get_Call {
+	return &MockInfrastructureRepository_Get_Call{Call: _e.mock.On("Get", ctx, id)}
+}
+
+func (_c *MockInfrastructureRepository_Get_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureRepository_Get_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Get_Call) Return(infrastructure *Infrastructure, err error) *MockInfrastructureRepository_Get_Call {
+	_c.Call.Return(infrastructure, err)
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Get_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*Infrastructure, error)) *MockInfrastructureRepository_Get_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// List provides a mock function for the type MockInfrastructureRepository
+func (_mock *MockInfrastructureRepository) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[Infrastructure], error) {
+	ret := _mock.Called(ctx, scope, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 *PageRes[Infrastructure]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[Infrastructure], error)); ok {
+		return returnFunc(ctx, scope, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[Infrastructure]); ok {
+		r0 = returnFunc(ctx, scope, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[Infrastructure])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureRepository_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockInfrastructureRepository_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - req *PageReq
+func (_e *MockInfrastructureRepository_Expecter) List(ctx interface{}, scope interface{}, req interface{}) *MockInfrastructureRepository_List_Call {
+	return &MockInfrastructureRepository_List_Call{Call: _e.mock.On("List", ctx, scope, req)}
+}
+
+func (_c *MockInfrastructureRepository_List_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq)) *MockInfrastructureRepository_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_List_Call) Return(pageRes *PageRes[Infrastructure], err error) *MockInfrastructureRepository_List_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[Infrastructure], error)) *MockInfrastructureRepository_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Save provides a mock function for the type MockInfrastructureRepository
+func (_mock *MockInfrastructureRepository) Save(ctx context.Context, entity *Infrastructure) error {
+	ret := _mock.Called(ctx, entity)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Save")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *Infrastructure) error); ok {
+		r0 = returnFunc(ctx, entity)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInfrastructureRepository_Save_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Save'
+type MockInfrastructureRepository_Save_Call struct {
+	*mock.Call
+}
+
+// Save is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entity *Infrastructure
+func (_e *MockInfrastructureRepository_Expecter) Save(ctx interface{}, entity interface{}) *MockInfrastructureRepository_Save_Call {
+	return &MockInfrastructureRepository_Save_Call{Call: _e.mock.On("Save", ctx, entity)}
+}
+
+func (_c *MockInfrastructureRepository_Save_Call) Run(run func(ctx context.Context, entity *Infrastructure)) *MockInfrastructureRepository_Save_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *Infrastructure
+		if args[1] != nil {
+			arg1 = args[1].(*Infrastructure)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Save_Call) Return(err error) *MockInfrastructureRepository_Save_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInfrastructureRepository_Save_Call) RunAndReturn(run func(ctx context.Context, entity *Infrastructure) error) *MockInfrastructureRepository_Save_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockInfrastructureQuerier creates a new instance of MockInfrastructureQuerier. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockInfrastructureQuerier(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockInfrastructureQuerier {
+	mock := &MockInfrastructureQuerier{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockInfrastructureQuerier is an autogenerated mock type for the InfrastructureQuerier type
+type MockInfrastructureQuerier struct {
+	mock.Mock
+}
+
+type MockInfrastructureQuerier_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockInfrastructureQuerier) EXPECT() *MockInfrastructureQuerier_Expecter {
+	return &MockInfrastructureQuerier_Expecter{mock: &_m.Mock}
+}
+
+// AuthScope provides a mock function for the type MockInfrastructureQuerier
+func (_mock *MockInfrastructureQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthScope")
+	}
+
+	var r0 authz.ObjectScope
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(authz.ObjectScope)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureQuerier_AuthScope_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthScope'
+type MockInfrastructureQuerier_AuthScope_Call struct {
+	*mock.Call
+}
+
+// AuthScope is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureQuerier_Expecter) AuthScope(ctx interface{}, id interface{}) *MockInfrastructureQuerier_AuthScope_Call {
+	return &MockInfrastructureQuerier_AuthScope_Call{Call: _e.mock.On("AuthScope", ctx, id)}
+}
+
+func (_c *MockInfrastructureQuerier_AuthScope_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureQuerier_AuthScope_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockInfrastructureQuerier_AuthScope_Call {
+	_c.Call.Return(objectScope, err)
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockInfrastructureQuerier_AuthScope_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Count provides a mock function for the type MockInfrastructureQuerier
+func (_mock *MockInfrastructureQuerier) Count(ctx context.Context) (int64, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Count")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureQuerier_Count_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Count'
+type MockInfrastructureQuerier_Count_Call struct {
+	*mock.Call
+}
+
+// Count is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockInfrastructureQuerier_Expecter) Count(ctx interface{}) *MockInfrastructureQuerier_Count_Call {
+	return &MockInfrastructureQuerier_Count_Call{Call: _e.mock.On("Count", ctx)}
+}
+
+func (_c *MockInfrastructureQuerier_Count_Call) Run(run func(ctx context.Context)) *MockInfrastructureQuerier_Count_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_Count_Call) Return(n int64, err error) *MockInfrastructureQuerier_Count_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockInfrastructureQuerier_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountByInfrastructureType provides a mock function for the type MockInfrastructureQuerier
+func (_mock *MockInfrastructureQuerier) CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, infrastructureTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByInfrastructureType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, infrastructureTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, infrastructureTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureQuerier_CountByInfrastructureType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByInfrastructureType'
+type MockInfrastructureQuerier_CountByInfrastructureType_Call struct {
+	*mock.Call
+}
+
+// CountByInfrastructureType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - infrastructureTypeID properties.UUID
+func (_e *MockInfrastructureQuerier_Expecter) CountByInfrastructureType(ctx interface{}, infrastructureTypeID interface{}) *MockInfrastructureQuerier_CountByInfrastructureType_Call {
+	return &MockInfrastructureQuerier_CountByInfrastructureType_Call{Call: _e.mock.On("CountByInfrastructureType", ctx, infrastructureTypeID)}
+}
+
+func (_c *MockInfrastructureQuerier_CountByInfrastructureType_Call) Run(run func(ctx context.Context, infrastructureTypeID properties.UUID)) *MockInfrastructureQuerier_CountByInfrastructureType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_CountByInfrastructureType_Call) Return(n int64, err error) *MockInfrastructureQuerier_CountByInfrastructureType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_CountByInfrastructureType_Call) RunAndReturn(run func(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)) *MockInfrastructureQuerier_CountByInfrastructureType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Exists provides a mock function for the type MockInfrastructureQuerier
+func (_mock *MockInfrastructureQuerier) Exists(ctx context.Context, id properties.UUID) (bool, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Exists")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (bool, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) bool); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureQuerier_Exists_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Exists'
+type MockInfrastructureQuerier_Exists_Call struct {
+	*mock.Call
+}
+
+// Exists is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureQuerier_Expecter) Exists(ctx interface{}, id interface{}) *MockInfrastructureQuerier_Exists_Call {
+	return &MockInfrastructureQuerier_Exists_Call{Call: _e.mock.On("Exists", ctx, id)}
+}
+
+func (_c *MockInfrastructureQuerier_Exists_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureQuerier_Exists_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_Exists_Call) Return(b bool, err error) *MockInfrastructureQuerier_Exists_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_Exists_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (bool, error)) *MockInfrastructureQuerier_Exists_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Get provides a mock function for the type MockInfrastructureQuerier
+func (_mock *MockInfrastructureQuerier) Get(ctx context.Context, id properties.UUID) (*Infrastructure, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Get")
+	}
+
+	var r0 *Infrastructure
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*Infrastructure, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *Infrastructure); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Infrastructure)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureQuerier_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
+type MockInfrastructureQuerier_Get_Call struct {
+	*mock.Call
+}
+
+// Get is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureQuerier_Expecter) Get(ctx interface{}, id interface{}) *MockInfrastructureQuerier_Get_Call {
+	return &MockInfrastructureQuerier_Get_Call{Call: _e.mock.On("Get", ctx, id)}
+}
+
+func (_c *MockInfrastructureQuerier_Get_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureQuerier_Get_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_Get_Call) Return(infrastructure *Infrastructure, err error) *MockInfrastructureQuerier_Get_Call {
+	_c.Call.Return(infrastructure, err)
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_Get_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*Infrastructure, error)) *MockInfrastructureQuerier_Get_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// List provides a mock function for the type MockInfrastructureQuerier
+func (_mock *MockInfrastructureQuerier) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[Infrastructure], error) {
+	ret := _mock.Called(ctx, scope, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 *PageRes[Infrastructure]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[Infrastructure], error)); ok {
+		return returnFunc(ctx, scope, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[Infrastructure]); ok {
+		r0 = returnFunc(ctx, scope, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[Infrastructure])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureQuerier_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockInfrastructureQuerier_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - req *PageReq
+func (_e *MockInfrastructureQuerier_Expecter) List(ctx interface{}, scope interface{}, req interface{}) *MockInfrastructureQuerier_List_Call {
+	return &MockInfrastructureQuerier_List_Call{Call: _e.mock.On("List", ctx, scope, req)}
+}
+
+func (_c *MockInfrastructureQuerier_List_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq)) *MockInfrastructureQuerier_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_List_Call) Return(pageRes *PageRes[Infrastructure], err error) *MockInfrastructureQuerier_List_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockInfrastructureQuerier_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[Infrastructure], error)) *MockInfrastructureQuerier_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockInfrastructureTypeCommander creates a new instance of MockInfrastructureTypeCommander. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockInfrastructureTypeCommander(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockInfrastructureTypeCommander {
+	mock := &MockInfrastructureTypeCommander{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockInfrastructureTypeCommander is an autogenerated mock type for the InfrastructureTypeCommander type
+type MockInfrastructureTypeCommander struct {
+	mock.Mock
+}
+
+type MockInfrastructureTypeCommander_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockInfrastructureTypeCommander) EXPECT() *MockInfrastructureTypeCommander_Expecter {
+	return &MockInfrastructureTypeCommander_Expecter{mock: &_m.Mock}
+}
+
+// Create provides a mock function for the type MockInfrastructureTypeCommander
+func (_mock *MockInfrastructureTypeCommander) Create(ctx context.Context, params CreateInfrastructureTypeParams) (*InfrastructureType, error) {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 *InfrastructureType
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateInfrastructureTypeParams) (*InfrastructureType, error)); ok {
+		return returnFunc(ctx, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateInfrastructureTypeParams) *InfrastructureType); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*InfrastructureType)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateInfrastructureTypeParams) error); ok {
+		r1 = returnFunc(ctx, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeCommander_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockInfrastructureTypeCommander_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params CreateInfrastructureTypeParams
+func (_e *MockInfrastructureTypeCommander_Expecter) Create(ctx interface{}, params interface{}) *MockInfrastructureTypeCommander_Create_Call {
+	return &MockInfrastructureTypeCommander_Create_Call{Call: _e.mock.On("Create", ctx, params)}
+}
+
+func (_c *MockInfrastructureTypeCommander_Create_Call) Run(run func(ctx context.Context, params CreateInfrastructureTypeParams)) *MockInfrastructureTypeCommander_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 CreateInfrastructureTypeParams
+		if args[1] != nil {
+			arg1 = args[1].(CreateInfrastructureTypeParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeCommander_Create_Call) Return(infrastructureType *InfrastructureType, err error) *MockInfrastructureTypeCommander_Create_Call {
+	_c.Call.Return(infrastructureType, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateInfrastructureTypeParams) (*InfrastructureType, error)) *MockInfrastructureTypeCommander_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockInfrastructureTypeCommander
+func (_mock *MockInfrastructureTypeCommander) Delete(ctx context.Context, id properties.UUID) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInfrastructureTypeCommander_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockInfrastructureTypeCommander_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureTypeCommander_Expecter) Delete(ctx interface{}, id interface{}) *MockInfrastructureTypeCommander_Delete_Call {
+	return &MockInfrastructureTypeCommander_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
+}
+
+func (_c *MockInfrastructureTypeCommander_Delete_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureTypeCommander_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeCommander_Delete_Call) Return(err error) *MockInfrastructureTypeCommander_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeCommander_Delete_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockInfrastructureTypeCommander_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type MockInfrastructureTypeCommander
+func (_mock *MockInfrastructureTypeCommander) Update(ctx context.Context, params UpdateInfrastructureTypeParams) (*InfrastructureType, error) {
+	ret := _mock.Called(ctx, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 *InfrastructureType
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateInfrastructureTypeParams) (*InfrastructureType, error)); ok {
+		return returnFunc(ctx, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UpdateInfrastructureTypeParams) *InfrastructureType); ok {
+		r0 = returnFunc(ctx, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*InfrastructureType)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, UpdateInfrastructureTypeParams) error); ok {
+		r1 = returnFunc(ctx, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeCommander_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockInfrastructureTypeCommander_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - params UpdateInfrastructureTypeParams
+func (_e *MockInfrastructureTypeCommander_Expecter) Update(ctx interface{}, params interface{}) *MockInfrastructureTypeCommander_Update_Call {
+	return &MockInfrastructureTypeCommander_Update_Call{Call: _e.mock.On("Update", ctx, params)}
+}
+
+func (_c *MockInfrastructureTypeCommander_Update_Call) Run(run func(ctx context.Context, params UpdateInfrastructureTypeParams)) *MockInfrastructureTypeCommander_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 UpdateInfrastructureTypeParams
+		if args[1] != nil {
+			arg1 = args[1].(UpdateInfrastructureTypeParams)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeCommander_Update_Call) Return(infrastructureType *InfrastructureType, err error) *MockInfrastructureTypeCommander_Update_Call {
+	_c.Call.Return(infrastructureType, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeCommander_Update_Call) RunAndReturn(run func(ctx context.Context, params UpdateInfrastructureTypeParams) (*InfrastructureType, error)) *MockInfrastructureTypeCommander_Update_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockInfrastructureTypeRepository creates a new instance of MockInfrastructureTypeRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockInfrastructureTypeRepository(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockInfrastructureTypeRepository {
+	mock := &MockInfrastructureTypeRepository{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockInfrastructureTypeRepository is an autogenerated mock type for the InfrastructureTypeRepository type
+type MockInfrastructureTypeRepository struct {
+	mock.Mock
+}
+
+type MockInfrastructureTypeRepository_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockInfrastructureTypeRepository) EXPECT() *MockInfrastructureTypeRepository_Expecter {
+	return &MockInfrastructureTypeRepository_Expecter{mock: &_m.Mock}
+}
+
+// AuthScope provides a mock function for the type MockInfrastructureTypeRepository
+func (_mock *MockInfrastructureTypeRepository) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthScope")
+	}
+
+	var r0 authz.ObjectScope
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(authz.ObjectScope)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeRepository_AuthScope_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthScope'
+type MockInfrastructureTypeRepository_AuthScope_Call struct {
+	*mock.Call
+}
+
+// AuthScope is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureTypeRepository_Expecter) AuthScope(ctx interface{}, id interface{}) *MockInfrastructureTypeRepository_AuthScope_Call {
+	return &MockInfrastructureTypeRepository_AuthScope_Call{Call: _e.mock.On("AuthScope", ctx, id)}
+}
+
+func (_c *MockInfrastructureTypeRepository_AuthScope_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureTypeRepository_AuthScope_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockInfrastructureTypeRepository_AuthScope_Call {
+	_c.Call.Return(objectScope, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockInfrastructureTypeRepository_AuthScope_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Count provides a mock function for the type MockInfrastructureTypeRepository
+func (_mock *MockInfrastructureTypeRepository) Count(ctx context.Context) (int64, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Count")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeRepository_Count_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Count'
+type MockInfrastructureTypeRepository_Count_Call struct {
+	*mock.Call
+}
+
+// Count is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockInfrastructureTypeRepository_Expecter) Count(ctx interface{}) *MockInfrastructureTypeRepository_Count_Call {
+	return &MockInfrastructureTypeRepository_Count_Call{Call: _e.mock.On("Count", ctx)}
+}
+
+func (_c *MockInfrastructureTypeRepository_Count_Call) Run(run func(ctx context.Context)) *MockInfrastructureTypeRepository_Count_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Count_Call) Return(n int64, err error) *MockInfrastructureTypeRepository_Count_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockInfrastructureTypeRepository_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Create provides a mock function for the type MockInfrastructureTypeRepository
+func (_mock *MockInfrastructureTypeRepository) Create(ctx context.Context, entity *InfrastructureType) error {
+	ret := _mock.Called(ctx, entity)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *InfrastructureType) error); ok {
+		r0 = returnFunc(ctx, entity)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInfrastructureTypeRepository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockInfrastructureTypeRepository_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entity *InfrastructureType
+func (_e *MockInfrastructureTypeRepository_Expecter) Create(ctx interface{}, entity interface{}) *MockInfrastructureTypeRepository_Create_Call {
+	return &MockInfrastructureTypeRepository_Create_Call{Call: _e.mock.On("Create", ctx, entity)}
+}
+
+func (_c *MockInfrastructureTypeRepository_Create_Call) Run(run func(ctx context.Context, entity *InfrastructureType)) *MockInfrastructureTypeRepository_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *InfrastructureType
+		if args[1] != nil {
+			arg1 = args[1].(*InfrastructureType)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Create_Call) Return(err error) *MockInfrastructureTypeRepository_Create_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Create_Call) RunAndReturn(run func(ctx context.Context, entity *InfrastructureType) error) *MockInfrastructureTypeRepository_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockInfrastructureTypeRepository
+func (_mock *MockInfrastructureTypeRepository) Delete(ctx context.Context, id properties.UUID) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInfrastructureTypeRepository_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockInfrastructureTypeRepository_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureTypeRepository_Expecter) Delete(ctx interface{}, id interface{}) *MockInfrastructureTypeRepository_Delete_Call {
+	return &MockInfrastructureTypeRepository_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
+}
+
+func (_c *MockInfrastructureTypeRepository_Delete_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureTypeRepository_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Delete_Call) Return(err error) *MockInfrastructureTypeRepository_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Delete_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) error) *MockInfrastructureTypeRepository_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Exists provides a mock function for the type MockInfrastructureTypeRepository
+func (_mock *MockInfrastructureTypeRepository) Exists(ctx context.Context, id properties.UUID) (bool, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Exists")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (bool, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) bool); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeRepository_Exists_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Exists'
+type MockInfrastructureTypeRepository_Exists_Call struct {
+	*mock.Call
+}
+
+// Exists is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureTypeRepository_Expecter) Exists(ctx interface{}, id interface{}) *MockInfrastructureTypeRepository_Exists_Call {
+	return &MockInfrastructureTypeRepository_Exists_Call{Call: _e.mock.On("Exists", ctx, id)}
+}
+
+func (_c *MockInfrastructureTypeRepository_Exists_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureTypeRepository_Exists_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Exists_Call) Return(b bool, err error) *MockInfrastructureTypeRepository_Exists_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Exists_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (bool, error)) *MockInfrastructureTypeRepository_Exists_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Get provides a mock function for the type MockInfrastructureTypeRepository
+func (_mock *MockInfrastructureTypeRepository) Get(ctx context.Context, id properties.UUID) (*InfrastructureType, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Get")
+	}
+
+	var r0 *InfrastructureType
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*InfrastructureType, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *InfrastructureType); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*InfrastructureType)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeRepository_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
+type MockInfrastructureTypeRepository_Get_Call struct {
+	*mock.Call
+}
+
+// Get is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureTypeRepository_Expecter) Get(ctx interface{}, id interface{}) *MockInfrastructureTypeRepository_Get_Call {
+	return &MockInfrastructureTypeRepository_Get_Call{Call: _e.mock.On("Get", ctx, id)}
+}
+
+func (_c *MockInfrastructureTypeRepository_Get_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureTypeRepository_Get_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Get_Call) Return(infrastructureType *InfrastructureType, err error) *MockInfrastructureTypeRepository_Get_Call {
+	_c.Call.Return(infrastructureType, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Get_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*InfrastructureType, error)) *MockInfrastructureTypeRepository_Get_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// List provides a mock function for the type MockInfrastructureTypeRepository
+func (_mock *MockInfrastructureTypeRepository) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[InfrastructureType], error) {
+	ret := _mock.Called(ctx, scope, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 *PageRes[InfrastructureType]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[InfrastructureType], error)); ok {
+		return returnFunc(ctx, scope, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[InfrastructureType]); ok {
+		r0 = returnFunc(ctx, scope, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[InfrastructureType])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeRepository_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockInfrastructureTypeRepository_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - req *PageReq
+func (_e *MockInfrastructureTypeRepository_Expecter) List(ctx interface{}, scope interface{}, req interface{}) *MockInfrastructureTypeRepository_List_Call {
+	return &MockInfrastructureTypeRepository_List_Call{Call: _e.mock.On("List", ctx, scope, req)}
+}
+
+func (_c *MockInfrastructureTypeRepository_List_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq)) *MockInfrastructureTypeRepository_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_List_Call) Return(pageRes *PageRes[InfrastructureType], err error) *MockInfrastructureTypeRepository_List_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[InfrastructureType], error)) *MockInfrastructureTypeRepository_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Save provides a mock function for the type MockInfrastructureTypeRepository
+func (_mock *MockInfrastructureTypeRepository) Save(ctx context.Context, entity *InfrastructureType) error {
+	ret := _mock.Called(ctx, entity)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Save")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *InfrastructureType) error); ok {
+		r0 = returnFunc(ctx, entity)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInfrastructureTypeRepository_Save_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Save'
+type MockInfrastructureTypeRepository_Save_Call struct {
+	*mock.Call
+}
+
+// Save is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entity *InfrastructureType
+func (_e *MockInfrastructureTypeRepository_Expecter) Save(ctx interface{}, entity interface{}) *MockInfrastructureTypeRepository_Save_Call {
+	return &MockInfrastructureTypeRepository_Save_Call{Call: _e.mock.On("Save", ctx, entity)}
+}
+
+func (_c *MockInfrastructureTypeRepository_Save_Call) Run(run func(ctx context.Context, entity *InfrastructureType)) *MockInfrastructureTypeRepository_Save_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *InfrastructureType
+		if args[1] != nil {
+			arg1 = args[1].(*InfrastructureType)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Save_Call) Return(err error) *MockInfrastructureTypeRepository_Save_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeRepository_Save_Call) RunAndReturn(run func(ctx context.Context, entity *InfrastructureType) error) *MockInfrastructureTypeRepository_Save_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockInfrastructureTypeQuerier creates a new instance of MockInfrastructureTypeQuerier. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockInfrastructureTypeQuerier(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockInfrastructureTypeQuerier {
+	mock := &MockInfrastructureTypeQuerier{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockInfrastructureTypeQuerier is an autogenerated mock type for the InfrastructureTypeQuerier type
+type MockInfrastructureTypeQuerier struct {
+	mock.Mock
+}
+
+type MockInfrastructureTypeQuerier_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockInfrastructureTypeQuerier) EXPECT() *MockInfrastructureTypeQuerier_Expecter {
+	return &MockInfrastructureTypeQuerier_Expecter{mock: &_m.Mock}
+}
+
+// AuthScope provides a mock function for the type MockInfrastructureTypeQuerier
+func (_mock *MockInfrastructureTypeQuerier) AuthScope(ctx context.Context, id properties.UUID) (authz.ObjectScope, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthScope")
+	}
+
+	var r0 authz.ObjectScope
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (authz.ObjectScope, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) authz.ObjectScope); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(authz.ObjectScope)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeQuerier_AuthScope_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthScope'
+type MockInfrastructureTypeQuerier_AuthScope_Call struct {
+	*mock.Call
+}
+
+// AuthScope is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureTypeQuerier_Expecter) AuthScope(ctx interface{}, id interface{}) *MockInfrastructureTypeQuerier_AuthScope_Call {
+	return &MockInfrastructureTypeQuerier_AuthScope_Call{Call: _e.mock.On("AuthScope", ctx, id)}
+}
+
+func (_c *MockInfrastructureTypeQuerier_AuthScope_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureTypeQuerier_AuthScope_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeQuerier_AuthScope_Call) Return(objectScope authz.ObjectScope, err error) *MockInfrastructureTypeQuerier_AuthScope_Call {
+	_c.Call.Return(objectScope, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeQuerier_AuthScope_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (authz.ObjectScope, error)) *MockInfrastructureTypeQuerier_AuthScope_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Count provides a mock function for the type MockInfrastructureTypeQuerier
+func (_mock *MockInfrastructureTypeQuerier) Count(ctx context.Context) (int64, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Count")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeQuerier_Count_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Count'
+type MockInfrastructureTypeQuerier_Count_Call struct {
+	*mock.Call
+}
+
+// Count is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockInfrastructureTypeQuerier_Expecter) Count(ctx interface{}) *MockInfrastructureTypeQuerier_Count_Call {
+	return &MockInfrastructureTypeQuerier_Count_Call{Call: _e.mock.On("Count", ctx)}
+}
+
+func (_c *MockInfrastructureTypeQuerier_Count_Call) Run(run func(ctx context.Context)) *MockInfrastructureTypeQuerier_Count_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeQuerier_Count_Call) Return(n int64, err error) *MockInfrastructureTypeQuerier_Count_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeQuerier_Count_Call) RunAndReturn(run func(ctx context.Context) (int64, error)) *MockInfrastructureTypeQuerier_Count_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Exists provides a mock function for the type MockInfrastructureTypeQuerier
+func (_mock *MockInfrastructureTypeQuerier) Exists(ctx context.Context, id properties.UUID) (bool, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Exists")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (bool, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) bool); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeQuerier_Exists_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Exists'
+type MockInfrastructureTypeQuerier_Exists_Call struct {
+	*mock.Call
+}
+
+// Exists is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureTypeQuerier_Expecter) Exists(ctx interface{}, id interface{}) *MockInfrastructureTypeQuerier_Exists_Call {
+	return &MockInfrastructureTypeQuerier_Exists_Call{Call: _e.mock.On("Exists", ctx, id)}
+}
+
+func (_c *MockInfrastructureTypeQuerier_Exists_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureTypeQuerier_Exists_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeQuerier_Exists_Call) Return(b bool, err error) *MockInfrastructureTypeQuerier_Exists_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeQuerier_Exists_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (bool, error)) *MockInfrastructureTypeQuerier_Exists_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Get provides a mock function for the type MockInfrastructureTypeQuerier
+func (_mock *MockInfrastructureTypeQuerier) Get(ctx context.Context, id properties.UUID) (*InfrastructureType, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Get")
+	}
+
+	var r0 *InfrastructureType
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (*InfrastructureType, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) *InfrastructureType); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*InfrastructureType)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeQuerier_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
+type MockInfrastructureTypeQuerier_Get_Call struct {
+	*mock.Call
+}
+
+// Get is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id properties.UUID
+func (_e *MockInfrastructureTypeQuerier_Expecter) Get(ctx interface{}, id interface{}) *MockInfrastructureTypeQuerier_Get_Call {
+	return &MockInfrastructureTypeQuerier_Get_Call{Call: _e.mock.On("Get", ctx, id)}
+}
+
+func (_c *MockInfrastructureTypeQuerier_Get_Call) Run(run func(ctx context.Context, id properties.UUID)) *MockInfrastructureTypeQuerier_Get_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeQuerier_Get_Call) Return(infrastructureType *InfrastructureType, err error) *MockInfrastructureTypeQuerier_Get_Call {
+	_c.Call.Return(infrastructureType, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeQuerier_Get_Call) RunAndReturn(run func(ctx context.Context, id properties.UUID) (*InfrastructureType, error)) *MockInfrastructureTypeQuerier_Get_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// List provides a mock function for the type MockInfrastructureTypeQuerier
+func (_mock *MockInfrastructureTypeQuerier) List(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[InfrastructureType], error) {
+	ret := _mock.Called(ctx, scope, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 *PageRes[InfrastructureType]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) (*PageRes[InfrastructureType], error)); ok {
+		return returnFunc(ctx, scope, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *auth.IdentityScope, *PageReq) *PageRes[InfrastructureType]); ok {
+		r0 = returnFunc(ctx, scope, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PageRes[InfrastructureType])
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *auth.IdentityScope, *PageReq) error); ok {
+		r1 = returnFunc(ctx, scope, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInfrastructureTypeQuerier_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockInfrastructureTypeQuerier_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope *auth.IdentityScope
+//   - req *PageReq
+func (_e *MockInfrastructureTypeQuerier_Expecter) List(ctx interface{}, scope interface{}, req interface{}) *MockInfrastructureTypeQuerier_List_Call {
+	return &MockInfrastructureTypeQuerier_List_Call{Call: _e.mock.On("List", ctx, scope, req)}
+}
+
+func (_c *MockInfrastructureTypeQuerier_List_Call) Run(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq)) *MockInfrastructureTypeQuerier_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *auth.IdentityScope
+		if args[1] != nil {
+			arg1 = args[1].(*auth.IdentityScope)
+		}
+		var arg2 *PageReq
+		if args[2] != nil {
+			arg2 = args[2].(*PageReq)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInfrastructureTypeQuerier_List_Call) Return(pageRes *PageRes[InfrastructureType], err error) *MockInfrastructureTypeQuerier_List_Call {
+	_c.Call.Return(pageRes, err)
+	return _c
+}
+
+func (_c *MockInfrastructureTypeQuerier_List_Call) RunAndReturn(run func(ctx context.Context, scope *auth.IdentityScope, req *PageReq) (*PageRes[InfrastructureType], error)) *MockInfrastructureTypeQuerier_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockInstallTokenCommander creates a new instance of MockInstallTokenCommander. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockInstallTokenCommander(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockInstallTokenCommander {
+	mock := &MockInstallTokenCommander{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockInstallTokenCommander is an autogenerated mock type for the InstallTokenCommander type
+type MockInstallTokenCommander struct {
+	mock.Mock
+}
+
+type MockInstallTokenCommander_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockInstallTokenCommander) EXPECT() *MockInstallTokenCommander_Expecter {
+	return &MockInstallTokenCommander_Expecter{mock: &_m.Mock}
+}
+
+// Create provides a mock function for the type MockInstallTokenCommander
+func (_mock *MockInstallTokenCommander) Create(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) (*InstallToken, error) {
+	ret := _mock.Called(ctx, entityType, entityID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 *InstallToken
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, InstallTokenEntityType, properties.UUID) (*InstallToken, error)); ok {
+		return returnFunc(ctx, entityType, entityID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, InstallTokenEntityType, properties.UUID) *InstallToken); ok {
+		r0 = returnFunc(ctx, entityType, entityID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*InstallToken)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, InstallTokenEntityType, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, entityType, entityID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInstallTokenCommander_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockInstallTokenCommander_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entityType InstallTokenEntityType
+//   - entityID properties.UUID
+func (_e *MockInstallTokenCommander_Expecter) Create(ctx interface{}, entityType interface{}, entityID interface{}) *MockInstallTokenCommander_Create_Call {
+	return &MockInstallTokenCommander_Create_Call{Call: _e.mock.On("Create", ctx, entityType, entityID)}
+}
+
+func (_c *MockInstallTokenCommander_Create_Call) Run(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID)) *MockInstallTokenCommander_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 InstallTokenEntityType
+		if args[1] != nil {
+			arg1 = args[1].(InstallTokenEntityType)
+		}
+		var arg2 properties.UUID
+		if args[2] != nil {
+			arg2 = args[2].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInstallTokenCommander_Create_Call) Return(installToken *InstallToken, err error) *MockInstallTokenCommander_Create_Call {
+	_c.Call.Return(installToken, err)
+	return _c
+}
+
+func (_c *MockInstallTokenCommander_Create_Call) RunAndReturn(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) (*InstallToken, error)) *MockInstallTokenCommander_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Regenerate provides a mock function for the type MockInstallTokenCommander
+func (_mock *MockInstallTokenCommander) Regenerate(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) (*InstallToken, error) {
+	ret := _mock.Called(ctx, entityType, entityID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Regenerate")
+	}
+
+	var r0 *InstallToken
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, InstallTokenEntityType, properties.UUID) (*InstallToken, error)); ok {
+		return returnFunc(ctx, entityType, entityID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, InstallTokenEntityType, properties.UUID) *InstallToken); ok {
+		r0 = returnFunc(ctx, entityType, entityID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*InstallToken)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, InstallTokenEntityType, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, entityType, entityID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInstallTokenCommander_Regenerate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Regenerate'
+type MockInstallTokenCommander_Regenerate_Call struct {
+	*mock.Call
+}
+
+// Regenerate is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entityType InstallTokenEntityType
+//   - entityID properties.UUID
+func (_e *MockInstallTokenCommander_Expecter) Regenerate(ctx interface{}, entityType interface{}, entityID interface{}) *MockInstallTokenCommander_Regenerate_Call {
+	return &MockInstallTokenCommander_Regenerate_Call{Call: _e.mock.On("Regenerate", ctx, entityType, entityID)}
+}
+
+func (_c *MockInstallTokenCommander_Regenerate_Call) Run(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID)) *MockInstallTokenCommander_Regenerate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 InstallTokenEntityType
+		if args[1] != nil {
+			arg1 = args[1].(InstallTokenEntityType)
+		}
+		var arg2 properties.UUID
+		if args[2] != nil {
+			arg2 = args[2].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInstallTokenCommander_Regenerate_Call) Return(installToken *InstallToken, err error) *MockInstallTokenCommander_Regenerate_Call {
+	_c.Call.Return(installToken, err)
+	return _c
+}
+
+func (_c *MockInstallTokenCommander_Regenerate_Call) RunAndReturn(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) (*InstallToken, error)) *MockInstallTokenCommander_Regenerate_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Revoke provides a mock function for the type MockInstallTokenCommander
+func (_mock *MockInstallTokenCommander) Revoke(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) error {
+	ret := _mock.Called(ctx, entityType, entityID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Revoke")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, InstallTokenEntityType, properties.UUID) error); ok {
+		r0 = returnFunc(ctx, entityType, entityID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInstallTokenCommander_Revoke_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Revoke'
+type MockInstallTokenCommander_Revoke_Call struct {
+	*mock.Call
+}
+
+// Revoke is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entityType InstallTokenEntityType
+//   - entityID properties.UUID
+func (_e *MockInstallTokenCommander_Expecter) Revoke(ctx interface{}, entityType interface{}, entityID interface{}) *MockInstallTokenCommander_Revoke_Call {
+	return &MockInstallTokenCommander_Revoke_Call{Call: _e.mock.On("Revoke", ctx, entityType, entityID)}
+}
+
+func (_c *MockInstallTokenCommander_Revoke_Call) Run(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID)) *MockInstallTokenCommander_Revoke_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 InstallTokenEntityType
+		if args[1] != nil {
+			arg1 = args[1].(InstallTokenEntityType)
+		}
+		var arg2 properties.UUID
+		if args[2] != nil {
+			arg2 = args[2].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInstallTokenCommander_Revoke_Call) Return(err error) *MockInstallTokenCommander_Revoke_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInstallTokenCommander_Revoke_Call) RunAndReturn(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) error) *MockInstallTokenCommander_Revoke_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockInstallTokenRepository creates a new instance of MockInstallTokenRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockInstallTokenRepository(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockInstallTokenRepository {
+	mock := &MockInstallTokenRepository{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockInstallTokenRepository is an autogenerated mock type for the InstallTokenRepository type
+type MockInstallTokenRepository struct {
+	mock.Mock
+}
+
+type MockInstallTokenRepository_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockInstallTokenRepository) EXPECT() *MockInstallTokenRepository_Expecter {
+	return &MockInstallTokenRepository_Expecter{mock: &_m.Mock}
+}
+
+// Create provides a mock function for the type MockInstallTokenRepository
+func (_mock *MockInstallTokenRepository) Create(ctx context.Context, tok *InstallToken) error {
+	ret := _mock.Called(ctx, tok)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *InstallToken) error); ok {
+		r0 = returnFunc(ctx, tok)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInstallTokenRepository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockInstallTokenRepository_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tok *InstallToken
+func (_e *MockInstallTokenRepository_Expecter) Create(ctx interface{}, tok interface{}) *MockInstallTokenRepository_Create_Call {
+	return &MockInstallTokenRepository_Create_Call{Call: _e.mock.On("Create", ctx, tok)}
+}
+
+func (_c *MockInstallTokenRepository_Create_Call) Run(run func(ctx context.Context, tok *InstallToken)) *MockInstallTokenRepository_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *InstallToken
+		if args[1] != nil {
+			arg1 = args[1].(*InstallToken)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInstallTokenRepository_Create_Call) Return(err error) *MockInstallTokenRepository_Create_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInstallTokenRepository_Create_Call) RunAndReturn(run func(ctx context.Context, tok *InstallToken) error) *MockInstallTokenRepository_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteByEntity provides a mock function for the type MockInstallTokenRepository
+func (_mock *MockInstallTokenRepository) DeleteByEntity(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) error {
+	ret := _mock.Called(ctx, entityType, entityID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteByEntity")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, InstallTokenEntityType, properties.UUID) error); ok {
+		r0 = returnFunc(ctx, entityType, entityID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInstallTokenRepository_DeleteByEntity_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteByEntity'
+type MockInstallTokenRepository_DeleteByEntity_Call struct {
+	*mock.Call
+}
+
+// DeleteByEntity is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entityType InstallTokenEntityType
+//   - entityID properties.UUID
+func (_e *MockInstallTokenRepository_Expecter) DeleteByEntity(ctx interface{}, entityType interface{}, entityID interface{}) *MockInstallTokenRepository_DeleteByEntity_Call {
+	return &MockInstallTokenRepository_DeleteByEntity_Call{Call: _e.mock.On("DeleteByEntity", ctx, entityType, entityID)}
+}
+
+func (_c *MockInstallTokenRepository_DeleteByEntity_Call) Run(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID)) *MockInstallTokenRepository_DeleteByEntity_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 InstallTokenEntityType
+		if args[1] != nil {
+			arg1 = args[1].(InstallTokenEntityType)
+		}
+		var arg2 properties.UUID
+		if args[2] != nil {
+			arg2 = args[2].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInstallTokenRepository_DeleteByEntity_Call) Return(err error) *MockInstallTokenRepository_DeleteByEntity_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInstallTokenRepository_DeleteByEntity_Call) RunAndReturn(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) error) *MockInstallTokenRepository_DeleteByEntity_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByHashedToken provides a mock function for the type MockInstallTokenRepository
+func (_mock *MockInstallTokenRepository) FindByHashedToken(ctx context.Context, hashed string) (*InstallToken, error) {
+	ret := _mock.Called(ctx, hashed)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByHashedToken")
+	}
+
+	var r0 *InstallToken
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*InstallToken, error)); ok {
+		return returnFunc(ctx, hashed)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *InstallToken); ok {
+		r0 = returnFunc(ctx, hashed)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*InstallToken)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, hashed)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInstallTokenRepository_FindByHashedToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByHashedToken'
+type MockInstallTokenRepository_FindByHashedToken_Call struct {
+	*mock.Call
+}
+
+// FindByHashedToken is a helper method to define mock.On call
+//   - ctx context.Context
+//   - hashed string
+func (_e *MockInstallTokenRepository_Expecter) FindByHashedToken(ctx interface{}, hashed interface{}) *MockInstallTokenRepository_FindByHashedToken_Call {
+	return &MockInstallTokenRepository_FindByHashedToken_Call{Call: _e.mock.On("FindByHashedToken", ctx, hashed)}
+}
+
+func (_c *MockInstallTokenRepository_FindByHashedToken_Call) Run(run func(ctx context.Context, hashed string)) *MockInstallTokenRepository_FindByHashedToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInstallTokenRepository_FindByHashedToken_Call) Return(installToken *InstallToken, err error) *MockInstallTokenRepository_FindByHashedToken_Call {
+	_c.Call.Return(installToken, err)
+	return _c
+}
+
+func (_c *MockInstallTokenRepository_FindByHashedToken_Call) RunAndReturn(run func(ctx context.Context, hashed string) (*InstallToken, error)) *MockInstallTokenRepository_FindByHashedToken_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetByEntity provides a mock function for the type MockInstallTokenRepository
+func (_mock *MockInstallTokenRepository) GetByEntity(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) (*InstallToken, error) {
+	ret := _mock.Called(ctx, entityType, entityID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByEntity")
+	}
+
+	var r0 *InstallToken
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, InstallTokenEntityType, properties.UUID) (*InstallToken, error)); ok {
+		return returnFunc(ctx, entityType, entityID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, InstallTokenEntityType, properties.UUID) *InstallToken); ok {
+		r0 = returnFunc(ctx, entityType, entityID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*InstallToken)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, InstallTokenEntityType, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, entityType, entityID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInstallTokenRepository_GetByEntity_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByEntity'
+type MockInstallTokenRepository_GetByEntity_Call struct {
+	*mock.Call
+}
+
+// GetByEntity is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entityType InstallTokenEntityType
+//   - entityID properties.UUID
+func (_e *MockInstallTokenRepository_Expecter) GetByEntity(ctx interface{}, entityType interface{}, entityID interface{}) *MockInstallTokenRepository_GetByEntity_Call {
+	return &MockInstallTokenRepository_GetByEntity_Call{Call: _e.mock.On("GetByEntity", ctx, entityType, entityID)}
+}
+
+func (_c *MockInstallTokenRepository_GetByEntity_Call) Run(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID)) *MockInstallTokenRepository_GetByEntity_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 InstallTokenEntityType
+		if args[1] != nil {
+			arg1 = args[1].(InstallTokenEntityType)
+		}
+		var arg2 properties.UUID
+		if args[2] != nil {
+			arg2 = args[2].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInstallTokenRepository_GetByEntity_Call) Return(installToken *InstallToken, err error) *MockInstallTokenRepository_GetByEntity_Call {
+	_c.Call.Return(installToken, err)
+	return _c
+}
+
+func (_c *MockInstallTokenRepository_GetByEntity_Call) RunAndReturn(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) (*InstallToken, error)) *MockInstallTokenRepository_GetByEntity_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Save provides a mock function for the type MockInstallTokenRepository
+func (_mock *MockInstallTokenRepository) Save(ctx context.Context, tok *InstallToken) error {
+	ret := _mock.Called(ctx, tok)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Save")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *InstallToken) error); ok {
+		r0 = returnFunc(ctx, tok)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockInstallTokenRepository_Save_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Save'
+type MockInstallTokenRepository_Save_Call struct {
+	*mock.Call
+}
+
+// Save is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tok *InstallToken
+func (_e *MockInstallTokenRepository_Expecter) Save(ctx interface{}, tok interface{}) *MockInstallTokenRepository_Save_Call {
+	return &MockInstallTokenRepository_Save_Call{Call: _e.mock.On("Save", ctx, tok)}
+}
+
+func (_c *MockInstallTokenRepository_Save_Call) Run(run func(ctx context.Context, tok *InstallToken)) *MockInstallTokenRepository_Save_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *InstallToken
+		if args[1] != nil {
+			arg1 = args[1].(*InstallToken)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInstallTokenRepository_Save_Call) Return(err error) *MockInstallTokenRepository_Save_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockInstallTokenRepository_Save_Call) RunAndReturn(run func(ctx context.Context, tok *InstallToken) error) *MockInstallTokenRepository_Save_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockInstallTokenQuerier creates a new instance of MockInstallTokenQuerier. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockInstallTokenQuerier(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockInstallTokenQuerier {
+	mock := &MockInstallTokenQuerier{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockInstallTokenQuerier is an autogenerated mock type for the InstallTokenQuerier type
+type MockInstallTokenQuerier struct {
+	mock.Mock
+}
+
+type MockInstallTokenQuerier_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockInstallTokenQuerier) EXPECT() *MockInstallTokenQuerier_Expecter {
+	return &MockInstallTokenQuerier_Expecter{mock: &_m.Mock}
+}
+
+// FindByHashedToken provides a mock function for the type MockInstallTokenQuerier
+func (_mock *MockInstallTokenQuerier) FindByHashedToken(ctx context.Context, hashed string) (*InstallToken, error) {
+	ret := _mock.Called(ctx, hashed)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByHashedToken")
+	}
+
+	var r0 *InstallToken
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*InstallToken, error)); ok {
+		return returnFunc(ctx, hashed)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *InstallToken); ok {
+		r0 = returnFunc(ctx, hashed)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*InstallToken)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, hashed)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInstallTokenQuerier_FindByHashedToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByHashedToken'
+type MockInstallTokenQuerier_FindByHashedToken_Call struct {
+	*mock.Call
+}
+
+// FindByHashedToken is a helper method to define mock.On call
+//   - ctx context.Context
+//   - hashed string
+func (_e *MockInstallTokenQuerier_Expecter) FindByHashedToken(ctx interface{}, hashed interface{}) *MockInstallTokenQuerier_FindByHashedToken_Call {
+	return &MockInstallTokenQuerier_FindByHashedToken_Call{Call: _e.mock.On("FindByHashedToken", ctx, hashed)}
+}
+
+func (_c *MockInstallTokenQuerier_FindByHashedToken_Call) Run(run func(ctx context.Context, hashed string)) *MockInstallTokenQuerier_FindByHashedToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInstallTokenQuerier_FindByHashedToken_Call) Return(installToken *InstallToken, err error) *MockInstallTokenQuerier_FindByHashedToken_Call {
+	_c.Call.Return(installToken, err)
+	return _c
+}
+
+func (_c *MockInstallTokenQuerier_FindByHashedToken_Call) RunAndReturn(run func(ctx context.Context, hashed string) (*InstallToken, error)) *MockInstallTokenQuerier_FindByHashedToken_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetByEntity provides a mock function for the type MockInstallTokenQuerier
+func (_mock *MockInstallTokenQuerier) GetByEntity(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) (*InstallToken, error) {
+	ret := _mock.Called(ctx, entityType, entityID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByEntity")
+	}
+
+	var r0 *InstallToken
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, InstallTokenEntityType, properties.UUID) (*InstallToken, error)); ok {
+		return returnFunc(ctx, entityType, entityID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, InstallTokenEntityType, properties.UUID) *InstallToken); ok {
+		r0 = returnFunc(ctx, entityType, entityID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*InstallToken)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, InstallTokenEntityType, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, entityType, entityID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockInstallTokenQuerier_GetByEntity_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByEntity'
+type MockInstallTokenQuerier_GetByEntity_Call struct {
+	*mock.Call
+}
+
+// GetByEntity is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entityType InstallTokenEntityType
+//   - entityID properties.UUID
+func (_e *MockInstallTokenQuerier_Expecter) GetByEntity(ctx interface{}, entityType interface{}, entityID interface{}) *MockInstallTokenQuerier_GetByEntity_Call {
+	return &MockInstallTokenQuerier_GetByEntity_Call{Call: _e.mock.On("GetByEntity", ctx, entityType, entityID)}
+}
+
+func (_c *MockInstallTokenQuerier_GetByEntity_Call) Run(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID)) *MockInstallTokenQuerier_GetByEntity_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 InstallTokenEntityType
+		if args[1] != nil {
+			arg1 = args[1].(InstallTokenEntityType)
+		}
+		var arg2 properties.UUID
+		if args[2] != nil {
+			arg2 = args[2].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockInstallTokenQuerier_GetByEntity_Call) Return(installToken *InstallToken, err error) *MockInstallTokenQuerier_GetByEntity_Call {
+	_c.Call.Return(installToken, err)
+	return _c
+}
+
+func (_c *MockInstallTokenQuerier_GetByEntity_Call) RunAndReturn(run func(ctx context.Context, entityType InstallTokenEntityType, entityID properties.UUID) (*InstallToken, error)) *MockInstallTokenQuerier_GetByEntity_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -29600,52 +32753,6 @@ func (_m *MockStore) EXPECT() *MockStore_Expecter {
 	return &MockStore_Expecter{mock: &_m.Mock}
 }
 
-// AgentInstallTokenRepo provides a mock function for the type MockStore
-func (_mock *MockStore) AgentInstallTokenRepo() AgentInstallTokenRepository {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for AgentInstallTokenRepo")
-	}
-
-	var r0 AgentInstallTokenRepository
-	if returnFunc, ok := ret.Get(0).(func() AgentInstallTokenRepository); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(AgentInstallTokenRepository)
-		}
-	}
-	return r0
-}
-
-// MockStore_AgentInstallTokenRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AgentInstallTokenRepo'
-type MockStore_AgentInstallTokenRepo_Call struct {
-	*mock.Call
-}
-
-// AgentInstallTokenRepo is a helper method to define mock.On call
-func (_e *MockStore_Expecter) AgentInstallTokenRepo() *MockStore_AgentInstallTokenRepo_Call {
-	return &MockStore_AgentInstallTokenRepo_Call{Call: _e.mock.On("AgentInstallTokenRepo")}
-}
-
-func (_c *MockStore_AgentInstallTokenRepo_Call) Run(run func()) *MockStore_AgentInstallTokenRepo_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *MockStore_AgentInstallTokenRepo_Call) Return(agentInstallTokenRepository AgentInstallTokenRepository) *MockStore_AgentInstallTokenRepo_Call {
-	_c.Call.Return(agentInstallTokenRepository)
-	return _c
-}
-
-func (_c *MockStore_AgentInstallTokenRepo_Call) RunAndReturn(run func() AgentInstallTokenRepository) *MockStore_AgentInstallTokenRepo_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // AgentRepo provides a mock function for the type MockStore
 func (_mock *MockStore) AgentRepo() AgentRepository {
 	ret := _mock.Called()
@@ -29975,6 +33082,144 @@ func (_c *MockStore_EventSubscriptionRepo_Call) Return(eventSubscriptionReposito
 }
 
 func (_c *MockStore_EventSubscriptionRepo_Call) RunAndReturn(run func() EventSubscriptionRepository) *MockStore_EventSubscriptionRepo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// InfrastructureRepo provides a mock function for the type MockStore
+func (_mock *MockStore) InfrastructureRepo() InfrastructureRepository {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for InfrastructureRepo")
+	}
+
+	var r0 InfrastructureRepository
+	if returnFunc, ok := ret.Get(0).(func() InfrastructureRepository); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(InfrastructureRepository)
+		}
+	}
+	return r0
+}
+
+// MockStore_InfrastructureRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InfrastructureRepo'
+type MockStore_InfrastructureRepo_Call struct {
+	*mock.Call
+}
+
+// InfrastructureRepo is a helper method to define mock.On call
+func (_e *MockStore_Expecter) InfrastructureRepo() *MockStore_InfrastructureRepo_Call {
+	return &MockStore_InfrastructureRepo_Call{Call: _e.mock.On("InfrastructureRepo")}
+}
+
+func (_c *MockStore_InfrastructureRepo_Call) Run(run func()) *MockStore_InfrastructureRepo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockStore_InfrastructureRepo_Call) Return(infrastructureRepository InfrastructureRepository) *MockStore_InfrastructureRepo_Call {
+	_c.Call.Return(infrastructureRepository)
+	return _c
+}
+
+func (_c *MockStore_InfrastructureRepo_Call) RunAndReturn(run func() InfrastructureRepository) *MockStore_InfrastructureRepo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// InfrastructureTypeRepo provides a mock function for the type MockStore
+func (_mock *MockStore) InfrastructureTypeRepo() InfrastructureTypeRepository {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for InfrastructureTypeRepo")
+	}
+
+	var r0 InfrastructureTypeRepository
+	if returnFunc, ok := ret.Get(0).(func() InfrastructureTypeRepository); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(InfrastructureTypeRepository)
+		}
+	}
+	return r0
+}
+
+// MockStore_InfrastructureTypeRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InfrastructureTypeRepo'
+type MockStore_InfrastructureTypeRepo_Call struct {
+	*mock.Call
+}
+
+// InfrastructureTypeRepo is a helper method to define mock.On call
+func (_e *MockStore_Expecter) InfrastructureTypeRepo() *MockStore_InfrastructureTypeRepo_Call {
+	return &MockStore_InfrastructureTypeRepo_Call{Call: _e.mock.On("InfrastructureTypeRepo")}
+}
+
+func (_c *MockStore_InfrastructureTypeRepo_Call) Run(run func()) *MockStore_InfrastructureTypeRepo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockStore_InfrastructureTypeRepo_Call) Return(infrastructureTypeRepository InfrastructureTypeRepository) *MockStore_InfrastructureTypeRepo_Call {
+	_c.Call.Return(infrastructureTypeRepository)
+	return _c
+}
+
+func (_c *MockStore_InfrastructureTypeRepo_Call) RunAndReturn(run func() InfrastructureTypeRepository) *MockStore_InfrastructureTypeRepo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// InstallTokenRepo provides a mock function for the type MockStore
+func (_mock *MockStore) InstallTokenRepo() InstallTokenRepository {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for InstallTokenRepo")
+	}
+
+	var r0 InstallTokenRepository
+	if returnFunc, ok := ret.Get(0).(func() InstallTokenRepository); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(InstallTokenRepository)
+		}
+	}
+	return r0
+}
+
+// MockStore_InstallTokenRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InstallTokenRepo'
+type MockStore_InstallTokenRepo_Call struct {
+	*mock.Call
+}
+
+// InstallTokenRepo is a helper method to define mock.On call
+func (_e *MockStore_Expecter) InstallTokenRepo() *MockStore_InstallTokenRepo_Call {
+	return &MockStore_InstallTokenRepo_Call{Call: _e.mock.On("InstallTokenRepo")}
+}
+
+func (_c *MockStore_InstallTokenRepo_Call) Run(run func()) *MockStore_InstallTokenRepo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockStore_InstallTokenRepo_Call) Return(installTokenRepository InstallTokenRepository) *MockStore_InstallTokenRepo_Call {
+	_c.Call.Return(installTokenRepository)
+	return _c
+}
+
+func (_c *MockStore_InstallTokenRepo_Call) RunAndReturn(run func() InstallTokenRepository) *MockStore_InstallTokenRepo_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -30830,6 +34075,98 @@ func (_c *MockReadOnlyStore_EventSubscriptionQuerier_Call) Return(eventSubscript
 }
 
 func (_c *MockReadOnlyStore_EventSubscriptionQuerier_Call) RunAndReturn(run func() EventSubscriptionQuerier) *MockReadOnlyStore_EventSubscriptionQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// InfrastructureQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) InfrastructureQuerier() InfrastructureQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for InfrastructureQuerier")
+	}
+
+	var r0 InfrastructureQuerier
+	if returnFunc, ok := ret.Get(0).(func() InfrastructureQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(InfrastructureQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_InfrastructureQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InfrastructureQuerier'
+type MockReadOnlyStore_InfrastructureQuerier_Call struct {
+	*mock.Call
+}
+
+// InfrastructureQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) InfrastructureQuerier() *MockReadOnlyStore_InfrastructureQuerier_Call {
+	return &MockReadOnlyStore_InfrastructureQuerier_Call{Call: _e.mock.On("InfrastructureQuerier")}
+}
+
+func (_c *MockReadOnlyStore_InfrastructureQuerier_Call) Run(run func()) *MockReadOnlyStore_InfrastructureQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_InfrastructureQuerier_Call) Return(infrastructureQuerier InfrastructureQuerier) *MockReadOnlyStore_InfrastructureQuerier_Call {
+	_c.Call.Return(infrastructureQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_InfrastructureQuerier_Call) RunAndReturn(run func() InfrastructureQuerier) *MockReadOnlyStore_InfrastructureQuerier_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// InfrastructureTypeQuerier provides a mock function for the type MockReadOnlyStore
+func (_mock *MockReadOnlyStore) InfrastructureTypeQuerier() InfrastructureTypeQuerier {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for InfrastructureTypeQuerier")
+	}
+
+	var r0 InfrastructureTypeQuerier
+	if returnFunc, ok := ret.Get(0).(func() InfrastructureTypeQuerier); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(InfrastructureTypeQuerier)
+		}
+	}
+	return r0
+}
+
+// MockReadOnlyStore_InfrastructureTypeQuerier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InfrastructureTypeQuerier'
+type MockReadOnlyStore_InfrastructureTypeQuerier_Call struct {
+	*mock.Call
+}
+
+// InfrastructureTypeQuerier is a helper method to define mock.On call
+func (_e *MockReadOnlyStore_Expecter) InfrastructureTypeQuerier() *MockReadOnlyStore_InfrastructureTypeQuerier_Call {
+	return &MockReadOnlyStore_InfrastructureTypeQuerier_Call{Call: _e.mock.On("InfrastructureTypeQuerier")}
+}
+
+func (_c *MockReadOnlyStore_InfrastructureTypeQuerier_Call) Run(run func()) *MockReadOnlyStore_InfrastructureTypeQuerier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockReadOnlyStore_InfrastructureTypeQuerier_Call) Return(infrastructureTypeQuerier InfrastructureTypeQuerier) *MockReadOnlyStore_InfrastructureTypeQuerier_Call {
+	_c.Call.Return(infrastructureTypeQuerier)
+	return _c
+}
+
+func (_c *MockReadOnlyStore_InfrastructureTypeQuerier_Call) RunAndReturn(run func() InfrastructureTypeQuerier) *MockReadOnlyStore_InfrastructureTypeQuerier_Call {
 	_c.Call.Return(run)
 	return _c
 }

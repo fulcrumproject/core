@@ -4,7 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
+	"github.com/google/uuid"
 )
 
 func TestAgentType_WithConfigurationSchema(t *testing.T) {
@@ -121,8 +123,10 @@ func TestAgentType_WithConfigurationSchema(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			agentType := &AgentType{
-				Name:                "Test Agent",
-				ConfigurationSchema: tt.schema,
+				Name: "Test Agent",
+				TemplateValidation: TemplateValidation{
+					ConfigurationSchema: tt.schema,
+				},
 			}
 
 			err := agentType.ValidateWithEngine(engine)
@@ -336,11 +340,13 @@ func TestAgentType_ValidateTemplates(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			at := &AgentType{
-				Name:                "Test Agent",
-				ConfigurationSchema: schema.Schema{Properties: tt.props},
-				ConfigTemplate:      tt.configTemplate,
-				CmdTemplate:         tt.cmdTemplate,
-				ConfigContentType:   tt.configContentType,
+				Name: "Test Agent",
+				TemplateValidation: TemplateValidation{
+					ConfigurationSchema: schema.Schema{Properties: tt.props},
+					ConfigTemplate:      tt.configTemplate,
+					CmdTemplate:         tt.cmdTemplate,
+					ConfigContentType:   tt.configContentType,
+				},
 			}
 			err := at.Validate()
 			if (err != nil) != tt.wantErr {
@@ -358,8 +364,10 @@ func TestAgentType_ValidateWithEngine_EmptyName(t *testing.T) {
 
 	agentType := &AgentType{
 		Name: "",
-		ConfigurationSchema: schema.Schema{
-			Properties: map[string]schema.PropertyDefinition{},
+		TemplateValidation: TemplateValidation{
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{},
+			},
 		},
 	}
 
@@ -475,15 +483,105 @@ func TestNewAgentType(t *testing.T) {
 	})
 }
 
+func TestAgentType_InfrastructureTypes(t *testing.T) {
+	id1 := properties.UUID(uuid.New())
+	id2 := properties.UUID(uuid.New())
+
+	t.Run("Validate rejects more than one infrastructure type", func(t *testing.T) {
+		at := &AgentType{
+			Name: "vpn-agent",
+			InfrastructureTypes: []InfrastructureType{
+				{BaseEntity: BaseEntity{ID: id1}},
+				{BaseEntity: BaseEntity{ID: id2}},
+			},
+		}
+		err := at.Validate()
+		if err == nil {
+			t.Fatal("expected error for len > 1")
+		}
+		if !strings.Contains(err.Error(), "at most one infrastructure type") {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("Validate accepts zero or one", func(t *testing.T) {
+		cases := []struct {
+			name string
+			its  []InfrastructureType
+		}{
+			{"empty", nil},
+			{"one", []InfrastructureType{{BaseEntity: BaseEntity{ID: id1}}}},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				at := &AgentType{Name: "vpn-agent", InfrastructureTypes: tc.its}
+				if err := at.Validate(); err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			})
+		}
+	})
+
+	t.Run("RequiredInfrastructureType returns nil when empty", func(t *testing.T) {
+		at := &AgentType{}
+		if got := at.RequiredInfrastructureType(); got != nil {
+			t.Errorf("expected nil, got %v", got)
+		}
+	})
+
+	t.Run("RequiredInfrastructureType returns first when present", func(t *testing.T) {
+		at := &AgentType{InfrastructureTypes: []InfrastructureType{{BaseEntity: BaseEntity{ID: id1}}}}
+		got := at.RequiredInfrastructureType()
+		if got == nil || got.ID != id1 {
+			t.Errorf("expected ID %v, got %v", id1, got)
+		}
+	})
+
+	t.Run("NewAgentType materialises InfrastructureTypeIds", func(t *testing.T) {
+		at := NewAgentType(CreateAgentTypeParams{
+			Name:                  "vpn-agent",
+			InfrastructureTypeIds: []properties.UUID{id1},
+		})
+		if len(at.InfrastructureTypes) != 1 || at.InfrastructureTypes[0].ID != id1 {
+			t.Errorf("expected single InfrastructureType with ID %v, got %v", id1, at.InfrastructureTypes)
+		}
+	})
+
+	t.Run("Update replaces InfrastructureTypes when non-nil", func(t *testing.T) {
+		at := &AgentType{InfrastructureTypes: []InfrastructureType{{BaseEntity: BaseEntity{ID: id1}}}}
+		newIDs := []properties.UUID{id2}
+		at.Update(UpdateAgentTypeParams{InfrastructureTypeIds: &newIDs})
+		if len(at.InfrastructureTypes) != 1 || at.InfrastructureTypes[0].ID != id2 {
+			t.Errorf("expected replacement to ID %v, got %v", id2, at.InfrastructureTypes)
+		}
+
+		emptyIDs := []properties.UUID{}
+		at.Update(UpdateAgentTypeParams{InfrastructureTypeIds: &emptyIDs})
+		if len(at.InfrastructureTypes) != 0 {
+			t.Errorf("expected empty after replace, got %v", at.InfrastructureTypes)
+		}
+	})
+
+	t.Run("Update leaves InfrastructureTypes alone when nil", func(t *testing.T) {
+		at := &AgentType{InfrastructureTypes: []InfrastructureType{{BaseEntity: BaseEntity{ID: id1}}}}
+		at.Update(UpdateAgentTypeParams{InfrastructureTypeIds: nil})
+		if len(at.InfrastructureTypes) != 1 || at.InfrastructureTypes[0].ID != id1 {
+			t.Errorf("expected unchanged, got %v", at.InfrastructureTypes)
+		}
+	})
+}
+
 func TestAgentType_Update(t *testing.T) {
 	engine := NewAgentConfigSchemaEngine(nil)
 
 	agentType := &AgentType{
 		Name: "Initial Agent",
-		ConfigurationSchema: schema.Schema{
-			Properties: map[string]schema.PropertyDefinition{
-				"apiKey": {
-					Type: "string",
+		TemplateValidation: TemplateValidation{
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"apiKey": {
+						Type: "string",
+					},
 				},
 			},
 		},

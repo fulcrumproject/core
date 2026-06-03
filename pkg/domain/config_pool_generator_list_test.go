@@ -15,16 +15,21 @@ func TestConfigPoolListGenerator_Allocate(t *testing.T) {
 	ctx := context.Background()
 	poolID := properties.UUID(uuid.New())
 	agentID := properties.UUID(uuid.New())
+	infraID := properties.UUID(uuid.New())
 
 	tests := []struct {
-		name      string
-		setupRepo func(*MockConfigPoolValueRepository)
-		wantValue any
-		wantErr   bool
-		errSubstr string
+		name       string
+		entityType ConfigPoolValueEntityType
+		entityID   properties.UUID
+		setupRepo  func(*MockConfigPoolValueRepository)
+		wantValue  any
+		wantErr    bool
+		errSubstr  string
 	}{
 		{
-			name: "happy path",
+			name:       "happy path agent",
+			entityType: ConfigPoolValueEntityTypeAgent,
+			entityID:   agentID,
 			setupRepo: func(repo *MockConfigPoolValueRepository) {
 				values := []*ConfigPoolValue{
 					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "10.0.0.1"},
@@ -32,7 +37,7 @@ func TestConfigPoolListGenerator_Allocate(t *testing.T) {
 				}
 				repo.On("FindAvailable", ctx, poolID).Return(values, nil)
 				repo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
-					return v.AgentID != nil && *v.AgentID == agentID &&
+					return v.AgentID != nil && *v.AgentID == agentID && v.InfrastructureID == nil &&
 						v.PropertyName != nil && *v.PropertyName == "propA" &&
 						v.AllocatedAt != nil
 				})).Return(nil)
@@ -40,7 +45,26 @@ func TestConfigPoolListGenerator_Allocate(t *testing.T) {
 			wantValue: "10.0.0.1",
 		},
 		{
-			name: "no available values",
+			name:       "happy path infrastructure",
+			entityType: ConfigPoolValueEntityTypeInfrastructure,
+			entityID:   infraID,
+			setupRepo: func(repo *MockConfigPoolValueRepository) {
+				values := []*ConfigPoolValue{
+					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "10.0.0.1"},
+				}
+				repo.On("FindAvailable", ctx, poolID).Return(values, nil)
+				repo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+					return v.InfrastructureID != nil && *v.InfrastructureID == infraID && v.AgentID == nil &&
+						v.PropertyName != nil && *v.PropertyName == "propA" &&
+						v.AllocatedAt != nil
+				})).Return(nil)
+			},
+			wantValue: "10.0.0.1",
+		},
+		{
+			name:       "no available values",
+			entityType: ConfigPoolValueEntityTypeAgent,
+			entityID:   agentID,
 			setupRepo: func(repo *MockConfigPoolValueRepository) {
 				repo.On("FindAvailable", ctx, poolID).Return([]*ConfigPoolValue{}, nil)
 			},
@@ -48,7 +72,9 @@ func TestConfigPoolListGenerator_Allocate(t *testing.T) {
 			errSubstr: "no available values",
 		},
 		{
-			name: "find available errors",
+			name:       "find available errors",
+			entityType: ConfigPoolValueEntityTypeAgent,
+			entityID:   agentID,
 			setupRepo: func(repo *MockConfigPoolValueRepository) {
 				repo.On("FindAvailable", ctx, poolID).Return(nil, errors.New("db boom"))
 			},
@@ -56,7 +82,9 @@ func TestConfigPoolListGenerator_Allocate(t *testing.T) {
 			errSubstr: "db boom",
 		},
 		{
-			name: "update errors",
+			name:       "update errors",
+			entityType: ConfigPoolValueEntityTypeAgent,
+			entityID:   agentID,
 			setupRepo: func(repo *MockConfigPoolValueRepository) {
 				values := []*ConfigPoolValue{
 					{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: "x"},
@@ -75,7 +103,7 @@ func TestConfigPoolListGenerator_Allocate(t *testing.T) {
 			tt.setupRepo(repo)
 
 			gen := NewConfigPoolListGenerator(repo, poolID)
-			got, err := gen.Allocate(ctx, agentID, "propA")
+			got, err := gen.Allocate(ctx, tt.entityType, tt.entityID, "propA")
 
 			if tt.wantErr {
 				if err == nil {

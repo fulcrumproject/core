@@ -51,15 +51,49 @@ func TestConfigPool_Validate(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name: "invalid subnet generator type",
+			name: "valid range pool",
 			pool: &ConfigPool{
-				Name:          "Valid Subnet Pool",
+				Name:            "ASN Pool",
+				Type:            "asn",
+				PropertyType:    "integer",
+				GeneratorType:   PoolGeneratorRange,
+				GeneratorConfig: &properties.JSON{"min": float64(65000), "max": float64(65535), "exclude": []any{float64(65500)}},
+			},
+			wantError: false,
+		},
+		{
+			name: "valid subnet pool",
+			pool: &ConfigPool{
+				Name:            "PtP Pool",
+				Type:            "ptp",
+				PropertyType:    "json",
+				GeneratorType:   PoolGeneratorSubnet,
+				GeneratorConfig: &properties.JSON{"cidr": "10.255.1.0/24", "prefix": float64(30)},
+			},
+			wantError: false,
+		},
+		{
+			name: "subnet generator missing config",
+			pool: &ConfigPool{
+				Name:          "Subnet Pool",
 				Type:          "internalIp",
 				PropertyType:  "json",
 				GeneratorType: PoolGeneratorSubnet,
 			},
 			wantError: true,
-			errorMsg:  "invalid generator type for config pool",
+			errorMsg:  "subnet generator requires generatorConfig",
+		},
+		{
+			name: "range generator invalid config",
+			pool: &ConfigPool{
+				Name:            "ASN Pool",
+				Type:            "asn",
+				PropertyType:    "integer",
+				GeneratorType:   PoolGeneratorRange,
+				GeneratorConfig: &properties.JSON{"min": float64(10)},
+			},
+			wantError: true,
+			errorMsg:  "requires integer 'max'",
 		},
 		{
 			name: "empty name",

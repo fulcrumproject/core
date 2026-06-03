@@ -36,8 +36,8 @@ func NewAgentRepository(db *gorm.DB) *GormAgentRepository {
 			applyAgentFilter,
 			applyAgentSort,
 			agentAuthzFilterApplier,
-			[]string{"Provider", "AgentType", "AgentType.ServiceTypes", "ServicePoolSet"}, // Find preload paths
-			[]string{"Provider", "AgentType"},                                             // List preload paths
+			[]string{"Provider", "AgentType", "AgentType.ServiceTypes", "AgentType.InfrastructureTypes", "ServicePoolSet", "Infrastructure", "Infrastructure.InfrastructureType"}, // Find preload paths
+			[]string{"Provider", "AgentType"}, // List preload paths
 		),
 	}
 	return repo
@@ -55,6 +55,15 @@ func (r *GormAgentRepository) CountByProvider(ctx context.Context, providerID pr
 func (r *GormAgentRepository) CountByAgentType(ctx context.Context, agentTypeID properties.UUID) (int64, error) {
 	var count int64
 	result := r.db.WithContext(ctx).Model(&domain.Agent{}).Where("agent_type_id = ?", agentTypeID).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}
+
+func (r *GormAgentRepository) CountByInfrastructure(ctx context.Context, infrastructureID properties.UUID) (int64, error) {
+	var count int64
+	result := r.db.WithContext(ctx).Model(&domain.Agent{}).Where("infrastructure_id = ?", infrastructureID).Count(&count)
 	if result.Error != nil {
 		return 0, result.Error
 	}

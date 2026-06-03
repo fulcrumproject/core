@@ -85,17 +85,19 @@ func TestAgentCommander_CreateWithConfiguration(t *testing.T) {
 			agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
 				BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())},
 				Name:       "Test Agent Type",
-				ConfigurationSchema: schema.Schema{
-					Properties: map[string]schema.PropertyDefinition{
-						"apiEndpoint": {
-							Type:     "string",
-							Label:    "API Endpoint",
-							Required: true,
-						},
-						"maxRetries": {
-							Type:    "integer",
-							Label:   "Max Retries",
-							Default: 3,
+				TemplateValidation: TemplateValidation{
+					ConfigurationSchema: schema.Schema{
+						Properties: map[string]schema.PropertyDefinition{
+							"apiEndpoint": {
+								Type:     "string",
+								Label:    "API Endpoint",
+								Required: true,
+							},
+							"maxRetries": {
+								Type:    "integer",
+								Label:   "Max Retries",
+								Default: 3,
+							},
 						},
 					},
 				},
@@ -188,17 +190,19 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 		agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
 			BaseEntity: BaseEntity{ID: existingAgent.AgentTypeID},
 			Name:       "Test Agent Type",
-			ConfigurationSchema: schema.Schema{
-				Properties: map[string]schema.PropertyDefinition{
-					"apiEndpoint": {
-						Type:     "string",
-						Label:    "API Endpoint",
-						Required: true,
-					},
-					"maxRetries": {
-						Type:    "integer",
-						Label:   "Max Retries",
-						Default: 3,
+			TemplateValidation: TemplateValidation{
+				ConfigurationSchema: schema.Schema{
+					Properties: map[string]schema.PropertyDefinition{
+						"apiEndpoint": {
+							Type:     "string",
+							Label:    "API Endpoint",
+							Required: true,
+						},
+						"maxRetries": {
+							Type:    "integer",
+							Label:   "Max Retries",
+							Default: 3,
+						},
 					},
 				},
 			},
@@ -257,17 +261,19 @@ func TestAgentCommander_UpdateWithConfiguration(t *testing.T) {
 		agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
 			BaseEntity: BaseEntity{ID: existingAgent.AgentTypeID},
 			Name:       "Test Agent Type",
-			ConfigurationSchema: schema.Schema{
-				Properties: map[string]schema.PropertyDefinition{
-					"apiEndpoint": {
-						Type:     "string",
-						Label:    "API Endpoint",
-						Required: true,
-					},
-					"maxRetries": {
-						Type:    "integer",
-						Label:   "Max Retries",
-						Default: 3,
+			TemplateValidation: TemplateValidation{
+				ConfigurationSchema: schema.Schema{
+					Properties: map[string]schema.PropertyDefinition{
+						"apiEndpoint": {
+							Type:     "string",
+							Label:    "API Endpoint",
+							Required: true,
+						},
+						"maxRetries": {
+							Type:    "integer",
+							Label:   "Max Retries",
+							Default: 3,
+						},
 					},
 				},
 			},
@@ -326,8 +332,10 @@ func TestAgentCommander_ServicePoolSetValidation(t *testing.T) {
 
 		agentTypeRepo := NewMockAgentTypeRepository(t)
 		agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
-			BaseEntity:          BaseEntity{ID: agentTypeID},
-			ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			BaseEntity: BaseEntity{ID: agentTypeID},
+			TemplateValidation: TemplateValidation{
+				ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			},
 		}, nil).Maybe()
 		ms.On("AgentTypeRepo").Return(agentTypeRepo).Maybe()
 
@@ -369,8 +377,10 @@ func TestAgentCommander_ServicePoolSetValidation(t *testing.T) {
 
 		agentTypeRepo := NewMockAgentTypeRepository(t)
 		agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
-			BaseEntity:          BaseEntity{ID: agentTypeID},
-			ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			BaseEntity: BaseEntity{ID: agentTypeID},
+			TemplateValidation: TemplateValidation{
+				ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			},
 		}, nil).Maybe()
 		ms.On("AgentTypeRepo").Return(agentTypeRepo).Maybe()
 
@@ -415,8 +425,10 @@ func TestAgentCommander_ServicePoolSetValidation(t *testing.T) {
 
 		agentTypeRepo := NewMockAgentTypeRepository(t)
 		agentTypeRepo.On("Get", mock.Anything, mock.Anything).Return(&AgentType{
-			BaseEntity:          BaseEntity{ID: agentTypeID},
-			ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			BaseEntity: BaseEntity{ID: agentTypeID},
+			TemplateValidation: TemplateValidation{
+				ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+			},
 		}, nil).Maybe()
 		ms.On("AgentTypeRepo").Return(agentTypeRepo).Maybe()
 
@@ -450,14 +462,16 @@ func TestAgentCommander_CreateWithPoolGenerator(t *testing.T) {
 	agentType := &AgentType{
 		BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())},
 		Name:       "Pool-Using Agent Type",
-		ConfigurationSchema: schema.Schema{
-			Properties: map[string]schema.PropertyDefinition{
-				"publicIP": {
-					Type:  "string",
-					Label: "Public IP",
-					Generator: &schema.GeneratorConfig{
-						Type:   "pool",
-						Config: map[string]any{"poolType": "public_ip"},
+		TemplateValidation: TemplateValidation{
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"publicIP": {
+						Type:  "string",
+						Label: "Public IP",
+						Generator: &schema.GeneratorConfig{
+							Type:   "pool",
+							Config: map[string]any{"poolType": "public_ip"},
+						},
 					},
 				},
 			},
@@ -785,4 +799,112 @@ func TestAgent_Update_ServicePoolSetID(t *testing.T) {
 			t.Error("Expected ServicePoolSet to remain nil")
 		}
 	})
+}
+
+func TestAgentCommander_Create_InfrastructureCompatibility(t *testing.T) {
+	providerID := properties.UUID(uuid.New())
+	otherProviderID := properties.UUID(uuid.New())
+	agentTypeID := properties.UUID(uuid.New())
+	infraTypeID := properties.UUID(uuid.New())
+	otherInfraTypeID := properties.UUID(uuid.New())
+	matchingInfraID := properties.UUID(uuid.New())
+	wrongTypeInfraID := properties.UUID(uuid.New())
+	wrongProviderInfraID := properties.UUID(uuid.New())
+
+	infraByID := map[properties.UUID]*Infrastructure{
+		matchingInfraID:      {BaseEntity: BaseEntity{ID: matchingInfraID}, ProviderID: providerID, InfrastructureTypeID: infraTypeID},
+		wrongTypeInfraID:     {BaseEntity: BaseEntity{ID: wrongTypeInfraID}, ProviderID: providerID, InfrastructureTypeID: otherInfraTypeID},
+		wrongProviderInfraID: {BaseEntity: BaseEntity{ID: wrongProviderInfraID}, ProviderID: otherProviderID, InfrastructureTypeID: infraTypeID},
+	}
+
+	emptyAT := &AgentType{
+		BaseEntity: BaseEntity{ID: agentTypeID},
+		TemplateValidation: TemplateValidation{
+			ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+		},
+	}
+	boundAT := &AgentType{
+		BaseEntity:          BaseEntity{ID: agentTypeID},
+		InfrastructureTypes: []InfrastructureType{{BaseEntity: BaseEntity{ID: infraTypeID}}},
+		TemplateValidation: TemplateValidation{
+			ConfigurationSchema: schema.Schema{Properties: map[string]schema.PropertyDefinition{}},
+		},
+	}
+
+	tests := []struct {
+		name        string
+		agentType   *AgentType
+		infraID     *properties.UUID
+		wantErr     bool
+		errContains string
+	}{
+		{name: "no required IT + no req infraID -> success", agentType: emptyAT, infraID: nil, wantErr: false},
+		{name: "no required IT + infraID supplied -> reject", agentType: emptyAT, infraID: &matchingInfraID, wantErr: true, errContains: "does not allow an infrastructure"},
+		{name: "required IT + missing infraID -> reject", agentType: boundAT, infraID: nil, wantErr: true, errContains: "requires an infrastructure"},
+		{name: "required IT + wrong type -> reject", agentType: boundAT, infraID: &wrongTypeInfraID, wantErr: true, errContains: "expected"},
+		{name: "required IT + other provider -> reject", agentType: boundAT, infraID: &wrongProviderInfraID, wantErr: true, errContains: "does not belong to provider"},
+		{name: "required IT + matching infra -> success", agentType: boundAT, infraID: &matchingInfraID, wantErr: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ms := setupMockStore(t)
+
+			participantRepo := NewMockParticipantRepository(t)
+			participantRepo.On("Exists", mock.Anything, providerID).Return(true, nil).Maybe()
+			ms.On("ParticipantRepo").Return(participantRepo).Maybe()
+
+			agentTypeRepo := NewMockAgentTypeRepository(t)
+			agentTypeRepo.On("Get", mock.Anything, agentTypeID).Return(tt.agentType, nil).Maybe()
+			ms.On("AgentTypeRepo").Return(agentTypeRepo).Maybe()
+
+			infraRepo := NewMockInfrastructureRepository(t)
+			if tt.infraID != nil {
+				if infra, ok := infraByID[*tt.infraID]; ok {
+					infraRepo.On("Get", mock.Anything, *tt.infraID).Return(infra, nil).Maybe()
+				} else {
+					infraRepo.On("Get", mock.Anything, *tt.infraID).Return(nil, errors.New("not found")).Maybe()
+				}
+			}
+			ms.On("InfrastructureRepo").Return(infraRepo).Maybe()
+
+			agentRepo := NewMockAgentRepository(t)
+			agentRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Maybe()
+			ms.On("AgentRepo").Return(agentRepo).Maybe()
+
+			eventRepo := NewMockEventRepository(t)
+			eventRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Maybe()
+			ms.On("EventRepo").Return(eventRepo).Maybe()
+
+			commander := NewAgentCommander(ms, NewAgentConfigSchemaEngine(nil))
+			ctx := auth.WithIdentity(context.Background(), &auth.Identity{Role: auth.RoleAdmin, ID: properties.UUID(uuid.New())})
+
+			agent, err := commander.Create(ctx, CreateAgentParams{
+				Name:             "Agent",
+				ProviderID:       providerID,
+				AgentTypeID:      agentTypeID,
+				InfrastructureID: tt.infraID,
+			})
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("expected error to contain %q, got %v", tt.errContains, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Create() error = %v, want nil", err)
+			}
+			if tt.infraID != nil {
+				if agent.InfrastructureID == nil || *agent.InfrastructureID != *tt.infraID {
+					t.Errorf("expected InfrastructureID %v, got %v", *tt.infraID, agent.InfrastructureID)
+				}
+			} else if agent.InfrastructureID != nil {
+				t.Errorf("expected nil InfrastructureID, got %v", *agent.InfrastructureID)
+			}
+		})
+	}
 }

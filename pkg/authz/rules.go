@@ -8,6 +8,8 @@ const (
 	ObjectTypeParticipant       ObjectType = "participant"
 	ObjectTypeAgent             ObjectType = "agent"
 	ObjectTypeAgentType         ObjectType = "agent_type"
+	ObjectTypeInfrastructureType ObjectType = "infrastructure_type"
+	ObjectTypeInfrastructure     ObjectType = "infrastructure"
 	ObjectTypeConfigPool        ObjectType = "config_pool"
 	ObjectTypeConfigPoolValue   ObjectType = "config_pool_value"
 	ObjectTypeService           ObjectType = "service"
@@ -64,6 +66,18 @@ var Rules = []AuthorizationRule{
 	{Object: ObjectTypeAgentType, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
 	{Object: ObjectTypeAgentType, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
 	{Object: ObjectTypeAgentType, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
+
+	// InfrastructureType permissions
+	{Object: ObjectTypeInfrastructureType, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+	{Object: ObjectTypeInfrastructureType, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeInfrastructureType, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin}},
+	{Object: ObjectTypeInfrastructureType, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
+
+	// Infrastructure permissions — instance, provider-scoped, same shape as Agent
+	{Object: ObjectTypeInfrastructure, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},
+	{Object: ObjectTypeInfrastructure, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeInfrastructure, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
+	{Object: ObjectTypeInfrastructure, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 
 	// Service permissions
 	{Object: ObjectTypeService, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},

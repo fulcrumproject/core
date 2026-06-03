@@ -36,6 +36,10 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/config-pool-values?agentId=change-me
 Authorization: Bearer {{adminToken}}
 
+### Get all config pool values with filter by infrastructureId
+GET {{baseUrl}}/config-pool-values?infrastructureId=change-me
+Authorization: Bearer {{adminToken}}
+
 ### Create an config pool value
 # @name createConfigPoolValue
 POST {{baseUrl}}/config-pool-values
@@ -499,3 +503,151 @@ Authorization: Bearer {{adminToken}}
 ### Sanity: the global pool's value is now stamped on the agent
 GET {{baseUrl}}/config-pool-values?agentId={{scopedGenAgentId}}
 Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### Range generator: retire-on-release (released value is NOT re-allocated)
+###############################################################################
+### Contrast with the list scenario above (where a released value is reused). For
+### range/subnet, release keeps the row, so the value stays "used" and is never
+### handed out again:
+###   1. Range pool min=1, max=3.
+###   2. Agent 1 -> value 1; agent 2 -> value 2.
+###   3. Delete agent 1 -> value 1 row is kept with agentId=null (released, not deleted).
+###   4. Agent 3 -> gets the NEXT value 3, NOT the released 1.
+###   5. Agent 4 -> fails "range exhausted": value 1 is retired, never re-issued.
+
+### Provider for the range scenario
+# @name createRangeProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Generator Provider",
+  "status": "Enabled"
+}
+
+@rangeProviderId = {{createRangeProvider.response.body.$.id}}
+
+### Range pool with three values (1..3)
+# @name createRangePool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Retire Pool",
+  "type": "rangeRetireAsn",
+  "propertyType": "integer",
+  "generatorType": "range",
+  "generatorConfig": { "min": 1, "max": 3 }
+}
+
+@rangePoolId = {{createRangePool.response.body.$.id}}
+
+### Agent type that auto-allocates a value of this type
+# @name createRangeAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Retire Agent Type {{$timestamp}}",
+  "configurationSchema": {
+    "properties": {
+      "asn": {
+        "type": "integer",
+        "label": "ASN",
+        "generator": {
+          "type": "pool",
+          "config": {
+            "poolType": "rangeRetireAsn"
+          }
+        }
+      }
+    }
+  }
+}
+
+@rangeAgentTypeId = {{createRangeAgentType.response.body.$.id}}
+
+### Agent 1 -> allocates value 1
+# @name createRangeAgent1
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Agent 1",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{rangeAgentTypeId}}",
+  "tags": ["range-retire-test"],
+  "configuration": {}
+}
+
+@rangeAgent1Id = {{createRangeAgent1.response.body.$.id}}
+
+### Verify agent 1 holds value 1
+GET {{baseUrl}}/config-pool-values?agentId={{rangeAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### Agent 2 -> allocates value 2
+# @name createRangeAgent2
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Agent 2",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{rangeAgentTypeId}}",
+  "tags": ["range-retire-test"],
+  "configuration": {}
+}
+
+@rangeAgent2Id = {{createRangeAgent2.response.body.$.id}}
+
+### Verify agent 2 holds value 2
+GET {{baseUrl}}/config-pool-values?agentId={{rangeAgent2Id}}
+Authorization: Bearer {{adminToken}}
+
+### Delete agent 1 -> value 1 is released (row kept, agentId cleared)
+DELETE {{baseUrl}}/agents/{{rangeAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### Value 1's row must still exist, now with agentId=null (released, not deleted)
+GET {{baseUrl}}/config-pool-values?configPoolId={{rangePoolId}}
+Authorization: Bearer {{adminToken}}
+
+### Agent 3 -> must get the NEXT value 3, NOT the released value 1
+# @name createRangeAgent3
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Agent 3",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{rangeAgentTypeId}}",
+  "tags": ["range-retire-test"],
+  "configuration": {}
+}
+
+@rangeAgent3Id = {{createRangeAgent3.response.body.$.id}}
+
+### Confirm agent 3 got value 3 (the released 1 was retired, not re-issued)
+GET {{baseUrl}}/config-pool-values?agentId={{rangeAgent3Id}}
+Authorization: Bearer {{adminToken}}
+
+### TEST: agent 4 fails — value 1 is retired, so the range is exhausted
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Agent 4 (should fail)",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{rangeAgentTypeId}}",
+  "tags": ["range-retire-test"],
+  "configuration": {}
+}

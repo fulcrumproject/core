@@ -47,7 +47,7 @@ type CoreFixtures struct {
 	AgentType         *domain.AgentType
 	Agent             *domain.Agent
 	AgentToken        *domain.Token
-	AgentInstallToken *domain.AgentInstallToken
+	AgentInstallToken *domain.InstallToken
 	ConfigPool        *domain.ConfigPool
 	ConfigPoolValue   *domain.ConfigPoolValue
 	Group             *domain.ServiceGroup
@@ -127,14 +127,16 @@ func SeedCore(tx *gorm.DB) (*CoreFixtures, error) {
 		// "schema must have at least one property" validator the API
 		// applies on PATCH; otherwise tests that mutate this fixture
 		// 400 even when not touching the schema.
-		ConfigurationSchema: schema.Schema{
-			Properties: map[string]schema.PropertyDefinition{
-				"placeholder": {Type: "string", Label: "Placeholder"},
+		TemplateValidation: domain.TemplateValidation{
+			ConfigurationSchema: schema.Schema{
+				Properties: map[string]schema.PropertyDefinition{
+					"placeholder": {Type: "string", Label: "Placeholder"},
+				},
 			},
+			ConfigTemplate:    "# e2e agent config\n",
+			CmdTemplate:       "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
+			ConfigContentType: "text/plain",
 		},
-		ConfigTemplate:    "# e2e agent config\n",
-		CmdTemplate:       "curl -fsSL {{.configUrl}} -H 'Authorization: Bearer {{.authToken}}'",
-		ConfigContentType: "text/plain",
 	}); err != nil {
 		return nil, err
 	}
@@ -196,9 +198,10 @@ func SeedCore(tx *gorm.DB) (*CoreFixtures, error) {
 
 	const installPlain = "e2e-install-token"
 	installSum := sha256.Sum256([]byte(installPlain))
-	if f.AgentInstallToken, err = create(tx, &domain.AgentInstallToken{
+	if f.AgentInstallToken, err = create(tx, &domain.InstallToken{
 		BaseEntity:  domain.BaseEntity{ID: AgentInstallTokenID},
-		AgentID:     f.Agent.ID,
+		EntityType:  domain.InstallTokenEntityTypeAgent,
+		EntityID:    f.Agent.ID,
 		TokenHashed: hex.EncodeToString(installSum[:]),
 		ExpiresAt:   time.Now().Add(30 * 24 * time.Hour),
 	}); err != nil {

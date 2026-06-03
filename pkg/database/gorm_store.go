@@ -10,26 +10,28 @@ import (
 
 // GormStore implements the domain.Store interface using GORM
 type GormStore struct {
-	db                    *gorm.DB
-	participantRepo       domain.ParticipantRepository
-	tokenRepo             domain.TokenRepository
-	agentTypeRepo         domain.AgentTypeRepository
-	agentRepo             domain.AgentRepository
-	agentInstallTokenRepo domain.AgentInstallTokenRepository
-	configPoolRepo        domain.ConfigPoolRepository
-	configPoolValueRepo   domain.ConfigPoolValueRepository
-	serviceTypeRepo       domain.ServiceTypeRepository
-	serviceGroupRepo      domain.ServiceGroupRepository
-	serviceRepo           domain.ServiceRepository
-	serviceOptionTypeRepo domain.ServiceOptionTypeRepository
-	serviceOptionRepo     domain.ServiceOptionRepository
-	servicePoolSetRepo    domain.ServicePoolSetRepository
-	servicePoolRepo       domain.ServicePoolRepository
-	servicePoolValueRepo  domain.ServicePoolValueRepository
-	jobRepo               domain.JobRepository
-	eventEntryRepo        domain.EventRepository
-	eventSubscriptionRepo domain.EventSubscriptionRepository
-	metricTypeRepo        domain.MetricTypeRepository
+	db                     *gorm.DB
+	participantRepo        domain.ParticipantRepository
+	tokenRepo              domain.TokenRepository
+	agentTypeRepo          domain.AgentTypeRepository
+	agentRepo              domain.AgentRepository
+	installTokenRepo       domain.InstallTokenRepository
+	configPoolRepo         domain.ConfigPoolRepository
+	configPoolValueRepo    domain.ConfigPoolValueRepository
+	infrastructureTypeRepo domain.InfrastructureTypeRepository
+	infrastructureRepo     domain.InfrastructureRepository
+	serviceTypeRepo        domain.ServiceTypeRepository
+	serviceGroupRepo       domain.ServiceGroupRepository
+	serviceRepo            domain.ServiceRepository
+	serviceOptionTypeRepo  domain.ServiceOptionTypeRepository
+	serviceOptionRepo      domain.ServiceOptionRepository
+	servicePoolSetRepo     domain.ServicePoolSetRepository
+	servicePoolRepo        domain.ServicePoolRepository
+	servicePoolValueRepo   domain.ServicePoolValueRepository
+	jobRepo                domain.JobRepository
+	eventEntryRepo         domain.EventRepository
+	eventSubscriptionRepo  domain.EventSubscriptionRepository
+	metricTypeRepo         domain.MetricTypeRepository
 }
 
 // NewGormStore creates a new GormStore instance
@@ -77,11 +79,11 @@ func (s *GormStore) AgentRepo() domain.AgentRepository {
 	return s.agentRepo
 }
 
-func (s *GormStore) AgentInstallTokenRepo() domain.AgentInstallTokenRepository {
-	if s.agentInstallTokenRepo == nil {
-		s.agentInstallTokenRepo = NewAgentInstallTokenRepository(s.db)
+func (s *GormStore) InstallTokenRepo() domain.InstallTokenRepository {
+	if s.installTokenRepo == nil {
+		s.installTokenRepo = NewInstallTokenRepository(s.db)
 	}
-	return s.agentInstallTokenRepo
+	return s.installTokenRepo
 }
 
 func (s *GormStore) ConfigPoolRepo() domain.ConfigPoolRepository {
@@ -96,6 +98,20 @@ func (s *GormStore) ConfigPoolValueRepo() domain.ConfigPoolValueRepository {
 		s.configPoolValueRepo = NewConfigPoolValueRepository(s.db)
 	}
 	return s.configPoolValueRepo
+}
+
+func (s *GormStore) InfrastructureTypeRepo() domain.InfrastructureTypeRepository {
+	if s.infrastructureTypeRepo == nil {
+		s.infrastructureTypeRepo = NewInfrastructureTypeRepository(s.db)
+	}
+	return s.infrastructureTypeRepo
+}
+
+func (s *GormStore) InfrastructureRepo() domain.InfrastructureRepository {
+	if s.infrastructureRepo == nil {
+		s.infrastructureRepo = NewInfrastructureRepository(s.db)
+	}
+	return s.infrastructureRepo
 }
 
 func (s *GormStore) ServiceTypeRepo() domain.ServiceTypeRepository {
@@ -208,6 +224,14 @@ func (s *GormReadOnlyStore) ConfigPoolQuerier() domain.ConfigPoolQuerier {
 
 func (s *GormReadOnlyStore) ConfigPoolValueQuerier() domain.ConfigPoolValueQuerier {
 	return NewConfigPoolValueRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) InfrastructureTypeQuerier() domain.InfrastructureTypeQuerier {
+	return NewInfrastructureTypeRepository(s.db)
+}
+
+func (s *GormReadOnlyStore) InfrastructureQuerier() domain.InfrastructureQuerier {
+	return NewInfrastructureRepository(s.db)
 }
 
 func (s *GormReadOnlyStore) TokenQuerier() domain.TokenQuerier {

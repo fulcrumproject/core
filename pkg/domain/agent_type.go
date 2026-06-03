@@ -17,12 +17,18 @@ const (
 // AgentType represents a type of service manager agent
 type AgentType struct {
 	BaseEntity
-	Name                string        `json:"name" gorm:"not null;unique"`
-	ServiceTypes        []ServiceType `json:"-" gorm:"many2many:agent_type_service_types;"`
-	ConfigurationSchema schema.Schema `json:"configurationSchema" gorm:"type:jsonb;not null"`
-	ConfigTemplate      string        `json:"configTemplate" gorm:"type:text"`
-	CmdTemplate         string        `json:"cmdTemplate" gorm:"type:text"`
-	ConfigContentType   string        `json:"configContentType" gorm:"type:text;not null;default:'text/plain'"`
+	Name                string               `json:"name" gorm:"not null;unique"`
+	ServiceTypes        []ServiceType        `json:"-" gorm:"many2many:agent_type_service_types;"`
+	InfrastructureTypes []InfrastructureType `json:"-" gorm:"many2many:agent_type_infrastructure_types;"`
+	TemplateValidation
+}
+
+// RequiredInfrastructureType returns the single required InfrastructureType, or nil.
+func (at *AgentType) RequiredInfrastructureType() *InfrastructureType {
+	if len(at.InfrastructureTypes) == 0 {
+		return nil
+	}
+	return &at.InfrastructureTypes[0]
 }
 
 // NewAgentType creates a new agent type without validation
@@ -35,6 +41,13 @@ func NewAgentType(params CreateAgentTypeParams) *AgentType {
 		})
 	}
 
+	infrastructureTypes := make([]InfrastructureType, 0, len(params.InfrastructureTypeIds))
+	for _, id := range params.InfrastructureTypeIds {
+		infrastructureTypes = append(infrastructureTypes, InfrastructureType{
+			BaseEntity: BaseEntity{ID: id},
+		})
+	}
+
 	configContentType := params.ConfigContentType
 	if configContentType == "" {
 		configContentType = "text/plain"
@@ -43,10 +56,13 @@ func NewAgentType(params CreateAgentTypeParams) *AgentType {
 	return &AgentType{
 		Name:                params.Name,
 		ServiceTypes:        serviceTypes,
-		ConfigurationSchema: params.ConfigurationSchema,
-		ConfigTemplate:      params.ConfigTemplate,
-		CmdTemplate:         params.CmdTemplate,
-		ConfigContentType:   configContentType,
+		InfrastructureTypes: infrastructureTypes,
+		TemplateValidation: TemplateValidation{
+			ConfigurationSchema: params.ConfigurationSchema,
+			ConfigTemplate:      params.ConfigTemplate,
+			CmdTemplate:         params.CmdTemplate,
+			ConfigContentType:   configContentType,
+		},
 	}
 }
 
@@ -55,17 +71,13 @@ func (AgentType) TableName() string {
 	return "agent_types"
 }
 
-// HasInstallTemplates reports whether both install templates are configured.
-// Validation enforces "both set or both empty"; callers use this single check
-// to avoid divergence between the cmd-side and config-side branches.
-func (at *AgentType) HasInstallTemplates() bool {
-	return at.CmdTemplate != "" && at.ConfigTemplate != ""
-}
-
 // Validate ensures all AgentType fields are valid (without schema validation)
 func (at *AgentType) Validate() error {
 	if at.Name == "" {
 		return fmt.Errorf("agent type name cannot be empty")
+	}
+	if len(at.InfrastructureTypes) > 1 {
+		return fmt.Errorf("agent type may have at most one infrastructure type")
 	}
 	return at.validateTemplates()
 }
@@ -74,6 +86,9 @@ func (at *AgentType) Validate() error {
 func (at *AgentType) ValidateWithEngine(engine *schema.Engine[AgentConfigContext]) error {
 	if at.Name == "" {
 		return fmt.Errorf("agent type name cannot be empty")
+	}
+	if len(at.InfrastructureTypes) > 1 {
+		return fmt.Errorf("agent type may have at most one infrastructure type")
 	}
 
 	// Always validate schema (required, not nullable)
@@ -98,6 +113,15 @@ func (at *AgentType) Update(params UpdateAgentTypeParams) {
 			})
 		}
 		at.ServiceTypes = serviceTypes
+	}
+	if params.InfrastructureTypeIds != nil {
+		infrastructureTypes := make([]InfrastructureType, 0, len(*params.InfrastructureTypeIds))
+		for _, id := range *params.InfrastructureTypeIds {
+			infrastructureTypes = append(infrastructureTypes, InfrastructureType{
+				BaseEntity: BaseEntity{ID: id},
+			})
+		}
+		at.InfrastructureTypes = infrastructureTypes
 	}
 	if params.ConfigurationSchema != nil {
 		at.ConfigurationSchema = *params.ConfigurationSchema
@@ -129,22 +153,24 @@ type AgentTypeCommander interface {
 }
 
 type CreateAgentTypeParams struct {
-	Name                string            `json:"name"`
-	ServiceTypeIds      []properties.UUID `json:"serviceTypeIds,omitempty"`
-	ConfigurationSchema schema.Schema     `json:"configurationSchema"`
-	ConfigTemplate      string            `json:"configTemplate,omitempty"`
-	CmdTemplate         string            `json:"cmdTemplate,omitempty"`
-	ConfigContentType   string            `json:"configContentType,omitempty"`
+	Name                  string            `json:"name"`
+	ServiceTypeIds        []properties.UUID `json:"serviceTypeIds,omitempty"`
+	InfrastructureTypeIds []properties.UUID `json:"infrastructureTypeIds,omitempty"`
+	ConfigurationSchema   schema.Schema     `json:"configurationSchema"`
+	ConfigTemplate        string            `json:"configTemplate,omitempty"`
+	CmdTemplate           string            `json:"cmdTemplate,omitempty"`
+	ConfigContentType     string            `json:"configContentType,omitempty"`
 }
 
 type UpdateAgentTypeParams struct {
-	ID                  properties.UUID    `json:"id"`
-	Name                *string            `json:"name"`
-	ServiceTypeIds      *[]properties.UUID `json:"serviceTypeIds,omitempty"`
-	ConfigurationSchema *schema.Schema     `json:"configurationSchema,omitempty"`
-	ConfigTemplate      *string            `json:"configTemplate,omitempty"`
-	CmdTemplate         *string            `json:"cmdTemplate,omitempty"`
-	ConfigContentType   *string            `json:"configContentType,omitempty"`
+	ID                    properties.UUID    `json:"id"`
+	Name                  *string            `json:"name"`
+	ServiceTypeIds        *[]properties.UUID `json:"serviceTypeIds,omitempty"`
+	InfrastructureTypeIds *[]properties.UUID `json:"infrastructureTypeIds,omitempty"`
+	ConfigurationSchema   *schema.Schema     `json:"configurationSchema,omitempty"`
+	ConfigTemplate        *string            `json:"configTemplate,omitempty"`
+	CmdTemplate           *string            `json:"cmdTemplate,omitempty"`
+	ConfigContentType     *string            `json:"configContentType,omitempty"`
 }
 
 // agentTypeCommander is the concrete implementation of AgentTypeCommander
@@ -282,4 +308,7 @@ type AgentTypeRepository interface {
 // AgentTypeQuerier defines the interface for the AgentType read-only queries
 type AgentTypeQuerier interface {
 	BaseEntityQuerier[AgentType]
+
+	// CountByInfrastructureType returns the number of agent types bound to a specific infrastructure type
+	CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)
 }

@@ -97,16 +97,18 @@ func TestConfigPoolValue_TableName(t *testing.T) {
 
 func TestConfigPoolValue_IsAllocated(t *testing.T) {
 	tests := []struct {
-		name     string
-		agentID  *properties.UUID
-		expected bool
+		name             string
+		agentID          *properties.UUID
+		infrastructureID *properties.UUID
+		expected         bool
 	}{
-		{name: "not allocated", agentID: nil, expected: false},
-		{name: "allocated", agentID: helpers.UUIDPtr(properties.NewUUID()), expected: true},
+		{name: "not allocated", expected: false},
+		{name: "allocated to agent", agentID: helpers.UUIDPtr(properties.NewUUID()), expected: true},
+		{name: "allocated to infrastructure", infrastructureID: helpers.UUIDPtr(properties.NewUUID()), expected: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := &ConfigPoolValue{AgentID: tt.agentID}
+			v := &ConfigPoolValue{AgentID: tt.agentID, InfrastructureID: tt.infrastructureID}
 			assert.Equal(t, tt.expected, v.IsAllocated())
 		})
 	}
@@ -116,14 +118,23 @@ func TestConfigPoolValue_Allocate(t *testing.T) {
 	tests := []struct {
 		name         string
 		initial      *ConfigPoolValue
-		agentID      properties.UUID
+		entityType   ConfigPoolValueEntityType
+		entityID     properties.UUID
 		propertyName string
 	}{
 		{
-			name:         "allocate fresh value",
+			name:         "allocate fresh value to agent",
 			initial:      &ConfigPoolValue{},
-			agentID:      properties.NewUUID(),
+			entityType:   ConfigPoolValueEntityTypeAgent,
+			entityID:     properties.NewUUID(),
 			propertyName: "ip_address",
+		},
+		{
+			name:         "allocate fresh value to infrastructure",
+			initial:      &ConfigPoolValue{},
+			entityType:   ConfigPoolValueEntityTypeInfrastructure,
+			entityID:     properties.NewUUID(),
+			propertyName: "ptp",
 		},
 		{
 			name: "re-allocate already allocated value",
@@ -136,16 +147,24 @@ func TestConfigPoolValue_Allocate(t *testing.T) {
 					AllocatedAt:  &now,
 				}
 			}(),
-			agentID:      properties.NewUUID(),
+			entityType:   ConfigPoolValueEntityTypeAgent,
+			entityID:     properties.NewUUID(),
 			propertyName: "new_prop",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.initial.Allocate(tt.agentID, tt.propertyName)
+			tt.initial.Allocate(tt.entityType, tt.entityID, tt.propertyName)
 
-			assert.Equal(t, &tt.agentID, tt.initial.AgentID)
+			switch tt.entityType {
+			case ConfigPoolValueEntityTypeAgent:
+				assert.Equal(t, &tt.entityID, tt.initial.AgentID)
+				assert.Nil(t, tt.initial.InfrastructureID)
+			case ConfigPoolValueEntityTypeInfrastructure:
+				assert.Equal(t, &tt.entityID, tt.initial.InfrastructureID)
+				assert.Nil(t, tt.initial.AgentID)
+			}
 			assert.Equal(t, helpers.StringPtr(tt.propertyName), tt.initial.PropertyName)
 			assert.NotNil(t, tt.initial.AllocatedAt)
 			assert.True(t, tt.initial.IsAllocated())
@@ -269,6 +288,18 @@ func TestConfigPoolValue_Release(t *testing.T) {
 			}(),
 		},
 		{
+			name: "release infrastructure-allocated value",
+			initial: func() *ConfigPoolValue {
+				id := properties.NewUUID()
+				now := time.Now()
+				return &ConfigPoolValue{
+					InfrastructureID: &id,
+					PropertyName:     helpers.StringPtr("ptp"),
+					AllocatedAt:      &now,
+				}
+			}(),
+		},
+		{
 			name:    "release already released value",
 			initial: &ConfigPoolValue{},
 		},
@@ -279,6 +310,7 @@ func TestConfigPoolValue_Release(t *testing.T) {
 			tt.initial.Release()
 
 			assert.Nil(t, tt.initial.AgentID)
+			assert.Nil(t, tt.initial.InfrastructureID)
 			assert.Nil(t, tt.initial.PropertyName)
 			assert.Nil(t, tt.initial.AllocatedAt)
 			assert.False(t, tt.initial.IsAllocated())
