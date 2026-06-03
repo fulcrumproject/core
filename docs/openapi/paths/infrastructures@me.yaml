@@ -2,7 +2,7 @@ get:
   operationId: infrastructuresGetCurrent
   summary: Get current infrastructure
   tags:
-    - Infrastructures
+    - Infrastructure
   description: Retrieves the infrastructure referenced by the bootstrap-token identity. Used by the install flow once the install-token issuer for Infrastructure ships (Phase 3).
   security:
     - BearerAuth: []

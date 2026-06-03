@@ -9,7 +9,7 @@ get:
   operationId: infrastructuresFetchInstallConfig
   summary: Fetch rendered infrastructure install configuration
   tags:
-    - Infrastructures
+    - Infrastructure
   description: |
     Returns the rendered configuration for a freshly deployed infrastructure.
     The caller must present BOTH:

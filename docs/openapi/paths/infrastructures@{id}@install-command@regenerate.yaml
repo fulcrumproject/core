@@ -8,7 +8,7 @@ post:
   operationId: infrastructuresRegenerateInstallCommand
   summary: Regenerate install command
   tags:
-    - Infrastructures
+    - Infrastructure
   description: |
     Rotates the infrastructure's install token. Invalidates any previously
     issued install token and returns a fresh install command plus fetch URL.

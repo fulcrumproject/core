@@ -8,7 +8,7 @@ get:
   operationId: infrastructureTypesGet
   summary: Get an infrastructure type
   tags:
-    - Infrastructures
+    - Infrastructure
   description: Retrieves a specific infrastructure type by ID
   x-auth-permissions:
     - role: admin
@@ -34,7 +34,7 @@ patch:
   operationId: infrastructureTypesUpdate
   summary: Update an infrastructure type
   tags:
-    - Infrastructures
+    - Infrastructure
   description: Partially updates an infrastructure type (PATCH semantics)
   x-auth-permissions:
     - role: admin
@@ -86,7 +86,7 @@ delete:
   operationId: infrastructureTypesDelete
   summary: Delete an infrastructure type
   tags:
-    - Infrastructures
+    - Infrastructure
   description: Deletes an infrastructure type
   x-auth-permissions:
     - role: admin

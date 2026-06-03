@@ -18,6 +18,8 @@ tags:
     description: Cloud service participant management
   - name: Agents
     description: Agent and agent type management
+  - name: Infrastructure
+    description: Infrastructure and infrastructure type management
   - name: Services
     description: Service, service type, service group management and service pools
   - name: Jobs
@@ -107,6 +109,14 @@ components:
       $ref: ./components/schemas/infrastructures.yaml#/CreateInfrastructureReq
     UpdateInfrastructureReq:
       $ref: ./components/schemas/infrastructures.yaml#/UpdateInfrastructureReq
+    InfrastructureTypeRes:
+      $ref: ./components/schemas/infrastructure_types.yaml#/InfrastructureTypeRes
+    CreateInfrastructureTypeReq:
+      $ref: ./components/schemas/infrastructure_types.yaml#/CreateInfrastructureTypeReq
+    UpdateInfrastructureTypeReq:
+      $ref: ./components/schemas/infrastructure_types.yaml#/UpdateInfrastructureTypeReq
+    InfrastructureConfigurationSchema:
+      $ref: ./components/schemas/infrastructure_types.yaml#/InfrastructureConfigurationSchema
     JSONObject:
       $ref: ./components/schemas/common.yaml#/JSONObject
     CreateKeycloakUserReq:

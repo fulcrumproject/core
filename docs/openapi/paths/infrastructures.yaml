@@ -2,7 +2,7 @@ get:
   operationId: infrastructuresList
   summary: List infrastructures
   tags:
-    - Infrastructures
+    - Infrastructure
   description: Retrieves a paginated list of infrastructures
   x-auth-permissions:
     - role: admin
@@ -71,7 +71,7 @@ post:
   operationId: infrastructuresCreate
   summary: Create an infrastructure
   tags:
-    - Infrastructures
+    - Infrastructure
   description: Creates a new infrastructure instance under the given provider and infrastructure type. Configuration is validated against the infrastructure type's configurationSchema.
   x-auth-permissions:
     - role: admin

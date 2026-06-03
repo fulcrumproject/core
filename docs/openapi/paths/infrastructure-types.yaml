@@ -2,7 +2,7 @@ get:
   operationId: infrastructureTypesList
   summary: List infrastructure types
   tags:
-    - Infrastructures
+    - Infrastructure
   description: Retrieves a paginated list of infrastructure types
   x-auth-permissions:
     - role: admin
@@ -57,7 +57,7 @@ post:
   operationId: infrastructureTypesCreate
   summary: Create an infrastructure type
   tags:
-    - Infrastructures
+    - Infrastructure
   description: Creates a new infrastructure type
   x-auth-permissions:
     - role: admin

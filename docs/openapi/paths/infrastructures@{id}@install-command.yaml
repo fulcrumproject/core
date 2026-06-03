@@ -8,7 +8,7 @@ get:
   operationId: infrastructuresGetInstallCommand
   summary: Get install-command metadata
   tags:
-    - Infrastructures
+    - Infrastructure
   description: |
     Returns metadata about the current install token for the infrastructure
     (id, expiration, creation time). Never returns the plain token or
@@ -45,7 +45,7 @@ post:
   operationId: infrastructuresCreateInstallCommand
   summary: Create install command
   tags:
-    - Infrastructures
+    - Infrastructure
   description: |
     Issues a new install token for the infrastructure and returns the
     one-shot install command plus fetch URL. Install tokens are short-lived
@@ -86,7 +86,7 @@ delete:
   operationId: infrastructuresRevokeInstallCommand
   summary: Revoke install command
   tags:
-    - Infrastructures
+    - Infrastructure
   description: Revokes the infrastructure's current install token. Subsequent fetch attempts on that token return 404.
   x-auth-permissions:
     - role: admin

@@ -19,6 +19,8 @@ tags:
     description: Cloud service participant management
   - name: Agents
     description: Agent and agent type management
+  - name: Infrastructure
+    description: Infrastructure and infrastructure type management
   - name: Services
     description: Service, service type, service group management and service pools
   - name: Jobs
@@ -262,7 +264,7 @@ paths:
       operationId: infrastructureTypesList
       summary: List infrastructure types
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Retrieves a paginated list of infrastructure types
       x-auth-permissions:
         - role: admin
@@ -317,7 +319,7 @@ paths:
       operationId: infrastructureTypesCreate
       summary: Create an infrastructure type
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Creates a new infrastructure type
       x-auth-permissions:
         - role: admin
@@ -370,7 +372,7 @@ paths:
       operationId: infrastructureTypesGet
       summary: Get an infrastructure type
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Retrieves a specific infrastructure type by ID
       x-auth-permissions:
         - role: admin
@@ -396,7 +398,7 @@ paths:
       operationId: infrastructureTypesUpdate
       summary: Update an infrastructure type
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Partially updates an infrastructure type (PATCH semantics)
       x-auth-permissions:
         - role: admin
@@ -448,7 +450,7 @@ paths:
       operationId: infrastructureTypesDelete
       summary: Delete an infrastructure type
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Deletes an infrastructure type
       x-auth-permissions:
         - role: admin
@@ -479,7 +481,7 @@ paths:
       operationId: infrastructuresList
       summary: List infrastructures
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Retrieves a paginated list of infrastructures
       x-auth-permissions:
         - role: admin
@@ -548,7 +550,7 @@ paths:
       operationId: infrastructuresCreate
       summary: Create an infrastructure
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Creates a new infrastructure instance under the given provider and infrastructure type. Configuration is validated against the infrastructure type's configurationSchema.
       x-auth-permissions:
         - role: admin
@@ -583,7 +585,7 @@ paths:
       operationId: infrastructuresGetCurrent
       summary: Get current infrastructure
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Retrieves the infrastructure referenced by the bootstrap-token identity. Used by the install flow once the install-token issuer for Infrastructure ships (Phase 3).
       security:
         - BearerAuth: []
@@ -618,7 +620,7 @@ paths:
       operationId: infrastructuresFetchInstallConfig
       summary: Fetch rendered infrastructure install configuration
       tags:
-        - Infrastructures
+        - Infrastructure
       description: |
         Returns the rendered configuration for a freshly deployed infrastructure.
         The caller must present BOTH:
@@ -694,7 +696,7 @@ paths:
       operationId: infrastructuresGet
       summary: Get an infrastructure
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Retrieves a specific infrastructure by ID
       x-auth-permissions:
         - role: admin
@@ -720,7 +722,7 @@ paths:
       operationId: infrastructuresUpdate
       summary: Update an infrastructure
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Partially updates an infrastructure (PATCH semantics). Configuration changes are validated against the infrastructure type's configurationSchema.
       x-auth-permissions:
         - role: admin
@@ -760,7 +762,7 @@ paths:
       operationId: infrastructuresDelete
       summary: Delete an infrastructure
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Deletes an infrastructure
       x-auth-permissions:
         - role: admin
@@ -791,7 +793,7 @@ paths:
       operationId: infrastructuresGetInstallCommand
       summary: Get install-command metadata
       tags:
-        - Infrastructures
+        - Infrastructure
       description: |
         Returns metadata about the current install token for the infrastructure
         (id, expiration, creation time). Never returns the plain token or
@@ -828,7 +830,7 @@ paths:
       operationId: infrastructuresCreateInstallCommand
       summary: Create install command
       tags:
-        - Infrastructures
+        - Infrastructure
       description: |
         Issues a new install token for the infrastructure and returns the
         one-shot install command plus fetch URL. Install tokens are short-lived
@@ -869,7 +871,7 @@ paths:
       operationId: infrastructuresRevokeInstallCommand
       summary: Revoke install command
       tags:
-        - Infrastructures
+        - Infrastructure
       description: Revokes the infrastructure's current install token. Subsequent fetch attempts on that token return 404.
       x-auth-permissions:
         - role: admin
@@ -902,7 +904,7 @@ paths:
       operationId: infrastructuresRegenerateInstallCommand
       summary: Regenerate install command
       tags:
-        - Infrastructures
+        - Infrastructure
       description: |
         Rotates the infrastructure's install token. Invalidates any previously
         issued install token and returns a fresh install command plus fetch URL.
@@ -5498,6 +5500,105 @@ components:
             type: string
         configuration:
           $ref: '#/components/schemas/JSONObject'
+    InfrastructureTypeRes:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/properties.UUID'
+        name:
+          type: string
+          example: fulcrum-csp-node
+        configurationSchema:
+          $ref: '#/components/schemas/InfrastructureConfigurationSchema'
+          description: Schema defining the structure and validation rules for infrastructure configuration
+        configTemplate:
+          type: string
+          description: Go text/template rendered at install time to produce the infrastructure config file. Placeholder refs (e.g. {{.host}}) must be keys of configurationSchema.properties.
+          example: |
+            endpoint={{.endpoint}}
+        cmdTemplate:
+          type: string
+          description: Go text/template rendered at install time to produce the infrastructure install command. Placeholder refs must be keys of configurationSchema.properties or the special {{.configUrl}} / {{.authToken}}.
+          example: 'curl -fsSL {{.configUrl}} -H ''Authorization: Bearer {{.authToken}}'' | sh'
+        configContentType:
+          type: string
+          description: Media type (RFC 6838) of the rendered configTemplate output. Defaults to text/plain.
+          default: text/plain
+          example: text/yaml
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateInfrastructureTypeReq:
+      type: object
+      required:
+        - name
+        - configurationSchema
+      properties:
+        name:
+          type: string
+          description: Name of the infrastructure type
+          example: fulcrum-csp-node
+          minLength: 1
+        configurationSchema:
+          $ref: '#/components/schemas/InfrastructureConfigurationSchema'
+          description: Schema defining the structure and validation rules for infrastructure configuration
+        configTemplate:
+          type: string
+          description: Go text/template for the infrastructure config file. Placeholder refs must be keys of configurationSchema.properties.
+          example: |
+            endpoint={{.endpoint}}
+        cmdTemplate:
+          type: string
+          description: Go text/template for the infrastructure install command. Placeholder refs must be keys of configurationSchema.properties or {{.configUrl}} / {{.authToken}}.
+          example: 'curl -fsSL {{.configUrl}} -H ''Authorization: Bearer {{.authToken}}'' | sh'
+        configContentType:
+          type: string
+          description: Media type (RFC 6838) of the rendered configTemplate output. Defaults to text/plain when omitted.
+          default: text/plain
+          example: text/yaml
+    UpdateInfrastructureTypeReq:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated name of the infrastructure type
+          minLength: 1
+        configurationSchema:
+          $ref: '#/components/schemas/InfrastructureConfigurationSchema'
+          description: Updated configuration schema
+        configTemplate:
+          type: string
+          description: Updated Go text/template for the infrastructure config file.
+        cmdTemplate:
+          type: string
+          description: Updated Go text/template for the infrastructure install command.
+        configContentType:
+          type: string
+          description: Updated media type for the rendered configTemplate output. Empty resets to text/plain.
+          default: text/plain
+    InfrastructureConfigurationSchema:
+      type: object
+      description: Schema defining validation rules and structure for infrastructure configuration properties
+      properties:
+        properties:
+          type: object
+          description: Property definitions keyed by property name
+          additionalProperties:
+            $ref: '#/components/schemas/PropertyDefinition'
+        validators:
+          type: array
+          description: Schema-level validators (e.g., exactlyOne)
+          items:
+            $ref: '#/components/schemas/SchemaValidatorConfig'
+      example:
+        properties:
+          endpoint:
+            type: string
+            label: Endpoint
+            required: true
     JSONObject:
       type: object
       additionalProperties: true
@@ -6764,105 +6865,6 @@ components:
               - type: max
                 config:
                   value: 10
-    InfrastructureConfigurationSchema:
-      type: object
-      description: Schema defining validation rules and structure for infrastructure configuration properties
-      properties:
-        properties:
-          type: object
-          description: Property definitions keyed by property name
-          additionalProperties:
-            $ref: '#/components/schemas/PropertyDefinition'
-        validators:
-          type: array
-          description: Schema-level validators (e.g., exactlyOne)
-          items:
-            $ref: '#/components/schemas/SchemaValidatorConfig'
-      example:
-        properties:
-          endpoint:
-            type: string
-            label: Endpoint
-            required: true
-    InfrastructureTypeRes:
-      type: object
-      properties:
-        id:
-          $ref: '#/components/schemas/properties.UUID'
-        name:
-          type: string
-          example: fulcrum-csp-node
-        configurationSchema:
-          $ref: '#/components/schemas/InfrastructureConfigurationSchema'
-          description: Schema defining the structure and validation rules for infrastructure configuration
-        configTemplate:
-          type: string
-          description: Go text/template rendered at install time to produce the infrastructure config file. Placeholder refs (e.g. {{.host}}) must be keys of configurationSchema.properties.
-          example: |
-            endpoint={{.endpoint}}
-        cmdTemplate:
-          type: string
-          description: Go text/template rendered at install time to produce the infrastructure install command. Placeholder refs must be keys of configurationSchema.properties or the special {{.configUrl}} / {{.authToken}}.
-          example: 'curl -fsSL {{.configUrl}} -H ''Authorization: Bearer {{.authToken}}'' | sh'
-        configContentType:
-          type: string
-          description: Media type (RFC 6838) of the rendered configTemplate output. Defaults to text/plain.
-          default: text/plain
-          example: text/yaml
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-    CreateInfrastructureTypeReq:
-      type: object
-      required:
-        - name
-        - configurationSchema
-      properties:
-        name:
-          type: string
-          description: Name of the infrastructure type
-          example: fulcrum-csp-node
-          minLength: 1
-        configurationSchema:
-          $ref: '#/components/schemas/InfrastructureConfigurationSchema'
-          description: Schema defining the structure and validation rules for infrastructure configuration
-        configTemplate:
-          type: string
-          description: Go text/template for the infrastructure config file. Placeholder refs must be keys of configurationSchema.properties.
-          example: |
-            endpoint={{.endpoint}}
-        cmdTemplate:
-          type: string
-          description: Go text/template for the infrastructure install command. Placeholder refs must be keys of configurationSchema.properties or {{.configUrl}} / {{.authToken}}.
-          example: 'curl -fsSL {{.configUrl}} -H ''Authorization: Bearer {{.authToken}}'' | sh'
-        configContentType:
-          type: string
-          description: Media type (RFC 6838) of the rendered configTemplate output. Defaults to text/plain when omitted.
-          default: text/plain
-          example: text/yaml
-    UpdateInfrastructureTypeReq:
-      type: object
-      properties:
-        name:
-          type: string
-          description: Updated name of the infrastructure type
-          minLength: 1
-        configurationSchema:
-          $ref: '#/components/schemas/InfrastructureConfigurationSchema'
-          description: Updated configuration schema
-        configTemplate:
-          type: string
-          description: Updated Go text/template for the infrastructure config file.
-        cmdTemplate:
-          type: string
-          description: Updated Go text/template for the infrastructure install command.
-        configContentType:
-          type: string
-          description: Updated media type for the rendered configTemplate output. Empty resets to text/plain.
-          default: text/plain
     UpdateServiceOptionTypeReq:
       type: object
       properties:
