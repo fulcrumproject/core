@@ -4972,6 +4972,8 @@ components:
           type: string
           enum:
             - list
+            - range
+            - subnet
           example: list
         generatorConfig:
           type: object
@@ -5128,11 +5130,13 @@ components:
           type: string
           enum:
             - list
+            - range
+            - subnet
           example: list
-          description: 'Allocation strategy: ''list'' for pre-configured values'
+          description: 'Allocation strategy: ''list'' for pre-configured values, ''range'' for an integer range, ''subnet'' for CIDR-derived values'
         generatorConfig:
           type: object
-          description: Generator-specific configuration
+          description: Generator-specific configuration. Required for 'range' (min/max, optional exclude) and 'subnet' (cidr, optional prefix/hosts/excludeFirst/excludeLast/exclude)
           example:
             cidr: 192.168.1.0/24
             excludeFirst: 1
