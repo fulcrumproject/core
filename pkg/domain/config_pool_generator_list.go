@@ -39,16 +39,7 @@ func (g *ConfigPoolListGenerator) Allocate(ctx context.Context, entityType Confi
 }
 
 func (g *ConfigPoolListGenerator) Release(ctx context.Context, values []*ConfigPoolValue) error {
-	for _, v := range values {
-		if v.PoolID() != g.poolID {
-			continue
-		}
-		v.Release()
-		if err := g.repo.Update(ctx, v); err != nil {
-			return fmt.Errorf("failed to release value: %w", err)
-		}
-	}
-	return nil
+	return releasePoolValues(ctx, g.repo, g.poolID, values)
 }
 
 var _ ConfigPoolGenerator = (*ConfigPoolListGenerator)(nil)

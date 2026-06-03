@@ -11,13 +11,15 @@ import (
 	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/fulcrumproject/core/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
+	"resty.dev/v3"
 )
 
 // testFaeProxmoxScenario exercises the range + subnet generators end to end across
 // both pool scopes: ASN and PtP /30 are Fulcrum-global pools (admin, no participantId),
 // while public IP, VMBR0 LAN /24 and GRE NAT /23 are CSP/participant-scoped. Onboarding
-// GRE and L2 Proxmox clusters auto-allocates from both scopes in a single allocation,
-// with values reused lowest-first after release.
+// GRE and L2 Proxmox clusters auto-allocates from both scopes in a single allocation.
+// Release keeps the value rows (cleared) so a released value is retired, never
+// re-allocated.
 func testFaeProxmoxScenario(t *testing.T, env *Env) {
 	providerID := testhelpers.ProviderID
 	uniq := testhelpers.Uniq()
@@ -112,11 +114,21 @@ func testFaeProxmoxScenario(t *testing.T, env *Env) {
 		testhelpers.MustDelete(t, env.AdminClient, "/infrastructures", l2.ID)
 		testhelpers.MustDelete(t, env.AdminClient, "/infrastructure-types", greType.ID)
 		testhelpers.MustDelete(t, env.AdminClient, "/infrastructure-types", l2Type.ID)
-		testhelpers.MustDelete(t, env.AdminClient, "/config-pools", asnPool.ID)
-		testhelpers.MustDelete(t, env.AdminClient, "/config-pools", ptpPool.ID)
-		testhelpers.MustDelete(t, env.ProviderClient, "/config-pools", pubPool.ID)
-		testhelpers.MustDelete(t, env.ProviderClient, "/config-pools", lanPool.ID)
-		testhelpers.MustDelete(t, env.ProviderClient, "/config-pools", natPool.ID)
+		// Release keeps the (now unallocated) value rows, so each pool's retained
+		// values must be deleted before the pool can be removed. Generator-minted
+		// values carry no participantId (admin-scoped), so list/delete them as admin.
+		deletePool := func(client *resty.Client, poolID properties.UUID) {
+			page := testhelpers.MustList[api.ConfigPoolValueRes](t, env.AdminClient, "/config-pool-values?configPoolId="+poolID.String())
+			for _, v := range page.Items {
+				testhelpers.MustDelete(t, env.AdminClient, "/config-pool-values", v.ID)
+			}
+			testhelpers.MustDelete(t, client, "/config-pools", poolID)
+		}
+		deletePool(env.AdminClient, asnPool.ID)
+		deletePool(env.AdminClient, ptpPool.ID)
+		deletePool(env.ProviderClient, pubPool.ID)
+		deletePool(env.ProviderClient, lanPool.ID)
+		deletePool(env.ProviderClient, natPool.ID)
 	})
 
 	// GRE resolves from both scopes in one allocation: asn/ptp from the global
@@ -137,7 +149,7 @@ func testFaeProxmoxScenario(t *testing.T, env *Env) {
 	require.Equal(t, "172.30.232.0/23", nat["cidr"], "natSubnet from the CSP pool")
 	require.NotContains(t, nat, "host1", "empty hosts emits no host fields")
 
-	// L2 also spans both scopes: asn/ptp (global) + lanSubnet (CSP), reused lowest-first.
+	// L2 also spans both scopes: asn/ptp (global) + lanSubnet (CSP), allocated lowest-first.
 	require.NotNil(t, l2.Configuration)
 	l2Cfg := *l2.Configuration
 	require.Equal(t, "l2", l2Cfg["transport"])

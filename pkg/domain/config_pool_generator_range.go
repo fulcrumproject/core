@@ -109,17 +109,18 @@ func toInt(v any) (int, bool) {
 	}
 }
 
-// releasePoolValues deletes, in a single query, the passed values that belong to
-// poolID. Shared by the algorithmic generators (range, subnet).
+// releasePoolValues clears the allocation fields of the passed values that belong to
+// poolID and keeps the rows, so the value stays "used" and is never re-allocated.
+// Shared by the algorithmic generators (range, subnet).
 func releasePoolValues(ctx context.Context, repo ConfigPoolValueRepository, poolID properties.UUID, values []*ConfigPoolValue) error {
-	ids := make([]properties.UUID, 0, len(values))
 	for _, v := range values {
-		if v.PoolID() == poolID {
-			ids = append(ids, v.ID)
+		if v.PoolID() != poolID {
+			continue
 		}
-	}
-	if err := repo.DeleteByIDs(ctx, ids); err != nil {
-		return fmt.Errorf("failed to release values: %w", err)
+		v.Release()
+		if err := repo.Update(ctx, v); err != nil {
+			return fmt.Errorf("failed to release value: %w", err)
+		}
 	}
 	return nil
 }

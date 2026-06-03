@@ -60,13 +60,6 @@ func (r *GormConfigPoolValueRepository) FindByInfrastructure(ctx context.Context
 	return values, result.Error
 }
 
-func (r *GormConfigPoolValueRepository) DeleteByIDs(ctx context.Context, ids []properties.UUID) error {
-	if len(ids) == 0 {
-		return nil
-	}
-	return r.db.WithContext(ctx).Where("id IN ?", ids).Delete(&domain.ConfigPoolValue{}).Error
-}
-
 func (r *GormConfigPoolValueRepository) FindByPool(ctx context.Context, poolID properties.UUID) ([]*domain.ConfigPoolValue, error) {
 	var values []*domain.ConfigPoolValue
 	result := r.db.WithContext(ctx).Where("config_pool_id = ?", poolID).Order("name ASC").Find(&values)

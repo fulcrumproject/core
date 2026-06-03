@@ -116,7 +116,6 @@ type ConfigPoolValueRepository interface {
 	Create(ctx context.Context, value *ConfigPoolValue) error
 	Update(ctx context.Context, value *ConfigPoolValue) error
 	Delete(ctx context.Context, id properties.UUID) error
-	DeleteByIDs(ctx context.Context, ids []properties.UUID) error
 }
 
 type ConfigPoolValueCommander interface {

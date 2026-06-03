@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
@@ -186,23 +187,29 @@ func TestConfigPoolSubnetGenerator_Allocate(t *testing.T) {
 	}
 }
 
+// Release keeps the row: it clears the allocation fields and Updates each value of this
+// pool, leaving other pools' values untouched, so a released subnet is never re-issued.
 func TestConfigPoolSubnetGenerator_Release(t *testing.T) {
 	ctx := context.Background()
 	poolID := properties.UUID(uuid.New())
 	otherPool := properties.UUID(uuid.New())
 	id1 := properties.UUID(uuid.New())
 	id2 := properties.UUID(uuid.New())
+	agentID := properties.UUID(uuid.New())
+	prop := "subnet"
+	now := time.Now()
 
 	values := []*ConfigPoolValue{
-		{BaseEntity: BaseEntity{ID: id1}, ConfigPoolID: poolID},
-		{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: otherPool},
-		{BaseEntity: BaseEntity{ID: id2}, ConfigPoolID: poolID},
+		{BaseEntity: BaseEntity{ID: id1}, ConfigPoolID: poolID, AgentID: &agentID, PropertyName: &prop, AllocatedAt: &now},
+		{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: otherPool, AgentID: &agentID, PropertyName: &prop, AllocatedAt: &now},
+		{BaseEntity: BaseEntity{ID: id2}, ConfigPoolID: poolID, AgentID: &agentID, PropertyName: &prop, AllocatedAt: &now},
 	}
 
 	repo := NewMockConfigPoolValueRepository(t)
-	repo.On("DeleteByIDs", ctx, mock.MatchedBy(func(ids []properties.UUID) bool {
-		return len(ids) == 2 && ids[0] == id1 && ids[1] == id2
-	})).Return(nil)
+	repo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+		return (v.ID == id1 || v.ID == id2) && !v.IsAllocated() &&
+			v.AgentID == nil && v.InfrastructureID == nil && v.AllocatedAt == nil && v.PropertyName == nil
+	})).Return(nil).Twice()
 
 	gen := NewConfigPoolSubnetGenerator(repo, poolID, properties.JSON{})
 	if err := gen.Release(ctx, values); err != nil {

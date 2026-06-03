@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
@@ -93,26 +94,59 @@ func TestConfigPoolRangeGenerator_Allocate(t *testing.T) {
 	}
 }
 
+// Release keeps the row: it clears the allocation fields and Updates each value of
+// this pool, so the value stays "used" and is never re-allocated. Values of other
+// pools are left untouched.
 func TestConfigPoolRangeGenerator_Release(t *testing.T) {
 	ctx := context.Background()
 	poolID := properties.UUID(uuid.New())
 	otherPool := properties.UUID(uuid.New())
 	id1 := properties.UUID(uuid.New())
 	id2 := properties.UUID(uuid.New())
+	agentID := properties.UUID(uuid.New())
+	prop := "asn"
+	now := time.Now()
 
 	values := []*ConfigPoolValue{
-		{BaseEntity: BaseEntity{ID: id1}, ConfigPoolID: poolID},
-		{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: otherPool},
-		{BaseEntity: BaseEntity{ID: id2}, ConfigPoolID: poolID},
+		{BaseEntity: BaseEntity{ID: id1}, ConfigPoolID: poolID, AgentID: &agentID, PropertyName: &prop, AllocatedAt: &now},
+		{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: otherPool, AgentID: &agentID, PropertyName: &prop, AllocatedAt: &now},
+		{BaseEntity: BaseEntity{ID: id2}, ConfigPoolID: poolID, AgentID: &agentID, PropertyName: &prop, AllocatedAt: &now},
 	}
 
 	repo := NewMockConfigPoolValueRepository(t)
-	repo.On("DeleteByIDs", ctx, mock.MatchedBy(func(ids []properties.UUID) bool {
-		return len(ids) == 2 && ids[0] == id1 && ids[1] == id2
-	})).Return(nil)
+	repo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+		return (v.ID == id1 || v.ID == id2) && !v.IsAllocated() &&
+			v.AgentID == nil && v.InfrastructureID == nil && v.AllocatedAt == nil && v.PropertyName == nil
+	})).Return(nil).Twice()
 
 	gen := NewConfigPoolRangeGenerator(repo, poolID, properties.JSON{})
 	if err := gen.Release(ctx, values); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// A released value keeps its row (FindByPool still returns it), so the next allocation
+// skips it and hands out the next free value instead of re-issuing the released one.
+func TestConfigPoolRangeGenerator_ReleasedValueNotReallocated(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	agentID := properties.UUID(uuid.New())
+
+	released := &ConfigPoolValue{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: float64(1)}
+
+	repo := NewMockConfigPoolValueRepository(t)
+	repo.On("FindByPool", ctx, poolID).Return([]*ConfigPoolValue{released}, nil)
+	repo.On("Create", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+		n, ok := toInt(v.Value)
+		return ok && n == 2
+	})).Return(nil)
+
+	gen := NewConfigPoolRangeGenerator(repo, poolID, properties.JSON{"min": float64(1), "max": float64(3)})
+	got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeAgent, agentID, "asn")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != 2 {
+		t.Errorf("released value 1 must not be re-allocated; got %v", got)
 	}
 }
