@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -38,6 +40,7 @@ func TestCompositeAuthenticator_Authenticate(t *testing.T) {
 		expectError       bool
 		errorContains     string
 		expectedCallCount []bool // which authenticators should be called
+		expectLog         bool   // true only when all authenticators fail with at least one error
 	}{
 		{
 			name: "First authenticator succeeds",
@@ -62,8 +65,8 @@ func TestCompositeAuthenticator_Authenticate(t *testing.T) {
 		{
 			name: "First authenticator fails with error, second succeeds (fallback)",
 			authenticators: []*mockAuthenticator{
-					{identity: nil, err: authError},
-					{identity: participantIdentity, err: nil},
+				{identity: nil, err: authError},
+				{identity: participantIdentity, err: nil},
 			},
 			expectedIdentity:  participantIdentity,
 			expectError:       false,
@@ -72,20 +75,21 @@ func TestCompositeAuthenticator_Authenticate(t *testing.T) {
 		{
 			name: "Both authenticators fail with error",
 			authenticators: []*mockAuthenticator{
-					{identity: nil, err: errors.New("first auth failed")},
-					{identity: nil, err: errors.New("second auth failed")},
+				{identity: nil, err: errors.New("first auth failed")},
+				{identity: nil, err: errors.New("second auth failed")},
 			},
 			expectedIdentity:  nil,
 			expectError:       true,
-			errorContains:     "authentication failed: no valid identity found", 
+			errorContains:     "authentication failed: no valid identity found",
 			expectedCallCount: []bool{true, true},
+			expectLog:         true,
 		},
 		{
 			name: "First succeeds after second returned nil (mixed scenarios)",
 			authenticators: []*mockAuthenticator{
-					{identity: nil, err: nil}, // Returns nil (not an error, just no match)
-					{identity: nil, err: authError}, // Returns error
-					{identity: adminIdentity, err: nil}, // Succeeds
+				{identity: nil, err: nil},           // Returns nil (not an error, just no match)
+				{identity: nil, err: authError},     // Returns error
+				{identity: adminIdentity, err: nil}, // Succeeds
 			},
 			expectedIdentity:  adminIdentity,
 			expectError:       false,
@@ -114,6 +118,12 @@ func TestCompositeAuthenticator_Authenticate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Capture the default logger to assert compound-failure logging.
+			var logBuf bytes.Buffer
+			prev := slog.Default()
+			slog.SetDefault(slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelError})))
+			defer slog.SetDefault(prev)
+
 			// Convert to Authenticator interface slice
 			auths := make([]Authenticator, len(tt.authenticators))
 			for i, auth := range tt.authenticators {
@@ -140,6 +150,13 @@ func TestCompositeAuthenticator_Authenticate(t *testing.T) {
 			for i, expectedCalled := range tt.expectedCallCount {
 				assert.Equal(t, expectedCalled, tt.authenticators[i].called,
 					"Authenticator %d call status should match expected", i)
+			}
+
+			// Verify the compound log fires only when all authenticators fail with an error
+			if tt.expectLog {
+				assert.NotEmpty(t, logBuf.String(), "expected one compound failure log")
+			} else {
+				assert.Empty(t, logBuf.String(), "expected no log on this path")
 			}
 		})
 	}

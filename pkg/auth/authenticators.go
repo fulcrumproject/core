@@ -23,10 +23,11 @@ func NewCompositeAuthenticator(authenticators ...Authenticator) *CompositeAuthen
 // Returns nil if all authenticators fail
 func (c *CompositeAuthenticator) Authenticate(ctx context.Context, token string) (*Identity, error) {
 	// Try each authenticator in order
+	var errs []error
 	for _, authenticator := range c.authenticators {
 		identity, err := authenticator.Authenticate(ctx, token)
 		if err != nil {
-			slog.Error("Authentication error", "error", err)
+			errs = append(errs, err)
 			continue
 		}
 		if identity != nil {
@@ -34,7 +35,10 @@ func (c *CompositeAuthenticator) Authenticate(ctx context.Context, token string)
 		}
 	}
 
-	// All authenticators failed
+	// All authenticators failed: log once with the aggregated causes.
+	if len(errs) > 0 {
+		slog.Error("Authentication failed for all authenticators", "error", errors.Join(errs...))
+	}
 	return nil, errors.New("authentication failed: no valid identity found")
 }
 
