@@ -19,7 +19,7 @@ func createTestConfigPoolValue(t *testing.T, poolID properties.UUID) *domain.Con
 	randomSuffix := uuid.New().String()
 	return &domain.ConfigPoolValue{
 		Name:         fmt.Sprintf("Value %s", randomSuffix),
-		Value:        fmt.Sprintf("192.168.1.%s", randomSuffix[:3]),
+		Value:        fmt.Sprintf("192.168.1.%s", randomSuffix),
 		ConfigPoolID: poolID,
 	}
 }
