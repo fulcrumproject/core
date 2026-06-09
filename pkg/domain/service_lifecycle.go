@@ -117,6 +117,20 @@ func (ls *LifecycleSchema) ResolveNextState(currentState string, action string, 
 	return "", fmt.Errorf("no valid error transition found for action %q from state %q with error code %q: %w", action, currentState, *errorCode, ErrNoLifecycleTransition)
 }
 
+// TerminateAction returns the action whose successful transition moves a service
+// from currentState into the lifecycle's TerminateState, and whether one exists.
+func (ls *LifecycleSchema) TerminateAction(currentState string) (string, bool) {
+	for _, a := range ls.Actions {
+		for _, t := range a.Transitions {
+			if t.From == currentState && t.To == ls.TerminateState && !t.OnError {
+				return a.Name, true
+			}
+		}
+	}
+
+	return "", false
+}
+
 // ValidateActionAllowed checks if an action is allowed from the current state
 func (ls *LifecycleSchema) ValidateActionAllowed(currentState string, action string) error {
 	// Find the action in the lifecycle schema

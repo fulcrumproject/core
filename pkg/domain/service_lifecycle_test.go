@@ -394,3 +394,59 @@ func TestIsTerminalState_EmptyTerminalStates(t *testing.T) {
 		t.Error("IsTerminalState() should return false when terminal states list is empty")
 	}
 }
+
+func TestTerminateAction(t *testing.T) {
+	lifecycle := &LifecycleSchema{
+		States: []LifecycleState{
+			{Name: "New"},
+			{Name: "Running"},
+			{Name: "Failed"},
+			{Name: "Deleted"},
+		},
+		Actions: []LifecycleAction{
+			{
+				Name: "create",
+				Transitions: []LifecycleTransition{
+					{From: "New", To: "Running"},
+					{From: "New", To: "Failed", OnError: true},
+				},
+			},
+			{
+				Name: "delete",
+				Transitions: []LifecycleTransition{
+					{From: "Running", To: "Deleted"},
+				},
+			},
+			{
+				Name: "fail",
+				Transitions: []LifecycleTransition{
+					{From: "Failed", To: "Deleted", OnError: true},
+				},
+			},
+		},
+		InitialState:   "New",
+		TerminateState: "Deleted",
+	}
+
+	tests := []struct {
+		name         string
+		currentState string
+		wantAction   string
+		wantOk       bool
+	}{
+		{"success transition to terminate state", "Running", "delete", true},
+		{"no transition reaches terminate state", "New", "", false},
+		{"only OnError transition reaches terminate state", "Failed", "", false},
+		{"already in terminate state", "Deleted", "", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			action, ok := lifecycle.TerminateAction(tt.currentState)
+			if action != tt.wantAction || ok != tt.wantOk {
+				t.Errorf("TerminateAction(%q) = (%q, %v), want (%q, %v)",
+					tt.currentState, action, ok, tt.wantAction, tt.wantOk)
+			}
+		})
+	}
+}
