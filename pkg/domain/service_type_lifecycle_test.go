@@ -36,6 +36,7 @@ func TestServiceType_ValidateLifecycle_Valid(t *testing.T) {
 			},
 		},
 		InitialState:   "New",
+		TerminateState: "Deleted",
 		TerminalStates: []string{"Deleted"},
 	}
 
@@ -174,6 +175,60 @@ func TestServiceType_ValidateLifecycle_InvalidInitialState(t *testing.T) {
 	}
 }
 
+func TestServiceType_ValidateLifecycle_EmptyTerminateState(t *testing.T) {
+	lifecycle := LifecycleSchema{
+		States: []LifecycleState{
+			{Name: "New"},
+			{Name: "Running"},
+		},
+		Actions: []LifecycleAction{
+			{
+				Name: "create",
+				Transitions: []LifecycleTransition{
+					{From: "New", To: "Running"},
+				},
+			},
+		},
+		InitialState: "New",
+	}
+
+	err := lifecycle.Validate()
+	if err == nil {
+		t.Error("ValidateLifecycle() should fail for empty terminate state")
+	}
+	if err.Error() != "lifecycle must have a terminate state" {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestServiceType_ValidateLifecycle_InvalidTerminateState(t *testing.T) {
+	lifecycle := LifecycleSchema{
+		States: []LifecycleState{
+			{Name: "New"},
+			{Name: "Running"},
+		},
+		Actions: []LifecycleAction{
+			{
+				Name: "create",
+				Transitions: []LifecycleTransition{
+					{From: "New", To: "Running"},
+				},
+			},
+		},
+		InitialState:   "New",
+		TerminateState: "NonExistent",
+	}
+
+	err := lifecycle.Validate()
+	if err == nil {
+		t.Error("ValidateLifecycle() should fail for invalid terminate state")
+	}
+	expectedMsg := "lifecycle terminate state \"NonExistent\" does not exist in states list"
+	if err.Error() != expectedMsg {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
 func TestServiceType_ValidateLifecycle_InvalidTerminalState(t *testing.T) {
 	lifecycle := LifecycleSchema{
 		States: []LifecycleState{
@@ -190,6 +245,7 @@ func TestServiceType_ValidateLifecycle_InvalidTerminalState(t *testing.T) {
 			},
 		},
 		InitialState:   "New",
+		TerminateState: "Stopped",
 		TerminalStates: []string{"Deleted"},
 	}
 
@@ -209,8 +265,9 @@ func TestServiceType_ValidateLifecycle_EmptyActions(t *testing.T) {
 			{Name: "New"},
 			{Name: "Running"},
 		},
-		Actions:      []LifecycleAction{},
-		InitialState: "New",
+		Actions:        []LifecycleAction{},
+		InitialState:   "New",
+		TerminateState: "Running",
 	}
 
 	err := lifecycle.Validate()
@@ -236,7 +293,8 @@ func TestServiceType_ValidateLifecycle_EmptyActionName(t *testing.T) {
 				},
 			},
 		},
-		InitialState: "New",
+		InitialState:   "New",
+		TerminateState: "Running",
 	}
 
 	err := lifecycle.Validate()
@@ -269,7 +327,8 @@ func TestServiceType_ValidateLifecycle_DuplicateActionName(t *testing.T) {
 				},
 			},
 		},
-		InitialState: "New",
+		InitialState:   "New",
+		TerminateState: "Stopped",
 	}
 
 	err := lifecycle.Validate()
@@ -293,7 +352,8 @@ func TestServiceType_ValidateLifecycle_EmptyTransitions(t *testing.T) {
 				Transitions: []LifecycleTransition{},
 			},
 		},
-		InitialState: "New",
+		InitialState:   "New",
+		TerminateState: "Running",
 	}
 
 	err := lifecycle.Validate()
@@ -319,7 +379,8 @@ func TestServiceType_ValidateLifecycle_InvalidTransitionFromState(t *testing.T) 
 				},
 			},
 		},
-		InitialState: "New",
+		InitialState:   "New",
+		TerminateState: "Running",
 	}
 
 	err := lifecycle.Validate()
@@ -346,7 +407,8 @@ func TestServiceType_ValidateLifecycle_InvalidTransitionToState(t *testing.T) {
 				},
 			},
 		},
-		InitialState: "New",
+		InitialState:   "New",
+		TerminateState: "Running",
 	}
 
 	err := lifecycle.Validate()
@@ -375,7 +437,8 @@ func TestServiceType_ValidateLifecycle_InvalidErrorRegexp(t *testing.T) {
 				},
 			},
 		},
-		InitialState: "New",
+		InitialState:   "New",
+		TerminateState: "Failed",
 	}
 
 	err := lifecycle.Validate()
@@ -404,7 +467,8 @@ func TestServiceType_ValidateLifecycle_ValidErrorRegexp(t *testing.T) {
 				},
 			},
 		},
-		InitialState: "New",
+		InitialState:   "New",
+		TerminateState: "Failed",
 	}
 
 	err := lifecycle.Validate()
@@ -472,6 +536,7 @@ func TestServiceType_ValidateLifecycle_ComplexLifecycle(t *testing.T) {
 			},
 		},
 		InitialState:   "New",
+		TerminateState: "Deleted",
 		TerminalStates: []string{"Deleted", "Failed"},
 	}
 
@@ -495,7 +560,8 @@ func TestServiceType_Validate_WithLifecycle(t *testing.T) {
 				},
 			},
 		},
-		InitialState: "New",
+		InitialState:   "New",
+		TerminateState: "Running",
 	}
 
 	st := &ServiceType{

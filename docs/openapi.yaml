@@ -5830,6 +5830,7 @@ components:
         - states
         - actions
         - initialState
+        - terminateState
       properties:
         states:
           type: array
@@ -5850,6 +5851,10 @@ components:
           type: string
           description: Initial state for new services
           example: New
+        terminateState:
+          type: string
+          description: State CEM moves a service into when its order expires and is not renewed
+          example: Deleted
         terminalStates:
           type: array
           description: States where no further actions can be performed

@@ -20,6 +20,7 @@ type LifecycleSchema struct {
 	States         []LifecycleState  `json:"states"`
 	Actions        []LifecycleAction `json:"actions"`
 	InitialState   string            `json:"initialState"`
+	TerminateState string            `json:"terminateState"`
 	TerminalStates []string          `json:"terminalStates"`
 	RunningStates  []string          `json:"runningStates,omitempty"`
 }
@@ -176,6 +177,14 @@ func (ls *LifecycleSchema) Validate() error {
 	}
 	if !stateNames[ls.InitialState] {
 		return fmt.Errorf("lifecycle initial state %q does not exist in states list", ls.InitialState)
+	}
+
+	// Validate terminate state exists
+	if ls.TerminateState == "" {
+		return fmt.Errorf("lifecycle must have a terminate state")
+	}
+	if !stateNames[ls.TerminateState] {
+		return fmt.Errorf("lifecycle terminate state %q does not exist in states list", ls.TerminateState)
 	}
 
 	// Validate terminal states exist

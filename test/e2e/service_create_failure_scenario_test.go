@@ -17,14 +17,14 @@ import (
 // testServiceCreateFailureScenario covers two failure paths on /jobs/{id}/fail
 // for a create job:
 //
-//   1. Lifecycle DOES define an OnError transition into a terminal state.
-//      Service transitions to creationFailed and any pool-allocated property
-//      values are released back to the pool.
+//  1. Lifecycle DOES define an OnError transition into a terminal state.
+//     Service transitions to creationFailed and any pool-allocated property
+//     values are released back to the pool.
 //
-//   2. Lifecycle does NOT define an error transition for the action.
-//      Fail must still succeed (HTTP 200), the job is marked Failed, and the
-//      service stays in its current state so the operator can retry/delete.
-//      (Pool values stay allocated because the service is not in a terminal state.)
+//  2. Lifecycle does NOT define an error transition for the action.
+//     Fail must still succeed (HTTP 200), the job is marked Failed, and the
+//     service stays in its current state so the operator can retry/delete.
+//     (Pool values stay allocated because the service is not in a terminal state.)
 func testServiceCreateFailureScenario(t *testing.T, env *Env) {
 	t.Run("OnError into terminal: releases pool values", func(t *testing.T) {
 		testCreateFailureTerminalReleasesPool(t, env)
@@ -85,6 +85,7 @@ func testCreateFailureTerminalReleasesPool(t *testing.T, env *Env) {
 				}},
 			},
 			InitialState:   "creating",
+			TerminateState: "deleted",
 			TerminalStates: []string{"deleted", "creationFailed"},
 		},
 	})
@@ -172,6 +173,7 @@ func testCreateFailureNoTransitionTolerant(t *testing.T, env *Env) {
 				}},
 			},
 			InitialState:   "creating",
+			TerminateState: "deleted",
 			TerminalStates: []string{"deleted"},
 		},
 	})

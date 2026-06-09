@@ -30,6 +30,7 @@ func testServiceType(t *testing.T, env *Env) {
 			},
 		},
 		InitialState:   "new",
+		TerminateState: "created",
 		TerminalStates: []string{"created"},
 	}
 
@@ -46,6 +47,7 @@ func testServiceType(t *testing.T, env *Env) {
 		})
 		require.Equal(t, name, created.Name)
 		require.Equal(t, "new", created.LifecycleSchema.InitialState, "lifecycle round-trips")
+		require.Equal(t, "created", created.LifecycleSchema.TerminateState, "terminate state round-trips")
 		require.Contains(t, created.PropertySchema.Properties, "region", "property schema round-trips")
 		require.NotEqual(t, properties.UUID{}, created.ID)
 		require.False(t, time.Time(created.CreatedAt).IsZero())

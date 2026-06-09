@@ -92,6 +92,7 @@ func SeedCore(tx *gorm.DB) (*CoreFixtures, error) {
 				},
 			},
 			InitialState:   "creating",
+			TerminateState: "deleted",
 			TerminalStates: []string{"deleted"},
 		},
 	}); err != nil {

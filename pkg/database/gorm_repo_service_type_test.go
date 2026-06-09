@@ -170,6 +170,7 @@ func TestServiceTypeRepository(t *testing.T) {
 					},
 				},
 				InitialState:   "New",
+				TerminateState: "Deleted",
 				TerminalStates: []string{"Deleted"},
 				RunningStates:  []string{"Started"},
 			}
@@ -189,6 +190,7 @@ func TestServiceTypeRepository(t *testing.T) {
 
 			// Verify basic lifecycle properties
 			assert.Equal(t, "New", found.LifecycleSchema.InitialState)
+			assert.Equal(t, "Deleted", found.LifecycleSchema.TerminateState)
 			assert.Equal(t, []string{"Deleted"}, found.LifecycleSchema.TerminalStates)
 			assert.Equal(t, []string{"Started"}, found.LifecycleSchema.RunningStates)
 			assert.Len(t, found.LifecycleSchema.States, 7)
