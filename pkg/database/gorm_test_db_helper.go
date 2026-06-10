@@ -43,6 +43,11 @@ func NewTestDB(t *testing.T) *TestDB {
 	if err != nil {
 		t.Fatalf("Failed to connect to postgres database: %v", err)
 	}
+	defer func() {
+		if sqlDB, derr := adminDB.DB(); derr == nil {
+			_ = sqlDB.Close()
+		}
+	}()
 
 	// Create the test database
 	sql := fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbName)
@@ -85,16 +90,14 @@ func replaceDatabaseInDSN(dsn, newDBName string) string {
 
 // Cleanup removes the test database
 func (tdb *TestDB) Cleanup(t *testing.T) {
-	sqlDB, err := tdb.DB.DB()
-	if err != nil {
-		t.Errorf("Failed to get underlying *sql.DB: %v", err)
-		return
-	}
-
-	// Close all database connections
-	if err := sqlDB.Close(); err != nil {
-		t.Errorf("Failed to close database connection: %v", err)
-		return
+	// Close all test database connection pools (DB and MetricDB)
+	for _, gdb := range []*gorm.DB{tdb.DB, tdb.MetricDB} {
+		if gdb == nil {
+			continue
+		}
+		if sqlDB, derr := gdb.DB(); derr == nil {
+			_ = sqlDB.Close()
+		}
 	}
 
 	// Connect to postgres database to delete the test database
@@ -111,6 +114,11 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 		t.Errorf("Failed to connect to postgres database: %v", err)
 		return
 	}
+	defer func() {
+		if sqlDB, derr := adminDB.DB(); derr == nil {
+			_ = sqlDB.Close()
+		}
+	}()
 
 	// Force close all connections to the test database
 	sql := fmt.Sprintf(`
