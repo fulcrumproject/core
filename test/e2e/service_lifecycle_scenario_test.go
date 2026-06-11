@@ -102,6 +102,7 @@ func testServiceLifecycleScenario(t *testing.T, env *Env) {
 				}},
 			},
 			InitialState:   "New",
+			TerminateState: "Deleted",
 			TerminalStates: []string{"Deleted"},
 			RunningStates:  []string{"Started"},
 		},

@@ -57,6 +57,7 @@ func createTestServiceType(t *testing.T) *domain.ServiceType {
 				},
 			},
 			InitialState:   "New",
+			TerminateState: "Deleted",
 			TerminalStates: []string{"Deleted"},
 			RunningStates:  []string{"Started"},
 		},

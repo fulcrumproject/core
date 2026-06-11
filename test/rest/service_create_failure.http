@@ -149,6 +149,7 @@ Content-Type: application/json
             }
         ],
         "initialState": "creating",
+        "terminateState": "deleted",
         "terminalStates": ["deleted", "creationFailed"]
     }
 }
@@ -198,6 +199,7 @@ Content-Type: application/json
             }
         ],
         "initialState": "creating",
+        "terminateState": "deleted",
         "terminalStates": ["deleted"]
     }
 }
