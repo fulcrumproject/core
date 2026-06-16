@@ -26,8 +26,8 @@ CreateConfigPoolReq:
       description: "Allocation strategy: 'list' for pre-configured values, 'range' for an integer range, 'subnet' for CIDR-derived values"
     generatorConfig:
       type: object
-      description: "Generator-specific configuration. Required for 'range' (min/max, optional exclude) and 'subnet' (cidr, optional prefix/hosts/excludeFirst/excludeLast/exclude)"
-      example: { "cidr": "192.168.1.0/24", "excludeFirst": 1, "excludeLast": 1 }
+      description: "Generator-specific configuration. Required for 'range' (min/max, optional exclude) and 'subnet' (cidr, optional prefix/hosts/excludeFirst/excludeLast/exclude). For 'range' and 'subnet' an optional integer 'retentionSeconds' sets a reuse cooldown: a released value is re-allocatable only after that many seconds (omitted or 0 = reuse immediately)."
+      example: { "cidr": "192.168.1.0/24", "excludeFirst": 1, "excludeLast": 1, "retentionSeconds": 3600 }
     participantId:
       $ref: "./common.yaml#/properties.UUID"
       description: |
