@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 )
@@ -29,15 +30,44 @@ func (g *ConfigPoolSubnetGenerator) Allocate(ctx context.Context, entityType Con
 		return nil, err
 	}
 
+	retention, err := parseRetention(g.config)
+	if err != nil {
+		return nil, err
+	}
+
 	existing, err := g.repo.FindByPool(ctx, g.poolID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pool values: %w", err)
 	}
-	used := usedSubnetKeys(existing)
 
-	name, value, ok := sc.nextFree(used)
+	// Partition existing rows: allocated or still-cooling values are reserved (skipped);
+	// freed values past their cooldown are reusable and re-allocated in place.
+	now := time.Now()
+	reserved := make(map[string]bool, len(existing))
+	reusable := make(map[string]*ConfigPoolValue, len(existing))
+	for _, v := range existing {
+		key := subnetKey(v)
+		if key == "" {
+			continue
+		}
+		if v.IsAllocated() || !retentionAllows(retention, v.ReleasedAt, now) {
+			reserved[key] = true
+		} else {
+			reusable[key] = v
+		}
+	}
+
+	name, value, ok := sc.nextFree(reserved)
 	if !ok {
 		return nil, NewInvalidInputErrorf("subnet exhausted: no available values in pool")
+	}
+
+	if row, found := reusable[name]; found {
+		row.Allocate(entityType, entityID, propertyName)
+		if err := g.repo.Update(ctx, row); err != nil {
+			return nil, fmt.Errorf("failed to allocate value: %w", err)
+		}
+		return row.RawValue(), nil
 	}
 
 	cv := &ConfigPoolValue{Name: name, Value: value, ConfigPoolID: g.poolID}
@@ -94,21 +124,18 @@ func (sc *subnetConfig) nextFree(used map[string]bool) (string, any, bool) {
 	return "", nil, false
 }
 
-// usedSubnetKeys extracts the identifying key of each existing value: the scalar
-// string in host mode, or the "cidr" field in block mode.
-func usedSubnetKeys(values []*ConfigPoolValue) map[string]bool {
-	used := make(map[string]bool, len(values))
-	for _, v := range values {
-		switch val := v.Value.(type) {
-		case string:
-			used[val] = true
-		case map[string]any:
-			if cidr, ok := val["cidr"].(string); ok {
-				used[cidr] = true
-			}
+// subnetKey extracts the identifying key of a value: the scalar string in host mode,
+// or the "cidr" field in block mode. Returns "" when the value has no usable key.
+func subnetKey(v *ConfigPoolValue) string {
+	switch val := v.Value.(type) {
+	case string:
+		return val
+	case map[string]any:
+		if cidr, ok := val["cidr"].(string); ok {
+			return cidr
 		}
 	}
-	return used
+	return ""
 }
 
 func validateSubnetGeneratorConfig(cfg properties.JSON) error {

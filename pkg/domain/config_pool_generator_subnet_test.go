@@ -14,6 +14,7 @@ func TestConfigPoolSubnetGenerator_Allocate(t *testing.T) {
 	ctx := context.Background()
 	poolID := properties.UUID(uuid.New())
 	entityID := properties.UUID(uuid.New())
+	usedBy := properties.UUID(uuid.New())
 
 	tests := []struct {
 		name      string
@@ -27,7 +28,7 @@ func TestConfigPoolSubnetGenerator_Allocate(t *testing.T) {
 			name:   "host mode allocates first free, honouring excludeFirst/Last and exclude",
 			config: properties.JSON{"cidr": "212.78.11.0/24", "excludeFirst": float64(2), "excludeLast": float64(1), "exclude": []any{"212.78.11.3"}},
 			existing: []*ConfigPoolValue{
-				{ConfigPoolID: poolID, Value: "212.78.11.2"},
+				{ConfigPoolID: poolID, Value: "212.78.11.2", AgentID: &usedBy},
 			},
 			check: func(t *testing.T, got any) {
 				if got != "212.78.11.4" {
@@ -87,7 +88,7 @@ func TestConfigPoolSubnetGenerator_Allocate(t *testing.T) {
 			name:   "block mode skips used /30",
 			config: properties.JSON{"cidr": "10.255.1.0/24", "prefix": float64(30)},
 			existing: []*ConfigPoolValue{
-				{ConfigPoolID: poolID, Value: map[string]any{"cidr": "10.255.1.0/30"}},
+				{ConfigPoolID: poolID, Value: map[string]any{"cidr": "10.255.1.0/30"}, AgentID: &usedBy},
 			},
 			check: func(t *testing.T, got any) {
 				if got.(map[string]any)["cidr"] != "10.255.1.4/30" {
@@ -98,7 +99,7 @@ func TestConfigPoolSubnetGenerator_Allocate(t *testing.T) {
 		{
 			name:      "exhausted subnet errors",
 			config:    properties.JSON{"cidr": "10.0.0.0/30", "prefix": float64(30)},
-			existing:  []*ConfigPoolValue{{ConfigPoolID: poolID, Value: map[string]any{"cidr": "10.0.0.0/30"}}},
+			existing:  []*ConfigPoolValue{{ConfigPoolID: poolID, Value: map[string]any{"cidr": "10.0.0.0/30"}, AgentID: &usedBy}},
 			wantErr:   true,
 			errSubstr: "subnet exhausted",
 		},
@@ -214,5 +215,65 @@ func TestConfigPoolSubnetGenerator_Release(t *testing.T) {
 	gen := NewConfigPoolSubnetGenerator(repo, poolID, properties.JSON{})
 	if err := gen.Release(ctx, values); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// With no retentionSeconds a freed subnet is reusable immediately: the next allocation
+// re-allocates the existing row (Update) instead of minting a new one.
+func TestConfigPoolSubnetGenerator_ReusesReleasedValue(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	entityID := properties.UUID(uuid.New())
+	releasedAt := time.Now().Add(-time.Hour)
+
+	released := &ConfigPoolValue{
+		BaseEntity:   BaseEntity{ID: properties.UUID(uuid.New())},
+		ConfigPoolID: poolID,
+		Value:        "212.78.11.2",
+		ReleasedAt:   &releasedAt,
+	}
+	repo := NewMockConfigPoolValueRepository(t)
+	repo.On("FindByPool", ctx, poolID).Return([]*ConfigPoolValue{released}, nil)
+	repo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+		return v.ID == released.ID && v.IsAllocated() && v.ReleasedAt == nil
+	})).Return(nil)
+
+	gen := NewConfigPoolSubnetGenerator(repo, poolID, properties.JSON{"cidr": "212.78.11.0/24", "excludeFirst": float64(2)})
+	got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeInfrastructure, entityID, "ip")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "212.78.11.2" {
+		t.Errorf("expected freed 212.78.11.2 to be reused, got %v", got)
+	}
+}
+
+// Within the retentionSeconds cooldown a freed subnet stays reserved and the next free
+// value is minted instead.
+func TestConfigPoolSubnetGenerator_RetentionHoldsValue(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	entityID := properties.UUID(uuid.New())
+	releasedAt := time.Now()
+
+	released := &ConfigPoolValue{
+		BaseEntity:   BaseEntity{ID: properties.UUID(uuid.New())},
+		ConfigPoolID: poolID,
+		Value:        "212.78.11.2",
+		ReleasedAt:   &releasedAt,
+	}
+	repo := NewMockConfigPoolValueRepository(t)
+	repo.On("FindByPool", ctx, poolID).Return([]*ConfigPoolValue{released}, nil)
+	repo.On("Create", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+		return v.Value == "212.78.11.3"
+	})).Return(nil)
+
+	gen := NewConfigPoolSubnetGenerator(repo, poolID, properties.JSON{"cidr": "212.78.11.0/24", "excludeFirst": float64(2), "retentionSeconds": float64(3600)})
+	got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeInfrastructure, entityID, "ip")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "212.78.11.3" {
+		t.Errorf("expected 212.78.11.3 (212.78.11.2 still cooling), got %v", got)
 	}
 }
