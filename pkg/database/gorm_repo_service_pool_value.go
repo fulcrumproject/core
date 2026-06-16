@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
@@ -21,8 +22,9 @@ var applyServicePoolValueFilter = MapFilterApplier(map[string]FilterFieldApplier
 })
 
 var applyServicePoolValueSort = MapSortApplier(map[string]string{
-	"name":      "name",
-	"createdAt": "created_at",
+	"name":       "name",
+	"createdAt":  "created_at",
+	"releasedAt": "released_at",
 })
 
 // servicePoolValueAuthzFilterApplier applies authorization scoping to service pool value queries
@@ -153,6 +155,7 @@ func (r *GormServicePoolValueRepository) ReleaseByService(ctx context.Context, s
 		"service_id":    nil,
 		"property_name": nil,
 		"allocated_at":  nil,
+		"released_at":   time.Now().UTC(),
 	}).Error
 }
 

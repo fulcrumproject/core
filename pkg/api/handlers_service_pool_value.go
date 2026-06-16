@@ -90,6 +90,7 @@ type ServicePoolValueRes struct {
 	AllocatedAt   *JSONUTCTime     `json:"allocatedAt,omitempty"`
 	CreatedAt     JSONUTCTime      `json:"createdAt"`
 	UpdatedAt     JSONUTCTime      `json:"updatedAt"`
+	ReleasedAt    *JSONUTCTime     `json:"releasedAt,omitempty"`
 }
 
 // ServicePoolValueToRes converts a domain.ServicePoolValue to a ServicePoolValueRes
@@ -116,6 +117,11 @@ func ServicePoolValueToRes(v *domain.ServicePoolValue) *ServicePoolValueRes {
 
 	if v.Service != nil {
 		res.Service = ServiceToRes(v.Service)
+	}
+
+	if v.ReleasedAt != nil {
+		releasedAt := JSONUTCTime(*v.ReleasedAt)
+		res.ReleasedAt = &releasedAt
 	}
 
 	return res
