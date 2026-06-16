@@ -1,0 +1,457 @@
+### Service Pool Value reuse flows (subnet generator)
+###
+### Exercises the new reuse behaviour end to end through service create + release:
+###   - Scenario A: with no retentionSeconds a freed IP is reused immediately.
+###   - Scenario B: a retentionSeconds cooldown holds a freed IP until it elapses.
+###
+### Release is triggered by failing a create job into a terminal state, which runs
+### ServicePoolValueRepository.ReleaseByService (clears serviceId, stamps releasedAt).
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+###############################################################################
+### SHARED SETUP
+###############################################################################
+
+### Provider
+# @name createProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Provider {{$guid}}",
+  "status": "Enabled"
+}
+
+@providerId = {{createProvider.response.body.id}}
+
+### Service Pool Set
+# @name createPoolSet
+POST {{baseUrl}}/service-pool-sets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Set {{$guid}}",
+  "providerId": "{{providerId}}"
+}
+
+@poolSetId = {{createPoolSet.response.body.id}}
+
+### Reuse pool: subnet 10.50.0.0/31 (usable .0, .1), no retention -> immediate reuse
+# @name createReusePool
+POST {{baseUrl}}/service-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Reuse Pool",
+  "type": "svc_subnet_reuse",
+  "propertyType": "string",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.50.0.0/31" },
+  "servicePoolSetId": "{{poolSetId}}"
+}
+
+### Cooldown pool: subnet 10.60.0.0/31 (usable .0, .1) with a 30s reuse cooldown
+# @name createCooldownPool
+POST {{baseUrl}}/service-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Cooldown Pool",
+  "type": "svc_subnet_cooldown",
+  "propertyType": "string",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.60.0.0/31", "retentionSeconds": 30 },
+  "servicePoolSetId": "{{poolSetId}}"
+}
+
+### Service Type (reuse): create has OnError -> creationFailed (terminal) so a failed
+### create releases the allocated IP.
+# @name createReuseServiceType
+POST {{baseUrl}}/service-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-subnet-reuse {{$guid}}",
+  "propertySchema": {
+    "properties": {
+      "ip": {
+        "type": "string",
+        "label": "IP",
+        "immutable": true,
+        "authorizers": [ {"type": "actor", "config": {"actors": ["system"]}} ],
+        "generator": { "type": "pool", "config": {"poolType": "svc_subnet_reuse"} }
+      }
+    }
+  },
+  "lifecycleSchema": {
+    "states": [
+      {"name": "creating"},
+      {"name": "created"},
+      {"name": "creationFailed"},
+      {"name": "deleted"}
+    ],
+    "actions": [
+      {
+        "name": "create",
+        "transitions": [
+          {"from": "creating", "to": "created"},
+          {"from": "creating", "to": "creationFailed", "onError": true}
+        ]
+      },
+      {
+        "name": "delete",
+        "transitions": [ {"from": "created", "to": "deleted"} ]
+      }
+    ],
+    "initialState": "creating",
+    "terminateState": "deleted",
+    "terminalStates": ["deleted", "creationFailed"]
+  }
+}
+
+@reuseServiceTypeId = {{createReuseServiceType.response.body.id}}
+
+### Service Type (cooldown): same lifecycle, allocates from the cooldown pool
+# @name createCooldownServiceType
+POST {{baseUrl}}/service-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-subnet-cooldown {{$guid}}",
+  "propertySchema": {
+    "properties": {
+      "ip": {
+        "type": "string",
+        "label": "IP",
+        "immutable": true,
+        "authorizers": [ {"type": "actor", "config": {"actors": ["system"]}} ],
+        "generator": { "type": "pool", "config": {"poolType": "svc_subnet_cooldown"} }
+      }
+    }
+  },
+  "lifecycleSchema": {
+    "states": [
+      {"name": "creating"},
+      {"name": "created"},
+      {"name": "creationFailed"},
+      {"name": "deleted"}
+    ],
+    "actions": [
+      {
+        "name": "create",
+        "transitions": [
+          {"from": "creating", "to": "created"},
+          {"from": "creating", "to": "creationFailed", "onError": true}
+        ]
+      },
+      {
+        "name": "delete",
+        "transitions": [ {"from": "created", "to": "deleted"} ]
+      }
+    ],
+    "initialState": "creating",
+    "terminateState": "deleted",
+    "terminalStates": ["deleted", "creationFailed"]
+  }
+}
+
+@cooldownServiceTypeId = {{createCooldownServiceType.response.body.id}}
+
+### Agent Type wiring both service types
+# @name createAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-subnet-agent {{$guid}}",
+  "serviceTypeIds": [ "{{reuseServiceTypeId}}", "{{cooldownServiceTypeId}}" ],
+  "configurationSchema": {
+    "properties": {
+      "endpoint": { "type": "string", "label": "Endpoint", "required": true }
+    }
+  }
+}
+
+@agentTypeId = {{createAgentType.response.body.id}}
+
+### One agent PER SCENARIO. GET /jobs/pending ignores any serviceId filter and
+### returns one pending job per group for the agent, so an agent that also has a
+### lingering pending job in another scenario's group would surface the wrong job
+### as $[0]. A dedicated agent keeps each scenario's create job the only one its
+### token can see.
+
+### Agent A (scenario A) — linked to the pool set so service create auto-allocates
+# @name createAgentA
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Agent A {{$guid}}",
+  "agentTypeId": "{{agentTypeId}}",
+  "providerId": "{{providerId}}",
+  "servicePoolSetId": "{{poolSetId}}",
+  "configuration": { "endpoint": "https://hypervisor.example.com" }
+}
+
+@agentAId = {{createAgentA.response.body.id}}
+
+### Agent A token
+# @name createAgentAToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Agent A Token",
+  "role": "agent",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{agentAId}}"
+}
+
+@agentAToken = {{createAgentAToken.response.body.value}}
+
+### Agent B (scenario B)
+# @name createAgentB
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Agent B {{$guid}}",
+  "agentTypeId": "{{agentTypeId}}",
+  "providerId": "{{providerId}}",
+  "servicePoolSetId": "{{poolSetId}}",
+  "configuration": { "endpoint": "https://hypervisor.example.com" }
+}
+
+@agentBId = {{createAgentB.response.body.id}}
+
+### Agent B token
+# @name createAgentBToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Agent B Token",
+  "role": "agent",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{agentBId}}"
+}
+
+@agentBToken = {{createAgentBToken.response.body.value}}
+
+### Consumer
+# @name createConsumer
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Consumer {{$guid}}",
+  "status": "Enabled"
+}
+
+### Service Group A (scenario A). A dedicated group per scenario keeps each
+### service's pending create job findable: GET /jobs/pending returns at most one
+### job per group, so a shared group would hide the job we need to fail.
+# @name createServiceGroupA
+POST {{baseUrl}}/service-groups
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Group A {{$guid}}",
+  "consumerId": "{{createConsumer.response.body.id}}"
+}
+
+@groupAId = {{createServiceGroupA.response.body.id}}
+
+### Service Group B (scenario B)
+# @name createServiceGroupB
+POST {{baseUrl}}/service-groups
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Group B {{$guid}}",
+  "consumerId": "{{createConsumer.response.body.id}}"
+}
+
+@groupBId = {{createServiceGroupB.response.body.id}}
+
+###############################################################################
+### SCENARIO A: reuse-on-release (no retentionSeconds) -> freed IP reused
+###############################################################################
+
+### Service 1 -> allocates 10.50.0.0
+# @name createServiceA1
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-reuse-1 {{$guid}}",
+  "properties": {},
+  "agentId": "{{agentAId}}",
+  "serviceTypeId": "{{reuseServiceTypeId}}",
+  "groupId": "{{groupAId}}"
+}
+
+@serviceA1Id = {{createServiceA1.response.body.id}}
+
+### Confirm service 1 got 10.50.0.0
+GET {{baseUrl}}/services/{{serviceA1Id}}
+Authorization: Bearer {{adminToken}}
+# Expect: properties.ip == "10.50.0.0"
+
+### Claim + fail the create job to release the IP into the pool
+# @name pendingA1
+GET {{baseUrl}}/jobs/pending
+Authorization: Bearer {{agentAToken}}
+# /jobs/pending returns one job per group for this agent; agent A only has
+# group A, so $[0] is service 1's create job.
+
+@jobA1Id = {{pendingA1.response.body.$[0].id}}
+
+###
+POST {{baseUrl}}/jobs/{{jobA1Id}}/claim
+Authorization: Bearer {{agentAToken}}
+
+###
+POST {{baseUrl}}/jobs/{{jobA1Id}}/fail
+Authorization: Bearer {{agentAToken}}
+Content-Type: application/json
+
+{ "errorMessage": "simulated create failure to release the IP" }
+# Expect: 204; service -> creationFailed; 10.50.0.0 released (serviceId null, releasedAt set)
+
+### Service 2 -> REUSES the freed 10.50.0.0
+# @name createServiceA2
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-reuse-2 {{$guid}}",
+  "properties": {},
+  "agentId": "{{agentAId}}",
+  "serviceTypeId": "{{reuseServiceTypeId}}",
+  "groupId": "{{groupAId}}"
+}
+
+@serviceA2Id = {{createServiceA2.response.body.id}}
+
+### Confirm service 2 reused 10.50.0.0
+GET {{baseUrl}}/services/{{serviceA2Id}}
+Authorization: Bearer {{adminToken}}
+# Expect: properties.ip == "10.50.0.0" (the freed value, reused)
+
+###############################################################################
+### SCENARIO B: retentionSeconds cooldown holds a freed IP until it elapses
+###############################################################################
+
+### Service 3 -> allocates 10.60.0.0 from the cooldown pool
+# @name createServiceB3
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-cooldown-3 {{$guid}}",
+  "properties": {},
+  "agentId": "{{agentBId}}",
+  "serviceTypeId": "{{cooldownServiceTypeId}}",
+  "groupId": "{{groupBId}}"
+}
+
+@serviceB3Id = {{createServiceB3.response.body.id}}
+
+### Claim + fail to release 10.60.0.0 at T0 (cooldown starts)
+# @name pendingB3
+GET {{baseUrl}}/jobs/pending
+Authorization: Bearer {{agentBToken}}
+# Agent B only has group B, and service 4 is not created yet, so $[0] is
+# service 3's create job.
+
+@jobB3Id = {{pendingB3.response.body.$[0].id}}
+
+###
+POST {{baseUrl}}/jobs/{{jobB3Id}}/claim
+Authorization: Bearer {{agentBToken}}
+
+###
+POST {{baseUrl}}/jobs/{{jobB3Id}}/fail
+Authorization: Bearer {{agentBToken}}
+Content-Type: application/json
+
+{ "errorMessage": "simulated create failure to release the IP" }
+
+### Service 4 (immediately) -> 10.60.0.0 still cooling, so it mints 10.60.0.1
+# @name createServiceB4
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-cooldown-4 {{$guid}}",
+  "properties": {},
+  "agentId": "{{agentBId}}",
+  "serviceTypeId": "{{cooldownServiceTypeId}}",
+  "groupId": "{{groupBId}}"
+}
+
+@serviceB4Id = {{createServiceB4.response.body.id}}
+
+### Confirm service 4 got 10.60.0.1 (10.60.0.0 held by the cooldown)
+GET {{baseUrl}}/services/{{serviceB4Id}}
+Authorization: Bearer {{adminToken}}
+# Expect: properties.ip == "10.60.0.1"
+
+### TEST: service 5 (immediately) fails — 10.60.0.0 cooling and 10.60.0.1 in use
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-cooldown-5 (should fail while cooling) {{$guid}}",
+  "properties": {},
+  "agentId": "{{agentBId}}",
+  "serviceTypeId": "{{cooldownServiceTypeId}}",
+  "groupId": "{{groupBId}}"
+}
+# Expect: failure — subnet exhausted while 10.60.0.0 is still cooling
+
+### WAIT > 30 seconds (the retentionSeconds cooldown) before the next request.
+
+### Service 5 retry -> now REUSES the cooled-down 10.60.0.0
+# @name createServiceB5
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-cooldown-5 {{$guid}}",
+  "properties": {},
+  "agentId": "{{agentBId}}",
+  "serviceTypeId": "{{cooldownServiceTypeId}}",
+  "groupId": "{{groupBId}}"
+}
+
+@serviceB5Id = {{createServiceB5.response.body.id}}
+
+### Confirm service 5 reused 10.60.0.0 after the cooldown elapsed
+GET {{baseUrl}}/services/{{serviceB5Id}}
+Authorization: Bearer {{adminToken}}
+# Expect: properties.ip == "10.60.0.0"

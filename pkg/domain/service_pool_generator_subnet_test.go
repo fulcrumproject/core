@@ -218,3 +218,64 @@ func TestSubnetGenerator_Release(t *testing.T) {
 		})
 	}
 }
+
+// With no retentionSeconds a freed IP is reusable immediately: the next allocation
+// re-allocates the existing row (Update) instead of minting a new one.
+func TestSubnetGenerator_ReusesReleasedValue(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	serviceID := properties.UUID(uuid.New())
+	releasedAt := time.Now().Add(-time.Hour)
+
+	released := &ServicePoolValue{
+		BaseEntity:    BaseEntity{ID: properties.UUID(uuid.New())},
+		Name:          "10.0.0.1",
+		Value:         "10.0.0.1",
+		ServicePoolID: poolID,
+		ReleasedAt:    &releasedAt,
+	}
+
+	repo := NewMockServicePoolValueRepository(t)
+	repo.EXPECT().FindByPool(ctx, poolID).Return([]*ServicePoolValue{released}, nil)
+	repo.EXPECT().
+		Update(ctx, mock.MatchedBy(func(v *ServicePoolValue) bool {
+			return v.ID == released.ID && v.IsAllocated() &&
+				v.ServiceID != nil && *v.ServiceID == serviceID && v.ReleasedAt == nil
+		})).
+		Return(nil)
+
+	generator := NewSubnetGenerator(repo, poolID, properties.JSON{"cidr": "10.0.0.0/24", "excludeFirst": 1})
+	value, err := generator.Allocate(ctx, serviceID, "ipAddress")
+	require.NoError(t, err)
+	assert.Equal(t, "10.0.0.1", value)
+}
+
+// Within the retentionSeconds cooldown a freed IP stays reserved and the next free
+// IP is minted instead.
+func TestSubnetGenerator_RetentionHoldsValue(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	serviceID := properties.UUID(uuid.New())
+	releasedAt := time.Now()
+
+	released := &ServicePoolValue{
+		BaseEntity:    BaseEntity{ID: properties.UUID(uuid.New())},
+		Name:          "10.0.0.1",
+		Value:         "10.0.0.1",
+		ServicePoolID: poolID,
+		ReleasedAt:    &releasedAt,
+	}
+
+	repo := NewMockServicePoolValueRepository(t)
+	repo.EXPECT().FindByPool(ctx, poolID).Return([]*ServicePoolValue{released}, nil)
+	repo.EXPECT().
+		Create(ctx, mock.MatchedBy(func(v *ServicePoolValue) bool {
+			return v.Value == "10.0.0.2"
+		})).
+		Return(nil)
+
+	generator := NewSubnetGenerator(repo, poolID, properties.JSON{"cidr": "10.0.0.0/24", "excludeFirst": 1, "retentionSeconds": float64(3600)})
+	value, err := generator.Allocate(ctx, serviceID, "ipAddress")
+	require.NoError(t, err)
+	assert.Equal(t, "10.0.0.2", value)
+}

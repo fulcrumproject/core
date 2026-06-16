@@ -54,18 +54,31 @@ func (g *SubnetGenerator) Allocate(ctx context.Context, serviceID properties.UUI
 		return nil, NewInvalidInputErrorf("invalid CIDR format: %v", err)
 	}
 
-	// Get all existing values for this pool (to know which IPs are already allocated)
+	retention, err := parseRetention(g.generatorConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all existing values for this pool
 	existingValues, err := g.valueRepo.FindByPool(ctx, g.poolID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query existing pool values: %w", err)
 	}
 
-	// Build a set of allocated IPs
-	allocatedIPs := make(map[string]bool)
+	// Partition existing rows: allocated or still-cooling IPs are reserved (skipped);
+	// freed IPs past their cooldown are reusable and re-allocated in place.
+	now := time.Now()
+	reserved := make(map[string]bool, len(existingValues))
+	reusable := make(map[string]*ServicePoolValue, len(existingValues))
 	for _, v := range existingValues {
-		// Value can be stored as a plain string
-		if ipStr, ok := v.Value.(string); ok {
-			allocatedIPs[ipStr] = true
+		ipStr, ok := v.Value.(string)
+		if !ok {
+			continue
+		}
+		if v.IsAllocated() || !retentionAllows(retention, v.ReleasedAt, now) {
+			reserved[ipStr] = true
+		} else {
+			reusable[ipStr] = v
 		}
 	}
 
@@ -74,16 +87,14 @@ func (g *SubnetGenerator) Allocate(ctx context.Context, serviceID properties.UUI
 	ones, bits := ipNet.Mask.Size()
 	totalIPs := 1 << uint(bits-ones)
 
-	// Find next available IP
+	// Find the next free IP (not reserved)
 	var nextIP net.IP
 	for i := excludeFirst; i < totalIPs-excludeLast; i++ {
 		candidateIP := incrementIP(firstIP, i)
 		if !ipNet.Contains(candidateIP) {
 			continue
 		}
-
-		ipStr := candidateIP.String()
-		if !allocatedIPs[ipStr] {
+		if !reserved[candidateIP.String()] {
 			nextIP = candidateIP
 			break
 		}
@@ -93,22 +104,24 @@ func (g *SubnetGenerator) Allocate(ctx context.Context, serviceID properties.UUI
 		return nil, NewInvalidInputErrorf("subnet exhausted: no available IPs in pool")
 	}
 
-	// Create new ServicePoolValue with the allocated IP
 	ipStr := nextIP.String()
-	now := time.Now()
+
+	// Reuse a freed row in place when the chosen IP already has one; otherwise mint.
+	if row, found := reusable[ipStr]; found {
+		row.Allocate(serviceID, propertyName)
+		if err := g.valueRepo.Update(ctx, row); err != nil {
+			return nil, fmt.Errorf("failed to allocate value: %w", err)
+		}
+		return row.RawValue(), nil
+	}
 
 	newValue := &ServicePoolValue{
 		Name:          ipStr,
 		Value:         ipStr, // Store IP address as a plain string
 		ServicePoolID: g.poolID,
-		ServiceID:     &serviceID,
-		PropertyName:  &propertyName,
-		AllocatedAt:   &now,
 	}
-
-	// Create the value in the repository
-	err = g.valueRepo.Create(ctx, newValue)
-	if err != nil {
+	newValue.Allocate(serviceID, propertyName)
+	if err := g.valueRepo.Create(ctx, newValue); err != nil {
 		return nil, fmt.Errorf("failed to create allocated value: %w", err)
 	}
 
@@ -131,12 +144,8 @@ func (g *SubnetGenerator) Release(ctx context.Context, serviceID properties.UUID
 			continue
 		}
 
-		value.ServiceID = nil
-		value.PropertyName = nil
-		value.AllocatedAt = nil
-
-		err = g.valueRepo.Update(ctx, value)
-		if err != nil {
+		value.Release()
+		if err := g.valueRepo.Update(ctx, value); err != nil {
 			return fmt.Errorf("failed to release value: %w", err)
 		}
 	}
