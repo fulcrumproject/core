@@ -96,6 +96,29 @@ func TestConfigPool_Validate(t *testing.T) {
 			errorMsg:  "requires integer 'max'",
 		},
 		{
+			name: "valid range pool with retentionSeconds",
+			pool: &ConfigPool{
+				Name:            "ASN Pool",
+				Type:            "asn",
+				PropertyType:    "integer",
+				GeneratorType:   PoolGeneratorRange,
+				GeneratorConfig: &properties.JSON{"min": float64(65000), "max": float64(65535), "retentionSeconds": float64(3600)},
+			},
+			wantError: false,
+		},
+		{
+			name: "range generator invalid retentionSeconds",
+			pool: &ConfigPool{
+				Name:            "ASN Pool",
+				Type:            "asn",
+				PropertyType:    "integer",
+				GeneratorType:   PoolGeneratorRange,
+				GeneratorConfig: &properties.JSON{"min": float64(65000), "max": float64(65535), "retentionSeconds": float64(-1)},
+			},
+			wantError: true,
+			errorMsg:  "retentionSeconds must be >= 0",
+		},
+		{
 			name: "empty name",
 			pool: &ConfigPool{
 				Name:          "",
