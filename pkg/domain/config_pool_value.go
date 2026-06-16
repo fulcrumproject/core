@@ -36,6 +36,7 @@ type ConfigPoolValue struct {
 	AllocatedAt      *time.Time       `json:"allocatedAt,omitempty"`
 	ParticipantID    *properties.UUID `json:"participantId,omitempty" gorm:"index"`
 	Participant      *Participant     `json:"-" gorm:"foreignKey:ParticipantID"`
+	ReleasedAt       *time.Time       `json:"releasedAt,omitempty"`
 }
 
 func (ConfigPoolValue) TableName() string {
@@ -71,6 +72,7 @@ func (cv *ConfigPoolValue) Allocate(entityType ConfigPoolValueEntityType, entity
 	}
 	cv.AllocatedAt = &allocated
 	cv.PropertyName = &propertyName
+	cv.ReleasedAt = nil
 }
 
 func (cv *ConfigPoolValue) Release() {
@@ -78,6 +80,8 @@ func (cv *ConfigPoolValue) Release() {
 	cv.InfrastructureID = nil
 	cv.AllocatedAt = nil
 	cv.PropertyName = nil
+	now := time.Now().UTC()
+	cv.ReleasedAt = &now
 }
 
 func (cv *ConfigPoolValue) PoolID() properties.UUID {
