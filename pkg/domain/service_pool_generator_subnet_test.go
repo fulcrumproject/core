@@ -279,3 +279,33 @@ func TestSubnetGenerator_RetentionHoldsValue(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "10.0.0.2", value)
 }
+
+// neverReallocate keeps a freed IP out of circulation forever: even past any cooldown
+// the freed value is skipped and the next free IP is minted.
+func TestSubnetGenerator_NeverReallocate(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	serviceID := properties.UUID(uuid.New())
+	releasedAt := time.Now().Add(-100 * time.Hour)
+
+	released := &ServicePoolValue{
+		BaseEntity:    BaseEntity{ID: properties.UUID(uuid.New())},
+		Name:          "10.0.0.1",
+		Value:         "10.0.0.1",
+		ServicePoolID: poolID,
+		ReleasedAt:    &releasedAt,
+	}
+
+	repo := NewMockServicePoolValueRepository(t)
+	repo.EXPECT().FindByPool(ctx, poolID).Return([]*ServicePoolValue{released}, nil)
+	repo.EXPECT().
+		Create(ctx, mock.MatchedBy(func(v *ServicePoolValue) bool {
+			return v.Value == "10.0.0.2"
+		})).
+		Return(nil)
+
+	generator := NewSubnetGenerator(repo, poolID, properties.JSON{"cidr": "10.0.0.0/24", "excludeFirst": 1, "neverReallocate": true})
+	value, err := generator.Allocate(ctx, serviceID, "ipAddress")
+	require.NoError(t, err)
+	assert.Equal(t, "10.0.0.2", value)
+}

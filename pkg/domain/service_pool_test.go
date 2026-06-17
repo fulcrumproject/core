@@ -79,6 +79,19 @@ func TestServicePool_Validate(t *testing.T) {
 			errorMsg:  "retentionSeconds must be an integer",
 		},
 		{
+			name: "subnet pool invalid neverReallocate",
+			pool: &ServicePool{
+				Name:             "Subnet Pool",
+				Type:             "internalIp",
+				PropertyType:     "json",
+				GeneratorType:    PoolGeneratorSubnet,
+				ServicePoolSetID: poolSetID,
+				GeneratorConfig:  &properties.JSON{"cidr": "10.0.0.0/24", "neverReallocate": "nope"},
+			},
+			wantError: true,
+			errorMsg:  "neverReallocate must be a boolean",
+		},
+		{
 			name: "empty name",
 			pool: &ServicePool{
 				Name:             "",

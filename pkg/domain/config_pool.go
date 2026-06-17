@@ -99,6 +99,9 @@ func (cp *ConfigPool) Validate() error {
 		if _, err := parseRetention(*cp.GeneratorConfig); err != nil {
 			return err
 		}
+		if _, err := parseNeverReallocate(*cp.GeneratorConfig); err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -3,6 +3,7 @@
 ### Exercises the new reuse behaviour end to end through service create + release:
 ###   - Scenario A: with no retentionSeconds a freed IP is reused immediately.
 ###   - Scenario B: a retentionSeconds cooldown holds a freed IP until it elapses.
+###   - Scenario C: neverReallocate retires a freed IP forever (never reused).
 ###
 ### Release is triggered by failing a create job into a terminal state, which runs
 ### ServicePoolValueRepository.ReleaseByService (clears serviceId, stamps releasedAt).
@@ -68,6 +69,21 @@ Content-Type: application/json
   "propertyType": "string",
   "generatorType": "subnet",
   "generatorConfig": { "cidr": "10.60.0.0/31", "retentionSeconds": 30 },
+  "servicePoolSetId": "{{poolSetId}}"
+}
+
+### Never pool: subnet 10.80.0.0/31 (usable .0, .1), neverReallocate -> freed IP retired
+# @name createNeverPool
+POST {{baseUrl}}/service-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Never Reallocate Pool",
+  "type": "svc_subnet_never",
+  "propertyType": "string",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.80.0.0/31", "neverReallocate": true },
   "servicePoolSetId": "{{poolSetId}}"
 }
 
@@ -166,7 +182,54 @@ Content-Type: application/json
 
 @cooldownServiceTypeId = {{createCooldownServiceType.response.body.id}}
 
-### Agent Type wiring both service types
+### Service Type (never): same lifecycle, allocates from the never-reallocate pool
+# @name createNeverServiceType
+POST {{baseUrl}}/service-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-subnet-never {{$guid}}",
+  "propertySchema": {
+    "properties": {
+      "ip": {
+        "type": "string",
+        "label": "IP",
+        "immutable": true,
+        "authorizers": [ {"type": "actor", "config": {"actors": ["system"]}} ],
+        "generator": { "type": "pool", "config": {"poolType": "svc_subnet_never"} }
+      }
+    }
+  },
+  "lifecycleSchema": {
+    "states": [
+      {"name": "creating"},
+      {"name": "created"},
+      {"name": "creationFailed"},
+      {"name": "deleted"}
+    ],
+    "actions": [
+      {
+        "name": "create",
+        "transitions": [
+          {"from": "creating", "to": "created"},
+          {"from": "creating", "to": "creationFailed", "onError": true}
+        ]
+      },
+      {
+        "name": "delete",
+        "transitions": [ {"from": "created", "to": "deleted"} ]
+      }
+    ],
+    "initialState": "creating",
+    "terminateState": "deleted",
+    "terminalStates": ["deleted", "creationFailed"]
+  }
+}
+
+@neverServiceTypeId = {{createNeverServiceType.response.body.id}}
+
+### Agent Type wiring all three service types
 # @name createAgentType
 POST {{baseUrl}}/agent-types
 Authorization: Bearer {{adminToken}}
@@ -174,7 +237,7 @@ Content-Type: application/json
 
 {
   "name": "svc-subnet-agent {{$guid}}",
-  "serviceTypeIds": [ "{{reuseServiceTypeId}}", "{{cooldownServiceTypeId}}" ],
+  "serviceTypeIds": [ "{{reuseServiceTypeId}}", "{{cooldownServiceTypeId}}", "{{neverServiceTypeId}}" ],
   "configurationSchema": {
     "properties": {
       "endpoint": { "type": "string", "label": "Endpoint", "required": true }
@@ -252,6 +315,37 @@ Content-Type: application/json
 
 @agentBToken = {{createAgentBToken.response.body.value}}
 
+### Agent C (scenario C)
+# @name createAgentC
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Agent C {{$guid}}",
+  "agentTypeId": "{{agentTypeId}}",
+  "providerId": "{{providerId}}",
+  "servicePoolSetId": "{{poolSetId}}",
+  "configuration": { "endpoint": "https://hypervisor.example.com" }
+}
+
+@agentCId = {{createAgentC.response.body.id}}
+
+### Agent C token
+# @name createAgentCToken
+POST {{baseUrl}}/tokens
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Agent C Token",
+  "role": "agent",
+  "expireAt": "{{$datetime iso8601 1 y}}",
+  "scopeId": "{{agentCId}}"
+}
+
+@agentCToken = {{createAgentCToken.response.body.value}}
+
 ### Consumer
 # @name createConsumer
 POST {{baseUrl}}/participants
@@ -290,6 +384,19 @@ Content-Type: application/json
 }
 
 @groupBId = {{createServiceGroupB.response.body.id}}
+
+### Service Group C (scenario C)
+# @name createServiceGroupC
+POST {{baseUrl}}/service-groups
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Reuse Group C {{$guid}}",
+  "consumerId": "{{createConsumer.response.body.id}}"
+}
+
+@groupCId = {{createServiceGroupC.response.body.id}}
 
 ###############################################################################
 ### SCENARIO A: reuse-on-release (no retentionSeconds) -> freed IP reused
@@ -455,3 +562,77 @@ Content-Type: application/json
 GET {{baseUrl}}/services/{{serviceB5Id}}
 Authorization: Bearer {{adminToken}}
 # Expect: properties.ip == "10.60.0.0"
+
+###############################################################################
+### SCENARIO C: neverReallocate retires a freed IP forever (never reused)
+###############################################################################
+
+### Service 6 -> allocates 10.80.0.0 from the never pool
+# @name createServiceC6
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-never-6 {{$guid}}",
+  "properties": {},
+  "agentId": "{{agentCId}}",
+  "serviceTypeId": "{{neverServiceTypeId}}",
+  "groupId": "{{groupCId}}"
+}
+
+@serviceC6Id = {{createServiceC6.response.body.id}}
+
+### Claim + fail to release 10.80.0.0 (retired forever)
+# @name pendingC6
+GET {{baseUrl}}/jobs/pending
+Authorization: Bearer {{agentCToken}}
+# Agent C only has group C, so $[0] is service 6's create job.
+
+@jobC6Id = {{pendingC6.response.body.$[0].id}}
+
+###
+POST {{baseUrl}}/jobs/{{jobC6Id}}/claim
+Authorization: Bearer {{agentCToken}}
+
+###
+POST {{baseUrl}}/jobs/{{jobC6Id}}/fail
+Authorization: Bearer {{agentCToken}}
+Content-Type: application/json
+
+{ "errorMessage": "simulated create failure to release the IP" }
+
+### Service 7 -> 10.80.0.0 is retired, so it mints 10.80.0.1 (never reuses .0)
+# @name createServiceC7
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-never-7 {{$guid}}",
+  "properties": {},
+  "agentId": "{{agentCId}}",
+  "serviceTypeId": "{{neverServiceTypeId}}",
+  "groupId": "{{groupCId}}"
+}
+
+@serviceC7Id = {{createServiceC7.response.body.id}}
+
+### Confirm service 7 got 10.80.0.1, not the retired 10.80.0.0
+GET {{baseUrl}}/services/{{serviceC7Id}}
+Authorization: Bearer {{adminToken}}
+# Expect: properties.ip == "10.80.0.1"
+
+### TEST: service 8 fails — 10.80.0.0 retired forever and 10.80.0.1 in use
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-never-8 (should fail, .0 retired) {{$guid}}",
+  "properties": {},
+  "agentId": "{{agentCId}}",
+  "serviceTypeId": "{{neverServiceTypeId}}",
+  "groupId": "{{groupCId}}"
+}
+# Expect: failure — subnet exhausted; 10.80.0.0 is retired and never reused

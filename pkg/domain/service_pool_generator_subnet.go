@@ -58,6 +58,10 @@ func (g *SubnetGenerator) Allocate(ctx context.Context, serviceID properties.UUI
 	if err != nil {
 		return nil, err
 	}
+	neverReallocate, err := parseNeverReallocate(g.generatorConfig)
+	if err != nil {
+		return nil, err
+	}
 
 	// Get all existing values for this pool
 	existingValues, err := g.valueRepo.FindByPool(ctx, g.poolID)
@@ -66,7 +70,8 @@ func (g *SubnetGenerator) Allocate(ctx context.Context, serviceID properties.UUI
 	}
 
 	// Partition existing rows: allocated or still-cooling IPs are reserved (skipped);
-	// freed IPs past their cooldown are reusable and re-allocated in place.
+	// freed IPs past their cooldown are reusable and re-allocated in place. With
+	// neverReallocate a freed IP stays reserved permanently.
 	now := time.Now()
 	reserved := make(map[string]bool, len(existingValues))
 	reusable := make(map[string]*ServicePoolValue, len(existingValues))
@@ -75,7 +80,7 @@ func (g *SubnetGenerator) Allocate(ctx context.Context, serviceID properties.UUI
 		if !ok {
 			continue
 		}
-		if v.IsAllocated() || !retentionAllows(retention, v.ReleasedAt, now) {
+		if v.IsAllocated() || !retentionAllows(retention, neverReallocate, v.ReleasedAt, now) {
 			reserved[ipStr] = true
 		} else {
 			reusable[ipStr] = v

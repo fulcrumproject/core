@@ -359,11 +359,14 @@ func testConfigPoolValue(t *testing.T, env *Env) {
 		// key (immediate reuse). Range pools keep their minted value rows, so the
 		// pool can't be deleted afterwards; the ephemeral test DB tears it down
 		// (matches the fae_proxmox scenario, which also leaves its pools).
-		setup := func(t *testing.T, retentionSeconds int) *api.AgentTypeRes {
+		setup := func(t *testing.T, retentionSeconds int, neverReallocate bool) *api.AgentTypeRes {
 			poolType := "range-" + testhelpers.Uniq()
 			genCfg := properties.JSON{"min": 1, "max": 2}
 			if retentionSeconds > 0 {
 				genCfg["retentionSeconds"] = retentionSeconds
+			}
+			if neverReallocate {
+				genCfg["neverReallocate"] = true
 			}
 			testhelpers.MustPost[api.CreateConfigPoolReq, api.ConfigPoolRes](t, env.ProviderClient, "/config-pools", api.CreateConfigPoolReq{
 				Name:            "own-" + poolType,
@@ -403,7 +406,7 @@ func testConfigPoolValue(t *testing.T, env *Env) {
 		}
 
 		t.Run("no retentionSeconds reuses the freed value", func(t *testing.T) {
-			at := setup(t, 0)
+			at := setup(t, 0, false)
 			a1 := createAgent(t, at, "reuse-a1")
 			a2 := createAgent(t, at, "reuse-a2")
 			t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/agents", a2.ID) })
@@ -420,7 +423,7 @@ func testConfigPoolValue(t *testing.T, env *Env) {
 		})
 
 		t.Run("retentionSeconds holds the freed value within the cooldown", func(t *testing.T) {
-			at := setup(t, 3600)
+			at := setup(t, 3600, false)
 			a1 := createAgent(t, at, "cool-a1")
 			a2 := createAgent(t, at, "cool-a2")
 			t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/agents", a2.ID) })
@@ -439,6 +442,28 @@ func testConfigPoolValue(t *testing.T, env *Env) {
 			require.NoError(t, err)
 			require.GreaterOrEqualf(t, resp.StatusCode(), http.StatusBadRequest,
 				"allocation must fail while the freed value is cooling: %s", resp.String())
+		})
+
+		t.Run("neverReallocate retires the freed value forever", func(t *testing.T) {
+			at := setup(t, 0, true)
+			a1 := createAgent(t, at, "never-a1")
+			a2 := createAgent(t, at, "never-a2")
+			t.Cleanup(func() { testhelpers.MustDelete(t, env.AdminClient, "/agents", a2.ID) })
+
+			// Free a1's value; neverReallocate retires it permanently.
+			testhelpers.MustDelete(t, env.AdminClient, "/agents", a1.ID)
+
+			// A third agent cannot allocate: value 1 is retired and value 2 is in use.
+			cfg := properties.JSON{}
+			resp, err := env.AdminClient.R().SetBody(api.CreateAgentReq{
+				Name:          "never-a3-" + testhelpers.Uniq(),
+				ProviderID:    providerID,
+				AgentTypeID:   at.ID,
+				Configuration: &cfg,
+			}).Post("/agents")
+			require.NoError(t, err)
+			require.GreaterOrEqualf(t, resp.StatusCode(), http.StatusBadRequest,
+				"allocation must fail while the freed value is retired: %s", resp.String())
 		})
 	})
 }

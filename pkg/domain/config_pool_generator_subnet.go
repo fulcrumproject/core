@@ -34,6 +34,10 @@ func (g *ConfigPoolSubnetGenerator) Allocate(ctx context.Context, entityType Con
 	if err != nil {
 		return nil, err
 	}
+	neverReallocate, err := parseNeverReallocate(g.config)
+	if err != nil {
+		return nil, err
+	}
 
 	existing, err := g.repo.FindByPool(ctx, g.poolID)
 	if err != nil {
@@ -41,7 +45,8 @@ func (g *ConfigPoolSubnetGenerator) Allocate(ctx context.Context, entityType Con
 	}
 
 	// Partition existing rows: allocated or still-cooling values are reserved (skipped);
-	// freed values past their cooldown are reusable and re-allocated in place.
+	// freed values past their cooldown are reusable and re-allocated in place. With
+	// neverReallocate a freed value stays reserved permanently.
 	now := time.Now()
 	reserved := make(map[string]bool, len(existing))
 	reusable := make(map[string]*ConfigPoolValue, len(existing))
@@ -50,7 +55,7 @@ func (g *ConfigPoolSubnetGenerator) Allocate(ctx context.Context, entityType Con
 		if key == "" {
 			continue
 		}
-		if v.IsAllocated() || !retentionAllows(retention, v.ReleasedAt, now) {
+		if v.IsAllocated() || !retentionAllows(retention, neverReallocate, v.ReleasedAt, now) {
 			reserved[key] = true
 		} else {
 			reusable[key] = v

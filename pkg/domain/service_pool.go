@@ -106,6 +106,9 @@ func (sp *ServicePool) Validate() error {
 		if _, err := parseRetention(*sp.GeneratorConfig); err != nil {
 			return err
 		}
+		if _, err := parseNeverReallocate(*sp.GeneratorConfig); err != nil {
+			return err
+		}
 	}
 	if sp.ServicePoolSetID == (properties.UUID{}) {
 		return fmt.Errorf("service pool set ID cannot be empty")

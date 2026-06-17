@@ -32,6 +32,10 @@ func (g *ConfigPoolRangeGenerator) Allocate(ctx context.Context, entityType Conf
 	if err != nil {
 		return nil, err
 	}
+	neverReallocate, err := parseNeverReallocate(g.config)
+	if err != nil {
+		return nil, err
+	}
 
 	existing, err := g.repo.FindByPool(ctx, g.poolID)
 	if err != nil {
@@ -39,7 +43,8 @@ func (g *ConfigPoolRangeGenerator) Allocate(ctx context.Context, entityType Conf
 	}
 
 	// Partition existing rows: allocated or still-cooling values are reserved (skipped);
-	// freed values past their cooldown are reusable and re-allocated in place.
+	// freed values past their cooldown are reusable and re-allocated in place. With
+	// neverReallocate a freed value stays reserved permanently.
 	now := time.Now()
 	reserved := make(map[int]bool, len(existing))
 	reusable := make(map[int]*ConfigPoolValue, len(existing))
@@ -48,7 +53,7 @@ func (g *ConfigPoolRangeGenerator) Allocate(ctx context.Context, entityType Conf
 		if !ok {
 			continue
 		}
-		if v.IsAllocated() || !retentionAllows(retention, v.ReleasedAt, now) {
+		if v.IsAllocated() || !retentionAllows(retention, neverReallocate, v.ReleasedAt, now) {
 			reserved[n] = true
 		} else {
 			reusable[n] = v

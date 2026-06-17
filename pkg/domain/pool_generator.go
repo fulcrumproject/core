@@ -12,6 +12,10 @@ import (
 // cooldown, in seconds.
 const retentionConfigKey = "retentionSeconds"
 
+// neverReallocateConfigKey is the optional generatorConfig boolean: when true a
+// released value is never re-allocated, taking precedence over retentionSeconds.
+const neverReallocateConfigKey = "neverReallocate"
+
 // parseRetention reads the optional retentionSeconds key. Absent (or 0) means a
 // freed value may be reallocated immediately; a positive value is the cooldown
 // that must elapse since release. A non-integer or negative value is rejected.
@@ -30,12 +34,29 @@ func parseRetention(cfg properties.JSON) (time.Duration, error) {
 	return time.Duration(n) * time.Second, nil
 }
 
+// parseNeverReallocate reads the optional neverReallocate key. Absent means
+// false; a non-boolean value is rejected.
+func parseNeverReallocate(cfg properties.JSON) (bool, error) {
+	raw, present := cfg[neverReallocateConfigKey]
+	if !present {
+		return false, nil
+	}
+	b, ok := raw.(bool)
+	if !ok {
+		return false, NewInvalidInputErrorf("%s must be a boolean", neverReallocateConfigKey)
+	}
+	return b, nil
+}
+
 // retentionAllows reports whether a freed value may be reallocated now: a value
-// that was never released is always allocatable; otherwise its cooldown must
-// have elapsed.
-func retentionAllows(retention time.Duration, releasedAt *time.Time, now time.Time) bool {
+// that was never released is always allocatable; neverReallocate keeps a released
+// value out of circulation forever; otherwise its cooldown must have elapsed.
+func retentionAllows(retention time.Duration, neverReallocate bool, releasedAt *time.Time, now time.Time) bool {
 	if releasedAt == nil {
 		return true
+	}
+	if neverReallocate {
+		return false
 	}
 	return now.Sub(*releasedAt) >= retention
 }

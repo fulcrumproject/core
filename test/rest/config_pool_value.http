@@ -817,6 +817,132 @@ GET {{baseUrl}}/config-pool-values?agentId={{cooldownAgent4Id}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
+### Range generator: neverReallocate retires a freed value forever
+###############################################################################
+### neverReallocate=true keeps a released value out of circulation permanently,
+### regardless of any retentionSeconds:
+###   1. Range pool min=1, max=3, neverReallocate=true.
+###   2. Agent 1 -> value 1; agent 2 -> value 2.
+###   3. Delete agent 1 -> value 1 freed (row kept, agentId=null, releasedAt set).
+###   4. Agent 3 -> value 1 is retired, so it mints value 3 (never reuses 1).
+###   5. Agent 4 -> fails "range exhausted" (1 retired forever, 2 and 3 in use).
+
+### Range pool that never reallocates a freed value
+# @name createNeverPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Never Reallocate Pool",
+  "type": "rangeNeverAsn",
+  "propertyType": "integer",
+  "generatorType": "range",
+  "generatorConfig": { "min": 1, "max": 3, "neverReallocate": true }
+}
+
+@neverPoolId = {{createNeverPool.response.body.$.id}}
+
+### Agent type for the never-reallocate pool
+# @name createNeverAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Never Agent Type {{$timestamp}}",
+  "configurationSchema": {
+    "properties": {
+      "asn": {
+        "type": "integer",
+        "label": "ASN",
+        "generator": {
+          "type": "pool",
+          "config": {
+            "poolType": "rangeNeverAsn"
+          }
+        }
+      }
+    }
+  }
+}
+
+@neverAgentTypeId = {{createNeverAgentType.response.body.$.id}}
+
+### Agent 1 -> value 1
+# @name createNeverAgent1
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Never Agent 1",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{neverAgentTypeId}}",
+  "tags": ["range-never-test"],
+  "configuration": {}
+}
+
+@neverAgent1Id = {{createNeverAgent1.response.body.$.id}}
+
+### Agent 2 -> value 2
+# @name createNeverAgent2
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Never Agent 2",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{neverAgentTypeId}}",
+  "tags": ["range-never-test"],
+  "configuration": {}
+}
+
+@neverAgent2Id = {{createNeverAgent2.response.body.$.id}}
+
+### Delete agent 1 -> value 1 freed and retired forever
+DELETE {{baseUrl}}/agents/{{neverAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### Agent 3 -> value 1 is retired, so it mints value 3 (never reuses 1)
+# @name createNeverAgent3
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Never Agent 3",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{neverAgentTypeId}}",
+  "tags": ["range-never-test"],
+  "configuration": {}
+}
+
+@neverAgent3Id = {{createNeverAgent3.response.body.$.id}}
+
+### Confirm agent 3 got value 3, not the retired value 1
+GET {{baseUrl}}/config-pool-values?agentId={{neverAgent3Id}}
+Authorization: Bearer {{adminToken}}
+
+### TEST: agent 4 fails — value 1 is retired forever, 2 and 3 in use
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Never Agent 4 (should fail, 1 retired)",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{neverAgentTypeId}}",
+  "tags": ["range-never-test"],
+  "configuration": {}
+}
+
+### The retired value 1 row remains with agentId=null and releasedAt set, unused
+GET {{baseUrl}}/config-pool-values?configPoolId={{neverPoolId}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
 ### Subnet generator: reuse-on-release (released IP IS re-allocated)
 ###############################################################################
 ### Same reuse behaviour as range, but for the subnet generator. Host mode on a

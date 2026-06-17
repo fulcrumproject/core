@@ -119,6 +119,18 @@ func TestConfigPool_Validate(t *testing.T) {
 			errorMsg:  "retentionSeconds must be >= 0",
 		},
 		{
+			name: "range generator invalid neverReallocate",
+			pool: &ConfigPool{
+				Name:            "ASN Pool",
+				Type:            "asn",
+				PropertyType:    "integer",
+				GeneratorType:   PoolGeneratorRange,
+				GeneratorConfig: &properties.JSON{"min": float64(65000), "max": float64(65535), "neverReallocate": "yes"},
+			},
+			wantError: true,
+			errorMsg:  "neverReallocate must be a boolean",
+		},
+		{
 			name: "empty name",
 			pool: &ConfigPool{
 				Name:          "",

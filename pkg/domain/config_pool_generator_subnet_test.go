@@ -277,3 +277,33 @@ func TestConfigPoolSubnetGenerator_RetentionHoldsValue(t *testing.T) {
 		t.Errorf("expected 212.78.11.3 (212.78.11.2 still cooling), got %v", got)
 	}
 }
+
+// neverReallocate keeps a freed subnet out of circulation forever: even past any
+// cooldown the freed value is skipped and the next free one is minted.
+func TestConfigPoolSubnetGenerator_NeverReallocate(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	entityID := properties.UUID(uuid.New())
+	releasedAt := time.Now().Add(-100 * time.Hour)
+
+	released := &ConfigPoolValue{
+		BaseEntity:   BaseEntity{ID: properties.UUID(uuid.New())},
+		ConfigPoolID: poolID,
+		Value:        "212.78.11.2",
+		ReleasedAt:   &releasedAt,
+	}
+	repo := NewMockConfigPoolValueRepository(t)
+	repo.On("FindByPool", ctx, poolID).Return([]*ConfigPoolValue{released}, nil)
+	repo.On("Create", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+		return v.Value == "212.78.11.3"
+	})).Return(nil)
+
+	gen := NewConfigPoolSubnetGenerator(repo, poolID, properties.JSON{"cidr": "212.78.11.0/24", "excludeFirst": float64(2), "neverReallocate": true})
+	got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeInfrastructure, entityID, "ip")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "212.78.11.3" {
+		t.Errorf("expected 212.78.11.3 (212.78.11.2 never reallocated), got %v", got)
+	}
+}
