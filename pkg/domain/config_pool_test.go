@@ -116,7 +116,7 @@ func TestConfigPool_Validate(t *testing.T) {
 				GeneratorConfig: &properties.JSON{"min": float64(65000), "max": float64(65535), "retentionSeconds": float64(-1)},
 			},
 			wantError: true,
-			errorMsg:  "retentionSeconds must be >= 0",
+			errorMsg:  "retentionSeconds must be higher than 0",
 		},
 		{
 			name: "range generator invalid neverReallocate",
@@ -262,13 +262,13 @@ func TestConfigPoolCommander_Create(t *testing.T) {
 	}
 
 	tests := []struct {
-		name             string
-		params           CreateConfigPoolParams
-		conflictExists   bool             // FindByTypeAndProvider returns a row
-		conflictOwnedBy  *properties.UUID // ParticipantID of the conflicting row (nil = global)
-		wantErr          bool
-		errContains      string
-		assertOnCreate   func(t *testing.T, p *ConfigPool)
+		name            string
+		params          CreateConfigPoolParams
+		conflictExists  bool             // FindByTypeAndProvider returns a row
+		conflictOwnedBy *properties.UUID // ParticipantID of the conflicting row (nil = global)
+		wantErr         bool
+		errContains     string
+		assertOnCreate  func(t *testing.T, p *ConfigPool)
 	}{
 		{
 			name:   "creates global pool when no conflict",

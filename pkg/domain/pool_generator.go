@@ -29,7 +29,7 @@ func parseRetention(cfg properties.JSON) (time.Duration, error) {
 		return 0, NewInvalidInputErrorf("%s must be an integer number of seconds", retentionConfigKey)
 	}
 	if n < 0 {
-		return 0, NewInvalidInputErrorf("%s must be >= 0", retentionConfigKey)
+		return 0, NewInvalidInputErrorf("%s must be higher than 0", retentionConfigKey)
 	}
 	return time.Duration(n) * time.Second, nil
 }
