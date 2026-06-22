@@ -102,6 +102,14 @@ func (sp *ServicePool) Validate() error {
 	if err := sp.GeneratorType.Validate(); err != nil {
 		return err
 	}
+	if sp.GeneratorType == PoolGeneratorSubnet && sp.GeneratorConfig != nil {
+		if _, err := parseRetention(*sp.GeneratorConfig); err != nil {
+			return err
+		}
+		if _, err := parseNeverReallocate(*sp.GeneratorConfig); err != nil {
+			return err
+		}
+	}
 	if sp.ServicePoolSetID == (properties.UUID{}) {
 		return fmt.Errorf("service pool set ID cannot be empty")
 	}

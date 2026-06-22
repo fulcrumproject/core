@@ -374,6 +374,7 @@ func TestServicePoolValueRepository(t *testing.T) {
 			assert.Nil(t, found.ServiceID)
 			assert.Nil(t, found.PropertyName)
 			assert.Nil(t, found.AllocatedAt)
+			assert.NotNil(t, found.ReleasedAt)
 		}
 	})
 

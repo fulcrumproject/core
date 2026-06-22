@@ -142,6 +142,7 @@ func TestServicePoolValue_Allocate(t *testing.T) {
 	poolID := properties.UUID(uuid.New())
 	serviceID := properties.UUID(uuid.New())
 	value := properties.JSON{"ip": "203.0.113.10"}
+	now := time.Now().UTC()
 
 	poolValue := &ServicePoolValue{
 		ServicePoolID: poolID,
@@ -150,6 +151,7 @@ func TestServicePoolValue_Allocate(t *testing.T) {
 		ServiceID:     nil,
 		PropertyName:  nil,
 		AllocatedAt:   nil,
+		ReleasedAt:    &now,
 	}
 
 	assert.False(t, poolValue.IsAllocated())
@@ -160,6 +162,7 @@ func TestServicePoolValue_Allocate(t *testing.T) {
 	assert.Equal(t, serviceID, *poolValue.ServiceID)
 	assert.Equal(t, "publicIp", *poolValue.PropertyName)
 	assert.NotNil(t, poolValue.AllocatedAt)
+	assert.Nil(t, poolValue.ReleasedAt)
 }
 
 func TestServicePoolValue_Release(t *testing.T) {
@@ -185,6 +188,7 @@ func TestServicePoolValue_Release(t *testing.T) {
 	assert.Nil(t, poolValue.ServiceID)
 	assert.Nil(t, poolValue.PropertyName)
 	assert.Nil(t, poolValue.AllocatedAt)
+	assert.NotNil(t, poolValue.ReleasedAt)
 }
 
 func TestServicePoolValue_TableName(t *testing.T) {

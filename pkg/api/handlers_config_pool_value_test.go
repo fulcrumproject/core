@@ -65,14 +65,16 @@ func TestConfigPoolValueToRes(t *testing.T) {
 	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	updatedAt := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
 	allocatedAt := time.Date(2023, 1, 3, 0, 0, 0, 0, time.UTC)
+	releasedAt := time.Date(2023, 1, 3, 0, 0, 0, 0, time.UTC)
 	propName := "ip_address"
 
 	tests := []struct {
-		name             string
-		value            *domain.ConfigPoolValue
-		expectedAgentID  *properties.UUID
-		expectedAllocAt  *JSONUTCTime
-		expectedPropName *string
+		name               string
+		value              *domain.ConfigPoolValue
+		expectedAgentID    *properties.UUID
+		expectedAllocAt    *JSONUTCTime
+		expectedReleasedAt *JSONUTCTime
+		expectedPropName   *string
 	}{
 		{
 			name: "not allocated",
@@ -101,6 +103,17 @@ func TestConfigPoolValueToRes(t *testing.T) {
 			expectedAllocAt:  jsonUTCTimePtr(allocatedAt),
 			expectedPropName: &propName,
 		},
+		{
+			name: "released",
+			value: &domain.ConfigPoolValue{
+				BaseEntity:   domain.BaseEntity{ID: properties.UUID(id), CreatedAt: createdAt, UpdatedAt: updatedAt},
+				Name:         "value-3",
+				Value:        "192.168.1.3",
+				ConfigPoolID: properties.UUID(poolID),
+				ReleasedAt:   &releasedAt,
+			},
+			expectedReleasedAt: jsonUTCTimePtr(releasedAt),
+		},
 	}
 
 	for _, tt := range tests {
@@ -116,6 +129,7 @@ func TestConfigPoolValueToRes(t *testing.T) {
 			assert.Equal(t, tt.expectedAllocAt, res.AllocatedAt)
 			assert.Equal(t, JSONUTCTime(createdAt), res.CreatedAt)
 			assert.Equal(t, JSONUTCTime(updatedAt), res.UpdatedAt)
+			assert.Equal(t, tt.expectedReleasedAt, res.ReleasedAt)
 		})
 	}
 }

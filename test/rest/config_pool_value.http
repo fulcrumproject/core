@@ -505,16 +505,15 @@ GET {{baseUrl}}/config-pool-values?agentId={{scopedGenAgentId}}
 Authorization: Bearer {{adminToken}}
 
 ###############################################################################
-### Range generator: retire-on-release (released value is NOT re-allocated)
+### Range generator: reuse-on-release (released value IS re-allocated)
 ###############################################################################
-### Contrast with the list scenario above (where a released value is reused). For
-### range/subnet, release keeps the row, so the value stays "used" and is never
-### handed out again:
+### With no retentionSeconds, range/subnet now reuse a freed value immediately
+### (release keeps the row, clears agentId and stamps releasedAt):
 ###   1. Range pool min=1, max=3.
 ###   2. Agent 1 -> value 1; agent 2 -> value 2.
-###   3. Delete agent 1 -> value 1 row is kept with agentId=null (released, not deleted).
-###   4. Agent 3 -> gets the NEXT value 3, NOT the released 1.
-###   5. Agent 4 -> fails "range exhausted": value 1 is retired, never re-issued.
+###   3. Delete agent 1 -> value 1 row is kept with agentId=null, releasedAt set.
+###   4. Agent 3 -> REUSES the freed value 1 (lowest free), not a new value.
+###   5. Agent 4 -> gets value 3 (next free); agent 5 -> fails "range exhausted".
 
 ### Provider for the range scenario
 # @name createRangeProvider
@@ -529,15 +528,15 @@ Content-Type: application/json
 
 @rangeProviderId = {{createRangeProvider.response.body.$.id}}
 
-### Range pool with three values (1..3)
+### Range pool with three values (1..3), no retention -> immediate reuse
 # @name createRangePool
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "name": "Range Retire Pool",
-  "type": "rangeRetireAsn",
+  "name": "Range Reuse Pool",
+  "type": "rangeReuseAsn",
   "propertyType": "integer",
   "generatorType": "range",
   "generatorConfig": { "min": 1, "max": 3 }
@@ -552,7 +551,7 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "name": "Range Retire Agent Type {{$timestamp}}",
+  "name": "Range Reuse Agent Type {{$timestamp}}",
   "configurationSchema": {
     "properties": {
       "asn": {
@@ -561,7 +560,7 @@ Content-Type: application/json
         "generator": {
           "type": "pool",
           "config": {
-            "poolType": "rangeRetireAsn"
+            "poolType": "rangeReuseAsn"
           }
         }
       }
@@ -581,7 +580,7 @@ Content-Type: application/json
   "name": "Range Agent 1",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{rangeAgentTypeId}}",
-  "tags": ["range-retire-test"],
+  "tags": ["range-reuse-test"],
   "configuration": {}
 }
 
@@ -601,7 +600,7 @@ Content-Type: application/json
   "name": "Range Agent 2",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{rangeAgentTypeId}}",
-  "tags": ["range-retire-test"],
+  "tags": ["range-reuse-test"],
   "configuration": {}
 }
 
@@ -611,15 +610,15 @@ Content-Type: application/json
 GET {{baseUrl}}/config-pool-values?agentId={{rangeAgent2Id}}
 Authorization: Bearer {{adminToken}}
 
-### Delete agent 1 -> value 1 is released (row kept, agentId cleared)
+### Delete agent 1 -> value 1 is released (row kept, agentId=null, releasedAt set)
 DELETE {{baseUrl}}/agents/{{rangeAgent1Id}}
 Authorization: Bearer {{adminToken}}
 
-### Value 1's row must still exist, now with agentId=null (released, not deleted)
+### Value 1's row must still exist with agentId=null and releasedAt populated
 GET {{baseUrl}}/config-pool-values?configPoolId={{rangePoolId}}
 Authorization: Bearer {{adminToken}}
 
-### Agent 3 -> must get the NEXT value 3, NOT the released value 1
+### Agent 3 -> REUSES the freed value 1 (lowest free), not a new value
 # @name createRangeAgent3
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
@@ -629,25 +628,575 @@ Content-Type: application/json
   "name": "Range Agent 3",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{rangeAgentTypeId}}",
-  "tags": ["range-retire-test"],
+  "tags": ["range-reuse-test"],
   "configuration": {}
 }
 
 @rangeAgent3Id = {{createRangeAgent3.response.body.$.id}}
 
-### Confirm agent 3 got value 3 (the released 1 was retired, not re-issued)
+### Confirm agent 3 reused value 1 (releasedAt is cleared again)
 GET {{baseUrl}}/config-pool-values?agentId={{rangeAgent3Id}}
 Authorization: Bearer {{adminToken}}
 
-### TEST: agent 4 fails — value 1 is retired, so the range is exhausted
+### Agent 4 -> gets value 3 (the only remaining free value)
+# @name createRangeAgent4
 POST {{baseUrl}}/agents
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "name": "Range Agent 4 (should fail)",
+  "name": "Range Agent 4",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{rangeAgentTypeId}}",
-  "tags": ["range-retire-test"],
+  "tags": ["range-reuse-test"],
   "configuration": {}
 }
+
+@rangeAgent4Id = {{createRangeAgent4.response.body.$.id}}
+
+### Confirm agent 4 got value 3
+GET {{baseUrl}}/config-pool-values?agentId={{rangeAgent4Id}}
+Authorization: Bearer {{adminToken}}
+
+### TEST: agent 5 fails — values 1, 2 and 3 are all in use
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Agent 5 (should fail)",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{rangeAgentTypeId}}",
+  "tags": ["range-reuse-test"],
+  "configuration": {}
+}
+
+###############################################################################
+### Range generator: retentionSeconds cooldown blocks reuse until it elapses
+###############################################################################
+### A positive retentionSeconds holds a freed value out of circulation until the
+### cooldown elapses, measured from releasedAt:
+###   1. Range pool min=1, max=3, retentionSeconds=30.
+###   2. Agent 1 -> value 1; agent 2 -> value 2.
+###   3. Delete agent 1 -> value 1 freed at T0 (still cooling).
+###   4. Agent 3 (immediately) -> value 1 is reserved (cooling), so it mints value 3.
+###   5. Agent 4 (immediately) -> fails "range exhausted" (1 cooling, 2 and 3 in use).
+###   6. WAIT > 30 seconds, then agent 4 retry -> REUSES the now-cooled value 1.
+
+### Range pool with a 30s reuse cooldown
+# @name createCooldownPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Cooldown Pool",
+  "type": "rangeCooldownAsn",
+  "propertyType": "integer",
+  "generatorType": "range",
+  "generatorConfig": { "min": 1, "max": 3, "retentionSeconds": 30 }
+}
+
+@cooldownPoolId = {{createCooldownPool.response.body.$.id}}
+
+### Agent type for the cooldown pool
+# @name createCooldownAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Cooldown Agent Type {{$timestamp}}",
+  "configurationSchema": {
+    "properties": {
+      "asn": {
+        "type": "integer",
+        "label": "ASN",
+        "generator": {
+          "type": "pool",
+          "config": {
+            "poolType": "rangeCooldownAsn"
+          }
+        }
+      }
+    }
+  }
+}
+
+@cooldownAgentTypeId = {{createCooldownAgentType.response.body.$.id}}
+
+### Agent 1 -> value 1
+# @name createCooldownAgent1
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Cooldown Agent 1",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{cooldownAgentTypeId}}",
+  "tags": ["range-cooldown-test"],
+  "configuration": {}
+}
+
+@cooldownAgent1Id = {{createCooldownAgent1.response.body.$.id}}
+
+### Agent 2 -> value 2
+# @name createCooldownAgent2
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Cooldown Agent 2",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{cooldownAgentTypeId}}",
+  "tags": ["range-cooldown-test"],
+  "configuration": {}
+}
+
+@cooldownAgent2Id = {{createCooldownAgent2.response.body.$.id}}
+
+### Delete agent 1 -> value 1 freed at T0 (cooldown starts)
+DELETE {{baseUrl}}/agents/{{cooldownAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### Agent 3 (immediately) -> value 1 still cooling, so mints value 3
+# @name createCooldownAgent3
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Cooldown Agent 3",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{cooldownAgentTypeId}}",
+  "tags": ["range-cooldown-test"],
+  "configuration": {}
+}
+
+@cooldownAgent3Id = {{createCooldownAgent3.response.body.$.id}}
+
+### Confirm agent 3 got value 3 (value 1 was held by the cooldown)
+GET {{baseUrl}}/config-pool-values?agentId={{cooldownAgent3Id}}
+Authorization: Bearer {{adminToken}}
+
+### TEST: agent 4 (immediately) fails — value 1 is still cooling, 2 and 3 in use
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Cooldown Agent 4 (should fail while cooling)",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{cooldownAgentTypeId}}",
+  "tags": ["range-cooldown-test"],
+  "configuration": {}
+}
+
+### WAIT > 30 seconds (the retentionSeconds cooldown) before the next request.
+
+### Agent 4 retry -> now REUSES the cooled-down value 1
+# @name createCooldownAgent4
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Cooldown Agent 4",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{cooldownAgentTypeId}}",
+  "tags": ["range-cooldown-test"],
+  "configuration": {}
+}
+
+@cooldownAgent4Id = {{createCooldownAgent4.response.body.$.id}}
+
+### Confirm agent 4 reused value 1 after the cooldown elapsed
+GET {{baseUrl}}/config-pool-values?agentId={{cooldownAgent4Id}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### Range generator: neverReallocate retires a freed value forever
+###############################################################################
+### neverReallocate=true keeps a released value out of circulation permanently,
+### regardless of any retentionSeconds:
+###   1. Range pool min=1, max=3, neverReallocate=true.
+###   2. Agent 1 -> value 1; agent 2 -> value 2.
+###   3. Delete agent 1 -> value 1 freed (row kept, agentId=null, releasedAt set).
+###   4. Agent 3 -> value 1 is retired, so it mints value 3 (never reuses 1).
+###   5. Agent 4 -> fails "range exhausted" (1 retired forever, 2 and 3 in use).
+
+### Range pool that never reallocates a freed value
+# @name createNeverPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Never Reallocate Pool",
+  "type": "rangeNeverAsn",
+  "propertyType": "integer",
+  "generatorType": "range",
+  "generatorConfig": { "min": 1, "max": 3, "neverReallocate": true }
+}
+
+@neverPoolId = {{createNeverPool.response.body.$.id}}
+
+### Agent type for the never-reallocate pool
+# @name createNeverAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Range Never Agent Type {{$timestamp}}",
+  "configurationSchema": {
+    "properties": {
+      "asn": {
+        "type": "integer",
+        "label": "ASN",
+        "generator": {
+          "type": "pool",
+          "config": {
+            "poolType": "rangeNeverAsn"
+          }
+        }
+      }
+    }
+  }
+}
+
+@neverAgentTypeId = {{createNeverAgentType.response.body.$.id}}
+
+### Agent 1 -> value 1
+# @name createNeverAgent1
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Never Agent 1",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{neverAgentTypeId}}",
+  "tags": ["range-never-test"],
+  "configuration": {}
+}
+
+@neverAgent1Id = {{createNeverAgent1.response.body.$.id}}
+
+### Agent 2 -> value 2
+# @name createNeverAgent2
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Never Agent 2",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{neverAgentTypeId}}",
+  "tags": ["range-never-test"],
+  "configuration": {}
+}
+
+@neverAgent2Id = {{createNeverAgent2.response.body.$.id}}
+
+### Delete agent 1 -> value 1 freed and retired forever
+DELETE {{baseUrl}}/agents/{{neverAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### Agent 3 -> value 1 is retired, so it mints value 3 (never reuses 1)
+# @name createNeverAgent3
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Never Agent 3",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{neverAgentTypeId}}",
+  "tags": ["range-never-test"],
+  "configuration": {}
+}
+
+@neverAgent3Id = {{createNeverAgent3.response.body.$.id}}
+
+### Confirm agent 3 got value 3, not the retired value 1
+GET {{baseUrl}}/config-pool-values?agentId={{neverAgent3Id}}
+Authorization: Bearer {{adminToken}}
+
+### TEST: agent 4 fails — value 1 is retired forever, 2 and 3 in use
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Never Agent 4 (should fail, 1 retired)",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{neverAgentTypeId}}",
+  "tags": ["range-never-test"],
+  "configuration": {}
+}
+
+### The retired value 1 row remains with agentId=null and releasedAt set, unused
+GET {{baseUrl}}/config-pool-values?configPoolId={{neverPoolId}}
+Authorization: Bearer {{adminToken}}
+
+###############################################################################
+### Subnet generator: reuse-on-release (released IP IS re-allocated)
+###############################################################################
+### Same reuse behaviour as range, but for the subnet generator. Host mode on a
+### /31 yields exactly two IPs (10.70.0.0, 10.70.0.1):
+###   1. Agent 1 -> 10.70.0.0; agent 2 -> 10.70.0.1.
+###   2. Delete agent 1 -> 10.70.0.0 freed (row kept, agentId=null, releasedAt set).
+###   3. Agent 3 -> REUSES 10.70.0.0 (lowest free).
+###   4. Agent 4 -> fails "subnet exhausted" (both IPs in use).
+
+### Subnet pool: 10.70.0.0/31 host mode, no retention -> immediate reuse
+# @name createSubnetReusePool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Reuse Pool",
+  "type": "subnetReuseIp",
+  "propertyType": "string",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.70.0.0/31" }
+}
+
+### Agent type that auto-allocates an IP from the subnet pool
+# @name createSubnetReuseAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Reuse Agent Type {{$timestamp}}",
+  "configurationSchema": {
+    "properties": {
+      "ip": {
+        "type": "string",
+        "label": "IP",
+        "generator": { "type": "pool", "config": { "poolType": "subnetReuseIp" } }
+      }
+    }
+  }
+}
+
+@subnetReuseAgentTypeId = {{createSubnetReuseAgentType.response.body.$.id}}
+
+### Agent 1 -> 10.70.0.0
+# @name createSubnetAgent1
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Agent 1",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{subnetReuseAgentTypeId}}",
+  "tags": ["subnet-reuse-test"],
+  "configuration": {}
+}
+
+@subnetAgent1Id = {{createSubnetAgent1.response.body.$.id}}
+
+### Verify agent 1 holds 10.70.0.0
+GET {{baseUrl}}/config-pool-values?agentId={{subnetAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### Agent 2 -> 10.70.0.1
+# @name createSubnetAgent2
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Agent 2",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{subnetReuseAgentTypeId}}",
+  "tags": ["subnet-reuse-test"],
+  "configuration": {}
+}
+
+@subnetAgent2Id = {{createSubnetAgent2.response.body.$.id}}
+
+### Verify agent 2 holds 10.70.0.1
+GET {{baseUrl}}/config-pool-values?agentId={{subnetAgent2Id}}
+Authorization: Bearer {{adminToken}}
+
+### Delete agent 1 -> 10.70.0.0 released (row kept, agentId=null, releasedAt set)
+DELETE {{baseUrl}}/agents/{{subnetAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### Agent 3 -> REUSES the freed 10.70.0.0
+# @name createSubnetAgent3
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Agent 3",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{subnetReuseAgentTypeId}}",
+  "tags": ["subnet-reuse-test"],
+  "configuration": {}
+}
+
+@subnetAgent3Id = {{createSubnetAgent3.response.body.$.id}}
+
+### Confirm agent 3 reused 10.70.0.0 (releasedAt cleared again)
+GET {{baseUrl}}/config-pool-values?agentId={{subnetAgent3Id}}
+Authorization: Bearer {{adminToken}}
+
+### TEST: agent 4 fails — both 10.70.0.0 and 10.70.0.1 are in use
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Agent 4 (should fail)",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{subnetReuseAgentTypeId}}",
+  "tags": ["subnet-reuse-test"],
+  "configuration": {}
+}
+
+###############################################################################
+### Subnet generator: retentionSeconds cooldown blocks reuse until it elapses
+###############################################################################
+### Host mode on a /30 with excludeLast=1 yields three IPs (.0, .1, .2):
+###   1. Subnet pool 10.71.0.0/30, excludeLast=1, retentionSeconds=30.
+###   2. Agent 1 -> 10.71.0.0; agent 2 -> 10.71.0.1.
+###   3. Delete agent 1 -> 10.71.0.0 freed at T0 (still cooling).
+###   4. Agent 3 (immediately) -> 10.71.0.0 reserved (cooling), so it mints 10.71.0.2.
+###   5. Agent 4 (immediately) -> fails "subnet exhausted" (all three in use/cooling).
+###   6. WAIT > 30 seconds, then agent 4 retry -> REUSES the now-cooled 10.71.0.0.
+
+### Subnet pool with a 30s reuse cooldown
+# @name createSubnetCooldownPool
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Cooldown Pool",
+  "type": "subnetCooldownIp",
+  "propertyType": "string",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.71.0.0/30", "excludeLast": 1, "retentionSeconds": 30 }
+}
+
+### Agent type for the cooldown subnet pool
+# @name createSubnetCooldownAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Cooldown Agent Type {{$timestamp}}",
+  "configurationSchema": {
+    "properties": {
+      "ip": {
+        "type": "string",
+        "label": "IP",
+        "generator": { "type": "pool", "config": { "poolType": "subnetCooldownIp" } }
+      }
+    }
+  }
+}
+
+@subnetCooldownAgentTypeId = {{createSubnetCooldownAgentType.response.body.$.id}}
+
+### Agent 1 -> 10.71.0.0
+# @name createSubnetCdAgent1
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Cooldown Agent 1",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{subnetCooldownAgentTypeId}}",
+  "tags": ["subnet-cooldown-test"],
+  "configuration": {}
+}
+
+@subnetCdAgent1Id = {{createSubnetCdAgent1.response.body.$.id}}
+
+### Agent 2 -> 10.71.0.1
+# @name createSubnetCdAgent2
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Cooldown Agent 2",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{subnetCooldownAgentTypeId}}",
+  "tags": ["subnet-cooldown-test"],
+  "configuration": {}
+}
+
+@subnetCdAgent2Id = {{createSubnetCdAgent2.response.body.$.id}}
+
+### Delete agent 1 -> 10.71.0.0 freed at T0 (cooldown starts)
+DELETE {{baseUrl}}/agents/{{subnetCdAgent1Id}}
+Authorization: Bearer {{adminToken}}
+
+### Agent 3 (immediately) -> 10.71.0.0 still cooling, so mints 10.71.0.2
+# @name createSubnetCdAgent3
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Cooldown Agent 3",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{subnetCooldownAgentTypeId}}",
+  "tags": ["subnet-cooldown-test"],
+  "configuration": {}
+}
+
+@subnetCdAgent3Id = {{createSubnetCdAgent3.response.body.$.id}}
+
+### Confirm agent 3 got 10.71.0.2 (10.71.0.0 held by the cooldown)
+GET {{baseUrl}}/config-pool-values?agentId={{subnetCdAgent3Id}}
+Authorization: Bearer {{adminToken}}
+
+### TEST: agent 4 (immediately) fails — 10.71.0.0 cooling, 10.71.0.1 and .2 in use
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Cooldown Agent 4 (should fail while cooling)",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{subnetCooldownAgentTypeId}}",
+  "tags": ["subnet-cooldown-test"],
+  "configuration": {}
+}
+
+### WAIT > 30 seconds (the retentionSeconds cooldown) before the next request.
+
+### Agent 4 retry -> now REUSES the cooled-down 10.71.0.0
+# @name createSubnetCdAgent4
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Cooldown Agent 4",
+  "providerId": "{{rangeProviderId}}",
+  "agentTypeId": "{{subnetCooldownAgentTypeId}}",
+  "tags": ["subnet-cooldown-test"],
+  "configuration": {}
+}
+
+@subnetCdAgent4Id = {{createSubnetCdAgent4.response.body.$.id}}
+
+### Confirm agent 4 reused 10.71.0.0 after the cooldown elapsed
+GET {{baseUrl}}/config-pool-values?agentId={{subnetCdAgent4Id}}
+Authorization: Bearer {{adminToken}}

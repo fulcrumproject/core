@@ -14,6 +14,7 @@ func TestConfigPoolRangeGenerator_Allocate(t *testing.T) {
 	ctx := context.Background()
 	poolID := properties.UUID(uuid.New())
 	entityID := properties.UUID(uuid.New())
+	usedBy := properties.UUID(uuid.New())
 
 	tests := []struct {
 		name      string
@@ -29,11 +30,11 @@ func TestConfigPoolRangeGenerator_Allocate(t *testing.T) {
 			wantValue: 65000,
 		},
 		{
-			name:   "skips already-used values",
+			name:   "skips allocated values",
 			config: properties.JSON{"min": float64(65000), "max": float64(65535)},
 			existing: []*ConfigPoolValue{
-				{ConfigPoolID: poolID, Value: float64(65000)},
-				{ConfigPoolID: poolID, Value: float64(65001)},
+				{ConfigPoolID: poolID, Value: float64(65000), AgentID: &usedBy},
+				{ConfigPoolID: poolID, Value: float64(65001), AgentID: &usedBy},
 			},
 			wantValue: 65002,
 		},
@@ -46,7 +47,7 @@ func TestConfigPoolRangeGenerator_Allocate(t *testing.T) {
 			name:   "exhausted range errors",
 			config: properties.JSON{"min": float64(65000), "max": float64(65000)},
 			existing: []*ConfigPoolValue{
-				{ConfigPoolID: poolID, Value: float64(65000)},
+				{ConfigPoolID: poolID, Value: float64(65000), AgentID: &usedBy},
 			},
 			wantErr:   true,
 			errSubstr: "range exhausted",
@@ -125,20 +126,26 @@ func TestConfigPoolRangeGenerator_Release(t *testing.T) {
 	}
 }
 
-// A released value keeps its row (FindByPool still returns it), so the next allocation
-// skips it and hands out the next free value instead of re-issuing the released one.
-func TestConfigPoolRangeGenerator_ReleasedValueNotReallocated(t *testing.T) {
+// With no retentionSeconds, a freed value is reusable immediately: the next allocation
+// re-allocates the existing row in place (Update) rather than minting a new one.
+func TestConfigPoolRangeGenerator_ReusesReleasedValue(t *testing.T) {
 	ctx := context.Background()
 	poolID := properties.UUID(uuid.New())
 	agentID := properties.UUID(uuid.New())
+	releasedAt := time.Now().Add(-time.Hour)
 
-	released := &ConfigPoolValue{BaseEntity: BaseEntity{ID: properties.UUID(uuid.New())}, ConfigPoolID: poolID, Value: float64(1)}
+	released := &ConfigPoolValue{
+		BaseEntity:   BaseEntity{ID: properties.UUID(uuid.New())},
+		ConfigPoolID: poolID,
+		Value:        float64(1),
+		ReleasedAt:   &releasedAt,
+	}
 
 	repo := NewMockConfigPoolValueRepository(t)
 	repo.On("FindByPool", ctx, poolID).Return([]*ConfigPoolValue{released}, nil)
-	repo.On("Create", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
-		n, ok := toInt(v.Value)
-		return ok && n == 2
+	repo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+		return v.ID == released.ID && v.IsAllocated() &&
+			v.AgentID != nil && *v.AgentID == agentID && v.ReleasedAt == nil
 	})).Return(nil)
 
 	gen := NewConfigPoolRangeGenerator(repo, poolID, properties.JSON{"min": float64(1), "max": float64(3)})
@@ -146,7 +153,96 @@ func TestConfigPoolRangeGenerator_ReleasedValueNotReallocated(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got != 2 {
-		t.Errorf("released value 1 must not be re-allocated; got %v", got)
+	if n, ok := toInt(got); !ok || n != 1 {
+		t.Errorf("expected freed value 1 to be reused, got %v", got)
+	}
+}
+
+// retentionSeconds blocks reuse until the cooldown elapses: within the window the freed
+// value is skipped and a new one is minted; past it the freed value is re-allocated.
+func TestConfigPoolRangeGenerator_RetentionCooldown(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	agentID := properties.UUID(uuid.New())
+	config := properties.JSON{"min": float64(1), "max": float64(3), "retentionSeconds": float64(3600)}
+
+	t.Run("within cooldown mints next value", func(t *testing.T) {
+		releasedAt := time.Now()
+		released := &ConfigPoolValue{
+			BaseEntity:   BaseEntity{ID: properties.UUID(uuid.New())},
+			ConfigPoolID: poolID,
+			Value:        float64(1),
+			ReleasedAt:   &releasedAt,
+		}
+		repo := NewMockConfigPoolValueRepository(t)
+		repo.On("FindByPool", ctx, poolID).Return([]*ConfigPoolValue{released}, nil)
+		repo.On("Create", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+			n, ok := toInt(v.Value)
+			return ok && n == 2
+		})).Return(nil)
+
+		gen := NewConfigPoolRangeGenerator(repo, poolID, config)
+		got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeAgent, agentID, "asn")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if n, _ := toInt(got); n != 2 {
+			t.Errorf("expected 2 (value 1 still cooling), got %v", got)
+		}
+	})
+
+	t.Run("after cooldown reuses freed value", func(t *testing.T) {
+		releasedAt := time.Now().Add(-2 * time.Hour)
+		released := &ConfigPoolValue{
+			BaseEntity:   BaseEntity{ID: properties.UUID(uuid.New())},
+			ConfigPoolID: poolID,
+			Value:        float64(1),
+			ReleasedAt:   &releasedAt,
+		}
+		repo := NewMockConfigPoolValueRepository(t)
+		repo.On("FindByPool", ctx, poolID).Return([]*ConfigPoolValue{released}, nil)
+		repo.On("Update", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+			return v.ID == released.ID && v.IsAllocated() && v.ReleasedAt == nil
+		})).Return(nil)
+
+		gen := NewConfigPoolRangeGenerator(repo, poolID, config)
+		got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeAgent, agentID, "asn")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if n, _ := toInt(got); n != 1 {
+			t.Errorf("expected reused 1 after cooldown, got %v", got)
+		}
+	})
+}
+
+// neverReallocate keeps a freed value out of circulation forever: even long past any
+// cooldown the freed value is skipped and a new one is minted instead.
+func TestConfigPoolRangeGenerator_NeverReallocate(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	agentID := properties.UUID(uuid.New())
+	releasedAt := time.Now().Add(-100 * time.Hour)
+
+	released := &ConfigPoolValue{
+		BaseEntity:   BaseEntity{ID: properties.UUID(uuid.New())},
+		ConfigPoolID: poolID,
+		Value:        float64(1),
+		ReleasedAt:   &releasedAt,
+	}
+	repo := NewMockConfigPoolValueRepository(t)
+	repo.On("FindByPool", ctx, poolID).Return([]*ConfigPoolValue{released}, nil)
+	repo.On("Create", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+		n, ok := toInt(v.Value)
+		return ok && n == 2
+	})).Return(nil)
+
+	gen := NewConfigPoolRangeGenerator(repo, poolID, properties.JSON{"min": float64(1), "max": float64(3), "retentionSeconds": float64(3600), "neverReallocate": true})
+	got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeAgent, agentID, "asn")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if n, _ := toInt(got); n != 2 {
+		t.Errorf("expected 2 (value 1 never reallocated), got %v", got)
 	}
 }

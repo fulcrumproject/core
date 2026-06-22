@@ -51,6 +51,10 @@ ConfigPoolValueRes:
       type: string
       format: date-time
       description: "When this value was allocated"
+    releasedAt:
+      type: string
+      format: date-time
+      description: "When this value was last released back to the pool (omitted while allocated). Combined with the pool's retentionSeconds to gate reuse of range/subnet values."
     createdAt:
       type: string
       format: date-time

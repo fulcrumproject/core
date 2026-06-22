@@ -27,8 +27,8 @@ CreateServicePoolReq:
       description: "Allocation strategy: 'list' for pre-configured values, 'subnet' for IP ranges"
     generatorConfig:
       type: object
-      description: "Generator-specific configuration (required for subnet)"
-      example: { "cidr": "192.168.1.0/24", "excludeFirst": 1, "excludeLast": 1 }
+      description: "Generator-specific configuration (required for subnet). For 'subnet' an optional integer 'retentionSeconds' sets a reuse cooldown: a released value is re-allocatable only after that many seconds (omitted or 0 = reuse immediately). An optional boolean 'neverReallocate' (default false): when true a released value is never re-allocated, taking precedence over 'retentionSeconds'."
+      example: { "cidr": "192.168.1.0/24", "excludeFirst": 1, "excludeLast": 1, "neverReallocate": true }
     servicePoolSetId:
       $ref: "./common.yaml#/properties.UUID"
 

@@ -18,8 +18,8 @@ import (
 // both pool scopes: ASN and PtP /30 are Fulcrum-global pools (admin, no participantId),
 // while public IP, VMBR0 LAN /24 and GRE NAT /23 are CSP/participant-scoped. Onboarding
 // GRE and L2 Proxmox clusters auto-allocates from both scopes in a single allocation.
-// Release keeps the value rows (cleared) so a released value is retired, never
-// re-allocated.
+// Release keeps the value rows (cleared) and stamps released_at; without a
+// retentionSeconds cooldown a freed value is reusable on the next allocation.
 func testFaeProxmoxScenario(t *testing.T, env *Env) {
 	providerID := testhelpers.ProviderID
 	uniq := testhelpers.Uniq()

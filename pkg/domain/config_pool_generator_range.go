@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 )
 
 // ConfigPoolRangeGenerator allocates the lowest free integer in a [min,max] range,
-// skipping excluded values. It mints a ConfigPoolValue row per allocation.
+// skipping excluded values. It reuses a freed value once its retention cooldown has
+// elapsed, otherwise mints a new ConfigPoolValue row.
 type ConfigPoolRangeGenerator struct {
 	repo   ConfigPoolValueRepository
 	poolID properties.UUID
@@ -26,21 +28,48 @@ func (g *ConfigPoolRangeGenerator) Allocate(ctx context.Context, entityType Conf
 	if err != nil {
 		return nil, err
 	}
+	retention, err := parseRetention(g.config)
+	if err != nil {
+		return nil, err
+	}
+	neverReallocate, err := parseNeverReallocate(g.config)
+	if err != nil {
+		return nil, err
+	}
 
 	existing, err := g.repo.FindByPool(ctx, g.poolID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pool values: %w", err)
 	}
-	used := make(map[int]bool, len(existing))
+
+	// Partition existing rows: allocated or still-cooling values are reserved (skipped);
+	// freed values past their cooldown are reusable and re-allocated in place. With
+	// neverReallocate a freed value stays reserved permanently.
+	now := time.Now()
+	reserved := make(map[int]bool, len(existing))
+	reusable := make(map[int]*ConfigPoolValue, len(existing))
 	for _, v := range existing {
-		if n, ok := toInt(v.Value); ok {
-			used[n] = true
+		n, ok := toInt(v.Value)
+		if !ok {
+			continue
+		}
+		if v.IsAllocated() || !retentionAllows(retention, neverReallocate, v.ReleasedAt, now) {
+			reserved[n] = true
+		} else {
+			reusable[n] = v
 		}
 	}
 
 	for n := min; n <= max; n++ {
-		if exclude[n] || used[n] {
+		if exclude[n] || reserved[n] {
 			continue
+		}
+		if row, found := reusable[n]; found {
+			row.Allocate(entityType, entityID, propertyName)
+			if err := g.repo.Update(ctx, row); err != nil {
+				return nil, fmt.Errorf("failed to allocate value: %w", err)
+			}
+			return row.RawValue(), nil
 		}
 		value := &ConfigPoolValue{Name: strconv.Itoa(n), Value: n, ConfigPoolID: g.poolID}
 		value.Allocate(entityType, entityID, propertyName)
@@ -110,8 +139,8 @@ func toInt(v any) (int, bool) {
 }
 
 // releasePoolValues clears the allocation fields of the passed values that belong to
-// poolID and keeps the rows, so the value stays "used" and is never re-allocated.
-// Shared by the algorithmic generators (range, subnet).
+// poolID and stamps released_at, keeping the rows so they can be reused once their
+// retention cooldown elapses. Shared by the algorithmic generators (range, subnet).
 func releasePoolValues(ctx context.Context, repo ConfigPoolValueRepository, poolID properties.UUID, values []*ConfigPoolValue) error {
 	for _, v := range values {
 		if v.PoolID() != poolID {

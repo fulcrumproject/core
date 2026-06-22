@@ -100,6 +100,7 @@ type ConfigPoolValueRes struct {
 	AllocatedAt      *JSONUTCTime       `json:"allocatedAt,omitempty"`
 	CreatedAt        JSONUTCTime        `json:"createdAt"`
 	UpdatedAt        JSONUTCTime        `json:"updatedAt"`
+	ReleasedAt       *JSONUTCTime       `json:"releasedAt,omitempty"`
 }
 
 func ConfigPoolValueToRes(a *domain.ConfigPoolValue) *ConfigPoolValueRes {
@@ -129,6 +130,11 @@ func ConfigPoolValueToRes(a *domain.ConfigPoolValue) *ConfigPoolValueRes {
 
 	if a.Infrastructure != nil {
 		res.Infrastructure = InfrastructureToRes(a.Infrastructure)
+	}
+
+	if a.ReleasedAt != nil {
+		releasedAt := JSONUTCTime(*a.ReleasedAt)
+		res.ReleasedAt = &releasedAt
 	}
 
 	return res

@@ -87,10 +87,21 @@ func (cp *ConfigPool) Validate() error {
 		if cp.GeneratorConfig == nil {
 			return fmt.Errorf("%s generator requires generatorConfig", cp.GeneratorType)
 		}
+		var err error
 		if cp.GeneratorType == PoolGeneratorRange {
-			return validateRangeGeneratorConfig(*cp.GeneratorConfig)
+			err = validateRangeGeneratorConfig(*cp.GeneratorConfig)
+		} else {
+			err = validateSubnetGeneratorConfig(*cp.GeneratorConfig)
 		}
-		return validateSubnetGeneratorConfig(*cp.GeneratorConfig)
+		if err != nil {
+			return err
+		}
+		if _, err := parseRetention(*cp.GeneratorConfig); err != nil {
+			return err
+		}
+		if _, err := parseNeverReallocate(*cp.GeneratorConfig); err != nil {
+			return err
+		}
 	}
 
 	return nil

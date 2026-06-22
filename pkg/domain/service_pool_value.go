@@ -33,6 +33,7 @@ type ServicePoolValue struct {
 
 	ParticipantID *properties.UUID `json:"participantId,omitempty" gorm:"index"`
 	Participant   *Participant     `json:"-" gorm:"foreignKey:ParticipantID"`
+	ReleasedAt    *time.Time       `json:"releasedAt,omitempty"`
 }
 
 // CreateServicePoolValueParams defines parameters for creating a ServicePoolValue
@@ -84,6 +85,7 @@ func (spv *ServicePoolValue) Allocate(serviceID properties.UUID, propertyName st
 	spv.ServiceID = &serviceID
 	spv.PropertyName = &propertyName
 	spv.AllocatedAt = &now
+	spv.ReleasedAt = nil
 }
 
 // Release marks this value as available for allocation
@@ -91,6 +93,8 @@ func (spv *ServicePoolValue) Release() {
 	spv.ServiceID = nil
 	spv.PropertyName = nil
 	spv.AllocatedAt = nil
+	now := time.Now().UTC()
+	spv.ReleasedAt = &now
 }
 
 func (spv *ServicePoolValue) PoolID() properties.UUID {

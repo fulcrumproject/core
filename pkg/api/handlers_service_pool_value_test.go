@@ -83,6 +83,7 @@ func TestServicePoolValueToRes(t *testing.T) {
 		ServiceID:     nil,
 		PropertyName:  nil,
 		AllocatedAt:   nil,
+		ReleasedAt:    nil,
 	}
 
 	// Convert to response
@@ -98,6 +99,7 @@ func TestServicePoolValueToRes(t *testing.T) {
 	assert.Nil(t, res.AllocatedAt)
 	assert.Equal(t, JSONUTCTime(createdAt), res.CreatedAt)
 	assert.Equal(t, JSONUTCTime(updatedAt), res.UpdatedAt)
+	assert.Nil(t, res.ReleasedAt)
 }
 
 // TestServicePoolValueToRes_Allocated tests ServicePoolValueToRes for allocated value

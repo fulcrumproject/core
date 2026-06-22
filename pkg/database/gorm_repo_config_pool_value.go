@@ -21,8 +21,9 @@ var applyConfigPoolValueFilter = MapFilterApplier(map[string]FilterFieldApplier{
 })
 
 var applyConfigPoolValueSort = MapSortApplier(map[string]string{
-	"name":      "name",
-	"createdAt": "created_at",
+	"name":       "name",
+	"createdAt":  "created_at",
+	"releasedAt": "released_at",
 })
 
 func NewConfigPoolValueRepository(db *gorm.DB) *GormConfigPoolValueRepository {

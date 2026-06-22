@@ -151,6 +151,16 @@ func TestConfigPoolValue_Allocate(t *testing.T) {
 			entityID:     properties.NewUUID(),
 			propertyName: "new_prop",
 		},
+		{
+			name: "re-allocate a released value clears ReleasedAt",
+			initial: func() *ConfigPoolValue {
+				now := time.Now()
+				return &ConfigPoolValue{ReleasedAt: &now} // freed row being reused
+			}(),
+			entityType:   ConfigPoolValueEntityTypeAgent,
+			entityID:     properties.NewUUID(),
+			propertyName: "ip_address",
+		},
 	}
 
 	for _, tt := range tests {
@@ -168,6 +178,7 @@ func TestConfigPoolValue_Allocate(t *testing.T) {
 			assert.Equal(t, helpers.StringPtr(tt.propertyName), tt.initial.PropertyName)
 			assert.NotNil(t, tt.initial.AllocatedAt)
 			assert.True(t, tt.initial.IsAllocated())
+			assert.Nil(t, tt.initial.ReleasedAt)
 		})
 	}
 }
@@ -271,6 +282,7 @@ func TestConfigPoolValueCommander_Create(t *testing.T) {
 }
 
 func TestConfigPoolValue_Release(t *testing.T) {
+	now := time.Now().UTC()
 	tests := []struct {
 		name    string
 		initial *ConfigPoolValue
@@ -279,7 +291,6 @@ func TestConfigPoolValue_Release(t *testing.T) {
 			name: "release allocated value",
 			initial: func() *ConfigPoolValue {
 				id := properties.NewUUID()
-				now := time.Now()
 				return &ConfigPoolValue{
 					AgentID:      &id,
 					PropertyName: helpers.StringPtr("ip_address"),
@@ -291,7 +302,6 @@ func TestConfigPoolValue_Release(t *testing.T) {
 			name: "release infrastructure-allocated value",
 			initial: func() *ConfigPoolValue {
 				id := properties.NewUUID()
-				now := time.Now()
 				return &ConfigPoolValue{
 					InfrastructureID: &id,
 					PropertyName:     helpers.StringPtr("ptp"),
@@ -313,6 +323,7 @@ func TestConfigPoolValue_Release(t *testing.T) {
 			assert.Nil(t, tt.initial.InfrastructureID)
 			assert.Nil(t, tt.initial.PropertyName)
 			assert.Nil(t, tt.initial.AllocatedAt)
+			assert.NotNil(t, tt.initial.ReleasedAt)
 			assert.False(t, tt.initial.IsAllocated())
 		})
 	}

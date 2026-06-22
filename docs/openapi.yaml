@@ -5027,6 +5027,10 @@ components:
           type: string
           format: date-time
           description: When this value was allocated
+        releasedAt:
+          type: string
+          format: date-time
+          description: When this value was last released back to the pool (omitted while allocated). Combined with the pool's retentionSeconds to gate reuse of range/subnet values.
         createdAt:
           type: string
           format: date-time
@@ -5136,11 +5140,12 @@ components:
           description: 'Allocation strategy: ''list'' for pre-configured values, ''range'' for an integer range, ''subnet'' for CIDR-derived values'
         generatorConfig:
           type: object
-          description: Generator-specific configuration. Required for 'range' (min/max, optional exclude) and 'subnet' (cidr, optional prefix/hosts/excludeFirst/excludeLast/exclude)
+          description: 'Generator-specific configuration. Required for ''range'' (min/max, optional exclude) and ''subnet'' (cidr, optional prefix/hosts/excludeFirst/excludeLast/exclude). For ''range'' and ''subnet'' an optional integer ''retentionSeconds'' sets a reuse cooldown: a released value is re-allocatable only after that many seconds (omitted or 0 = reuse immediately). An optional boolean ''neverReallocate'' (default false): when true a released value is never re-allocated, taking precedence over ''retentionSeconds''.'
           example:
             cidr: 192.168.1.0/24
             excludeFirst: 1
             excludeLast: 1
+            neverReallocate: true
         participantId:
           $ref: '#/components/schemas/properties.UUID'
           description: |
@@ -6398,6 +6403,10 @@ components:
           type: string
           format: date-time
           description: When this value was allocated
+        releasedAt:
+          type: string
+          format: date-time
+          description: When this value was last released back to the pool (omitted while allocated). Combined with the pool's retentionSeconds to gate reuse of subnet values.
         createdAt:
           type: string
           format: date-time
@@ -6440,11 +6449,12 @@ components:
           description: 'Allocation strategy: ''list'' for pre-configured values, ''subnet'' for IP ranges'
         generatorConfig:
           type: object
-          description: Generator-specific configuration (required for subnet)
+          description: 'Generator-specific configuration (required for subnet). For ''subnet'' an optional integer ''retentionSeconds'' sets a reuse cooldown: a released value is re-allocatable only after that many seconds (omitted or 0 = reuse immediately). An optional boolean ''neverReallocate'' (default false): when true a released value is never re-allocated, taking precedence over ''retentionSeconds''.'
           example:
             cidr: 192.168.1.0/24
             excludeFirst: 1
             excludeLast: 1
+            neverReallocate: true
         servicePoolSetId:
           $ref: '#/components/schemas/properties.UUID'
     CreateServicePoolSetReq:

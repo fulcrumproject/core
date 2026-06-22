@@ -96,6 +96,41 @@ func TestConfigPool_Validate(t *testing.T) {
 			errorMsg:  "requires integer 'max'",
 		},
 		{
+			name: "valid range pool with retentionSeconds",
+			pool: &ConfigPool{
+				Name:            "ASN Pool",
+				Type:            "asn",
+				PropertyType:    "integer",
+				GeneratorType:   PoolGeneratorRange,
+				GeneratorConfig: &properties.JSON{"min": float64(65000), "max": float64(65535), "retentionSeconds": float64(3600)},
+			},
+			wantError: false,
+		},
+		{
+			name: "range generator invalid retentionSeconds",
+			pool: &ConfigPool{
+				Name:            "ASN Pool",
+				Type:            "asn",
+				PropertyType:    "integer",
+				GeneratorType:   PoolGeneratorRange,
+				GeneratorConfig: &properties.JSON{"min": float64(65000), "max": float64(65535), "retentionSeconds": float64(-1)},
+			},
+			wantError: true,
+			errorMsg:  "retentionSeconds must be higher than 0",
+		},
+		{
+			name: "range generator invalid neverReallocate",
+			pool: &ConfigPool{
+				Name:            "ASN Pool",
+				Type:            "asn",
+				PropertyType:    "integer",
+				GeneratorType:   PoolGeneratorRange,
+				GeneratorConfig: &properties.JSON{"min": float64(65000), "max": float64(65535), "neverReallocate": "yes"},
+			},
+			wantError: true,
+			errorMsg:  "neverReallocate must be a boolean",
+		},
+		{
 			name: "empty name",
 			pool: &ConfigPool{
 				Name:          "",
@@ -227,13 +262,13 @@ func TestConfigPoolCommander_Create(t *testing.T) {
 	}
 
 	tests := []struct {
-		name             string
-		params           CreateConfigPoolParams
-		conflictExists   bool             // FindByTypeAndProvider returns a row
-		conflictOwnedBy  *properties.UUID // ParticipantID of the conflicting row (nil = global)
-		wantErr          bool
-		errContains      string
-		assertOnCreate   func(t *testing.T, p *ConfigPool)
+		name            string
+		params          CreateConfigPoolParams
+		conflictExists  bool             // FindByTypeAndProvider returns a row
+		conflictOwnedBy *properties.UUID // ParticipantID of the conflicting row (nil = global)
+		wantErr         bool
+		errContains     string
+		assertOnCreate  func(t *testing.T, p *ConfigPool)
 	}{
 		{
 			name:   "creates global pool when no conflict",
