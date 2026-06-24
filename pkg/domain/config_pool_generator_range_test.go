@@ -73,7 +73,7 @@ func TestConfigPoolRangeGenerator_Allocate(t *testing.T) {
 				})).Return(nil)
 			}
 
-			gen := NewConfigPoolRangeGenerator(repo, poolID, tt.config)
+			gen := NewConfigPoolRangeGenerator(repo, poolID, nil, tt.config)
 			got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeInfrastructure, entityID, "asn")
 
 			if tt.wantErr {
@@ -90,6 +90,41 @@ func TestConfigPoolRangeGenerator_Allocate(t *testing.T) {
 			}
 			if got != tt.wantValue {
 				t.Errorf("expected value %v, got %v", tt.wantValue, got)
+			}
+		})
+	}
+}
+
+// A minted value inherits the pool's participant so participant-scoped allocations stay
+// visible only to that participant; a global pool leaves it nil.
+func TestConfigPoolRangeGenerator_StampsParticipant(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	entityID := properties.UUID(uuid.New())
+	participantID := properties.UUID(uuid.New())
+
+	tests := []struct {
+		name        string
+		participant *properties.UUID
+	}{
+		{name: "stamps nil participant from global pool", participant: nil},
+		{name: "stamps participant from scoped pool", participant: &participantID},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := NewMockConfigPoolValueRepository(t)
+			repo.On("FindByPool", ctx, poolID).Return([]*ConfigPoolValue{}, nil)
+			repo.On("Create", ctx, mock.MatchedBy(func(v *ConfigPoolValue) bool {
+				if tt.participant == nil {
+					return v.ParticipantID == nil
+				}
+				return v.ParticipantID != nil && *v.ParticipantID == *tt.participant
+			})).Return(nil)
+
+			gen := NewConfigPoolRangeGenerator(repo, poolID, tt.participant, properties.JSON{"min": float64(1), "max": float64(3)})
+			if _, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeAgent, entityID, "asn"); err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
 		})
 	}
@@ -120,7 +155,7 @@ func TestConfigPoolRangeGenerator_Release(t *testing.T) {
 			v.AgentID == nil && v.InfrastructureID == nil && v.AllocatedAt == nil && v.PropertyName == nil
 	})).Return(nil).Twice()
 
-	gen := NewConfigPoolRangeGenerator(repo, poolID, properties.JSON{})
+	gen := NewConfigPoolRangeGenerator(repo, poolID, nil, properties.JSON{})
 	if err := gen.Release(ctx, values); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -148,7 +183,7 @@ func TestConfigPoolRangeGenerator_ReusesReleasedValue(t *testing.T) {
 			v.AgentID != nil && *v.AgentID == agentID && v.ReleasedAt == nil
 	})).Return(nil)
 
-	gen := NewConfigPoolRangeGenerator(repo, poolID, properties.JSON{"min": float64(1), "max": float64(3)})
+	gen := NewConfigPoolRangeGenerator(repo, poolID, nil, properties.JSON{"min": float64(1), "max": float64(3)})
 	got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeAgent, agentID, "asn")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -181,7 +216,7 @@ func TestConfigPoolRangeGenerator_RetentionCooldown(t *testing.T) {
 			return ok && n == 2
 		})).Return(nil)
 
-		gen := NewConfigPoolRangeGenerator(repo, poolID, config)
+		gen := NewConfigPoolRangeGenerator(repo, poolID, nil, config)
 		got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeAgent, agentID, "asn")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -205,7 +240,7 @@ func TestConfigPoolRangeGenerator_RetentionCooldown(t *testing.T) {
 			return v.ID == released.ID && v.IsAllocated() && v.ReleasedAt == nil
 		})).Return(nil)
 
-		gen := NewConfigPoolRangeGenerator(repo, poolID, config)
+		gen := NewConfigPoolRangeGenerator(repo, poolID, nil, config)
 		got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeAgent, agentID, "asn")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -237,7 +272,7 @@ func TestConfigPoolRangeGenerator_NeverReallocate(t *testing.T) {
 		return ok && n == 2
 	})).Return(nil)
 
-	gen := NewConfigPoolRangeGenerator(repo, poolID, properties.JSON{"min": float64(1), "max": float64(3), "retentionSeconds": float64(3600), "neverReallocate": true})
+	gen := NewConfigPoolRangeGenerator(repo, poolID, nil, properties.JSON{"min": float64(1), "max": float64(3), "retentionSeconds": float64(3600), "neverReallocate": true})
 	got, err := gen.Allocate(ctx, ConfigPoolValueEntityTypeAgent, agentID, "asn")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

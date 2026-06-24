@@ -121,7 +121,7 @@ func TestSubnetGenerator_Allocate(t *testing.T) {
 			repo := NewMockServicePoolValueRepository(t)
 			tt.setupMock(repo)
 
-			generator := NewSubnetGenerator(repo, poolID, tt.generatorConfig)
+			generator := NewSubnetGenerator(repo, poolID, nil, tt.generatorConfig)
 			value, err := generator.Allocate(ctx, serviceID, propertyName)
 
 			if tt.expectErr {
@@ -135,6 +135,40 @@ func TestSubnetGenerator_Allocate(t *testing.T) {
 				require.True(t, ok, "value should be a string")
 				assert.Equal(t, tt.expectedValue, ipStr)
 			}
+		})
+	}
+}
+
+// A minted value inherits the pool's participant so participant-scoped allocations stay
+// visible only to that participant; a global pool leaves it nil.
+func TestSubnetGenerator_StampsParticipant(t *testing.T) {
+	ctx := context.Background()
+	poolID := properties.UUID(uuid.New())
+	serviceID := properties.UUID(uuid.New())
+	participantID := properties.UUID(uuid.New())
+
+	tests := []struct {
+		name        string
+		participant *properties.UUID
+	}{
+		{name: "stamps nil participant from global pool", participant: nil},
+		{name: "stamps participant from scoped pool", participant: &participantID},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := NewMockServicePoolValueRepository(t)
+			repo.EXPECT().FindByPool(ctx, poolID).Return([]*ServicePoolValue{}, nil)
+			repo.EXPECT().Create(ctx, mock.MatchedBy(func(v *ServicePoolValue) bool {
+				if tt.participant == nil {
+					return v.ParticipantID == nil
+				}
+				return v.ParticipantID != nil && *v.ParticipantID == *tt.participant
+			})).Return(nil)
+
+			generator := NewSubnetGenerator(repo, poolID, tt.participant, properties.JSON{"cidr": "10.0.0.0/30", "excludeFirst": 1})
+			_, err := generator.Allocate(ctx, serviceID, "ipAddress")
+			require.NoError(t, err)
 		})
 	}
 }
@@ -206,7 +240,7 @@ func TestSubnetGenerator_Release(t *testing.T) {
 			repo := NewMockServicePoolValueRepository(t)
 			tt.setupMock(repo)
 
-			generator := NewSubnetGenerator(repo, poolID, config)
+			generator := NewSubnetGenerator(repo, poolID, nil, config)
 			err := generator.Release(ctx, serviceID)
 
 			if tt.expectErr {
@@ -244,7 +278,7 @@ func TestSubnetGenerator_ReusesReleasedValue(t *testing.T) {
 		})).
 		Return(nil)
 
-	generator := NewSubnetGenerator(repo, poolID, properties.JSON{"cidr": "10.0.0.0/24", "excludeFirst": 1})
+	generator := NewSubnetGenerator(repo, poolID, nil, properties.JSON{"cidr": "10.0.0.0/24", "excludeFirst": 1})
 	value, err := generator.Allocate(ctx, serviceID, "ipAddress")
 	require.NoError(t, err)
 	assert.Equal(t, "10.0.0.1", value)
@@ -274,7 +308,7 @@ func TestSubnetGenerator_RetentionHoldsValue(t *testing.T) {
 		})).
 		Return(nil)
 
-	generator := NewSubnetGenerator(repo, poolID, properties.JSON{"cidr": "10.0.0.0/24", "excludeFirst": 1, "retentionSeconds": float64(3600)})
+	generator := NewSubnetGenerator(repo, poolID, nil, properties.JSON{"cidr": "10.0.0.0/24", "excludeFirst": 1, "retentionSeconds": float64(3600)})
 	value, err := generator.Allocate(ctx, serviceID, "ipAddress")
 	require.NoError(t, err)
 	assert.Equal(t, "10.0.0.2", value)
@@ -304,7 +338,7 @@ func TestSubnetGenerator_NeverReallocate(t *testing.T) {
 		})).
 		Return(nil)
 
-	generator := NewSubnetGenerator(repo, poolID, properties.JSON{"cidr": "10.0.0.0/24", "excludeFirst": 1, "neverReallocate": true})
+	generator := NewSubnetGenerator(repo, poolID, nil, properties.JSON{"cidr": "10.0.0.0/24", "excludeFirst": 1, "neverReallocate": true})
 	value, err := generator.Allocate(ctx, serviceID, "ipAddress")
 	require.NoError(t, err)
 	assert.Equal(t, "10.0.0.2", value)

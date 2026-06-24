@@ -636,3 +636,139 @@ Content-Type: application/json
   "groupId": "{{groupCId}}"
 }
 # Expect: failure — subnet exhausted; 10.80.0.0 is retired and never reused
+
+###############################################################################
+### SCENARIO D: a minted subnet value inherits the pool's participant
+###
+### The subnet generator mints brand-new value rows on allocation. A minted row must
+### carry the pool's participant (the provider) so participant-scoped values stay
+### scoped. This scenario uses its own pool/type/agent/group so its allocation is
+### independent of scenarios A-C, then mints one fresh value to inspect in the DB.
+###
+### DB check after the service create below (participantId is not exposed in the API):
+###   SELECT value, participant_id FROM service_pool_values WHERE value = '"10.90.0.0"';
+###   Expect participant_id == {{providerId}} (was NULL before the stamping fix).
+###############################################################################
+
+### Participant pool: subnet 10.90.0.0/31 (usable .0, .1)
+# @name createParticipantPool
+POST {{baseUrl}}/service-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Subnet Participant Pool",
+  "type": "svc_subnet_participant",
+  "propertyType": "string",
+  "generatorType": "subnet",
+  "generatorConfig": { "cidr": "10.90.0.0/31" },
+  "servicePoolSetId": "{{poolSetId}}"
+}
+
+### Service Type allocating from the participant pool
+# @name createParticipantServiceType
+POST {{baseUrl}}/service-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-subnet-participant {{$guid}}",
+  "propertySchema": {
+    "properties": {
+      "ip": {
+        "type": "string",
+        "label": "IP",
+        "immutable": true,
+        "authorizers": [ {"type": "actor", "config": {"actors": ["system"]}} ],
+        "generator": { "type": "pool", "config": {"poolType": "svc_subnet_participant"} }
+      }
+    }
+  },
+  "lifecycleSchema": {
+    "states": [
+      {"name": "creating"},
+      {"name": "created"},
+      {"name": "deleted"}
+    ],
+    "actions": [
+      {
+        "name": "create",
+        "transitions": [ {"from": "creating", "to": "created"} ]
+      },
+      {
+        "name": "delete",
+        "transitions": [ {"from": "created", "to": "deleted"} ]
+      }
+    ],
+    "initialState": "creating",
+    "terminateState": "deleted",
+    "terminalStates": ["deleted"]
+  }
+}
+
+@participantServiceTypeId = {{createParticipantServiceType.response.body.id}}
+
+### Agent Type for the participant service type
+# @name createParticipantAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-subnet-participant-agent {{$guid}}",
+  "serviceTypeIds": [ "{{participantServiceTypeId}}" ],
+  "configurationSchema": {
+    "properties": {
+      "endpoint": { "type": "string", "label": "Endpoint", "required": true }
+    }
+  }
+}
+
+### Agent D — linked to the pool set so service create auto-allocates
+# @name createAgentD
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Participant Agent D {{$guid}}",
+  "agentTypeId": "{{createParticipantAgentType.response.body.id}}",
+  "providerId": "{{providerId}}",
+  "servicePoolSetId": "{{poolSetId}}",
+  "configuration": { "endpoint": "https://hypervisor.example.com" }
+}
+
+@agentDId = {{createAgentD.response.body.id}}
+
+### Service Group D
+# @name createServiceGroupD
+POST {{baseUrl}}/service-groups
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Service Pool Participant Group D {{$guid}}",
+  "consumerId": "{{createConsumer.response.body.id}}"
+}
+
+### Service -> mints a fresh 10.90.0.0 from the participant pool
+# @name createServiceD
+POST {{baseUrl}}/services
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "svc-participant {{$guid}}",
+  "properties": {},
+  "agentId": "{{agentDId}}",
+  "serviceTypeId": "{{participantServiceTypeId}}",
+  "groupId": "{{createServiceGroupD.response.body.id}}"
+}
+
+@serviceDId = {{createServiceD.response.body.id}}
+
+### Confirm the service got 10.90.0.0, then check participant_id in the DB (see header)
+GET {{baseUrl}}/services/{{serviceDId}}
+Authorization: Bearer {{adminToken}}
+# Expect: properties.ip == "10.90.0.0"
+# DB: the service_pool_values row for "10.90.0.0" has participant_id == {{providerId}}

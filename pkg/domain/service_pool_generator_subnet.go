@@ -14,14 +14,16 @@ import (
 type SubnetGenerator struct {
 	valueRepo       ServicePoolValueRepository
 	poolID          properties.UUID
+	participantID   *properties.UUID
 	generatorConfig properties.JSON
 }
 
 // NewSubnetGenerator creates a new subnet-based generator
-func NewSubnetGenerator(valueRepo ServicePoolValueRepository, poolID properties.UUID, config properties.JSON) *SubnetGenerator {
+func NewSubnetGenerator(valueRepo ServicePoolValueRepository, poolID properties.UUID, participantID *properties.UUID, config properties.JSON) *SubnetGenerator {
 	return &SubnetGenerator{
 		valueRepo:       valueRepo,
 		poolID:          poolID,
+		participantID:   participantID,
 		generatorConfig: config,
 	}
 }
@@ -124,6 +126,7 @@ func (g *SubnetGenerator) Allocate(ctx context.Context, serviceID properties.UUI
 		Name:          ipStr,
 		Value:         ipStr, // Store IP address as a plain string
 		ServicePoolID: g.poolID,
+		ParticipantID: g.participantID,
 	}
 	newValue.Allocate(serviceID, propertyName)
 	if err := g.valueRepo.Create(ctx, newValue); err != nil {
