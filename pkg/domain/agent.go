@@ -547,6 +547,6 @@ type AgentQuerier interface {
 	// CountByInfrastructure returns the number of agents bound to a specific infrastructure
 	CountByInfrastructure(ctx context.Context, infrastructureID properties.UUID) (int64, error)
 
-	// FindByServiceTypeAndTags finds agents that support a service type and have all required tags
-	FindByServiceTypeAndTags(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*Agent, error)
+	// FindOnlineByServiceType finds connected agents whose type supports a service type
+	FindOnlineByServiceType(ctx context.Context, serviceTypeID properties.UUID) ([]*Agent, error)
 }

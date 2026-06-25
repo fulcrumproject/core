@@ -10,15 +10,9 @@ ServiceReq:
       example: "web-server-01"
     properties:
       $ref: "./common.yaml#/JSONObject"
-    agentTags:
-      type: array
-      items:
-        type: string
-      example: ["gpu", "high-memory"]
-      description: "Tags used for agent discovery when agentId is not specified"
     agentId:
       $ref: "./common.yaml#/properties.UUID"
-      description: "Specific agent ID (optional - if not provided, agent discovery will use agentTags)"
+      description: "Specific agent ID. Optional - if omitted, the most-recently-seen online agent supporting the service type is chosen."
     serviceTypeId:
       $ref: "./common.yaml#/properties.UUID"
     groupId:

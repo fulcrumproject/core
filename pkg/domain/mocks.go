@@ -835,48 +835,47 @@ func (_c *MockAgentRepository_Exists_Call) RunAndReturn(run func(ctx context.Con
 	return _c
 }
 
-// FindByServiceTypeAndTags provides a mock function for the type MockAgentRepository
-func (_mock *MockAgentRepository) FindByServiceTypeAndTags(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*Agent, error) {
-	ret := _mock.Called(ctx, serviceTypeID, tags)
+// FindOnlineByServiceType provides a mock function for the type MockAgentRepository
+func (_mock *MockAgentRepository) FindOnlineByServiceType(ctx context.Context, serviceTypeID properties.UUID) ([]*Agent, error) {
+	ret := _mock.Called(ctx, serviceTypeID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for FindByServiceTypeAndTags")
+		panic("no return value specified for FindOnlineByServiceType")
 	}
 
 	var r0 []*Agent
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, []string) ([]*Agent, error)); ok {
-		return returnFunc(ctx, serviceTypeID, tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*Agent, error)); ok {
+		return returnFunc(ctx, serviceTypeID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, []string) []*Agent); ok {
-		r0 = returnFunc(ctx, serviceTypeID, tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*Agent); ok {
+		r0 = returnFunc(ctx, serviceTypeID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*Agent)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, []string) error); ok {
-		r1 = returnFunc(ctx, serviceTypeID, tags)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceTypeID)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockAgentRepository_FindByServiceTypeAndTags_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByServiceTypeAndTags'
-type MockAgentRepository_FindByServiceTypeAndTags_Call struct {
+// MockAgentRepository_FindOnlineByServiceType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindOnlineByServiceType'
+type MockAgentRepository_FindOnlineByServiceType_Call struct {
 	*mock.Call
 }
 
-// FindByServiceTypeAndTags is a helper method to define mock.On call
+// FindOnlineByServiceType is a helper method to define mock.On call
 //   - ctx context.Context
 //   - serviceTypeID properties.UUID
-//   - tags []string
-func (_e *MockAgentRepository_Expecter) FindByServiceTypeAndTags(ctx interface{}, serviceTypeID interface{}, tags interface{}) *MockAgentRepository_FindByServiceTypeAndTags_Call {
-	return &MockAgentRepository_FindByServiceTypeAndTags_Call{Call: _e.mock.On("FindByServiceTypeAndTags", ctx, serviceTypeID, tags)}
+func (_e *MockAgentRepository_Expecter) FindOnlineByServiceType(ctx interface{}, serviceTypeID interface{}) *MockAgentRepository_FindOnlineByServiceType_Call {
+	return &MockAgentRepository_FindOnlineByServiceType_Call{Call: _e.mock.On("FindOnlineByServiceType", ctx, serviceTypeID)}
 }
 
-func (_c *MockAgentRepository_FindByServiceTypeAndTags_Call) Run(run func(ctx context.Context, serviceTypeID properties.UUID, tags []string)) *MockAgentRepository_FindByServiceTypeAndTags_Call {
+func (_c *MockAgentRepository_FindOnlineByServiceType_Call) Run(run func(ctx context.Context, serviceTypeID properties.UUID)) *MockAgentRepository_FindOnlineByServiceType_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -886,25 +885,20 @@ func (_c *MockAgentRepository_FindByServiceTypeAndTags_Call) Run(run func(ctx co
 		if args[1] != nil {
 			arg1 = args[1].(properties.UUID)
 		}
-		var arg2 []string
-		if args[2] != nil {
-			arg2 = args[2].([]string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
 }
 
-func (_c *MockAgentRepository_FindByServiceTypeAndTags_Call) Return(agents []*Agent, err error) *MockAgentRepository_FindByServiceTypeAndTags_Call {
+func (_c *MockAgentRepository_FindOnlineByServiceType_Call) Return(agents []*Agent, err error) *MockAgentRepository_FindOnlineByServiceType_Call {
 	_c.Call.Return(agents, err)
 	return _c
 }
 
-func (_c *MockAgentRepository_FindByServiceTypeAndTags_Call) RunAndReturn(run func(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*Agent, error)) *MockAgentRepository_FindByServiceTypeAndTags_Call {
+func (_c *MockAgentRepository_FindOnlineByServiceType_Call) RunAndReturn(run func(ctx context.Context, serviceTypeID properties.UUID) ([]*Agent, error)) *MockAgentRepository_FindOnlineByServiceType_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1593,48 +1587,47 @@ func (_c *MockAgentQuerier_Exists_Call) RunAndReturn(run func(ctx context.Contex
 	return _c
 }
 
-// FindByServiceTypeAndTags provides a mock function for the type MockAgentQuerier
-func (_mock *MockAgentQuerier) FindByServiceTypeAndTags(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*Agent, error) {
-	ret := _mock.Called(ctx, serviceTypeID, tags)
+// FindOnlineByServiceType provides a mock function for the type MockAgentQuerier
+func (_mock *MockAgentQuerier) FindOnlineByServiceType(ctx context.Context, serviceTypeID properties.UUID) ([]*Agent, error) {
+	ret := _mock.Called(ctx, serviceTypeID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for FindByServiceTypeAndTags")
+		panic("no return value specified for FindOnlineByServiceType")
 	}
 
 	var r0 []*Agent
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, []string) ([]*Agent, error)); ok {
-		return returnFunc(ctx, serviceTypeID, tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) ([]*Agent, error)); ok {
+		return returnFunc(ctx, serviceTypeID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID, []string) []*Agent); ok {
-		r0 = returnFunc(ctx, serviceTypeID, tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) []*Agent); ok {
+		r0 = returnFunc(ctx, serviceTypeID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*Agent)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID, []string) error); ok {
-		r1 = returnFunc(ctx, serviceTypeID, tags)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceTypeID)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockAgentQuerier_FindByServiceTypeAndTags_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByServiceTypeAndTags'
-type MockAgentQuerier_FindByServiceTypeAndTags_Call struct {
+// MockAgentQuerier_FindOnlineByServiceType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindOnlineByServiceType'
+type MockAgentQuerier_FindOnlineByServiceType_Call struct {
 	*mock.Call
 }
 
-// FindByServiceTypeAndTags is a helper method to define mock.On call
+// FindOnlineByServiceType is a helper method to define mock.On call
 //   - ctx context.Context
 //   - serviceTypeID properties.UUID
-//   - tags []string
-func (_e *MockAgentQuerier_Expecter) FindByServiceTypeAndTags(ctx interface{}, serviceTypeID interface{}, tags interface{}) *MockAgentQuerier_FindByServiceTypeAndTags_Call {
-	return &MockAgentQuerier_FindByServiceTypeAndTags_Call{Call: _e.mock.On("FindByServiceTypeAndTags", ctx, serviceTypeID, tags)}
+func (_e *MockAgentQuerier_Expecter) FindOnlineByServiceType(ctx interface{}, serviceTypeID interface{}) *MockAgentQuerier_FindOnlineByServiceType_Call {
+	return &MockAgentQuerier_FindOnlineByServiceType_Call{Call: _e.mock.On("FindOnlineByServiceType", ctx, serviceTypeID)}
 }
 
-func (_c *MockAgentQuerier_FindByServiceTypeAndTags_Call) Run(run func(ctx context.Context, serviceTypeID properties.UUID, tags []string)) *MockAgentQuerier_FindByServiceTypeAndTags_Call {
+func (_c *MockAgentQuerier_FindOnlineByServiceType_Call) Run(run func(ctx context.Context, serviceTypeID properties.UUID)) *MockAgentQuerier_FindOnlineByServiceType_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -1644,25 +1637,20 @@ func (_c *MockAgentQuerier_FindByServiceTypeAndTags_Call) Run(run func(ctx conte
 		if args[1] != nil {
 			arg1 = args[1].(properties.UUID)
 		}
-		var arg2 []string
-		if args[2] != nil {
-			arg2 = args[2].([]string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
 }
 
-func (_c *MockAgentQuerier_FindByServiceTypeAndTags_Call) Return(agents []*Agent, err error) *MockAgentQuerier_FindByServiceTypeAndTags_Call {
+func (_c *MockAgentQuerier_FindOnlineByServiceType_Call) Return(agents []*Agent, err error) *MockAgentQuerier_FindOnlineByServiceType_Call {
 	_c.Call.Return(agents, err)
 	return _c
 }
 
-func (_c *MockAgentQuerier_FindByServiceTypeAndTags_Call) RunAndReturn(run func(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*Agent, error)) *MockAgentQuerier_FindByServiceTypeAndTags_Call {
+func (_c *MockAgentQuerier_FindOnlineByServiceType_Call) RunAndReturn(run func(ctx context.Context, serviceTypeID properties.UUID) ([]*Agent, error)) *MockAgentQuerier_FindOnlineByServiceType_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -20622,74 +20610,6 @@ func (_c *MockServiceCommander_Create_Call) Return(service *Service, err error) 
 }
 
 func (_c *MockServiceCommander_Create_Call) RunAndReturn(run func(ctx context.Context, params CreateServiceParams) (*Service, error)) *MockServiceCommander_Create_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// CreateWithTags provides a mock function for the type MockServiceCommander
-func (_mock *MockServiceCommander) CreateWithTags(ctx context.Context, params CreateServiceWithTagsParams) (*Service, error) {
-	ret := _mock.Called(ctx, params)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CreateWithTags")
-	}
-
-	var r0 *Service
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateServiceWithTagsParams) (*Service, error)); ok {
-		return returnFunc(ctx, params)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateServiceWithTagsParams) *Service); ok {
-		r0 = returnFunc(ctx, params)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*Service)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateServiceWithTagsParams) error); ok {
-		r1 = returnFunc(ctx, params)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockServiceCommander_CreateWithTags_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateWithTags'
-type MockServiceCommander_CreateWithTags_Call struct {
-	*mock.Call
-}
-
-// CreateWithTags is a helper method to define mock.On call
-//   - ctx context.Context
-//   - params CreateServiceWithTagsParams
-func (_e *MockServiceCommander_Expecter) CreateWithTags(ctx interface{}, params interface{}) *MockServiceCommander_CreateWithTags_Call {
-	return &MockServiceCommander_CreateWithTags_Call{Call: _e.mock.On("CreateWithTags", ctx, params)}
-}
-
-func (_c *MockServiceCommander_CreateWithTags_Call) Run(run func(ctx context.Context, params CreateServiceWithTagsParams)) *MockServiceCommander_CreateWithTags_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 CreateServiceWithTagsParams
-		if args[1] != nil {
-			arg1 = args[1].(CreateServiceWithTagsParams)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockServiceCommander_CreateWithTags_Call) Return(service *Service, err error) *MockServiceCommander_CreateWithTags_Call {
-	_c.Call.Return(service, err)
-	return _c
-}
-
-func (_c *MockServiceCommander_CreateWithTags_Call) RunAndReturn(run func(ctx context.Context, params CreateServiceWithTagsParams) (*Service, error)) *MockServiceCommander_CreateWithTags_Call {
 	_c.Call.Return(run)
 	return _c
 }
