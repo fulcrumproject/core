@@ -64,7 +64,6 @@ func testInfrastructureInstallScenario(t *testing.T, env *Env) {
 			Name:                 name + "-" + testhelpers.Uniq(),
 			ProviderID:           env.Seed.Provider.ID,
 			InfrastructureTypeID: infraType.ID,
-			Tags:                 []string{"install-scenario"},
 			Configuration:        &cfg,
 		})
 		t.Cleanup(func() {

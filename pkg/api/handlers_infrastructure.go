@@ -17,7 +17,6 @@ type CreateInfrastructureReq struct {
 	Name                 string           `json:"name"`
 	ProviderID           properties.UUID  `json:"providerId"`
 	InfrastructureTypeID properties.UUID  `json:"infrastructureTypeId"`
-	Tags                 []string         `json:"tags"`
 	Configuration        *properties.JSON `json:"configuration,omitempty"`
 }
 
@@ -29,7 +28,6 @@ func (r CreateInfrastructureReq) ObjectScope() (authz.ObjectScope, error) {
 
 type UpdateInfrastructureReq struct {
 	Name          *string          `json:"name,omitempty"`
-	Tags          *[]string        `json:"tags,omitempty"`
 	Configuration *properties.JSON `json:"configuration,omitempty"`
 }
 
@@ -96,7 +94,6 @@ func (h *InfrastructureHandler) Create(ctx context.Context, req *CreateInfrastru
 		Name:                 req.Name,
 		ProviderID:           req.ProviderID,
 		InfrastructureTypeID: req.InfrastructureTypeID,
-		Tags:                 req.Tags,
 		Configuration:        req.Configuration,
 	}
 	return h.commander.Create(ctx, params)
@@ -106,7 +103,6 @@ func (h *InfrastructureHandler) Update(ctx context.Context, id properties.UUID, 
 	params := domain.UpdateInfrastructureParams{
 		ID:            id,
 		Name:          req.Name,
-		Tags:          req.Tags,
 		Configuration: req.Configuration,
 	}
 	return h.commander.Update(ctx, params)
@@ -129,7 +125,6 @@ type InfrastructureRes struct {
 	Name                 string                 `json:"name"`
 	ProviderID           properties.UUID        `json:"providerId"`
 	InfrastructureTypeID properties.UUID        `json:"infrastructureTypeId"`
-	Tags                 []string               `json:"tags"`
 	Configuration        *properties.JSON       `json:"configuration,omitempty"`
 	Participant          *ParticipantRes        `json:"participant,omitempty"`
 	InfrastructureType   *InfrastructureTypeRes `json:"infrastructureType,omitempty"`
@@ -143,7 +138,6 @@ func InfrastructureToRes(i *domain.Infrastructure) *InfrastructureRes {
 		Name:                 i.Name,
 		ProviderID:           i.ProviderID,
 		InfrastructureTypeID: i.InfrastructureTypeID,
-		Tags:                 []string(i.Tags),
 		Configuration:        i.Configuration,
 		CreatedAt:            JSONUTCTime(i.CreatedAt),
 		UpdatedAt:            JSONUTCTime(i.UpdatedAt),

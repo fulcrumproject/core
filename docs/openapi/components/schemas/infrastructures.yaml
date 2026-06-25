@@ -10,11 +10,6 @@ InfrastructureRes:
       $ref: "./common.yaml#/properties.UUID"
     infrastructureTypeId:
       $ref: "./common.yaml#/properties.UUID"
-    tags:
-      type: array
-      items:
-        type: string
-      example: ["region:eu"]
     configuration:
       $ref: "./common.yaml#/JSONObject"
       description: "Instance-specific configuration values validated against the referenced InfrastructureType's configurationSchema."
@@ -44,10 +39,6 @@ CreateInfrastructureReq:
       $ref: "./common.yaml#/properties.UUID"
     infrastructureTypeId:
       $ref: "./common.yaml#/properties.UUID"
-    tags:
-      type: array
-      items:
-        type: string
     configuration:
       $ref: "./common.yaml#/JSONObject"
       description: "Configuration values validated against the InfrastructureType's configurationSchema."
@@ -58,9 +49,5 @@ UpdateInfrastructureReq:
     name:
       type: string
       minLength: 1
-    tags:
-      type: array
-      items:
-        type: string
     configuration:
       $ref: "./common.yaml#/JSONObject"

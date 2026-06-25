@@ -72,7 +72,6 @@ Content-Type: application/json
     "name": "Infra Install Flow",
     "providerId": "{{iic_providerId}}",
     "infrastructureTypeId": "{{iic_infraTypeId}}",
-    "tags": ["infra-install-flow"],
     "configuration": {
         "endpoint": "https://infra.example.com",
         "apiKey": "super-secret-infra-api-key"
@@ -178,7 +177,6 @@ Content-Type: application/json
     "name": "Plain Infra",
     "providerId": "{{iic_providerId}}",
     "infrastructureTypeId": "{{iic_plainInfraTypeId}}",
-    "tags": ["infra-install-flow"],
     "configuration": { "endpoint": "https://x.invalid" }
 }
 

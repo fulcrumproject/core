@@ -68,15 +68,13 @@ func TestInfrastructureHandlerCreate(t *testing.T) {
 		Name:                 "csi-node-01",
 		ProviderID:           providerID,
 		InfrastructureTypeID: infraTypeID,
-		Tags:                 []string{"region:eu"},
 	}
 
 	commander.EXPECT().
 		Create(mock.Anything, mock.MatchedBy(func(params domain.CreateInfrastructureParams) bool {
 			return params.Name == "csi-node-01" &&
 				params.ProviderID == providerID &&
-				params.InfrastructureTypeID == infraTypeID &&
-				len(params.Tags) == 1 && params.Tags[0] == "region:eu"
+				params.InfrastructureTypeID == infraTypeID
 		})).
 		Return(&domain.Infrastructure{
 			BaseEntity:           domain.BaseEntity{ID: properties.UUID(uuid.New())},
@@ -193,7 +191,6 @@ func TestInfrastructureToRes(t *testing.T) {
 		Name:                 "csi-node-01",
 		ProviderID:           providerID,
 		InfrastructureTypeID: infraTypeID,
-		Tags:                 []string{"region:eu"},
 		Configuration:        &properties.JSON{"endpoint": "https://x"},
 	}
 
@@ -202,7 +199,6 @@ func TestInfrastructureToRes(t *testing.T) {
 	assert.Equal(t, "csi-node-01", res.Name)
 	assert.Equal(t, providerID, res.ProviderID)
 	assert.Equal(t, infraTypeID, res.InfrastructureTypeID)
-	assert.Equal(t, []string{"region:eu"}, res.Tags)
 	assert.Equal(t, infra.Configuration, res.Configuration)
 	assert.Equal(t, JSONUTCTime(createdAt), res.CreatedAt)
 	assert.Equal(t, JSONUTCTime(updatedAt), res.UpdatedAt)

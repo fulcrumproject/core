@@ -5456,12 +5456,6 @@ components:
           $ref: '#/components/schemas/properties.UUID'
         infrastructureTypeId:
           $ref: '#/components/schemas/properties.UUID'
-        tags:
-          type: array
-          items:
-            type: string
-          example:
-            - region:eu
         configuration:
           $ref: '#/components/schemas/JSONObject'
           description: Instance-specific configuration values validated against the referenced InfrastructureType's configurationSchema.
@@ -5490,10 +5484,6 @@ components:
           $ref: '#/components/schemas/properties.UUID'
         infrastructureTypeId:
           $ref: '#/components/schemas/properties.UUID'
-        tags:
-          type: array
-          items:
-            type: string
         configuration:
           $ref: '#/components/schemas/JSONObject'
           description: Configuration values validated against the InfrastructureType's configurationSchema.
@@ -5503,10 +5493,6 @@ components:
         name:
           type: string
           minLength: 1
-        tags:
-          type: array
-          items:
-            type: string
         configuration:
           $ref: '#/components/schemas/JSONObject'
     InfrastructureTypeRes:
