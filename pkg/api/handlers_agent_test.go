@@ -121,7 +121,6 @@ func TestAgentToResponse(t *testing.T) {
 		Status:      domain.AgentConnected,
 		ProviderID:  uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 		AgentTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
-		Tags:        []string{"tag1", "tag2"},
 		Configuration: &properties.JSON{
 			"timeout": 30,
 			"retries": 3,
@@ -137,7 +136,6 @@ func TestAgentToResponse(t *testing.T) {
 	assert.Equal(t, agent.Status, response.Status)
 	assert.Equal(t, agent.ProviderID, response.ProviderID)
 	assert.Equal(t, agent.AgentTypeID, response.AgentTypeID)
-	assert.Equal(t, []string{"tag1", "tag2"}, response.Tags)
 	assert.Equal(t, agent.Configuration, response.Configuration)
 	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(updatedAt), response.UpdatedAt)
@@ -159,7 +157,6 @@ func TestAgentToResponse_NilConfiguration(t *testing.T) {
 		Status:        domain.AgentConnected,
 		ProviderID:    uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 		AgentTypeID:   uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
-		Tags:          []string{"tag1", "tag2"},
 		Configuration: nil,
 	}
 
@@ -172,7 +169,6 @@ func TestAgentToResponse_NilConfiguration(t *testing.T) {
 	assert.Equal(t, agent.Status, response.Status)
 	assert.Equal(t, agent.ProviderID, response.ProviderID)
 	assert.Equal(t, agent.AgentTypeID, response.AgentTypeID)
-	assert.Equal(t, []string{"tag1", "tag2"}, response.Tags)
 	assert.Nil(t, response.Configuration)
 	assert.Equal(t, JSONUTCTime(createdAt), response.CreatedAt)
 	assert.Equal(t, JSONUTCTime(updatedAt), response.UpdatedAt)

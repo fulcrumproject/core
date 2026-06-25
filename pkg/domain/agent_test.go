@@ -759,7 +759,7 @@ func TestAgent_Update_ServicePoolSetID(t *testing.T) {
 			t.Error("Expected agent to have old ServicePoolSet association")
 		}
 
-		updated := agent.Update(nil, nil, nil, &newPoolSetID)
+		updated := agent.Update(nil, nil, &newPoolSetID)
 
 		if !updated {
 			t.Error("Expected Update() to return true")
@@ -787,7 +787,7 @@ func TestAgent_Update_ServicePoolSetID(t *testing.T) {
 			ServicePoolSet:   nil,
 		}
 
-		updated := agent.Update(nil, nil, nil, &newPoolSetID)
+		updated := agent.Update(nil, nil, &newPoolSetID)
 
 		if !updated {
 			t.Error("Expected Update() to return true")

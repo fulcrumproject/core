@@ -89,8 +89,7 @@ Content-Type: application/json
 {
     "name": "OAuth Test Agent",
     "providerId": "{{participantId}}",
-    "agentTypeId": "{{agentTypeId}}",
-    "tags": ["test-agent-{{$timestamp}}", "high-performance", "ssd-storage"]
+    "agentTypeId": "{{agentTypeId}}"
 }
 
 @agentId = {{createAgent.response.body.$.id}}

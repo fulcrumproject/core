@@ -244,7 +244,6 @@ Content-Type: application/json
   "name": "Pool Gen Agent 1",
   "providerId": "{{poolGenProviderId}}",
   "agentTypeId": "{{poolGenAgentTypeId}}",
-  "tags": ["pool-gen-test"],
   "configuration": {}
 }
 
@@ -268,7 +267,6 @@ Content-Type: application/json
   "name": "Pool Gen Agent 2",
   "providerId": "{{poolGenProviderId}}",
   "agentTypeId": "{{poolGenAgentTypeId}}",
-  "tags": ["pool-gen-test"],
   "configuration": {}
 }
 
@@ -291,7 +289,6 @@ Content-Type: application/json
   "name": "Pool Gen Agent 3 (should fail)",
   "providerId": "{{poolGenProviderId}}",
   "agentTypeId": "{{poolGenAgentTypeId}}",
-  "tags": ["pool-gen-test"],
   "configuration": {}
 }
 
@@ -301,7 +298,7 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "tags": ["pool-gen-test", "updated"]
+  "name": "Pool Gen Agent 1 (updated)"
 }
 
 ### Verify agent 1 still holds its original pool value
@@ -330,7 +327,6 @@ Content-Type: application/json
   "name": "Pool Gen Agent 3",
   "providerId": "{{poolGenProviderId}}",
   "agentTypeId": "{{poolGenAgentTypeId}}",
-  "tags": ["pool-gen-test"],
   "configuration": {}
 }
 
@@ -580,7 +576,6 @@ Content-Type: application/json
   "name": "Range Agent 1",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{rangeAgentTypeId}}",
-  "tags": ["range-reuse-test"],
   "configuration": {}
 }
 
@@ -600,7 +595,6 @@ Content-Type: application/json
   "name": "Range Agent 2",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{rangeAgentTypeId}}",
-  "tags": ["range-reuse-test"],
   "configuration": {}
 }
 
@@ -628,7 +622,6 @@ Content-Type: application/json
   "name": "Range Agent 3",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{rangeAgentTypeId}}",
-  "tags": ["range-reuse-test"],
   "configuration": {}
 }
 
@@ -648,7 +641,6 @@ Content-Type: application/json
   "name": "Range Agent 4",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{rangeAgentTypeId}}",
-  "tags": ["range-reuse-test"],
   "configuration": {}
 }
 
@@ -667,7 +659,6 @@ Content-Type: application/json
   "name": "Range Agent 5 (should fail)",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{rangeAgentTypeId}}",
-  "tags": ["range-reuse-test"],
   "configuration": {}
 }
 
@@ -735,7 +726,6 @@ Content-Type: application/json
   "name": "Cooldown Agent 1",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{cooldownAgentTypeId}}",
-  "tags": ["range-cooldown-test"],
   "configuration": {}
 }
 
@@ -751,7 +741,6 @@ Content-Type: application/json
   "name": "Cooldown Agent 2",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{cooldownAgentTypeId}}",
-  "tags": ["range-cooldown-test"],
   "configuration": {}
 }
 
@@ -771,7 +760,6 @@ Content-Type: application/json
   "name": "Cooldown Agent 3",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{cooldownAgentTypeId}}",
-  "tags": ["range-cooldown-test"],
   "configuration": {}
 }
 
@@ -790,7 +778,6 @@ Content-Type: application/json
   "name": "Cooldown Agent 4 (should fail while cooling)",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{cooldownAgentTypeId}}",
-  "tags": ["range-cooldown-test"],
   "configuration": {}
 }
 
@@ -806,7 +793,6 @@ Content-Type: application/json
   "name": "Cooldown Agent 4",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{cooldownAgentTypeId}}",
-  "tags": ["range-cooldown-test"],
   "configuration": {}
 }
 
@@ -879,7 +865,6 @@ Content-Type: application/json
   "name": "Never Agent 1",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{neverAgentTypeId}}",
-  "tags": ["range-never-test"],
   "configuration": {}
 }
 
@@ -895,7 +880,6 @@ Content-Type: application/json
   "name": "Never Agent 2",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{neverAgentTypeId}}",
-  "tags": ["range-never-test"],
   "configuration": {}
 }
 
@@ -915,7 +899,6 @@ Content-Type: application/json
   "name": "Never Agent 3",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{neverAgentTypeId}}",
-  "tags": ["range-never-test"],
   "configuration": {}
 }
 
@@ -934,7 +917,6 @@ Content-Type: application/json
   "name": "Never Agent 4 (should fail, 1 retired)",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{neverAgentTypeId}}",
-  "tags": ["range-never-test"],
   "configuration": {}
 }
 
@@ -997,7 +979,6 @@ Content-Type: application/json
   "name": "Subnet Agent 1",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{subnetReuseAgentTypeId}}",
-  "tags": ["subnet-reuse-test"],
   "configuration": {}
 }
 
@@ -1017,7 +998,6 @@ Content-Type: application/json
   "name": "Subnet Agent 2",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{subnetReuseAgentTypeId}}",
-  "tags": ["subnet-reuse-test"],
   "configuration": {}
 }
 
@@ -1041,7 +1021,6 @@ Content-Type: application/json
   "name": "Subnet Agent 3",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{subnetReuseAgentTypeId}}",
-  "tags": ["subnet-reuse-test"],
   "configuration": {}
 }
 
@@ -1060,7 +1039,6 @@ Content-Type: application/json
   "name": "Subnet Agent 4 (should fail)",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{subnetReuseAgentTypeId}}",
-  "tags": ["subnet-reuse-test"],
   "configuration": {}
 }
 
@@ -1120,7 +1098,6 @@ Content-Type: application/json
   "name": "Subnet Cooldown Agent 1",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{subnetCooldownAgentTypeId}}",
-  "tags": ["subnet-cooldown-test"],
   "configuration": {}
 }
 
@@ -1136,7 +1113,6 @@ Content-Type: application/json
   "name": "Subnet Cooldown Agent 2",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{subnetCooldownAgentTypeId}}",
-  "tags": ["subnet-cooldown-test"],
   "configuration": {}
 }
 
@@ -1156,7 +1132,6 @@ Content-Type: application/json
   "name": "Subnet Cooldown Agent 3",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{subnetCooldownAgentTypeId}}",
-  "tags": ["subnet-cooldown-test"],
   "configuration": {}
 }
 
@@ -1175,7 +1150,6 @@ Content-Type: application/json
   "name": "Subnet Cooldown Agent 4 (should fail while cooling)",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{subnetCooldownAgentTypeId}}",
-  "tags": ["subnet-cooldown-test"],
   "configuration": {}
 }
 
@@ -1191,7 +1165,6 @@ Content-Type: application/json
   "name": "Subnet Cooldown Agent 4",
   "providerId": "{{rangeProviderId}}",
   "agentTypeId": "{{subnetCooldownAgentTypeId}}",
-  "tags": ["subnet-cooldown-test"],
   "configuration": {}
 }
 

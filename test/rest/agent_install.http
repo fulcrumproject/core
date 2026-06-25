@@ -76,7 +76,6 @@ Content-Type: application/json
     "name": "Install Flow Agent",
     "providerId": "{{ic_providerId}}",
     "agentTypeId": "{{ic_agentTypeId}}",
-    "tags": ["install-flow-test"],
     "configuration": {
         "apiEndpoint": "https://api.example.com",
         "apiKey": "super-secret-api-key-42",
@@ -178,7 +177,6 @@ Content-Type: application/json
     "name": "Install Flow Agent (no install yet)",
     "providerId": "{{ic_providerId}}",
     "agentTypeId": "{{ic_agentTypeId}}",
-    "tags": ["install-flow-test"],
     "configuration": {
         "apiEndpoint": "https://api.example.com",
         "apiKey": "another-secret-99"
@@ -237,7 +235,6 @@ Content-Type: application/json
     "name": "Plain Agent",
     "providerId": "{{ic_providerId}}",
     "agentTypeId": "{{ic_plainAgentTypeId}}",
-    "tags": ["install-flow-test"],
     "configuration": { "name": "demo" }
 }
 

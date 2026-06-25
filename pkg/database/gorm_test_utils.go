@@ -100,25 +100,15 @@ func createTestInfrastructure(t *testing.T, providerID, infraTypeID properties.U
 
 func createTestAgent(t *testing.T, participantID, agentTypeID properties.UUID, status domain.AgentStatus) *domain.Agent {
 	t.Helper()
-	return createTestAgentWithTags(t, participantID, agentTypeID, status, nil)
-}
-
-func createTestAgentWithTags(t *testing.T, participantID, agentTypeID properties.UUID, status domain.AgentStatus, tags []string) *domain.Agent {
-	t.Helper()
-	return createTestAgentWithStatusUpdateAndTags(t, participantID, agentTypeID, status, time.Now(), tags)
+	return createTestAgentWithStatusUpdate(t, participantID, agentTypeID, status, time.Now())
 }
 
 func createTestAgentWithStatusUpdate(t *testing.T, participantID, agentTypeID properties.UUID, status domain.AgentStatus, lastUpdate time.Time) *domain.Agent {
 	t.Helper()
-	return createTestAgentWithStatusUpdateAndTags(t, participantID, agentTypeID, status, lastUpdate, nil)
+	return createTestAgentWithConfig(t, participantID, agentTypeID, status, lastUpdate, nil)
 }
 
-func createTestAgentWithStatusUpdateAndTags(t *testing.T, participantID, agentTypeID properties.UUID, status domain.AgentStatus, lastUpdate time.Time, tags []string) *domain.Agent {
-	t.Helper()
-	return createTestAgentWithConfig(t, participantID, agentTypeID, status, lastUpdate, tags, nil)
-}
-
-func createTestAgentWithConfig(t *testing.T, participantID, agentTypeID properties.UUID, status domain.AgentStatus, lastUpdate time.Time, tags []string, configuration *properties.JSON) *domain.Agent {
+func createTestAgentWithConfig(t *testing.T, participantID, agentTypeID properties.UUID, status domain.AgentStatus, lastUpdate time.Time, configuration *properties.JSON) *domain.Agent {
 	t.Helper()
 	randomSuffix := uuid.New().String()
 	return &domain.Agent{
@@ -127,7 +117,6 @@ func createTestAgentWithConfig(t *testing.T, participantID, agentTypeID properti
 		ProviderID:       participantID,
 		AgentTypeID:      agentTypeID,
 		LastStatusUpdate: lastUpdate,
-		Tags:             tags,
 		Configuration:    configuration,
 	}
 }

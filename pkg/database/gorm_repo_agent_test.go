@@ -77,7 +77,7 @@ func TestAgentRepository(t *testing.T) {
 				},
 			}
 
-			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), []string{"tag1"}, config)
+			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), config)
 
 			// Execute
 			err := agentRepo.Create(ctx, agent)
@@ -116,7 +116,7 @@ func TestAgentRepository(t *testing.T) {
 			agentType := createTestAgentType(t)
 			require.NoError(t, agentTypeRepo.Create(ctx, agentType))
 
-			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), []string{"tag1"}, nil)
+			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), nil)
 
 			// Execute
 			err := agentRepo.Create(ctx, agent)
@@ -410,7 +410,7 @@ func TestAgentRepository(t *testing.T) {
 				"retries": 3,
 			}
 
-			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), []string{"tag1"}, initialConfig)
+			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), initialConfig)
 			require.NoError(t, agentRepo.Create(ctx, agent))
 
 			// Read
@@ -454,7 +454,7 @@ func TestAgentRepository(t *testing.T) {
 				"timeout": 30,
 			}
 
-			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), []string{"tag1"}, initialConfig)
+			agent := createTestAgentWithConfig(t, participant.ID, agentType.ID, domain.AgentNew, time.Now(), initialConfig)
 			require.NoError(t, agentRepo.Create(ctx, agent))
 
 			// Read

@@ -390,7 +390,6 @@ Content-Type: application/json
     "agentTypeId": "{{createAgentType.response.body.id}}",
     "providerId": "{{createProvider.response.body.id}}",
     "servicePoolSetId": "{{createPoolSet.response.body.id}}",
-    "tags": ["test-agent", "property-testing"],
     "configuration": {
         "hypervisorEndpoint": "https://hypervisor.provider.example.com",
         "hypervisorUsername": "admin",

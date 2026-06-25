@@ -49,7 +49,6 @@ func testAgentInstallScenario(t *testing.T, env *Env) {
 		Name:          "install-scenario-agent-" + testhelpers.Uniq(),
 		ProviderID:    env.Seed.Provider.ID,
 		AgentTypeID:   agentType.ID,
-		Tags:          []string{"install-scenario"},
 		Configuration: &cfg,
 	})
 

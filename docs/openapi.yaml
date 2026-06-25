@@ -4906,14 +4906,6 @@ components:
           $ref: '#/components/schemas/properties.UUID'
         agentTypeId:
           $ref: '#/components/schemas/properties.UUID'
-        tags:
-          type: array
-          items:
-            type: string
-          example:
-            - gpu
-            - high-memory
-            - ssd
         configuration:
           $ref: '#/components/schemas/JSONObject'
           description: Agent-specific configuration parameters
@@ -5184,15 +5176,6 @@ components:
         agentTypeId:
           $ref: '#/components/schemas/properties.UUID'
           description: The agent type ID
-        tags:
-          type: array
-          items:
-            type: string
-          example:
-            - gpu
-            - high-memory
-            - ssd
-          description: Tags representing capabilities or certifications of this agent
         configuration:
           $ref: '#/components/schemas/JSONObject'
           description: Agent-specific configuration parameters
@@ -6634,15 +6617,6 @@ components:
           example: aws-agent-01
         status:
           $ref: '#/components/schemas/AgentStatus'
-        tags:
-          type: array
-          items:
-            type: string
-          example:
-            - gpu
-            - high-memory
-            - ssd
-          description: Tags representing capabilities or certifications of this agent
         configuration:
           $ref: '#/components/schemas/JSONObject'
           description: Agent-specific configuration parameters
