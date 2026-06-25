@@ -14,13 +14,14 @@ import (
 // skipping excluded values. It reuses a freed value once its retention cooldown has
 // elapsed, otherwise mints a new ConfigPoolValue row.
 type ConfigPoolRangeGenerator struct {
-	repo   ConfigPoolValueRepository
-	poolID properties.UUID
-	config properties.JSON
+	repo          ConfigPoolValueRepository
+	poolID        properties.UUID
+	participantID *properties.UUID
+	config        properties.JSON
 }
 
-func NewConfigPoolRangeGenerator(repo ConfigPoolValueRepository, poolID properties.UUID, config properties.JSON) *ConfigPoolRangeGenerator {
-	return &ConfigPoolRangeGenerator{repo: repo, poolID: poolID, config: config}
+func NewConfigPoolRangeGenerator(repo ConfigPoolValueRepository, poolID properties.UUID, participantID *properties.UUID, config properties.JSON) *ConfigPoolRangeGenerator {
+	return &ConfigPoolRangeGenerator{repo: repo, poolID: poolID, participantID: participantID, config: config}
 }
 
 func (g *ConfigPoolRangeGenerator) Allocate(ctx context.Context, entityType ConfigPoolValueEntityType, entityID properties.UUID, propertyName string) (any, error) {
@@ -71,7 +72,7 @@ func (g *ConfigPoolRangeGenerator) Allocate(ctx context.Context, entityType Conf
 			}
 			return row.RawValue(), nil
 		}
-		value := &ConfigPoolValue{Name: strconv.Itoa(n), Value: n, ConfigPoolID: g.poolID}
+		value := &ConfigPoolValue{Name: strconv.Itoa(n), Value: n, ConfigPoolID: g.poolID, ParticipantID: g.participantID}
 		value.Allocate(entityType, entityID, propertyName)
 		if err := g.repo.Create(ctx, value); err != nil {
 			return nil, fmt.Errorf("failed to allocate value: %w", err)

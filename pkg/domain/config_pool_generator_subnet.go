@@ -15,13 +15,14 @@ import (
 // "hosts" config (defaulting to {host1, host2}), pre-computing them so config templates
 // need no IP math.
 type ConfigPoolSubnetGenerator struct {
-	repo   ConfigPoolValueRepository
-	poolID properties.UUID
-	config properties.JSON
+	repo          ConfigPoolValueRepository
+	poolID        properties.UUID
+	participantID *properties.UUID
+	config        properties.JSON
 }
 
-func NewConfigPoolSubnetGenerator(repo ConfigPoolValueRepository, poolID properties.UUID, config properties.JSON) *ConfigPoolSubnetGenerator {
-	return &ConfigPoolSubnetGenerator{repo: repo, poolID: poolID, config: config}
+func NewConfigPoolSubnetGenerator(repo ConfigPoolValueRepository, poolID properties.UUID, participantID *properties.UUID, config properties.JSON) *ConfigPoolSubnetGenerator {
+	return &ConfigPoolSubnetGenerator{repo: repo, poolID: poolID, participantID: participantID, config: config}
 }
 
 func (g *ConfigPoolSubnetGenerator) Allocate(ctx context.Context, entityType ConfigPoolValueEntityType, entityID properties.UUID, propertyName string) (any, error) {
@@ -75,7 +76,7 @@ func (g *ConfigPoolSubnetGenerator) Allocate(ctx context.Context, entityType Con
 		return row.RawValue(), nil
 	}
 
-	cv := &ConfigPoolValue{Name: name, Value: value, ConfigPoolID: g.poolID}
+	cv := &ConfigPoolValue{Name: name, Value: value, ConfigPoolID: g.poolID, ParticipantID: g.participantID}
 	cv.Allocate(entityType, entityID, propertyName)
 	if err := g.repo.Create(ctx, cv); err != nil {
 		return nil, fmt.Errorf("failed to allocate value: %w", err)
