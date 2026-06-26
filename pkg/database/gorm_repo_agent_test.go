@@ -677,8 +677,8 @@ func TestAgentRepository(t *testing.T) {
 		})
 	})
 
-	t.Run("FindOnlineByServiceType", func(t *testing.T) {
-		t.Run("returns connected agents most-recently-seen first", func(t *testing.T) {
+	t.Run("FindFirstOnlineByServiceType", func(t *testing.T) {
+		t.Run("returns the most-recently-seen connected agent", func(t *testing.T) {
 			ctx := context.Background()
 
 			participant := createTestParticipant(t, domain.ParticipantEnabled)
@@ -707,16 +707,15 @@ func TestAgentRepository(t *testing.T) {
 			agentOffline := createTestAgentWithStatusUpdate(t, participant.ID, agentType1.ID, domain.AgentDisconnected, now)
 			require.NoError(t, agentRepo.Create(ctx, agentOffline))
 
-			agents, err := agentRepo.FindOnlineByServiceType(ctx, serviceType1.ID)
+			agent, err := agentRepo.FindFirstOnlineByServiceType(ctx, serviceType1.ID)
 			require.NoError(t, err)
-			require.Len(t, agents, 2)
-			assert.Equal(t, agentRecent.ID, agents[0].ID, "most recent heartbeat should win")
-			assert.Equal(t, agentOld.ID, agents[1].ID)
+			require.NotNil(t, agent)
+			assert.Equal(t, agentRecent.ID, agent.ID, "most recent heartbeat should win")
 
 			// Service type that no agent supports.
-			agents, err = agentRepo.FindOnlineByServiceType(ctx, serviceType2.ID)
+			agent, err = agentRepo.FindFirstOnlineByServiceType(ctx, serviceType2.ID)
 			require.NoError(t, err)
-			assert.Len(t, agents, 0)
+			assert.Nil(t, agent)
 		})
 
 		t.Run("returns empty when only disconnected agents support the type", func(t *testing.T) {
@@ -734,20 +733,20 @@ func TestAgentRepository(t *testing.T) {
 
 			require.NoError(t, tdb.DB.Exec("INSERT INTO agent_type_service_types (agent_type_id, service_type_id) VALUES (?, ?)", agentType.ID, serviceType.ID).Error)
 
-			agent := createTestAgentWithStatusUpdate(t, participant.ID, agentType.ID, domain.AgentDisconnected, time.Now())
-			require.NoError(t, agentRepo.Create(ctx, agent))
+			offlineAgent := createTestAgentWithStatusUpdate(t, participant.ID, agentType.ID, domain.AgentDisconnected, time.Now())
+			require.NoError(t, agentRepo.Create(ctx, offlineAgent))
 
-			agents, err := agentRepo.FindOnlineByServiceType(ctx, serviceType.ID)
+			agent, err := agentRepo.FindFirstOnlineByServiceType(ctx, serviceType.ID)
 			require.NoError(t, err)
-			assert.Len(t, agents, 0)
+			assert.Nil(t, agent)
 		})
 
-		t.Run("returns empty for non-existent service type", func(t *testing.T) {
+		t.Run("returns nil for non-existent service type", func(t *testing.T) {
 			ctx := context.Background()
 
-			agents, err := agentRepo.FindOnlineByServiceType(ctx, properties.NewUUID())
+			agent, err := agentRepo.FindFirstOnlineByServiceType(ctx, properties.NewUUID())
 			require.NoError(t, err)
-			assert.Len(t, agents, 0)
+			assert.Nil(t, agent)
 		})
 	})
 }

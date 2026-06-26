@@ -242,14 +242,14 @@ func (s *serviceCommander) Create(
 		}
 		agent = a
 	} else {
-		agents, err := s.store.AgentRepo().FindOnlineByServiceType(ctx, params.ServiceTypeID)
+		a, err := s.store.AgentRepo().FindFirstOnlineByServiceType(ctx, params.ServiceTypeID)
 		if err != nil {
 			return nil, err
 		}
-		if len(agents) == 0 {
+		if a == nil {
 			return nil, NewInvalidInputErrorf("no online agent found for service type %s", params.ServiceTypeID)
 		}
-		agent = agents[0]
+		agent = a
 	}
 
 	return CreateServiceWithAgent(ctx, s.store, s.engine, agent, params)

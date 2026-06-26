@@ -526,6 +526,6 @@ type AgentQuerier interface {
 	// CountByInfrastructure returns the number of agents bound to a specific infrastructure
 	CountByInfrastructure(ctx context.Context, infrastructureID properties.UUID) (int64, error)
 
-	// FindOnlineByServiceType finds connected agents whose type supports a service type
-	FindOnlineByServiceType(ctx context.Context, serviceTypeID properties.UUID) ([]*Agent, error)
+	// FindFirstOnlineByServiceType finds the most-recently-seen connected agent whose type supports a service type
+	FindFirstOnlineByServiceType(ctx context.Context, serviceTypeID properties.UUID) (*Agent, error)
 }
