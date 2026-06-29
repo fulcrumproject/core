@@ -6475,6 +6475,7 @@ components:
         - name
         - serviceTypeId
         - groupId
+        - agentId
       properties:
         name:
           type: string
@@ -6483,7 +6484,7 @@ components:
           $ref: '#/components/schemas/JSONObject'
         agentId:
           $ref: '#/components/schemas/properties.UUID'
-          description: Specific agent ID. Optional - if omitted, the most-recently-seen online agent supporting the service type is chosen.
+          description: ID of the agent that will host the service.
         serviceTypeId:
           $ref: '#/components/schemas/properties.UUID'
         groupId:

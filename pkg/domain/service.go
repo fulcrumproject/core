@@ -210,11 +210,11 @@ func NewServiceCommander(
 }
 
 type CreateServiceParams struct {
-	AgentID       *properties.UUID `json:"agentId,omitempty"`
-	ServiceTypeID properties.UUID  `json:"serviceTypeId"`
-	GroupID       properties.UUID  `json:"groupId"`
-	Name          string           `json:"name"`
-	Properties    properties.JSON  `json:"targetProperties"`
+	AgentID       properties.UUID `json:"agentId"`
+	ServiceTypeID properties.UUID `json:"serviceTypeId"`
+	GroupID       properties.UUID `json:"groupId"`
+	Name          string          `json:"name"`
+	Properties    properties.JSON `json:"targetProperties"`
 }
 
 type UpdateServiceParams struct {
@@ -228,28 +228,17 @@ type DoServiceActionParams struct {
 	Action string          `json:"action"`
 }
 
-// Create resolves the agent (explicit agentId if given, otherwise the most-recently-seen
-// online agent supporting the service type) and creates the service plus its job.
+// Create resolves the agent from params.AgentID and creates the service plus its job.
 func (s *serviceCommander) Create(
 	ctx context.Context,
 	params CreateServiceParams,
 ) (*Service, error) {
-	var agent *Agent
-	if params.AgentID != nil {
-		a, err := s.store.AgentRepo().Get(ctx, *params.AgentID)
-		if err != nil {
-			return nil, NewInvalidInputErrorf("agent with ID %s does not exist", *params.AgentID)
-		}
-		agent = a
-	} else {
-		a, err := s.store.AgentRepo().FindFirstOnlineByServiceType(ctx, params.ServiceTypeID)
-		if err != nil {
-			return nil, err
-		}
-		if a == nil {
-			return nil, NewInvalidInputErrorf("no online agent found for service type %s", params.ServiceTypeID)
-		}
-		agent = a
+	if params.AgentID == uuid.Nil {
+		return nil, NewInvalidInputErrorf("agent ID is required")
+	}
+	agent, err := s.store.AgentRepo().Get(ctx, params.AgentID)
+	if err != nil {
+		return nil, NewInvalidInputErrorf("agent with ID %s does not exist", params.AgentID)
 	}
 
 	return CreateServiceWithAgent(ctx, s.store, s.engine, agent, params)

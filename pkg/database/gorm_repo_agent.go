@@ -69,31 +69,6 @@ func (r *GormAgentRepository) CountByInfrastructure(ctx context.Context, infrast
 	return count, nil
 }
 
-// FindFirstOnlineByServiceType returns the most-recently-seen connected agent
-// whose type supports the service type, or nil if none.
-func (r *GormAgentRepository) FindFirstOnlineByServiceType(ctx context.Context, serviceTypeID properties.UUID) (*domain.Agent, error) {
-	var agents []*domain.Agent
-
-	result := r.db.WithContext(ctx).
-		Joins("JOIN agent_types ON agents.agent_type_id = agent_types.id").
-		Joins("JOIN agent_type_service_types ON agent_types.id = agent_type_service_types.agent_type_id").
-		Where("agent_type_service_types.service_type_id = ?", serviceTypeID).
-		Where("agents.status = ?", domain.AgentConnected).
-		Order("agents.last_status_update DESC").
-		Limit(1).
-		Preload("Provider").Preload("AgentType").Preload("AgentType.ServiceTypes").
-		Find(&agents)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	if len(agents) == 0 {
-		return nil, nil
-	}
-
-	return agents[0], nil
-}
-
 func (r *GormAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Context, inactiveDuration time.Duration) (int64, error) {
 	cutoffTime := time.Now().Add(-inactiveDuration)
 

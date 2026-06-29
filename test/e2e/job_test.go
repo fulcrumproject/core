@@ -24,7 +24,7 @@ func testJob(t *testing.T, env *Env) {
 	aid := env.Seed.Agent.ID
 	svc := testhelpers.MustPost[api.CreateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", api.CreateServiceReq{
 		GroupID:       group.ID,
-		AgentID:       &aid,
+		AgentID:       aid,
 		ServiceTypeID: env.Seed.ServiceType.ID,
 		Name:          "svc-job-" + testhelpers.Uniq(),
 		Properties:    properties.JSON{},

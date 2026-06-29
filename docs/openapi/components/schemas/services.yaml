@@ -4,6 +4,7 @@ ServiceReq:
     - name
     - serviceTypeId
     - groupId
+    - agentId
   properties:
     name:
       type: string
@@ -12,7 +13,7 @@ ServiceReq:
       $ref: "./common.yaml#/JSONObject"
     agentId:
       $ref: "./common.yaml#/properties.UUID"
-      description: "Specific agent ID. Optional - if omitted, the most-recently-seen online agent supporting the service type is chosen."
+      description: "ID of the agent that will host the service."
     serviceTypeId:
       $ref: "./common.yaml#/properties.UUID"
     groupId:

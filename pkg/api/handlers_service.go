@@ -40,11 +40,11 @@ func NewServiceHandler(
 
 // CreateServiceReq represents the request to create a service
 type CreateServiceReq struct {
-	GroupID       properties.UUID  `json:"groupId"`
-	AgentID       *properties.UUID `json:"agentId,omitempty"`
-	ServiceTypeID properties.UUID  `json:"serviceTypeId"`
-	Name          string           `json:"name"`
-	Properties    properties.JSON  `json:"properties"`
+	GroupID       properties.UUID `json:"groupId"`
+	AgentID       properties.UUID `json:"agentId"`
+	ServiceTypeID properties.UUID `json:"serviceTypeId"`
+	Name          string          `json:"name"`
+	Properties    properties.JSON `json:"properties"`
 }
 
 // UpdateServiceReq represents the request to update a service
@@ -134,8 +134,7 @@ func (h *ServiceHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// Get decoded body from context
 	body := middlewares.MustGetBody[CreateServiceReq](r.Context())
 
-	// Agent is resolved in the commander: explicit agentId if provided, otherwise the
-	// most-recently-seen online agent supporting the service type.
+	// Agent is resolved in the commander from the explicit agentId.
 	params := domain.CreateServiceParams{
 		AgentID:       body.AgentID,
 		ServiceTypeID: body.ServiceTypeID,

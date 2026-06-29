@@ -100,7 +100,7 @@ func testCreateFailureTerminalReleasesPool(t *testing.T, env *Env) {
 	agentID := env.Seed.Agent.ID
 	svc := testhelpers.MustPost[api.CreateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", api.CreateServiceReq{
 		GroupID:       group.ID,
-		AgentID:       &agentID,
+		AgentID:       agentID,
 		ServiceTypeID: svcType.ID,
 		Name:          "svc-fail-terminal-" + testhelpers.Uniq(),
 		Properties:    properties.JSON{},
@@ -188,7 +188,7 @@ func testCreateFailureNoTransitionTolerant(t *testing.T, env *Env) {
 	agentID := env.Seed.Agent.ID
 	svc := testhelpers.MustPost[api.CreateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", api.CreateServiceReq{
 		GroupID:       group.ID,
-		AgentID:       &agentID,
+		AgentID:       agentID,
 		ServiceTypeID: svcType.ID,
 		Name:          "svc-fail-no-transition-" + testhelpers.Uniq(),
 		Properties:    properties.JSON{},
