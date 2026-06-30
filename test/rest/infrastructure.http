@@ -64,7 +64,6 @@ Content-Type: application/json
   "name": "csi-node-e2e",
   "providerId": "{{i_providerId}}",
   "infrastructureTypeId": "{{i_infraTypeId}}",
-  "tags": ["region:eu"],
   "configuration": {
     "endpoint": "https://example.invalid",
     "maxRetries": 5

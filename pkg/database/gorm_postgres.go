@@ -56,6 +56,9 @@ func autoMigrate(db *gorm.DB) error {
 	if err := migrateInstallTokens(db); err != nil {
 		return err
 	}
+	if err := dropLegacyTagColumns(db); err != nil {
+		return err
+	}
 
 	err := db.AutoMigrate(
 		&domain.Token{},
@@ -195,6 +198,23 @@ func migrateInstallTokens(db *gorm.DB) error {
 	} {
 		if err := db.Exec(fmt.Sprintf("ALTER TABLE install_tokens DROP CONSTRAINT IF EXISTS %s", c)).Error; err != nil {
 			return fmt.Errorf("drop %s: %w", c, err)
+		}
+	}
+	return nil
+}
+
+// dropLegacyTagColumns removes the retired free-form `tags` columns. HasColumn-guarded so
+// fresh DBs skip cleanly and re-runs are no-ops. agents.tags is added here when its field
+// is removed in a later phase.
+func dropLegacyTagColumns(db *gorm.DB) error {
+	m := db.Migrator()
+	for _, c := range []struct{ table, column string }{
+		{"infrastructures", "tags"},
+	} {
+		if m.HasTable(c.table) && m.HasColumn(c.table, c.column) {
+			if err := db.Exec(fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", c.table, c.column)).Error; err != nil {
+				return fmt.Errorf("drop %s.%s: %w", c.table, c.column, err)
+			}
 		}
 	}
 	return nil

@@ -44,13 +44,11 @@ func testInfrastructure(t *testing.T, env *Env) {
 			Name:                 name,
 			ProviderID:           env.Seed.Provider.ID,
 			InfrastructureTypeID: itID,
-			Tags:                 []string{"region:eu"},
 			Configuration:        &cfg,
 		})
 		require.Equal(t, name, created.Name)
 		require.Equal(t, env.Seed.Provider.ID, created.ProviderID)
 		require.Equal(t, itID, created.InfrastructureTypeID)
-		require.Equal(t, []string{"region:eu"}, created.Tags)
 		require.NotNil(t, created.Configuration, "configuration must round-trip")
 		require.Equal(t, "https://example.invalid", (*created.Configuration)["endpoint"])
 		require.NotEqual(t, properties.UUID{}, created.ID)
@@ -72,8 +70,6 @@ func testInfrastructure(t *testing.T, env *Env) {
 		})
 		require.Equal(t, newName, updated.Name)
 		require.Equal(t, "https://renamed.invalid", (*updated.Configuration)["endpoint"])
-		// Tags weren't in the PATCH body — must survive untouched.
-		require.Equal(t, created.Tags, updated.Tags, "PATCH must not touch unprovided fields")
 
 		page := testhelpers.MustList[api.InfrastructureRes](t, env.AdminClient, "/infrastructures")
 		require.True(t, testhelpers.ContainsID(page.Items, created.ID), "list must include just-created infrastructure")

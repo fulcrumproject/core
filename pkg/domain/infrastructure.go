@@ -8,7 +8,6 @@ import (
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 const (
@@ -23,9 +22,6 @@ type Infrastructure struct {
 	BaseEntity
 
 	Name string `json:"name" gorm:"not null"`
-
-	// Tags representing capabilities/labels of this infrastructure
-	Tags pq.StringArray `json:"tags" gorm:"type:text[]"`
 
 	// Configuration stores instance-specific configuration parameters as JSON
 	Configuration *properties.JSON `json:"configuration,omitempty" gorm:"type:jsonb"`
@@ -43,7 +39,6 @@ func NewInfrastructure(params CreateInfrastructureParams) *Infrastructure {
 		Name:                 params.Name,
 		ProviderID:           params.ProviderID,
 		InfrastructureTypeID: params.InfrastructureTypeID,
-		Tags:                 pq.StringArray(params.Tags),
 		Configuration:        params.Configuration,
 	}
 }
@@ -64,14 +59,6 @@ func (i *Infrastructure) Validate() error {
 	if i.ProviderID == uuid.Nil {
 		return fmt.Errorf("provider ID cannot be empty")
 	}
-	for idx, tag := range []string(i.Tags) {
-		if len(tag) == 0 {
-			return fmt.Errorf("tag at index %d cannot be empty", idx)
-		}
-		if len(tag) > 100 {
-			return fmt.Errorf("tag at index %d exceeds maximum length of 100 characters", idx)
-		}
-	}
 	return nil
 }
 
@@ -79,9 +66,6 @@ func (i *Infrastructure) Validate() error {
 func (i *Infrastructure) Update(params UpdateInfrastructureParams) {
 	if params.Name != nil {
 		i.Name = *params.Name
-	}
-	if params.Tags != nil {
-		i.Tags = pq.StringArray(*params.Tags)
 	}
 	if params.Configuration != nil {
 		i.Configuration = params.Configuration
@@ -99,14 +83,12 @@ type CreateInfrastructureParams struct {
 	Name                 string           `json:"name"`
 	ProviderID           properties.UUID  `json:"providerId"`
 	InfrastructureTypeID properties.UUID  `json:"infrastructureTypeId"`
-	Tags                 []string         `json:"tags"`
 	Configuration        *properties.JSON `json:"configuration,omitempty"`
 }
 
 type UpdateInfrastructureParams struct {
 	ID            properties.UUID  `json:"id"`
 	Name          *string          `json:"name,omitempty"`
-	Tags          *[]string        `json:"tags,omitempty"`
 	Configuration *properties.JSON `json:"configuration,omitempty"`
 }
 

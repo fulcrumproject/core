@@ -26,7 +26,6 @@ func TestNewInfrastructure(t *testing.T) {
 		Name:                 "csi-node-01",
 		ProviderID:           properties.UUID(uuid.New()),
 		InfrastructureTypeID: properties.UUID(uuid.New()),
-		Tags:                 []string{"region:eu"},
 	}
 
 	infra := NewInfrastructure(params)
@@ -38,9 +37,6 @@ func TestNewInfrastructure(t *testing.T) {
 	}
 	if infra.InfrastructureTypeID != params.InfrastructureTypeID {
 		t.Errorf("InfrastructureTypeID mismatch")
-	}
-	if len(infra.Tags) != 1 || infra.Tags[0] != "region:eu" {
-		t.Errorf("Tags mismatch: %v", infra.Tags)
 	}
 }
 
@@ -89,17 +85,6 @@ func TestInfrastructure_Validate(t *testing.T) {
 			wantErr:     true,
 			errContains: "provider ID",
 		},
-		{
-			name: "empty tag at index",
-			infra: &Infrastructure{
-				Name:                 "ok",
-				InfrastructureTypeID: validType,
-				ProviderID:           validProvider,
-				Tags:                 []string{""},
-			},
-			wantErr:     true,
-			errContains: "tag at index 0",
-		},
 	}
 
 	for _, tt := range tests {
@@ -122,7 +107,6 @@ func TestInfrastructure_Update(t *testing.T) {
 			Name:                 "Initial",
 			InfrastructureTypeID: properties.UUID(uuid.New()),
 			ProviderID:           properties.UUID(uuid.New()),
-			Tags:                 []string{"old"},
 		}
 	}
 
@@ -132,15 +116,6 @@ func TestInfrastructure_Update(t *testing.T) {
 		infra.Update(UpdateInfrastructureParams{Name: &newName})
 		if infra.Name != "Renamed" {
 			t.Errorf("Expected 'Renamed', got %q", infra.Name)
-		}
-	})
-
-	t.Run("update tags only", func(t *testing.T) {
-		infra := makeInfra()
-		newTags := []string{"a", "b"}
-		infra.Update(UpdateInfrastructureParams{Tags: &newTags})
-		if len(infra.Tags) != 2 || infra.Tags[0] != "a" || infra.Tags[1] != "b" {
-			t.Errorf("Expected new tags, got %v", infra.Tags)
 		}
 	})
 
@@ -157,7 +132,7 @@ func TestInfrastructure_Update(t *testing.T) {
 		infra := makeInfra()
 		before := *infra
 		infra.Update(UpdateInfrastructureParams{})
-		if infra.Name != before.Name || len(infra.Tags) != len(before.Tags) {
+		if infra.Name != before.Name {
 			t.Error("Update with nil params mutated fields")
 		}
 	})
