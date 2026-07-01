@@ -2250,6 +2250,72 @@ func (_c *MockAgentTypeRepository_CountByInfrastructureType_Call) RunAndReturn(r
 	return _c
 }
 
+// CountByServiceType provides a mock function for the type MockAgentTypeRepository
+func (_mock *MockAgentTypeRepository) CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, serviceTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByServiceType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, serviceTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, serviceTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentTypeRepository_CountByServiceType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByServiceType'
+type MockAgentTypeRepository_CountByServiceType_Call struct {
+	*mock.Call
+}
+
+// CountByServiceType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceTypeID properties.UUID
+func (_e *MockAgentTypeRepository_Expecter) CountByServiceType(ctx interface{}, serviceTypeID interface{}) *MockAgentTypeRepository_CountByServiceType_Call {
+	return &MockAgentTypeRepository_CountByServiceType_Call{Call: _e.mock.On("CountByServiceType", ctx, serviceTypeID)}
+}
+
+func (_c *MockAgentTypeRepository_CountByServiceType_Call) Run(run func(ctx context.Context, serviceTypeID properties.UUID)) *MockAgentTypeRepository_CountByServiceType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentTypeRepository_CountByServiceType_Call) Return(n int64, err error) *MockAgentTypeRepository_CountByServiceType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentTypeRepository_CountByServiceType_Call) RunAndReturn(run func(ctx context.Context, serviceTypeID properties.UUID) (int64, error)) *MockAgentTypeRepository_CountByServiceType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function for the type MockAgentTypeRepository
 func (_mock *MockAgentTypeRepository) Create(ctx context.Context, entity *AgentType) error {
 	ret := _mock.Called(ctx, entity)
@@ -2846,6 +2912,72 @@ func (_c *MockAgentTypeQuerier_CountByInfrastructureType_Call) Return(n int64, e
 }
 
 func (_c *MockAgentTypeQuerier_CountByInfrastructureType_Call) RunAndReturn(run func(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)) *MockAgentTypeQuerier_CountByInfrastructureType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountByServiceType provides a mock function for the type MockAgentTypeQuerier
+func (_mock *MockAgentTypeQuerier) CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error) {
+	ret := _mock.Called(ctx, serviceTypeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountByServiceType")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) (int64, error)); ok {
+		return returnFunc(ctx, serviceTypeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, properties.UUID) int64); ok {
+		r0 = returnFunc(ctx, serviceTypeID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, properties.UUID) error); ok {
+		r1 = returnFunc(ctx, serviceTypeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAgentTypeQuerier_CountByServiceType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountByServiceType'
+type MockAgentTypeQuerier_CountByServiceType_Call struct {
+	*mock.Call
+}
+
+// CountByServiceType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceTypeID properties.UUID
+func (_e *MockAgentTypeQuerier_Expecter) CountByServiceType(ctx interface{}, serviceTypeID interface{}) *MockAgentTypeQuerier_CountByServiceType_Call {
+	return &MockAgentTypeQuerier_CountByServiceType_Call{Call: _e.mock.On("CountByServiceType", ctx, serviceTypeID)}
+}
+
+func (_c *MockAgentTypeQuerier_CountByServiceType_Call) Run(run func(ctx context.Context, serviceTypeID properties.UUID)) *MockAgentTypeQuerier_CountByServiceType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 properties.UUID
+		if args[1] != nil {
+			arg1 = args[1].(properties.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAgentTypeQuerier_CountByServiceType_Call) Return(n int64, err error) *MockAgentTypeQuerier_CountByServiceType_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockAgentTypeQuerier_CountByServiceType_Call) RunAndReturn(run func(ctx context.Context, serviceTypeID properties.UUID) (int64, error)) *MockAgentTypeQuerier_CountByServiceType_Call {
 	_c.Call.Return(run)
 	return _c
 }

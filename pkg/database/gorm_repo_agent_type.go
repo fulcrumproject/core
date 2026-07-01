@@ -65,6 +65,33 @@ func (r *GormAgentTypeRepository) Save(ctx context.Context, agentType *domain.Ag
 	return nil
 }
 
+// Delete overrides the base Delete to clear the many-to-many join rows before
+// removing the agent type. The join tables have no ON DELETE CASCADE, so without
+// this the rows orphan and inflate CountBy* on the referenced types.
+func (r *GormAgentTypeRepository) Delete(ctx context.Context, id properties.UUID) error {
+	agentType := &domain.AgentType{BaseEntity: domain.BaseEntity{ID: id}}
+	if err := r.db.WithContext(ctx).Model(agentType).Association("ServiceTypes").Clear(); err != nil {
+		return err
+	}
+	if err := r.db.WithContext(ctx).Model(agentType).Association("InfrastructureTypes").Clear(); err != nil {
+		return err
+	}
+	return r.db.WithContext(ctx).Delete(agentType).Error
+}
+
+func (r *GormAgentTypeRepository) CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error) {
+	var count int64
+	result := r.db.WithContext(ctx).
+		Model(&domain.AgentType{}).
+		Joins("JOIN agent_type_service_types ON agent_types.id = agent_type_service_types.agent_type_id").
+		Where("agent_type_service_types.service_type_id = ?", serviceTypeID).
+		Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}
+
 func (r *GormAgentTypeRepository) CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error) {
 	var count int64
 	result := r.db.WithContext(ctx).
