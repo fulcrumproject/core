@@ -9,7 +9,6 @@ import (
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/fulcrumproject/core/pkg/schema"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 const (
@@ -57,9 +56,6 @@ type Agent struct {
 	Status           AgentStatus `json:"status" gorm:"not null"`
 	LastStatusUpdate time.Time   `json:"lastStatusUpdate" gorm:"index"`
 
-	// Tags representing capabilities or certifications of this agent
-	Tags pq.StringArray `json:"tags" gorm:"type:text[]"`
-
 	// Configuration stores instance-specific configuration parameters as JSON
 	Configuration *properties.JSON `json:"configuration,omitempty" gorm:"type:jsonb"`
 
@@ -82,7 +78,6 @@ func NewAgent(params CreateAgentParams) *Agent {
 		LastStatusUpdate: time.Now(),
 		ProviderID:       params.ProviderID,
 		AgentTypeID:      params.AgentTypeID,
-		Tags:             pq.StringArray(params.Tags),
 		Configuration:    params.Configuration,
 		ServicePoolSetID: params.ServicePoolSetID,
 		InfrastructureID: params.InfrastructureID,
@@ -115,15 +110,6 @@ func (a *Agent) Validate() error {
 		return fmt.Errorf("provider ID cannot be empty")
 	}
 
-	for i, tag := range []string(a.Tags) {
-		if len(tag) == 0 {
-			return fmt.Errorf("tag at index %d cannot be empty", i)
-		}
-		if len(tag) > 100 {
-			return fmt.Errorf("tag at index %d exceeds maximum length of 100 characters", i)
-		}
-	}
-
 	return nil
 }
 
@@ -146,16 +132,11 @@ func (a *Agent) RegisterMetadata(name *string) {
 }
 
 // Update updates the agent's fields
-func (a *Agent) Update(name *string, tags *[]string, configuration *properties.JSON, servicePoolSetID *properties.UUID) bool {
+func (a *Agent) Update(name *string, configuration *properties.JSON, servicePoolSetID *properties.UUID) bool {
 	updated := false
 
 	if name != nil {
 		a.Name = *name
-		updated = true
-	}
-
-	if tags != nil {
-		a.Tags = pq.StringArray(*tags)
 		updated = true
 	}
 
@@ -192,7 +173,6 @@ type CreateAgentParams struct {
 	Name             string           `json:"name"`
 	ProviderID       properties.UUID  `json:"providerId"`
 	AgentTypeID      properties.UUID  `json:"agentTypeId"`
-	Tags             []string         `json:"tags"`
 	Configuration    *properties.JSON `json:"configuration,omitempty"`
 	ServicePoolSetID *properties.UUID `json:"servicePoolSetId,omitempty"`
 	InfrastructureID *properties.UUID `json:"infrastructureId,omitempty"`
@@ -202,7 +182,6 @@ type UpdateAgentParams struct {
 	ID               properties.UUID  `json:"id"`
 	Name             *string          `json:"name,omitempty"`
 	Status           *AgentStatus     `json:"status,omitempty"`
-	Tags             *[]string        `json:"tags,omitempty"`
 	Configuration    *properties.JSON `json:"configuration,omitempty"`
 	ServicePoolSetID *properties.UUID `json:"servicePoolSetId,omitempty"`
 }
@@ -371,7 +350,7 @@ func (s *agentCommander) Update(ctx context.Context,
 	if params.Status != nil {
 		agent.UpdateStatus(*params.Status)
 	}
-	agent.Update(params.Name, params.Tags, params.Configuration, params.ServicePoolSetID)
+	agent.Update(params.Name, params.Configuration, params.ServicePoolSetID)
 
 	// Save and event
 	err = s.store.Atomic(ctx, func(store Store) error {
@@ -546,7 +525,4 @@ type AgentQuerier interface {
 
 	// CountByInfrastructure returns the number of agents bound to a specific infrastructure
 	CountByInfrastructure(ctx context.Context, infrastructureID properties.UUID) (int64, error)
-
-	// FindByServiceTypeAndTags finds agents that support a service type and have all required tags
-	FindByServiceTypeAndTags(ctx context.Context, serviceTypeID properties.UUID, tags []string) ([]*Agent, error)
 }

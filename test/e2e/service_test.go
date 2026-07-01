@@ -24,7 +24,7 @@ func testService(t *testing.T, env *Env) {
 		name := "svc-" + testhelpers.Uniq()
 		created := testhelpers.MustPost[api.CreateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", api.CreateServiceReq{
 			GroupID:       env.Seed.Group.ID,
-			AgentID:       &agentID,
+			AgentID:       agentID,
 			ServiceTypeID: env.Seed.ServiceType.ID,
 			Name:          name,
 			Properties:    properties.JSON{},
@@ -66,6 +66,18 @@ func testService(t *testing.T, env *Env) {
 		require.Equal(t, created.GroupID, updated.GroupID, "PATCH must not change FK")
 		require.Equal(t, created.AgentID, updated.AgentID, "PATCH must not change FK")
 		require.Equal(t, created.ServiceTypeID, updated.ServiceTypeID, "PATCH must not change FK")
+	})
+
+	t.Run("rejects create without agentId", func(t *testing.T) {
+		resp, err := env.AdminClient.R().SetBody(api.CreateServiceReq{
+			GroupID:       env.Seed.Group.ID,
+			ServiceTypeID: env.Seed.ServiceType.ID,
+			Name:          "svc-no-agent-" + testhelpers.Uniq(),
+			Properties:    properties.JSON{},
+		}).Post("/services")
+		require.NoError(t, err)
+		require.Equalf(t, http.StatusBadRequest, resp.StatusCode(), "body: %s", resp.String())
+		require.Containsf(t, resp.String(), "agent ID is required", "unexpected error body: %s", resp.String())
 	})
 
 	t.Run("rejects undefined action", func(t *testing.T) {

@@ -40,12 +40,11 @@ func NewServiceHandler(
 
 // CreateServiceReq represents the request to create a service
 type CreateServiceReq struct {
-	GroupID       properties.UUID  `json:"groupId"`
-	AgentID       *properties.UUID `json:"agentId,omitempty"`
-	ServiceTypeID properties.UUID  `json:"serviceTypeId"`
-	AgentTags     []string         `json:"agentTags,omitempty"`
-	Name          string           `json:"name"`
-	Properties    properties.JSON  `json:"properties"`
+	GroupID       properties.UUID `json:"groupId"`
+	AgentID       properties.UUID `json:"agentId"`
+	ServiceTypeID properties.UUID `json:"serviceTypeId"`
+	Name          string          `json:"name"`
+	Properties    properties.JSON `json:"properties"`
 }
 
 // UpdateServiceReq represents the request to update a service
@@ -135,38 +134,15 @@ func (h *ServiceHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// Get decoded body from context
 	body := middlewares.MustGetBody[CreateServiceReq](r.Context())
 
-	var service *domain.Service
-	var err error
-
-	if body.AgentID != nil {
-		// Direct agent specification
-		params := domain.CreateServiceParams{
-			AgentID:       *body.AgentID,
-			ServiceTypeID: body.ServiceTypeID,
-			GroupID:       body.GroupID,
-			Name:          body.Name,
-			Properties:    body.Properties,
-		}
-		service, err = h.commander.Create(
-			r.Context(),
-			params,
-		)
-	} else {
-		// Agent discovery using service type and tags
-		params := domain.CreateServiceWithTagsParams{
-			CreateServiceParams: domain.CreateServiceParams{
-				ServiceTypeID: body.ServiceTypeID,
-				GroupID:       body.GroupID,
-				Name:          body.Name,
-				Properties:    body.Properties,
-			},
-			ServiceTags: body.AgentTags,
-		}
-		service, err = h.commander.CreateWithTags(
-			r.Context(),
-			params,
-		)
+	// Agent is resolved in the commander from the explicit agentId.
+	params := domain.CreateServiceParams{
+		AgentID:       body.AgentID,
+		ServiceTypeID: body.ServiceTypeID,
+		GroupID:       body.GroupID,
+		Name:          body.Name,
+		Properties:    body.Properties,
 	}
+	service, err := h.commander.Create(r.Context(), params)
 
 	if err != nil {
 		render.Render(w, r, ErrDomain(err))

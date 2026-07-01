@@ -17,7 +17,6 @@ type CreateAgentReq struct {
 	Name             string           `json:"name"`
 	ProviderID       properties.UUID  `json:"providerId"`
 	AgentTypeID      properties.UUID  `json:"agentTypeId"`
-	Tags             []string         `json:"tags"`
 	Configuration    *properties.JSON `json:"configuration,omitempty"`
 	ServicePoolSetID *properties.UUID `json:"servicePoolSetId,omitempty"`
 	InfrastructureID *properties.UUID `json:"infrastructureId,omitempty"`
@@ -31,7 +30,6 @@ func (r CreateAgentReq) ObjectScope() (authz.ObjectScope, error) {
 type UpdateAgentReq struct {
 	Name             *string             `json:"name"`
 	Status           *domain.AgentStatus `json:"status"`
-	Tags             *[]string           `json:"tags"`
 	Configuration    *properties.JSON    `json:"configuration,omitempty"`
 	ServicePoolSetID *properties.UUID    `json:"servicePoolSetId,omitempty"`
 }
@@ -111,7 +109,6 @@ func (h *AgentHandler) Create(ctx context.Context, req *CreateAgentReq) (*domain
 		Name:             req.Name,
 		ProviderID:       req.ProviderID,
 		AgentTypeID:      req.AgentTypeID,
-		Tags:             req.Tags,
 		Configuration:    req.Configuration,
 		ServicePoolSetID: req.ServicePoolSetID,
 		InfrastructureID: req.InfrastructureID,
@@ -125,7 +122,6 @@ func (h *AgentHandler) Update(ctx context.Context, id properties.UUID, req *Upda
 		ID:               id,
 		Name:             req.Name,
 		Status:           req.Status,
-		Tags:             req.Tags,
 		Configuration:    req.Configuration,
 		ServicePoolSetID: req.ServicePoolSetID,
 	}
@@ -163,7 +159,6 @@ type AgentRes struct {
 	Status           domain.AgentStatus `json:"status"`
 	ProviderID       properties.UUID    `json:"providerId"`
 	AgentTypeID      properties.UUID    `json:"agentTypeId"`
-	Tags             []string           `json:"tags"`
 	Configuration    *properties.JSON   `json:"configuration,omitempty"`
 	ServicePoolSetID *properties.UUID   `json:"servicePoolSetId,omitempty"`
 	InfrastructureID *properties.UUID   `json:"infrastructureId,omitempty"`
@@ -182,7 +177,6 @@ func AgentToRes(a *domain.Agent) *AgentRes {
 		Status:           a.Status,
 		ProviderID:       a.ProviderID,
 		AgentTypeID:      a.AgentTypeID,
-		Tags:             []string(a.Tags),
 		Configuration:    a.Configuration,
 		ServicePoolSetID: a.ServicePoolSetID,
 		InfrastructureID: a.InfrastructureID,

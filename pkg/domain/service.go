@@ -182,9 +182,6 @@ type ServiceCommander interface {
 	// Create handles service creation and creates a job for the agent
 	Create(ctx context.Context, params CreateServiceParams) (*Service, error)
 
-	// CreateWithTags handles service creation using agent discovery by tags
-	CreateWithTags(ctx context.Context, params CreateServiceWithTagsParams) (*Service, error)
-
 	// Update handles service updates and creates a job for the agent
 	Update(ctx context.Context, params UpdateServiceParams) (*Service, error)
 
@@ -220,11 +217,6 @@ type CreateServiceParams struct {
 	Properties    properties.JSON `json:"targetProperties"`
 }
 
-type CreateServiceWithTagsParams struct {
-	CreateServiceParams
-	ServiceTags []string `json:"agentTags,omitempty"`
-}
-
 type UpdateServiceParams struct {
 	ID         properties.UUID  `json:"id"`
 	Name       *string          `json:"name,omitempty"`
@@ -236,42 +228,20 @@ type DoServiceActionParams struct {
 	Action string          `json:"action"`
 }
 
+// Create resolves the agent from params.AgentID and creates the service plus its job.
 func (s *serviceCommander) Create(
 	ctx context.Context,
 	params CreateServiceParams,
 ) (*Service, error) {
+	if params.AgentID == uuid.Nil {
+		return nil, NewInvalidInputErrorf("agent ID is required")
+	}
 	agent, err := s.store.AgentRepo().Get(ctx, params.AgentID)
 	if err != nil {
 		return nil, NewInvalidInputErrorf("agent with ID %s does not exist", params.AgentID)
 	}
 
 	return CreateServiceWithAgent(ctx, s.store, s.engine, agent, params)
-}
-
-func (s *serviceCommander) CreateWithTags(
-	ctx context.Context,
-	params CreateServiceWithTagsParams,
-) (*Service, error) {
-	return CreateServiceWithTags(ctx, s.store, s.engine, params)
-}
-
-func CreateServiceWithTags(
-	ctx context.Context,
-	store Store,
-	engine *schema.Engine[ServicePropertyContext],
-	params CreateServiceWithTagsParams,
-) (*Service, error) {
-	agents, err := store.AgentRepo().FindByServiceTypeAndTags(ctx, params.ServiceTypeID, params.ServiceTags)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(agents) == 0 {
-		return nil, NewInvalidInputErrorf("no agent found for service type %s with tags %v", params.ServiceTypeID, params.ServiceTags)
-	}
-
-	agent := agents[0]
-	return CreateServiceWithAgent(ctx, store, engine, agent, params.CreateServiceParams)
 }
 
 func CreateServiceWithAgent(

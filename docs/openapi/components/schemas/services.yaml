@@ -4,21 +4,16 @@ ServiceReq:
     - name
     - serviceTypeId
     - groupId
+    - agentId
   properties:
     name:
       type: string
       example: "web-server-01"
     properties:
       $ref: "./common.yaml#/JSONObject"
-    agentTags:
-      type: array
-      items:
-        type: string
-      example: ["gpu", "high-memory"]
-      description: "Tags used for agent discovery when agentId is not specified"
     agentId:
       $ref: "./common.yaml#/properties.UUID"
-      description: "Specific agent ID (optional - if not provided, agent discovery will use agentTags)"
+      description: "ID of the agent that will host the service."
     serviceTypeId:
       $ref: "./common.yaml#/properties.UUID"
     groupId:

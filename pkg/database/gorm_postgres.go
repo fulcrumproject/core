@@ -204,12 +204,12 @@ func migrateInstallTokens(db *gorm.DB) error {
 }
 
 // dropLegacyTagColumns removes the retired free-form `tags` columns. HasColumn-guarded so
-// fresh DBs skip cleanly and re-runs are no-ops. agents.tags is added here when its field
-// is removed in a later phase.
+// fresh DBs skip cleanly and re-runs are no-ops.
 func dropLegacyTagColumns(db *gorm.DB) error {
 	m := db.Migrator()
 	for _, c := range []struct{ table, column string }{
 		{"infrastructures", "tags"},
+		{"agents", "tags"},
 	} {
 		if m.HasTable(c.table) && m.HasColumn(c.table, c.column) {
 			if err := db.Exec(fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", c.table, c.column)).Error; err != nil {

@@ -108,7 +108,7 @@ func TestServiceHandleCreate(t *testing.T) {
 			name: "Success",
 			request: CreateServiceReq{
 				Name:          "Test Service",
-				AgentID:       &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
+				AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"prop": "value"},
@@ -147,7 +147,7 @@ func TestServiceHandleCreate(t *testing.T) {
 			name: "CommanderError",
 			request: CreateServiceReq{
 				Name:          "Test Service",
-				AgentID:       &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
+				AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"prop": "value"},
@@ -577,7 +577,7 @@ func TestServicePropertyValidation(t *testing.T) {
 			operation: "create",
 			request: CreateServiceReq{
 				Name:          "Test Service",
-				AgentID:       &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
+				AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"ipAddress": "192.168.1.100"},
@@ -599,7 +599,7 @@ func TestServicePropertyValidation(t *testing.T) {
 			operation: "create",
 			request: CreateServiceReq{
 				Name:          "Test Service",
-				AgentID:       &[]properties.UUID{uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")}[0],
+				AgentID:       uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 				GroupID:       uuid.MustParse("660e8400-e29b-41d4-a716-446655440000"),
 				ServiceTypeID: uuid.MustParse("770e8400-e29b-41d4-a716-446655440000"),
 				Properties:    properties.JSON{"instanceName": "my-instance"},

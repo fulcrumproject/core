@@ -131,7 +131,7 @@ func testServiceLifecycleScenario(t *testing.T, env *Env) {
 	agentID := env.Seed.Agent.ID
 	svc := testhelpers.MustPost[api.CreateServiceReq, api.ServiceRes](t, env.AdminClient, "/services", api.CreateServiceReq{
 		GroupID:       group.ID,
-		AgentID:       &agentID,
+		AgentID:       agentID,
 		ServiceTypeID: svcType.ID,
 		Name:          "svc-lifecycle-" + testhelpers.Uniq(),
 		Properties: properties.JSON{
