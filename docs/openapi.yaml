@@ -999,6 +999,13 @@ paths:
             items:
               $ref: '#/components/schemas/properties.UUID'
           description: Filter by agent type ID (can specify multiple values)
+        - name: serviceTypeId
+          in: query
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/properties.UUID'
+          description: Filter by service type ID - returns agents whose agent type provides any of the given service types (can specify multiple values)
       responses:
         '200':
           description: A paginated list of agents

@@ -17,10 +17,11 @@ type GormAgentRepository struct {
 }
 
 var applyAgentFilter = MapFilterApplier(map[string]FilterFieldApplier{
-	"name":        StringContainsInsensitiveFilterFieldApplier("name"),
-	"status":      ParserInFilterFieldApplier("status", domain.ParseAgentStatus),
-	"providerId":  ParserInFilterFieldApplier("provider_id", properties.ParseUUID),
-	"agentTypeId": ParserInFilterFieldApplier("agent_type_id", properties.ParseUUID),
+	"name":          StringContainsInsensitiveFilterFieldApplier("name"),
+	"status":        ParserInFilterFieldApplier("status", domain.ParseAgentStatus),
+	"providerId":    ParserInFilterFieldApplier("provider_id", properties.ParseUUID),
+	"agentTypeId":   ParserInFilterFieldApplier("agent_type_id", properties.ParseUUID),
+	"serviceTypeId": agentServiceTypeFilterApplier,
 })
 
 var applyAgentSort = MapSortApplier(map[string]string{
@@ -81,6 +82,25 @@ func (r *GormAgentRepository) MarkInactiveAgentsAsDisconnected(ctx context.Conte
 		})
 
 	return result.RowsAffected, result.Error
+}
+
+// agentServiceTypeFilterApplier keeps agents whose agent type provides any of the given service types.
+func agentServiceTypeFilterApplier(db *gorm.DB, vv []string) (*gorm.DB, error) {
+	if len(vv) == 0 {
+		return db, nil
+	}
+	ids := make([]properties.UUID, 0, len(vv))
+	for _, v := range vv {
+		id, err := properties.ParseUUID(v)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return db.Where(
+		"agent_type_id IN (SELECT agent_type_id FROM agent_type_service_types WHERE service_type_id IN ?)",
+		ids,
+	), nil
 }
 
 // agentAuthzFilterApplier applies authorization scoping to agent queries

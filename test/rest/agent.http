@@ -1,0 +1,149 @@
+### Agent list: filter by serviceTypeId
+###
+### An agent has no direct service-type link - it reaches service types through
+### its agent type (agent -> agentType -> agent_type_service_types M:M). This file
+### sets up two service types on two agent types, one agent each, then filters
+### GET /agents by serviceTypeId (single value, and repeated for OR semantics).
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+### --- Setup --------------------------------------------------------------
+
+### Create a provider
+# @name createProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Agent Filter Provider {{$guid}}",
+    "status": "Enabled"
+}
+
+### Create service type 1
+# @name createServiceType1
+POST {{baseUrl}}/service-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "agent-filter-st1 {{$guid}}",
+    "propertySchema": {
+        "properties": {
+            "hostname": { "type": "string", "label": "Hostname", "required": true }
+        }
+    },
+    "lifecycleSchema": {
+        "states": [{"name": "New"}, {"name": "Started"}, {"name": "Deleted"}],
+        "actions": [
+            {"name": "create", "transitions": [{"from": "New", "to": "New"}]},
+            {"name": "start", "transitions": [{"from": "New", "to": "Started"}]},
+            {"name": "delete", "transitions": [{"from": "Started", "to": "Deleted"}]}
+        ],
+        "initialState": "New",
+        "terminateState": "Deleted",
+        "terminalStates": ["Deleted"],
+        "runningStates": ["Started"]
+    }
+}
+
+### Create service type 2
+# @name createServiceType2
+POST {{baseUrl}}/service-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "agent-filter-st2 {{$guid}}",
+    "propertySchema": {
+        "properties": {
+            "hostname": { "type": "string", "label": "Hostname", "required": true }
+        }
+    },
+    "lifecycleSchema": {
+        "states": [{"name": "New"}, {"name": "Started"}, {"name": "Deleted"}],
+        "actions": [
+            {"name": "create", "transitions": [{"from": "New", "to": "New"}]},
+            {"name": "start", "transitions": [{"from": "New", "to": "Started"}]},
+            {"name": "delete", "transitions": [{"from": "Started", "to": "Deleted"}]}
+        ],
+        "initialState": "New",
+        "terminateState": "Deleted",
+        "terminalStates": ["Deleted"],
+        "runningStates": ["Started"]
+    }
+}
+
+### Agent type A provides service type 1
+# @name createAgentTypeA
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "agent-filter-type-a {{$guid}}",
+    "serviceTypeIds": ["{{createServiceType1.response.body.id}}"],
+    "configurationSchema": {
+        "properties": {
+            "endpoint": { "type": "string", "label": "Endpoint", "required": true }
+        }
+    }
+}
+
+### Agent type B provides service type 2
+# @name createAgentTypeB
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "agent-filter-type-b {{$guid}}",
+    "serviceTypeIds": ["{{createServiceType2.response.body.id}}"],
+    "configurationSchema": {
+        "properties": {
+            "endpoint": { "type": "string", "label": "Endpoint", "required": true }
+        }
+    }
+}
+
+### Agent A (agent type A)
+# @name createAgentA
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Agent Filter A",
+    "providerId": "{{createProvider.response.body.id}}",
+    "agentTypeId": "{{createAgentTypeA.response.body.id}}",
+    "configuration": { "endpoint": "https://agent-a.example.com" }
+}
+
+### Agent B (agent type B)
+# @name createAgentB
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "name": "Agent Filter B",
+    "providerId": "{{createProvider.response.body.id}}",
+    "agentTypeId": "{{createAgentTypeB.response.body.id}}",
+    "configuration": { "endpoint": "https://agent-b.example.com" }
+}
+
+### --- Filter ------------------------------------------------------------
+
+### Filter by service type 1 - expect only Agent A
+GET {{baseUrl}}/agents?serviceTypeId={{createServiceType1.response.body.id}}&providerId={{createProvider.response.body.id}}
+Authorization: Bearer {{adminToken}}
+
+### Filter by service type 2 - expect only Agent B
+GET {{baseUrl}}/agents?serviceTypeId={{createServiceType2.response.body.id}}&providerId={{createProvider.response.body.id}}
+Authorization: Bearer {{adminToken}}
+
+### Filter by both service types (repeated param, OR) - expect Agent A and Agent B
+GET {{baseUrl}}/agents?serviceTypeId={{createServiceType1.response.body.id}}&serviceTypeId={{createServiceType2.response.body.id}}&providerId={{createProvider.response.body.id}}
+Authorization: Bearer {{adminToken}}
