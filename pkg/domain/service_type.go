@@ -218,6 +218,14 @@ func (c *serviceTypeCommander) Delete(ctx context.Context, id properties.UUID) e
 			return NewInvalidInputErrorf("cannot delete service type %s: %d dependent service(s) exist", id, serviceCount)
 		}
 
+		atCount, err := store.AgentTypeRepo().CountByServiceType(ctx, id)
+		if err != nil {
+			return fmt.Errorf("failed to count agent types for service type %s: %w", id, err)
+		}
+		if atCount > 0 {
+			return NewInvalidInputErrorf("cannot delete service type %s: %d dependent agent type(s) exist", id, atCount)
+		}
+
 		eventEntry, err := NewEvent(EventTypeServiceTypeDeleted, WithInitiatorCtx(ctx), WithServiceType(serviceType))
 		if err != nil {
 			return err

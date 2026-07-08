@@ -311,4 +311,7 @@ type AgentTypeQuerier interface {
 
 	// CountByInfrastructureType returns the number of agent types bound to a specific infrastructure type
 	CountByInfrastructureType(ctx context.Context, infrastructureTypeID properties.UUID) (int64, error)
+
+	// CountByServiceType returns the number of agent types bound to a specific service type
+	CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error)
 }

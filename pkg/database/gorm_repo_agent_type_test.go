@@ -338,6 +338,61 @@ func TestAgentTypeRepository(t *testing.T) {
 		assert.Equal(t, int64(1), n)
 	})
 
+	t.Run("CountByServiceType", func(t *testing.T) {
+		ctx := context.Background()
+
+		st := createTestServiceType(t)
+		require.NoError(t, serviceTypeRepo.Create(ctx, st))
+		other := createTestServiceType(t)
+		require.NoError(t, serviceTypeRepo.Create(ctx, other))
+
+		// 2 AgentTypes reference `st`; 1 references `other`
+		for i := 0; i < 2; i++ {
+			at := createTestAgentType(t)
+			at.ServiceTypes = []domain.ServiceType{*st}
+			require.NoError(t, repo.Create(ctx, at))
+		}
+		atOther := createTestAgentType(t)
+		atOther.ServiceTypes = []domain.ServiceType{*other}
+		require.NoError(t, repo.Create(ctx, atOther))
+
+		n, err := repo.CountByServiceType(ctx, st.ID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), n)
+
+		n, err = repo.CountByServiceType(ctx, other.ID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), n)
+	})
+
+	t.Run("Delete removes join rows", func(t *testing.T) {
+		ctx := context.Background()
+		infraTypeRepo := NewInfrastructureTypeRepository(tdb.DB)
+
+		st := createTestServiceType(t)
+		require.NoError(t, serviceTypeRepo.Create(ctx, st))
+		it := createTestInfrastructureType(t)
+		require.NoError(t, infraTypeRepo.Create(ctx, it))
+
+		at := createTestAgentType(t)
+		at.ServiceTypes = []domain.ServiceType{*st}
+		at.InfrastructureTypes = []domain.InfrastructureType{*it}
+		require.NoError(t, repo.Create(ctx, at))
+
+		require.NoError(t, repo.Delete(ctx, at.ID))
+
+		// Join rows must be physically gone, not just hidden behind the preload JOIN.
+		// Use a fresh session for the raw Table() query so it does not mutate the
+		// shared tdb.DB statement and leak the join table name into later creates.
+		var stRows, itRows int64
+		require.NoError(t, tdb.DB.WithContext(ctx).Table("agent_type_service_types").
+			Where("agent_type_id = ?", at.ID).Count(&stRows).Error)
+		require.NoError(t, tdb.DB.WithContext(ctx).Table("agent_type_infrastructure_types").
+			Where("agent_type_id = ?", at.ID).Count(&itRows).Error)
+		assert.Zero(t, stRows, "service type join rows must be removed when the agent type is deleted")
+		assert.Zero(t, itRows, "infrastructure type join rows must be removed when the agent type is deleted")
+	})
+
 	t.Run("AuthScope", func(t *testing.T) {
 		t.Run("success - returns empty auth scope", func(t *testing.T) {
 			ctx := context.Background()
