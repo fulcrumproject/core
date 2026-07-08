@@ -184,6 +184,51 @@ func TestAgentRepository(t *testing.T) {
 			}
 		})
 
+		t.Run("success - list with serviceTypeId filter", func(t *testing.T) {
+			ctx := context.Background()
+			serviceTypeRepo := NewServiceTypeRepository(tdb.DB)
+
+			provider := createTestParticipant(t, domain.ParticipantEnabled)
+			require.NoError(t, participantRepo.Create(ctx, provider))
+
+			st1 := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, st1))
+			st2 := createTestServiceType(t)
+			require.NoError(t, serviceTypeRepo.Create(ctx, st2))
+
+			// Agent type A provides st1; agent type B provides st2
+			atA := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, atA))
+			atA.ServiceTypes = []domain.ServiceType{{BaseEntity: domain.BaseEntity{ID: st1.ID}}}
+			require.NoError(t, agentTypeRepo.Save(ctx, atA))
+
+			atB := createTestAgentType(t)
+			require.NoError(t, agentTypeRepo.Create(ctx, atB))
+			atB.ServiceTypes = []domain.ServiceType{{BaseEntity: domain.BaseEntity{ID: st2.ID}}}
+			require.NoError(t, agentTypeRepo.Save(ctx, atB))
+
+			agentA := createTestAgent(t, provider.ID, atA.ID, domain.AgentNew)
+			require.NoError(t, agentRepo.Create(ctx, agentA))
+			agentB := createTestAgent(t, provider.ID, atB.ID, domain.AgentNew)
+			require.NoError(t, agentRepo.Create(ctx, agentB))
+
+			// Scope to this provider so the result set is exact
+			scope := &auth.IdentityScope{ParticipantID: &provider.ID}
+
+			// Single ID -> only agentA
+			res, err := agentRepo.List(ctx, scope, &domain.PageReq{Page: 1, PageSize: 10,
+				Filters: map[string][]string{"serviceTypeId": {st1.ID.String()}}})
+			require.NoError(t, err)
+			require.Len(t, res.Items, 1)
+			assert.Equal(t, agentA.ID, res.Items[0].ID)
+
+			// Multiple IDs (OR) -> both agents
+			res, err = agentRepo.List(ctx, scope, &domain.PageReq{Page: 1, PageSize: 10,
+				Filters: map[string][]string{"serviceTypeId": {st1.ID.String(), st2.ID.String()}}})
+			require.NoError(t, err)
+			require.Len(t, res.Items, 2)
+		})
+
 		t.Run("success - list with name substring filter", func(t *testing.T) {
 			ctx := context.Background()
 
