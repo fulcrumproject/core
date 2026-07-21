@@ -4,7 +4,6 @@ package domain
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -63,13 +62,13 @@ func (ServicePoolValue) TableName() string {
 // Validate ensures all ServicePoolValue fields are valid
 func (spv *ServicePoolValue) Validate() error {
 	if spv.Name == "" {
-		return fmt.Errorf("pool value name cannot be empty")
+		return NewInvalidInputError("pool value name cannot be empty", nil)
 	}
 	if spv.Value == nil {
-		return fmt.Errorf("pool value cannot be nil")
+		return NewInvalidInputError("pool value cannot be nil", nil)
 	}
 	if spv.ServicePoolID == (properties.UUID{}) {
-		return fmt.Errorf("service pool ID cannot be empty")
+		return NewInvalidInputError("service pool ID cannot be empty", nil)
 	}
 	return nil
 }
@@ -153,7 +152,7 @@ func (c *servicePoolValueCommander) Create(
 		pool, err := store.ServicePoolRepo().Get(ctx, params.ServicePoolID)
 		if err != nil {
 			if errors.As(err, &NotFoundError{}) {
-				return NewNotFoundErrorf("service pool with id %s not found", params.ServicePoolID)
+				return NewNotFoundError("service pool with id {id} not found", MsgData{"id": params.ServicePoolID})
 			}
 			return err
 		}
@@ -202,7 +201,7 @@ func (c *servicePoolValueCommander) Delete(
 
 		// Check if it's allocated
 		if value.IsAllocated() {
-			return NewInvalidInputErrorf("cannot delete allocated pool value")
+			return NewInvalidInputError("cannot delete allocated pool value", nil)
 		}
 
 		eventEntry, err := NewEvent(EventTypeServicePoolValueDeleted, WithInitiatorCtx(ctx), WithServicePoolValue(value))

@@ -39,7 +39,7 @@ func (ServiceType) TableName() string {
 // Validate ensures all ServiceType fields are valid
 func (st *ServiceType) Validate() error {
 	if st.Name == "" {
-		return fmt.Errorf("service type name cannot be empty")
+		return NewInvalidInputError("service type name cannot be empty", nil)
 	}
 
 	// Validate lifecycle schema
@@ -129,7 +129,7 @@ func (c *serviceTypeCommander) Create(
 
 		// Validate service type (includes lifecycle validation)
 		if err := serviceType.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 
 		if err := store.ServiceTypeRepo().Create(ctx, serviceType); err != nil {
@@ -176,7 +176,7 @@ func (c *serviceTypeCommander) Update(
 
 	// Validate service type (includes lifecycle validation)
 	if err := serviceType.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	// Save and event
@@ -215,7 +215,7 @@ func (c *serviceTypeCommander) Delete(ctx context.Context, id properties.UUID) e
 			return fmt.Errorf("failed to count services for service type %s: %w", id, err)
 		}
 		if serviceCount > 0 {
-			return NewInvalidInputErrorf("cannot delete service type %s: %d dependent service(s) exist", id, serviceCount)
+			return NewInvalidInputError("cannot delete service type '{id}': {count} dependent service(s) exist", MsgData{"id": id, "count": serviceCount})
 		}
 
 		atCount, err := store.AgentTypeRepo().CountByServiceType(ctx, id)
@@ -223,7 +223,7 @@ func (c *serviceTypeCommander) Delete(ctx context.Context, id properties.UUID) e
 			return fmt.Errorf("failed to count agent types for service type %s: %w", id, err)
 		}
 		if atCount > 0 {
-			return NewInvalidInputErrorf("cannot delete service type %s: %d dependent agent type(s) exist", id, atCount)
+			return NewInvalidInputError("cannot delete service type '{id}': {count} dependent agent type(s) exist", MsgData{"id": id, "count": atCount})
 		}
 
 		eventEntry, err := NewEvent(EventTypeServiceTypeDeleted, WithInitiatorCtx(ctx), WithServiceType(serviceType))

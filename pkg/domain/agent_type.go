@@ -74,10 +74,10 @@ func (AgentType) TableName() string {
 // Validate ensures all AgentType fields are valid (without schema validation)
 func (at *AgentType) Validate() error {
 	if at.Name == "" {
-		return fmt.Errorf("agent type name cannot be empty")
+		return NewInvalidInputError("agent type name cannot be empty", nil)
 	}
 	if len(at.InfrastructureTypes) > 1 {
-		return fmt.Errorf("agent type may have at most one infrastructure type")
+		return NewInvalidInputError("agent type may have at most one infrastructure type", nil)
 	}
 	return at.validateTemplates()
 }
@@ -85,10 +85,10 @@ func (at *AgentType) Validate() error {
 // ValidateWithEngine validates the agent type including its configuration schema
 func (at *AgentType) ValidateWithEngine(engine *schema.Engine[AgentConfigContext]) error {
 	if at.Name == "" {
-		return fmt.Errorf("agent type name cannot be empty")
+		return NewInvalidInputError("agent type name cannot be empty", nil)
 	}
 	if len(at.InfrastructureTypes) > 1 {
-		return fmt.Errorf("agent type may have at most one infrastructure type")
+		return NewInvalidInputError("agent type may have at most one infrastructure type", nil)
 	}
 
 	// Always validate schema (required, not nullable)
@@ -201,7 +201,7 @@ func (c *agentTypeCommander) Create(
 
 		// Use engine to validate (includes schema validation)
 		if err := agentType.ValidateWithEngine(c.configEngine); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 
 		if err := store.AgentTypeRepo().Create(ctx, agentType); err != nil {
@@ -241,7 +241,7 @@ func (c *agentTypeCommander) Update(
 	// Update and validate
 	agentType.Update(params)
 	if err := agentType.ValidateWithEngine(c.configEngine); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	// Save and event
@@ -280,7 +280,7 @@ func (c *agentTypeCommander) Delete(ctx context.Context, id properties.UUID) err
 			return fmt.Errorf("failed to count agents for agent type %s: %w", id, err)
 		}
 		if agentCount > 0 {
-			return NewInvalidInputErrorf("cannot delete agent type %s: %d dependent agent(s) exist", id, agentCount)
+			return NewInvalidInputError("cannot delete agent type {id}: {count} dependent agent(s) exist", MsgData{"id": id, "count": agentCount})
 		}
 
 		eventEntry, err := NewEvent(EventTypeAgentTypeDeleted, WithInitiatorCtx(ctx), WithAgentType(agentType))

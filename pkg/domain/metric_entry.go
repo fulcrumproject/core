@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/auth"
@@ -32,7 +31,7 @@ func (s AggregateType) Validate() error {
 	case AggregateMin, AggregateMax, AggregateSum, AggregateAvg, AggregateDiffMaxMin:
 		return nil
 	default:
-		return fmt.Errorf("invalid aggregate type: %s", s)
+		return NewInvalidInputError("invalid aggregate type '{type}'", MsgData{"type": s})
 	}
 }
 
@@ -96,11 +95,11 @@ func (b AggregateBucket) MaxDurationLabel() string {
 
 func (b AggregateBucket) ValidateTimeRange(start, end time.Time) error {
 	if end.Before(start) {
-		return fmt.Errorf("end time must be after start time")
+		return NewInvalidInputError("end time must be after start time", nil)
 	}
 
 	if end.Sub(start) > b.MaxDuration() {
-		return fmt.Errorf("time range exceeds maximum for bucket %s (max: %s)", b, b.MaxDurationLabel())
+		return NewInvalidInputError("time range exceeds maximum for bucket '{bucket}' (max: {max})", MsgData{"bucket": b, "max": b.MaxDurationLabel()})
 	}
 	return nil
 }
@@ -110,7 +109,7 @@ func (s AggregateBucket) Validate() error {
 	case AggregateBucketMinute, AggregateBucketHour, AggregateBucketDay, AggregateBucketMonth:
 		return nil
 	default:
-		return fmt.Errorf("invalid aggregate bucket: %s", s)
+		return NewInvalidInputError("invalid aggregate bucket '{bucket}'", MsgData{"bucket": s})
 	}
 }
 
@@ -212,16 +211,16 @@ func (m *MetricEntry) BeforeCreate(tx *gorm.DB) error {
 // Validate ensures all MetricEntry fields are valid
 func (p *MetricEntry) Validate() error {
 	if p.ResourceID == "" {
-		return fmt.Errorf("resource ID cannot be empty")
+		return NewInvalidInputError("resource ID cannot be empty", nil)
 	}
 	if p.TypeID == uuid.Nil {
-		return fmt.Errorf("metric type ID cannot be empty")
+		return NewInvalidInputError("metric type ID cannot be empty", nil)
 	}
 	if p.AgentID == uuid.Nil {
-		return fmt.Errorf("agent ID cannot be empty")
+		return NewInvalidInputError("agent ID cannot be empty", nil)
 	}
 	if p.ServiceID == uuid.Nil {
-		return fmt.Errorf("service ID cannot be empty")
+		return NewInvalidInputError("service ID cannot be empty", nil)
 	}
 	return nil
 }
@@ -278,7 +277,7 @@ func (s *metricEntryCommander) CreateWithAgentInstanceID(
 		return nil, err
 	}
 	if !ok {
-		return nil, NewInvalidInputErrorf("invalid agent ID %s", params.AgentID)
+		return nil, NewInvalidInputError("invalid agent ID '{id}'", MsgData{"id": params.AgentID})
 	}
 
 	// 2. Find service by agent instance ID
@@ -299,7 +298,7 @@ func (s *metricEntryCommander) CreateWithAgentInstanceID(
 		return nil, err
 	}
 	if !metricTypeExists {
-		return nil, InvalidInputError{Err: fmt.Errorf("metric type with ID %s does not exist", metricType.ID)}
+		return nil, NewInvalidInputError("metric type with ID '{id}' does not exist", MsgData{"id": metricType.ID})
 	}
 
 	// 5. Create and validate
@@ -314,7 +313,7 @@ func (s *metricEntryCommander) CreateWithAgentInstanceID(
 	)
 
 	if err := metricEntry.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	// 6. Save
@@ -335,7 +334,7 @@ func (s *metricEntryCommander) Create(
 		return nil, err
 	}
 	if !ok {
-		return nil, NewInvalidInputErrorf("invalid agent ID %s", params.AgentID)
+		return nil, NewInvalidInputError("invalid agent ID '{id}'", MsgData{"id": params.AgentID})
 	}
 
 	// 2. Find service
@@ -356,7 +355,7 @@ func (s *metricEntryCommander) Create(
 		return nil, err
 	}
 	if !metricTypeExists {
-		return nil, InvalidInputError{Err: fmt.Errorf("metric type with ID %s does not exist", metricType.ID)}
+		return nil, NewInvalidInputError("metric type with ID '{id}' does not exist", MsgData{"id": metricType.ID})
 	}
 
 	// 5. Create and validate
@@ -371,7 +370,7 @@ func (s *metricEntryCommander) Create(
 	)
 
 	if err := metricEntry.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	// 6. Save

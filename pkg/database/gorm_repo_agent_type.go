@@ -51,14 +51,14 @@ func (r *GormAgentTypeRepository) Save(ctx context.Context, agentType *domain.Ag
 	if agentType.ServiceTypes != nil {
 		err := r.GormRepository.db.WithContext(ctx).Model(agentType).Association("ServiceTypes").Replace(agentType.ServiceTypes)
 		if err != nil {
-			return err
+			return translatePgError(err)
 		}
 	}
 
 	if agentType.InfrastructureTypes != nil {
 		err := r.GormRepository.db.WithContext(ctx).Model(agentType).Association("InfrastructureTypes").Replace(agentType.InfrastructureTypes)
 		if err != nil {
-			return err
+			return translatePgError(err)
 		}
 	}
 
@@ -76,7 +76,7 @@ func (r *GormAgentTypeRepository) Delete(ctx context.Context, id properties.UUID
 	if err := r.db.WithContext(ctx).Model(agentType).Association("InfrastructureTypes").Clear(); err != nil {
 		return err
 	}
-	return r.db.WithContext(ctx).Delete(agentType).Error
+	return r.GormRepository.Delete(ctx, id)
 }
 
 func (r *GormAgentTypeRepository) CountByServiceType(ctx context.Context, serviceTypeID properties.UUID) (int64, error) {

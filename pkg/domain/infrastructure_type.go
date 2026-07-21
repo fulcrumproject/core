@@ -47,7 +47,7 @@ func (InfrastructureType) TableName() string {
 // Validate ensures all InfrastructureType fields are valid (without schema validation).
 func (it *InfrastructureType) Validate() error {
 	if it.Name == "" {
-		return fmt.Errorf("infrastructure type name cannot be empty")
+		return NewInvalidInputError("infrastructure type name cannot be empty", nil)
 	}
 	return it.validateTemplates()
 }
@@ -55,7 +55,7 @@ func (it *InfrastructureType) Validate() error {
 // ValidateWithEngine validates the infrastructure type including its configuration schema.
 func (it *InfrastructureType) ValidateWithEngine(engine *schema.Engine[InfrastructureConfigContext]) error {
 	if it.Name == "" {
-		return fmt.Errorf("infrastructure type name cannot be empty")
+		return NewInvalidInputError("infrastructure type name cannot be empty", nil)
 	}
 
 	if err := engine.ValidateSchema(it.ConfigurationSchema); err != nil {
@@ -137,7 +137,7 @@ func (c *infrastructureTypeCommander) Create(
 		infraType = NewInfrastructureType(params)
 
 		if err := infraType.ValidateWithEngine(c.configEngine); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 
 		if err := store.InfrastructureTypeRepo().Create(ctx, infraType); err != nil {
@@ -177,7 +177,7 @@ func (c *infrastructureTypeCommander) Update(
 	// Update and validate
 	infraType.Update(params)
 	if err := infraType.ValidateWithEngine(c.configEngine); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	err = c.store.Atomic(ctx, func(store Store) error {
@@ -214,7 +214,7 @@ func (c *infrastructureTypeCommander) Delete(ctx context.Context, id properties.
 			return fmt.Errorf("failed to count infrastructures for infrastructure type %s: %w", id, err)
 		}
 		if infraCount > 0 {
-			return NewInvalidInputErrorf("cannot delete infrastructure type %s: %d dependent infrastructure(s) exist", id, infraCount)
+			return NewInvalidInputError("cannot delete infrastructure type {id}: {count} dependent infrastructure(s) exist", MsgData{"id": id, "count": infraCount})
 		}
 
 		atCount, err := store.AgentTypeRepo().CountByInfrastructureType(ctx, id)
@@ -222,7 +222,7 @@ func (c *infrastructureTypeCommander) Delete(ctx context.Context, id properties.
 			return fmt.Errorf("failed to count agent types for infrastructure type %s: %w", id, err)
 		}
 		if atCount > 0 {
-			return NewInvalidInputErrorf("cannot delete infrastructure type %s: %d dependent agent type(s) exist", id, atCount)
+			return NewInvalidInputError("cannot delete infrastructure type {id}: {count} dependent agent type(s) exist", MsgData{"id": id, "count": atCount})
 		}
 
 		eventEntry, err := NewEvent(EventTypeInfrastructureTypeDeleted, WithInitiatorCtx(ctx), WithInfrastructureType(infraType))

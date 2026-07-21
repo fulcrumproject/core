@@ -65,7 +65,7 @@ func (g *ConfigPoolSubnetGenerator) Allocate(ctx context.Context, entityType Con
 
 	name, value, ok := sc.nextFree(reserved)
 	if !ok {
-		return nil, NewInvalidInputErrorf("subnet exhausted: no available values in pool")
+		return nil, NewInvalidInputError("subnet exhausted: no available values in pool", nil)
 	}
 
 	if row, found := reusable[name]; found {
@@ -152,43 +152,55 @@ func validateSubnetGeneratorConfig(cfg properties.JSON) error {
 func parseSubnetConfig(cfg properties.JSON) (*subnetConfig, error) {
 	cidr, ok := cfg["cidr"].(string)
 	if !ok || cidr == "" {
-		return nil, fmt.Errorf("subnet generator config requires string 'cidr'")
+		return nil, NewInvalidInputError("subnet generator config requires string 'cidr'", nil)
 	}
 	ip, ipNet, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return nil, fmt.Errorf("subnet generator config 'cidr' is invalid: %w", err)
+		return nil, NewInvalidInputError(
+			"subnet generator config 'cidr' is invalid: {reason}",
+			MsgData{"reason": err.Error()},
+		)
 	}
 	base := ip.Mask(ipNet.Mask).To4()
 	if base == nil {
-		return nil, fmt.Errorf("subnet generator config 'cidr' must be IPv4")
+		return nil, NewInvalidInputError("subnet generator config 'cidr' must be IPv4", nil)
 	}
 	ones, bits := ipNet.Mask.Size()
 	sc := &subnetConfig{base: base, ones: ones, bits: bits, exclude: map[string]bool{}}
 
 	if p, ok := toInt(cfg["prefix"]); ok {
 		if p < ones || p > bits {
-			return nil, fmt.Errorf("subnet generator config 'prefix' (%d) must be between %d and %d", p, ones, bits)
+			return nil, NewInvalidInputError(
+				"subnet generator config 'prefix' ({prefix}) must be between {min} and {max}",
+				MsgData{"prefix": p, "min": ones, "max": bits},
+			)
 		}
 		sc.prefix = p
 		sc.hasPrefix = true
 	}
 	if raw, present := cfg["hosts"]; present {
 		if !sc.hasPrefix {
-			return nil, fmt.Errorf("subnet generator config 'hosts' requires 'prefix' (block mode)")
+			return nil, NewInvalidInputError("subnet generator config 'hosts' requires 'prefix' (block mode)", nil)
 		}
 		obj, ok := raw.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("subnet generator config 'hosts' must be an object of name->offset")
+			return nil, NewInvalidInputError("subnet generator config 'hosts' must be an object of name->offset", nil)
 		}
 		blockSize := 1 << uint(sc.bits-sc.prefix)
 		sc.hosts = make(map[string]int, len(obj))
 		for name, v := range obj {
 			if name == "" || name == "cidr" || name == "prefix" {
-				return nil, fmt.Errorf("subnet generator config 'hosts' key %q is reserved or empty", name)
+				return nil, NewInvalidInputError(
+					"subnet generator config 'hosts' key '{name}' is reserved or empty",
+					MsgData{"name": name},
+				)
 			}
 			off, ok := toInt(v)
 			if !ok || off < 0 || off >= blockSize {
-				return nil, fmt.Errorf("subnet generator config 'hosts' offset for %q must be 0..%d", name, blockSize-1)
+				return nil, NewInvalidInputError(
+					"subnet generator config 'hosts' offset for '{name}' must be 0..{max}",
+					MsgData{"name": name, "max": blockSize - 1},
+				)
 			}
 			sc.hosts[name] = off
 		}
@@ -214,7 +226,7 @@ func parseSubnetConfig(cfg properties.JSON) (*subnetConfig, error) {
 	_, hasExcludeLast := cfg["excludeLast"]
 	_, hasExclude := cfg["exclude"]
 	if sc.hasPrefix && (hasExcludeFirst || hasExcludeLast || hasExclude) {
-		return nil, fmt.Errorf("subnet generator config 'excludeFirst'/'excludeLast'/'exclude' apply to host mode only (no 'prefix')")
+		return nil, NewInvalidInputError("subnet generator config 'excludeFirst'/'excludeLast'/'exclude' apply to host mode only (no 'prefix')", nil)
 	}
 
 	if n, ok := toInt(cfg["excludeFirst"]); ok {
@@ -226,12 +238,12 @@ func parseSubnetConfig(cfg properties.JSON) (*subnetConfig, error) {
 	if raw, present := cfg["exclude"]; present {
 		list, ok := raw.([]any)
 		if !ok {
-			return nil, fmt.Errorf("subnet generator config 'exclude' must be an array")
+			return nil, NewInvalidInputError("subnet generator config 'exclude' must be an array", nil)
 		}
 		for _, e := range list {
 			s, ok := e.(string)
 			if !ok || net.ParseIP(s) == nil {
-				return nil, fmt.Errorf("subnet generator config 'exclude' entries must be IP strings")
+				return nil, NewInvalidInputError("subnet generator config 'exclude' entries must be IP strings", nil)
 			}
 			sc.exclude[s] = true
 		}
@@ -240,10 +252,16 @@ func parseSubnetConfig(cfg properties.JSON) (*subnetConfig, error) {
 	if !sc.hasPrefix {
 		totalIPs := 1 << uint(sc.bits-sc.ones)
 		if sc.excludeFirst < 0 || sc.excludeLast < 0 {
-			return nil, fmt.Errorf("subnet generator config 'excludeFirst' (%d) and 'excludeLast' (%d) must be >= 0", sc.excludeFirst, sc.excludeLast)
+			return nil, NewInvalidInputError(
+				"subnet generator config 'excludeFirst' ({first}) and 'excludeLast' ({last}) must be >= 0",
+				MsgData{"first": sc.excludeFirst, "last": sc.excludeLast},
+			)
 		}
 		if sc.excludeFirst+sc.excludeLast >= totalIPs {
-			return nil, fmt.Errorf("subnet generator config 'excludeFirst' (%d) + 'excludeLast' (%d) leave no addresses in the /%d subnet", sc.excludeFirst, sc.excludeLast, sc.ones)
+			return nil, NewInvalidInputError(
+				"subnet generator config 'excludeFirst' ({first}) + 'excludeLast' ({last}) leave no addresses in the /{prefix} subnet",
+				MsgData{"first": sc.excludeFirst, "last": sc.excludeLast, "prefix": sc.ones},
+			)
 		}
 	}
 	return sc, nil

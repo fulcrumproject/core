@@ -27,7 +27,7 @@ func (g *ConfigPoolListGenerator) Allocate(ctx context.Context, entityType Confi
 		return nil, fmt.Errorf("failed to query available values: %w", err)
 	}
 	if len(available) == 0 {
-		return nil, NewInvalidInputErrorf("no available values in pool")
+		return nil, NewInvalidInputError("no available values in pool", nil)
 	}
 
 	value := available[0]

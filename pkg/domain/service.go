@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
 	"time"
@@ -155,19 +154,19 @@ func ApplyAgentPropertyUpdates(
 // Validate a service
 func (s *Service) Validate() error {
 	if s.Name == "" {
-		return errors.New("service name cannot be empty")
+		return NewInvalidInputError("service name cannot be empty", nil)
 	}
 	if s.Status == "" {
-		return errors.New("service status cannot be empty")
+		return NewInvalidInputError("service status cannot be empty", nil)
 	}
 	if s.GroupID == uuid.Nil {
-		return errors.New("service group ID cannot be nil")
+		return NewInvalidInputError("service group ID cannot be nil", nil)
 	}
 	if s.AgentID == uuid.Nil {
-		return errors.New("service agent ID cannot be nil")
+		return NewInvalidInputError("service agent ID cannot be nil", nil)
 	}
 	if s.ServiceTypeID == uuid.Nil {
-		return errors.New("service type ID cannot be nil")
+		return NewInvalidInputError("service type ID cannot be nil", nil)
 	}
 	return nil
 }
@@ -234,11 +233,11 @@ func (s *serviceCommander) Create(
 	params CreateServiceParams,
 ) (*Service, error) {
 	if params.AgentID == uuid.Nil {
-		return nil, NewInvalidInputErrorf("agent ID is required")
+		return nil, NewInvalidInputError("agent ID is required", nil)
 	}
 	agent, err := s.store.AgentRepo().Get(ctx, params.AgentID)
 	if err != nil {
-		return nil, NewInvalidInputErrorf("agent with ID %s does not exist", params.AgentID)
+		return nil, NewInvalidInputError("agent with ID '{id}' does not exist", MsgData{"id": params.AgentID})
 	}
 
 	return CreateServiceWithAgent(ctx, s.store, s.engine, agent, params)
@@ -278,7 +277,7 @@ func CreateServiceWithAgent(
 		}
 	}
 	if !supported {
-		return nil, NewInvalidInputErrorf("agent type %s does not support service type %s", agent.AgentType.Name, params.ServiceTypeID)
+		return nil, NewInvalidInputError("agent type '{agentType}' does not support service type '{serviceType}'", MsgData{"agentType": agent.AgentType.Name, "serviceType": params.ServiceTypeID})
 	}
 
 	// Get initial state from lifecycle schema (always present)
@@ -294,7 +293,7 @@ func CreateServiceWithAgent(
 	svc.ID = serviceID
 
 	if err := svc.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	err = store.Atomic(ctx, func(txStore Store) error {
@@ -389,7 +388,7 @@ func UpdateService(ctx context.Context, store Store, engine *schema.Engine[Servi
 		return nil, err
 	}
 	if err := svc.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	// Save, event and create job
@@ -434,7 +433,7 @@ func UpdateService(ctx context.Context, store Store, engine *schema.Engine[Servi
 		if action {
 			// Check if service is in a terminal state (lifecycle always present)
 			if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
-				return NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
+				return NewInvalidInputError("cannot perform action on service in terminal state: '{status}'", MsgData{"status": svc.Status})
 			}
 
 			// Check if the service is in a valid state to be updated with a job
@@ -485,7 +484,7 @@ func DoServiceAction(ctx context.Context, store Store, params DoServiceActionPar
 
 	// Check if service is in a terminal state (lifecycle always present)
 	if serviceType.LifecycleSchema.IsTerminalState(svc.Status) {
-		return nil, NewInvalidInputErrorf("cannot perform action on service in terminal state: %s", svc.Status)
+		return nil, NewInvalidInputError("cannot perform action on service in terminal state: '{status}'", MsgData{"status": svc.Status})
 	}
 
 	// Check if the service is in a valid state to perform this action
@@ -523,7 +522,7 @@ func checkHasNotActiveJob(ctx context.Context, store Store, svc *Service) error 
 		return err
 	}
 	if job != nil && job.IsActive() {
-		return NewInvalidInputErrorf("cannot update service %s while there is an active job %s", svc.ID, job.ID)
+		return NewInvalidInputError("cannot update service '{serviceId}' while there is an active job '{jobId}'", MsgData{"serviceId": svc.ID, "jobId": job.ID})
 	}
 	return nil
 }

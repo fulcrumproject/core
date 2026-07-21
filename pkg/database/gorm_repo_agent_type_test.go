@@ -48,6 +48,23 @@ func TestAgentTypeRepository(t *testing.T) {
 			assert.NotEmpty(t, found.ServiceTypes)
 			assert.Equal(t, serviceType.ID, found.ServiceTypes[0].ID)
 		})
+
+		t.Run("duplicate name maps to conflict", func(t *testing.T) {
+			ctx := context.Background()
+
+			first := createTestAgentType(t)
+			require.NoError(t, repo.Create(ctx, first))
+
+			dup := createTestAgentType(t)
+			dup.Name = first.Name
+
+			err := repo.Create(ctx, dup)
+
+			var conflict domain.ConflictError
+			require.ErrorAs(t, err, &conflict)
+			assert.Equal(t, "name", conflict.Data["field"])
+			assert.Equal(t, first.Name, conflict.Data["value"])
+		})
 	})
 
 	t.Run("Get", func(t *testing.T) {

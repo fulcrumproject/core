@@ -1,14 +1,30 @@
 ErrorRes:
   type: object
+  required:
+    - status
+    - message
   properties:
     status:
+      type: integer
+      description: HTTP status code
+      example: 400
+    message:
       type: string
-      description: User-level status message
-      example: "Invalid request"
-    error:
+      description: Human-readable error message
+      example: "provider with ID '123e4567-e89b-12d3-a456-426614174000' does not exist"
+    template:
       type: string
-      description: Application-level error message
-      example: "The field 'name' is required"
+      description: >-
+        Message template with {placeholder} tokens, present only when the
+        message was interpolated from structured data (enables client-side
+        localization).
+      example: "provider with ID {providerId} does not exist"
+    data:
+      type: object
+      additionalProperties: true
+      description: Interpolation values for the template placeholders
+      example:
+        providerId: "123e4567-e89b-12d3-a456-426614174000"
 
 properties.UUID:
   type: string
@@ -57,23 +73,35 @@ ValidationErrorDetail:
     message:
       type: string
       description: The validation error message
-      example: "cpu: value must be one of: [1, 2, 4, 8, 16, 32]"
+      example: "value not in allowed enum values 1, 2, 4, 8, 16, 32"
+    template:
+      type: string
+      description: >-
+        Message template with {placeholder} tokens, present only when the
+        message was interpolated from structured data.
+      example: "value not in allowed enum values {values}"
+    data:
+      type: object
+      additionalProperties: true
+      description: Interpolation values for the template placeholders
+      example:
+        values: [1, 2, 4, 8, 16, 32]
 
 ValidationErrRes:
   type: object
   required:
     - status
-    - valid
+    - message
     - errors
   properties:
     status:
+      type: integer
+      description: HTTP status code
+      example: 400
+    message:
       type: string
-      description: User-level status message
-      example: "Validation failed"
-    valid:
-      type: boolean
-      description: Whether the validation passed
-      example: false
+      description: Human-readable summary of the failure
+      example: "validation failed"
     errors:
       type: array
       items:

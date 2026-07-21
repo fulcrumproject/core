@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/properties"
@@ -45,15 +44,15 @@ func (ConfigPoolValue) TableName() string {
 
 func (cv *ConfigPoolValue) Validate() error {
 	if cv.Name == "" {
-		return fmt.Errorf("config pool value name is required")
+		return NewInvalidInputError("config pool value name is required", nil)
 	}
 
 	if cv.Value == nil {
-		return fmt.Errorf("config pool value is required")
+		return NewInvalidInputError("config pool value is required", nil)
 	}
 
 	if cv.ConfigPoolID == (properties.UUID{}) {
-		return fmt.Errorf("config pool ID cannot be empty")
+		return NewInvalidInputError("config pool ID cannot be empty", nil)
 	}
 	return nil
 }
@@ -141,7 +140,7 @@ func (c *configPoolValueCommander) Create(ctx context.Context, params CreateConf
 		pool, err := s.ConfigPoolRepo().Get(ctx, params.ConfigPoolID)
 		if err != nil {
 			if errors.As(err, &NotFoundError{}) {
-				return NewNotFoundErrorf("config pool with id %s not found", params.ConfigPoolID)
+				return NewNotFoundError("config pool with id {id} not found", MsgData{"id": params.ConfigPoolID})
 			}
 			return err
 		}
@@ -183,7 +182,7 @@ func (c *configPoolValueCommander) Delete(ctx context.Context, id properties.UUI
 		}
 
 		if value.IsAllocated() {
-			return NewInvalidInputErrorf("cannot delete allocated pool value")
+			return NewInvalidInputError("cannot delete allocated pool value", nil)
 		}
 
 		eventEntry, err := NewEvent(EventTypeConfigPoolValueDeleted, WithInitiatorCtx(ctx), WithConfigPoolValue(value))

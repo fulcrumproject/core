@@ -1,0 +1,270 @@
+### Error responses showcase
+###
+### Walks through every error shape the API emits after the error-handling
+### refactor. The unified body is:
+###
+###   {
+###     "status":   <int http code>,
+###     "message":  "<human message>",
+###     "template": "<raw {key} template>",   // present only for templated errors
+###     "data":     { ... },                  // interpolation values for template
+###     "errors":   [ { "path", "message", "template", "data" } ]  // schema validation only
+###   }
+###
+### Run top-to-bottom. A few requests intentionally fail; the "# Expect:" note
+### on each says what you should see.
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@adminToken = change-me
+
+###############################################################################
+### 1) Auth failure -- bad/missing bearer token (auth middleware)
+###############################################################################
+
+### Any authenticated endpoint with a bogus token. NOTE: a failed
+### authentication currently returns 403, not 401 -- the auth middleware maps
+### "no valid identity" to Forbidden.
+GET {{baseUrl}}/participants
+Authorization: Bearer not-a-real-token
+# Expect: 403
+#   { "status": 403, "message": "authentication failed: no valid identity found" }
+
+###############################################################################
+### 2) 400 InvalidInputError, plain (no template) -- domain Validate()
+###############################################################################
+
+### Config pool with an empty name -> ConfigPool.Validate() rejects it
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "",
+  "type": "err_demo_plain",
+  "propertyType": "string",
+  "generatorType": "list"
+}
+# Expect: 400
+#   { "status": 400, "message": "config pool name cannot be empty" }
+#   NOTE: no "template"/"data" -- these are emitted only when the message
+#   carries interpolation data.
+
+###############################################################################
+### 3) 400 InvalidInputError, templated + data (slice rendered as a list)
+###############################################################################
+
+### Invalid propertyType -> templated message; "allowed" is a slice and renders
+### as a comma-separated list, not Go's [a b] bracket syntax.
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "err demo bad property type",
+  "type": "err_demo_bad_ptype",
+  "propertyType": "banana",
+  "generatorType": "list"
+}
+# Expect: 400
+#   {
+#     "status": 400,
+#     "message": "invalid property type 'banana' (must be one of string, integer, number, boolean, json)",
+#     "template": "invalid property type '{propertyType}' (must be one of {allowed})",
+#     "data": { "propertyType": "banana", "allowed": ["string","integer","number","boolean","json"] }
+#   }
+
+###############################################################################
+### 4) 403 templated -- create referencing a parent that cannot be authorized
+###############################################################################
+### The value handler authorizes the target config pool before the commander
+### runs. A missing pool cannot be scoped, so the repo's templated NotFoundError
+### comes back as 403 (missing rows are reported as forbidden, not 404).
+POST {{baseUrl}}/config-pool-values
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "orphan",
+  "value": "10.0.0.1",
+  "configPoolId": "11111111-1111-1111-1111-111111111111"
+}
+# Expect: 403
+#   {
+#     "status": 403,
+#     "message": "resource with id '11111111-1111-1111-1111-111111111111' not found",
+#     "template": "resource with id '{id}' not found",
+#     "data": { "id": "11111111-1111-1111-1111-111111111111" }
+#   }
+
+###############################################################################
+### 5) 403 templated -- GET on a missing row (AuthScope reports missing as 403)
+###############################################################################
+
+### A well-formed but nonexistent id. The scope middleware cannot prove access
+### to a row it cannot find, so it returns 403 rather than 404.
+GET {{baseUrl}}/config-pools/22222222-2222-2222-2222-222222222222
+Authorization: Bearer {{adminToken}}
+# Expect: 403
+#   {
+#     "status": 403,
+#     "message": "cannot load resource: resource with id '22222222-2222-2222-2222-222222222222' not found",
+#     "template": "resource with id '{id}' not found",
+#     "data": { "id": "22222222-2222-2222-2222-222222222222" }
+#   }
+
+###############################################################################
+### 6) 409 ConflictError, templated -- domain uniqueness pre-check
+###############################################################################
+
+### First create succeeds (or 409s if you have run this file before -- either
+### way the second request below demonstrates the conflict).
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "err demo conflict A",
+  "type": "err_demo_conflict_type",
+  "propertyType": "string",
+  "generatorType": "list"
+}
+# Expect: 201 on first run
+
+### Same type in the same (global) scope -> ConflictError
+POST {{baseUrl}}/config-pools
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "err demo conflict B",
+  "type": "err_demo_conflict_type",
+  "propertyType": "string",
+  "generatorType": "list"
+}
+# Expect: 409
+#   {
+#     "status": 409,
+#     "message": "config pool with type 'err_demo_conflict_type' already exists in global scope",
+#     "template": "config pool with type '{type}' already exists in {scope} scope",
+#     "data": { "type": "err_demo_conflict_type", "scope": "global" }
+#   }
+
+###############################################################################
+### 7) 409 ConflictError from a DB unique violation (translatePgError)
+###############################################################################
+### agent_types.name has a UNIQUE constraint with no domain pre-check, so the
+### duplicate is caught by Postgres and translated in pkg/database/pg_errors.go.
+
+### First create succeeds (or 409s on re-run). The schema must define at least
+### one property, else it is rejected before the name is ever checked.
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "err_demo_dup_agent_type",
+  "configurationSchema": {
+    "properties": {
+      "endpoint": { "type": "string", "label": "Endpoint" }
+    }
+  }
+}
+# Expect: 201 on first run
+
+### Same name -> unique violation -> 409
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "err_demo_dup_agent_type",
+  "configurationSchema": {
+    "properties": {
+      "endpoint": { "type": "string", "label": "Endpoint" }
+    }
+  }
+}
+# Expect: 409
+#   {
+#     "status": 409,
+#     "message": "name 'err_demo_dup_agent_type' already exists",
+#     "template": "{field} '{value}' already exists",
+#     "data": { "field": "name", "value": "err_demo_dup_agent_type" }
+#   }
+
+###############################################################################
+### 8) 400 schema ValidationError with an "errors" array (schema engine)
+###############################################################################
+### Setup: a provider and an agent type whose configurationSchema has a required
+### field, a numeric min validator, and an enum validator. Creating an agent
+### with a violating configuration returns one entry per failing property.
+
+### Provider
+# @name errProvider
+POST {{baseUrl}}/participants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Err Demo Provider {{$guid}}",
+  "status": "Enabled"
+}
+
+### Agent type with validators (fresh name each run)
+# @name errAgentType
+POST {{baseUrl}}/agent-types
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "err-demo-validated {{$guid}}",
+  "configurationSchema": {
+    "properties": {
+      "endpoint": { "type": "string", "label": "Endpoint", "required": true },
+      "port": {
+        "type": "integer",
+        "label": "Port",
+        "validators": [ { "type": "min", "config": { "value": 1024 } } ]
+      },
+      "tier": {
+        "type": "string",
+        "label": "Tier",
+        "validators": [ { "type": "enum", "config": { "values": ["gold", "silver"] } } ]
+      }
+    }
+  }
+}
+
+### Agent whose configuration breaks every rule: endpoint missing, port below
+### minimum, tier not in the enum.
+POST {{baseUrl}}/agents
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "err demo agent {{$guid}}",
+  "agentTypeId": "{{errAgentType.response.body.id}}",
+  "providerId": "{{errProvider.response.body.id}}",
+  "configuration": {
+    "port": 1,
+    "tier": "bronze"
+  }
+}
+# Expect: 400
+#   {
+#     "status": 400,
+#     "message": "validation failed",
+#     "errors": [
+#       { "path": "endpoint", "message": "required property is missing" },
+#       { "path": "port", "message": "value 1 is less than minimum 1024",
+#         "template": "value {value} is less than minimum {min}",
+#         "data": { "value": 1, "min": 1024 } },
+#       { "path": "tier", "message": "value not in allowed enum values gold, silver",
+#         "template": "value not in allowed enum values {values}",
+#         "data": { "values": ["gold", "silver"] } }
+#     ]
+#   }
+### NOTE: the engine wraps this ValidationError inside an InvalidInputError, so
+### the per-field "errors" array only survives because ErrDomain classifies it
+### with errors.As (see pkg/api/response_error.go).

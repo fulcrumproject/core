@@ -10,6 +10,7 @@ require (
 	github.com/go-chi/render v1.0.3
 	github.com/go-co-op/gocron/v2 v2.16.3
 	github.com/google/uuid v1.6.0
+	github.com/jackc/pgx/v5 v5.7.5
 	github.com/stretchr/testify v1.10.0
 	github.com/wI2L/jsondiff v0.7.0
 	gorm.io/datatypes v1.2.6
@@ -43,7 +44,6 @@ require (
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.7.5 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect

@@ -184,12 +184,7 @@ func (h *EventHandler) Lease(w http.ResponseWriter, r *http.Request) {
 		if errors.As(err, &invalidInputErr) &&
 			(strings.Contains(err.Error(), "lease is already held") ||
 				strings.Contains(err.Error(), "lease is not owned")) {
-			render.Render(w, r, &ErrRes{
-				Err:            err,
-				HTTPStatusCode: 409, // Conflict
-				StatusText:     "Lease Conflict",
-				ErrorText:      err.Error(),
-			})
+			render.Render(w, r, ErrConflict(err))
 			return
 		}
 		render.Render(w, r, ErrDomain(err))
@@ -270,12 +265,7 @@ func (h *EventHandler) Acknowledge(w http.ResponseWriter, r *http.Request) {
 			(strings.Contains(err.Error(), "no active lease") ||
 				strings.Contains(err.Error(), "lease is not owned") ||
 				strings.Contains(err.Error(), "cannot acknowledge sequence")) {
-			render.Render(w, r, &ErrRes{
-				Err:            err,
-				HTTPStatusCode: 409, // Conflict
-				StatusText:     "Acknowledgement Conflict",
-				ErrorText:      err.Error(),
-			})
+			render.Render(w, r, ErrConflict(err))
 			return
 		}
 		render.Render(w, r, ErrDomain(err))

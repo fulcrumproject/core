@@ -156,7 +156,7 @@ func mintBootstrapToken(ctx context.Context, store Store, entityID, providerID p
 		return nil, err
 	}
 	if err := token.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 	if err := store.TokenRepo().Create(ctx, token); err != nil {
 		return nil, err
@@ -193,7 +193,7 @@ func loadEntityCtx(ctx context.Context, store Store, entityType InstallTokenEnti
 			return entityCtx{}, err
 		}
 		if agent.AgentType == nil {
-			return entityCtx{}, NewInvalidInputErrorf("agent type not loaded for agent %s", entityID)
+			return entityCtx{}, NewInvalidInputError("agent type not loaded for agent '{id}'", MsgData{"id": entityID})
 		}
 		return entityCtx{
 			templates:  &agent.AgentType.TemplateValidation,
@@ -207,7 +207,7 @@ func loadEntityCtx(ctx context.Context, store Store, entityType InstallTokenEnti
 			return entityCtx{}, err
 		}
 		if infra.InfrastructureType == nil {
-			return entityCtx{}, NewInvalidInputErrorf("infrastructure type not loaded for infrastructure %s", entityID)
+			return entityCtx{}, NewInvalidInputError("infrastructure type not loaded for infrastructure '{id}'", MsgData{"id": entityID})
 		}
 		return entityCtx{
 			templates:  &infra.InfrastructureType.TemplateValidation,
@@ -216,7 +216,7 @@ func loadEntityCtx(ctx context.Context, store Store, entityType InstallTokenEnti
 			hydrate:    func(tok *InstallToken) { tok.Infrastructure = infra },
 		}, nil
 	default:
-		return entityCtx{}, NewInvalidInputErrorf("unknown install-token entity type %q", entityType)
+		return entityCtx{}, NewInvalidInputError("unknown install-token entity type '{entityType}'", MsgData{"entityType": entityType})
 	}
 }
 
@@ -252,11 +252,11 @@ func (c *installTokenCommander) Create(ctx context.Context, entityType InstallTo
 			return err
 		}
 		if !ec.templates.HasInstallTemplates() {
-			return NewInvalidInputErrorf("entity has no install templates configured")
+			return NewInvalidInputError("entity has no install templates configured", nil)
 		}
 
 		if _, existsErr := store.InstallTokenRepo().GetByEntity(ctx, entityType, entityID); existsErr == nil {
-			return NewConflictErrorf("install token already exists for %s %s", entityType, entityID)
+			return NewConflictError("install token already exists for {entityType} {entityID}", MsgData{"entityType": entityType, "entityID": entityID})
 		} else if !errors.As(existsErr, &NotFoundError{}) {
 			return existsErr
 		}
@@ -317,7 +317,7 @@ func (c *installTokenCommander) Regenerate(ctx context.Context, entityType Insta
 			return err
 		}
 		if !ec.templates.HasInstallTemplates() {
-			return NewInvalidInputErrorf("entity has no install templates configured")
+			return NewInvalidInputError("entity has no install templates configured", nil)
 		}
 
 		existing, err := store.InstallTokenRepo().GetByEntity(ctx, entityType, entityID)

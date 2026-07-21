@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log/slog"
 
 	"github.com/fulcrumproject/core/pkg/auth"
 	"github.com/fulcrumproject/core/pkg/authz"
@@ -18,6 +17,14 @@ type AuthzFilterApplier func(scope *auth.IdentityScope, db *gorm.DB) *gorm.DB
 
 type Tabler interface {
 	TableName() string
+}
+
+func notFoundByID(id properties.UUID, err error) domain.NotFoundError {
+	return domain.NotFoundError{
+		Err:      err,
+		Template: "resource with id '{id}' not found",
+		Data:     domain.MsgData{"id": id},
+	}
 }
 
 // GormRepository provides a base implementation of Repository using GORM
@@ -52,7 +59,7 @@ func NewGormRepository[T Tabler](
 func (r *GormRepository[T]) Create(ctx context.Context, entity *T) error {
 	result := r.db.WithContext(ctx).Create(entity)
 	if result.Error != nil {
-		return result.Error
+		return translatePgError(result.Error)
 	}
 	return nil
 }
@@ -60,7 +67,7 @@ func (r *GormRepository[T]) Create(ctx context.Context, entity *T) error {
 func (r *GormRepository[T]) Save(ctx context.Context, entity *T) error {
 	result := r.db.WithContext(ctx).Save(entity)
 	if result.Error != nil {
-		return result.Error
+		return translatePgError(result.Error)
 	}
 	return nil
 }
@@ -68,7 +75,7 @@ func (r *GormRepository[T]) Save(ctx context.Context, entity *T) error {
 func (r *GormRepository[T]) Delete(ctx context.Context, id properties.UUID) error {
 	result := r.db.WithContext(ctx).Delete(new(T), id)
 	if result.Error != nil {
-		return result.Error
+		return translatePgError(result.Error)
 	}
 	return nil
 }
@@ -85,7 +92,7 @@ func (r *GormRepository[T]) Get(ctx context.Context, id properties.UUID) (*T, er
 	err := db.Take(entity, entityValue.TableName()+".id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, domain.NotFoundError{Err: err}
+			return nil, notFoundByID(id, err)
 		}
 		return nil, err
 	}
@@ -167,7 +174,6 @@ func (r *GormRepository[T]) AuthScopeByFields(ctx context.Context, id properties
 	entity := new(T)
 	entityValue := *entity
 
-	slog.Info(entityValue.TableName())
 	err := r.db.
 		WithContext(ctx).
 		Table(entityValue.TableName()).
@@ -178,7 +184,7 @@ func (r *GormRepository[T]) AuthScopeByFields(ctx context.Context, id properties
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
-			return nil, domain.NotFoundError{Err: err}
+			return nil, notFoundByID(id, err)
 		}
 		return nil, err
 	}

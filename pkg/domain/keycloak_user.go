@@ -80,22 +80,22 @@ type CreateKeycloakUserParams struct {
 
 func (p *CreateKeycloakUserParams) Validate() error {
 	if p.Username == "" {
-		return NewInvalidInputErrorf("username is required")
+		return NewInvalidInputError("username is required", nil)
 	}
 	if p.Email == "" {
-		return NewInvalidInputErrorf("email is required")
+		return NewInvalidInputError("email is required", nil)
 	}
 	if p.FirstName == "" {
-		return NewInvalidInputErrorf("first name is required")
+		return NewInvalidInputError("first name is required", nil)
 	}
 	if p.LastName == "" {
-		return NewInvalidInputErrorf("last name is required")
+		return NewInvalidInputError("last name is required", nil)
 	}
 	if p.Password == "" {
-		return NewInvalidInputErrorf("password is required")
+		return NewInvalidInputError("password is required", nil)
 	}
 	if err := p.Role.Validate(); err != nil {
-		return NewInvalidInputErrorf("invalid role: %s", p.Role)
+		return NewInvalidInputError("invalid role '{role}'", MsgData{"role": p.Role})
 	}
 	return nil
 }
@@ -151,7 +151,7 @@ func (c *keycloakUserCommander) Create(ctx context.Context, params CreateKeycloa
 
 func (c *keycloakUserCommander) Update(ctx context.Context, id string, params UpdateKeycloakUserParams) (*KeycloakUser, error) {
 	if id == "" {
-		return nil, NewInvalidInputErrorf("keycloak user id is required")
+		return nil, NewInvalidInputError("keycloak user id is required", nil)
 	}
 	if params.Role != nil {
 		if err := c.validateRoleChange(ctx, &params); err != nil {
@@ -167,7 +167,7 @@ func (c *keycloakUserCommander) Update(ctx context.Context, id string, params Up
 
 func (c *keycloakUserCommander) Delete(ctx context.Context, id string) error {
 	if id == "" {
-		return NewInvalidInputErrorf("keycloak user id is required")
+		return NewInvalidInputError("keycloak user id is required", nil)
 	}
 	return c.adminClient.Delete(ctx, id)
 }
@@ -176,12 +176,12 @@ func (c *keycloakUserCommander) validateCreateRoleAttributes(ctx context.Context
 	switch params.Role {
 	case auth.RoleParticipant:
 		if params.ParticipantID == "" {
-			return NewInvalidInputErrorf("participantId is required for role participant")
+			return NewInvalidInputError("participantId is required for role participant", nil)
 		}
 		return c.validateEntityExists(ctx, params.ParticipantID, "participant", c.participantQuerier.Exists)
 	case auth.RoleAgent:
 		if params.AgentID == "" {
-			return NewInvalidInputErrorf("agentId is required for role agent")
+			return NewInvalidInputError("agentId is required for role agent", nil)
 		}
 		return c.validateEntityExists(ctx, params.AgentID, "agent", c.agentQuerier.Exists)
 	}
@@ -190,12 +190,12 @@ func (c *keycloakUserCommander) validateCreateRoleAttributes(ctx context.Context
 
 func (c *keycloakUserCommander) validateRoleChange(ctx context.Context, params *UpdateKeycloakUserParams) error {
 	if err := params.Role.Validate(); err != nil {
-		return NewInvalidInputErrorf("invalid role: %s", *params.Role)
+		return NewInvalidInputError("invalid role '{role}'", MsgData{"role": *params.Role})
 	}
 	switch *params.Role {
 	case auth.RoleParticipant:
 		if params.ParticipantID == nil || *params.ParticipantID == "" {
-			return NewInvalidInputErrorf("participantId is required for role participant")
+			return NewInvalidInputError("participantId is required for role participant", nil)
 		}
 		if err := c.validateEntityExists(ctx, *params.ParticipantID, "participant", c.participantQuerier.Exists); err != nil {
 			return err
@@ -203,7 +203,7 @@ func (c *keycloakUserCommander) validateRoleChange(ctx context.Context, params *
 		params.AgentID = helpers.StringPtr("")
 	case auth.RoleAgent:
 		if params.AgentID == nil || *params.AgentID == "" {
-			return NewInvalidInputErrorf("agentId is required for role agent")
+			return NewInvalidInputError("agentId is required for role agent", nil)
 		}
 		if err := c.validateEntityExists(ctx, *params.AgentID, "agent", c.agentQuerier.Exists); err != nil {
 			return err
@@ -223,7 +223,7 @@ func (c *keycloakUserCommander) validateAttributeOnlyUpdate(ctx context.Context,
 	}
 	if params.ParticipantID != nil && *params.ParticipantID != "" {
 		if !slices.Contains(currentUser.Roles, auth.RoleParticipant) {
-			return NewInvalidInputErrorf("participantId can only be set on users with role participant")
+			return NewInvalidInputError("participantId can only be set on users with role participant", nil)
 		}
 		if err := c.validateEntityExists(ctx, *params.ParticipantID, "participant", c.participantQuerier.Exists); err != nil {
 			return err
@@ -231,7 +231,7 @@ func (c *keycloakUserCommander) validateAttributeOnlyUpdate(ctx context.Context,
 	}
 	if params.AgentID != nil && *params.AgentID != "" {
 		if !slices.Contains(currentUser.Roles, auth.RoleAgent) {
-			return NewInvalidInputErrorf("agentId can only be set on users with role agent")
+			return NewInvalidInputError("agentId can only be set on users with role agent", nil)
 		}
 		if err := c.validateEntityExists(ctx, *params.AgentID, "agent", c.agentQuerier.Exists); err != nil {
 			return err
@@ -244,14 +244,14 @@ func (c *keycloakUserCommander) validateAttributeOnlyUpdate(ctx context.Context,
 func (c *keycloakUserCommander) validateEntityExists(ctx context.Context, rawID string, entityName string, existsFn func(context.Context, properties.UUID) (bool, error)) error {
 	id, err := properties.ParseUUID(rawID)
 	if err != nil {
-		return NewInvalidInputErrorf("invalid %s id: %s", entityName, rawID)
+		return NewInvalidInputError("invalid {entityName} id '{id}'", MsgData{"entityName": entityName, "id": rawID})
 	}
 	exists, err := existsFn(ctx, id)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		return NewInvalidInputErrorf("%s with id %s not found", entityName, rawID)
+		return NewInvalidInputError("{entityName} with id '{id}' not found", MsgData{"entityName": entityName, "id": rawID})
 	}
 	return nil
 }

@@ -42,10 +42,10 @@ func (f *DefaultGeneratorFactory) CreateGenerator(pool *ServicePool) (PoolGenera
 		return NewListGenerator(f.valueRepo, pool.ID), nil
 	case PoolGeneratorSubnet:
 		if pool.GeneratorConfig == nil {
-			return nil, NewInvalidInputErrorf("subnet pool missing generator config")
+			return nil, NewInvalidInputError("subnet pool missing generator config", nil)
 		}
 		return NewSubnetGenerator(f.valueRepo, pool.ID, pool.ParticipantID, *pool.GeneratorConfig), nil
 	default:
-		return nil, NewInvalidInputErrorf("unsupported pool generator type: %s", pool.GeneratorType)
+		return nil, NewInvalidInputError("unsupported pool generator type: {type}", MsgData{"type": pool.GeneratorType})
 	}
 }

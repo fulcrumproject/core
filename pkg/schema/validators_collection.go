@@ -29,7 +29,10 @@ func (v *EnumValidator[C]) Validate(ctx context.Context, schemaCtx C, operation 
 		}
 	}
 
-	return fmt.Errorf("%s: value not in allowed enum values", propPath)
+	return PropError{
+		Template: "value not in allowed enum values {values}",
+		Data:     map[string]any{"values": valuesSlice},
+	}
 }
 
 func (v *EnumValidator[C]) ValidateConfig(propPath string, config map[string]any) error {
@@ -60,7 +63,10 @@ func (v *MinItemsValidator[C]) Validate(ctx context.Context, schemaCtx C, operat
 	}
 
 	if len(arr) < minInt {
-		return fmt.Errorf("%s: array length %d is less than minimum %d", propPath, len(arr), minInt)
+		return PropError{
+			Template: "array length {length} is less than minimum {min}",
+			Data:     map[string]any{"length": len(arr), "min": minInt},
+		}
 	}
 
 	return nil
@@ -86,7 +92,10 @@ func (v *MaxItemsValidator[C]) Validate(ctx context.Context, schemaCtx C, operat
 	}
 
 	if len(arr) > maxInt {
-		return fmt.Errorf("%s: array length %d exceeds maximum %d", propPath, len(arr), maxInt)
+		return PropError{
+			Template: "array length {length} exceeds maximum {max}",
+			Data:     map[string]any{"length": len(arr), "max": maxInt},
+		}
 	}
 
 	return nil

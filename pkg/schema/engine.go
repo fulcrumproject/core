@@ -212,10 +212,7 @@ func (e *Engine[C]) apply(
 
 		finalValue, err := e.processProperty(ctx, schemaCtx, operation, propName, propDef, oldValue, newValue)
 		if err != nil {
-			validationErrors = append(validationErrors, ValidationErrorDetail{
-				Path:    propName,
-				Message: err.Error(),
-			})
+			validationErrors = append(validationErrors, newValidationErrorDetail(propName, err))
 			continue
 		}
 
@@ -232,10 +229,7 @@ func (e *Engine[C]) apply(
 
 	// Run schema-level validators (cross-property validation)
 	if err := e.validateSchema(ctx, schemaCtx, operation, schema.Validators, oldProperties, result); err != nil {
-		validationErrors = append(validationErrors, ValidationErrorDetail{
-			Path:    "",
-			Message: err.Error(),
-		})
+		validationErrors = append(validationErrors, newValidationErrorDetail("", err))
 	}
 
 	// Return all validation errors at once
@@ -263,7 +257,7 @@ func (e *Engine[C]) processProperty(
 	}
 
 	// 2. Check immutability (hard constraint on property itself)
-	if err := e.checkImmutability(operation, propName, propDef, oldValue, newValue); err != nil {
+	if err := e.checkImmutability(operation, propDef, oldValue, newValue); err != nil {
 		return nil, err
 	}
 
@@ -311,7 +305,6 @@ func isVaultReference(value any, secretConfig *SecretConfig) bool {
 // checkImmutability verifies immutability constraints
 func (e *Engine[C]) checkImmutability(
 	operation Operation,
-	propName string,
 	propDef PropertyDefinition,
 	oldValue, newValue any,
 ) error {
@@ -323,7 +316,7 @@ func (e *Engine[C]) checkImmutability(
 	if propDef.Immutable && newValue != nil && oldValue != nil && operation == OperationUpdate {
 		// Check if the value is actually changing
 		if !reflect.DeepEqual(oldValue, newValue) {
-			return fmt.Errorf("%s: property is immutable and cannot be changed", propName)
+			return PropError{Template: "property is immutable and cannot be changed"}
 		}
 		// If values are equal, allow it (no-op update)
 	}

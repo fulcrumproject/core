@@ -40,16 +40,16 @@ func (ServiceOptionType) TableName() string {
 // Validate ensures all ServiceOptionType fields are valid
 func (sot *ServiceOptionType) Validate() error {
 	if sot.Name == "" {
-		return fmt.Errorf("service option type name cannot be empty")
+		return NewInvalidInputError("service option type name cannot be empty", nil)
 	}
 	if sot.Type == "" {
-		return fmt.Errorf("service option type type cannot be empty")
+		return NewInvalidInputError("service option type type cannot be empty", nil)
 	}
 
 	// Type must be alphanumeric and underscores only
 	validType := regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
 	if !validType.MatchString(sot.Type) {
-		return fmt.Errorf("service option type type must contain only alphanumeric characters and underscores")
+		return NewInvalidInputError("service option type type must contain only alphanumeric characters and underscores", nil)
 	}
 
 	return nil
@@ -123,7 +123,7 @@ func (c *serviceOptionTypeCommander) Create(
 	err := c.store.Atomic(ctx, func(store Store) error {
 		optionType = NewServiceOptionType(params)
 		if err := optionType.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 
 		if err := store.ServiceOptionTypeRepo().Create(ctx, optionType); err != nil {
@@ -163,7 +163,7 @@ func (c *serviceOptionTypeCommander) Update(
 	// Update and validate
 	optionType.Update(params)
 	if err := optionType.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	// Save and event
@@ -202,7 +202,7 @@ func (c *serviceOptionTypeCommander) Delete(ctx context.Context, id properties.U
 			return fmt.Errorf("failed to count service options for type %s: %w", id, err)
 		}
 		if optionCount > 0 {
-			return NewInvalidInputErrorf("cannot delete service option type %s: %d dependent service option(s) exist", id, optionCount)
+			return NewInvalidInputError("cannot delete service option type '{id}': {count} dependent service option(s) exist", MsgData{"id": id, "count": optionCount})
 		}
 
 		eventEntry, err := NewEvent(EventTypeServiceOptionTypeDeleted, WithInitiatorCtx(ctx), WithServiceOptionType(optionType))
@@ -220,4 +220,3 @@ func (c *serviceOptionTypeCommander) Delete(ctx context.Context, id properties.U
 		return nil
 	})
 }
-

@@ -26,10 +26,10 @@ func parseRetention(cfg properties.JSON) (time.Duration, error) {
 	}
 	n, ok := toInt(raw)
 	if !ok {
-		return 0, NewInvalidInputErrorf("%s must be an integer number of seconds", retentionConfigKey)
+		return 0, NewInvalidInputError("{key} must be an integer number of seconds", MsgData{"key": retentionConfigKey})
 	}
 	if n < 0 {
-		return 0, NewInvalidInputErrorf("%s must be higher than 0", retentionConfigKey)
+		return 0, NewInvalidInputError("{key} must be higher than 0", MsgData{"key": retentionConfigKey})
 	}
 	return time.Duration(n) * time.Second, nil
 }
@@ -43,7 +43,7 @@ func parseNeverReallocate(cfg properties.JSON) (bool, error) {
 	}
 	b, ok := raw.(bool)
 	if !ok {
-		return false, NewInvalidInputErrorf("%s must be a boolean", neverReallocateConfigKey)
+		return false, NewInvalidInputError("{key} must be a boolean", MsgData{"key": neverReallocateConfigKey})
 	}
 	return b, nil
 }
@@ -89,7 +89,7 @@ func (p *PoolListGenerator[V]) Allocate(ctx context.Context, entityID properties
 	}
 
 	if len(availableValues) == 0 {
-		return nil, NewInvalidInputErrorf("no available values in pool")
+		return nil, NewInvalidInputError("no available values in pool", nil)
 	}
 
 	value := availableValues[0]

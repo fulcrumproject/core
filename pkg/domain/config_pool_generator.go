@@ -41,16 +41,16 @@ func (f *DefaultConfigPoolGeneratorFactory) CreateGenerator(pool *ConfigPool) (C
 		return NewConfigPoolListGenerator(f.valueRepo, pool.ID), nil
 	case PoolGeneratorRange:
 		if pool.GeneratorConfig == nil {
-			return nil, NewInvalidInputErrorf("range config pool missing generatorConfig")
+			return nil, NewInvalidInputError("range config pool missing generatorConfig", nil)
 		}
 		return NewConfigPoolRangeGenerator(f.valueRepo, pool.ID, pool.ParticipantID, *pool.GeneratorConfig), nil
 	case PoolGeneratorSubnet:
 		if pool.GeneratorConfig == nil {
-			return nil, NewInvalidInputErrorf("subnet config pool missing generatorConfig")
+			return nil, NewInvalidInputError("subnet config pool missing generatorConfig", nil)
 		}
 		return NewConfigPoolSubnetGenerator(f.valueRepo, pool.ID, pool.ParticipantID, *pool.GeneratorConfig), nil
 	default:
-		return nil, NewInvalidInputErrorf("unsupported config pool generator type: %s", pool.GeneratorType)
+		return nil, NewInvalidInputError("unsupported config pool generator type: {type}", MsgData{"type": pool.GeneratorType})
 	}
 }
 

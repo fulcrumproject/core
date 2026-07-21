@@ -67,15 +67,18 @@ func configPoolScopeDesc(participantID *properties.UUID) string {
 
 func (cp *ConfigPool) Validate() error {
 	if cp.Name == "" {
-		return fmt.Errorf("config pool name cannot be empty")
+		return NewInvalidInputError("config pool name cannot be empty", nil)
 	}
 
 	if cp.Type == "" {
-		return fmt.Errorf("config pool type cannot be empty")
+		return NewInvalidInputError("config pool type cannot be empty", nil)
 	}
 
 	if !slices.Contains(ValidPoolPropertyTypes, cp.PropertyType) {
-		return fmt.Errorf("invalid property type: %s (must be one of: %v)", cp.PropertyType, ValidPoolPropertyTypes)
+		return NewInvalidInputError(
+			"invalid property type '{propertyType}' (must be one of {allowed})",
+			MsgData{"propertyType": cp.PropertyType, "allowed": ValidPoolPropertyTypes},
+		)
 	}
 
 	if err := cp.GeneratorType.Validate(); err != nil {
@@ -85,7 +88,10 @@ func (cp *ConfigPool) Validate() error {
 	switch cp.GeneratorType {
 	case PoolGeneratorRange, PoolGeneratorSubnet:
 		if cp.GeneratorConfig == nil {
-			return fmt.Errorf("%s generator requires generatorConfig", cp.GeneratorType)
+			return NewInvalidInputError(
+				"{generator} generator requires generatorConfig",
+				MsgData{"generator": string(cp.GeneratorType)},
+			)
 		}
 		var err error
 		if cp.GeneratorType == PoolGeneratorRange {
@@ -152,7 +158,7 @@ func (c *configPoolCommander) Create(
 	err := c.store.Atomic(ctx, func(store Store) error {
 		pool = NewConfigPool(params)
 		if err := pool.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 
 		conflict, err := store.ConfigPoolRepo().FindByTypeAndProvider(ctx, pool.Type, pool.ParticipantID)
@@ -162,9 +168,9 @@ func (c *configPoolCommander) Create(
 				return err
 			}
 		} else if conflict != nil {
-			return NewInvalidInputErrorf(
-				"config pool with type %q already exists in %s scope",
-				pool.Type, configPoolScopeDesc(conflict.ParticipantID),
+			return NewConflictError(
+				"config pool with type '{type}' already exists in {scope} scope",
+				MsgData{"type": pool.Type, "scope": configPoolScopeDesc(conflict.ParticipantID)},
 			)
 		}
 
@@ -209,7 +215,7 @@ func (c *configPoolCommander) Update(
 		pool.Update(params)
 
 		if err := pool.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 
 		if err := store.ConfigPoolRepo().Update(ctx, pool); err != nil {
@@ -251,7 +257,10 @@ func (c *configPoolCommander) Delete(
 		}
 
 		if poolValues > 0 {
-			return NewInvalidInputErrorf("cannot delete config pool %s: %d dependent value(s) exist", id, poolValues)
+			return NewInvalidInputError(
+				"cannot delete config pool {id}: {count} dependent value(s) exist",
+				MsgData{"id": id, "count": poolValues},
+			)
 		}
 
 		eventEntity, err := NewEvent(EventTypeConfigPoolDeleted, WithInitiatorCtx(ctx), WithConfigPool(pool))
