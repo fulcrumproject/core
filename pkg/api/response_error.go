@@ -42,9 +42,8 @@ func ErrInvalidRequest(err error) render.Renderer {
 
 func ErrNotFound() render.Renderer {
 	return &response.ErrRes{
-		HTTPStatusCode: http.StatusNotFound,
-		Status:         http.StatusNotFound,
-		Message:        "resource not found",
+		Status:  http.StatusNotFound,
+		Message: "resource not found",
 	}
 }
 
@@ -54,9 +53,8 @@ func ErrInternal(err error) render.Renderer {
 
 func ErrUnauthenticated() render.Renderer {
 	return &response.ErrRes{
-		HTTPStatusCode: http.StatusUnauthorized,
-		Status:         http.StatusUnauthorized,
-		Message:        "authentication required",
+		Status:  http.StatusUnauthorized,
+		Message: "authentication required",
 	}
 }
 
@@ -77,10 +75,8 @@ func ErrValidation(err schema.ValidationError) render.Renderer {
 		})
 	}
 	return &response.ErrRes{
-		Err:            err,
-		HTTPStatusCode: http.StatusBadRequest,
-		Status:         http.StatusBadRequest,
-		Message:        "validation failed",
-		Errors:         details,
+		Status:  http.StatusBadRequest,
+		Message: "validation failed",
+		Errors:  details,
 	}
 }

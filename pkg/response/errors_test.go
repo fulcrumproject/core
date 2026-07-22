@@ -19,17 +19,17 @@ func TestErrResponse_Render(t *testing.T) {
 	}{
 		{
 			name:           "Bad Request",
-			errResponse:    &ErrRes{HTTPStatusCode: http.StatusBadRequest},
+			errResponse:    &ErrRes{Status: http.StatusBadRequest},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "Not Found",
-			errResponse:    &ErrRes{HTTPStatusCode: http.StatusNotFound},
+			errResponse:    &ErrRes{Status: http.StatusNotFound},
 			expectedStatus: http.StatusNotFound,
 		},
 		{
 			name:           "Internal Server Error",
-			errResponse:    &ErrRes{HTTPStatusCode: http.StatusInternalServerError},
+			errResponse:    &ErrRes{Status: http.StatusInternalServerError},
 			expectedStatus: http.StatusInternalServerError,
 		},
 	}
@@ -64,7 +64,6 @@ func TestErrConstructors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, ok := tt.renderer.(*ErrRes)
 			require.True(t, ok, "expected *ErrRes")
-			assert.Equal(t, tt.wantStatus, res.HTTPStatusCode)
 			assert.Equal(t, tt.wantStatus, res.Status)
 			assert.Equal(t, tt.wantErr.Error(), res.Message)
 			assert.Empty(t, res.Errors)
