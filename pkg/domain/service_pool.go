@@ -34,7 +34,7 @@ func (t PoolGeneratorType) Validate() error {
 	case PoolGeneratorList, PoolGeneratorSubnet, PoolGeneratorRange:
 		return nil
 	default:
-		return fmt.Errorf("invalid generator type: %s", t)
+		return NewInvalidInputError("invalid generator type '{type}'", MsgData{"type": string(t)})
 	}
 }
 
@@ -89,14 +89,17 @@ func (ServicePool) TableName() string {
 // Validate ensures all ServicePool fields are valid
 func (sp *ServicePool) Validate() error {
 	if sp.Name == "" {
-		return fmt.Errorf("pool name cannot be empty")
+		return NewInvalidInputError("pool name cannot be empty", nil)
 	}
 	if sp.Type == "" {
-		return fmt.Errorf("pool type cannot be empty")
+		return NewInvalidInputError("pool type cannot be empty", nil)
 	}
 
 	if !slices.Contains(ValidPoolPropertyTypes, sp.PropertyType) {
-		return fmt.Errorf("invalid property type: %s (must be one of: %v)", sp.PropertyType, ValidPoolPropertyTypes)
+		return NewInvalidInputError(
+			"invalid property type '{propertyType}' (must be one of {allowed})",
+			MsgData{"propertyType": sp.PropertyType, "allowed": ValidPoolPropertyTypes},
+		)
 	}
 
 	if err := sp.GeneratorType.Validate(); err != nil {
@@ -111,7 +114,7 @@ func (sp *ServicePool) Validate() error {
 		}
 	}
 	if sp.ServicePoolSetID == (properties.UUID{}) {
-		return fmt.Errorf("service pool set ID cannot be empty")
+		return NewInvalidInputError("service pool set ID cannot be empty", nil)
 	}
 	return nil
 }
@@ -172,7 +175,10 @@ func (c *servicePoolCommander) Create(
 		if err != nil {
 			var notFound NotFoundError
 			if errors.As(err, &notFound) {
-				return NewNotFoundErrorf("service pool set with id %s not found", params.ServicePoolSetID)
+				return NewNotFoundError(
+					"service pool set with id {id} not found",
+					MsgData{"id": params.ServicePoolSetID},
+				)
 			}
 			return err
 		}
@@ -181,7 +187,7 @@ func (c *servicePoolCommander) Create(
 		pool = NewServicePool(params)
 		pool.ParticipantID = &poolSet.ProviderID
 		if err := pool.Validate(); err != nil {
-			return err
+			return asInvalidInput(err)
 		}
 
 		// Type must be unique per provider — the pool resolver matches by type
@@ -194,7 +200,10 @@ func (c *servicePoolCommander) Create(
 				return err
 			}
 		} else if existing != nil {
-			return NewInvalidInputErrorf("service pool with type %q already exists for this provider", pool.Type)
+			return NewConflictError(
+				"service pool with type '{type}' already exists for this provider",
+				MsgData{"type": pool.Type},
+			)
 		}
 
 		// Save to database
@@ -282,7 +291,7 @@ func (c *servicePoolCommander) Delete(
 			return err
 		}
 		if pool.ID != id {
-			return NewNotFoundErrorf("service pool with id %s not found", id)
+			return NewNotFoundError("service pool with id {id} not found", MsgData{"id": id})
 		}
 
 		poolValues, err := store.ServicePoolValueRepo().CountByPool(ctx, pool.ID)
@@ -291,7 +300,10 @@ func (c *servicePoolCommander) Delete(
 		}
 
 		if poolValues > 0 {
-			return NewInvalidInputErrorf("cannot delete service pool %s: %d dependent value(s) exist", id, poolValues)
+			return NewInvalidInputError(
+				"cannot delete service pool {id}: {count} dependent value(s) exist",
+				MsgData{"id": id, "count": poolValues},
+			)
 		}
 
 		eventEntity, err := NewEvent(EventTypeServicePoolDeleted, WithInitiatorCtx(ctx), WithServicePool(pool))

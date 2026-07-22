@@ -25,7 +25,7 @@ func (s ParticipantStatus) Validate() error {
 	case ParticipantEnabled, ParticipantDisabled:
 		return nil
 	default:
-		return fmt.Errorf("invalid participant status: %s", s)
+		return NewInvalidInputError("invalid participant status '{status}'", MsgData{"status": s})
 	}
 }
 
@@ -65,7 +65,7 @@ func (Participant) TableName() string {
 // Validate ensures all Participant fields are valid
 func (p *Participant) Validate() error {
 	if p.Name == "" {
-		return fmt.Errorf("participant name cannot be empty")
+		return NewInvalidInputError("participant name cannot be empty", nil)
 	}
 	if err := p.Status.Validate(); err != nil {
 		return err
@@ -128,7 +128,7 @@ func (c *participantCommander) Create(
 	err := c.store.Atomic(ctx, func(store Store) error {
 		participant = NewParticipant(params)
 		if err := participant.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 		if err := store.ParticipantRepo().Create(ctx, participant); err != nil {
 			return err
@@ -160,7 +160,7 @@ func (c *participantCommander) Update(
 
 	participant.Update(params)
 	if err := participant.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	err = c.store.Atomic(ctx, func(store Store) error {
@@ -196,7 +196,7 @@ func (c *participantCommander) Delete(ctx context.Context, id properties.UUID) e
 			return fmt.Errorf("failed to count agents for participant %s: %w", id, err)
 		}
 		if agentCount > 0 {
-			return NewInvalidInputErrorf("cannot delete participant %s: %d dependent agent(s) exist", id, agentCount)
+			return NewInvalidInputError("cannot delete participant '{id}': {count} dependent agent(s) exist", MsgData{"id": id, "count": agentCount})
 		}
 
 		eventEntry, err := NewEvent(EventTypeParticipantDeleted, WithInitiatorCtx(ctx), WithParticipant(participant))

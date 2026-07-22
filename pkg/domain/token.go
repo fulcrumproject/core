@@ -66,14 +66,14 @@ func NewToken(
 				return nil, err
 			}
 			if !exists {
-				return nil, NewInvalidInputErrorf("invalid participant ID: %v", params.ScopeID)
+				return nil, NewInvalidInputError("invalid participant ID '{id}'", MsgData{"id": *params.ScopeID})
 			}
 			token.ParticipantID = params.ScopeID
 		case auth.RoleAgent:
 			// Validate agent exists, set agent ID, and copy the participant ID from the agent
 			agent, err := store.AgentRepo().Get(ctx, *params.ScopeID)
 			if err != nil {
-				return nil, NewInvalidInputErrorf("invalid agent ID: %v", err)
+				return nil, NewInvalidInputError("invalid agent ID '{id}'", MsgData{"id": *params.ScopeID})
 			}
 			token.AgentID = params.ScopeID
 			token.ParticipantID = &agent.ProviderID
@@ -87,7 +87,7 @@ func NewToken(
 
 	// Validate again after setting scope IDs and generating token
 	if err := token.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	return token, nil
@@ -101,16 +101,16 @@ func (Token) TableName() string {
 // Validate ensures all Token fields are valid
 func (t *Token) Validate() error {
 	if t.Name == "" {
-		return fmt.Errorf("token name cannot be empty")
+		return NewInvalidInputError("token name cannot be empty", nil)
 	}
 	if t.HashedValue == "" {
-		return fmt.Errorf("token hashed value cannot be empty")
+		return NewInvalidInputError("token hashed value cannot be empty", nil)
 	}
 	if err := t.Role.Validate(); err != nil {
 		return err
 	}
 	if t.ExpireAt.IsZero() {
-		return fmt.Errorf("token expire at cannot be empty")
+		return NewInvalidInputError("token expire at cannot be empty", nil)
 	}
 
 	// Validate scope ID based on role
@@ -118,23 +118,23 @@ func (t *Token) Validate() error {
 	case auth.RoleAdmin:
 		// No scope ID needed for admin
 		if t.ParticipantID != nil || t.AgentID != nil { // Updated to check ParticipantID
-			return fmt.Errorf("fulcrum admin tokens should not have any scope IDs")
+			return NewInvalidInputError("fulcrum admin tokens should not have any scope IDs", nil)
 		}
 	case auth.RoleParticipant: // New Role (assuming it's defined)
 		// Participant ID required for participant role
 		if t.ParticipantID == nil {
-			return fmt.Errorf("participant ID is required for participant role")
+			return NewInvalidInputError("participant ID is required for participant role", nil)
 		}
 		if t.AgentID != nil {
-			return fmt.Errorf("participant tokens should only have participant ID set")
+			return NewInvalidInputError("participant tokens should only have participant ID set", nil)
 		}
 	case auth.RoleAgent:
 		// Agent ID and ParticipantID (from agent) required for agent role
 		if t.AgentID == nil {
-			return fmt.Errorf("agent ID is required for agent role")
+			return NewInvalidInputError("agent ID is required for agent role", nil)
 		}
 		if t.ParticipantID == nil { // Agent's ParticipantID
-			return fmt.Errorf("participant ID is required for agent role")
+			return NewInvalidInputError("participant ID is required for agent role", nil)
 		}
 	}
 

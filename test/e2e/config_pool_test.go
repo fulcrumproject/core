@@ -165,7 +165,7 @@ func testConfigPool(t *testing.T, env *Env) {
 				}).
 				Post("/config-pools")
 			require.NoError(t, err)
-			require.Equalf(t, http.StatusBadRequest, resp.StatusCode(), "body: %s", resp.String())
+			require.Equalf(t, http.StatusConflict, resp.StatusCode(), "body: %s", resp.String())
 			require.Contains(t, resp.String(), "already exists in global scope")
 		})
 
@@ -191,7 +191,7 @@ func testConfigPool(t *testing.T, env *Env) {
 				}).
 				Post("/config-pools")
 			require.NoError(t, err)
-			require.Equalf(t, http.StatusBadRequest, resp.StatusCode(), "body: %s", resp.String())
+			require.Equalf(t, http.StatusConflict, resp.StatusCode(), "body: %s", resp.String())
 			require.Contains(t, resp.String(), "participant "+providerID.String())
 		})
 	})

@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
@@ -50,4 +51,31 @@ func testServicePool(t *testing.T, env *Env) {
 
 	testhelpers.MustDelete(t, env.AdminClient, "/service-pools", created.ID)
 	testhelpers.AssertGone(t, env.AdminClient, "/service-pools", created.ID)
+
+	t.Run("duplicate type conflicts", func(t *testing.T) {
+		dupType := "type_dup_" + testhelpers.Uniq()
+		first := testhelpers.MustPost[api.CreateServicePoolReq, api.ServicePoolRes](t, env.AdminClient, "/service-pools", api.CreateServicePoolReq{
+			Name:             "sp-" + testhelpers.Uniq(),
+			Type:             dupType,
+			PropertyType:     "string",
+			GeneratorType:    domain.PoolGeneratorList,
+			ServicePoolSetID: env.Seed.ServicePoolSet.ID,
+		})
+		t.Cleanup(func() {
+			testhelpers.MustDelete(t, env.AdminClient, "/service-pools", first.ID)
+		})
+
+		resp, err := env.AdminClient.R().
+			SetBody(api.CreateServicePoolReq{
+				Name:             "sp-" + testhelpers.Uniq(),
+				Type:             dupType,
+				PropertyType:     "string",
+				GeneratorType:    domain.PoolGeneratorList,
+				ServicePoolSetID: env.Seed.ServicePoolSet.ID,
+			}).
+			Post("/service-pools")
+		require.NoError(t, err)
+		require.Equalf(t, http.StatusConflict, resp.StatusCode(), "body: %s", resp.String())
+		require.Contains(t, resp.String(), "already exists for this provider")
+	})
 }

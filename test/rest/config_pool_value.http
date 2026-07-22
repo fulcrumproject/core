@@ -407,7 +407,7 @@ Content-Type: application/json
 @scopedGenProviderId = {{createScopedGenProvider.response.body.$.id}}
 
 ### CONFLICT: provider attempts to create a participant pool of type T — expect
-### 400 with body "...already exists in global scope"
+### 409 with body "...already exists in global scope"
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -436,7 +436,7 @@ Content-Type: application/json
 
 @scopedGenProviderPool2Id = {{createScopedGenProviderPool2.response.body.$.id}}
 
-### CONFLICT: admin attempts to create a global pool of type T2 — expect 400
+### CONFLICT: admin attempts to create a global pool of type T2 — expect 409
 ### with body "...already exists in participant <scopedGenProviderId> scope"
 POST {{baseUrl}}/config-pools
 Authorization: Bearer {{adminToken}}

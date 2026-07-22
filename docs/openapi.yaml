@@ -1535,6 +1535,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /config-pools/{id}:
     get:
       operationId: configPoolsGet
@@ -3812,6 +3814,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /service-pools/{id}:
     get:
       operationId: servicePoolsGet
@@ -4874,8 +4878,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorRes'
               example:
-                status: Not found
-                error: Secret with reference 'abc123' not found
+                status: 404
+                message: Secret with reference 'abc123' not found
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
@@ -5257,15 +5261,28 @@ components:
           description: Optional lifecycle schema defining states, actions, and transitions for services of this type
     ErrorRes:
       type: object
+      required:
+        - status
+        - message
       properties:
         status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        message:
           type: string
-          description: User-level status message
-          example: Invalid request
-        error:
+          description: Human-readable error message
+          example: provider with ID '123e4567-e89b-12d3-a456-426614174000' does not exist
+        template:
           type: string
-          description: Application-level error message
-          example: The field 'name' is required
+          description: Message template with {placeholder} tokens, present only when the message was interpolated from structured data (enables client-side localization).
+          example: provider with ID {providerId} does not exist
+        data:
+          type: object
+          additionalProperties: true
+          description: Interpolation values for the template placeholders
+          example:
+            providerId: 123e4567-e89b-12d3-a456-426614174000
     EventAckReq:
       type: object
       required:
@@ -6879,22 +6896,38 @@ components:
         message:
           type: string
           description: The validation error message
-          example: 'cpu: value must be one of: [1, 2, 4, 8, 16, 32]'
+          example: value not in allowed enum values 1, 2, 4, 8, 16, 32
+        template:
+          type: string
+          description: Message template with {placeholder} tokens, present only when the message was interpolated from structured data.
+          example: value not in allowed enum values {values}
+        data:
+          type: object
+          additionalProperties: true
+          description: Interpolation values for the template placeholders
+          example:
+            values:
+              - 1
+              - 2
+              - 4
+              - 8
+              - 16
+              - 32
     ValidationErrRes:
       type: object
       required:
         - status
-        - valid
+        - message
         - errors
       properties:
         status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        message:
           type: string
-          description: User-level status message
-          example: Validation failed
-        valid:
-          type: boolean
-          description: Whether the validation passed
-          example: false
+          description: Human-readable summary of the failure
+          example: validation failed
         errors:
           type: array
           items:
@@ -6926,6 +6959,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorRes'
+    Conflict:
+      description: Conflict - the request conflicts with the current state of the resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRes'
     ValidationErrors:
       description: Validation errors - request contains invalid or missing required fields
       content:
@@ -6933,10 +6972,19 @@ components:
           schema:
             $ref: '#/components/schemas/ValidationErrRes'
           example:
-            status: Validation failed
-            valid: false
+            status: 400
+            message: validation failed
             errors:
               - path: cpu
-                message: 'cpu: value must be one of: [1, 2, 4, 8, 16, 32]'
+                message: value not in allowed enum values 1, 2, 4, 8, 16, 32
+                template: value not in allowed enum values {values}
+                data:
+                  values:
+                    - 1
+                    - 2
+                    - 4
+                    - 8
+                    - 16
+                    - 32
               - path: memory
-                message: 'memory: property is required'
+                message: property is required

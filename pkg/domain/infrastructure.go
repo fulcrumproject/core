@@ -51,13 +51,13 @@ func (Infrastructure) TableName() string {
 // Validate ensures all infrastructure fields are valid
 func (i *Infrastructure) Validate() error {
 	if i.Name == "" {
-		return fmt.Errorf("infrastructure name cannot be empty")
+		return NewInvalidInputError("infrastructure name cannot be empty", nil)
 	}
 	if i.InfrastructureTypeID == uuid.Nil {
-		return fmt.Errorf("infrastructure type ID cannot be empty")
+		return NewInvalidInputError("infrastructure type ID cannot be empty", nil)
 	}
 	if i.ProviderID == uuid.Nil {
-		return fmt.Errorf("provider ID cannot be empty")
+		return NewInvalidInputError("provider ID cannot be empty", nil)
 	}
 	return nil
 }
@@ -118,14 +118,14 @@ func (c *infrastructureCommander) Create(
 		return nil, err
 	}
 	if !providerExists {
-		return nil, NewInvalidInputErrorf("provider with ID %s does not exist", params.ProviderID)
+		return nil, NewInvalidInputError("provider with ID {providerId} does not exist", MsgData{"providerId": params.ProviderID})
 	}
 
 	infraType, err := c.store.InfrastructureTypeRepo().Get(ctx, params.InfrastructureTypeID)
 	if err != nil {
 		var nfe NotFoundError
 		if errors.As(err, &nfe) {
-			return nil, NewInvalidInputErrorf("infrastructure type with ID %s does not exist", params.InfrastructureTypeID)
+			return nil, NewInvalidInputError("infrastructure type with ID {infrastructureTypeId} does not exist", MsgData{"infrastructureTypeId": params.InfrastructureTypeID})
 		}
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func (c *infrastructureCommander) Create(
 		}
 
 		if err := infra.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 		if err := store.InfrastructureRepo().Create(ctx, infra); err != nil {
 			return err
@@ -222,7 +222,7 @@ func (c *infrastructureCommander) Update(
 		}
 
 		if err := infra.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 		if err := store.InfrastructureRepo().Save(ctx, infra); err != nil {
 			return err
@@ -252,7 +252,7 @@ func (c *infrastructureCommander) Delete(ctx context.Context, id properties.UUID
 			return fmt.Errorf("failed to count agents for infrastructure %s: %w", id, err)
 		}
 		if agentCount > 0 {
-			return NewInvalidInputErrorf("cannot delete infrastructure %s: %d dependent agent(s) exist", id, agentCount)
+			return NewInvalidInputError("cannot delete infrastructure {id}: {count} dependent agent(s) exist", MsgData{"id": id, "count": agentCount})
 		}
 
 		// Release any ConfigPoolValue rows allocated to this infrastructure. Dispatched per pool via

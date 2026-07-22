@@ -79,7 +79,7 @@ func (g *ConfigPoolRangeGenerator) Allocate(ctx context.Context, entityType Conf
 		}
 		return value.RawValue(), nil
 	}
-	return nil, NewInvalidInputErrorf("range exhausted: no available values in pool")
+	return nil, NewInvalidInputError("range exhausted: no available values in pool", nil)
 }
 
 func (g *ConfigPoolRangeGenerator) Release(ctx context.Context, values []*ConfigPoolValue) error {
@@ -94,25 +94,28 @@ func validateRangeGeneratorConfig(cfg properties.JSON) error {
 func parseRangeConfig(cfg properties.JSON) (int, int, map[int]bool, error) {
 	min, ok := toInt(cfg["min"])
 	if !ok {
-		return 0, 0, nil, fmt.Errorf("range generator config requires integer 'min'")
+		return 0, 0, nil, NewInvalidInputError("range generator config requires integer 'min'", nil)
 	}
 	max, ok := toInt(cfg["max"])
 	if !ok {
-		return 0, 0, nil, fmt.Errorf("range generator config requires integer 'max'")
+		return 0, 0, nil, NewInvalidInputError("range generator config requires integer 'max'", nil)
 	}
 	if min > max {
-		return 0, 0, nil, fmt.Errorf("range generator config 'min' (%d) must be <= 'max' (%d)", min, max)
+		return 0, 0, nil, NewInvalidInputError(
+			"range generator config 'min' ({min}) must be <= 'max' ({max})",
+			MsgData{"min": min, "max": max},
+		)
 	}
 	exclude := map[int]bool{}
 	if raw, present := cfg["exclude"]; present {
 		list, ok := raw.([]any)
 		if !ok {
-			return 0, 0, nil, fmt.Errorf("range generator config 'exclude' must be an array")
+			return 0, 0, nil, NewInvalidInputError("range generator config 'exclude' must be an array", nil)
 		}
 		for _, e := range list {
 			n, ok := toInt(e)
 			if !ok {
-				return 0, 0, nil, fmt.Errorf("range generator config 'exclude' entries must be integers")
+				return 0, 0, nil, NewInvalidInputError("range generator config 'exclude' entries must be integers", nil)
 			}
 			exclude[n] = true
 		}

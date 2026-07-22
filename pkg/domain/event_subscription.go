@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 )
 
@@ -36,25 +35,25 @@ func (EventSubscription) TableName() string {
 // Validate ensures all EventSubscription fields are valid
 func (es *EventSubscription) Validate() error {
 	if es.SubscriberID == "" {
-		return fmt.Errorf("subscriber_id cannot be empty")
+		return NewInvalidInputError("subscriber_id cannot be empty", nil)
 	}
 	if es.LastEventSequenceProcessed < 0 {
-		return fmt.Errorf("last_event_sequence_processed cannot be negative")
+		return NewInvalidInputError("last_event_sequence_processed cannot be negative", nil)
 	}
 	// Validate lease consistency
 	if es.LeaseOwnerInstanceID != nil {
 		if es.LeaseAcquiredAt == nil {
-			return fmt.Errorf("lease_acquired_at must be set when lease_owner_instance_id is set")
+			return NewInvalidInputError("lease_acquired_at must be set when lease_owner_instance_id is set", nil)
 		}
 		if es.LeaseExpiresAt == nil {
-			return fmt.Errorf("lease_expires_at must be set when lease_owner_instance_id is set")
+			return NewInvalidInputError("lease_expires_at must be set when lease_owner_instance_id is set", nil)
 		}
 		if es.LeaseExpiresAt.Before(*es.LeaseAcquiredAt) {
-			return fmt.Errorf("lease_expires_at must be after lease_acquired_at")
+			return NewInvalidInputError("lease_expires_at must be after lease_acquired_at", nil)
 		}
 	} else {
 		if es.LeaseAcquiredAt != nil || es.LeaseExpiresAt != nil {
-			return fmt.Errorf("lease_acquired_at and lease_expires_at must be nil when lease_owner_instance_id is nil")
+			return NewInvalidInputError("lease_acquired_at and lease_expires_at must be nil when lease_owner_instance_id is nil", nil)
 		}
 	}
 	return nil
@@ -188,7 +187,7 @@ func (c *eventSubscriptionCommander) UpdateProgress(
 
 	subscription.Update(&params.LastEventSequenceProcessed, nil, nil, nil, nil)
 	if err := subscription.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	if err := c.store.EventSubscriptionRepo().Save(ctx, subscription); err != nil {
@@ -211,7 +210,7 @@ func (c *eventSubscriptionCommander) AcquireLease(
 		// Create new subscription if not found
 		subscription = NewEventSubscription(params.SubscriberID)
 		if err := subscription.Validate(); err != nil {
-			return nil, InvalidInputError{Err: err}
+			return nil, asInvalidInput(err)
 		}
 		if err := c.store.EventSubscriptionRepo().Create(ctx, subscription); err != nil {
 			return nil, err
@@ -220,12 +219,12 @@ func (c *eventSubscriptionCommander) AcquireLease(
 
 	// Check if lease can be acquired
 	if subscription.HasActiveLease() && subscription.LeaseOwnerInstanceID != nil && *subscription.LeaseOwnerInstanceID != params.InstanceID {
-		return nil, NewInvalidInputErrorf("lease is already held by instance %s", *subscription.LeaseOwnerInstanceID)
+		return nil, NewInvalidInputError("lease is already held by instance '{instanceId}'", MsgData{"instanceId": *subscription.LeaseOwnerInstanceID})
 	}
 
 	subscription.AcquireLease(params)
 	if err := subscription.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	if err := c.store.EventSubscriptionRepo().Save(ctx, subscription); err != nil {
@@ -245,12 +244,12 @@ func (c *eventSubscriptionCommander) RenewLease(
 
 	// Check if the instance owns the lease
 	if subscription.LeaseOwnerInstanceID == nil || *subscription.LeaseOwnerInstanceID != params.InstanceID {
-		return nil, NewInvalidInputErrorf("lease is not owned by instance %s", params.InstanceID)
+		return nil, NewInvalidInputError("lease is not owned by instance '{instanceId}'", MsgData{"instanceId": params.InstanceID})
 	}
 
 	subscription.AcquireLease(params)
 	if err := subscription.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	if err := c.store.EventSubscriptionRepo().Save(ctx, subscription); err != nil {
@@ -270,12 +269,12 @@ func (c *eventSubscriptionCommander) ReleaseLease(
 
 	// Check if the instance owns the lease
 	if subscription.LeaseOwnerInstanceID == nil || *subscription.LeaseOwnerInstanceID != params.InstanceID {
-		return nil, NewInvalidInputErrorf("lease is not owned by instance %s", params.InstanceID)
+		return nil, NewInvalidInputError("lease is not owned by instance '{instanceId}'", MsgData{"instanceId": params.InstanceID})
 	}
 
 	subscription.ReleaseLease()
 	if err := subscription.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	if err := c.store.EventSubscriptionRepo().Save(ctx, subscription); err != nil {
@@ -295,21 +294,21 @@ func (c *eventSubscriptionCommander) AcknowledgeEvents(
 
 	// Check if the instance owns a valid lease
 	if !subscription.HasActiveLease() {
-		return nil, NewInvalidInputErrorf("no active lease found for subscriber %s", params.SubscriberID)
+		return nil, NewInvalidInputError("no active lease found for subscriber '{subscriberId}'", MsgData{"subscriberId": params.SubscriberID})
 	}
 	if subscription.LeaseOwnerInstanceID == nil || *subscription.LeaseOwnerInstanceID != params.InstanceID {
-		return nil, NewInvalidInputErrorf("lease is not owned by instance %s", params.InstanceID)
+		return nil, NewInvalidInputError("lease is not owned by instance '{instanceId}'", MsgData{"instanceId": params.InstanceID})
 	}
 
 	// Only update if the new sequence is greater than current (prevent regression)
 	if params.LastEventSequenceProcessed <= subscription.LastEventSequenceProcessed {
-		return nil, NewInvalidInputErrorf("cannot acknowledge sequence %d: must be greater than current sequence %d",
-			params.LastEventSequenceProcessed, subscription.LastEventSequenceProcessed)
+		return nil, NewInvalidInputError("cannot acknowledge sequence {sequence}: must be greater than current sequence {currentSequence}",
+			MsgData{"sequence": params.LastEventSequenceProcessed, "currentSequence": subscription.LastEventSequenceProcessed})
 	}
 
 	subscription.Update(&params.LastEventSequenceProcessed, nil, nil, nil, nil)
 	if err := subscription.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	if err := c.store.EventSubscriptionRepo().Save(ctx, subscription); err != nil {
@@ -329,7 +328,7 @@ func (c *eventSubscriptionCommander) SetActive(
 
 	subscription.Update(nil, nil, nil, nil, &params.IsActive)
 	if err := subscription.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	if err := c.store.EventSubscriptionRepo().Save(ctx, subscription); err != nil {

@@ -198,6 +198,40 @@ func TestUnauthorizedError(t *testing.T) {
 	})
 }
 
+func TestConflictError_Templated(t *testing.T) {
+	err := NewConflictError("{field} '{value}' already exists", MsgData{"field": "name", "value": "foo"})
+
+	if got := err.Error(); got != "name 'foo' already exists" {
+		t.Errorf("Error() = %q, want rendered message without prefix", got)
+	}
+
+	if !errors.As(err, &ConflictError{}) {
+		t.Error("errors.As should still match ConflictError")
+	}
+
+	var templated Templated
+	if !errors.As(err, &templated) {
+		t.Fatal("errors.As should match Templated interface")
+	}
+	if templated.MessageTemplate() != "{field} '{value}' already exists" {
+		t.Errorf("MessageTemplate() = %q", templated.MessageTemplate())
+	}
+	if templated.MessageData()["field"] != "name" {
+		t.Errorf("MessageData()[field] = %v", templated.MessageData()["field"])
+	}
+}
+
+func TestConflictErrorf_BackwardCompat(t *testing.T) {
+	err := NewConflictErrorf("plain %s", "x")
+
+	if got := err.Error(); got != "conflict: plain x" {
+		t.Errorf("Error() = %q, want prefixed message", got)
+	}
+	if err.MessageTemplate() != "" {
+		t.Errorf("MessageTemplate() = %q, want empty so API falls back to Error()", err.MessageTemplate())
+	}
+}
+
 func TestErrorChaining(t *testing.T) {
 	// Test error wrapping and unwrapping through multiple levels
 	t.Run("Error wrapping chain", func(t *testing.T) {

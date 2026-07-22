@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"errors"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
@@ -29,10 +28,10 @@ type ServiceGroup struct {
 // Validate checks if the service group is valid
 func (sg *ServiceGroup) Validate() error {
 	if sg.Name == "" {
-		return errors.New("service group name cannot be empty")
+		return NewInvalidInputError("service group name cannot be empty", nil)
 	}
 	if sg.ConsumerID == uuid.Nil {
-		return errors.New("service group consumer cannot be nil")
+		return NewInvalidInputError("service group consumer cannot be nil", nil)
 	}
 	return nil
 }
@@ -101,7 +100,7 @@ func (s *serviceGroupCommander) Create(ctx context.Context, params CreateService
 		return nil, err
 	}
 	if !consumerExists {
-		return nil, NewInvalidInputErrorf("consumer with ID %s does not exist", params.ConsumerID)
+		return nil, NewInvalidInputError("consumer with ID '{id}' does not exist", MsgData{"id": params.ConsumerID})
 	}
 
 	// Create and save
@@ -109,7 +108,7 @@ func (s *serviceGroupCommander) Create(ctx context.Context, params CreateService
 	err = s.store.Atomic(ctx, func(store Store) error {
 		sg = NewServiceGroup(params)
 		if err := sg.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 
 		if err := store.ServiceGroupRepo().Create(ctx, sg); err != nil {
@@ -145,10 +144,10 @@ func (s *serviceGroupCommander) Update(ctx context.Context, params UpdateService
 
 	// Update and validate
 	if err := sg.Update(params.Name); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 	if err := sg.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	// Save and event
@@ -187,7 +186,7 @@ func (s *serviceGroupCommander) Delete(ctx context.Context, id properties.UUID) 
 		return err
 	}
 	if numOfServices > 0 {
-		return errors.New("cannot delete service group with associated services")
+		return NewInvalidInputError("cannot delete service group with associated services", nil)
 	}
 
 	// Delete and event

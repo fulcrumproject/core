@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -177,6 +178,31 @@ func TestVaultSaveAndGet(t *testing.T) {
 			assert.Equal(t, tt.value, retrieved)
 		})
 	}
+}
+
+func TestVaultSaveDuplicateReference(t *testing.T) {
+	tdb := NewTestDB(t)
+	defer tdb.Cleanup(t)
+
+	key := make([]byte, 32)
+	rand.Read(key)
+	vault, err := NewVault(tdb.DB, key)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	refBytes := make([]byte, 16)
+	rand.Read(refBytes)
+	ref := hex.EncodeToString(refBytes)
+
+	require.NoError(t, vault.Save(ctx, ref, "first", nil))
+
+	// Reusing the reference violates the unique index and must surface as a
+	// domain.ConflictError so the API returns 409 rather than 500.
+	err = vault.Save(ctx, ref, "second", nil)
+	require.Error(t, err)
+	var conflict domain.ConflictError
+	require.ErrorAs(t, err, &conflict)
 }
 
 func TestVaultGetNotFound(t *testing.T) {

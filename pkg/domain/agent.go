@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -34,7 +33,7 @@ func (s AgentStatus) Validate() error {
 	case AgentNew, AgentConnected, AgentDisconnected, AgentError, AgentDisabled:
 		return nil
 	default:
-		return fmt.Errorf("invalid agent status: %s", s)
+		return NewInvalidInputError("invalid agent status: '{status}'", MsgData{"status": s})
 	}
 }
 
@@ -92,7 +91,7 @@ func (Agent) TableName() string {
 // Validate ensures all agent fields are valid
 func (a *Agent) Validate() error {
 	if a.Name == "" {
-		return fmt.Errorf("agent name cannot be empty")
+		return NewInvalidInputError("agent name cannot be empty", nil)
 	}
 
 	if err := a.Status.Validate(); err != nil {
@@ -100,14 +99,14 @@ func (a *Agent) Validate() error {
 	}
 
 	if a.LastStatusUpdate.IsZero() {
-		return fmt.Errorf("status last update cannot be empty")
+		return NewInvalidInputError("status last update cannot be empty", nil)
 	}
 
 	if a.AgentTypeID == uuid.Nil {
-		return fmt.Errorf("agent type ID cannot be empty")
+		return NewInvalidInputError("agent type ID cannot be empty", nil)
 	}
 	if a.ProviderID == uuid.Nil {
-		return fmt.Errorf("provider ID cannot be empty")
+		return NewInvalidInputError("provider ID cannot be empty", nil)
 	}
 
 	return nil
@@ -219,44 +218,44 @@ func (s *agentCommander) Create(
 		return nil, err
 	}
 	if !providerExists {
-		return nil, NewInvalidInputErrorf("provider with ID %s does not exist", params.ProviderID)
+		return nil, NewInvalidInputError("provider with ID {providerId} does not exist", MsgData{"providerId": params.ProviderID})
 	}
 
 	// Get agent type to access configuration schema
 	agentType, err := s.store.AgentTypeRepo().Get(ctx, params.AgentTypeID)
 	if err != nil {
-		return nil, NewInvalidInputErrorf("agent type with ID %s does not exist", params.AgentTypeID)
+		return nil, NewInvalidInputError("agent type with ID {agentTypeId} does not exist", MsgData{"agentTypeId": params.AgentTypeID})
 	}
 
 	requiredIT := agentType.RequiredInfrastructureType()
 	if requiredIT == nil {
 		if params.InfrastructureID != nil {
-			return nil, NewInvalidInputErrorf("agent type %s does not allow an infrastructure", params.AgentTypeID)
+			return nil, NewInvalidInputError("agent type {agentTypeId} does not allow an infrastructure", MsgData{"agentTypeId": params.AgentTypeID})
 		}
 	} else {
 		if params.InfrastructureID == nil {
-			return nil, NewInvalidInputErrorf("agent type %s requires an infrastructure of type %s", params.AgentTypeID, requiredIT.ID)
+			return nil, NewInvalidInputError("agent type {agentTypeId} requires an infrastructure of type {infrastructureTypeId}", MsgData{"agentTypeId": params.AgentTypeID, "infrastructureTypeId": requiredIT.ID})
 		}
 		infra, err := s.store.InfrastructureRepo().Get(ctx, *params.InfrastructureID)
 		if err != nil {
-			return nil, NewInvalidInputErrorf("infrastructure with ID %s does not exist", *params.InfrastructureID)
+			return nil, NewInvalidInputError("infrastructure with ID {infrastructureId} does not exist", MsgData{"infrastructureId": *params.InfrastructureID})
 		}
 		if infra.ProviderID != params.ProviderID {
-			return nil, NewInvalidInputErrorf("infrastructure with ID %s does not belong to provider %s", *params.InfrastructureID, params.ProviderID)
+			return nil, NewInvalidInputError("infrastructure with ID {infrastructureId} does not belong to provider {providerId}", MsgData{"infrastructureId": *params.InfrastructureID, "providerId": params.ProviderID})
 		}
 		if infra.InfrastructureTypeID != requiredIT.ID {
-			return nil, NewInvalidInputErrorf("infrastructure with ID %s has type %s, expected %s", *params.InfrastructureID, infra.InfrastructureTypeID, requiredIT.ID)
+			return nil, NewInvalidInputError("infrastructure with ID {infrastructureId} has type {actualType}, expected {expectedType}", MsgData{"infrastructureId": *params.InfrastructureID, "actualType": infra.InfrastructureTypeID, "expectedType": requiredIT.ID})
 		}
 	}
 
 	if params.ServicePoolSetID != nil {
 		servicePoolSet, err := s.store.ServicePoolSetRepo().Get(ctx, *params.ServicePoolSetID)
 		if err != nil {
-			return nil, NewInvalidInputErrorf("service pool set with ID %s does not exist", params.ServicePoolSetID)
+			return nil, NewInvalidInputError("service pool set with ID {servicePoolSetId} does not exist", MsgData{"servicePoolSetId": *params.ServicePoolSetID})
 		}
 
 		if servicePoolSet.ProviderID != params.ProviderID {
-			return nil, NewInvalidInputErrorf("service pool set with ID %s does not belong to provider %s", *params.ServicePoolSetID, params.ProviderID)
+			return nil, NewInvalidInputError("service pool set with ID {servicePoolSetId} does not belong to provider {providerId}", MsgData{"servicePoolSetId": *params.ServicePoolSetID, "providerId": params.ProviderID})
 		}
 	}
 
@@ -299,7 +298,7 @@ func (s *agentCommander) Create(
 		}
 
 		if err := agent.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 		if err := store.AgentRepo().Create(ctx, agent); err != nil {
 			return err
@@ -342,7 +341,7 @@ func (s *agentCommander) Update(ctx context.Context,
 		}
 
 		if servicePoolSet.ProviderID != agent.ProviderID {
-			return nil, NewInvalidInputErrorf("service pool set with ID %s does not belong to provider %s", params.ServicePoolSetID, agent.ProviderID)
+			return nil, NewInvalidInputError("service pool set with ID {servicePoolSetId} does not belong to provider {providerId}", MsgData{"servicePoolSetId": *params.ServicePoolSetID, "providerId": agent.ProviderID})
 		}
 	}
 
@@ -385,7 +384,7 @@ func (s *agentCommander) Update(ctx context.Context,
 		}
 
 		if err := agent.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 
 		if err := store.AgentRepo().Save(ctx, agent); err != nil {
@@ -421,7 +420,7 @@ func (s *agentCommander) Delete(ctx context.Context, id properties.UUID) error {
 			return err
 		}
 		if numOfServices > 0 {
-			return errors.New("cannot delete agent with associated services")
+			return NewInvalidInputError("cannot delete agent with associated services", nil)
 		}
 
 		if err := store.TokenRepo().DeleteByAgentID(ctx, id); err != nil {
@@ -482,7 +481,7 @@ func (s *agentCommander) UpdateStatus(ctx context.Context, params UpdateAgentSta
 	// Update and validate
 	agent.UpdateStatus(params.Status)
 	if err := agent.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	// Save and event

@@ -249,11 +249,11 @@ Content-Type: application/json
 }
 
 ### --------------------------------------------------------------------------
-### Caught validation errors (expect 400 Invalid request)
+### Caught validation errors (expect 400)
 ### --------------------------------------------------------------------------
 ### Every request below is rejected by ConfigPool.Validate() before anything is
 ### persisted, so each returns:
-###   { "status": "Invalid request", "error": "<reason>" }
+###   { "status": 400, "message": "<reason>" }
 
 ### Malformed CIDR -> 400
 ### error: subnet generator config 'cidr' is invalid: invalid CIDR address: 10.255.1.0/33

@@ -11,13 +11,16 @@ ValidationErrors:
       schema:
         $ref: "./schemas/common.yaml#/ValidationErrRes"
       example:
-        status: "Validation failed"
-        valid: false
+        status: 400
+        message: "validation failed"
         errors:
           - path: "cpu"
-            message: "cpu: value must be one of: [1, 2, 4, 8, 16, 32]"
+            message: "value not in allowed enum values 1, 2, 4, 8, 16, 32"
+            template: "value not in allowed enum values {values}"
+            data:
+              values: [1, 2, 4, 8, 16, 32]
           - path: "memory"
-            message: "memory: property is required"
+            message: "property is required"
 Unauthorized:
   description: Unauthorized
   content:
@@ -26,6 +29,12 @@ Unauthorized:
         $ref: "./schemas/common.yaml#/ErrorRes"
 Forbidden:
   description: Forbidden
+  content:
+    application/json:
+      schema:
+        $ref: "./schemas/common.yaml#/ErrorRes"
+Conflict:
+  description: Conflict - the request conflicts with the current state of the resource
   content:
     application/json:
       schema:

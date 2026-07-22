@@ -22,7 +22,10 @@ func (v *MinValidator[C]) Validate(ctx context.Context, schemaCtx C, operation O
 	}
 
 	if num < minFloat {
-		return fmt.Errorf("%s: value %v is less than minimum %v", propPath, num, minFloat)
+		return PropError{
+			Template: "value {value} is less than minimum {min}",
+			Data:     map[string]any{"value": num, "min": minFloat},
+		}
 	}
 
 	return nil
@@ -54,7 +57,10 @@ func (v *MaxValidator[C]) Validate(ctx context.Context, schemaCtx C, operation O
 	}
 
 	if num > maxFloat {
-		return fmt.Errorf("%s: value %v exceeds maximum %v", propPath, num, maxFloat)
+		return PropError{
+			Template: "value {value} exceeds maximum {max}",
+			Data:     map[string]any{"value": num, "max": maxFloat},
+		}
 	}
 
 	return nil

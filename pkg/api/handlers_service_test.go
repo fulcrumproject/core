@@ -683,7 +683,7 @@ func TestServicePropertyValidation(t *testing.T) {
 				var response map[string]any
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				require.NoError(t, err)
-				errorText, ok := response["error"].(string)
+				errorText, ok := response["message"].(string)
 				require.True(t, ok, "Error message should be present")
 				tc.checkError(t, errorText)
 			}

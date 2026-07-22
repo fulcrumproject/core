@@ -33,7 +33,7 @@ func (g *SubnetGenerator) Allocate(ctx context.Context, serviceID properties.UUI
 	// Parse generator config
 	cidr, ok := g.generatorConfig["cidr"].(string)
 	if !ok || cidr == "" {
-		return nil, NewInvalidInputErrorf("invalid CIDR in generator config")
+		return nil, NewInvalidInputError("invalid CIDR in generator config", nil)
 	}
 
 	excludeFirst := 0
@@ -53,7 +53,7 @@ func (g *SubnetGenerator) Allocate(ctx context.Context, serviceID properties.UUI
 	// Parse CIDR
 	ip, ipNet, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return nil, NewInvalidInputErrorf("invalid CIDR format: %v", err)
+		return nil, NewInvalidInputError("invalid CIDR format: {reason}", MsgData{"reason": err.Error()})
 	}
 
 	retention, err := parseRetention(g.generatorConfig)
@@ -108,7 +108,7 @@ func (g *SubnetGenerator) Allocate(ctx context.Context, serviceID properties.UUI
 	}
 
 	if nextIP == nil {
-		return nil, NewInvalidInputErrorf("subnet exhausted: no available IPs in pool")
+		return nil, NewInvalidInputError("subnet exhausted: no available IPs in pool", nil)
 	}
 
 	ipStr := nextIP.String()

@@ -23,7 +23,10 @@ func (v *MinLengthValidator[C]) Validate(ctx context.Context, schemaCtx C, opera
 	}
 
 	if len(str) < minInt {
-		return fmt.Errorf("%s: string length %d is less than minimum %d", propPath, len(str), minInt)
+		return PropError{
+			Template: "string length {length} is less than minimum {min}",
+			Data:     map[string]any{"length": len(str), "min": minInt},
+		}
 	}
 
 	return nil
@@ -49,7 +52,10 @@ func (v *MaxLengthValidator[C]) Validate(ctx context.Context, schemaCtx C, opera
 	}
 
 	if len(str) > maxInt {
-		return fmt.Errorf("%s: string length %d exceeds maximum %d", propPath, len(str), maxInt)
+		return PropError{
+			Template: "string length {length} exceeds maximum {max}",
+			Data:     map[string]any{"length": len(str), "max": maxInt},
+		}
 	}
 
 	return nil
@@ -91,7 +97,10 @@ func (v *PatternValidator[C]) Validate(ctx context.Context, schemaCtx C, operati
 	}
 
 	if !regex.MatchString(str) {
-		return fmt.Errorf("%s: string does not match required pattern", propPath)
+		return PropError{
+			Template: "string does not match required pattern {pattern}",
+			Data:     map[string]any{"pattern": pattern},
+		}
 	}
 
 	return nil

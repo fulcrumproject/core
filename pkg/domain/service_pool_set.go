@@ -3,7 +3,6 @@ package domain
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 )
@@ -50,10 +49,10 @@ func (ServicePoolSet) TableName() string {
 // Validate ensures all ServicePoolSet fields are valid
 func (sps *ServicePoolSet) Validate() error {
 	if sps.Name == "" {
-		return fmt.Errorf("pool set name cannot be empty")
+		return NewInvalidInputError("pool set name cannot be empty", nil)
 	}
 	if sps.ProviderID == (properties.UUID{}) {
-		return fmt.Errorf("provider ID cannot be empty")
+		return NewInvalidInputError("provider ID cannot be empty", nil)
 	}
 	return nil
 }
@@ -111,7 +110,7 @@ func (c *servicePoolSetCommander) Create(
 			return err
 		}
 		if !exists {
-			return NewNotFoundErrorf("provider with id %s not found", params.ProviderID)
+			return NewNotFoundError("provider with id {id} not found", MsgData{"id": params.ProviderID})
 		}
 
 		// Create the pool set

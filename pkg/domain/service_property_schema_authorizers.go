@@ -30,12 +30,12 @@ func (a *ActorAuthorizer) Authorize(
 	// Get allowed actors from config
 	allowedActorsRaw, hasConfig := config["actors"]
 	if !hasConfig {
-		return fmt.Errorf("%s: actor authorizer config missing 'actors'", propPath)
+		return schema.PropError{Template: "actor authorizer config missing 'actors'"}
 	}
 
 	allowedActors, ok := allowedActorsRaw.([]any)
 	if !ok {
-		return fmt.Errorf("%s: actor authorizer config 'actors' must be an array", propPath)
+		return schema.PropError{Template: "actor authorizer config 'actors' must be an array"}
 	}
 
 	// Check if current actor is in allowed list
@@ -54,7 +54,10 @@ func (a *ActorAuthorizer) Authorize(
 		}
 	}
 
-	return fmt.Errorf("%s: property can only be set by: %v (current actor: %s)", propPath, allowedNames, currentActor)
+	return schema.PropError{
+		Template: "property can only be set by: {actors} (current actor: {actor})",
+		Data:     map[string]any{"actors": allowedNames, "actor": currentActor},
+	}
 }
 
 // ValidateConfig validates the actor authorizer configuration
@@ -115,18 +118,18 @@ func (a *StateAuthorizer) Authorize(
 
 	// Service status must exist for update operations
 	if schemaCtx.ServiceStatus == "" {
-		return fmt.Errorf("%s: state authorizer requires service status for update operations", propPath)
+		return schema.PropError{Template: "state authorizer requires service status for update operations"}
 	}
 
 	// Get allowed states
 	allowedStatesRaw, hasConfig := config["allowedStates"]
 	if !hasConfig {
-		return fmt.Errorf("%s: state authorizer config missing 'allowedStates'", propPath)
+		return schema.PropError{Template: "state authorizer config missing 'allowedStates'"}
 	}
 
 	allowedStates, ok := allowedStatesRaw.([]any)
 	if !ok {
-		return fmt.Errorf("%s: state authorizer config 'allowedStates' must be an array", propPath)
+		return schema.PropError{Template: "state authorizer config 'allowedStates' must be an array"}
 	}
 
 	// Check if current status is in the allowed states
@@ -145,7 +148,10 @@ func (a *StateAuthorizer) Authorize(
 		}
 	}
 
-	return fmt.Errorf("%s: property cannot be updated in state '%s' (allowed states: %v)", propPath, currentStatus, allowedNames)
+	return schema.PropError{
+		Template: "property cannot be updated in state '{status}' (allowed states: {states})",
+		Data:     map[string]any{"status": string(currentStatus), "states": allowedNames},
+	}
 }
 
 // ValidateConfig validates the state authorizer configuration

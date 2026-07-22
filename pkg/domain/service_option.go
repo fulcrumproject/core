@@ -3,7 +3,6 @@ package domain
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/fulcrumproject/core/pkg/properties"
 	"github.com/google/uuid"
@@ -46,16 +45,16 @@ func (ServiceOption) TableName() string {
 // Validate ensures all ServiceOption fields are valid
 func (so *ServiceOption) Validate() error {
 	if so.ProviderID == properties.UUID(uuid.Nil) {
-		return fmt.Errorf("service option providerId cannot be empty")
+		return NewInvalidInputError("service option providerId cannot be empty", nil)
 	}
 	if so.ServiceOptionTypeID == properties.UUID(uuid.Nil) {
-		return fmt.Errorf("service option serviceOptionTypeId cannot be empty")
+		return NewInvalidInputError("service option serviceOptionTypeId cannot be empty", nil)
 	}
 	if so.Name == "" {
-		return fmt.Errorf("service option name cannot be empty")
+		return NewInvalidInputError("service option name cannot be empty", nil)
 	}
 	if so.Value == nil {
-		return fmt.Errorf("service option value cannot be nil")
+		return NewInvalidInputError("service option value cannot be nil", nil)
 	}
 	return nil
 }
@@ -155,7 +154,7 @@ func (c *serviceOptionCommander) Create(
 			return err
 		}
 		if !exists {
-			return NewNotFoundErrorf("provider %s not found", params.ProviderID)
+			return NewNotFoundError("provider '{id}' not found", MsgData{"id": params.ProviderID})
 		}
 
 		// Validate that the service option type exists
@@ -164,12 +163,12 @@ func (c *serviceOptionCommander) Create(
 			return err
 		}
 		if !exists {
-			return NewNotFoundErrorf("service option type %s not found", params.ServiceOptionTypeID)
+			return NewNotFoundError("service option type '{id}' not found", MsgData{"id": params.ServiceOptionTypeID})
 		}
 
 		option = NewServiceOption(params)
 		if err := option.Validate(); err != nil {
-			return InvalidInputError{Err: err}
+			return asInvalidInput(err)
 		}
 
 		if err := store.ServiceOptionRepo().Create(ctx, option); err != nil {
@@ -209,7 +208,7 @@ func (c *serviceOptionCommander) Update(
 	// Update and validate
 	option.Update(params)
 	if err := option.Validate(); err != nil {
-		return nil, InvalidInputError{Err: err}
+		return nil, asInvalidInput(err)
 	}
 
 	// Save and event

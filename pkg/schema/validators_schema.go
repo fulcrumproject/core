@@ -39,11 +39,17 @@ func (v *ExactlyOneValidator[C]) Validate(ctx context.Context, schemaCtx C, oper
 	}
 
 	if providedCount == 0 {
-		return fmt.Errorf("exactly one of %v must be provided", props)
+		return PropError{
+			Template: "exactly one of {properties} must be provided",
+			Data:     map[string]any{"properties": props},
+		}
 	}
 
 	if providedCount > 1 {
-		return fmt.Errorf("only one of %v can be provided, got: %v", props, providedProps)
+		return PropError{
+			Template: "only one of {properties} can be provided, got {provided}",
+			Data:     map[string]any{"properties": props, "provided": providedProps},
+		}
 	}
 
 	return nil
@@ -114,12 +120,10 @@ func (v *UniqueValuesValidator[C]) Validate(ctx context.Context, schemaCtx C, op
 
 		// Check if this value was already seen
 		if existingProp, found := seenValues[valueKey]; found {
-			return fmt.Errorf(
-				"properties %s and %s must have unique values, both have: %v",
-				existingProp,
-				propStr,
-				val,
-			)
+			return PropError{
+				Template: "properties {first} and {second} must have unique values, both have {value}",
+				Data:     map[string]any{"first": existingProp, "second": propStr, "value": val},
+			}
 		}
 
 		// Record this value as seen
