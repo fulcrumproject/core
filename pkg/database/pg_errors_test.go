@@ -66,7 +66,7 @@ func TestTranslatePgError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := translatePgError(tt.in)
+			got := TranslatePgError(tt.in)
 			if tt.wantPass {
 				if got != tt.in {
 					t.Fatalf("expected passthrough, got %v", got)

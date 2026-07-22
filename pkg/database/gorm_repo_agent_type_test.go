@@ -105,21 +105,26 @@ func TestAgentTypeRepository(t *testing.T) {
 		t.Run("success - list all", func(t *testing.T) {
 			ctx := context.Background()
 
-			// Setup
+			// Setup: a unique name prefix scopes the list to only this
+			// subtest's rows, isolating it from siblings sharing the test DB.
+			prefix := uuid.NewString()
 			serviceType := createTestServiceType(t)
 			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType))
 
 			agentType1 := createTestAgentType(t)
+			agentType1.Name = prefix + " A"
 			agentType1.ServiceTypes = []domain.ServiceType{*serviceType}
 			require.NoError(t, repo.Create(ctx, agentType1))
 
 			agentType2 := createTestAgentType(t)
+			agentType2.Name = prefix + " B"
 			agentType2.ServiceTypes = []domain.ServiceType{*serviceType}
 			require.NoError(t, repo.Create(ctx, agentType2))
 
 			page := &domain.PageReq{
 				Page:     1,
 				PageSize: 10,
+				Filters:  map[string][]string{"name": {prefix}},
 			}
 
 			// Execute
@@ -127,7 +132,7 @@ func TestAgentTypeRepository(t *testing.T) {
 
 			// Assert
 			require.NoError(t, err)
-			assert.Greater(t, len(result.Items), 0)
+			require.Len(t, result.Items, 2)
 			// Verify ServiceTypes are preloaded
 			assert.NotEmpty(t, result.Items[0].ServiceTypes)
 		})
@@ -162,17 +167,19 @@ func TestAgentTypeRepository(t *testing.T) {
 		t.Run("success - list with sorting", func(t *testing.T) {
 			ctx := context.Background()
 
-			// Setup
+			// Setup: a unique name prefix scopes the list to only this
+			// subtest's rows, isolating it from siblings sharing the test DB.
+			prefix := uuid.NewString()
 			serviceType := createTestServiceType(t)
 			require.NoError(t, serviceTypeRepo.Create(ctx, serviceType))
 
 			agentType1 := createTestAgentType(t)
-			agentType1.Name = "A Agent Type"
+			agentType1.Name = prefix + " A Agent Type"
 			agentType1.ServiceTypes = []domain.ServiceType{*serviceType}
 			require.NoError(t, repo.Create(ctx, agentType1))
 
 			agentType2 := createTestAgentType(t)
-			agentType2.Name = "B Agent Type"
+			agentType2.Name = prefix + " B Agent Type"
 			agentType2.ServiceTypes = []domain.ServiceType{*serviceType}
 			require.NoError(t, repo.Create(ctx, agentType2))
 
@@ -182,6 +189,7 @@ func TestAgentTypeRepository(t *testing.T) {
 				Sort:     true,
 				SortBy:   "name",
 				SortAsc:  false, // Descending order
+				Filters:  map[string][]string{"name": {prefix}},
 			}
 
 			// Execute
@@ -189,11 +197,10 @@ func TestAgentTypeRepository(t *testing.T) {
 
 			// Assert
 			require.NoError(t, err)
-			assert.GreaterOrEqual(t, len(result.Items), 2)
+			require.Len(t, result.Items, 2)
 			// Verify descending order
-			for i := 1; i < len(result.Items); i++ {
-				assert.GreaterOrEqual(t, result.Items[i-1].Name, result.Items[i].Name)
-			}
+			assert.Equal(t, agentType2.Name, result.Items[0].Name)
+			assert.Equal(t, agentType1.Name, result.Items[1].Name)
 			// Verify ServiceTypes are preloaded
 			assert.NotEmpty(t, result.Items[0].ServiceTypes)
 		})

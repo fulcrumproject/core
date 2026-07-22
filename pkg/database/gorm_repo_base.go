@@ -59,7 +59,7 @@ func NewGormRepository[T Tabler](
 func (r *GormRepository[T]) Create(ctx context.Context, entity *T) error {
 	result := r.db.WithContext(ctx).Create(entity)
 	if result.Error != nil {
-		return translatePgError(result.Error)
+		return TranslatePgError(result.Error)
 	}
 	return nil
 }
@@ -67,7 +67,7 @@ func (r *GormRepository[T]) Create(ctx context.Context, entity *T) error {
 func (r *GormRepository[T]) Save(ctx context.Context, entity *T) error {
 	result := r.db.WithContext(ctx).Save(entity)
 	if result.Error != nil {
-		return translatePgError(result.Error)
+		return TranslatePgError(result.Error)
 	}
 	return nil
 }
@@ -75,7 +75,7 @@ func (r *GormRepository[T]) Save(ctx context.Context, entity *T) error {
 func (r *GormRepository[T]) Delete(ctx context.Context, id properties.UUID) error {
 	result := r.db.WithContext(ctx).Delete(new(T), id)
 	if result.Error != nil {
-		return translatePgError(result.Error)
+		return TranslatePgError(result.Error)
 	}
 	return nil
 }

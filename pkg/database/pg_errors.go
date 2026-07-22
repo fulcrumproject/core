@@ -17,9 +17,9 @@ const (
 // detailKeyValue matches the "Key (col)=(val)" prefix of a pg constraint Detail.
 var detailKeyValue = regexp.MustCompile(`Key \(([^)]+)\)=\(([^)]+)\)`)
 
-// translatePgError maps Postgres driver errors to domain errors so the API layer
+// TranslatePgError maps Postgres driver errors to domain errors so the API layer
 // classifies them correctly. Unmapped errors are returned unchanged.
-func translatePgError(err error) error {
+func TranslatePgError(err error) error {
 	if err == nil {
 		return nil
 	}

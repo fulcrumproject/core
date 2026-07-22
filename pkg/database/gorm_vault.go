@@ -129,7 +129,7 @@ func (v *gormVault) Save(ctx context.Context, reference string, value any, metad
 
 	// Save to database
 	if err := v.db.WithContext(ctx).Create(secret).Error; err != nil {
-		return translatePgError(fmt.Errorf("failed to save secret: %w", err))
+		return TranslatePgError(fmt.Errorf("failed to save secret: %w", err))
 	}
 
 	return nil
