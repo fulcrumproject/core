@@ -1,3 +1,5 @@
+// Configuration combines Core runtime settings and optional features.
+// Defaults keep CMP signing disabled and existing authentication unchanged.
 package config
 
 import (
@@ -5,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fulcrumproject/core/pkg/keycloak"
+	"github.com/fulcrumproject/core/pkg/sso"
 	"github.com/fulcrumproject/utils/gormpg"
 	"github.com/fulcrumproject/utils/logging"
 )
@@ -15,6 +18,7 @@ const (
 
 // Fulcrum configuration
 type Config struct {
+	CmpSso                  sso.Config            `json:"cmpSso"`
 	Port                    uint                  `json:"port" env:"PORT" validate:"required,min=1,max=65535"`
 	ShutdownTimeout         time.Duration         `json:"shutdownTimeout" env:"SHUTDOWN_TIMEOUT"`
 	SchedulerLockerConfig   SchedulerLockerConfig `json:"schedulerLocker" validate:"required"`
@@ -55,6 +59,7 @@ type JobConfig struct {
 }
 
 var Default = Config{
+	CmpSso:          sso.Config{TokenTTL: sso.DefaultTokenTTL},
 	Port:            8080,
 	ShutdownTimeout: 30 * time.Second,
 	SchedulerLockerConfig: SchedulerLockerConfig{

@@ -1,0 +1,56 @@
+CmpLaunchTokenReq:
+  type: [object, "null"]
+  description: Unknown top-level fields are ignored and cannot override system claims.
+  properties:
+    ext:
+      type: [object, "null"]
+      additionalProperties: true
+      description: >
+        Opaque marketplace-asserted data, not trusted customer identity.
+        Serialized JSON is limited to 4096 bytes. Immediate keys must not be
+        iss, sub, aud, exp, nbf, iat, jti, participant_id, service_id, relation or ext.
+CmpLaunchTokenRes:
+  type: object
+  required: [redirectUrl, token, expiresAt]
+  properties:
+    redirectUrl:
+      type: string
+      description: Configured CMP landing URL from the service's persisted agent.
+    token:
+      type: string
+      description: Short-lived ES256 JWT to submit to the CMP by POST, not in a URL.
+    expiresAt:
+      type: string
+      format: date-time
+JWKS:
+  type: object
+  required: [keys]
+  properties:
+    keys:
+      type: array
+      maxItems: 1
+      items:
+        type: object
+        additionalProperties: false
+        required: [kty, crv, x, y, kid, alg, use]
+        properties:
+          kty:
+            type: string
+            const: EC
+          crv:
+            type: string
+            const: P-256
+          x:
+            type: string
+            description: Base64url-encoded public X coordinate.
+          y:
+            type: string
+            description: Base64url-encoded public Y coordinate.
+          kid:
+            type: string
+          alg:
+            type: string
+            const: ES256
+          use:
+            type: string
+            const: sig

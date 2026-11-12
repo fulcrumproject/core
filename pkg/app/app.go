@@ -1,3 +1,5 @@
+// App assembles Core configuration, persistence, authentication and handlers.
+// Optional CMP signing is initialized without replacing external authentication.
 package app
 
 import (
@@ -19,6 +21,7 @@ import (
 	"github.com/fulcrumproject/core/pkg/health"
 	"github.com/fulcrumproject/core/pkg/keycloak"
 	"github.com/fulcrumproject/core/pkg/schema"
+	"github.com/fulcrumproject/core/pkg/sso"
 	"github.com/fulcrumproject/utils/confbuilder"
 	"github.com/fulcrumproject/utils/logging"
 	"github.com/go-co-op/gocron/v2"
@@ -26,45 +29,47 @@ import (
 )
 
 type App struct {
-	Config                    *config.Config
-	Db                        *gorm.DB
-	MetricDb                  *gorm.DB
-	Authenticators            []auth.Authenticator
-	AgentTypeHandler          *api.AgentTypeHandler
-	AgentInstallTokenHandler  *api.AgentInstallTokenHandler
-	ServiceTypeHandler        *api.ServiceTypeHandler
-	ServiceOptionTypeHandler  *api.ServiceOptionTypeHandler
-	ServiceOptionHandler      *api.ServiceOptionHandler
-	ServicePoolSetHandler     *api.ServicePoolSetHandler
-	ServicePoolHandler        *api.ServicePoolHandler
-	ServicePoolValueHandler   *api.ServicePoolValueHandler
-	ParticipantHandler        *api.ParticipantHandler
-	AgentHandler              *api.AgentHandler
-	ConfigPoolHandler         *api.ConfigPoolHandler
-	ConfigPoolValueHandler    *api.ConfigPoolValueHandler
+	SsoSigner                         *sso.Signer
+	CmpLaunchHandler                  *api.CmpLaunchHandler
+	Config                            *config.Config
+	Db                                *gorm.DB
+	MetricDb                          *gorm.DB
+	Authenticators                    []auth.Authenticator
+	AgentTypeHandler                  *api.AgentTypeHandler
+	AgentInstallTokenHandler          *api.AgentInstallTokenHandler
+	ServiceTypeHandler                *api.ServiceTypeHandler
+	ServiceOptionTypeHandler          *api.ServiceOptionTypeHandler
+	ServiceOptionHandler              *api.ServiceOptionHandler
+	ServicePoolSetHandler             *api.ServicePoolSetHandler
+	ServicePoolHandler                *api.ServicePoolHandler
+	ServicePoolValueHandler           *api.ServicePoolValueHandler
+	ParticipantHandler                *api.ParticipantHandler
+	AgentHandler                      *api.AgentHandler
+	ConfigPoolHandler                 *api.ConfigPoolHandler
+	ConfigPoolValueHandler            *api.ConfigPoolValueHandler
 	InfrastructureTypeHandler         *api.InfrastructureTypeHandler
 	InfrastructureHandler             *api.InfrastructureHandler
 	InfrastructureInstallTokenHandler *api.InfrastructureInstallTokenHandler
-	ServiceGroupHandler       *api.ServiceGroupHandler
-	ServiceHandler            *api.ServiceHandler
-	MetricTypeHandler         *api.MetricTypeHandler
-	MetricEntryHandler        *api.MetricEntryHandler
-	MetricEntryRepo           *database.GormMetricEntryRepository
-	EventHandler              *api.EventHandler
-	JobHandler                *api.JobHandler
-	TokenHandler              *api.TokenHandler
-	VaultHandler              *api.VaultHandler
-	KeycloakUserHandler       *api.KeycloakUserHandler
-	HealthHandler             *health.Handler
-	Logger                    *slog.Logger
-	PropertyEngine            *schema.Engine[domain.ServicePropertyContext]
-	CompositeAuthenticator    *auth.CompositeAuthenticator
-	RuleBasedAuthorizer       *authz.RuleBasedAuthorizer
-	Store                     domain.Store
-	ServiceCmd                domain.ServiceCommander
-	Scheduler                 *gocron.Scheduler
-	scheduleStarted           bool
-	WaitGroup                 *sync.WaitGroup
+	ServiceGroupHandler               *api.ServiceGroupHandler
+	ServiceHandler                    *api.ServiceHandler
+	MetricTypeHandler                 *api.MetricTypeHandler
+	MetricEntryHandler                *api.MetricEntryHandler
+	MetricEntryRepo                   *database.GormMetricEntryRepository
+	EventHandler                      *api.EventHandler
+	JobHandler                        *api.JobHandler
+	TokenHandler                      *api.TokenHandler
+	VaultHandler                      *api.VaultHandler
+	KeycloakUserHandler               *api.KeycloakUserHandler
+	HealthHandler                     *health.Handler
+	Logger                            *slog.Logger
+	PropertyEngine                    *schema.Engine[domain.ServicePropertyContext]
+	CompositeAuthenticator            *auth.CompositeAuthenticator
+	RuleBasedAuthorizer               *authz.RuleBasedAuthorizer
+	Store                             domain.Store
+	ServiceCmd                        domain.ServiceCommander
+	Scheduler                         *gocron.Scheduler
+	scheduleStarted                   bool
+	WaitGroup                         *sync.WaitGroup
 }
 
 func readConfig() (*config.Config, error) {
@@ -141,6 +146,12 @@ func NewApp() *App {
 	cfg, err := readConfig()
 	if err != nil {
 		slog.Error("Invalid configuration", "error", err)
+		return nil
+	}
+
+	ssoSigner, err := sso.New(cfg.CmpSso)
+	if err != nil {
+		slog.Error("Invalid CMP SSO configuration", "error", err)
 		return nil
 	}
 
@@ -273,44 +284,46 @@ func NewApp() *App {
 	configPoolValueCmd := domain.NewConfigPoolValueCommander(store)
 
 	return &App{
-		Config:                    cfg,
-		Db:                        db,
-		MetricDb:                  metricDb,
-		Logger:                    logger,
-		Scheduler:                 scheduler,
-		scheduleStarted:           false,
-		WaitGroup:                 &sync.WaitGroup{},
-		Store:                     store,
-		Authenticators:            authenticators,
-		CompositeAuthenticator:    ath,
-		RuleBasedAuthorizer:       athz,
-		ServiceTypeHandler:        api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz, propertyEngine),
-		ServiceOptionTypeHandler:  api.NewServiceOptionTypeHandler(store.ServiceOptionTypeRepo(), serviceOptionTypeCmd, athz),
-		ServiceOptionHandler:      api.NewServiceOptionHandler(store.ServiceOptionRepo(), serviceOptionCmd, athz),
-		ServicePoolSetHandler:     api.NewServicePoolSetHandler(store.ServicePoolSetRepo(), servicePoolSetCmd, athz),
-		ServicePoolHandler:        api.NewServicePoolHandler(store.ServicePoolRepo(), servicePoolCmd, athz),
-		ServicePoolValueHandler:   api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), servicePoolValueCmd, athz),
-		ParticipantHandler:        api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz),
-		AgentHandler:              api.NewAgentHandler(store.AgentRepo(), agentCmd, athz),
-		AgentInstallTokenHandler:  api.NewAgentInstallTokenHandler(store.InstallTokenRepo(), installTokenCmd, store.AgentRepo().AuthScope, athz, vault, cfg.PublicBaseURL),
-		ConfigPoolHandler:         api.NewConfigPoolHandler(store.ConfigPoolRepo(), configPoolCmd, athz),
-		ConfigPoolValueHandler:    api.NewConfigPoolValueHandler(store.ConfigPoolValueRepo(), store.ConfigPoolRepo(), configPoolValueCmd, athz),
-		AgentTypeHandler:          api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz),
-		InfrastructureTypeHandler: api.NewInfrastructureTypeHandler(store.InfrastructureTypeRepo(), infrastructureTypeCmd, athz),
+		SsoSigner:                         ssoSigner,
+		CmpLaunchHandler:                  api.NewCmpLaunchHandler(store.ServiceRepo(), store.AgentRepo(), domain.NewCmpLaunchCommander(store), athz, ssoSigner),
+		Config:                            cfg,
+		Db:                                db,
+		MetricDb:                          metricDb,
+		Logger:                            logger,
+		Scheduler:                         scheduler,
+		scheduleStarted:                   false,
+		WaitGroup:                         &sync.WaitGroup{},
+		Store:                             store,
+		Authenticators:                    authenticators,
+		CompositeAuthenticator:            ath,
+		RuleBasedAuthorizer:               athz,
+		ServiceTypeHandler:                api.NewServiceTypeHandler(store.ServiceTypeRepo(), serviceTypeCmd, athz, propertyEngine),
+		ServiceOptionTypeHandler:          api.NewServiceOptionTypeHandler(store.ServiceOptionTypeRepo(), serviceOptionTypeCmd, athz),
+		ServiceOptionHandler:              api.NewServiceOptionHandler(store.ServiceOptionRepo(), serviceOptionCmd, athz),
+		ServicePoolSetHandler:             api.NewServicePoolSetHandler(store.ServicePoolSetRepo(), servicePoolSetCmd, athz),
+		ServicePoolHandler:                api.NewServicePoolHandler(store.ServicePoolRepo(), servicePoolCmd, athz),
+		ServicePoolValueHandler:           api.NewServicePoolValueHandler(store.ServicePoolValueRepo(), servicePoolValueCmd, athz),
+		ParticipantHandler:                api.NewParticipantHandler(store.ParticipantRepo(), participantCmd, athz),
+		AgentHandler:                      api.NewAgentHandler(store.AgentRepo(), agentCmd, athz),
+		AgentInstallTokenHandler:          api.NewAgentInstallTokenHandler(store.InstallTokenRepo(), installTokenCmd, store.AgentRepo().AuthScope, athz, vault, cfg.PublicBaseURL),
+		ConfigPoolHandler:                 api.NewConfigPoolHandler(store.ConfigPoolRepo(), configPoolCmd, athz),
+		ConfigPoolValueHandler:            api.NewConfigPoolValueHandler(store.ConfigPoolValueRepo(), store.ConfigPoolRepo(), configPoolValueCmd, athz),
+		AgentTypeHandler:                  api.NewAgentTypeHandler(store.AgentTypeRepo(), agentTypeCmd, athz),
+		InfrastructureTypeHandler:         api.NewInfrastructureTypeHandler(store.InfrastructureTypeRepo(), infrastructureTypeCmd, athz),
 		InfrastructureHandler:             api.NewInfrastructureHandler(store.InfrastructureRepo(), infrastructureCmd, athz),
 		InfrastructureInstallTokenHandler: api.NewInfrastructureInstallTokenHandler(store.InstallTokenRepo(), installTokenCmd, store.InfrastructureRepo().AuthScope, athz, vault, cfg.PublicBaseURL),
-		ServiceGroupHandler:       api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz),
-		ServiceHandler:            api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, athz),
-		JobHandler:                api.NewJobHandler(store.JobRepo(), jobCmd, athz),
-		MetricTypeHandler:         api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, athz),
-		MetricEntryHandler:        api.NewMetricEntryHandler(metricEntryRepo, store.ServiceRepo(), metricEntryCmd, athz),
-		MetricEntryRepo:           metricEntryRepo,
-		EventHandler:              api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz),
-		TokenHandler:              api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz),
-		VaultHandler:              api.NewVaultHandler(vault),
-		KeycloakUserHandler:       keycloakUserHandler,
-		ServiceCmd:                serviceCmd,
-		PropertyEngine:            propertyEngine,
+		ServiceGroupHandler:               api.NewServiceGroupHandler(store.ServiceGroupRepo(), serviceGroupCmd, athz),
+		ServiceHandler:                    api.NewServiceHandler(store.ServiceRepo(), store.AgentRepo(), store.ServiceGroupRepo(), serviceCmd, athz),
+		JobHandler:                        api.NewJobHandler(store.JobRepo(), jobCmd, athz),
+		MetricTypeHandler:                 api.NewMetricTypeHandler(store.MetricTypeRepo(), metricTypeCmd, athz),
+		MetricEntryHandler:                api.NewMetricEntryHandler(metricEntryRepo, store.ServiceRepo(), metricEntryCmd, athz),
+		MetricEntryRepo:                   metricEntryRepo,
+		EventHandler:                      api.NewEventHandler(store.EventRepo(), eventSubscriptionCmd, athz),
+		TokenHandler:                      api.NewTokenHandler(store.TokenRepo(), tokenCmd, store.AgentRepo(), athz),
+		VaultHandler:                      api.NewVaultHandler(vault),
+		KeycloakUserHandler:               keycloakUserHandler,
+		ServiceCmd:                        serviceCmd,
+		PropertyEngine:                    propertyEngine,
 	}
 }
 

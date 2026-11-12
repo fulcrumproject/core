@@ -15,6 +15,7 @@ Fulcrum is currently under active development. New agents and features are being
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
     - [Configuration](#configuration)
+    - [Optional CMP launch signing](#optional-cmp-launch-signing)
     - [Running with Docker](#running-with-docker)
     - [Running locally](#running-locally)
   - [Health Endpoints](#health-endpoints)
@@ -107,6 +108,12 @@ FULCRUM_JOB_TIMEOUT_INTERVAL=5m
 # Agent Configuration
 FULCRUM_AGENT_HEALTH_TIMEOUT=5m
 ```
+
+### Optional CMP launch signing
+
+Core supports service-scoped CMP launch tokens and public ES256 JWKS without
+replacing incoming Keycloak/token authentication. It remains disabled by default.
+See [CMP SSO configuration and API](docs/CMP_SSO.md).
 
 ### Running with Docker
 
@@ -226,4 +233,3 @@ For a comprehensive overview of Fulcrum Core's architecture, data model, and com
 - **Hot Reload Not Working**: Make sure you have the latest version of Air installed and your `.air.toml` file is correctly configured.
 
 For more support, please [open an issue](https://github.com/your-organization/fulcrum-core/issues) on our GitHub repository.
-

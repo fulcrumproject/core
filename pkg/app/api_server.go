@@ -1,3 +1,5 @@
+// API servers mount authenticated Core resources and public discovery.
+// Health and JWKS routes do not depend on browser launch authentication.
 package app
 
 import (
@@ -6,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/health"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/utils/logging"
@@ -129,6 +132,9 @@ func BuildHttpServer(
 
 	authMiddleware := middlewares.Auth(app.CompositeAuthenticator)
 
+	// Public discovery must remain outside the authenticated API group.
+	r.Get("/.well-known/jwks.json", api.NewSsoHandler(app.SsoSigner).JWKS)
+
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authMiddleware)
@@ -152,7 +158,12 @@ func BuildHttpServer(
 		r.Route("/config-pools", app.ConfigPoolHandler.Routes())
 		r.Route("/config-pool-values", app.ConfigPoolValueHandler.Routes())
 		r.Route("/service-groups", app.ServiceGroupHandler.Routes())
-		r.Route("/services", app.ServiceHandler.Routes())
+		r.Route("/services", func(r chi.Router) {
+			app.ServiceHandler.Routes()(r)
+			if app.CmpLaunchHandler != nil {
+				app.CmpLaunchHandler.Routes()(r)
+			}
+		})
 		r.Route("/metric-types", app.MetricTypeHandler.Routes())
 		r.Route("/metric-entries", app.MetricEntryHandler.Routes())
 		r.Route("/events", app.EventHandler.Routes())

@@ -233,6 +233,10 @@ components:
       $ref: ./components/responses.yaml#/InternalServerError
 
 paths:
+  /.well-known/jwks.json:
+    $ref: ./paths/jwks.yaml
+  /services/{id}/cmp-launch-token:
+    $ref: ./paths/services@{id}@cmp-launch-token.yaml
   /agent-types:
     $ref: ./paths/agent-types.yaml
   /agent-types/{id}:

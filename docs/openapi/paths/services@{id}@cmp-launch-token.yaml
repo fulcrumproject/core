@@ -1,0 +1,55 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      $ref: ../components/schemas/common.yaml#/properties.UUID
+post:
+  operationId: servicesCmpLaunchToken
+  summary: Mint a service-scoped CMP launch token
+  description: >
+    Participant-only: the caller must be the service's provider or consumer.
+    Agents and admins cannot launch. Identity, relation, service and CMP target
+    are derived from the credential and persisted service/agent configuration,
+    never the body. The browser POSTs the returned token to redirectUrl.
+    JWTs use ES256, the configured issuer/audience, participant_id, service_id,
+    relation, iat/nbf/exp and a fresh jti. Default lifetime is 90 seconds.
+    The CMP verifies against the public root /.well-known/jwks.json endpoint.
+    No single-use policy is added. Successful issuance requires a launch audit.
+    A missing service normally returns 403 when its scope cannot be loaded.
+  tags:
+    - Services
+  requestBody:
+    required: true
+    description: Send at least {}. Empty/malformed bodies fail; JSON null is accepted.
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/cmp_sso.yaml#/CmpLaunchTokenReq
+  responses:
+    "200":
+      description: Launch token issued (Cache-Control no-store)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/cmp_sso.yaml#/CmpLaunchTokenRes
+    "400":
+      $ref: ../components/responses.yaml#/BadRequest
+    "401":
+      $ref: ../components/responses.yaml#/Unauthorized
+    "403":
+      $ref: ../components/responses.yaml#/Forbidden
+    "422":
+      description: The service's agent has no CMP target configured
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/common.yaml#/ErrorRes
+    "503":
+      description: CMP signing is unconfigured
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/common.yaml#/ErrorRes
+    "500":
+      $ref: ../components/responses.yaml#/InternalServerError
