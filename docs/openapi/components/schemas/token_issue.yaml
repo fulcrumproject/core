@@ -1,0 +1,62 @@
+IssueTokenReq:
+  type: object
+  additionalProperties: false
+  required: [audience]
+  properties:
+    audience:
+      type: string
+      minLength: 1
+      pattern: '\S'
+      description: Requested JWT audience; does not grant access to that application.
+    serviceId:
+      $ref: common.yaml#/properties.UUID
+      description: Optional nonzero service UUID. Core verifies native access and relationships before certifying context.
+    ext:
+      type: object
+      additionalProperties: true
+      description: >
+        Optional opaque caller-asserted context, capped at 4096 serialized JSON bytes.
+        Nested under ext, never flattened or certified as application privileges.
+        Direct keys iss, sub, aud, iat, nbf, exp, jti, role, participant_id,
+        agent_id, service_id, relation and ext are rejected.
+IssueTokenRes:
+  type: object
+  additionalProperties: false
+  required: [token, expiresAt]
+  properties:
+    token:
+      type: string
+      description: Short-lived ES256 JWT; not an incoming Core API credential.
+    expiresAt:
+      type: string
+      format: date-time
+JWKS:
+  type: object
+  required: [keys]
+  properties:
+    keys:
+      type: array
+      description: One current public signing key, or an empty array when signing is unconfigured.
+      items:
+        type: object
+        additionalProperties: false
+        required: [kty, crv, x, y, kid, use, alg]
+        properties:
+          kty:
+            type: string
+            const: EC
+          crv:
+            type: string
+            const: P-256
+          x:
+            type: string
+          y:
+            type: string
+          kid:
+            type: string
+          use:
+            type: string
+            const: sig
+          alg:
+            type: string
+            const: ES256

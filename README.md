@@ -15,7 +15,7 @@ Fulcrum is currently under active development. New agents and features are being
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
     - [Configuration](#configuration)
-    - [Optional CMP launch signing](#optional-cmp-launch-signing)
+    - [Optional JWT issuance](#optional-jwt-issuance)
     - [Running with Docker](#running-with-docker)
     - [Running locally](#running-locally)
   - [Health Endpoints](#health-endpoints)
@@ -109,11 +109,12 @@ FULCRUM_JOB_TIMEOUT_INTERVAL=5m
 FULCRUM_AGENT_HEALTH_TIMEOUT=5m
 ```
 
-### Optional CMP launch signing
+### Optional JWT issuance
 
-Core supports service-scoped CMP launch tokens and public ES256 JWKS without
-replacing incoming Keycloak/token authentication. It remains disabled by default.
-See [CMP SSO configuration and API](docs/CMP_SSO.md).
+Core optionally issues generic participant/agent JWTs, with authorized service
+context when requested, and public ES256 JWKS. Existing incoming credentials,
+Keycloak and token CRUD remain unchanged; issued JWTs do not authenticate into
+Core. See [JWT issuer configuration and API](docs/TOKEN_ISSUER.md).
 
 ### Running with Docker
 

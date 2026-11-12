@@ -1,6 +1,6 @@
-// Signer shares one ES256/P-256 key across CMP and application token profiles.
-// It publishes only public verification material and bounds browser extensions.
-package sso
+// Signer issues generic Core identity JWTs using one ES256/P-256 key.
+// Public discovery and bounded opaque extensions are shared by both caller roles.
+package jwtissuer
 
 import (
 	"crypto/ecdsa"
@@ -18,7 +18,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// maxExtBytes caps the serialized size of the marketplace-asserted ext block.
+// maxExtBytes caps the serialized size of the caller-asserted ext block.
 // ext is opaque passthrough; the cap stops a caller from bloating the token.
 const maxExtBytes = 4096
 
@@ -28,16 +28,17 @@ const maxExtBytes = 4096
 // a future refactor that flattens ext into the payload.
 var reservedClaims = map[string]struct{}{
 	"iss": {}, "sub": {}, "aud": {}, "exp": {}, "nbf": {}, "iat": {}, "jti": {},
-	"participant_id": {}, "service_id": {}, "relation": {}, "ext": {},
+	"role": {}, "participant_id": {}, "agent_id": {}, "service_id": {}, "relation": {}, "ext": {},
 }
 
 // Signer holds the shared ES256 signing primitive and public verification JWKS.
-// It is built once at boot and is safe for concurrent use by both profiles.
+// It is built once at boot and is safe for concurrent use by both caller roles.
 type Signer struct {
-	signer   jose.Signer
-	keys     jose.JSONWebKeySet
-	issuer   string
-	tokenTTL time.Duration
+	signer         jose.Signer
+	keys           jose.JSONWebKeySet
+	issuer         string
+	participantTTL time.Duration
+	agentTTL       time.Duration
 	// now is injectable so tests can pin iat/nbf/exp.
 	now func() time.Time
 }
@@ -52,12 +53,15 @@ func New(cfg Config) (*Signer, error) {
 	if !cfg.Enabled() {
 		return nil, nil
 	}
-	if cfg.TokenTTL == 0 {
-		cfg.TokenTTL = DefaultTokenTTL
+	if cfg.ParticipantTTL == 0 {
+		cfg.ParticipantTTL = DefaultParticipantTTL
+	}
+	if cfg.AgentTTL == 0 {
+		cfg.AgentTTL = DefaultAgentTTL
 	}
 	priv, err := parseECPrivateKey(cfg.SigningKey)
 	if err != nil {
-		return nil, fmt.Errorf("parse CMP SSO signing key: %w", err)
+		return nil, fmt.Errorf("parse JWT signing key: %w", err)
 	}
 
 	sig, err := jose.NewSigner(
@@ -76,27 +80,37 @@ func New(cfg Config) (*Signer, error) {
 	}
 
 	return &Signer{
-		signer:   sig,
-		keys:     jose.JSONWebKeySet{Keys: []jose.JSONWebKey{pub}},
-		issuer:   cfg.Issuer,
-		tokenTTL: cfg.TokenTTL,
-		now:      time.Now,
+		signer:         sig,
+		keys:           jose.JSONWebKeySet{Keys: []jose.JSONWebKey{pub}},
+		issuer:         cfg.Issuer,
+		participantTTL: cfg.ParticipantTTL,
+		agentTTL:       cfg.AgentTTL,
+		now:            time.Now,
 	}, nil
 }
 
-// Sign stamps the system claims (iss from config; iat/nbf = now; exp = now+TTL;
-// a fresh uuid jti) onto the caller's claims and serializes the signed token.
-// It returns the token and its absolute expiry. ext is validated before signing.
-func (s *Signer) Sign(claims LaunchClaims) (token string, expiresAt time.Time, err error) {
+// Sign stamps registered claims and a domain subject using caller-role TTL policy.
+// Its typed identity/context must come from Core authorization, not a request body.
+func (s *Signer) Sign(claims Claims) (token string, expiresAt time.Time, err error) {
 	if s == nil {
-		return "", time.Time{}, fmt.Errorf("CMP SSO signing is not configured")
+		return "", time.Time{}, fmt.Errorf("JWT signing is not configured")
 	}
 	if err := ValidateExt(claims.Ext); err != nil {
 		return "", time.Time{}, err
 	}
 
-	now := s.now()
-	expiresAt = now.Add(s.tokenTTL)
+	ttl := s.participantTTL
+	switch claims.Role {
+	case "participant":
+		claims.Subject = claims.ParticipantID
+	case "agent":
+		ttl = s.agentTTL
+		claims.Subject = claims.AgentID
+	default:
+		return "", time.Time{}, fmt.Errorf("unsupported JWT principal role")
+	}
+	now := s.now().UTC().Truncate(time.Second)
+	expiresAt = now.Add(ttl)
 
 	claims.Issuer = s.issuer
 	claims.IssuedAt = jwt.NewNumericDate(now)
@@ -106,7 +120,7 @@ func (s *Signer) Sign(claims LaunchClaims) (token string, expiresAt time.Time, e
 
 	token, err = jwt.Signed(s.signer).Claims(claims).Serialize()
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("sign launch token: %w", err)
+		return "", time.Time{}, fmt.Errorf("sign identity token: %w", err)
 	}
 	return token, expiresAt, nil
 }
@@ -153,11 +167,8 @@ func parseECPrivateKey(pemKey string) (*ecdsa.PrivateKey, error) {
 	return ecKey, nil
 }
 
-// JWKS returns the public key set a CMP fetches (once, cached by kid) to verify
-// launch tokens. Public keys only — the private signing key never leaves Signer.
-// It publishes the single key from the current config; overlap rotation (serving
-// a previous public key alongside the new one) is not yet implemented, so a key
-// swap invalidates in-flight tokens at restart (bounded by the short TokenTTL).
+// JWKS exposes only the single current public verification key.
+// Key replacement at restart invalidates tokens signed with the previous key.
 func (s *Signer) JWKS() jose.JSONWebKeySet {
 	if s == nil {
 		return jose.JSONWebKeySet{Keys: []jose.JSONWebKey{}}
@@ -169,16 +180,15 @@ func (s *Signer) JWKS() jose.JSONWebKeySet {
 	return jose.JSONWebKeySet{Keys: []jose.JSONWebKey{pub}}
 }
 
-// LaunchClaims is the payload of a CMP launch token: the RFC 7519 registered
-// claims (embedded, flattened on marshal) plus Fulcrum's private claims. Sign
-// stamps iss/iat/nbf/exp/jti; the caller supplies the rest. ext is opaque,
-// marketplace-asserted data that Fulcrum signs but never interprets.
-type LaunchClaims struct {
+// Claims certifies Core identity and optional authorized service context.
+// Ext is separately namespaced, caller-asserted data, never external privileges.
+type Claims struct {
 	jwt.Claims
-
+	Role          string         `json:"role"`
 	ParticipantID string         `json:"participant_id"`
-	ServiceID     string         `json:"service_id"`
-	Relation      string         `json:"relation"`
+	AgentID       string         `json:"agent_id,omitempty"`
+	ServiceID     string         `json:"service_id,omitempty"`
+	Relation      string         `json:"relation,omitempty"`
 	Ext           map[string]any `json:"ext,omitempty"`
 }
 

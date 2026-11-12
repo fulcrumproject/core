@@ -1,5 +1,5 @@
 // API servers mount authenticated Core resources and public discovery.
-// Health and JWKS routes do not depend on browser launch authentication.
+// Health and JWKS routes do not depend on JWT issuance.
 package app
 
 import (
@@ -133,7 +133,7 @@ func BuildHttpServer(
 	authMiddleware := middlewares.Auth(app.CompositeAuthenticator)
 
 	// Public discovery must remain outside the authenticated API group.
-	r.Get("/.well-known/jwks.json", api.NewSsoHandler(app.SsoSigner).JWKS)
+	r.Get("/.well-known/jwks.json", api.NewJwksHandler(app.JWTSigner).JWKS)
 
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
@@ -154,24 +154,21 @@ func BuildHttpServer(
 		r.Route("/agents", func(r chi.Router) {
 			app.AgentHandler.Routes()(r)
 			app.AgentInstallTokenHandler.Routes()(r)
-			if app.AgentAccessTokenHandler != nil {
-				app.AgentAccessTokenHandler.Routes()(r)
-			}
 		})
 		r.Route("/config-pools", app.ConfigPoolHandler.Routes())
 		r.Route("/config-pool-values", app.ConfigPoolValueHandler.Routes())
 		r.Route("/service-groups", app.ServiceGroupHandler.Routes())
-		r.Route("/services", func(r chi.Router) {
-			app.ServiceHandler.Routes()(r)
-			if app.CmpLaunchHandler != nil {
-				app.CmpLaunchHandler.Routes()(r)
-			}
-		})
+		r.Route("/services", app.ServiceHandler.Routes())
 		r.Route("/metric-types", app.MetricTypeHandler.Routes())
 		r.Route("/metric-entries", app.MetricEntryHandler.Routes())
 		r.Route("/events", app.EventHandler.Routes())
 		r.Route("/jobs", app.JobHandler.Routes())
-		r.Route("/tokens", app.TokenHandler.Routes())
+		r.Route("/tokens", func(r chi.Router) {
+			app.TokenHandler.Routes()(r)
+			if app.TokenIssueHandler != nil {
+				app.TokenIssueHandler.Routes()(r)
+			}
+		})
 		r.Route("/vault/secrets", app.VaultHandler.Routes())
 		if app.KeycloakUserHandler != nil {
 			r.Route("/keycloak-users", app.KeycloakUserHandler.Routes())

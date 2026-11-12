@@ -1,5 +1,5 @@
 // App assembles Core configuration, persistence, authentication and handlers.
-// Optional CMP signing is initialized without replacing external authentication.
+// Optional JWT signing is initialized without replacing external authentication.
 package app
 
 import (
@@ -19,9 +19,9 @@ import (
 	"github.com/fulcrumproject/core/pkg/domain"
 	"github.com/fulcrumproject/core/pkg/gormlock"
 	"github.com/fulcrumproject/core/pkg/health"
+	"github.com/fulcrumproject/core/pkg/jwtissuer"
 	"github.com/fulcrumproject/core/pkg/keycloak"
 	"github.com/fulcrumproject/core/pkg/schema"
-	"github.com/fulcrumproject/core/pkg/sso"
 	"github.com/fulcrumproject/utils/confbuilder"
 	"github.com/fulcrumproject/utils/logging"
 	"github.com/go-co-op/gocron/v2"
@@ -29,10 +29,8 @@ import (
 )
 
 type App struct {
-	SsoSigner                         *sso.Signer
-	ApplicationTokens                 *sso.ApplicationTokens
-	AgentAccessTokenHandler           *api.AgentAccessTokenHandler
-	CmpLaunchHandler                  *api.CmpLaunchHandler
+	JWTSigner                         *jwtissuer.Signer
+	TokenIssueHandler                 *api.TokenIssueHandler
 	Config                            *config.Config
 	Db                                *gorm.DB
 	MetricDb                          *gorm.DB
@@ -151,15 +149,9 @@ func NewApp() *App {
 		return nil
 	}
 
-	ssoSigner, err := sso.New(cfg.CmpSso)
+	jwtSigner, err := jwtissuer.New(cfg.JWT)
 	if err != nil {
-		slog.Error("Invalid CMP SSO configuration", "error", err)
-		return nil
-	}
-
-	applicationTokens, err := sso.NewApplicationTokens(ssoSigner, cfg.ApplicationTokens)
-	if err != nil {
-		slog.Error("Invalid application token configuration", "error", err)
+		slog.Error("Invalid JWT configuration", "error", err)
 		return nil
 	}
 
@@ -292,10 +284,8 @@ func NewApp() *App {
 	configPoolValueCmd := domain.NewConfigPoolValueCommander(store)
 
 	return &App{
-		SsoSigner:                         ssoSigner,
-		ApplicationTokens:                 applicationTokens,
-		AgentAccessTokenHandler:           api.NewAgentAccessTokenHandler(store.AgentRepo(), domain.NewAgentAccessTokenCommander(store), athz, applicationTokens),
-		CmpLaunchHandler:                  api.NewCmpLaunchHandler(store.ServiceRepo(), store.AgentRepo(), domain.NewCmpLaunchCommander(store), athz, ssoSigner),
+		JWTSigner:                         jwtSigner,
+		TokenIssueHandler:                 api.NewTokenIssueHandler(domain.NewTokenIssueCommander(store, athz), jwtSigner),
 		Config:                            cfg,
 		Db:                                db,
 		MetricDb:                          metricDb,

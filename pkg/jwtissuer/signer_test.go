@@ -1,6 +1,6 @@
-// Tests CMP signing, public verification and extension constraints.
+// Tests JWT signing, public verification and extension constraints.
 // All signing material is generated locally for each test.
-package sso
+package jwtissuer
 
 import (
 	"crypto/ecdsa"
@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// testConfig generates a throwaway P-256 key and returns a usable SSO config.
+// testConfig generates a throwaway P-256 key and returns a usable JWT config.
 func testConfig(t *testing.T) Config {
 	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -30,10 +30,10 @@ func testConfig(t *testing.T) Config {
 	require.NoError(t, err)
 	pemKey := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: der})
 	return Config{
-		SigningKey: string(pemKey),
-		KeyID:      "cem-sso-test",
-		Issuer:     "https://fulcrum.test/cem",
-		TokenTTL:   90 * time.Second,
+		SigningKey:     string(pemKey),
+		KeyID:          "core-jwt-test",
+		Issuer:         "https://fulcrum.test",
+		ParticipantTTL: 90 * time.Second,
 	}
 }
 
@@ -45,8 +45,8 @@ func TestSign_RoundTrip(t *testing.T) {
 	frozen := time.Date(2026, 6, 22, 10, 0, 0, 0, time.UTC)
 	signer.now = func() time.Time { return frozen }
 
-	token, expiresAt, err := signer.Sign(LaunchClaims{
-		Claims:        jwt.Claims{Subject: "p-123", Audience: jwt.Audience{"cmp-y"}},
+	token, expiresAt, err := signer.Sign(Claims{Role: "participant",
+		Claims:        jwt.Claims{Subject: "p-123", Audience: jwt.Audience{"recipient"}},
 		ParticipantID: "p-123",
 		ServiceID:     "svc-456",
 		Relation:      "provider",
@@ -54,16 +54,16 @@ func TestSign_RoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, frozen.Add(90*time.Second), expiresAt)
 
-	// Verify against the public JWKS, as a CMP would.
+	// Verify against the public JWKS, as a recipient would.
 	parsed, err := jwt.ParseSigned(token, []jose.SignatureAlgorithm{jose.ES256})
 	require.NoError(t, err)
 
-	var out LaunchClaims
+	var out Claims
 	require.NoError(t, parsed.Claims(signer.JWKS(), &out))
 
-	assert.Equal(t, "https://fulcrum.test/cem", out.Issuer)
+	assert.Equal(t, "https://fulcrum.test", out.Issuer)
 	assert.Equal(t, "p-123", out.Subject)
-	assert.Equal(t, jwt.Audience{"cmp-y"}, out.Audience)
+	assert.Equal(t, jwt.Audience{"recipient"}, out.Audience)
 	assert.Equal(t, "p-123", out.ParticipantID)
 	assert.Equal(t, "svc-456", out.ServiceID)
 	assert.Equal(t, "provider", out.Relation)
@@ -77,13 +77,13 @@ func TestSign_KidInHeader(t *testing.T) {
 	signer, err := New(testConfig(t))
 	require.NoError(t, err)
 
-	token, _, err := signer.Sign(LaunchClaims{ParticipantID: "p-1"})
+	token, _, err := signer.Sign(Claims{Role: "participant", ParticipantID: "p-1"})
 	require.NoError(t, err)
 
 	parsed, err := jwt.ParseSigned(token, []jose.SignatureAlgorithm{jose.ES256})
 	require.NoError(t, err)
 	require.Len(t, parsed.Headers, 1)
-	assert.Equal(t, "cem-sso-test", parsed.Headers[0].KeyID)
+	assert.Equal(t, "core-jwt-test", parsed.Headers[0].KeyID)
 	assert.Equal(t, string(jose.ES256), parsed.Headers[0].Algorithm)
 }
 
@@ -91,9 +91,9 @@ func TestSign_FreshJtiEachCall(t *testing.T) {
 	signer, err := New(testConfig(t))
 	require.NoError(t, err)
 
-	t1, _, err := signer.Sign(LaunchClaims{ParticipantID: "p-1"})
+	t1, _, err := signer.Sign(Claims{Role: "participant", ParticipantID: "p-1"})
 	require.NoError(t, err)
-	t2, _, err := signer.Sign(LaunchClaims{ParticipantID: "p-1"})
+	t2, _, err := signer.Sign(Claims{Role: "participant", ParticipantID: "p-1"})
 	require.NoError(t, err)
 	assert.NotEqual(t, t1, t2, "each token gets a unique jti")
 }
@@ -102,9 +102,9 @@ func TestSign_RejectsReservedExtKey(t *testing.T) {
 	signer, err := New(testConfig(t))
 	require.NoError(t, err)
 
-	_, _, err = signer.Sign(LaunchClaims{
+	_, _, err = signer.Sign(Claims{Role: "participant",
 		ParticipantID: "p-1",
-		Ext:           map[string]any{"aud": "evil-cmp"},
+		Ext:           map[string]any{"aud": "evil-recipient"},
 	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "reserved claim")
@@ -114,7 +114,7 @@ func TestSign_RejectsOversizedExt(t *testing.T) {
 	signer, err := New(testConfig(t))
 	require.NoError(t, err)
 
-	_, _, err = signer.Sign(LaunchClaims{
+	_, _, err = signer.Sign(Claims{Role: "participant",
 		ParticipantID: "p-1",
 		Ext:           map[string]any{"blob": strings.Repeat("x", maxExtBytes+1)},
 	})
@@ -126,7 +126,7 @@ func TestSign_ExtPassedThrough(t *testing.T) {
 	signer, err := New(testConfig(t))
 	require.NoError(t, err)
 
-	token, _, err := signer.Sign(LaunchClaims{
+	token, _, err := signer.Sign(Claims{Role: "participant",
 		ParticipantID: "p-1",
 		Relation:      "consumer",
 		Ext:           map[string]any{"operatorEmail": "buyer@acme.com", "mpOrderRef": "ORD-42"},
@@ -135,7 +135,7 @@ func TestSign_ExtPassedThrough(t *testing.T) {
 
 	parsed, err := jwt.ParseSigned(token, []jose.SignatureAlgorithm{jose.ES256})
 	require.NoError(t, err)
-	var out LaunchClaims
+	var out Claims
 	require.NoError(t, parsed.Claims(signer.JWKS(), &out))
 	assert.Equal(t, "buyer@acme.com", out.Ext["operatorEmail"])
 	assert.Equal(t, "ORD-42", out.Ext["mpOrderRef"])
@@ -143,10 +143,10 @@ func TestSign_ExtPassedThrough(t *testing.T) {
 
 func TestNew_RejectsBadKey(t *testing.T) {
 	_, err := New(Config{
-		SigningKey: "not a pem key",
-		KeyID:      "k1",
-		Issuer:     "iss",
-		TokenTTL:   time.Minute,
+		SigningKey:     "not a pem key",
+		KeyID:          "k1",
+		Issuer:         "iss",
+		ParticipantTTL: time.Minute,
 	})
 	require.Error(t, err)
 }
@@ -165,14 +165,14 @@ func TestParseECPrivateKey_PKCS8(t *testing.T) {
 
 func TestConfiguration(t *testing.T) {
 	for name, cfg := range map[string]Config{
-		"empty": {}, "default TTL": {TokenTTL: DefaultTokenTTL},
+		"empty": {}, "default TTL": {ParticipantTTL: DefaultParticipantTTL},
 	} {
 		t.Run(name, func(t *testing.T) {
 			s, err := New(cfg)
 			require.NoError(t, err)
 			require.Nil(t, s)
 			require.Empty(t, s.JWKS().Keys)
-			_, _, err = s.Sign(LaunchClaims{})
+			_, _, err = s.Sign(Claims{Role: "participant"})
 			require.Error(t, err)
 		})
 	}
@@ -180,18 +180,18 @@ func TestConfiguration(t *testing.T) {
 		"key only":       {SigningKey: "invalid"},
 		"kid only":       {KeyID: "k1"},
 		"issuer only":    {Issuer: "issuer"},
-		"TTL only":       {TokenTTL: time.Minute},
-		"negative TTL":   {TokenTTL: -time.Second},
+		"TTL only":       {ParticipantTTL: time.Minute},
+		"negative TTL":   {ParticipantTTL: -time.Second},
 		"blank settings": {SigningKey: " ", KeyID: " ", Issuer: " "},
 	} {
 		t.Run(name, func(t *testing.T) { _, err := New(cfg); require.Error(t, err) })
 	}
 	cfg := testConfig(t)
-	cfg.TokenTTL = 0
+	cfg.ParticipantTTL = 0
 	s, err := New(cfg)
 	require.NoError(t, err)
-	require.Equal(t, DefaultTokenTTL, s.tokenTTL)
-	cfg.TokenTTL = -time.Second
+	require.Equal(t, DefaultParticipantTTL, s.participantTTL)
+	cfg.ParticipantTTL = -time.Second
 	_, err = New(cfg)
 	require.Error(t, err)
 }
@@ -250,17 +250,17 @@ func TestPublicKeysAndSystemClaims(t *testing.T) {
 	require.Equal(t, "ES256", keys.Keys[0]["alg"])
 	frozen := time.Now().Truncate(time.Second)
 	s.now = func() time.Time { return frozen }
-	token, _, err := s.Sign(LaunchClaims{Claims: jwt.Claims{Issuer: "evil", ID: "evil", Expiry: jwt.NewNumericDate(frozen.Add(time.Hour))}})
+	token, _, err := s.Sign(Claims{Role: "participant", Claims: jwt.Claims{Issuer: "evil", ID: "evil", Expiry: jwt.NewNumericDate(frozen.Add(time.Hour))}})
 	require.NoError(t, err)
 	parsed, err := jwt.ParseSigned(token, []jose.SignatureAlgorithm{jose.ES256})
 	require.NoError(t, err)
-	var claims LaunchClaims
+	var claims Claims
 	require.NoError(t, parsed.Claims(s.JWKS(), &claims))
 	require.NotEqual(t, "evil", claims.Issuer)
 	require.NotEqual(t, "evil", claims.ID)
-	require.Equal(t, frozen.Add(DefaultTokenTTL), claims.Expiry.Time())
+	require.Equal(t, frozen.Add(DefaultParticipantTTL), claims.Expiry.Time())
 	require.NoError(t, claims.Validate(jwt.Expected{Issuer: claims.Issuer, Time: frozen}))
-	require.Error(t, claims.ValidateWithLeeway(jwt.Expected{Time: frozen.Add(DefaultTokenTTL + time.Second)}, 0))
+	require.Error(t, claims.ValidateWithLeeway(jwt.Expected{Time: frozen.Add(DefaultParticipantTTL + time.Second)}, 0))
 	_, err = jwt.ParseSigned(token, []jose.SignatureAlgorithm{jose.HS256})
 	require.Error(t, err)
 	// Returned keys cannot mutate subsequent discovery responses.
@@ -287,15 +287,83 @@ func TestConcurrentSigning(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			token, _, err := s.Sign(LaunchClaims{})
+			token, _, err := s.Sign(Claims{Role: "participant"})
 			if !assert.NoError(t, err) {
 				return
 			}
 			parsed, err := jwt.ParseSigned(token, []jose.SignatureAlgorithm{jose.ES256})
 			if assert.NoError(t, err) {
-				assert.NoError(t, parsed.Claims(s.JWKS(), &LaunchClaims{}))
+				assert.NoError(t, parsed.Claims(s.JWKS(), &Claims{Role: "participant"}))
 			}
 		}()
 	}
 	wg.Wait()
+}
+
+func TestRolePolicyAndClaimPresence(t *testing.T) {
+	for _, custom := range []bool{false, true} {
+		cfg := testConfig(t)
+		if custom {
+			cfg.ParticipantTTL = 45 * time.Second
+			cfg.AgentTTL = 2 * time.Minute
+		}
+		s, err := New(cfg)
+		require.NoError(t, err)
+		for _, role := range []string{"participant", "agent"} {
+			expectedTTL := DefaultParticipantTTL
+			if role == "agent" {
+				expectedTTL = DefaultAgentTTL
+			}
+			if custom {
+				expectedTTL = cfg.ParticipantTTL
+				if role == "agent" {
+					expectedTTL = cfg.AgentTTL
+				}
+			}
+			claims := Claims{Claims: jwt.Claims{Subject: "credential-id-is-not-the-subject", Audience: jwt.Audience{"recipient"}}, Role: role, ParticipantID: "provider-id"}
+			subject := "provider-id"
+			if role == "agent" {
+				claims.AgentID = "agent-id"
+				subject = "agent-id"
+			}
+			token, expires, err := s.Sign(claims)
+			require.NoError(t, err)
+			parsed, err := jwt.ParseSigned(token, []jose.SignatureAlgorithm{jose.ES256})
+			require.NoError(t, err)
+			var raw map[string]any
+			require.NoError(t, parsed.Claims(s.JWKS(), &raw))
+			require.Equal(t, subject, raw["sub"])
+			require.Equal(t, role, raw["role"])
+			require.Equal(t, "provider-id", raw["participant_id"])
+			require.Equal(t, expectedTTL.Seconds(), raw["exp"].(float64)-raw["iat"].(float64))
+			require.Equal(t, raw["iat"], raw["nbf"])
+			require.Equal(t, float64(expires.Unix()), raw["exp"])
+			for _, key := range []string{"service_id", "relation", "ext", "app", "roles", "redirectUrl"} {
+				require.NotContains(t, raw, key)
+			}
+			if role == "agent" {
+				require.Equal(t, "agent-id", raw["agent_id"])
+			} else {
+				require.NotContains(t, raw, "agent_id")
+			}
+		}
+	}
+	s, err := New(testConfig(t))
+	require.NoError(t, err)
+	for _, role := range []string{"admin", "other", ""} {
+		_, _, err = s.Sign(Claims{Role: role})
+		require.Error(t, err)
+	}
+	for _, ttl := range []time.Duration{-time.Second, time.Millisecond, time.Second + time.Nanosecond} {
+		for _, agent := range []bool{false, true} {
+			cfg := testConfig(t)
+			if agent {
+				cfg.AgentTTL = ttl
+			} else {
+				cfg.ParticipantTTL = ttl
+			}
+			_, err := New(cfg)
+			require.Error(t, err)
+		}
+	}
 }
