@@ -38,6 +38,7 @@ const (
 	ActionDelete Action = "delete"
 
 	// Special actions
+	ActionAccessToken   Action = "access_token"
 	ActionCmpLaunch     Action = "cmp_launch"
 	ActionUpdateStatus  Action = "update_status"
 	ActionGenerateToken Action = "generate_token"
@@ -56,6 +57,9 @@ var Rules = []AuthorizationRule{
 	{Object: ObjectTypeParticipant, Action: ActionCreate, Roles: []auth.Role{auth.RoleAdmin}},
 	{Object: ObjectTypeParticipant, Action: ActionUpdate, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant}},
 	{Object: ObjectTypeParticipant, Action: ActionDelete, Roles: []auth.Role{auth.RoleAdmin}},
+
+	// Application-token issuance is agent-only, never an admin/participant shortcut.
+	{Object: ObjectTypeAgent, Action: ActionAccessToken, Roles: []auth.Role{auth.RoleAgent}},
 
 	// Agent permissions
 	{Object: ObjectTypeAgent, Action: ActionRead, Roles: []auth.Role{auth.RoleAdmin, auth.RoleParticipant, auth.RoleAgent}},

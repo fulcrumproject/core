@@ -261,6 +261,8 @@ paths:
     $ref: ./paths/agents.yaml
   /agents/me:
     $ref: ./paths/agents@me.yaml
+  /agents/me/access-token:
+    $ref: ./paths/agents@me@access-token.yaml
   /agents/me/status:
     $ref: ./paths/agents@me@status.yaml
   /agents/install/{token}/config:

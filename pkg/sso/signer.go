@@ -1,5 +1,5 @@
-// Signer issues ES256 CMP launch tokens using a server-owned P-256 key.
-// It publishes only public verification material and bounds opaque extensions.
+// Signer shares one ES256/P-256 key across CMP and application token profiles.
+// It publishes only public verification material and bounds browser extensions.
 package sso
 
 import (
@@ -31,8 +31,8 @@ var reservedClaims = map[string]struct{}{
 	"participant_id": {}, "service_id": {}, "relation": {}, "ext": {},
 }
 
-// Signer mints CMP launch tokens (ES256) and holds the public JWKS a CMP uses
-// to verify them. It is built once at boot and is safe for concurrent use.
+// Signer holds the shared ES256 signing primitive and public verification JWKS.
+// It is built once at boot and is safe for concurrent use by both profiles.
 type Signer struct {
 	signer   jose.Signer
 	keys     jose.JSONWebKeySet

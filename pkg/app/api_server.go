@@ -154,6 +154,9 @@ func BuildHttpServer(
 		r.Route("/agents", func(r chi.Router) {
 			app.AgentHandler.Routes()(r)
 			app.AgentInstallTokenHandler.Routes()(r)
+			if app.AgentAccessTokenHandler != nil {
+				app.AgentAccessTokenHandler.Routes()(r)
+			}
 		})
 		r.Route("/config-pools", app.ConfigPoolHandler.Routes())
 		r.Route("/config-pool-values", app.ConfigPoolValueHandler.Routes())

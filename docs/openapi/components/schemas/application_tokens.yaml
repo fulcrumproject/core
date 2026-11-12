@@ -1,0 +1,16 @@
+# Application tokens are distinct from service-scoped browser launch tokens.
+# Issued claims are determined by authenticated agent identity and operator policy.
+AgentAccessTokenRes:
+  type: object
+  additionalProperties: false
+  required:
+    - token
+    - expiresAt
+  properties:
+    token:
+      type: string
+      description: ES256 application JWT with app, roles, iss, aud, iat and exp
+    expiresAt:
+      type: string
+      format: date-time
+      description: Absolute token expiry (RFC 3339)

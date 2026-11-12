@@ -4,8 +4,9 @@ Core can sign short-lived browser launch tokens for a service's Cloud Management
 Platform (CMP). This is the generic CEM launch flow, not a new login system.
 Incoming API authentication remains the existing token/Keycloak chain. Core's
 launch JWTs are **not** accepted as Core API credentials. No tenant/end-customer
-model, session management, single-use/replay policy, machine-token endpoint or
-real FAE integration is implemented here.
+model, session management, single-use/replay policy or real FAE integration is
+implemented here. The separate [agent application token](AGENT_ACCESS_TOKENS.md)
+profile shares the signer/JWKS but not browser claims or TTL.
 
 ## Server configuration
 
@@ -116,8 +117,9 @@ application's **authenticated** `/api/v1/services` router, alongside its own
 service routes. Include Core's `authz.ActionCmpLaunch` rule (participant-only).
 Core's `App.SsoSigner` and `App.CmpLaunchHandler` expose the same initialized
 instances for extension wiring. There is no duplicate CEM implementation in
-Core and no machine-token profile in this item; a later CEM change must actually
-adopt these exports before downstream reuse can be claimed.
+Core; a later CEM change must actually adopt these exports before downstream
+reuse can be claimed. The separate agent application profile is documented in
+[Agent application access tokens](AGENT_ACCESS_TOKENS.md).
 
 ## Verification
 

@@ -30,6 +30,8 @@ import (
 
 type App struct {
 	SsoSigner                         *sso.Signer
+	ApplicationTokens                 *sso.ApplicationTokens
+	AgentAccessTokenHandler           *api.AgentAccessTokenHandler
 	CmpLaunchHandler                  *api.CmpLaunchHandler
 	Config                            *config.Config
 	Db                                *gorm.DB
@@ -152,6 +154,12 @@ func NewApp() *App {
 	ssoSigner, err := sso.New(cfg.CmpSso)
 	if err != nil {
 		slog.Error("Invalid CMP SSO configuration", "error", err)
+		return nil
+	}
+
+	applicationTokens, err := sso.NewApplicationTokens(ssoSigner, cfg.ApplicationTokens)
+	if err != nil {
+		slog.Error("Invalid application token configuration", "error", err)
 		return nil
 	}
 
@@ -285,6 +293,8 @@ func NewApp() *App {
 
 	return &App{
 		SsoSigner:                         ssoSigner,
+		ApplicationTokens:                 applicationTokens,
+		AgentAccessTokenHandler:           api.NewAgentAccessTokenHandler(store.AgentRepo(), domain.NewAgentAccessTokenCommander(store), athz, applicationTokens),
 		CmpLaunchHandler:                  api.NewCmpLaunchHandler(store.ServiceRepo(), store.AgentRepo(), domain.NewCmpLaunchCommander(store), athz, ssoSigner),
 		Config:                            cfg,
 		Db:                                db,

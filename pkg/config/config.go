@@ -19,6 +19,7 @@ const (
 // Fulcrum configuration
 type Config struct {
 	CmpSso                  sso.Config            `json:"cmpSso"`
+	ApplicationTokens       sso.ApplicationConfig `json:"applicationTokens"`
 	Port                    uint                  `json:"port" env:"PORT" validate:"required,min=1,max=65535"`
 	ShutdownTimeout         time.Duration         `json:"shutdownTimeout" env:"SHUTDOWN_TIMEOUT"`
 	SchedulerLockerConfig   SchedulerLockerConfig `json:"schedulerLocker" validate:"required"`
@@ -59,9 +60,10 @@ type JobConfig struct {
 }
 
 var Default = Config{
-	CmpSso:          sso.Config{TokenTTL: sso.DefaultTokenTTL},
-	Port:            8080,
-	ShutdownTimeout: 30 * time.Second,
+	CmpSso:            sso.Config{TokenTTL: sso.DefaultTokenTTL},
+	ApplicationTokens: sso.ApplicationConfig{TokenTTL: sso.DefaultApplicationTTL},
+	Port:              8080,
+	ShutdownTimeout:   30 * time.Second,
 	SchedulerLockerConfig: SchedulerLockerConfig{
 		Name:          "fulcrum-scheduler",
 		CleanInterval: 30 * time.Minute,

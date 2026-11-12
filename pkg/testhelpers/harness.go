@@ -1,3 +1,5 @@
+// The test harness starts isolated Core servers and waits for readiness.
+// Each caller owns its synthetic database, optional config file and process cleanup.
 package testhelpers
 
 import (
@@ -28,6 +30,7 @@ type DBSource interface {
 // with the harness defaults.
 type Config struct {
 	BinaryPath string
+	ConfigPath string
 	DB         DBSource
 	Realm      Realm
 	ExtraEnv   []string
@@ -71,6 +74,9 @@ func Start(t *testing.T, cfg Config) (apiURL, healthURL string) {
 		args = append(args, "-cover", "-coverpkg=./...")
 	}
 	args = append(args, cfg.BinaryPath)
+	if cfg.ConfigPath != "" {
+		args = append(args, "-config", cfg.ConfigPath)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, "go", args...)

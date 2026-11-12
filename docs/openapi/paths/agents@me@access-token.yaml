@@ -1,0 +1,59 @@
+# Application-token issuance uses only authenticated agent scope and operator policy.
+# Bodies and query parameters are intentionally ignored, including malformed JSON.
+post:
+  operationId: agentsAccessToken
+  summary: Issue an application JWT for the authenticated agent
+  tags:
+    - Agents
+  description: >
+    Agent-only; participant/admin credentials cannot issue application tokens.
+    No body or Content-Type is required. All unsolicited bodies (even malformed
+    JSON) and query parameters are ignored, never used as claim overrides.
+    Core loads the agent from authenticated agent scope, checks persisted
+    ID/provider, and uses only Core-operator-owned server grants for audience
+    and module roles. Agent metadata/configuration cannot create grants.
+    The ES256 JWT contains app (agent UUID), roles, iss, aud, iat and exp only.
+    It shares the CMP signing key and public root /.well-known/jwks.json, but
+    has a separate default five-minute TTL (CMP launch remains 90 seconds).
+    Successful issuance requires a persisted agent.access_token_issued audit.
+    Grants and signing settings are validated at boot; changes require restart.
+    Missing grants fail closed. Agent heartbeat status is not revocation;
+    issued tokens remain valid until expiry. No per-VDC permissions, single-use
+    policy, OAuth protocol or real FAE compatibility is implied. This JWT is
+    not a Core API credential. FAE header format, IP omission and deployment
+    audience/TTL remain proposals for FAE-team confirmation.
+  responses:
+    "200":
+      description: Application token issued
+      headers:
+        Cache-Control:
+          description: Tokens must not be cached
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/application_tokens.yaml#/AgentAccessTokenRes
+    "401":
+      $ref: ../components/responses.yaml#/Unauthorized
+    "403":
+      description: Invalid credentials, non-agent/mismatched scope or no operator grant
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/common.yaml#/ErrorRes
+    "404":
+      description: The authenticated agent no longer exists
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/common.yaml#/ErrorRes
+    "503":
+      description: Shared signing is unconfigured
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/common.yaml#/ErrorRes
+    "500":
+      $ref: ../components/responses.yaml#/InternalServerError
