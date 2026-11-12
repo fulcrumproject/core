@@ -48,6 +48,7 @@ func (h *TokenIssueHandler) Issue(w http.ResponseWriter, r *http.Request) {
 	// than accepting caller-supplied identity, lifetime or arbitrary claims.
 	var req *IssueTokenReq
 	dec := json.NewDecoder(r.Body)
+	dec.UseNumber()
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&req); err != nil {
 		render.Render(w, r, response.ErrInvalidRequest(err))

@@ -3,12 +3,14 @@
 package api
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -110,6 +112,62 @@ func TestTokenIssueRoutes(t *testing.T) {
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/tokens/"+tokenID.String(), nil))
 	require.Equal(t, 200, w.Code, w.Body.String())
+}
+
+func TestIssueTokenExtNumbers(t *testing.T) {
+	for _, number := range []string{
+		"9007199254740993", "-9007199254740993",
+		"1234567890123456789", "-1234567890123456789",
+		"0.12345678901234567890123456789",
+		"-1.234567890123456789e+25", "1.234567890123456789e-25",
+	} {
+		t.Run(number, func(t *testing.T) {
+			pid := properties.NewUUID()
+			identity := &auth.Identity{ID: properties.NewUUID(), Role: auth.RoleParticipant, Scope: auth.IdentityScope{ParticipantID: &pid}}
+			store, pq, events := domain.NewMockStore(t), domain.NewMockParticipantRepository(t), domain.NewMockEventRepository(t)
+			store.EXPECT().ParticipantRepo().Return(pq).Once()
+			pq.EXPECT().Get(mock.Anything, pid).Return(&domain.Participant{BaseEntity: domain.BaseEntity{ID: pid}}, nil).Once()
+			store.EXPECT().EventRepo().Return(events).Once()
+			events.EXPECT().Create(mock.Anything, mock.Anything).Return(nil).Once()
+			signer := issueTestSigner(t)
+			body := `{"audience":"recipient","ext":{"number":` + number + `,"nested":[{"numbers":[` + number + `,` + number + `]}]}}`
+			r := httptest.NewRequest(http.MethodPost, "/tokens/issue", strings.NewReader(body))
+			r = r.WithContext(auth.WithIdentity(r.Context(), identity))
+			w := httptest.NewRecorder()
+			NewTokenIssueHandler(domain.NewTokenIssueCommander(store, nil), signer).Issue(w, r)
+			require.Equal(t, 200, w.Code, w.Body.String())
+			var result IssueTokenRes
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+			parsed, err := jose.ParseSigned(result.Token, []jose.SignatureAlgorithm{jose.ES256})
+			require.NoError(t, err)
+			payload, err := parsed.Verify(signer.JWKS())
+			require.NoError(t, err)
+			// Decode verified claims into json.Number, never float64, including
+			// numbers inside nested objects and arrays in the actual JWT payload.
+			var claims struct {
+				Ext struct {
+					Number any `json:"number"`
+					Nested []struct {
+						Numbers []any `json:"numbers"`
+					} `json:"nested"`
+				} `json:"ext"`
+			}
+			dec := json.NewDecoder(bytes.NewReader(payload))
+			dec.UseNumber()
+			require.NoError(t, dec.Decode(&claims))
+			require.Len(t, claims.Ext.Nested, 1)
+			require.Len(t, claims.Ext.Nested[0].Numbers, 2)
+			want, ok := new(big.Rat).SetString(number)
+			require.True(t, ok)
+			for _, value := range append([]any{claims.Ext.Number}, claims.Ext.Nested[0].Numbers...) {
+				got, ok := value.(json.Number)
+				require.True(t, ok, "expected a JSON number, got %T", value)
+				actual, ok := new(big.Rat).SetString(got.String())
+				require.True(t, ok)
+				require.Zero(t, actual.Cmp(want), "opaque number changed: want %s, got %s", number, got)
+			}
+		})
+	}
 }
 
 func TestDisabledJWKS(t *testing.T) {

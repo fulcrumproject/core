@@ -192,6 +192,13 @@ type Claims struct {
 	Ext           map[string]any `json:"ext,omitempty"`
 }
 
+// MarshalJSON preserves encoding/json.Number values in opaque ext when go-jose
+// normalizes claims with its own JSON encoder, which otherwise treats them as strings.
+func (c Claims) MarshalJSON() ([]byte, error) {
+	type plain Claims
+	return json.Marshal(plain(c))
+}
+
 // ValidateExt enforces the size cap and rejects reserved claim names inside ext.
 // Exported so the handler can reject bad ext as client input (400) before
 // signing; Sign also calls it as a defense-in-depth guard.
