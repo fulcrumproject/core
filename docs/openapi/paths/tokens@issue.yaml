@@ -1,0 +1,77 @@
+post:
+  operationId: tokensIssue
+  summary: Issue a generic Core identity JWT
+  tags: [Tokens]
+  description: >
+    Certifies the authenticated persisted participant or agent, not access to an
+    external application. Only audience, optional serviceId and bounded opaque ext
+    are accepted. Unknown fields and malformed/trailing JSON are rejected.
+    Core role and participant_id come from verified Core scope and persisted data;
+    sub is the domain participant UUID or agent UUID, never a credential-record ID.
+    agent_id is present only for agents. Optional service_id and relation are
+    included only after native service read authorization. Participant relation is
+    provider or consumer (provider takes precedence when both apply); agent relation
+    is provider, and the service must be assigned to this agent with a consistent
+    provider. Without serviceId neither service_id nor relation is included.
+    Registered iss/sub/iat/nbf/exp/jti are server-owned; aud is the requested audience.
+    Default lifetimes are participant 90 seconds and agent five minutes, configurable
+    only by the server. Nonempty ext remains caller-asserted, not certified privileges.
+    No redirect URL, app claim, external roles or module grants are returned.
+    Recipients must validate issuer, audience, signature, time, role and applicable
+    resource scope, then enforce their own policy. A recipient unable to enforce a
+    service restriction must reject it rather than widen access. These JWTs do not
+    authenticate into Core regardless of audience. Successful issuance requires a
+    generic audit event containing no JWT, ext or private key.
+  x-auth-permissions:
+    - role: participant
+      permission: persisted authenticated participant; optional service must belong to it as provider or consumer
+    - role: agent
+      permission: persisted authenticated agent/provider; optional service must be assigned to it with consistent provider
+    - role: admin
+      permission: not authorized
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/token_issue.yaml#/IssueTokenReq
+  responses:
+    "200":
+      description: Short-lived JWT and expiry only
+      headers:
+        Cache-Control:
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/token_issue.yaml#/IssueTokenRes
+    "400":
+      description: Invalid request, unknown fields, UUID or extension
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/common.yaml#/ErrorRes
+    "401":
+      $ref: ../components/responses.yaml#/Unauthorized
+    "403":
+      $ref: ../components/responses.yaml#/Forbidden
+    "404":
+      description: Persisted principal or service not found
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/common.yaml#/ErrorRes
+    "500":
+      description: Repository, signing or mandatory audit failure; no JWT returned
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/common.yaml#/ErrorRes
+    "503":
+      description: JWT signing is entirely unconfigured; existing Core APIs remain available
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/common.yaml#/ErrorRes

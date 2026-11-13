@@ -233,6 +233,8 @@ components:
       $ref: ./components/responses.yaml#/InternalServerError
 
 paths:
+  /.well-known/jwks.json:
+    $ref: ./paths/jwks.yaml
   /agent-types:
     $ref: ./paths/agent-types.yaml
   /agent-types/{id}:
@@ -345,6 +347,8 @@ paths:
     $ref: ./paths/services@{id}.yaml
   /services/{id}/{action}:
     $ref: ./paths/services@{id}@{action}.yaml
+  /tokens/issue:
+    $ref: ./paths/tokens@issue.yaml
   /tokens:
     $ref: ./paths/tokens.yaml
   /tokens/{id}:

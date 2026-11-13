@@ -1,9 +1,12 @@
+// Configuration combines Core runtime settings and optional features.
+// Defaults keep JWT signing disabled and existing authentication unchanged.
 package config
 
 import (
 	"log/slog"
 	"time"
 
+	"github.com/fulcrumproject/core/pkg/jwtissuer"
 	"github.com/fulcrumproject/core/pkg/keycloak"
 	"github.com/fulcrumproject/utils/gormpg"
 	"github.com/fulcrumproject/utils/logging"
@@ -15,6 +18,7 @@ const (
 
 // Fulcrum configuration
 type Config struct {
+	JWT                     jwtissuer.Config      `json:"jwt"`
 	Port                    uint                  `json:"port" env:"PORT" validate:"required,min=1,max=65535"`
 	ShutdownTimeout         time.Duration         `json:"shutdownTimeout" env:"SHUTDOWN_TIMEOUT"`
 	SchedulerLockerConfig   SchedulerLockerConfig `json:"schedulerLocker" validate:"required"`
@@ -55,6 +59,7 @@ type JobConfig struct {
 }
 
 var Default = Config{
+	JWT:             jwtissuer.Config{ParticipantTTL: jwtissuer.DefaultParticipantTTL, AgentTTL: jwtissuer.DefaultAgentTTL},
 	Port:            8080,
 	ShutdownTimeout: 30 * time.Second,
 	SchedulerLockerConfig: SchedulerLockerConfig{

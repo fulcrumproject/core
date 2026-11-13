@@ -1,0 +1,21 @@
+servers:
+  - url: /
+    description: Root of this Core origin, not /api/v1
+get:
+  operationId: publicJwks
+  summary: Get public ES256 verification keys
+  description: >
+    Public endpoint outside API authentication. Returns only public EC P-256
+    verification material and the signing kid; never a private key. Signing
+    disabled returns an empty keys array. Only the current key is published;
+    overlapping-key rotation is not implemented.
+  tags:
+    - Tokens
+  security: []
+  responses:
+    "200":
+      description: Public JSON Web Key Set
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/token_issue.yaml#/JWKS

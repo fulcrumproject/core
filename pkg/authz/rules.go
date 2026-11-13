@@ -1,3 +1,5 @@
+// Authorization rules define permitted resource operations for each role.
+// Resource scopes further constrain these grants to trusted ownership.
 package authz
 
 import (
@@ -5,27 +7,27 @@ import (
 )
 
 const (
-	ObjectTypeParticipant       ObjectType = "participant"
-	ObjectTypeAgent             ObjectType = "agent"
-	ObjectTypeAgentType         ObjectType = "agent_type"
+	ObjectTypeParticipant        ObjectType = "participant"
+	ObjectTypeAgent              ObjectType = "agent"
+	ObjectTypeAgentType          ObjectType = "agent_type"
 	ObjectTypeInfrastructureType ObjectType = "infrastructure_type"
 	ObjectTypeInfrastructure     ObjectType = "infrastructure"
-	ObjectTypeConfigPool        ObjectType = "config_pool"
-	ObjectTypeConfigPoolValue   ObjectType = "config_pool_value"
-	ObjectTypeService           ObjectType = "service"
-	ObjectTypeServiceType       ObjectType = "service_type"
-	ObjectTypeServiceGroup      ObjectType = "service_group"
-	ObjectTypeServiceOptionType ObjectType = "service_option_type"
-	ObjectTypeServiceOption     ObjectType = "service_option"
-	ObjectTypeServicePoolSet    ObjectType = "service_pool_set"
-	ObjectTypeServicePool       ObjectType = "service_pool"
-	ObjectTypeServicePoolValue  ObjectType = "service_pool_value"
-	ObjectTypeJob               ObjectType = "job"
-	ObjectTypeMetricType        ObjectType = "metric_type"
-	ObjectTypeMetricEntry       ObjectType = "metric_entry"
-	ObjectTypeEvent             ObjectType = "event_entry"
-	ObjectTypeToken             ObjectType = "token"
-	ObjectTypeKeycloakUser      ObjectType = "keycloak_user"
+	ObjectTypeConfigPool         ObjectType = "config_pool"
+	ObjectTypeConfigPoolValue    ObjectType = "config_pool_value"
+	ObjectTypeService            ObjectType = "service"
+	ObjectTypeServiceType        ObjectType = "service_type"
+	ObjectTypeServiceGroup       ObjectType = "service_group"
+	ObjectTypeServiceOptionType  ObjectType = "service_option_type"
+	ObjectTypeServiceOption      ObjectType = "service_option"
+	ObjectTypeServicePoolSet     ObjectType = "service_pool_set"
+	ObjectTypeServicePool        ObjectType = "service_pool"
+	ObjectTypeServicePoolValue   ObjectType = "service_pool_value"
+	ObjectTypeJob                ObjectType = "job"
+	ObjectTypeMetricType         ObjectType = "metric_type"
+	ObjectTypeMetricEntry        ObjectType = "metric_entry"
+	ObjectTypeEvent              ObjectType = "event_entry"
+	ObjectTypeToken              ObjectType = "token"
+	ObjectTypeKeycloakUser       ObjectType = "keycloak_user"
 )
 
 const (

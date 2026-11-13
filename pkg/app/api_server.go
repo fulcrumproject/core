@@ -1,3 +1,5 @@
+// API servers mount authenticated Core resources and public discovery.
+// Health and JWKS routes do not depend on JWT issuance.
 package app
 
 import (
@@ -6,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/fulcrumproject/core/pkg/api"
 	"github.com/fulcrumproject/core/pkg/health"
 	"github.com/fulcrumproject/core/pkg/middlewares"
 	"github.com/fulcrumproject/utils/logging"
@@ -129,6 +132,9 @@ func BuildHttpServer(
 
 	authMiddleware := middlewares.Auth(app.CompositeAuthenticator)
 
+	// Public discovery must remain outside the authenticated API group.
+	r.Get("/.well-known/jwks.json", api.NewJwksHandler(app.JWTSigner).JWKS)
+
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authMiddleware)
@@ -157,7 +163,12 @@ func BuildHttpServer(
 		r.Route("/metric-entries", app.MetricEntryHandler.Routes())
 		r.Route("/events", app.EventHandler.Routes())
 		r.Route("/jobs", app.JobHandler.Routes())
-		r.Route("/tokens", app.TokenHandler.Routes())
+		r.Route("/tokens", func(r chi.Router) {
+			app.TokenHandler.Routes()(r)
+			if app.TokenIssueHandler != nil {
+				app.TokenIssueHandler.Routes()(r)
+			}
+		})
 		r.Route("/vault/secrets", app.VaultHandler.Routes())
 		if app.KeycloakUserHandler != nil {
 			r.Route("/keycloak-users", app.KeycloakUserHandler.Routes())
