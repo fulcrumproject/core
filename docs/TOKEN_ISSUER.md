@@ -5,8 +5,10 @@ such as CEM through Core's implementation. It certifies an authenticated Core
 participant or agent, optionally with authorized native service context. It does
 **not** grant access to an external application.
 
-Existing `/tokens` CRUD, opaque incoming API credentials, Keycloak authentication,
-bootstrap and credential revocation remain unchanged. Issued JWTs do not
+Existing `/tokens` CRUD, opaque incoming API credentials, Keycloak authentication
+and credential revocation remain unchanged. Administrative bootstrap is now
+[one-time database initialization](BOOTSTRAP.md), not credential recreation on
+restart. This separate correction does not change the issuer contract. Issued JWTs do not
 authenticate back into Core, even when their requested audience names Core.
 They are not stored as Core API credentials. Revoking the incoming credential
 prevents further issuance; already issued JWTs remain valid until expiry at

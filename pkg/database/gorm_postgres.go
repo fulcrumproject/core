@@ -1,3 +1,5 @@
+// PostgreSQL connections auto-migrate Core, metrics and scheduler storage.
+// Core models also define the persisted evidence used to adopt existing stores.
 package database
 
 import (
@@ -60,7 +62,21 @@ func autoMigrate(db *gorm.DB) error {
 		return err
 	}
 
-	err := db.AutoMigrate(
+	if err := db.AutoMigrate(append(coreModels(), &bootstrapState{})...); err != nil {
+		return err
+	}
+
+	if err := backfillConfigPoolValueParticipant(db); err != nil {
+		return err
+	}
+
+	return backfillServicePoolParticipant(db)
+}
+
+// coreModels lists persisted Core data, including native token audit history.
+// Keep bootstrap state separate: an empty migrated schema is still fresh.
+func coreModels() []any {
+	return []any{
 		&domain.Token{},
 		&domain.Participant{},
 		&domain.Agent{},
@@ -83,16 +99,7 @@ func autoMigrate(db *gorm.DB) error {
 		&domain.Event{},
 		&domain.EventSubscription{},
 		&vaultSecret{},
-	)
-	if err != nil {
-		return err
 	}
-
-	if err := backfillConfigPoolValueParticipant(db); err != nil {
-		return err
-	}
-
-	return backfillServicePoolParticipant(db)
 }
 
 // backfillConfigPoolValueParticipant copies participant_id from the parent pool onto

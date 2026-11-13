@@ -16,6 +16,7 @@ Fulcrum is currently under active development. New agents and features are being
     - [Prerequisites](#prerequisites)
     - [Configuration](#configuration)
     - [Optional JWT issuance](#optional-jwt-issuance)
+    - [One-time administrative bootstrap](#one-time-administrative-bootstrap)
     - [Running with Docker](#running-with-docker)
     - [Running locally](#running-locally)
   - [Health Endpoints](#health-endpoints)
@@ -116,6 +117,16 @@ context when requested, and public ES256 JWKS. Existing incoming credentials,
 Keycloak and token CRUD remain unchanged; issued JWTs do not authenticate into
 Core. See [JWT issuer configuration and API](docs/TOKEN_ISSUER.md).
 
+### One-time administrative bootstrap
+
+A fresh, empty database receives the known development admin credential
+`change-me` once, expiring after one calendar day. Regenerate and secure it before
+normal use. Existing stores are adopted without adding/resetting credentials;
+restarts never recreate revoked or expired credentials, even if none remain.
+Legacy default credentials require explicit operator cleanup. See
+[bootstrap behavior and reset boundaries](docs/BOOTSTRAP.md). This is not
+production-ready credential provisioning.
+
 ### Running with Docker
 
 To start the entire application stack:
@@ -124,7 +135,8 @@ To start the entire application stack:
 docker compose up --build
 ```
 
-To restart with a clean database:
+To explicitly reset your own disposable database (destroys all data, history and
+the bootstrap guard; **not** credential revocation or an ordinary restart):
 
 ```bash
 docker compose down -v && docker compose up --build
