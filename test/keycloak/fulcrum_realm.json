@@ -88,7 +88,8 @@
         "realm-management": [
           "manage-users",
           "view-users",
-          "query-users"
+          "query-users",
+          "view-realm"
         ]
       }
     }
@@ -103,7 +104,7 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
-      "defaultClientScopes": ["fulcrum_ids", "profile", "roles", "basic"]
+      "defaultClientScopes": ["fulcrum_ids", "profile", "roles", "basic", "kc-admin-api"]
     },
     {
       "clientId": "fulcrum-ui",
